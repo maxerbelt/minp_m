@@ -1,26 +1,18 @@
-function bitLength32 (n) {
-  const m = n < 3 ? 1 : 32 - Math.clz32(n - 1)
-  return m
-}
-function isPowerOf2 (n) {
-  return n > 0 && (n & (n - 1)) === 0
-}
-function nextPow2 (n) {
-  n = n >>> 0 // uint32
-  if (n <= 1) return 1
+import { BitMath } from './bitMath.js'
 
-  if ((n & (n - 1)) === 0) return n // already power of 2
-
-  return 1 << (32 - Math.clz32(n))
+function forEachRow (gridHeight, fn) {
+  for (let row = 0; row < gridHeight; row++) {
+    fn(row)
+  }
 }
-function nextPow2Strict (n) {
-  n = n >>> 0 // uint32
-  if (n <= 1) return 1
 
-  if ((n & (n - 1)) === 0) return n // already power of 2
-
-  return 1 << (32 - Math.clz32(n))
+function forEachCell (width, height, fn) {
+  const total = width * height
+  for (let i = 0; i < total; i++) {
+    fn(i)
+  }
 }
+
 export class StoreBase {
   constructor (
     one,
@@ -35,7 +27,7 @@ export class StoreBase {
     this.depth = depth
     this.empty = empty
     this.one = one
-    const bitsPerCell = nextPow2Strict(bitLength || bitLength32(depth))
+    const bitsPerCell = BitMath.bitsPerCell(depth, bitLength)
     const cellMask = (1 << bitsPerCell) - 1
     const bShift = Math.log2(bitsPerCell)
 
@@ -95,6 +87,12 @@ export class StoreBase {
     return result
   }
 
+  combineMasked (...values) {
+    const fullMask = this.fullBits
+    let result = this.empty
+    for (const v of values) result |= v
+    return result & fullMask
+  }
   check (color = 1) {
     if (this.depth > 1 && (color < this.MnC || color > this.MxC)) {
       throw new Error(`color must be ${this.MnC}..${this.MxC}`)
@@ -156,11 +154,11 @@ export class StoreBase {
     return this.bitPos(endIndex - startIndex + 1)
   }
   expandToDepth (bitboard, newDepth) {
-    const newBitsPerCell = nextPow2Strict(bitLength32(newDepth))
+    const newBitsPerCell = BitMath.bitsPerCell(newDepth)
     this.expandToBitsPerCell(bitboard, newBitsPerCell)
   }
   shrinkToDepth (bitboard, newDepth) {
-    const newBitsPerCell = nextPow2Strict(bitLength32(newDepth))
+    const newBitsPerCell = BitMath.bitsPerCell(newDepth)
     this.shrinkToBitsPerCell(bitboard, newBitsPerCell)
   }
 
@@ -178,14 +176,14 @@ export class StoreBase {
   }
 
   // Orchestration methods that delegate to subclass step implementations
-  dilate1D_horizontal (bitboard, gridWidth, gridHeight, radius, edgeMasks) {
+  dilate1D_horizontal (bitboard, radius, edgeMasks) {
     const masks = edgeMasks || this._createDefaultEdgeMasks()
     return this.applyRadiusSteps(bitboard, radius, this.dilateHorizontalStep, [
       masks
     ])
   }
 
-  dilate1D_vertical (bitboard, gridWidth, gridHeight, radius, edgeMasks) {
+  dilate1D_vertical (bitboard, gridWidth, radius, edgeMasks) {
     const masks = edgeMasks || this._createDefaultEdgeMasks()
     return this.applyRadiusSteps(bitboard, radius, this.dilateVerticalStep, [
       gridWidth,
@@ -211,18 +209,15 @@ export class StoreBase {
     }
   }
 
-  dilateSeparable (bitboard, gridWidth, gridHeight, radius, edgeMasks) {
+  dilateSeparable (bitboard, gridWidth, radius, edgeMasks) {
     const horizontalDilated = this.dilate1D_horizontal(
       bitboard,
-      gridWidth,
-      gridHeight,
       radius,
       edgeMasks
     )
     const horizontalAndVerticalDilated = this.dilate1D_vertical(
       horizontalDilated,
       gridWidth,
-      gridHeight,
       radius,
       edgeMasks
     )

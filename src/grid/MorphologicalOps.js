@@ -25,7 +25,6 @@ export class MorphologicalOps {
     return this.store.dilateSeparable(
       this.mask.bits,
       this.mask.width,
-      this.mask.height,
       this.store.storeType(radius),
       edges
     )

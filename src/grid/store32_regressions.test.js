@@ -1,4 +1,5 @@
 /* eslint-env jest */
+/* global describe,it,expect, jest */
 import { Packed } from './packed.js'
 import { Mask } from './mask.js'
 
@@ -60,8 +61,6 @@ describe('store32 regressions', () => {
     p.set(0, 0)
     p.set(0, 1)
     p.dilate(2)
-    expect(p.toAscii.trim()).toBe(
-      '111.....\n111.....\n111.....\n111.....\n........'
-    )
+    expect(p.toAscii).toBe('111.....\n111.....\n111.....\n111.....\n........')
   })
 })

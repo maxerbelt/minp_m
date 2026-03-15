@@ -205,26 +205,26 @@ describe('StoreBig erode / dilate operations', () => {
   describe('dilate1D_horizontal', () => {
     it('should dilate single bit horizontally', () => {
       const edgeMasks = mask.edgeMasks()
-      const result = store.dilate1D_horizontal(1n, 10, 10, 1, edgeMasks)
+      const result = store.dilate1D_horizontal(1n, 1, edgeMasks)
       expect(result).toBeGreaterThanOrEqual(1n)
     })
 
     it('should respect radius parameter', () => {
       const edgeMasks = mask.edgeMasks()
-      const result1 = store.dilate1D_horizontal(1n, 10, 10, 1, edgeMasks)
-      const result2 = store.dilate1D_horizontal(1n, 10, 10, 2, edgeMasks)
+      const result1 = store.dilate1D_horizontal(1n, 1, edgeMasks)
+      const result2 = store.dilate1D_horizontal(1n, 2, edgeMasks)
       expect(result2).toBeGreaterThanOrEqual(result1)
     })
   })
 
   describe('dilate1D_vertical', () => {
     it('should dilate single bit vertically', () => {
-      const result = store.dilate1D_vertical(1n, 10, 10, 1)
+      const result = store.dilate1D_vertical(1n, 10,  1)
       expect(result).toBeGreaterThanOrEqual(1n)
     })
 
     it('should expand based on width', () => {
-      const result = store.dilate1D_vertical(1n, 10, 10, 1)
+      const result = store.dilate1D_vertical(1n, 10,   1)
       expect(result).toBeGreaterThanOrEqual(1n)
     })
   })

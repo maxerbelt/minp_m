@@ -3,14 +3,11 @@ import { lazy } from '../utilities.js'
 import { buildTransformMaps } from './buildTransformMaps.js'
 import { ShapeEnum } from './shapeEnum.js'
 import { Store32 } from './store32.js'
-
-function bitLength32 (n) {
-  return 32 - Math.clz32(n - 1)
-}
+import { BitMath } from './bitMath.js'
 
 export class Packed extends MaskBase {
   constructor (width, height, bits, store, depth = 4) {
-    const bitlength = bitLength32(depth)
+    const bitlength = BitMath.bitLength32(depth)
     store =
       store || new Store32(depth, width * height, bitlength, width, height)
     bits = bits || store.newWords()
@@ -22,7 +19,7 @@ export class Packed extends MaskBase {
   }
 
   defaultStore (depth) {
-    const bitlength = bitLength32(depth)
+    const bitlength = BitMath.bitLength32(depth)
     return new Store32(
       depth,
       this.width * this.height,
@@ -373,7 +370,6 @@ export class Packed extends MaskBase {
     return this.store.dilateSeparable(
       this.bits,
       this.width,
-      this.height,
       this.store.storeType(radius),
       edges
     )

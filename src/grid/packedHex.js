@@ -2,14 +2,11 @@ import { MaskBase } from './MaskBase.js'
 import { ShapeEnum } from './shapeEnum.js'
 import { ActionsHex } from './actionHex.js'
 import { Store32 } from './store32.js'
-
-function bitLength32 (n) {
-  return 32 - Math.clz32(n - 1)
-}
+import { BitMath } from './bitMath.js'
 
 export class PackedHex extends MaskBase {
   constructor (radius, bits, store, depth = 4) {
-    const bitlength = bitLength32(depth)
+    const bitlength = BitMath.bitLength32(depth)
     const shape = ShapeEnum.hexagon(radius)
     const size = shape.indexer.size
     store =

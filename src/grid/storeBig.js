@@ -407,8 +407,7 @@ export class StoreBig extends StoreBase {
     const leftShifted = this.shiftBits(srcForLeft, -1)
     const rightShifted = this.shiftBits(srcForRight, 1)
 
-    const fullMask = this.fullBits
-    return (bitboard | leftShifted | rightShifted) & fullMask
+    return this.combineMasked(bitboard, leftShifted, rightShifted)
   }
 
   dilateVerticalStep (bitboard, gridWidth, edgeMasks) {
@@ -465,37 +464,26 @@ export class StoreBig extends StoreBase {
     const N = Math.max(gridHeight, gridWidth)
     return this.expandToWidth(gridWidth, gridHeight, bits, N)
   }
-  expandToWidth (gridWidth, gridHeight, bits, newWidth) {
-    let out = 0n
 
-    const rowMaskForWidth = this.rowMask(gridWidth)
+  mapRows (bits, width, height, newWidth, transform) {
+    let result = 0n
+    const minWidth = Math.min(width, newWidth)
+    const rowMask = this.rowMask(minWidth)
 
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-      const row = this.extractRowAtIndex(
-        bits,
-        rowIndex,
-        gridWidth,
-        rowMaskForWidth
-      )
-      out |= row << this.bitPos(rowIndex * newWidth)
+    for (let row = 0; row < height; row++) {
+      const rowBits = this.extractRowAtIndex(bits, row, width, rowMask)
+      const newRow = transform(rowBits, row)
+      result |= newRow << this.bitPos(row * newWidth)
     }
-    return out
+
+    return result
   }
+  expandToWidth (gridWidth, gridHeight, bits, newWidth) {
+    return this.mapRows(bits, gridWidth, gridHeight, newWidth, row => row)
+  }
+
   shrinkTo (gridWidth, bits, newWidth, newHeight) {
-    let out = 0n
-
-    const rowMaskForWidth = this.rowMask(newWidth)
-
-    for (let rowIndex = 0; rowIndex < newHeight; rowIndex++) {
-      const row = this.extractRowAtIndex(
-        bits,
-        rowIndex,
-        gridWidth,
-        rowMaskForWidth
-      )
-      out |= row << this.bitPos(rowIndex * newWidth)
-    }
-    return out
+    return this.mapRows(bits, gridWidth, newHeight, newWidth, row => row)
   }
 
   expandToWidthWithOffset (
@@ -964,6 +952,7 @@ export class StoreBig extends StoreBase {
 
     return resultBitboard
   }
+
   setOverlay (baseBitboard, overlayLayer, color) {
     if (this.isSingleBit) return baseBitboard | overlayLayer
     const baseBits = this.singleBitStore.expandToBitsPerCell(overlayLayer) // Validate overlay is 1-bit

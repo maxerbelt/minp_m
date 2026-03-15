@@ -1,8 +1,6 @@
 import { StoreBase } from './storeBase.js'
 import { areArraysOrderedAndEqual } from '../variants/normalize.js'
-function bitLength32 (n) {
-  return 32 - Math.clz32(n)
-}
+import { BitMath } from './bitMath.js'
 const OP_AND = 0
 const OP_OR = 1
 const OP_XOR = 2
@@ -27,7 +25,7 @@ function empty (numWords) {
 
 export class Store32 extends StoreBase {
   constructor (depth = 2, size = 0, bitLength, width, height) {
-    const bitsPerCell = bitLength || bitLength32(depth)
+    const bitsPerCell = BitMath.bitsPerCell(depth, bitLength)
     const cellsPerWord = 32 / bitsPerCell
     const cpwShift = Math.log2(cellsPerWord)
     const words = Math.ceil(size / (32 / bitsPerCell))
