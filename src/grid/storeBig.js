@@ -2,9 +2,7 @@ import { StoreBase } from './storeBase.js'
 import { popcountBigInt } from './placeTools.js'
 const one = 1n
 const zero = 0n
-function floorToFactor (value, factor) {
-  return Math.floor(value / factor) * factor
-}
+
 export class StoreBig extends StoreBase {
   constructor (depth = 1, size = 0, bitLength, width, height) {
     super(one, zero, BigInt, depth, size, bitLength, width, height)

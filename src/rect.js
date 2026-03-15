@@ -270,7 +270,7 @@ function drawDropPreview (canvas, dragData, clientX, clientY) {
             const offsetY = 50
             const cellSize = 50
             ctx.fillStyle = 'rgba(100, 200, 255, 0.4)'
-            ctx.strokeStyle = 'rgba(0, 100, 200, 0.8)'
+            ctx.strokeStyle = 'rgba(0, 120, 250, 0.8)'
             ctx.lineWidth = 2
             const canvasX = offsetX + x * cellSize + 1
             const canvasY = offsetY + y * cellSize + 1
