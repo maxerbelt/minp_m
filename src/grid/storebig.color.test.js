@@ -546,7 +546,7 @@ describe('StoreBig color operations', () => {
     })
 
     it('should roundtrip complex multicolor pattern', () => {
-      const store1 = new StoreBig(2, 100, 2, 4, 4)
+      const store1 = new StoreBig(2, 16, 2, 4, 4)
       let original = 0n
       // Create checkered pattern with two colors
       for (let i = 0; i < 16; i++) {

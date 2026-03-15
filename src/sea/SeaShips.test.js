@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-/* global describe, it, test, expect, beforeEach, jest */
+/* global describe, it, expect,  jest */
 
 import { seaShipsCatalogue } from './SeaShips.js'
 import {
@@ -11,15 +11,15 @@ import {
   Plane
 } from './SeaShape.js'
 import { Hybrid } from '../ships/SpecialShapes.js'
-// Jest test suite
+// Jest it suite
 describe('SeaShips - Buildings', () => {
-  test('seaShipsCatalogue is exported and has baseShapes', () => {
+  it('seaShipsCatalogue is exported and has baseShapes', () => {
     expect(seaShipsCatalogue).toBeDefined()
     expect(Array.isArray(seaShipsCatalogue.baseShapes)).toBe(true)
     expect(seaShipsCatalogue.baseShapes.length).toBeGreaterThan(0)
   })
 
-  test('catalogue contains Buildings: UndergroundBunker, AntiAircraftGun, RadarStation', () => {
+  it('catalogue contains Buildings: UndergroundBunker, AntiAircraftGun, RadarStation', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const buildings = shapes.filter(s => s instanceof Building)
     expect(buildings.length).toBeGreaterThanOrEqual(3)
@@ -29,7 +29,7 @@ describe('SeaShips - Buildings', () => {
     expect(letters).toContain('R')
   })
 
-  test('BombShelter is HillFort with hardened property', () => {
+  it('BombShelter is HillFort with hardened property', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const bombShelter = shapes.find(
       s => s.letter === 'L' && s instanceof HillFort
@@ -42,7 +42,7 @@ describe('SeaShips - Buildings', () => {
 })
 
 describe('SeaShips - Planes', () => {
-  test('catalogue contains Planes: JetFighter, Helicopter, Airplane, StealthBomber', () => {
+  it('catalogue contains Planes: JetFighter, Helicopter, Airplane, StealthBomber', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const planes = shapes.filter(s => s instanceof Plane)
     expect(planes.length).toBeGreaterThanOrEqual(4)
@@ -53,7 +53,7 @@ describe('SeaShips - Planes', () => {
     expect(letters).toContain('Q')
   })
 
-  test('Helicopter and Airplane have vulnerable properties', () => {
+  it('Helicopter and Airplane have vulnerable properties', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const helicopter = shapes.find(s => s.letter === 'H')
     const airplane = shapes.find(s => s.letter === 'P')
@@ -61,7 +61,7 @@ describe('SeaShips - Planes', () => {
     expect(Array.isArray(airplane?.vulnerable)).toBe(true)
   })
 
-  test('StealthBomber has vulnerable, hardened, and immune properties', () => {
+  it('StealthBomber has vulnerable, hardened, and immune properties', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const stealth = shapes.find(s => s.letter === 'Q')
     expect(stealth).toBeDefined()
@@ -74,7 +74,7 @@ describe('SeaShips - Planes', () => {
 })
 
 describe('SeaShips - SeaVessels', () => {
-  test('catalogue contains SeaVessels', () => {
+  it('catalogue contains SeaVessels', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const vessels = shapes.filter(
       s => s instanceof SeaVessel && !(s instanceof DeepSeaVessel)
@@ -89,7 +89,7 @@ describe('SeaShips - SeaVessels', () => {
     expect(letters).toContain('S')
   })
 
-  test('AircraftCarrier has correct description and type', () => {
+  it('AircraftCarrier has correct description and type', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const carrier = shapes.find(s => s.letter === 'A')
     expect(carrier).toBeDefined()
@@ -97,7 +97,7 @@ describe('SeaShips - SeaVessels', () => {
     expect(carrier.type()).toBe('S')
   })
 
-  test('Tanker has vulnerable property', () => {
+  it('Tanker has vulnerable property', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const tanker = shapes.find(s => s.letter === 'T')
     expect(tanker).toBeDefined()
@@ -105,7 +105,7 @@ describe('SeaShips - SeaVessels', () => {
     expect(tanker.vulnerable).toContain('Z')
   })
 
-  test('Submarine has vulnerable, hardened, and immune properties', () => {
+  it('Submarine has vulnerable, hardened, and immune properties', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const sub = shapes.find(s => s.letter === 'S')
     expect(sub).toBeDefined()
@@ -118,7 +118,7 @@ describe('SeaShips - SeaVessels', () => {
 })
 
 describe('SeaShips - DeepSeaVessel', () => {
-  test('OilRig is DeepSeaVessel with vulnerable property', () => {
+  it('OilRig is DeepSeaVessel with vulnerable property', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const rig = shapes.find(s => s.letter === 'O')
     expect(rig).toBeDefined()
@@ -129,7 +129,7 @@ describe('SeaShips - DeepSeaVessel', () => {
 })
 
 describe('SeaShips - Hybrids', () => {
-  test('catalogue contains Hybrids: SupplyDepot, Pier, NavalBase', () => {
+  it('catalogue contains Hybrids: SupplyDepot, Pier, NavalBase', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const hybrids = shapes.filter(s => s instanceof Hybrid)
     expect(hybrids.length).toBeGreaterThanOrEqual(3)
@@ -139,7 +139,7 @@ describe('SeaShips - Hybrids', () => {
     expect(letters).toContain('N')
   })
 
-  test('SupplyDepot is Hybrid with notes', () => {
+  it('SupplyDepot is Hybrid with notes', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const depot = shapes.find(s => s.letter === 'Y')
     expect(depot).toBeDefined()
@@ -148,7 +148,7 @@ describe('SeaShips - Hybrids', () => {
     expect(Array.isArray(depot.notes)).toBe(true)
   })
 
-  test('Pier is Hybrid with notes', () => {
+  it('Pier is Hybrid with notes', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const pier = shapes.find(s => s.letter === 'I')
     expect(pier).toBeDefined()
@@ -156,7 +156,7 @@ describe('SeaShips - Hybrids', () => {
     expect(Array.isArray(pier.notes)).toBe(true)
   })
 
-  test('NavalBase is Hybrid with notes about placement', () => {
+  it('NavalBase is Hybrid with notes about placement', () => {
     const shapes = seaShipsCatalogue.baseShapes
     const base = shapes.find(s => s.letter === 'N')
     expect(base).toBeDefined()

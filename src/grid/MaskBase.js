@@ -173,7 +173,7 @@ export class MaskBase extends CanvasGrid {
    * Create full (all bits set) mask of same shape
    * @template
    */
-  _createFullMask () {
+  get fullMask () {
     const mask = this.emptyMask
     mask.bits = this.fullBits
     return mask
@@ -183,7 +183,7 @@ export class MaskBase extends CanvasGrid {
    * Create inverted mask of same shape
    * @template
    */
-  _createInvertedMask () {
+  get invertedMask () {
     const mask = this.emptyMask
     mask.bits = this.invertedBits
     return mask
@@ -336,16 +336,6 @@ export class MaskBase extends CanvasGrid {
     return this._borderRegions.createInnerAreaMask()
   }
 
-  get invertedMask () {
-    const mask = this.emptyMask
-    mask.bits = this.invertedBits
-    return mask
-  }
-  get fullMask () {
-    const mask = this.emptyMask
-    mask.bits = this.fullBits
-    return mask
-  }
   normalize () {
     this.bits = this.store.normalizeUpLeft(this.bits, this.width, this.height)
   }

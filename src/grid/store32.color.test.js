@@ -524,7 +524,7 @@ describe('Store32 extract layers', () => {
 
       const singleColor = store5.extractColorLayer(bitboard, 1, 5, 5)
       // Should have occupancy for the 9 cells with color 1
-      expect(store5.occupancy(singleColor)).toBe(9) // 9 cells with color 1
+      expect(store5.singleBitStore.occupancy(singleColor)).toBe(9) // 9 cells with color 1
     })
 
     it('should maintain color consistency across extract-modify-reassemble', () => {

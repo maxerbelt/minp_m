@@ -60,9 +60,9 @@ export class Store32 extends StoreBase {
   // Normalize input bitboard to a Uint32Array of length `this.words`
   normalizeBitboard (bitboard) {
     let src = bitboard
-    if (!src || src.length !== this.words) {
+    if (src?.length !== this.words) {
       const tmp = this.newWords()
-      if (src && src.length) {
+      if (src?.length) {
         for (let i = 0; i < Math.min(src.length, this.words); i++)
           tmp[i] = src[i]
       }
@@ -270,7 +270,6 @@ export class Store32 extends StoreBase {
 
   // Per-cell helper: determine if cell at given index survives horizontal erosion
   cellSurvivesHorizontalErosion (src, idx) {
-    const x = idx % this.width
     const leftOk = this.cellHasLeftNeighbor(src, idx, this.width)
     const rightOk = this.cellHasRightNeighbor(src, idx, this.width)
     return leftOk && rightOk
@@ -278,7 +277,6 @@ export class Store32 extends StoreBase {
 
   // Per-cell helper: determine if cell at given index survives vertical erosion
   cellSurvivesVerticalErosion (src, idx, gridWidth) {
-    const row = Math.floor(idx / gridWidth)
     const h = this.height
     const upOk = this.cellHasTopNeighbor(src, idx, gridWidth)
     const downOk = this.cellHasBottomNeighbor(src, idx, gridWidth, h)
@@ -721,14 +719,24 @@ export class Store32 extends StoreBase {
   }
 
   // Occupancy and conversion functions
-  occupancy (bb) {
+  occupancyFast (bb) {
     let count = 0
-    for (let i = 0; i < bb.length; i++) {
-      count += this.popcount32(bb[i])
+    for (const word of bb) {
+      count += this.popcount32(word)
     }
     return count
   }
-
+  // Occupancy and conversion functions
+  occupancy (bb) {
+    if (this.bitsPerCell === 1) return this.occupancyFast(bb)
+    let count = 0
+    for (const word of bb) {
+      for (let shift = 0; shift < 32; shift += this.bitsPerCell) {
+        count += this.rightShift(word, shift) > 0 ? 1 : 0
+      }
+    }
+    return count
+  }
   popcount32 (x) {
     x -= (x >>> 1) & 0x55555555
     x = (x & 0x33333333) + ((x >>> 2) & 0x33333333)
@@ -1081,23 +1089,16 @@ export class Store32 extends StoreBase {
       notBottom: allOnes
     }
   }
-
-  combineCrossStepResults (
-    bitboard,
-    upShifted,
-    downShifted,
-    leftShifted,
-    rightShifted
-  ) {
-    const result = this.createEmptyBitboard(bitboard)
+  combineElement (idx, ...values) {
+    let result = 0 >>> 0
+    for (const v of values) result |= v[idx] >>> 0
+    return result
+  }
+  combineMasked (...values) {
+    const result = this.createEmptyBitboard(values[0])
 
     for (let i = 0; i < result.length; i++) {
-      result[i] =
-        bitboard[i] |
-        upShifted[i] |
-        downShifted[i] |
-        leftShifted[i] |
-        rightShifted[i]
+      result[i] = this.combineElement(i, values)
     }
 
     return result
@@ -1218,7 +1219,7 @@ export class Store32 extends StoreBase {
   }
 
   boundingBox (gridWidth, gridHeight, bitboard) {
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     let minRowIndex = gridHeight
     let minColIndex = gridWidth
 
@@ -1279,7 +1280,7 @@ export class Store32 extends StoreBase {
     return rangeForColumns << startBitPosition
   }
 
-  rowMask (gridWidth) {
+  rowMaskForWidth (gridWidth) {
     const widthInBits = this.bitPos(gridWidth)
     return (1 << widthInBits) - 1
   }
@@ -1315,7 +1316,7 @@ export class Store32 extends StoreBase {
   shiftTo (gridWidth, minRowIndex, gridHeight, bitboard, minColIndex) {
     let resultBitboard = this.newWords()
     let destinationRowIndex = 0
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
 
     for (
       let sourceRowIndex = minRowIndex;
@@ -1386,7 +1387,7 @@ export class Store32 extends StoreBase {
     offsetBits = 0
   ) {
     const out = this.newWords()
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     const wordsPerSourceRow = Math.ceil(gridWidth / 32)
     const wordsPerDestRow = Math.ceil(newWidth / 32)
 
@@ -1430,7 +1431,7 @@ export class Store32 extends StoreBase {
     offsetY = 0
   ) {
     const out = this.newWords()
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     const wordsPerSourceRow = Math.ceil(gridWidth / 32)
     const wordsPerDestRow = Math.ceil(newWidth / 32)
 
@@ -1545,7 +1546,7 @@ export class Store32 extends StoreBase {
 
   expandToWidth (gridWidth, gridHeight, bits, newWidth) {
     const out = this.newWords()
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     const wordsPerSourceRow = Math.ceil(gridWidth / 32)
     const wordsPerDestRow = Math.ceil(newWidth / 32)
 
@@ -1643,7 +1644,7 @@ export class Store32 extends StoreBase {
   ) {
     let resultBitboard = this.newWords()
     let destinationRowIndex = 0
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     const wordsPerRow = Math.ceil(gridWidth / 32)
 
     for (

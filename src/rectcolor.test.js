@@ -1,6 +1,6 @@
 /* eslint-env jest */
 /* global describe,it,expect,beforeEach,jest */
-import { jest } from '@jest/globals'
+import { expect, jest } from '@jest/globals'
 import { Mask } from './grid/mask.js'
 import { Packed } from './grid/packed.js'
 // very similar to rect.test.js but targets the rectcolor grid
@@ -432,33 +432,29 @@ describe('rectcolor dilation diagnostics', () => {
   it('should manually build occupancy for correct dilation', () => {
     // Build occupancy correctly without relying on occupancyMask
     const packed = new Packed(5, 5, null, null, 4)
-    packed.set(2, 2, 5)
-
-    const occ = new Packed(5, 5, null, null, 1)
-    for (let y = 0; y < 5; y++) {
-      for (let x = 0; x < 5; x++) {
-        if (packed.at(x, y) !== 0) {
-          occ.set(x, y, 1)
-        }
+    packed.set(2, 2, 3)
+    expect(packed.at(2, 2)).toBe(3)
+    expect(packed.occupancy).toBe(1)
+    const all = packed.store.all
+    const occ = packed.singleBitMask // Get a mask with bits set where packed has non-zero cells
+    for (const [x, y] of all.locations()) {
+      if (packed.at(x, y) !== 0) {
+        occ.set(x, y, 1)
       }
     }
-
+    expect(occ.occupancy).toBe(1)
     console.log('[diag] Manual occupancy before dilate:')
-    for (let y = 0; y < 5; y++) {
-      for (let x = 0; x < 5; x++) {
-        if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
-      }
+    for (const [x, y] of all.locations()) {
+      if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
 
     const beforeBits = Array.from(occ.bits)
     // use cross-dilate (4-connectivity) for manual occupancy expectation
     occ.dilateCross()
-
+    expect(occ.occupancy).toBe(5)
     console.log('[diag] Manual occupancy after dilate:')
-    for (let y = 0; y < 5; y++) {
-      for (let x = 0; x < 5; x++) {
-        if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
-      }
+    for (const [x, y] of all.locations()) {
+      if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
 
     // Find added cells

@@ -2,6 +2,7 @@
 
 /* global describe, it, expect, beforeEach */
 
+import e from 'express'
 import { Packed } from './packed.js'
 import { describe, it, expect } from '@jest/globals'
 
@@ -50,10 +51,11 @@ describe('Packed extra tests', () => {
     const p = new Packed(5, 5)
     p.set(2, 2, 1)
     const before = p.occupancy
+    expect(before).toBe(1)
     p.dilateCross()
 
     // occupancy should increase (cross neighbors added)
-    expect(p.occupancy).toBeGreaterThan(before)
+    expect(p.occupancy).toBe(5)
     // seed should remain non-zero
     expect(p.at(2, 2)).not.toBe(0)
   })

@@ -139,9 +139,7 @@ export function checkMorphologyState (mask, operation) {
   const clone = mask.clone
   clone.bits = original
 
-  if (operation === 'dilate') clone.dilate()
-  else if (operation === 'erode') clone.erode()
-  else if (operation === 'cross') clone.dilateCross()
+  applyOperation(operation, clone)
 
   return clone.bits !== original
 }
@@ -154,11 +152,15 @@ export function checkMorphologyChange (occupancy, operation) {
   const before = Array.from(occupancy.bits)
   const clone = occupancy.clone
 
+  applyOperation(operation, clone)
+
+  return bitsChanged(before, clone.bits)
+}
+
+function applyOperation (operation, clone) {
   if (operation === 'dilate') clone.dilate()
   else if (operation === 'erode') clone.erode()
   else if (operation === 'cross') clone.dilateCross()
-
-  return bitsChanged(before, clone.bits)
 }
 
 /**
@@ -168,9 +170,7 @@ export function checkMorphologyChange (occupancy, operation) {
 export function computeMorphologyState (maskObj, operation, bitsComparer) {
   const original = maskObj.bits
   const clone = maskObj.clone
-  if (operation === 'dilate') clone.dilate()
-  else if (operation === 'erode') clone.erode()
-  else if (operation === 'cross') clone.dilateCross()
+  applyOperation(operation, clone)
   return bitsComparer(original, clone.bits)
 }
 
@@ -182,9 +182,7 @@ export function getMorphologyDifferences (occupancy, operation) {
   const before = Array.from(occupancy.bits)
   const clone = occupancy.clone
 
-  if (operation === 'dilate') clone.dilate()
-  else if (operation === 'erode') clone.erode()
-  else if (operation === 'cross') clone.dilateCross()
+  applyOperation(operation, clone)
 
   const added = clone.store.bitSub(clone.bits, before)
   const removed = clone.store.bitSub(before, clone.bits)

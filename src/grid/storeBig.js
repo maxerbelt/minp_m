@@ -160,19 +160,6 @@ export class StoreBig extends StoreBase {
     return 0n
   }
 
-  combineCrossStepResults (
-    bitboard,
-    upShifted,
-    downShifted,
-    leftShifted,
-    rightShifted
-  ) {
-    const fullMask = this.fullBits
-    return (
-      (bitboard | upShifted | downShifted | leftShifted | rightShifted) &
-      fullMask
-    )
-  }
   // ============================================================================
   // Edge Mask Preparation (using base class helpers)
   // ============================================================================
@@ -191,13 +178,24 @@ export class StoreBig extends StoreBase {
   prepareSrcForDownExpansion (bitboard, edgeMasks) {
     return this._prepareSrcWithEdgeMask(bitboard, edgeMasks, 'notBottom')
   }
+  dilateCrossFast (bitboard, gridWidth, edgeMasks) {
+    const notLeft = edgeMasks?.notLeft ?? this.fullBits
+    const notRight = edgeMasks?.notRight ?? this.fullBits
+
+    const left = (bitboard & notLeft) >> 1n
+    const right = (bitboard & notRight) << 1n
+
+    const up = bitboard >> BigInt(gridWidth)
+    const down = bitboard << BigInt(gridWidth)
+
+    return this.combineMasked(bitboard, left, right, up, down)
+  }
 
   dilateHorizontalWrapStep (bitboard, gridWidth, gridHeight) {
     const leftRotated = this.rotateRowBits(bitboard, gridWidth, gridHeight, -1)
     const rightRotated = this.rotateRowBits(bitboard, gridWidth, gridHeight, 1)
 
-    const fullMask = this.fullBits
-    return (bitboard | leftRotated | rightRotated) & fullMask
+    return this.combineMasked(bitboard, leftRotated, rightRotated)
   }
 
   // Per-cell horizontal expansion for multi-bit stores
@@ -205,9 +203,7 @@ export class StoreBig extends StoreBase {
     const w = this.width
     let out = bitboard
 
-    for (const idx of this.cellIndices()) {
-      const val = this.getIdx(bitboard, idx)
-      if (val === 0n) continue
+    for (const [idx, val] of this.all.idxFilled(bitboard)) {
       out = this.setIdx(out, idx, val)
       const col = idx % w
       if (col > 0) out = this.setIdx(out, idx - 1, val)
@@ -221,9 +217,7 @@ export class StoreBig extends StoreBase {
     let out = bitboard
     const h = this.height
     const w = gridWidth
-    for (const idx of this.cellIndices()) {
-      const v = this.getIdx(bitboard, idx)
-      if (v === 0n) continue
+    for (const [idx, v] of this.all.idxFilled(bitboard)) {
       out = this.setIdx(out, idx, v)
       const row = Math.floor(idx / w)
       if (row > 0) out = this.setIdx(out, idx - w, v)
@@ -239,18 +233,15 @@ export class StoreBig extends StoreBase {
 
     const upShifted = this.shiftBits(srcForUp, -gridWidth)
     const downShifted = this.shiftBits(srcForDown, gridWidth)
-    const fullMask = this.fullBits
-    return (bitboard | upShifted | downShifted) & fullMask
+
+    return this.combineMasked(bitboard, upShifted, downShifted)
   }
 
   // Per-cell horizontal erosion for multi-bit stores
   erodeHorizontalCellwise (bitboard) {
-    const w = this.width
     let out = bitboard
 
-    for (const idx of this.cellIndices()) {
-      const val = this.getIdx(bitboard, idx)
-      if (val === 0n) continue
+    for (const [idx] of this.all.idxFilled(bitboard)) {
       if (!this.cellSurvivesHorizontalErosion(bitboard, idx)) {
         out = this.setIdx(out, idx, 0n)
       }
@@ -468,9 +459,10 @@ export class StoreBig extends StoreBase {
   mapRows (bits, width, height, newWidth, transform) {
     let result = 0n
     const minWidth = Math.min(width, newWidth)
-    const rowMask = this.rowMask(minWidth)
+    const grid = this.grid(minWidth, height)
+    const rowMask = grid.rowMask()
 
-    for (let row = 0; row < height; row++) {
+    for (const row of grid.rows()) {
       const rowBits = this.extractRowAtIndex(bits, row, width, rowMask)
       const newRow = transform(rowBits, row)
       result |= newRow << this.bitPos(row * newWidth)
@@ -494,10 +486,10 @@ export class StoreBig extends StoreBase {
     offsetBits = 0
   ) {
     let out = 0n
+    const grid = this.grid(gridWidth, gridHeight)
+    const rowMaskForWidth = grid.rowMask()
 
-    const rowMaskForWidth = this.rowMask(gridWidth)
-
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+    for (const rowIndex of grid.rows()) {
       const row = this.extractRowAtIndex(
         bits,
         rowIndex,
@@ -518,10 +510,10 @@ export class StoreBig extends StoreBase {
     offsetY = 0
   ) {
     let out = 0n
+    const grid = this.grid(gridWidth, gridHeight)
+    const rowMaskForWidth = grid.rowMask()
 
-    const rowMaskForWidth = this.rowMask(gridWidth)
-
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+    for (const rowIndex of grid.rows()) {
       const row = this.extractRowAtIndex(
         bits,
         rowIndex,
@@ -543,8 +535,7 @@ export class StoreBig extends StoreBase {
     const newStore = this.storeWith(newBitsPerCell)
     let output = 0n
 
-    for (const i of this.cellIndices()) {
-      const cellValue = this.getIdx(bitboard, i)
+    for (const [i, cellValue] of this.all.idxCells(bitboard)) {
       output = newStore.setIdx(output, i, cellValue)
     }
 
@@ -560,12 +551,12 @@ export class StoreBig extends StoreBase {
       return this.expandToBitsPerCell(bitboard, newBitsPerCell)
     }
 
-    const newCellMask = (1n << BigInt(newBitsPerCell)) - 1n
+    const newCellMask = this.rangeMaskForSize(newBitsPerCell)
     let output = 0n
     const newStore = this.storeWith(newBitsPerCell)
 
-    for (const i of this.cellIndices()) {
-      const cellValue = this.getIdx(bitboard, i) & newCellMask
+    for (const [i, value] of this.all.idxCells(bitboard)) {
+      const cellValue = value & newCellMask
       output = newStore.setIdx(output, i, cellValue)
     }
     return output
@@ -593,7 +584,7 @@ export class StoreBig extends StoreBase {
 
   extractRowOccupancy (bitboard, rowIndex) {
     // Extract the contiguous row bits for the given row index using a row mask
-    const rowMaskForWidth = this.rowMask(this.width)
+    const rowMaskForWidth = this.all.rowMask()
     return this.extractRowAtIndex(
       bitboard,
       rowIndex,
@@ -640,7 +631,7 @@ export class StoreBig extends StoreBase {
   }
 
   boundingBox (gridWidth, gridHeight, bitboard) {
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     let minRowIndex = gridHeight
     let minColIndex = gridWidth
 
@@ -721,7 +712,7 @@ export class StoreBig extends StoreBase {
   shiftTo (gridWidth, minRowIndex, gridHeight, bitboard, minColIndex) {
     let resultBitboard = zero
     let destinationRowIndex = 0
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
 
     for (
       let sourceRowIndex = minRowIndex;
@@ -825,7 +816,7 @@ export class StoreBig extends StoreBase {
   ) {
     let resultBitboard = zero
     let destinationRowIndex = 0
-    const rowMaskForWidth = this.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
 
     for (
       let sourceRowIndex = minRowIndex;
@@ -905,28 +896,24 @@ export class StoreBig extends StoreBase {
    * @returns {bigint[]} Array of 1-bit bitboards, indexed by color (1 to maxColor)
    */
   extractColorLayers (bitboard, gridWidth, gridHeight) {
-    let maxColor = 0n
+    const numColors = this.grid(gridWidth, gridHeight).maxNumber(bitboard)
 
-    // Find the maximum color value
-    for (const i of this.indicesFor(gridWidth, gridHeight)) {
-      const color = this.getIdx(bitboard, i)
-      if (color > maxColor) {
-        maxColor = color
-      }
-    }
     // Create array of bitboards for each non-zero color (1 to maxColor)
-    const numColors = Number(maxColor)
+
     const colorLayers = new Array(numColors).fill(0n)
 
     // For each cell with non-zero color, set a marker in the appropriate color bitboard
     // Use this store (which preserves bitsPerCell) to ensure consistent cell layout
-    for (const i of this.indicesFor(gridWidth, gridHeight)) {
-      const color = this.getIdx(bitboard, i)
-      if (color !== 0n) {
-        const idx = Number(color) - 1
-        // Set value 1 at this cell position in the color layer
-        colorLayers[idx] = this.singleBitStore.setIdx(colorLayers[idx], i, 1n)
-      }
+    for (const [i, color] of this.grid(gridWidth, gridHeight).idxFilled(
+      bitboard
+    )) {
+      const layerIdx = Number(color) - 1
+      // Set value 1 at this cell position in the color layer
+      colorLayers[layerIdx] = this.singleBitStore.setIdx(
+        colorLayers[layerIdx],
+        i,
+        1n
+      )
     }
 
     return colorLayers
@@ -941,11 +928,13 @@ export class StoreBig extends StoreBase {
    * @returns {bigint} 1-bit bitboard with the specified color extracted
    */
   extractColorLayer (bitboard, color, gridWidth, gridHeight) {
-    const colorValue = BigInt(color)
+    const layerColor = BigInt(color)
     let resultBitboard = 0n
     const singleBitStore = this.singleBitStore
-    for (const i of this.indicesFor(gridWidth, gridHeight)) {
-      if (this.getIdx(bitboard, i) === colorValue) {
+    for (const [i, cellColor] of this.grid(gridWidth, gridHeight).idxCells(
+      bitboard
+    )) {
+      if (cellColor === layerColor) {
         resultBitboard = singleBitStore.setIdx(resultBitboard, i, 1n)
       }
     }
@@ -992,10 +981,10 @@ export class StoreBig extends StoreBase {
       const colorLayer = colorLayers[colorIdx]
 
       // For each cell in the color layer, set the color in the result bitboard
-      for (const i of this.indicesFor(gridWidth, gridHeight)) {
-        if (singleBitStore.getIdx(colorLayer, i) !== 0n) {
-          resultBitboard = this.setIdx(resultBitboard, i, color)
-        }
+      for (const [i] of singleBitStore
+        .grid(gridWidth, gridHeight)
+        .idxFilled(colorLayer)) {
+        resultBitboard = this.setIdx(resultBitboard, i, color)
       }
     }
 
@@ -1019,26 +1008,14 @@ export class StoreBig extends StoreBase {
       const colorLayer = colorLayers[colorIdx]
 
       // For each cell in the color layer, set the color in the result bitboard
-      for (const i of this.indicesFor(gridWidth, gridHeight)) {
-        if (singleBitStore.getIdx(colorLayer, i) !== 0n) {
-          resultBitboard = this.setIdx(resultBitboard, i, color)
-        }
+      for (const [i] of singleBitStore
+        .grid(gridWidth, gridHeight)
+        .idxFilled(colorLayer)) {
+        resultBitboard = this.setIdx(resultBitboard, i, color)
       }
     }
 
     return resultBitboard
-  }
-  *cellIndices () {
-    const totalCells = (this.width || 0) * (this.height || 0)
-    for (let i = 0; i < totalCells; i++) {
-      yield i
-    }
-  }
-  *indicesFor (width = this.width, height = this.height) {
-    const totalCells = (width || 0) * (height || 0)
-    for (let i = 0; i < totalCells; i++) {
-      yield i
-    }
   }
   /**
    * Create a 1-bit bitboard representing occupancy of non-zero colors.
@@ -1053,12 +1030,9 @@ export class StoreBig extends StoreBase {
     const singleBitStore = this.singleBitStore
     // Create a 1-bit bitboard with one bit per occupied cell
     // Each occupied cell maps to exactly 1 bit in the output
-    for (const i of this.indicesFor(gridWidth, gridHeight)) {
-      if (this.getIdx(bitboard, i) !== 0n) {
-        resultBitboard = singleBitStore.setIdx(resultBitboard, i)
-      }
+    for (const [i] of this.grid(gridWidth, gridHeight).idxFilled(bitboard)) {
+      resultBitboard = singleBitStore.setIdx(resultBitboard, i)
     }
-
     return resultBitboard
   }
 }

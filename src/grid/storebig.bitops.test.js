@@ -92,14 +92,14 @@ describe('StoreBig bit operations', () => {
     })
   })
 
-  describe('rowMask', () => {
+  describe('rowMaskForWidth', () => {
     it('should create mask for row of width 4', () => {
-      const mask = store.rowMask(4)
+      const mask = store.rowMaskForWidth(4)
       expect(mask).toBeGreaterThan(0n)
     })
 
     it('should create appropriate mask for width 8', () => {
-      const mask = store.rowMask(8)
+      const mask = store.rowMaskForWidth(8)
       expect(mask).toBeGreaterThan(0n)
     })
   })
@@ -328,16 +328,16 @@ describe('StoreBig bit operations', () => {
     it('should extract row at index correctly', () => {
       const store1 = new StoreBig(1, 100, 1, 4, 2)
       const bitboard = 0b11110101n
-      const rowMask = store1.rowMask(4)
-      const result = store1.extractRowAtIndex(bitboard, 1, 4, rowMask)
+      const rowMaskForWidth = store1.rowMaskForWidth(4)
+      const result = store1.extractRowAtIndex(bitboard, 1, 4, rowMaskForWidth)
       expect(result).toBe(0b1111n)
     })
 
     it('should extract first row correctly', () => {
       const store1 = new StoreBig(1, 100, 1, 4, 2)
       const bitboard = 0b11110101n
-      const rowMask = store1.rowMask(4)
-      const result = store1.extractRowAtIndex(bitboard, 0, 4, rowMask)
+      const rowMaskForWidth = store1.rowMaskForWidth(4)
+      const result = store1.extractRowAtIndex(bitboard, 0, 4, rowMaskForWidth)
       expect(result).toBe(0b0101n)
     })
   })
@@ -367,20 +367,20 @@ describe('StoreBig bit operations', () => {
     })
   })
 
-  describe('combineCrossStepResults', () => {
+  describe('combineMasked', () => {
     it('should combine all shifted results with original', () => {
       const board = 0b00100000n
       const up = 0b00010000n
       const down = 0b01000000n
       const left = 0b00010000n
       const right = 0b00010000n
-      const result = store.combineCrossStepResults(board, up, down, left, right)
+      const result = store.combineMasked(board, up, down, left, right)
       expect(result).toBeGreaterThanOrEqual(board)
     })
 
     it('should respect fullBits mask', () => {
       const fullMask = store.fullBits
-      const result = store.combineCrossStepResults(
+      const result = store.combineMasked(
         0xffffffffn,
         0xffffffffn,
         0xffffffffn,

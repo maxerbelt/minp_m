@@ -1,18 +1,5 @@
 import { BitMath } from './bitMath.js'
-
-function forEachRow (gridHeight, fn) {
-  for (let row = 0; row < gridHeight; row++) {
-    fn(row)
-  }
-}
-
-function forEachCell (width, height, fn) {
-  const total = width * height
-  for (let i = 0; i < total; i++) {
-    fn(i)
-  }
-}
-
+import { BitGrid } from './bitgrid.js'
 export class StoreBase {
   constructor (
     one,
@@ -34,7 +21,7 @@ export class StoreBase {
     this.bitsPerCell = bitsPerCell
     this.width = width
     this.height = height
-
+    this.all = new BitGrid(this, width, height)
     this.cellMask = storeType(cellMask)
 
     this.bShift = storeType(bShift)
@@ -59,7 +46,9 @@ export class StoreBase {
   bitMaskByPos (pos) {
     return this.cellMask << this.storeType(pos)
   }
-
+  grid (width, height) {
+    return new BitGrid(this, width, height)
+  }
   numValue (bitboard, pos) {
     return Number(this.rightShift(bitboard, pos))
   }
@@ -89,9 +78,12 @@ export class StoreBase {
 
   combineMasked (...values) {
     const fullMask = this.fullBits
+    return this.combine(...values) & fullMask
+  }
+  combine (...values) {
     let result = this.empty
-    for (const v of values) result |= v
-    return result & fullMask
+    for (const v of values) result |= this.storeType(v)
+    return result
   }
   check (color = 1) {
     if (this.depth > 1 && (color < this.MnC || color > this.MxC)) {
@@ -111,8 +103,8 @@ export class StoreBase {
     return false
   }
 
-  rowMask (w) {
-    return this.rangeMaskRaw(this.bitPos(w))
+  rowMaskForWidth (w) {
+    return this.rangeMaskForSizeRaw(this.bitPos(w))
   }
   extractRowAtIndex (bb, r, w, rowMask) {
     return (bb >> this.storeType(r * w)) & rowMask
@@ -136,13 +128,13 @@ export class StoreBase {
     return n
   }
   get fullBits () {
-    return this.rangeMaskRaw(this.size)
+    return this.rangeMaskForSizeRaw(this.size)
   }
-  rangeMaskRaw (n) {
+  rangeMaskForSizeRaw (n) {
     return (this.one << n) - this.one
   }
-  rangeMask (n) {
-    return this.rangeMaskRaw(this.storeType(n))
+  rangeMaskForSize (n) {
+    return this.rangeMaskForSizeRaw(this.storeType(n))
   }
 
   // Common methods shared with StoreBig and Store32
@@ -289,7 +281,7 @@ export class StoreBase {
       srcForRight
     )
 
-    return this.combineCrossStepResults(
+    return this.combineMasked(
       bitboard,
       upShifted,
       downShifted,
@@ -440,9 +432,5 @@ export class StoreBase {
 
   createEmptyBitboard (template) {
     throw new Error('createEmptyBitboard must be implemented by subclass')
-  }
-
-  combineCrossStepResults (bitboard, up, down, left, right) {
-    throw new Error('combineCrossStepResults must be implemented by subclass')
   }
 }

@@ -3,6 +3,7 @@
 /* global describe, it, expect, beforeEach */
 import { Store32 } from './store32.js'
 import { Packed } from './packed.js'
+import e from 'express'
 
 function ascii (bits, packed) {
   const presult = packed.clone
@@ -433,7 +434,8 @@ describe('Store32', () => {
       let board = store.newWords()
       board[0] = 0b1111
       const result = store.occupancy(board)
-      expect(result).toBe(4)
+      expect(result).toBe(2)
+      expect(store.singleBitStore.occupancy(board)).toBe(4)
     })
 
     it('should count bits across multiple words', () => {
@@ -441,14 +443,16 @@ describe('Store32', () => {
       board[0] = 0b11
       board[1] = 0b101
       const result = store.occupancy(board)
-      expect(result).toBe(4)
+      expect(result).toBe(3)
+      expect(store.singleBitStore.occupancy(board)).toBe(4)
     })
 
     it('should count dense bits correctly', () => {
       let board = store.newWords()
+      expect(store.bitsPerCell).toBe(2)
       board[0] = 0xffffffff
       const result = store.occupancy(board)
-      expect(result).toBe(32)
+      expect(result).toBe(16)
     })
 
     it('should count sparse bits correctly', () => {
@@ -773,7 +777,7 @@ describe('Store32', () => {
     })
 
     it('should handle all cells occupied', () => {
-      const store1 = new Store32(2, 100, 2, 4, 4)
+      const store1 = new Store32(4, 16, 2, 4, 4)
       const bitboard = store1.newWords()
       for (let i = 1; i < 16; i++) {
         store1.setIdx(bitboard, i, (i % 3) + 1)
@@ -782,7 +786,7 @@ describe('Store32', () => {
       const result = store1.occupancyLayer(bitboard, 4, 4)
 
       // 15 occupied cells (1-15, not 0) = 15 bits set (1-bit output)
-      expect(store1.occupancy(result)).toBe(15)
+      expect(store1.singleBitStore.occupancy(result)).toBe(15)
     })
   })
 })

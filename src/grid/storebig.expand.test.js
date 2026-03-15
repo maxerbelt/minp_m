@@ -198,7 +198,7 @@ describe('StoreBig expand', () => {
       bitboard = store1.setIdx(bitboard, 5, 1n)
       expect(ascii(2, 3, bitboard, 2)).toBe('1.\n1.\n11')
 
-      const rowMaskForWidth = store1.rowMask(2)
+      const rowMaskForWidth = store1.rowMaskForWidth(2)
       expect(rowMaskForWidth).toBe(0b11n)
       const row0 = store1.extractRowAtIndex(bitboard, 0, 2, rowMaskForWidth)
       expect(ascii(2, 1, row0, 2)).toBe('1.')
@@ -243,7 +243,7 @@ describe('StoreBig expand', () => {
       bitboard = store1.setIdx(bitboard, 5, 1n)
       expect(ascii(2, 3, bitboard, 3)).toBe('1.\n1.\n11')
 
-      const rowMaskForWidth = store1.rowMask(2)
+      const rowMaskForWidth = store1.rowMaskForWidth(2)
       expect(rowMaskForWidth).toBe(0b1111n)
       const row0 = store1.extractRowAtIndex(bitboard, 0, 2, rowMaskForWidth)
       expect(ascii(2, 1, row0, 3)).toBe('1.')
