@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g transform="rotate(-30 32 32)">
+    <ellipse cx="32" cy="30" rx="6" ry="14" fill="#FFFFFF"/>
+    <polygon points="32,10 26,20 38,20" fill="#FF2D2D"/>
+    <polygon points="26,38 18,46 26,46" fill="#FF2D2D"/>
+    <polygon points="38,38 46,46 38,46" fill="#FF2D2D"/>
+    <path d="M32 44 C28 50 30 56 32 58 C34 56 36 50 32 44 Z" fill="#FF9800"/>
+  </g>
+</svg>

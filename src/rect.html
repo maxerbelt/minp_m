@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rect</title>
+    <link rel="stylesheet" href="./styles/default.css" />
+  </head>
+  <body>
+    <style>
+      /* styling for line tool radio buttons */
+      .line-tool-group {
+        display: inline-block;
+        margin-left: 10px;
+      }
+      .line-tool-group label {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+      .line-tool-group select {
+        margin-left: 8px;
+        padding: 4px 8px;
+        cursor: pointer;
+      }
+      /* drag and drop feedback */
+      canvas {
+        transition: opacity 0.2s ease;
+      }
+      #rect-poly {
+        cursor: grab;
+        display: block;
+        width: 600px;
+        height: 600px;
+      }
+      #rect-poly:active {
+        cursor: grabbing;
+      }
+      #rect-c {
+        transition: background-color 0.2s ease;
+        display: block;
+        width: 600px;
+        height: 600px;
+      }
+    </style>
+    <div class="rect" id="rect-game">
+      <div style="margin-bottom: 10px">
+        <button id="rotate-cw">Rotate CW</button>
+        <button id="rotate-ccw">Rotate CCW</button>
+        <button id="flip-h">Flip H</button>
+        <button id="flip-v">Flip V</button>
+        <button id="dilate">Dilate</button>
+        <button id="erode">Erode</button>
+        <button id="cross-dilate">Cross Dilate</button>
+        <button id="empty">Empty</button>
+        <button id="full">Full</button>
+        <button id="inverse">Inverse</button>
+        <button id="outer-border">Outer Border</button>
+        <button id="outer-area">Outer Area</button>
+        <button id="inner-border">Inner Border</button>
+        <button id="inner-area">Inner Area</button>
+        <fieldset
+          style="
+            display: inline-block;
+            margin-left: 15px;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 4px;
+          "
+        >
+          <legend
+            style="
+              font-size: 11px;
+              font-weight: bold;
+              padding: 0 5px;
+              margin-left: -5px;
+            "
+          >
+            Coordinate Mode:
+          </legend>
+          <label style="margin-right: 8px">
+            <input type="radio" name="coord-mode" value="clamped" checked />
+            Clamped
+          </label>
+          <label>
+            <input type="radio" name="coord-mode" value="wrapped" />
+            Wrapped
+          </label>
+        </fieldset>
+        <!-- line tools -->
+        <div class="line-tool-group">
+          <label
+            ><input type="radio" name="line-tool" value="single" checked />
+            Single</label
+          >
+          <label
+            ><input type="radio" name="line-tool" value="segment" />
+            Segment</label
+          >
+          <label><input type="radio" name="line-tool" value="ray" /> Ray</label>
+          <label
+            ><input type="radio" name="line-tool" value="full" /> Line</label
+          >
+          <select id="line-action">
+            <option value="set">Set</option>
+            <option value="clear">Clear</option>
+            <option value="toggle">Toggle</option>
+          </select>
+          <fieldset
+            style="
+              display: inline-block;
+              margin-left: 15px;
+              border: 1px solid #ccc;
+              padding: 5px;
+              border-radius: 4px;
+            "
+          >
+            <legend
+              style="
+                font-size: 11px;
+                font-weight: bold;
+                padding: 0 5px;
+                margin-left: -5px;
+              "
+            >
+              Cover Type:
+            </legend>
+            <label style="margin-right: 8px">
+              <input type="radio" name="cover-type" value="normal" checked />
+              Normal
+            </label>
+            <label style="margin-right: 8px">
+              <input type="radio" name="cover-type" value="half" />
+              Half
+            </label>
+            <label>
+              <input type="radio" name="cover-type" value="super" />
+              Super
+            </label>
+          </fieldset>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: row; gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <canvas
+            id="rect-c"
+            width="600"
+            height="600"
+            style="display: block"
+          ></canvas>
+          <div id="rect-symmetry" style="margin-top: 4px; font-weight: bold">
+            Symmetry:
+          </div>
+          <div
+            id="rect-hover-info"
+            style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+          >
+            Hover info:
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="margin-bottom: 10px">
+            <fieldset
+              style="
+                display: inline-block;
+                border: 1px solid #ccc;
+                padding: 5px;
+                border-radius: 4px;
+                margin-right: 15px;
+              "
+            >
+              <legend
+                style="
+                  font-size: 11px;
+                  font-weight: bold;
+                  padding: 0 5px;
+                  margin-left: -5px;
+                "
+              >
+                Polyomino Connectivity:
+              </legend>
+              <label style="margin-right: 8px">
+                <input
+                  type="radio"
+                  name="poly-connectivity"
+                  value="4"
+                  checked
+                />
+                4-Connected
+              </label>
+              <label>
+                <input type="radio" name="poly-connectivity" value="8" />
+                8-Connected
+              </label>
+            </fieldset>
+            <label style="margin-right: 15px">
+              Polyomino Size:
+              <select id="poly-size" style="margin-left: 8px; padding: 4px 8px">
+                <option value="3">3 cells</option>
+                <option value="4" selected>4 cells</option>
+                <option value="5">5 cells</option>
+                <option value="6">6 cells</option>
+                <option value="7">7 cells</option>
+              </select>
+            </label>
+            <button id="fill-poly-grid">Fill Grid</button>
+            <button id="prev-poly-grid" style="margin-left: 10px">
+              ← Previous
+            </button>
+            <button id="next-poly-grid">Next →</button>
+          </div>
+          <canvas
+            id="rect-poly"
+            width="600"
+            height="600"
+            draggable="true"
+            style="display: block"
+          ></canvas>
+          <div
+            id="rect-poly-more"
+            style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+          >
+            Showing x of X polyominos
+          </div>
+          <div
+            id="rect-poly-hover-info"
+            style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+          >
+            Hover info:
+          </div>
+          <div id="hover-symmetry" style="margin-top: 4px; font-weight: bold">
+            Symmetry:
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom: 10px">
+      <button id="rotate-cw2">Rotate CW</button>
+      <button id="rotate-ccw2">Rotate CCW</button>
+      <button id="flip-h2">Flip H</button>
+      <button id="flip-v2">Flip V</button>
+      <button id="dilate2">Dilate</button>
+      <button id="erode2">Erode</button>
+      <button id="cross-dilate2">Cross Dilate</button>
+      <button id="empty2">Empty</button>
+      <button id="full2">Full</button>
+      <button id="inverse2">Inverse</button>
+      <button id="outer-border2">Outer Border</button>
+      <button id="outer-area2">Outer Area</button>
+      <button id="inner-border2">Inner Border</button>
+      <button id="inner-area2">Inner Area</button>
+      <fieldset
+        style="
+          display: inline-block;
+          margin-left: 15px;
+          border: 1px solid #ccc;
+          padding: 5px;
+          border-radius: 4px;
+        "
+      >
+        <legend
+          style="
+            font-size: 11px;
+            font-weight: bold;
+            padding: 0 5px;
+            margin-left: -5px;
+          "
+        >
+          Coordinate Mode:
+        </legend>
+        <label style="margin-right: 8px">
+          <input type="radio" name="coord-mode2" value="clamped" checked />
+          Clamped
+        </label>
+        <label>
+          <input type="radio" name="coord-mode2" value="wrapped" />
+          Wrapped
+        </label>
+      </fieldset>
+      <!-- line tools for rectcolor -->
+      <div class="line-tool-group">
+        <label
+          ><input type="radio" name="line-tool2" value="single" checked />
+          Single</label
+        >
+        <label
+          ><input type="radio" name="line-tool2" value="segment" />
+          Segment</label
+        >
+        <label><input type="radio" name="line-tool2" value="ray" /> Ray</label>
+        <label
+          ><input type="radio" name="line-tool2" value="full" /> Line</label
+        >
+        <select id="line-color">
+          <option value="1">Color 1</option>
+          <option value="2">Color 2</option>
+          <option value="3">Color 3</option>
+          <option value="4">Color 4</option>
+          <option value="cycle">Cycle</option>
+        </select>
+        <fieldset
+          style="
+            display: inline-block;
+            margin-left: 15px;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 4px;
+          "
+        >
+          <legend
+            style="
+              font-size: 11px;
+              font-weight: bold;
+              padding: 0 5px;
+              margin-left: -5px;
+            "
+          >
+            Cover Type:
+          </legend>
+          <label style="margin-right: 8px">
+            <input type="radio" name="cover-type2" value="normal" checked />
+            Normal
+          </label>
+          <label style="margin-right: 8px">
+            <input type="radio" name="cover-type2" value="half" />
+            Half
+          </label>
+          <label>
+            <input type="radio" name="cover-type2" value="super" />
+            Super
+          </label>
+        </fieldset>
+      </div>
+    </div>
+    <div class="rectcolor" id="rectcolor-game">
+      <canvas id="rectcolor-c" width="600" height="600"></canvas>
+      <div id="rectcolor-symmetry" style="margin-top: 4px; font-weight: bold">
+        Symmetry:
+      </div>
+      <div
+        id="rectcolor-hover-info"
+        style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+      >
+        Hover info:
+      </div>
+    </div>
+    <script type="module" src="./rect.js"></script>
+    <script type="module" src="./rectcolor.js"></script>
+  </body>
+</html>

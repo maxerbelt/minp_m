@@ -1,0 +1,8 @@
+/coverage
+/docs
+/images
+/node_modules
+/output
+/src/node_modules
+/staticAnalysis
+/utils

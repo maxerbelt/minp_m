@@ -1,0 +1,157 @@
+:root {
+    --rail-cursor-image: url('../images/space/rail32.png');
+    --bolt-cursor-image: url('../images/space/bolt32.png');
+    --bolt-grey-cursor-image: url('../images/space/boltol32.png');
+    --missile-cursor-image: url('../images/space/missile32.png');
+    --missile-grey-cursor-image: url('../images/space/missileol32.png');
+    --white-rail-image: url('../images/space/whiterail26.png');
+    --black-rail-image: url('../images/space/blackrail26.png');
+    --white-round-image: url('../images/space/whiteround26.png');
+    --black-round-image: url('../images/space/blackround26.png');
+    --flying-missile-image: url('../images/space/flyingmissile40.png');
+    --flying-bolt-image: url('../images/space/flyingbolt40.png');
+    --flying-round-image: url('../images/space/flyinground40.png');
+    --asteroid-explode-image: url('../images/space/asteroid-explosion.png');
+    --space-explode-image: url('../images/space/space-explosion.png');
+    --plasma-explode-image: url('../images/space/plasma-explosion.png');
+    --launch-cursor-image: url('../images/space/launch32.png');
+    --launch2-cursor-image: url('../images/space/launch32_2.png');
+    --launch3-cursor-image: url('../images/space/launch32_3.png');
+    --launch4-cursor-image: url('../images/space/launch32_4.png');
+}
+
+
+.explosion.asteroid {
+    background-image: var(--asteroid-explode-image);
+}
+
+
+.explosion.plasma {
+    background-image: var(--plasma-explode-image);
+}
+
+.cell.rail,
+.board.rail {
+    cursor: var(--rail-cursor-image) 26 26, pointer;
+}
+
+.board.rail.not-step {
+    cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
+}
+
+.board.bolt {
+    cursor: var(--bolt-cursor-image) 26 26, pointer;
+}
+
+.board.bolt.not-step {
+    cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
+}
+
+.board.missile {
+    cursor: var(--missile-cursor-image) 6 6, pointer;
+}
+
+.board.missile.not-step {
+    cursor: var(--missile-grey-cursor-image) 6 6, pointer;
+}
+
+.cell.launch.turn3 {
+    cursor: var(--launch3-cursor-image) 16 24, pointer;
+}
+
+.cell.launch.turn4 {
+    cursor: var(--launch4-cursor-image) 24 16, pointer;
+}
+
+.flying-weapon.cursor.missile {
+    background-image: var(--missile-cursor-image);
+
+}
+
+.flying-weapon.cursor.bolt {
+    background-image: var(--bolt-cursor-image);
+
+}
+
+.flying-weapon.cursor.rail {
+    background-image: var(--rail-cursor-image);
+
+}
+
+.cell.launch,
+.board.launch {
+    cursor: var(--launch-cursor-image) 16 6, pointer;
+}
+
+.cell.launch.turn2 {
+    cursor: var(--launch2-cursor-image) 6 16, pointer;
+}
+
+.flying-weapon.missile {
+    background-image: var(--flying-missile-image);
+
+}
+
+.flying-weapon.rail-bolt {
+    background-image: var(--flying-bolt-image);
+
+}
+
+#modeIcon1.missile::before {
+    background-image: url('../images/space/boxlaunch56.png');
+}
+
+#modeIcon2.missile::before {
+    background-image: url('../images/space/boxmissile40.png');
+}
+
+#modeIcon1.missile.off::before {
+    background-image: url('../images/space/boxlaunchol56.png');
+}
+
+#modeIcon2.missile.off::before {
+    background-image: url('../images/space/boxmissileol56.png');
+}
+
+#modeIcon1.rail-bolt::before {
+    background-image: url('../images/space/boxrail56.png');
+}
+
+#modeIcon2.rail-bolt::before {
+    background-image: url('../images/space/boxbolt40.png');
+
+}
+
+#modeIcon1.rail-bolt.off::before {
+    background-image: url('../images/space/boxrailol56.png');
+}
+
+#modeIcon2.rail-bolt.off::before {
+    background-image: url('../images/space/boxboltol56.png');
+}
+
+.battleship.print-preview div.tally-row.weapon.missile div.tally-box::before {
+    content: '+';
+}
+
+.battleship.print-preview div.tally-row.weapon.rail-bolt div.tally-box::before {
+    content: '|';
+}
+
+
+.battleship:not(.print-preview) .tally-row.weapon.missile div.tally-box:not(.hit):not(.damaged)::before {
+    background-image: url('../images/space/boxmissile28.png');
+}
+
+.battleship:not(.print-preview) .tally-row.weapon.missile div.tally-box.used::before {
+    background-image: url('../images/space/boxmissileol28.png');
+    opacity: 0.6;
+}
+
+.battleship:not(.print-preview) .tally-row.weapon.rail-bolt div.tally-box:not(.hit):not(.damaged)::before {
+    background-image: url('../images/space/boxbolt28.png');
+}
+
+.battleship:not(.print-preview) .tally-row.weapon.rail-bolt div.tally-box.used::before {
+    background-image: url('../images/space/boxboltol28.png');
+}

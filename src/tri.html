@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title id="page-title" data-template="Triangle">Triangle</title>
+    <meta name="description" content="Triangle" />
+    <link
+      id="favicon"
+      rel="icon"
+      type="image/png"
+      href="./images/sea/favicons/favicon-48x48.png"
+    />
+    <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
+  </head>
+  <body class="hidden-hex">
+    <div class="triangle" id="tri-game">
+      <canvas id="c" width="600" height="600"></canvas>
+    </div>
+    <div
+      id="tri-symmetry"
+      style="margin-top: 4px; text-align: center; font-weight: bold"
+    >
+      Symmetry:
+    </div>
+    <div
+      id="tri-symmetry-details"
+      style="margin-top: 2px; text-align: center; font-size: smaller"
+    ></div>
+    <div
+      id="tri-hover-info"
+      style="
+        margin-top: 4px;
+        font-size: 12px;
+        color: #666;
+        height: 20px;
+        text-align: center;
+      "
+    >
+      Hover info:
+    </div>
+
+    <div id="controls" style="text-align: center; margin-top: 10px">
+      <button id="rotateBtn">Rotate 120°</button>
+      <button id="dilateBtn">Dilate</button>
+      <button id="erodeBtn">Erode</button>
+      <button id="crossDilateBtn">Cross Dilate</button>
+      <span id="flipButtons"></span>
+      <span id="lineTools">
+        <div class="line-tool-group">
+          <label
+            ><input type="radio" name="tri-line-tool" value="single" checked />
+            Single</label
+          >
+          <label
+            ><input type="radio" name="tri-line-tool" value="segment" />
+            Segment</label
+          >
+          <label
+            ><input type="radio" name="tri-line-tool" value="ray" /> Ray</label
+          >
+          <label
+            ><input type="radio" name="tri-line-tool" value="full" />
+            Line</label
+          >
+          <select id="tri-line-action">
+            <option value="set">Set</option>
+            <option value="clear">Clear</option>
+            <option value="toggle">Toggle</option>
+          </select>
+        </div>
+      </span>
+      <span id="gridButtons" style="margin-left: 8px">
+        <button id="empty">Empty</button>
+        <button id="full">Full</button>
+        <button id="inverse">Inverse</button>
+      </span>
+    </div>
+
+    <style>
+      /* styling for line tool radio buttons */
+      .line-tool-group {
+        display: inline-block;
+        margin-left: 10px;
+      }
+      .line-tool-group label {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+      .line-tool-group select {
+        margin-left: 8px;
+        padding: 4px 8px;
+        cursor: pointer;
+      }
+      /* grey out disabled buttons */
+      #controls button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+
+    <script type="module" src="./tri.js"></script>
+  </body>
+</html>

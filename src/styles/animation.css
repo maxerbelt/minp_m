@@ -1,0 +1,540 @@
+:root {
+    --flame1-image: url('../images/flame_20.png');
+    --flame2-image: url('../images/flame_24.png');
+    --flame-duration: 0.4s;
+    --flame2-duration: 0.7s;
+    --shake-x: 8px;
+    --shake-y: 6px;
+    --content-width: 600px;
+    --white-missile-image: url('../images/whitemissile26.png');
+    --air-explode-image: url('../images/air-explosion.png');
+    --cross-cursor-image: url('../images/cross32.png');
+}
+
+.cell.flames.long::before {
+    animation: flameFade var(--flame-duration, 1.3s) ease-out forwards;
+}
+
+.cell.hit.flames.long::before {
+    animation: flameFade var(--flame2-duration, 1.95s) ease-out forwards;
+}
+
+.cell.flames::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: 3;
+    /* slight bleed for edges */
+    pointer-events: none;
+    background:
+        /* a subtle animated glow texture underneath */
+        radial-gradient(closest-side, rgba(255, 200, 0, 0.22), transparent 70%) 0 0/33% 33%,
+        radial-gradient(closest-side, rgba(255, 120, 0, 0.18), transparent 70%) 16% 20%/40% 40%,
+        var(--flame1-image) center/cover no-repeat;
+    mix-blend-mode: screen;
+    /* lets the flames “light” the content */
+    opacity: 0;
+    /* will be set by animation */
+    filter: saturate(1.15);
+    animation: flameFade var(--flame-duration, 0.8s) ease-out forwards;
+}
+
+.cell.hit.flames::before {
+    z-index: 4;
+    background:
+        radial-gradient(closest-side, rgba(255, 200, 0, 0.22), transparent 70%) 0 0/33% 33%,
+        radial-gradient(closest-side, rgba(255, 120, 0, 0.18), transparent 70%) 16% 20%/40% 40%,
+        var(--flame2-image) center/cover no-repeat;
+    animation: flameFade var(--flame2-duration, 0.95s) ease-out forwards;
+}
+
+.cell.miss:not(.target)::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #91a3c6;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cell.miss.target::after {
+    content: '⬤';
+    font-size: 86%;
+    color: #91a3c6;
+    place-self: center;
+    text-align: center;
+}
+
+.cell.weapon:not(.active)::before {
+    content: '';
+    width: 11px;
+    height: 11px;
+    z-index: 2;
+    border-radius: 50%;
+    background: #fcd588;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cell.weapon.active::before {
+    content: '';
+    width: 26px;
+    height: 26px;
+    z-index: 3;
+    background-image: var(--white-missile-image);
+    transition: opacity 0.4s ease-in-out;
+}
+
+.cell.weapon.rail.active::before {
+    content: '';
+    width: 26px;
+    height: 26px;
+    z-index: 3;
+    background-image: var(--white-rail-image);
+    transition: opacity 0.4s ease-in-out;
+}
+
+.cell.weapon.rlaunch.active::before,
+.cell.weapon.round.active::before {
+    content: '';
+    width: 26px;
+    height: 26px;
+    z-index: 3;
+    background-image: var(--white-round-image);
+    transition: opacity 0.4s ease-in-out;
+}
+
+.cell.weapon.contrast.bolt.active::before,
+.cell.weapon.contrast.rail.active::before {
+    background-image: var(--black-rail-image);
+}
+
+.cell.weapon.contrast.rlaunch.active::before,
+.cell.weapon.contrast.round.active::before {
+    background-image: var(--black-round-image);
+}
+
+.cell.weapon.active.turn2::before {
+    -webkit-transform: rotate(90deg);
+    -moz-transform: rotate(90deg);
+    -o-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
+}
+
+.cell.weapon.active.turn3::before {
+    -webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);
+}
+
+.cell.weapon.active.turn4::before {
+    -webkit-transform: rotate(270deg);
+    -moz-transform: rotate(270deg);
+    -o-transform: rotate(270deg);
+    -ms-transform: rotate(270deg);
+    transform: rotate(270deg);
+}
+
+.cell.weapon.active.turn5::before {
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    -o-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+.cell.weapon.active.turn6::before {
+    -webkit-transform: rotate(135deg);
+    -moz-transform: rotate(135deg);
+    -o-transform: rotate(135deg);
+    -ms-transform: rotate(135deg);
+    transform: rotate(135deg);
+}
+
+.cell.weapon.active.turn7::before {
+    -webkit-transform: rotate(225deg);
+    -moz-transform: rotate(225deg);
+    -o-transform: rotate(225deg);
+    -ms-transform: rotate(225deg);
+    transform: rotate(225deg);
+}
+
+.cell.weapon.active.turn8::before {
+    -webkit-transform: rotate(315deg);
+    -moz-transform: rotate(315deg);
+    -o-transform: rotate(315deg);
+    -ms-transform: rotate(315deg);
+    transform: rotate(315deg);
+}
+
+.cell.marker::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    content: '';
+    width: 26px;
+    height: 26px;
+    z-index: 2;
+    border-radius: 50%;
+    border: 3px solid #e4b62d;
+    background-color: rgb(255, 253, 253);
+    transform: translate(-50%, -50%);
+    animation: pulse 1.2s ease-in-out forwards;
+}
+
+.cell.portal::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    content: '';
+    width: 26px;
+    height: 26px;
+    z-index: 2;
+    border-radius: 50%;
+    border: 3px solid #2d33e4;
+    background-color: black;
+    transform: translate(-50%, -50%);
+    animation: pulse 1.2s ease-in-out forwards;
+}
+
+@keyframes pulse {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+        width: 26px;
+        height: 26px;
+    }
+
+    80% {
+        width: 26px;
+        height: 26px;
+        opacity: 1;
+    }
+
+    100% {
+        width: 0;
+        height: 0;
+        opacity: 0;
+    }
+}
+
+.cell.weapon.empty:not(.frd-hit):not(.hit)::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    z-index: 2;
+    border-radius: 50%;
+    border: 4px solid #f8986c;
+    background-color: transparent;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cell.wake:not(.target)::after,
+.cell.semi-miss:not(.target)::after {
+    position: absolute;
+    inset: 0;
+    left: 4px;
+    top: 4px;
+    z-index: 1;
+    content: '';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    overflow: clip;
+    width: 25px;
+    height: 25px;
+    border-radius: 30%;
+    background: rgba(180, 180, 200, 0.3);
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cell.special::after {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #CCCC33;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cell.hit {
+    color: #ff3b3b
+}
+
+.cell.hit.target::after {
+    content: 'X';
+    font-size: 120%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    color: #ff3b3b;
+    transition: opacity 0.1s ease-in-out;
+    place-self: center;
+    text-align: center;
+}
+
+.cell.hit::after {
+    content: 'X';
+    font-size: 90%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    color: #ff3b3b;
+    transition: opacity 0.1s ease-in-out;
+    place-self: center;
+    text-align: center;
+}
+
+.cell.semi {
+    position: relative;
+    /* positioning context for the pseudo */
+}
+
+.cell.semi::after {
+    content: '?';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    /* vertical center the '?' */
+    justify-content: center;
+    /* horizontal center the '?' */
+    background-color: rgba(255, 255, 255, 0.3);
+    font-size: 150%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    color: #334;
+    pointer-events: none;
+    /* clicks go through to underlying content */
+    transition: opacity 0.1s ease-in-out;
+    z-index: 2;
+    /* sits above cell content */
+}
+
+.cell.hint:not(.semi)::after {
+    content: '!';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    /* vertical center the '?' */
+    justify-content: center;
+    /* horizontal center the '?' */
+    background-color: rgba(255, 255, 255, 0.3);
+    font-size: 150%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    color: #334;
+    pointer-events: none;
+    /* clicks go through to underlying content */
+    transition: opacity 0.1s ease-in-out;
+    z-index: 2;
+    /* sits above cell content */
+}
+
+.cell.hint.miss:not(.semi)::after {
+    content: '◎';
+    width: 100%;
+    height: 100%;
+    border-radius: 70%;
+}
+
+.cell.frd-sunk::after,
+.cell.frd-hit::after {
+    content: 'X';
+    font-size: 130%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    color: #380101;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.cell.miss.burnt:not(.target)::after {
+    display: flex;
+    justify-content: center;
+    /* horizontal */
+    align-items: center;
+    content: '⨳';
+    font-size: 150%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    background: transparent;
+    color: #54617c;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cell.hit.burnt.target,
+.cell.hit.burnt {
+    content: ' ';
+}
+
+.cell.frd-hit.burnt {
+    content: '';
+}
+
+.cell.frd-hit.burnt::after {
+    content: '⨳';
+    color: #832e26;
+}
+
+.cell.frd-sunk.burnt::after {
+    content: '⨳';
+    font-size: 180%;
+    color: #5c1d17;
+}
+
+.cell.hit.burnt.target::after,
+.cell.hit.burnt::after,
+.cell.frd-hit.burnt::after {
+    display: flex;
+    justify-content: center;
+    /* horizontal */
+    align-items: center;
+    content: '⨳';
+    font-size: 150%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    background: transparent;
+    color: #832e26;
+}
+
+.cell.enm-sunk.burnt::after {
+    display: flex;
+    justify-content: center;
+    /* horizontal */
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    width: 100%;
+    height: 100%;
+    font-size: 180%;
+    color: #5c1d17;
+}
+
+.cell.frd-hit.damaged,
+.cell.enm-sunk.damaged,
+.cell.frd-sunk.damaged,
+.cell.frd-sunk.skull,
+.cell.enm-sunk.skull,
+.cell.frd-hit.skull {
+    position: relative;
+    /* required */
+}
+
+
+
+.cell.frd-sunk.skull::after,
+.cell.enm-sunk.skull::after,
+.cell.frd-hit.skull::after {
+    content: '';
+    position: absolute;
+    margin: 3px 3px 3px 3px;
+    inset: 0;
+    /* shorthand for top/right/bottom/left: 0 */
+
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    /* or cover */
+
+    background-image: url('../images/skull28.png');
+}
+
+.cell.frd-hit.damaged::after,
+.cell.enm-sunk.damaged::after,
+.cell.frd-sunk.damaged::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* shorthand for top/right/bottom/left: 0 */
+    margin: 2px 2px 2px 2px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    /* or cover */
+
+    background-image: url('../images/skullol28.png');
+}
+
+.cell.frd-sunk {
+    border: 2px solid black;
+}
+
+@keyframes flameFade {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0) saturate(1.2);
+    }
+
+    20% {
+        opacity: 0.9;
+        transform: scale(1.05);
+        filter: blur(0) saturate(1.3);
+    }
+
+    40% {
+        opacity: 0.7;
+        transform: scale(0.9);
+        filter: blur(0.5px) saturate(1.25)
+    }
+
+    60% {
+        opacity: 0.5;
+        transform: scale(1.15);
+        filter: blur(0.5px) saturate(1.4)
+    }
+
+    100% {
+        opacity: 0.15;
+        transform: scale(1.3);
+        filter: blur(1.5px) saturate(1.3)
+    }
+}
+
+.burst {
+    animation: burstLighten 0.4s ease-out forwards;
+}
+
+.burst.long {
+    animation: burstLighten 0.6s ease-out forwards;
+}
+
+@keyframes burstLighten {
+    0% {
+        filter: brightness(200%);
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.9);
+    }
+
+    100% {
+        filter: brightness(100%);
+        box-shadow: none;
+    }
+}
+
+.flash {
+    animation: flashLighten 0.55s ease-out forwards;
+}
+
+
+@keyframes flashLighten {
+    0% {
+        filter: brightness(160%);
+    }
+
+    100% {
+        filter: brightness(100%);
+    }
+}

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="preload" href="./styles/sea-boot.css" as="style" />
+    <link rel="preload" href="./styles/space-boot.css" as="style" />
+    <script src="./terrain/terrain-bootstrap.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title id="page-title" data-template="Geoff's [terrain] Seek {mapName}">
+      Geoff's Hidden Battles Seek Game
+    </title>
+
+    <meta
+      name="description"
+      content="Play a challenging version of Battleship with no-touch placement rules and special ships."
+    />
+    <link
+      id="favicon"
+      rel="icon"
+      type="image/png"
+      href="./images/sea/favicons/favicon-48x48.png"
+    />
+    <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
+    <link rel="stylesheet" href="./styles/animation.css" />
+    <link rel="stylesheet" href="./styles/tab.css" />
+    <link rel="stylesheet" href="./styles/battle.css" />
+    <link rel="stylesheet" href="./styles/panel.css" />
+    <link rel="stylesheet" href="./styles/cells.css" />
+    <link rel="stylesheet" href="./styles/status.css" />
+    <link rel="stylesheet" href="./styles/battleseek.css" />
+    <link rel="stylesheet" media="print" href="./styles/print.css" />
+  </head>
+  <body class="hidden-battle">
+    <div class="battleship" id="battleship-game">
+      <div id="navbar"></div>
+      <div class="game-container" id="battleship-game-container">
+        <div class="player-container">
+          <div class="title-wrap">
+            <h2 id="enemy-title" class="centered-title">Enemy Waters</h2>
+          </div>
+          <div class="player-body">
+            <div class="player-main">
+              <div class="board-wrap">
+                <div class="board" id="enemy-board"></div>
+              </div>
+            </div>
+            <div class="footer" id="friend-footer">
+              <div class="info-wrap" id="statusLine-wrap">
+                <details class="chevron-box">
+                  <summary>
+                    <div class="status medium" id="statusLine">
+                      <div id="gameStatus" class="game-status"></div>
+                      <div id="statusRight" class="status right">
+                        <div id="modeStatus" class="mode-status"></div>
+                        <div id="modeIcon1" class="mode-icon hidden"></div>
+                        <div id="modeIcon2" class="mode-icon hidden"></div>
+                        <div id="ammoCounter" class="ammo-counter hidden">
+                          <span id="ammoCounterLeft" class="left"></span>
+                          <span id="ammoCounterTotal" class="right"></span>
+                        </div>
+                      </div>
+                    </div>
+                    <span id="chevron" class="chevron hidden"></span>
+                  </summary>
+                  <div class="status-list-content hidden" id="statusList"></div>
+                </details>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="board-wrap">
+                <div class="panel">
+                  <div class="panel-controls" id="seek-controls">
+                    <button class="seek-control" id="newGame" type="button">
+                      <span class="shortcut">R</span>estart
+                    </button>
+                    <button class="seek-control" id="weaponBtn" type="button">
+                      <span class="shortcut">M</span>ega Bomb
+                    </button>
+                    <button class="seek-control" id="revealBtn" type="button">
+                      Re<span class="shortcut">v</span>eal
+                    </button>
+                  </div>
+                  <div class="tally-box-container">
+                    <h4 class="tally-title">Tally Boxes</h4>
+                    <div class="tally-col" id="enemy-tallyBox"></div>
+                  </div>
+                  <div class="info-container">
+                    <div class="info" id="enemy-shots-label">
+                      Shots: <span class="no-wrap" id="enemy-shots">0 </span>
+                    </div>
+                    <div class="info" id="enemy-hits-label">
+                      Hits: <span class="no-wrap" id="enemy-hits">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-reveals-label">
+                      Reveals: <span id="enemy-reveals">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-hints-label">
+                      Hints: <span id="enemy-hints">0 </span>
+                    </div>
+                    <div class="info" id="enemy-sunk-label">
+                      Sunk: <span class="no-wrap" id="enemy-sunk">0 / 8</span>
+                    </div>
+                    <div
+                      class="info"
+                      id="enemy-placed-label"
+                      style="display: none"
+                    >
+                      Placed: <span class="no-wrap" id="enemy-placed">0 </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./navbar/navbar.js"></script>
+    <script type="module" src="./terrain/gameMaps.js"></script>
+    <script type="module" src="./navbar/enemySetup.js"></script>
+    <script type="module" src="./battleseek.js"></script>
+  </body>
+</html>

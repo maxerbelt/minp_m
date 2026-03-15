@@ -1,0 +1,86 @@
+<div class="tab-bar-container screen-only">
+  <div class="choose-title-wrapper">
+    <div class="logo-title-wrapper">
+      <a href="https://geoffburns.github.io/battleship">
+        <img
+          class="logo"
+          src="./images/sea/logos/sea-logo.png"
+          alt="Battleship Logo"
+      /></a>
+      <span> Geoff's Hidden Battle </span>
+    </div>
+    <div
+      class="choose-container choose-terrain-container"
+      id="choose-terrain-container"
+    >
+      <label for="chooseTerrain" class="choose-label" id="choose-terrain-label"
+        >Terrain:
+      </label>
+      <select id="chooseTerrain" class="choose-select"></select>
+    </div>
+  </div>
+  <nav class="tab-bar main" aria-label="Main Navigation">
+    <button class="tab-link" id="tab-about" type="button">About</button>
+    <button class="tab-link" id="tab-seek" type="button">Seek Game</button>
+    <button class="tab-link" id="tab-hide" type="button">
+      Hide and Seek Game
+    </button>
+    <button class="tab-link" id="tab-build" type="button">
+      Customize Maps
+    </button>
+    <button class="tab-link" id="tab-source" type="button">Source Code</button>
+  </nav>
+</div>
+<div class="info-wrap info-top sub-tabs">
+  <div class="heading-container sub-tabs">
+    <div class="tab-bar-container sub-tabs hidden" id="second-tab-bar">
+      <nav class="tab-bar sub-tabs" aria-label="Sub Navigation">
+        <button class="tab-link first" id="tab-add" type="button">Add</button>
+        <button class="tab-link" id="tab-list" type="button">List</button>
+        <button class="tab-link" id="tab-import" type="button">Import</button>
+        <button class="tab-link" id="tab-rules" type="button">Rules</button>
+        <button class="tab-link" id="tab-print" type="button">Print</button>
+      </nav>
+    </div>
+    <div class="choose-controls" id="choose-controls">
+      <img
+        class="logo print-only"
+        src="./images/sea/logos/sea-logo.png"
+        alt="Battleship Logo"
+      />
+      <div class="print-only" id="print-title"></div>
+      <div
+        class="choose-container choose-map-container hidden"
+        id="choose-map-container"
+      >
+        <label for="chooseMap" class="choose-label" id="choose-map-label"
+          >Choose a Map:
+        </label>
+        <select id="chooseMap" class="choose-select"></select>
+      </div>
+      <div
+        class="choose-container choose-height-container hidden"
+        id="height-container"
+      >
+        <label for="chooseHeight" class="choose-label">Height: </label>
+        <select id="chooseHeight" class="choose-select"></select>
+      </div>
+      <div
+        class="choose-container choose-width-container hidden"
+        id="width-container"
+      >
+        <label for="chooseWidth" class="choose-label">Width: </label>
+        <select id="chooseWidth" class="choose-select"></select>
+      </div>
+      <div
+        class="choose-container choose-map-container hidden"
+        id="choose-include"
+      >
+        <label for="chooseList" class="choose-label" id="choose-list-label"
+          >Include:
+        </label>
+        <select id="chooseList" class="choose-select"></select>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,351 @@
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 20px;
+        /* or 0 for borderless-capable printers */
+    }
+
+
+    body {
+        width: 780px;
+        /* printable width */
+        height: 1115px;
+        /* printable height */
+    }
+
+    nav a:not(.you-are-here),
+    nav div:not(.you-are-here),
+    nav button:not(.you-are-here),
+    div.heading-container.sub-tabs div.tab-bar-container.sub-tabs,
+    #choose-map-label,
+    .panel-controls,
+    .screen-only,
+    .status {
+        display: none !important;
+    }
+
+    .page-break {
+        page-break-before: always;
+        break-before: page;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+
+    #print-title {
+        font-weight: 900;
+        font-size: 180%
+    }
+
+    #choose-controls {
+        display: flex !important;
+        justify-content: flex-start;
+    }
+
+    select#chooseMap {
+
+        -webkit-appearance: none !important;
+        /* Chrome, Safari */
+        -moz-appearance: none !important;
+        /* Firefox */
+        appearance: none !important;
+        /* S
+ tandard */
+
+        border: 0 none;
+        text-align: center;
+        font-size: 200%;
+        text-indent: 1px;
+        text-overflow: '';
+        background: none !important;
+
+        background-image: none !important;
+        /* remove background including arrow in some browsers */
+        background-color: transparent !important;
+        /* restore background if needed */
+        padding-right: 1rem;
+    }
+
+    select#chooseMap::-ms-expand {
+        display: none !important;
+    }
+
+    div.tab-bar-container {
+        justify-content: space-between !important;
+        align-items: stretch !important;
+    }
+
+    div.tab-bar-container nav.tab-bar.tab-bar.main {
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: stretch !important;
+    }
+
+    .title-header {
+        color: #000 !important;
+        font-size: 150% !important;
+    }
+
+    .logo {
+        height: 120px !important;
+        width: 120px !important;
+    }
+
+    .tab-bar.main .you-are-here {
+        text-align: right !important;
+        padding-top: 2rem;
+        margin-bottom: -3rem;
+        border-radius: 0 0;
+        border: 0 none;
+        color: black;
+        transition: none;
+    }
+
+    .you-are-here {
+        font-size: 150% !important;
+    }
+
+
+    .board-wrap {
+        background: transparent;
+        border: 0 none;
+        border-radius: 0;
+    }
+
+    .info-wrap {
+        background: transparent;
+        border: 0 none;
+    }
+
+    .cell.empty {
+        background: transparent;
+        border: 0 none;
+    }
+
+    .cell.destroy-vunerable {
+        background: #c6f683 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.destroy-normal {
+        background: #f5c46c !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.destroy-hardened {
+        background: #f54197 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.reveal-vunerable {
+        background: #93ccf6 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.reveal-normal {
+        background: #8f8cf5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.reveal-hardened {
+        background: #8d61de !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.weapon-path {
+        background: #fd6d40 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.special::after {
+        background: black;
+        transition: none;
+    }
+
+
+    .cell {
+        border: 1px solid black;
+    }
+
+    .tray {
+        gap: 16px !important;
+    }
+
+    #tray-container {
+        border: 0 none;
+        gap: 16px !important;
+    }
+
+    #buildingTray .cell:not(.empty),
+    div.tally-row.land div.tally-box,
+    .cell.land.light {
+        background: #DAECCD !important;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    body.space #buildingTray .cell:not(.empty),
+    div.tally-row.asteroid div.tally-box,
+    .cell.asteroid.light {
+        background: #eed8a0 !important;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    .cell.land.dark {
+        background: #CAE4BA !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+
+    }
+
+    .cell.asteroid.dark {
+        background: #d6c286 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+
+    }
+
+    .rules-container {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .rules-container span.heading {
+        font-weight: 800;
+        font-size: 130%
+    }
+
+    #shipTray .cell:not(.empty),
+    div.tally-row.sea div.tally-box,
+    .cell.sea.light {
+        background: #DCEFFA !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    body.space #shipTray .cell:not(.empty),
+    div.tally-row.space div.tally-box,
+    .cell.space.light {
+        background: #e1d4f3 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    .cell.space.dark {
+        background: #c2bdd2 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    .cell.sea.dark {
+        background: #D4E6F8 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    #planeTray .cell:not(.empty),
+    div.tally-row.air div.tally-box {
+        background: #FFF4D1 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    body.space #planeTray .cell:not(.empty),
+    div.tally-row.shuttle div.tally-box {
+        background: #CAE4BA !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    #specialTray .cell:not(.empty),
+    div.tally-row.special div.tally-box {
+        background: #F5EEFB !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    body.space #specialTray .cell:not(.empty),
+    body.space div.tally-row.special div.tally-box {
+        background: #D4E6F8 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    #weaponTray .cell:not(.empty),
+    div.tally-row.weapon div.tally-box {
+        background: #F0DAF5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    body.space #weaponTray .cell:not(.empty),
+    body.space div.tally-row.weapon div.tally-box {
+        background: #F5EEFB !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: black !important;
+    }
+
+    .cell.rightEdge.light {
+        border-right: 3px solid #024 !important;
+    }
+
+    .cell.bottomEdge.light {
+        border-bottom: 3px solid #024 !important;
+    }
+
+    .cell.rightEdge.dark {
+        border-right: 3px solid #000 !important;
+    }
+
+    .cell.bottomEdge.dark {
+        border-bottom: 3px solid #000 !important;
+    }
+
+    .cell.leftEdge.light {
+        border-left: 3px solid #000 !important;
+    }
+
+    .cell.leftEdge.dark {
+        border-left: 3px solid #000 !important;
+    }
+
+    .info-container,
+    .info-container .info,
+    .tally-title {
+        color: black !important;
+    }
+
+    .tally-box {
+        border: 2px solid black;
+        font-size: 85%
+    }
+
+    .source {
+        font-size: 85%;
+    }
+}

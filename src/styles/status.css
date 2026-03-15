@@ -1,0 +1,172 @@
+.status {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-weight: bold;
+    color: #111;
+    font-size: 150%;
+    place-items: center;
+}
+
+.chevron-box summary .mode-status {
+    display: flex;
+    gap: 32px;
+    margin-right: 10px;
+    text-align: right;
+    place-items: center;
+}
+
+.status.right {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    margin-top: 0px;
+    gap: 8px;
+}
+
+.status.medium {
+    font-weight: bold;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    color: #111;
+    font-size: 115%;
+    width: 100%;
+}
+
+.status.small {
+    font-weight: bold;
+    height: 56px;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    color: #111;
+    font-size: 110%;
+    width: 100%;
+}
+
+.status.small.detail-line {
+    font-weight: bold;
+    height: 25px;
+    color: #111;
+    margin-bottom: 0px;
+    margin-top: 0px;
+    font-size: 90%;
+}
+
+.status.hidden {
+    display: none;
+}
+
+
+.chevron-box summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    list-style: none;
+}
+
+.chevron-box summary::-webkit-details-marker {
+    display: none;
+}
+
+.chevron {
+    width: 20px;
+    height: 20px;
+    border-right: 5px solid currentColor;
+    border-bottom: 5px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+    margin-left: 30px;
+    margin-top: -20px;
+}
+
+details[open] .chevron {
+    transform: rotate(-135deg);
+}
+
+.status-list-content {
+    padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+.game-status {
+    text-align: left;
+}
+
+flex-direction .mode-status {
+    text-align: right;
+}
+
+
+.status .mode-icons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: #111;
+}
+
+.ammo-counter {
+    position: relative;
+    font-family: system-ui, sans-serif;
+    font-weight: 600;
+    width: 50px;
+    height: 50px;
+}
+
+/* diagonal line */
+.ammo-counter::before {
+    width: 40px;
+    height: 40px;
+    margin-left: 12px;
+    margin-top: 7px;
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: opacity 0.4s ease-in-out;
+    background: linear-gradient(135deg,
+            transparent 46%,
+            #888 47%,
+            #888 53%,
+            transparent 54%);
+    pointer-events: none;
+}
+
+.small .ammo-counter .left {
+    position: absolute;
+    margin-top: -9px;
+    margin-left: 0px;
+    font-size: 96%;
+}
+
+.small .ammo-counter .right {
+    position: absolute;
+    bottom: -4px;
+    right: -8px;
+    font-size: 75%;
+    opacity: 0.75;
+}
+
+.ammo-counter .left {
+    position: absolute;
+    margin-top: -6px;
+    margin-left: 10px;
+    font-size: 70%;
+}
+
+.ammo-counter .right {
+    position: absolute;
+    bottom: -1px;
+    right: -2px;
+    font-size: 55%;
+    opacity: 0.75;
+}

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Color Rectangular Grid</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f5f5;
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        color: #0066cc;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+
+      .content-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 20px;
+      }
+
+      .canvas-section {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      #rect-multi-color {
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        background-color: #fafafa;
+        cursor: crosshair;
+        max-width: 100%;
+        height: auto;
+      }
+
+      .control-panel {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+      }
+
+      .control-group {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .control-group:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .control-group h3 {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #666;
+        margin-bottom: 10px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .radio-group label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        font-size: 13px;
+      }
+
+      .radio-group input[type='radio'] {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      .color-info {
+        padding: 10px;
+        background-color: white;
+        border-left: 8px solid #333;
+        border-radius: 2px;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+        word-break: break-all;
+      }
+
+      #color-display {
+        padding: 10px;
+        background-color: white;
+        border-left: 8px solid #000;
+        border-radius: 2px;
+        font-size: 12px;
+        transition: border-color 0.2s ease;
+      }
+
+      #color-mode-info {
+        padding: 10px;
+        background-color: #e3f2fd;
+        border-left: 4px solid #0066cc;
+        border-radius: 2px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      button {
+        padding: 8px 12px;
+        font-size: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f0f0f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+      }
+
+      button:hover {
+        background-color: #e0e0e0;
+        border-color: #999;
+      }
+
+      button:active {
+        background-color: #d0d0d0;
+      }
+
+      button.primary {
+        background-color: #0066cc;
+        color: white;
+        border-color: #0056b3;
+      }
+
+      button.primary:hover {
+        background-color: #0056b3;
+      }
+
+      input[type='range'] {
+        width: 100%;
+        cursor: pointer;
+        height: 4px;
+      }
+
+      input[type='file'] {
+        font-size: 11px;
+        padding: 4px;
+      }
+
+      #color-palette-swatches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 10px;
+      }
+
+      #color-palette-swatches button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        margin: 0;
+        border: 2px solid #333;
+        border-radius: 3px;
+        background-color: #000;
+        transition: border-color 0.2s ease;
+        flex: 0 0 auto;
+      }
+
+      #color-palette-swatches button:hover {
+        border-color: #0066cc;
+      }
+
+      .hover-info {
+        padding: 10px;
+        background-color: #fff9c4;
+        border-left: 4px solid #fbc02d;
+        border-radius: 2px;
+        font-size: 11px;
+        font-family: 'Courier New', monospace;
+        word-break: break-all;
+        margin-top: 10px;
+      }
+
+      .export-import {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+      }
+
+      .export-button {
+        background-color: #4caf50;
+        color: white;
+        border-color: #45a049;
+      }
+
+      .export-button:hover {
+        background-color: #45a049;
+      }
+
+      .import-button {
+        background-color: #ff9800;
+        color: white;
+        border-color: #e68900;
+      }
+
+      .import-button:hover {
+        background-color: #e68900;
+      }
+
+      .info-box {
+        background-color: #f0f0f0;
+        border-left: 4px solid #666;
+        padding: 10px;
+        font-size: 12px;
+        margin-top: 10px;
+        border-radius: 2px;
+      }
+
+      .info-box strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #333;
+      }
+
+      code {
+        background-color: #f5f5f5;
+        padding: 2px 4px;
+        border-radius: 2px;
+        font-size: 11px;
+        font-family: 'Courier New', monospace;
+      }
+
+      @media (max-width: 768px) {
+        .content-wrapper {
+          grid-template-columns: 1fr;
+        }
+
+        .button-group {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+
+        button {
+          flex: 1;
+          min-width: 100px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎨 Multi-Color Rectangular Grid</h1>
+      <p class="subtitle">Support for 2, 4, 16, and 256 color modes</p>
+
+      <div class="content-wrapper">
+        <div class="canvas-section">
+          <!-- Canvas for drawing -->
+          <canvas
+            id="rect-multi-color"
+            width="600"
+            height="600"
+            style="background-color: white"
+          ></canvas>
+
+          <!-- Hover information display -->
+          <div id="rect-hover-info" class="hover-info">
+            Hover info: Move mouse over grid to see coordinates and color
+          </div>
+        </div>
+
+        <div class="control-panel">
+          <!-- Color Mode Selection -->
+          <div class="control-group">
+            <h3>Color Mode</h3>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="color-bits-mode" value="1" />
+                2-Color (Binary)
+              </label>
+              <label>
+                <input type="radio" name="color-bits-mode" value="2" checked />
+                4-Color (Primary)
+              </label>
+              <label>
+                <input type="radio" name="color-bits-mode" value="4" />
+                16-Color (Extended)
+              </label>
+              <label>
+                <input type="radio" name="color-bits-mode" value="8" />
+                256-Color (RGB)
+              </label>
+            </div>
+          </div>
+
+          <!-- Color Mode Info -->
+          <div class="control-group">
+            <div id="color-mode-info" class="color-info">
+              4-color mode (2 bits per cell)
+            </div>
+          </div>
+
+          <!-- Current Color Display -->
+          <div class="control-group">
+            <h3>Selected Color</h3>
+            <div id="color-display" style="color: white">
+              Color: 1/3 (33%) #FF0000
+            </div>
+          </div>
+
+          <!-- Color Value Selection -->
+          <div class="control-group">
+            <h3>Color Value</h3>
+            <input
+              type="range"
+              id="color-value-input"
+              min="0"
+              max="3"
+              value="1"
+            />
+            <div class="button-group">
+              <button id="cycle-color-btn">🔄 Cycle Next</button>
+            </div>
+          </div>
+
+          <!-- Color Palette Swatches -->
+          <div class="control-group">
+            <h3>Palette</h3>
+            <div id="color-palette-swatches"></div>
+          </div>
+
+          <!-- Grid Operations -->
+          <div class="control-group">
+            <h3>Grid Operations</h3>
+            <div class="button-group">
+              <button id="fill-with-color-btn" class="primary">
+                Fill with Color
+              </button>
+            </div>
+          </div>
+
+          <!-- Export/Import -->
+          <div class="export-import">
+            <h3>Export / Import</h3>
+            <div class="button-group">
+              <button id="download-color-grid-image" class="export-button">
+                📥 Download as PNG
+              </button>
+              <button id="download-color-grid-json" class="export-button">
+                💾 Download as JSON
+              </button>
+            </div>
+            <div style="margin-top: 8px">
+              <label
+                for="import-color-grid-json"
+                style="display: block; margin-bottom: 5px"
+              >
+                📤 Import from JSON:
+              </label>
+              <input type="file" id="import-color-grid-json" accept=".json" />
+            </div>
+          </div>
+
+          <!-- Instructions -->
+          <div class="info-box">
+            <strong>How to Use:</strong>
+            <div style="font-size: 11px; margin-top: 5px; line-height: 1.6">
+              <div>• Select color mode (2, 4, 16, or 256 colors)</div>
+              <div>• Choose a color from the slider or palette</div>
+              <div>• Click cells to paint with selected color</div>
+              <div>• Use "Fill with Color" to fill entire grid</div>
+              <div>• Export as PNG or JSON for later use</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import the multi-color grid module -->
+    <script type="module" src="rectmulticolor.js"></script>
+  </body>
+</html>

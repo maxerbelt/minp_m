@@ -1,0 +1,29 @@
+:root {
+    --background-image: ;
+}
+
+body {
+    background-image: url('../images/sea/bg/sea-fleet.png');
+    background-repeat: repeat;
+}
+
+body img.logo {
+    content: url('../images/sea/logos/sea-logo.png');
+    ;
+}
+
+.cell.land.light {
+    background: #348239;
+}
+
+.cell.land.dark {
+    background: #296334;
+}
+
+.cell.sea.light {
+    background: #1a78d6;
+}
+
+.cell.sea.dark {
+    background: #1761b0;
+}

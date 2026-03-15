@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g fill="black" transform="rotate(-30 32 32)">
+    <ellipse cx="32" cy="30" rx="6" ry="14"/>
+    <polygon points="32,10 26,20 38,20"/>
+    <polygon points="26,38 18,46 26,46"/>
+    <polygon points="38,38 46,46 38,46"/>
+    <path d="M32 44 C28 50 30 56 32 58 C34 56 36 50 32 44 Z"/>
+  </g>
+</svg>

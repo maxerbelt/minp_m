@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Geoff's Hidden Battles Landing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <style>
+      :root {
+        --background-image: url('./src/spacefleet.png');
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        justify-content: space-between;
+        margin: 0;
+        font-family: Arial, sans-serif;
+
+        background-image: var(--background-image);
+        background-repeat: repeat;
+      }
+
+      header {
+        text-align: center;
+        padding: 2rem 1rem;
+
+        background-color: RGB(19, 26, 35, 0.8);
+        color: white;
+
+        -webkit-backdrop-filter: blur(10px);
+        /* Safari 9+, iOS 9+ */
+        backdrop-filter: blur(10px);
+      }
+      a {
+        text-decoration: none;
+        color: #0e1530;
+        font-weight: 900;
+      }
+
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        padding: 2rem;
+        text-align: center;
+        font-weight: 900;
+      }
+
+      .gallery img {
+        width: 100%;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .gallery a {
+        width: 100%;
+        border-radius: 12px;
+        padding: 0.5rem 0.3rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+
+        background-color: RGB(255, 255, 255, 0.8);
+        color: RGB(19, 26, 35);
+
+        -webkit-backdrop-filter: blur(10px);
+        /* Safari 9+, iOS 9+ */
+        backdrop-filter: blur(10px);
+      }
+      .gallery a:hover {
+        transform: scale(1.12);
+      }
+
+      footer {
+        text-align: center;
+        padding: 2rem;
+        background-color: RGB(19, 26, 35, 0.8);
+        color: white;
+        -webkit-backdrop-filter: blur(10px);
+        /* Safari 9+, iOS 9+ */
+        backdrop-filter: blur(10px);
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="./src/navbar.js"></script>
+    <script type="module">
+      import { setupTrack, trackTab } from './src/gtag.js'
+      setupTrack()
+
+      document
+        .getElementById('tab-about')
+        .addEventListener('click', trackTab.bind(null, 'go to blog'))
+      document
+        .getElementById('tab-source')
+        .addEventListener('click', trackTab.bind(null, 'go to source code'))
+    </script>
+    <header>
+      <picture
+        ><img
+          alt="hidden battle logo"
+          src="./src/logo2.png"
+          width="120"
+          height="120"
+      /></picture>
+      <h1>Geoff's Hidden Battle</h1>
+      <h2>Recreation of a childhood memory using javascript</h2>
+      <p>
+        Play a challenging version of Battleship with no-touch placement rules
+        and special ships.
+      </p>
+    </header>
+
+    <!-- Image Gallery Navigation -->
+    <div class="gallery">
+      <a
+        id="tab-about"
+        href="https://geoffburns.blogspot.com/2015/10/pencil-and-paper-battleships.html"
+        ><img src="./landing/battle-blog.png" alt="About" />About</a
+      >
+      <a href="https://geoffburns.github.io/HiddenBattle/src/battleseek.html"
+        ><img src="./landing/seek-game.png" alt="Seek Game" />Seek Game</a
+      >
+      <a href="https://geoffburns.github.io/HiddenBattle/src/"
+        ><img src="./landing/hide-game.png" alt="Hide and Seek Game" />Hide and
+        Seek Game</a
+      >
+      <a href="https://geoffburns.github.io/HiddenBattle/src/battlebuild.html"
+        ><img
+          src="./landing/create-your-own-map.png"
+          alt="Create Your Own Game"
+        />Create Your Own Game</a
+      >
+      <a id="tab-source" href="https://github.com/GeoffBurns/HiddenBattle"
+        ><img src="./landing/battleship-code.png" alt="Source Code" />Source
+        Code</a
+      >
+    </div>
+
+    <footer>
+      <p>© 2025 Geoff Burns</p>
+    </footer>
+  </body>
+</html>

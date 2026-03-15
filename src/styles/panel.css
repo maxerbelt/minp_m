@@ -1,0 +1,152 @@
+ .panel {
+     display: flex;
+     justify-content: space-between;
+     gap: 16px;
+ }
+
+ .panel-controls {
+     display: flex;
+     flex-direction: column;
+     gap: 8px;
+     width: 118px;
+ }
+
+ .panel-controls.map-list {
+     flex-wrap: wrap;
+ }
+
+ .tally-title {
+     color: white;
+     margin-bottom: 6px;
+     margin-top: 0px;
+ }
+
+ .tally-box-container {
+     display: flex;
+     align-items: center;
+     gap: 8px;
+ }
+
+ .tally-box-container.print-preview {
+     flex-direction: row;
+     margin-bottom: 0;
+ }
+
+ .tally-box-container:not(.print-preview) {
+
+     flex-direction: column;
+     margin-bottom: 8px;
+ }
+
+ .info-container {
+     display: flex;
+     flex-direction: column;
+     align-items: flex-start;
+     gap: 4px;
+     margin-bottom: 8px;
+ }
+
+ .tally-row {
+     display: flex;
+     gap: 6px;
+     align-items: center;
+     flex-wrap: wrap;
+ }
+
+ .tally-col {
+     display: flex;
+     flex-direction: column;
+     gap: 6px;
+ }
+
+
+ .battleship.print-preview .tally-col {
+     align-items: flex-end;
+ }
+
+
+ .tally-box {
+     position: relative;
+     width: 28px;
+     height: 22px;
+     overflow: hidden;
+     border-radius: 4px;
+     border: 1px solid rgba(200, 210, 240, 0.06);
+     display: grid;
+     place-items: center;
+     font-weight: 700;
+     font-size: 80%
+ }
+
+ .tally-box-container.map-list .tally-box {
+     gap: 2px;
+     margin-bottom: 2px;
+     font-size: 50%;
+ }
+
+ .board-wrap.map-list {
+     border-radius: 4px;
+     padding: 4px;
+     margin: 0 0;
+ }
+
+ .tally-box-container.map-list {
+     margin: 0 0;
+ }
+
+ .tally-box-container.map-list .tally-col {
+     gap: 3px;
+ }
+
+ .tally-box-container.map-list .tally-box {
+     width: 14px;
+     height: 11px;
+     border-radius: 2px;
+ }
+
+ .tally-group-container {
+     display: flex;
+ }
+
+ .battleship:not(.print-preview) .tally-group-container {
+     gap: 40px;
+ }
+
+ .battleship.print-preview .tally-group-container {
+     flex-direction: column;
+     gap: 8px;
+ }
+
+ button {
+     padding: 8px 10px;
+     border-radius: 8px;
+     border: none;
+     background: #2b4066;
+     color: #aaccff;
+     cursor: pointer;
+ }
+
+ button:disabled {
+     opacity: 0.45;
+     cursor: not-allowed;
+ }
+
+ span.shortcut {
+     color: #fff;
+     font-weight: 900;
+ }
+
+ .info {
+     color: #fff;
+ }
+
+ h2 {
+     margin: 0 0 12px 0;
+ }
+
+
+ @media (min-width: 1024px) {
+     .panel {
+         align-self: flex-start;
+     }
+ }

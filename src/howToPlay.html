@@ -1,0 +1,411 @@
+<h2>How to Play</h2>
+<h2>Step 1: Place Your Units</h2>
+<p>
+  Each player starts by placing their units on their
+  <b>“Your Ships” </b>map.
+</p>
+<ul id="l1">
+  <li data-list-text="•">
+    <p>
+      Use the <b>Tally Boxes </b>on the right to see how many of each unit to
+      place.
+    </p>
+  </li>
+  <li data-list-text="•">
+    <p>
+      Use the small reference icons on the left as a guide for each unit’s
+      shape.
+    </p>
+  </li>
+  <li data-list-text="•">
+    <p>
+      As you place each unit, mark a small tick in the corner of its tally box.
+    </p>
+  </li>
+  <li data-list-text="•">
+    <p>
+      Units can be rotated or reflected (placed vertically or horizontally), but
+      <b>not diagonally</b>.
+    </p>
+  </li>
+  <li data-list-text="•">
+    <p>
+      Units <b>must not touch</b>: leave at least one square of space between
+      any two units—
+    </p>
+  </li>
+</ul>
+<h4>orthogonally and diagonally<span class="p">.</span></h4>
+<h3>Unit Categories:</h3>
+
+<div class="rules-container sea" id="sea-container">
+  <span id="sea-unit-header" class="heading">Sea Units</span>
+  <p id="sea-unit-info">These are added to the blue areas (sea) of the map</p>
+
+  <div class="tray" id="shipTray"></div>
+  <div class="notes hidden" id="shipNotes"></div>
+</div>
+<br />
+<div class="rules-container land" id="land-container">
+  <span id="land-unit-header" class="heading">Land Units</span>
+  <p id="land-unit-info">
+    These are added to the greens areas (land) of the map
+  </p>
+  <div class="tray" id="buildingTray"></div>
+  <div class="notes hidden" id="buildingNotes"></div>
+</div>
+<br />
+<div class="rules-container air" id="air-container">
+  <span id="air-unit-header" class="heading">Air Units</span>
+  <p id="air-unit-info">
+    These are added to the any area (sea or land) of the map
+  </p>
+
+  <div class="tray" id="planeTray"></div>
+  <div class="notes hidden" id="planeNotes"></div>
+</div>
+<br />
+<div class="rules-container special" id="special-container">
+  <span id="special-unit-header" class="heading"> Special Units</span>
+  <p id="special-unit-info">
+    These have special rules about where they are placed on the map
+  </p>
+
+  <div class="tray" id="specialTray"></div>
+  <div class="notes hidden" id="specialNotes"></div>
+</div>
+
+<br />
+<br />
+<h2>Step 2. Attack Your Opponent</h2>
+<p>
+  Once all units are placed, players take turns trying to destroy their
+  opponent’s units.
+</p>
+<h3>On your turn, you can do one of the following:</h3>
+<ol>
+  <li id="weapon-info-single" data-list-text="1.">
+    <h4>Standard Attack:</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>Announce a grid location (e.g., “B4”).</p>
+      </li>
+      <li data-list-text="◦">
+        <p>Your opponent replies with:</p>
+        <ul>
+          <li data-list-text="▪">
+            <h4>“Miss” <span class="p">– if there’s nothing there.</span></h4>
+          </li>
+          <li data-list-text="▪">
+            <h4>
+              “Hit”
+              <span class="p"
+                >– if part of a unit is located at that square.</span
+              >
+            </h4>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>Mark your “Opponent’s Ships” grid with:</p>
+        <ul id="l5">
+          <li data-list-text="▪">
+            <p>A <b>slash ( / ) </b>for a miss.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>A <b>cross ( X ) </b>for a hit.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          When all squares of a unit are hit, your opponent must announce the
+          unit’s name (e.g., “Cruiser destroyed”). Cross it off in the tally
+          box.
+        </p>
+      </li>
+    </ul>
+  </li>
+  <li id="weapon-info-mega" class="hidden" data-list-text="2.">
+    <h4>Mega Bomb (Special Move):</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>Announce a target square.</p>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          The bomb hits that square
+          <b>plus all eight adjacent squares </b>(the surrounding 3x3 area).
+        </p>
+        <div class="splash-group">
+          <div id="splash-map-mega" class="hidden"></div>
+          <div id="splash-legend-mega" class="hidden"></div>
+        </div>
+      </li>
+      <li id="power-info-mega" class="hidden" data-list-text="◦"></li>
+      <li data-list-text="◦">
+        <p>Your opponent announces:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Any hits, along with their locations.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>Names of any destroyed units.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          Record the use of a mega bomb by crossing out an <b>‘M’ </b>in the
+          tally boxes.
+        </p>
+      </li>
+    </ul>
+  </li>
+  <li id="weapon-info-kinetic" class="hidden" data-list-text="3.">
+    <h4>Kinetic Strike (Special Move):</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>
+          The player announces a location on the left, right or top edge of the
+          map and a direction down, right, down and right or down and left
+          describing a line passing across the map.
+        </p>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          The strike hits one of the squares along the line.
+          <span class="hidden" id="splash-info-kinetic"
+            >The strike can also do splash damage</span
+          ><span class="hidden" id="splashed-kinetic"></span
+          ><span class="hidden" id="unsplashed-kinetic"></span>.
+        </p>
+        <div class="splash-group">
+          <div id="splash-map-kinetic" class="hidden"></div>
+          <div id="splash-legend-kinetic" class="hidden"></div>
+        </div>
+      </li>
+      <li id="power-info-kinetic" class="hidden" data-list-text="◦"></li>
+      <li data-list-text="◦">
+        <p>Your opponent chooses:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Which unit along the line to sacrifice as a hit.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>
+              Or if there are no ocupied un-hit square along the line, declares
+              a miss.
+            </p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>Your opponent announces:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Any hits, along with their locations.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>Names of any destroyed units.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          Record the use of a Kinetic Strike by crossing out a
+          <b>‘K’ </b>in the tally boxes.
+        </p>
+      </li>
+    </ul>
+  </li>
+  <li id="weapon-info-flack" class="hidden" data-list-text="4.">
+    <h4>Flack (Special Move):</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>Announce a target square.</p>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          The flack hits in a checkboard pattern in 8 squares in the surrounding
+          3x5 area.
+        </p>
+        <div class="splash-group">
+          <div id="splash-map-flack" class="hidden"></div>
+          <div id="splash-legend-flack" class="hidden"></div>
+        </div>
+      </li>
+      <li id="power-info-flack" class="hidden" data-list-text="◦"></li>
+      <li data-list-text="◦">
+        <p>Your opponent announces:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Any hits, along with their locations.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>Names of any destroyed units.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          Record the use of flack by crossing out an <b>‘F’ </b>in the tally
+          boxes.
+        </p>
+      </li>
+    </ul>
+  </li>
+  <li class="hidden" id="weapon-info-torpedo" data-list-text="5.">
+    <h4>Torpedo (Special Move):</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>
+          The player announces two locations that define a horizontal, vertical
+          or daigonal line across the sea
+        </p>
+        <div class="splash-group">
+          <div id="splash-map-torpedo" class="hidden"></div>
+          <div id="splash-legend-torpedo" class="hidden"></div>
+        </div>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          The the torpedo hits one of the squares along the line. The strike
+          hits one of the squares along the line.
+          <span class="hidden" id="splash-info-torpedo"
+            >The torpedo can also does splash damage against orthogonally
+            adjacent squares.</span
+          ><span class="hidden" id="splashed-torpedo"></span
+          ><span class="hidden" id="unsplashed-torpedo"></span>
+        </p>
+      </li>
+      <li id="power-info-torpedo" class="hidden" data-list-text="◦"></li>
+      <li data-list-text="◦">
+        <p>Your opponent chooses:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Which unit along the line to sacrifice as a hit.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>
+              Or if there are no ocupied un-hit square along the line, declares
+              a miss.
+            </p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>Your opponent announces:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Any hits, along with their locations.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>Names of any destroyed units.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          Record the use of a Torpedo by crossing out a
+          <b>‘+’ </b>in the tally boxes.
+        </p>
+      </li>
+    </ul>
+  </li>
+  <li id="weapon-info-missile" class="hidden" data-list-text="2.">
+    <h4>Missile (Special Move):</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>Announce a target square.</p>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          The bomb hits that square
+          <b>plus all eight adjacent squares </b>(the surrounding 3x3 area).
+        </p>
+        <div class="splash-group">
+          <div id="splash-map-missile" class="hidden"></div>
+          <div id="splash-legend-missile" class="hidden"></div>
+        </div>
+      </li>
+      <li id="power-info-missile" class="hidden" data-list-text="◦"></li>
+      <li data-list-text="◦">
+        <p>Your opponent announces:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Any hits, along with their locations.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>Names of any destroyed units.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          Record the use of a mega bomb by crossing out an <b>‘M’ </b>in the
+          tally boxes.
+        </p>
+      </li>
+    </ul>
+  </li>
+  <li id="weapon-info-rail" class="hidden" data-list-text="3.">
+    <h4>Rail Gun (Special Move):</h4>
+    <ul>
+      <li data-list-text="◦">
+        <p>
+          The player announces a location on the left, right or top edge of the
+          map and a direction down, right, down and right or down and left
+          describing a line passing across the map.
+        </p>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          The strike hits one of the squares along the line.
+          <span class="hidden" id="splash-info-rail"
+            >The strike can also do splash damage</span
+          ><span class="hidden" id="splashed-rail"></span
+          ><span class="hidden" id="unsplashed-rail"></span>.
+        </p>
+        <div class="splash-group">
+          <div id="splash-map-rail" class="hidden"></div>
+          <div id="splash-legend-rail" class="hidden"></div>
+        </div>
+      </li>
+      <li id="power-info-rail" class="hidden" data-list-text="◦"></li>
+      <li data-list-text="◦">
+        <p>Your opponent chooses:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Which unit along the line to sacrifice as a hit.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>
+              Or if there are no ocupied un-hit square along the line, declares
+              a miss.
+            </p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>Your opponent announces:</p>
+        <ul>
+          <li data-list-text="▪">
+            <p>Any hits, along with their locations.</p>
+          </li>
+          <li data-list-text="▪">
+            <p>Names of any destroyed units.</p>
+          </li>
+        </ul>
+      </li>
+      <li data-list-text="◦">
+        <p>
+          Record the use of a Kinetic Strike by crossing out a
+          <b>‘K’ </b>in the tally boxes.
+        </p>
+      </li>
+    </ul>
+  </li>
+</ol>
+<h2>Winning the Game:</h2>
+<p>The first player to destroy <b>all </b>of their opponent’s units wins.</p>

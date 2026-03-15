@@ -1,0 +1,14 @@
+:root {
+    --background-image: url('../images/sea/fleet.png');
+    --background-image-space: url('../images/space/spacefleet.png');
+    --logo-image-space: url('../images/space/space-logo.png');
+}
+
+body.space {
+    background-image: var(--background-image-space);
+    background-repeat: repeat;
+}
+
+body.space img.logo {
+    content: var(--logo-image-space);
+}

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="preload" href="./styles/sea-boot.css" as="style" />
+    <link rel="preload" href="./styles/space-boot.css" as="style" />
+    <script src="./terrain/terrain-bootstrap.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title
+      id="page-title"
+      data-template="Geoff's [terrain] Hide and Seek - {mapName}"
+    >
+      Geoff's Hidden Battles Hide and Seek Game
+    </title>
+
+    <meta
+      name="description"
+      content="Play a challenging of Battleship style game with no-touch placement rules and special ships."
+    />
+    <link
+      id="favicon"
+      rel="icon"
+      type="image/png"
+      href="./images/sea/favicons/favicon-48x48.png"
+    />
+    <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
+    <link rel="stylesheet" href="./styles/animation.css" />
+    <link rel="stylesheet" href="./styles/tab.css" />
+    <link rel="stylesheet" href="./styles/battle.css" />
+    <link rel="stylesheet" href="./styles/panel.css" />
+    <link rel="stylesheet" href="./styles/cells.css" />
+    <link rel="stylesheet" href="./styles/status.css" />
+    <link rel="stylesheet" href="./styles/battlehide.css" />
+    <link rel="stylesheet" media="print" href="./styles/print.css" />
+  </head>
+  <body class="hidden-battle">
+    <div class="battleship" id="battleship-game">
+      <div id="navbar"></div>
+      <div class="game-container" id="battleship-game-container">
+        <div class="player-container" id="friend-container">
+          <div class="title-wrap">
+            <h2 id="friend-title" class="centered-title">Friendly Waters</h2>
+          </div>
+          <div class="player-body">
+            <div class="player-main" id="friend-main">
+              <div class="board-wrap">
+                <div class="board" id="friend-board"></div>
+              </div>
+            </div>
+            <div class="footer" id="friend-footer">
+              <div class="info-wrap" id="statusLine-wrap">
+                <details class="chevron-box">
+                  <summary>
+                    <div class="status medium" id="statusLine">
+                      <div id="gameStatus" class="game-status"></div>
+                      <div id="statusRight" class="status right">
+                        <div id="modeStatus" class="mode-status"></div>
+                        <img
+                          id="spinner"
+                          class="spinner hidden"
+                          src="./images/loading.gif"
+                          alt="waiting"
+                        />
+                        <div id="modeIcon1" class="mode-icon hidden"></div>
+                        <div id="modeIcon2" class="mode-icon hidden"></div>
+                        <div id="ammoCounter" class="ammo-counter hidden">
+                          <span id="ammoCounterLeft" class="left"></span>
+                          <span id="ammoCounterTotal" class="right"></span>
+                        </div>
+                      </div>
+                    </div>
+                    <span id="chevron" class="chevron hidden"></span>
+                  </summary>
+                  <div class="status-list-content hidden" id="statusList"></div>
+                </details>
+              </div>
+              <div class="board-wrap alt trays" id="tray-container">
+                <div id="shipTray" class="tray"></div>
+                <div id="planeTray" class="tray"></div>
+                <div id="specialTray" class="tray"></div>
+                <div id="buildingTray" class="tray"></div>
+                <div id="weaponTray" class="tray"></div>
+              </div>
+            </div>
+            <div class="panel-container" id="friend-panel">
+              <div class="board-wrap">
+                <div class="panel">
+                  <div class="panel-controls" id="place-controls">
+                    <button
+                      class="place-control"
+                      id="newPlacement"
+                      type="button"
+                    >
+                      <span class="shortcut">C</span>lear
+                    </button>
+                    <button
+                      class="place-control"
+                      id="rotateBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">R</span>otate
+                    </button>
+                    <button
+                      class="place-control"
+                      id="flipBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">F</span>lip
+                    </button>
+                    <button
+                      class="place-control"
+                      id="rotateLeftBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">L</span>eft Rotate
+                    </button>
+                    <button
+                      class="place-control"
+                      id="transformBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">X</span>form
+                    </button>
+                    <button
+                      class="place-control"
+                      id="undoBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">U</span>ndo
+                    </button>
+
+                    <button
+                      class="place-control"
+                      id="testBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">T</span>est
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="stopBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">S</span>top
+                    </button>
+                    <button
+                      class="place-control"
+                      id="seekBtn"
+                      type="button"
+                      disabled
+                    >
+                      <span class="shortcut">H</span>ide and Seek
+                    </button>
+
+                    <button class="place-control" id="autoBtn" type="button">
+                      <span class="shortcut">A</span>uto
+                    </button>
+                  </div>
+                  <div class="tally-box-container" id="friend-tally-container">
+                    <h4 class="tally-title" id="tally-title">Tally Boxes</h4>
+                    <div id="friend-tallyBox"></div>
+                  </div>
+
+                  <div class="info-container">
+                    <div class="info" id="friend-placed-label">
+                      Placed: <span class="no-wrap" id="friend-placed">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-shots-label">
+                      Shots: <span id="friend-shots">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-hits-label">
+                      Hits: <span id="friend-hits">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-reveals-label">
+                      Reveals: <span id="friend-reveals">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-hints-label">
+                      Hints: <span id="friend-hints">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-sunk-label">
+                      Sunk: <span id="friend-sunk">0 / 8</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer-wrap" id="friend-footer-wrap"></div>
+        </div>
+
+        <div class="player-container hidden" id="enemy-container">
+          <div class="title-wrap">
+            <h2 id="enemy-title" class="centered-title">Enemy Waters</h2>
+          </div>
+
+          <div class="player-body">
+            <div class="player-main">
+              <div class="board-wrap">
+                <div class="board" id="enemy-board"></div>
+              </div>
+
+              <div class="info-wrap hidden">
+                <div class="status hidden" id="statusLine2"></div>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="board-wrap">
+                <div class="panel">
+                  <div class="panel-controls" id="seek-controls">
+                    <button class="seek-control" id="newPlace2" type="button">
+                      <span class="shortcut">P</span>lace Ships
+                    </button>
+                    <button class="seek-control" id="newGame" type="button">
+                      <span class="shortcut">R</span>estart
+                    </button>
+                    <button class="seek-control" id="weaponBtn" type="button">
+                      <span class="shortcut">M</span>ega Bomb
+                    </button>
+                    <button class="seek-control" id="revealBtn" type="button">
+                      Re<span class="shortcut">v</span>eal
+                    </button>
+                  </div>
+                  <div class="tally-box-container">
+                    <h4 class="tally-title">Tally Boxes</h4>
+                    <div id="enemy-tallyBox"></div>
+                  </div>
+                  <div class="info-container">
+                    <div class="info" id="enemy-shots-label">
+                      Shots: <span class="no-wrap" id="enemy-shots">0 </span>
+                    </div>
+                    <div class="info" id="enemy-hits-label">
+                      Hits: <span class="no-wrap" id="enemy-hits">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-reveals-label">
+                      Reveals: <span id="enemy-reveals">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-hints-label">
+                      Hints: <span id="enemy-hints">0 </span>
+                    </div>
+                    <div class="info" id="enemy-sunk-label">
+                      Sunk: <span class="no-wrap" id="enemy-sunk">0 / 8</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./navbar/navbar.js"></script>
+    <script type="module" src="./terrain/gameMaps.js"></script>
+    <script type="module" src="./battlehide.js"></script>
+  </body>
+</html>

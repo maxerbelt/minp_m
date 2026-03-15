@@ -1,0 +1,203 @@
+.centered-title {
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+[draggable="true"] {
+    cursor: grab;
+    /* before drag */
+}
+
+[draggable="true"]:active {
+    cursor: grabbing;
+    /* while dragging */
+}
+
+.board-wrap.alt {
+    background: #0f1c4d;
+    border: 1px solid #1f4766
+}
+
+
+.board.selected {
+    background: transparent;
+}
+
+.ship-ghost {
+    position: fixed;
+    pointer-events: none;
+    background: transparent;
+}
+
+.cell.bad {
+    border: 2px solid red;
+}
+
+.cell.notgood {
+    border: 2px solid orange;
+}
+
+.cell.space.bad,
+.cell.sea.bad {
+    border: 2px solid #ff0080;
+}
+
+.cell.space.notgood,
+.cell.sea.notgood {
+    border: 2px solid #ff8080;
+}
+
+.cell.asteroid.bad,
+.cell.land.bad {
+    border: 2px solid #ff7219;
+}
+
+.cell.asteroid.notgood,
+.cell.land.notgood {
+    border: 2px solid #ffa219;
+}
+
+.cell.good {
+    border: 2px solid green;
+}
+
+.cell.space.good,
+.cell.sea.good {
+    border: 2px solid #1ABB99;
+}
+
+.cell.asteroid.good,
+.cell.land.good {
+    border: 2px solid #29BB34
+}
+
+
+
+.cell.land.light.bad {
+    background: #B48239
+}
+
+.cell.asteroid.light.bad {
+    background: #cc8239
+}
+
+
+.cell.land.dark.bad {
+    background: #A96334
+}
+
+.cell.asteroid.dark.bad {
+    background: #b95314
+}
+
+.cell.land.light.notgood {
+    background: #B4b239
+}
+
+.cell.asteroid.light.notgood {
+    background: #d8f200
+}
+
+.cell.land.dark.notgood {
+    background: #A99334
+}
+
+.cell.asteroid.dark.notgood {
+    background: #c9e200
+}
+
+.cell.sea.light.bad {
+    background: #BA78D6
+}
+
+.cell.space.light.bad {
+    background: #ee78D6
+}
+
+.cell.sea.dark.bad {
+    background: #9761B0
+}
+
+.cell.space.dark.bad {
+    background: #b751B0
+}
+
+.cell.sea.light.notgood {
+    background: #BAa8D6
+}
+
+.cell.space.light.notgood {
+    background: #d7d150
+}
+
+
+.cell.sea.dark.notgood {
+    background: #97a1B0
+}
+
+.cell.space.dark.notgood {
+    background: #b7b150
+}
+
+.cell.cell.asteroid.light.good,
+.cell.land.light.good {
+    background: #34F239
+}
+
+.cell.asteroid.dark.good,
+.cell.land.dark.good {
+    background: #29C334
+}
+
+.cell.space.light.good,
+.cell.sea.light.good {
+    background: #1AE8D6
+}
+
+.cell.space.dark.good,
+.cell.sea.dark.good {
+    background: #17C1B0
+}
+
+.clicked {
+    border: 3px solid goldenrod
+}
+
+.entry-container {
+    display: flex;
+    gap: 6px;
+    align-items: center
+}
+
+
+button {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: none;
+    background: #2b4066;
+    color: #aaccff;
+    cursor: pointer
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed
+}
+
+span.shortcut {
+    color: #FFF;
+    font-weight: 900;
+}
+
+.info {
+    color: #fff
+}
+
+h2 {
+    margin: 0 0 12px 0
+}
+
+a img.drop-cap {
+    background: transparent;
+    box-shadow: none;
+}

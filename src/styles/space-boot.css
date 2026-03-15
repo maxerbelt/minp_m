@@ -1,0 +1,25 @@
+body.space {
+    background-image: url('../images/space/bg/space-fleet.png');
+    background-repeat: repeat;
+}
+
+body.space img.logo {
+    content: url('../images/space/logos/space-logo.png');
+}
+
+.cell.asteroid.light {
+    background: #eed8a0;
+
+}
+
+.cell.asteroid.dark {
+    background: #d6c286;
+}
+
+.cell.space.light {
+    background: #e1d4f3;
+}
+
+.cell.space.dark {
+    background: #c2bdd2;
+}

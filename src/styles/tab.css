@@ -1,0 +1,181 @@
+    /* Tab Bar */
+    .tab-bar-container {
+      display: flex;
+      flex-direction: row;
+      border-radius: 15px 15px 0 0;
+      justify-content: flex-start;
+      gap: 8px;
+      padding: 0.5rem 1rem 0 1rem;
+      align-items: center;
+      overflow: hidden;
+      background-color: RGB(19, 26, 35, 0.7);
+      -webkit-backdrop-filter: blur(10px);
+      /* Safari 9+, iOS 9+ */
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-bar-container.sub-tabs {
+      border-radius: 0 0 10px 10px;
+      padding: 0 0 0 0;
+      background-color: RGB(119, 126, 135, 0.8);
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      /* <- shrink to fit its contents */
+      width: auto;
+    }
+
+    .tab-bar-container.sub-tabs.print-preview {
+      border-radius: 0 15px 10px 10px;
+    }
+
+    .heading-container.sub-tabs {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .logo-title-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f1f5f9;
+      font-weight: 700;
+      text-align: left;
+      width: auto;
+      flex: 0 0 auto;
+      font-size: 120%;
+    }
+
+
+    .choose-title-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      color: #f1f5f9;
+      font-weight: 700;
+      text-align: left;
+      width: auto;
+      flex-wrap: wrap;
+      font-size: 120%;
+    }
+
+    div#choose-terrain-container {
+      display: flex;
+      align-items: center;
+      flex-shrink: 100;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media (max-width: 830px) and (min-width: 725px) {
+      div#choose-terrain-container {
+        display: flex;
+        flex-flow: column;
+        align-items: flex-start;
+        flex-shrink: 100;
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    }
+
+    .tab-bar-container .logo {
+      margin: 0;
+      width: auto;
+      align-self: flex-start;
+      flex: 0 0 auto;
+    }
+
+    .tab-bar-container .title-header {
+      color: #f1f5f9;
+      font-weight: 700;
+      text-align: left;
+      width: auto;
+      align-self: center;
+      flex: 0 0 auto;
+      font-size: 160%;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+    }
+
+    .tab-bar {
+      display: flex;
+      justify-content: center;
+      width: auto;
+      flex: 0 0 auto;
+    }
+
+    .tab-bar a {
+      display: inline-block;
+      padding: 1rem 1.5rem;
+      text-decoration: none;
+      font-family: arial, sans-serif;
+      color: #f1f5f9;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-sizing: none;
+      transition: background 0.2s, color 0.2s;
+    }
+
+
+    .tab-bar button {
+      padding: 1rem 1.5rem;
+      text-decoration: none;
+      font-family: arial, sans-serif;
+      color: #f1f5f9;
+      font-weight: 500;
+      font-size: 90%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      box-sizing: none;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab-bar a:hover:not(.you-are-here),
+    .tab-bar button:hover:not(.you-are-here) {
+      background-color: #334155;
+      color: #fff;
+    }
+
+    .tab-bar a.active {
+      border-bottom: 3px solid #3b82f6;
+      color: #3b82f6;
+    }
+
+    .content {
+      padding: 2rem;
+    }
+
+    .tab-bar button.tab-link.you-are-here,
+    .tab-bar a.you-are-here {
+      border-radius: 15px 15px 0 0;
+      font-size: 110%;
+      font-weight: 900;
+      border-top: 2px solid #ffc;
+      border-left: 2px solid #ffc;
+      border-right: 2px solid #ffc;
+      background: rgb(255, 255, 238, 0.76);
+      color: #334155;
+    }
+
+    .tab-bar button.tab-link.you-are-here {
+      padding: 0 1.5rem 1.5rem 1.5rem;
+      margin-bottom: -1.6rem;
+    }
+
+    .tab-bar a.you-are-here {
+      padding: 1rem 1.5rem 0 1.5rem;
+      margin-bottom: -2rem;
+    }
+
+    .tab-bar button.you-are-here.first,
+    .tab-bar a.you-are-here.first {
+      margin-left: -0.2rem;
+      border-radius: 0 15px 0 10px;
+    }

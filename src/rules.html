@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="preload" href="./styles/sea-boot.css" as="style" />
+    <link rel="preload" href="./styles/space-boot.css" as="style" />
+    <script src="./terrain-bootstrap.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Geoff's Hidden Battle Print Game</title>
+
+    <meta
+      name="description"
+      content="Play a challenging Battleship style game with no-touch placement rules and special ships."
+    />
+    <link rel="icon" type="image/png" href="../favicon.png" />
+    <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
+    <link rel="stylesheet" href="./styles/animation.css" />
+    <link rel="stylesheet" href="./styles/tab.css" />
+    <link rel="stylesheet" href="./styles/battle.css" />
+    <link rel="stylesheet" href="./styles/panel.css" />
+    <link rel="stylesheet" href="./styles/cells.css" />
+    <link rel="stylesheet" href="./styles/status.css" />
+    <link rel="stylesheet" href="./styles/battlehide.css" />
+    <link rel="stylesheet" media="print" href="./styles/print.css" />
+  </head>
+  <body class="hidden-battle">
+    <div class="battleship print-preview" id="battleship-game">
+      <div id="navbar"></div>
+      <div class="info-wrap" id="rules"></div>
+    </div>
+    <script type="module" src="./navbar/navbar.js"></script>
+    <script type="module" src="./terrain/gameMaps.js"></script>
+    <script type="module" src="./docs/rules.js"></script>
+  </body>
+</html>
