@@ -255,16 +255,18 @@ export class StoreBase {
   }
 
   // Apply horizontal expansion to source bits (left and right shifts)
-  expandHorizontalWithMasks (bitboard, srcForLeft, srcForRight) {
-    const leftShifted = this.shiftBits(srcForLeft, -1)
-    const rightShifted = this.shiftBits(srcForRight, 1)
+  expandHorizontalWithMasks (srcForLeft, srcForRight) {
+    const shiftAmount = this.bitPos(1)
+    const leftShifted = this.shiftBits(srcForLeft, -shiftAmount)
+    const rightShifted = this.shiftBits(srcForRight, shiftAmount)
     return { leftShifted, rightShifted }
   }
 
-  dilateCrossStep (bitboard, gridWidth, gridHeight = this.height, edgeMasks) {
+  dilateCrossStep (bitboard, edgeMasks, gridWidth, gridHeight = this.height) {
     // Vertical: simple shifts by grid width
-    const upShifted = this.shiftBits(bitboard, -gridWidth)
-    const downShifted = this.shiftBits(bitboard, gridWidth)
+    const shiftAmount = this.bitPos(gridWidth)
+    const upShifted = this.shiftBits(bitboard, -shiftAmount)
+    const downShifted = this.shiftBits(bitboard, shiftAmount)
 
     // Horizontal: respect row boundaries using edge masks
     const { notLeftMask, notRightMask } = this.getHorizontalEdgeMasks(
@@ -276,7 +278,6 @@ export class StoreBase {
     const srcForLeft = this.bitAnd(bitboard, notLeftMask)
     const srcForRight = this.bitAnd(bitboard, notRightMask)
     const { leftShifted, rightShifted } = this.expandHorizontalWithMasks(
-      bitboard,
       srcForLeft,
       srcForRight
     )

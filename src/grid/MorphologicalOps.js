@@ -46,9 +46,9 @@ export class MorphologicalOps {
     const edges = this.mask.edgeMasks()
     return this.store.dilateCrossStep(
       this.mask.bits,
+      edges,
       this.mask.width,
-      this.mask.height,
-      edges
+      this.mask.height
     )
   }
 

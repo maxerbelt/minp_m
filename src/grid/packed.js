@@ -389,6 +389,6 @@ export class Packed extends MaskBase {
    */
   dilateCrossBits () {
     const edges = this.edgeMasks()
-    return this.store.dilateCrossStep(this.bits, this.width, this.height, edges)
+    return this.store.dilateCrossStep(this.bits, edges, this.width, this.height)
   }
 }

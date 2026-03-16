@@ -1098,7 +1098,7 @@ export class Store32 extends StoreBase {
     const result = this.createEmptyBitboard(values[0])
 
     for (let i = 0; i < result.length; i++) {
-      result[i] = this.combineElement(i, values)
+      result[i] = this.combineElement(i, ...values)
     }
 
     return result

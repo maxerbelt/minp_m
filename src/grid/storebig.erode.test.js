@@ -219,12 +219,12 @@ describe('StoreBig erode / dilate operations', () => {
 
   describe('dilate1D_vertical', () => {
     it('should dilate single bit vertically', () => {
-      const result = store.dilate1D_vertical(1n, 10,  1)
+      const result = store.dilate1D_vertical(1n, 10, 1)
       expect(result).toBeGreaterThanOrEqual(1n)
     })
 
     it('should expand based on width', () => {
-      const result = store.dilate1D_vertical(1n, 10,   1)
+      const result = store.dilate1D_vertical(1n, 10, 1)
       expect(result).toBeGreaterThanOrEqual(1n)
     })
   })
@@ -232,25 +232,25 @@ describe('StoreBig erode / dilate operations', () => {
   describe('dilateCrossStep', () => {
     it('should dilate in four directions', () => {
       const board = 1n
-      const result = store.dilateCrossStep(board, 10, 10)
+      const result = store.dilateCrossStep(board, null, 10, 10)
       expect(result).toBeGreaterThanOrEqual(board)
     })
 
     it('should include original bit', () => {
       const board = 256n
-      const result = store.dilateCrossStep(board, 10, 10)
+      const result = store.dilateCrossStep(board, null, 10, 10)
       expect((result & board) === board).toBe(true)
     })
 
     it('should handle zero board', () => {
-      const result = store.dilateCrossStep(0n, 10, 10)
+      const result = store.dilateCrossStep(0n, null, 10, 10)
       expect(result).toBe(0n)
     })
     it('should handle edge of board', () => {
       let board = 1n
-      board = store.dilateCrossStep(board, 4, 4)
+      board = store.dilateCrossStep(board, null, 4, 4)
       expect(board).toBe(0b00010011n)
-      board = store.dilateCrossStep(board, 4, 4)
+      board = store.dilateCrossStep(board, null, 4, 4)
       expect(board).toBe(0b000100110111n)
     })
   })
