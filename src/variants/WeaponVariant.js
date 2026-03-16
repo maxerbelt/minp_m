@@ -59,7 +59,8 @@ export class WeaponVariant extends SpecialVariant {
 export const Armed = Base =>
   class extends Base {
     variants () {
-      return new WeaponVariant(
+      if (this._variants) return this._variants
+      this._variants = new WeaponVariant(
         this.board,
         this.weaponSystem,
         this.symmetry,
@@ -67,5 +68,6 @@ export const Armed = Base =>
         this.zoneDetail,
         this.subterrain
       )
+      return this._variants
     }
   }

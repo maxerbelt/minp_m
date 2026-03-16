@@ -19,10 +19,10 @@ export class Asymmetric extends FlippableVariant {
     const rightList = [right.shrinkToOccupied()]
     const leftList = [left.shrinkToOccupied()]
     for (let i = 0; i < 3; i++) {
-      right = right.clone.rotate().shrinkToOccupied()
-      rightList.push(right)
-      left = left.clone.rotate().shrinkToOccupied()
-      leftList.push(left)
+      right = right.clone.rotate()
+      rightList.push(right.shrinkToOccupied())
+      left = left.clone.rotate()
+      leftList.push(left.shrinkToOccupied())
     }
 
     return rightList.concat(leftList)

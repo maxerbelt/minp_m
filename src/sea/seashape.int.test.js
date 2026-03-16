@@ -80,16 +80,16 @@ describe('Sea Shape', () => {
     expect(variants.list.length).toBe(4)
     const id = variants.list[0]
     expect(id).toBeInstanceOf(Mask)
-    expect(id.toAsciiWith()).toBe('1....\n11...\n11...\n11...\n.1...')
+    expect(id.toAsciiWith()).toBe('1.\n11\n11\n11\n.1')
     const rotate = variants.list[1]
     expect(rotate).toBeInstanceOf(Mask)
-    expect(rotate.toAsciiWith()).toBe('.1111\n1111.\n.....\n.....\n.....')
+    expect(rotate.toAsciiWith()).toBe('.1111\n1111.')
     const flip = variants.list[2]
     expect(flip).toBeInstanceOf(Mask)
-    expect(flip.toAsciiWith()).toBe('.1...\n11...\n11...\n11...\n1....')
+    expect(flip.toAsciiWith()).toBe('.1\n11\n11\n11\n1.')
     const flipRotate = variants.list[3]
     expect(flipRotate).toBeInstanceOf(Mask)
-    expect(flipRotate.toAsciiWith()).toBe('1111.\n.1111\n.....\n.....\n.....')
+    expect(flipRotate.toAsciiWith()).toBe('1111.\n.1111')
   })
 
   it('should initialize with correct board', () => {

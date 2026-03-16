@@ -90,10 +90,10 @@ describe('Hybrid shape', () => {
     expect(variants.list.length).toBe(4)
     const id = variants.list[0]
     expect(id).toBeInstanceOf(Mask)
-    expect(id.toAsciiWith()).toBe('211\n...\n...')
+    expect(id.toAsciiWith()).toBe('211')
     const rotate = variants.list[1]
     expect(rotate).toBeInstanceOf(Mask)
-    expect(rotate.toAsciiWith()).toBe('2..\n1..\n1..')
+    expect(rotate.toAsciiWith()).toBe('2\n1\n1')
   })
   it('test assembleColorLayers', () => {
     expect(basement instanceof Mask).toBe(true)

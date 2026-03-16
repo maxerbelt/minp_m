@@ -50,8 +50,8 @@ describe('Blinker', () => {
     expect(blinker.zoneDetail).toBe(zoneDetail)
     expect(blinker.index).toBe(0)
     expect(blinker.list.length).toBe(2)
-    expect(blinker.list[0].width).toEqual(4)
-    expect(blinker.list[0].height).toEqual(4)
+    expect(blinker.list[0].width).toEqual(3)
+    expect(blinker.list[0].height).toEqual(3)
     expect(blinker.list[0].store.bitsPerCell).toEqual(1)
     expect(blinker.list[0].toCoords).toEqual(cells)
     expect(blinker.list[0].toAsciiWith()).toEqual('....\n1...\n....\n..1.')
@@ -72,8 +72,8 @@ describe('Blinker', () => {
     expect(board.store.bitsPerCell).toEqual(1)
     expect(variants.length).toBe(2)
     expect(variants[0].toCoords).toEqual(cells)
-    expect(variants[0].toAscii).toEqual('....\n1...\n....\n..1.')
-    expect(variants[1].toAscii).toEqual('..1.\n1...\n....\n....')
+    expect(variants[0].toAscii).toEqual('1..\n...\n..1')
+    expect(variants[1].toAscii).toEqual('..1\n1..\n...')
   })
 
   it('variantsOf creates unrotated and rotated 3D cells', () => {

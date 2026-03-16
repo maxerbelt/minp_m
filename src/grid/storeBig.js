@@ -710,6 +710,7 @@ export class StoreBig extends StoreBase {
   }
 
   shiftTo (gridWidth, minRowIndex, gridHeight, bitboard, minColIndex) {
+    if (minRowIndex === 0 && minColIndex === 0) return bitboard
     let resultBitboard = zero
     let destinationRowIndex = 0
     const rowMaskForWidth = this.rowMaskForWidth(gridWidth)

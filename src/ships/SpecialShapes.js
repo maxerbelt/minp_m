@@ -190,11 +190,13 @@ export class Hybrid extends Shape {
     return result
   }
   variants () {
-    return new Variant3(
+    if (this._variants) return this._variants
+    this._variants = new Variant3(
       this.board,
       [this.primary, this.secondary],
       this.symmetry
     )
+    return this._variants
   }
   type () {
     return 'M'
