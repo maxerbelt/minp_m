@@ -11,7 +11,10 @@ export class Diagonal extends FlippableVariant {
   }
 
   static variantsOf (board) {
-    return [board.square.defaultVariant, board.square.clone.rotate()]
+    return [
+      board.square.defaultVariant.shrinkToOccupied(),
+      board.square.clone.rotate().shrinkToOccupied()
+    ]
   }
 
   static setBehaviour (rotatable) {

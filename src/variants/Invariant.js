@@ -4,11 +4,11 @@ import { Variants } from './variants.js'
 export class Invariant extends Variants {
   constructor (board, validator, zoneDetail) {
     super(validator, zoneDetail, 'S')
-    this.list = [board]
+    this.list = [board.shrinkToOccupied()]
   }
 
   static variantsOf (board) {
-    return [board]
+    return [board.shrinkToOccupied()]
   }
   static setBehaviour (invariant) {
     invariant.canFlip = false

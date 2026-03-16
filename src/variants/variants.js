@@ -29,7 +29,7 @@ export class Variants {
   indexUnder (cellHeight) {
     const hasMultipleVariants = this.list.length > 1
     const board0 = this.boardFor(0).shrinkToOccupied()
-    if (!board0.maxSize <= cellHeight) {
+    if (board0.maxSize <= cellHeight) {
       if (board0.isWide && hasMultipleVariants) {
         return 1
       }

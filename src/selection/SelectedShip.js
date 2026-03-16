@@ -32,7 +32,7 @@ export class SelectedShip {
     return this.variants.special()
   }
   rotate () {
-    return this.variants.rotate()
+    return this.variants.rotate().shrinkToOccupied()
   }
 
   leftRotate () {

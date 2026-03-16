@@ -9,7 +9,10 @@ export class Blinker extends RotatableVariant {
   }
   static variantsOf (board) {
     const unrotated = board.square
-    return [unrotated, unrotated.clone.rotate()]
+    return [
+      unrotated.shrinkToOccupied(),
+      unrotated.clone.rotate().shrinkToOccupied()
+    ]
   }
 
   static setBehaviour (rotatable) {

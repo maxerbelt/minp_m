@@ -11,10 +11,10 @@ export class Orbit4F extends FlippableVariant {
 
   static variantsOf (board) {
     return [
-      board.square.defaultVariant,
-      board.square.rotate(),
-      board.square.flip(),
-      board.square.rotateFlip()
+      board.square.defaultVariant.shrinkToOccupied(),
+      board.square.rotate().shrinkToOccupied(),
+      board.square.flip().shrinkToOccupied(),
+      board.square.rotateFlip().shrinkToOccupied()
     ]
   }
 
