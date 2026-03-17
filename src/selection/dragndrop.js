@@ -336,8 +336,8 @@ class DragNDrop {
     if (!selection?.ghost) return
     if (r === null) r = lastEntered[0]
     if (c === null) c = lastEntered[1]
-    const [r0, c0] = selection.offsetCell(r, c)
-    if (!map.inBounds(r0, c0)) return
+    const [c0, r0] = selection.offsetCell(r, c)
+    if (!map.inBounds(c0, r0)) return
 
     viewModel.removeHighlight()
 
@@ -345,7 +345,7 @@ class DragNDrop {
     const canPlace = placing.canPlace(shipCellGrid)
     const cells = [...placing.board.locations()]
     console.log('place: ', cells)
-    for (const [rr, cc] of cells) {
+    for (const [cc, rr] of cells) {
       if (map.inBounds(rr, cc)) {
         const cell = viewModel.gridCellAt(rr, cc)
         let cellClass = 'bad'
