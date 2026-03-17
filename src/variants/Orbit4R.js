@@ -1,11 +1,10 @@
 import { FlippableVariant } from './FlippableVariant.js'
-import { Orbit4F } from './Orbit4F.js'
 import { Mask } from '../grid/mask.js'
 
 export class Orbit4R extends FlippableVariant {
   constructor (board, validator, zoneDetail, variants) {
     super(validator, zoneDetail)
-    this.list = Mask.listFromCoordsSquare(variants) || Orbit4F.variantsOf(board)
+    this.list = Mask.listFromCoordsSquare(variants) || Orbit4R.variantsOf(board)
   }
   static variantsOf (board) {
     return [
