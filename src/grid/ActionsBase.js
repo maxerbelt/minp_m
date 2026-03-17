@@ -241,10 +241,10 @@ export class ActionsBase {
     return this.orbitRaw(maps)
   }
 
-  classifyActionGroup () {
+  classifyOrbitType () {
     // subclasses are expected to implement their own logic depending on
     // group size and naming conventions
-    throw new Error('classifyActionGroup() not implemented in subclass')
+    throw new Error('classifyOrbitType() not implemented in subclass')
   }
 
   get order () {

@@ -53,6 +53,51 @@ export class Mask extends MaskBase {
     }
     return this
   }
+  r90 () {
+    const rotated = this.actions?.r90Map(this.bits)
+    if (rotated) {
+      this.bits = rotated
+    } else {
+      throw new Error('No 90-degree rotation found for this shape')
+    }
+    return this
+  }
+  r180 () {
+    const rotated = this.actions?.r180Map(this.bits)
+    if (rotated) {
+      this.bits = rotated
+    } else {
+      throw new Error('No 180-degree rotation found for this shape')
+    }
+    return this
+  }
+  r270 () {
+    const rotated = this.actions?.r270Map(this.bits)
+    if (rotated) {
+      this.bits = rotated
+    } else {
+      throw new Error('No 270-degree rotation found for this shape')
+    }
+    return this
+  }
+  fx () {
+    const flipped = this.actions?.fxMap(this.bits)
+    if (flipped) {
+      this.bits = flipped
+    } else {
+      throw new Error('No horizontal flip found for this shape')
+    }
+    return this
+  }
+  fy () {
+    const flipped = this.actions?.fyMap(this.bits)
+    if (flipped) {
+      this.bits = flipped
+    } else {
+      throw new Error('No vertical flip found for this shape')
+    }
+    return this
+  }
   rotateFlip () {
     const rotated = this.actions?.rotateFlip(this.bits)
     if (rotated) {

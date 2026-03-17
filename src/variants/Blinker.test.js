@@ -46,6 +46,7 @@ describe('Blinker', () => {
   it('constructs with cells and generates default variants using variantsOf', () => {
     const blinker = new Blinker(board, validator, zoneDetail)
 
+    expect(board.toAsciiWith()).toEqual('...\n1..\n...\n..1')
     expect(blinker.validator).toBe(validator)
     expect(blinker.zoneDetail).toBe(zoneDetail)
     expect(blinker.index).toBe(0)
@@ -53,9 +54,8 @@ describe('Blinker', () => {
     expect(blinker.list[0].width).toEqual(3)
     expect(blinker.list[0].height).toEqual(3)
     expect(blinker.list[0].store.bitsPerCell).toEqual(1)
-    expect(blinker.list[0].toCoords).toEqual(cells)
-    expect(blinker.list[0].toAsciiWith()).toEqual('....\n1...\n....\n..1.')
-    expect(blinker.list[1].toAsciiWith()).toEqual('..1.\n1...\n....\n....')
+    expect(blinker.list[0].toAsciiWith()).toEqual('1..\n...\n..1')
+    expect(blinker.list[1].toAsciiWith()).toEqual('..1\n1..\n...')
   })
 
   it('constructs with custom variants', () => {
@@ -67,13 +67,12 @@ describe('Blinker', () => {
   })
 
   it('variantsOf returns cells and rotated cells', () => {
-    const variants = Blinker.variantsOf(board)
-
+    const variants = Blinker.variantsOf(board.square)
+    expect(board.toAsciiWith()).toEqual('...\n1..\n...\n..1')
     expect(board.store.bitsPerCell).toEqual(1)
     expect(variants.length).toBe(2)
-    expect(variants[0].toCoords).toEqual(cells)
-    expect(variants[0].toAscii).toEqual('1..\n...\n..1')
-    expect(variants[1].toAscii).toEqual('..1\n1..\n...')
+    expect(variants[0].toAsciiWith()).toEqual('1..\n...\n..1')
+    expect(variants[1].toAsciiWith()).toEqual('..1\n1..\n...')
   })
 
   it('variantsOf creates unrotated and rotated 3D cells', () => {
@@ -95,14 +94,13 @@ describe('Blinker', () => {
     expect(variants[1].store.bitsPerCell).toEqual(2)
     //  expect(unrotated.bits).toEqual(0b10001001000n)
     expect(variants[0].toAsciiWith()).toEqual(
-      `.2.
-3..
-.1.`
+      `.2
+3.
+.1`
     )
     expect(variants[1].toAsciiWith()).toEqual(
       `.3.
-1.2
-...`
+1.2`
     )
   })
 

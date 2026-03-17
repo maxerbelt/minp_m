@@ -27,6 +27,9 @@ export class StoreBig extends StoreBase {
     const bitPosition = idx * this.bitsPerCell
     return this.extractCell(bitboard, bitPosition)
   }
+   hasIdxSet(bitboard, idx) {
+    return this.getIdx(bitboard, idx) > 0n
+  }
 
   extractCell (bitboard, bitPosition) {
     return this.extractRange(bitboard, bitPosition, this.cellMask)
@@ -599,11 +602,11 @@ export class StoreBig extends StoreBase {
     let maxColIndex = -1
 
     for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
-      const rowStart = BigInt(rowIndex * gridWidth)
+      const rowStart = rowIndex * gridWidth
 
       for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
-        const bitPosition = rowStart + BigInt(colIndex)
-        if (this.isBitSet(bitboard, bitPosition)) {
+        const idx = rowStart + colIndex
+        if (this.hasIdxSet(bitboard, idx)) {
           minColIndex = Math.min(minColIndex, colIndex)
           maxColIndex = Math.max(maxColIndex, colIndex)
         }
@@ -614,6 +617,7 @@ export class StoreBig extends StoreBase {
       ? { minX: minColIndex, maxX: maxColIndex }
       : null
   }
+
 
   isBitSet (bitboard, bitPosition) {
     return this.extractBit(bitboard, bitPosition) === 1n

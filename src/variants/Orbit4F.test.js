@@ -139,69 +139,6 @@ describe('Orbit4F', () => {
     })
   })
 
-  describe('static cell3', () => {
-    it('cell3 returns array of 4 variants', () => {
-      const cells = [
-        [0, 0],
-        [0, 1],
-        [0, 2]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]], [[0, 2]]]
-
-      const variants = Orbit4F.cell3(cells, subGroups)
-
-      expect(Array.isArray(variants)).toBe(true)
-      expect(variants.length).toBe(4)
-    })
-
-    it('cell3 first variant is unrotated', () => {
-      const cells = [
-        [0, 0],
-        [0, 1]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]]]
-
-      const variants = Orbit4F.cell3(cells, subGroups)
-      const first = variants[0]
-
-      expect(first).toBeDefined()
-      expect(first.length).toBeGreaterThan(0)
-    })
-
-    it('cell3 includes rotated variants', () => {
-      const cells = [
-        [0, 0],
-        [0, 1],
-        [0, 2]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]], [[0, 2]]]
-
-      const variants = Orbit4F.cell3(cells, subGroups)
-
-      // All variants should be arrays
-      variants.forEach(v => {
-        expect(Array.isArray(v)).toBe(true)
-      })
-    })
-
-    it('cell3 preserves third dimension (zone)', () => {
-      const cells = [
-        [0, 0, 1],
-        [0, 1, 2]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]]]
-
-      const variants = Orbit4F.cell3(cells, subGroups)
-
-      // All cells should have 3 dimensions
-      variants.forEach(variant => {
-        variant.forEach(cell => {
-          expect(cell.length).toBe(3)
-        })
-      })
-    })
-  })
-
   describe('static setBehaviour', () => {
     it('setBehaviour sets up transition functions', () => {
       const mockInstance = {
@@ -365,19 +302,19 @@ describe('Orbit4F', () => {
       const orbit = new Orbit4F(board, () => true, 0)
 
       expect(orbit.list[0].store.bitsPerCell).toBe(1)
-      expect(orbit.list[0].width).toBe(5)
+      expect(orbit.list[0].width).toBe(2)
       expect(orbit.list[0].height).toBe(5)
-      expect(orbit.list[0].toAscii).toBe('1....\n11...\n11...\n11...\n.1...')
+      expect(orbit.list[0].toAscii).toBe('1.\n11\n11\n11\n.1')
 
       // list[1] is an alternate variant (rotated/flipped)
       expect(orbit.list[1].width).toBe(5)
-      expect(orbit.list[1].height).toBe(5)
+      expect(orbit.list[1].height).toBe(2)
 
-      expect(orbit.list[2].width).toBe(5)
+      expect(orbit.list[2].width).toBe(2)
       expect(orbit.list[2].height).toBe(5)
 
       expect(orbit.list[3].width).toBe(5)
-      expect(orbit.list[3].height).toBe(5)
+      expect(orbit.list[3].height).toBe(2)
 
       const placeable = orbit.placeable()
       expect(placeable).toBeInstanceOf(Placeable)
@@ -518,17 +455,6 @@ describe('Orbit4F', () => {
         expect(state).toBeGreaterThanOrEqual(0)
         expect(state).toBeLessThan(4)
       })
-    })
-
-    it('cell3 produces matching structures to variantsOf', () => {
-      const cells = [
-        [0, 0],
-        [0, 1]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]]]
-
-      const cell3Variants = Orbit4F.cell3(cells, subGroups)
-      expect(cell3Variants.length).toBe(4)
     })
   })
 })

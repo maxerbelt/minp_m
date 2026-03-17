@@ -78,7 +78,7 @@ describe('Actions with Mask (StoreBig backend)', () => {
     })
 
     it('classifies symmetry correctly', () => {
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(classification).toBe('ASYM')
     })
   })
@@ -164,7 +164,7 @@ describe('Actions with Mask (StoreBig backend)', () => {
     })
 
     it('classifies symmetry correctly', () => {
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(classification).toBe('ASYM')
     })
   })
@@ -249,7 +249,7 @@ describe('Actions with Mask (StoreBig backend)', () => {
     })
 
     it('classifies symmetry correctly', () => {
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(['SYM', 'O2R', 'O2F', 'O4R', 'O4F', 'ASYM']).toContain(
         classification
       )

@@ -58,7 +58,7 @@ describe('Hybrid shape', () => {
   it('should produce variants with correct symmetries', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
     const hb = habitat.board
     expect(hb.store.bitsPerCell).toBe(2)
 
@@ -74,14 +74,14 @@ describe('Hybrid shape', () => {
     expect(a.ascii(symmetries[0])).toBe('211\n...\n...')
     expect(a.ascii(symmetries[1])).toBe('2..\n1..\n1..')
 
-    const symmetry = hb.actions.classifyActionGroup()
+    const symmetry = hb.actions.classifyOrbitType()
     expect(symmetry).toBe('O4R')
   })
 
   it('should produce variants that can be rotated', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
 
     const variants = habitat.variants()
     expect(variants).toBeDefined()
@@ -252,7 +252,7 @@ describe('Hybrid shape', () => {
   it('should produce correct variants', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
 
     expect(habitat.board.store.bitsPerCell).toBe(2)
     expect(habitat.subGroups).toHaveLength(2)
@@ -272,7 +272,7 @@ describe('Hybrid shape', () => {
     // expect(temp.toString()).toBe('221\n..1\n...')
 
     expect(a.ascii(orbit[1])).toBe('2..\n1..\n1..')
-    const symmetry = habitat.board.actions.classifyActionGroup()
+    const symmetry = habitat.board.actions.classifyOrbitType()
     expect(symmetry).toBe('O4R')
     const variants = habitat.variants()
     expect(variants).toBeDefined()

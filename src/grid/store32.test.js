@@ -611,7 +611,7 @@ describe('Store32', () => {
 
   describe('shrinkToOccupied', () => {
     it('should return zeros for empty bitboard', () => {
-      const store1 = new Store32(1, 100, 1, 8, 8)
+      const store1 = new Store32(1, 64, 1, 8, 8)
       const result = store1.shrinkToOccupied(store1.newWords(), 8, 8)
       expect(result.bitboard.every(w => w === 0)).toBe(true)
       expect(result.newWidth).toBe(0)
@@ -621,7 +621,7 @@ describe('Store32', () => {
     })
 
     it('should handle single bit at origin', () => {
-      const store1 = new Store32(1, 100, 1, 8, 8)
+      const store1 = new Store32(1, 64, 1, 8, 8)
       const bitboard = store1.newWords()
       bitboard[0] = 1
 
@@ -634,7 +634,7 @@ describe('Store32', () => {
     })
 
     it('should shrink rectangle from offset position', () => {
-      const store1 = new Store32(1, 100, 1, 8, 8)
+      const store1 = new Store32(1, 64, 1, 8, 8)
       const bitboard = store1.newWords()
       // Set some bits
       bitboard[0] |= 0b11 << 16 // Row 2
@@ -647,7 +647,7 @@ describe('Store32', () => {
     })
 
     it('should preserve occupancy when shrinking', () => {
-      const store1 = new Store32(1, 100, 1, 8, 8)
+      const store1 = new Store32(1, 64, 1, 8, 8)
       const bitboard = store1.newWords()
       bitboard[0] = 0b10101010
       bitboard[0] |= 0b11110000 << 8
@@ -663,7 +663,7 @@ describe('Store32', () => {
       const store1 = new Store32(1, 100, 1, 8, 8)
       const bitboard = store1.newWords()
       // Place scattered bits
-      bitboard[0] |= 1 << 0
+      bitboard[0] |= 1
       bitboard[0] |= 1 << 8
       bitboard[0] |= 1 << 16
 
@@ -696,12 +696,12 @@ describe('Store32', () => {
 
   describe('shiftBitboardToOrigin', () => {
     it('should exist and be callable', () => {
-      const store1 = new Store32(1, 100, 1, 4, 4)
+      const store1 = new Store32(1, 16, 1, 4, 4)
       expect(typeof store1.shiftBitboardToOrigin).toBe('function')
     })
 
     it('should handle valid parameters without error', () => {
-      const store1 = new Store32(1, 100, 1, 4, 4)
+      const store1 = new Store32(1, 16, 1, 4, 4)
       const bitboard = store1.newWords()
       bitboard[0] = 0b1111
 

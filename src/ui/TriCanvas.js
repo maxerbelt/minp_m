@@ -343,11 +343,11 @@ export class TriCanvas extends GridCanvas {
       try {
         const sym =
           (actions &&
-            typeof actions.classifyActionGroup === 'function' &&
-            actions.classifyActionGroup()) ||
+            typeof actions.classifyOrbitType === 'function' &&
+            actions.classifyOrbitType()) ||
           (mask.actions &&
-            typeof mask.actions.classifyActionGroup === 'function' &&
-            mask.actions.classifyActionGroup()) ||
+            typeof mask.actions.classifyOrbitType === 'function' &&
+            mask.actions.classifyOrbitType()) ||
           'n/a'
         symEl.textContent = `Symmetry: ${sym}`
       } catch (e) {

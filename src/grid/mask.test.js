@@ -58,8 +58,44 @@ describe('Mask - additional methods and edge cases', () => {
     })
     it('shrinkToOccupied special cells', () => {
       expect(mask3.toAscii).toBe('112\n..2\n...')
+      let rowBounds = mask3.store.findRowBounds(mask3.bits, mask3.height)
+      expect(rowBounds).toEqual({ minY: 0, maxY: 1 })
+      let colBounds = mask3.store.findColBounds(
+        mask3.bits,
+        rowBounds.minY,
+        rowBounds.maxY,
+        mask3.width
+      )
+      expect(colBounds).toEqual({ minX: 0, maxX: 2 })
+
       const shrunk = mask3.shrinkToOccupied()
       expect(shrunk.toAscii).toBe('112\n..2')
+      expect(mask3.clone.toAscii).toBe('112\n..2\n...')
+      expect(shrunk.square.toAscii).toBe('112\n..2\n...')
+
+      const rot = mask3.clone.rotate()
+      rowBounds = rot.store.findRowBounds(rot.bits, rot.height)
+      expect(rowBounds).toEqual({ minY: 0, maxY: 2 })
+      colBounds = rot.store.findColBounds(
+        rot.bits,
+        rowBounds.minY,
+        rowBounds.maxY,
+        rot.width
+      )
+      expect(colBounds).toEqual({ minX: 0, maxX: 1 })
+
+      expect(rot.toAscii).toBe('.1.\n.1.\n22.')
+      const ro2 = rot.clone.rotate()
+      expect(ro2.shrinkToOccupied().toAscii).toBe('2..\n211')
+
+      expect(ro2.toAscii).toBe('2..\n211\n...')
+      const ro3 = ro2.clone.rotate()
+      expect(ro3.toAscii).toBe('22.\n1..\n1..')
+      expect(ro3.shrinkToOccupied().toAscii).toBe('22\n1.\n1.')
+      expect(ro3.clone.rotate().toAscii).toBe('112\n..2\n...')
+      expect(ro3.clone.rotate().shrinkToOccupied().toAscii).toBe('112\n..2')
+      const shrunk2 = rot.shrinkToOccupied()
+      expect(shrunk2.toAscii).toBe('.1\n.1\n22')
     })
   })
   describe('morphological operations 7', () => {
@@ -373,7 +409,7 @@ describe('Mask - additional methods and edge cases', () => {
     })
   })
 
-  describe('classifyActionGroup', () => {
+  describe('classifyOrbitType', () => {
     it('should classify empty mask as C1', () => {
       const ss = mask.actions.symmetries
       expect(ss.length).toBe(1)
@@ -382,12 +418,12 @@ describe('Mask - additional methods and edge cases', () => {
       expect(s).toBe(n)
       const k = mask.actions.order
       expect(k).toBe(1)
-      expect(mask.actions.classifyActionGroup()).toBe('SYM')
+      expect(mask.actions.classifyOrbitType()).toBe('SYM')
     })
 
     it('should classify full mask as C1', () => {
       for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) mask.set(x, y)
-      expect(mask.actions.classifyActionGroup()).toBe('SYM')
+      expect(mask.actions.classifyOrbitType()).toBe('SYM')
     })
 
     it('should classify single cell as C1', () => {

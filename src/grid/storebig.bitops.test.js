@@ -392,7 +392,7 @@ describe('StoreBig bit operations', () => {
   })
   describe('shrinkToOccupied', () => {
     it('should return zeros for empty bitboard', () => {
-      const store1 = new StoreBig(1, 100, 1, 8, 8)
+      const store1 = new StoreBig(1, 64, 1, 8, 8)
       const result = store1.shrinkToOccupied(0n, 8, 8)
       expect(result.bitboard).toBe(0n)
       expect(result.newWidth).toBe(0)
@@ -402,7 +402,7 @@ describe('StoreBig bit operations', () => {
     })
 
     it('should handle single bit at origin', () => {
-      const store1 = new StoreBig(1, 100, 1, 8, 8)
+      const store1 = new StoreBig(1, 64, 1, 8, 8)
       const result = store1.shrinkToOccupied(1n, 8, 8)
       expect(result.bitboard).toBe(1n)
       expect(result.newWidth).toBe(1)
@@ -412,7 +412,7 @@ describe('StoreBig bit operations', () => {
     })
 
     it('should identify correct bounds for occupied region', () => {
-      const store1 = new StoreBig(1, 100, 1, 8, 8)
+      const store1 = new StoreBig(1, 64, 1, 8, 8)
       let bitboard = 0n
       bitboard |= 3n << 18n // Row 2: set bits
       bitboard |= 3n << 26n // Row 3: set bits

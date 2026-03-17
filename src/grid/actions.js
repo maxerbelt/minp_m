@@ -49,27 +49,25 @@ export class Actions extends ActionsBase {
     const b = bits === undefined ? this.template : bits
     return this.store.normalizeUpLeft(b, this.height, this.width)
   }
+  r90Map (bits = null) {
+    return this.applyMap(this.transformMaps.r90, bits)
+  }
+  r180Map (bits = null) {
+    return this.applyMap(this.transformMaps.r180, bits)
+  }
+  r270Map (bits = null) {
+    return this.applyMap(this.transformMaps.r270, bits)
+  }
+  fxMap (bits = null) {
+    return this.applyMap(this.transformMaps.fx, bits)
+  }
+  fyMap (bits = null) {
+    return this.applyMap(this.transformMaps.fy, bits)
+  }
 
   // square-specific symmetry classification logic
   classifyActionGroup () {
-    const maps = this.transformMaps
-    const b = this.template
-    const k = this.order
-    if (k === 8) return 'ASYM'
-    if (k === 4) {
-      if (this.applyMap(maps.r180) === b) return 'O4F' // (diagonal Klein four)'
-      return 'O4R'
-    }
-    if (k === 2) {
-      if (
-        this.applyMap(maps.r90) === this.applyMap(maps.fx) &&
-        this.applyMap(maps.r90) === this.applyMap(maps.fy)
-      )
-        return 'O2F' // (single mirror)'
-
-      return 'O2R' // (half-turn)'
-    }
-    return 'SYM'
+    return 'D4'
   }
 
   classifyOrbitType () {

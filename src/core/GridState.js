@@ -142,10 +142,10 @@ export class GridState {
     try {
       const actions = this.getCurrentActions()
       if (
-        actions?.classifyActionGroup &&
-        typeof actions.classifyActionGroup === 'function'
+        actions?.classifyOrbitType &&
+        typeof actions.classifyOrbitType === 'function'
       ) {
-        return actions.classifyActionGroup()
+        return actions.classifyOrbitType()
       }
     } catch {
       // Silently handle error

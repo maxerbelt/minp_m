@@ -51,7 +51,7 @@ export class ActionsTri extends ActionsBase {
     return normalized
   }
 
-  classifyActionGroup () {
+  classifyOrbitType () {
     const k = this.order
     if (k === 6) return 'D3'
     if (k === 3) return 'C3'

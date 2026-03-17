@@ -78,6 +78,7 @@ export class Variants {
   setByIndex (index) {
     this.index = index
     this.onChange()
+    return this.boardFor(index)
   }
   placingAt (r, c) {
     return new CellsToBePlaced(this.board(), r, c, this.validator)

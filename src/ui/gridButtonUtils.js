@@ -197,7 +197,7 @@ export function checkDilateCapacity (bits, fullBits) {
  */
 export function updateSymmetryDisplay (symElement, maskActions) {
   if (!symElement) return
-  const sym = maskActions?.classifyActionGroup?.() ?? 'n/a'
+  const sym = maskActions?.classifyOrbitType?.() ?? 'n/a'
   symElement.textContent = `Symmetry: ${sym}`
 }
 
@@ -345,16 +345,16 @@ export function computeTransformedBits (mask, map, actions) {
 export function getSymmetryClass (actions, maskActions) {
   try {
     if (
-      actions?.classifyActionGroup &&
-      typeof actions.classifyActionGroup === 'function'
+      actions?.classifyOrbitType &&
+      typeof actions.classifyOrbitType === 'function'
     ) {
-      return actions.classifyActionGroup()
+      return actions.classifyOrbitType()
     }
     if (
-      maskActions?.classifyActionGroup &&
-      typeof maskActions.classifyActionGroup === 'function'
+      maskActions?.classifyOrbitType &&
+      typeof maskActions.classifyOrbitType === 'function'
     ) {
-      return maskActions.classifyActionGroup()
+      return maskActions.classifyOrbitType()
     }
   } catch {
     // Silently handle error

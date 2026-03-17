@@ -8,24 +8,33 @@ import { jest } from '@jest/globals'
 describe('SelectedShip', () => {
   let mockShip
   let mockShape
+  let mockVariant
   let mockVariants
   let mockContentBuilder
   let selectedShip
 
   beforeEach(() => {
     // Create mock variants object with all required methods
+    mockVariant = {
+      variant: 'mask',
+      shinkToOccupied: jest.fn().mockReturnValue({
+        width: 2,
+        height: 5,
+        toAscii: '1.\n11\n11\n11\n.1'
+      })
+    }
     mockVariants = {
       index: 0,
       canFlip: true,
       canRotate: true,
       canTransform: true,
       placeable: jest.fn().mockReturnValue([{ r: 0, c: 0 }]),
-      variant: jest.fn().mockReturnValue({ variant: 'test' }),
+      variant: jest.fn().mockReturnValue(mockVariant),
       special: jest.fn().mockReturnValue({ special: 'prop' }),
-      rotate: jest.fn().mockReturnValue({ rotated: true }),
-      leftRotate: jest.fn().mockReturnValue({ leftRotated: true }),
-      flip: jest.fn().mockReturnValue({ flipped: true }),
-      nextForm: jest.fn().mockReturnValue({ next: 'form' })
+      rotate: jest.fn().mockReturnValue(mockVariant),
+      leftRotate: jest.fn().mockReturnValue(mockVariant),
+      flip: jest.fn().mockReturnValue(mockVariant),
+      nextForm: jest.fn().mockReturnValue(mockVariant)
     }
 
     // Create mock shape object
@@ -118,7 +127,7 @@ describe('SelectedShip', () => {
     it('should delegate variant() to variants', () => {
       const result = selectedShip.variant()
       expect(mockVariants.variant).toHaveBeenCalled()
-      expect(result).toEqual({ variant: 'test' })
+      expect(result.variant).toEqual('mask')
     })
 
     it('should delegate special() to variants', () => {
@@ -130,25 +139,25 @@ describe('SelectedShip', () => {
     it('should delegate rotate() to variants', () => {
       const result = selectedShip.rotate()
       expect(mockVariants.rotate).toHaveBeenCalled()
-      expect(result).toEqual({ rotated: true })
+      expect(result.variant).toEqual('mask')
     })
 
     it('should delegate leftRotate() to variants', () => {
       const result = selectedShip.leftRotate()
       expect(mockVariants.leftRotate).toHaveBeenCalled()
-      expect(result).toEqual({ leftRotated: true })
+      expect(result.variant).toEqual('mask')
     })
 
     it('should delegate flip() to variants', () => {
       const result = selectedShip.flip()
       expect(mockVariants.flip).toHaveBeenCalled()
-      expect(result).toEqual({ flipped: true })
+      expect(result.variant).toEqual('mask')
     })
 
     it('should delegate nextForm() to variants', () => {
       const result = selectedShip.nextForm()
       expect(mockVariants.nextForm).toHaveBeenCalled()
-      expect(result).toEqual({ next: 'form' })
+      expect(result.variant).toEqual('mask')
     })
   })
 

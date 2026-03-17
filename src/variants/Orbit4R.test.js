@@ -133,52 +133,6 @@ describe('Orbit4R', () => {
     })
   })
 
-  describe('static cell3', () => {
-    test('cell3 returns array of 4 variants', () => {
-      const cells = [
-        [0, 0],
-        [0, 1],
-        [0, 2]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]], [[0, 2]]]
-
-      const variants = Orbit4R.cell3(cells, subGroups)
-
-      expect(Array.isArray(variants)).toBe(true)
-      expect(variants.length).toBe(4)
-    })
-
-    test('cell3 uses Orbit4F.cell3 internally', () => {
-      const cells = [
-        [0, 0],
-        [0, 1]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]]]
-
-      const variants4R = Orbit4R.cell3(cells, subGroups)
-      const variants4F = Orbit4F.cell3(cells, subGroups)
-
-      expect(variants4R.length).toBe(variants4F.length)
-      expect(variants4R.length).toBe(4)
-    })
-
-    test('cell3 preserves cell structure', () => {
-      const cells = [
-        [0, 0, 1],
-        [0, 1, 2]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]]]
-
-      const variants = Orbit4R.cell3(cells, subGroups)
-
-      variants.forEach(variant => {
-        variant.forEach(cell => {
-          expect(cell.length).toBe(3)
-        })
-      })
-    })
-  })
-
   describe('static setBehaviour', () => {
     test('setBehaviour sets up transition functions', () => {
       const mockInstance = {
@@ -578,21 +532,6 @@ describe('Orbit4R', () => {
       expect(orbit4R.list.length).toBe(4)
       expect(orbit4F.list.length).toBe(4)
       expect(orbit4R.list.length).toBe(orbit4F.list.length)
-    })
-
-    test('Orbit4R uses same cell3 variants as Orbit4F', () => {
-      const cells = [
-        [0, 0],
-        [0, 1]
-      ]
-      const subGroups = [[[0, 0]], [[0, 1]]]
-
-      const variants4R = Orbit4R.cell3(cells, subGroups)
-      const variants4F = Orbit4F.cell3(cells, subGroups)
-
-      expect(variants4R.length).toBe(4)
-      expect(variants4F.length).toBe(4)
-      expect(variants4R.length).toBe(variants4F.length)
     })
 
     test('Orbit4R has different transition functions than Orbit4F', () => {

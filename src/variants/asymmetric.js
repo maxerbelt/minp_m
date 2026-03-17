@@ -1,6 +1,4 @@
-import { flip3, rotate3 } from './normalize.js'
 import { FlippableVariant } from './FlippableVariant.js'
-import { makeCell3 } from './makeCell3.js'
 import { Mask } from '../grid/mask.js'
 // asymmetric
 export class Asymmetric extends FlippableVariant {
@@ -23,23 +21,6 @@ export class Asymmetric extends FlippableVariant {
       rightList.push(right.shrinkToOccupied())
       left = left.clone.rotate()
       leftList.push(left.shrinkToOccupied())
-    }
-
-    return rightList.concat(leftList)
-  }
-  static cell3 (full, subGroups) {
-    const unrotated = makeCell3(full, subGroups)
-    let flipped = flip3(unrotated)
-
-    let right = unrotated
-    let left = flipped
-    const rightList = [right]
-    const leftList = [left]
-    for (let i = 0; i < 3; i++) {
-      right = rotate3(right)
-      rightList.push(right)
-      left = rotate3(left)
-      leftList.push(left)
     }
 
     return rightList.concat(leftList)

@@ -73,7 +73,7 @@ describe('Hybrid shape', () => {
   it('should produce variants with correct symmetries', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
     const nbb = navalBase.board
     expect(nbb.store.bitsPerCell).toBe(2)
 
@@ -95,14 +95,14 @@ describe('Hybrid shape', () => {
     expect(a.ascii(symmetries[6])).toBe('2..\n2..\n11.')
     expect(a.ascii(symmetries[7])).toBe('11.\n.2.\n.2.')
     expect(a.ascii(orbit[2])).toBe('1..\n122\n...')
-    const symmetry = nbb.actions.classifyActionGroup()
+    const symmetry = nbb.actions.classifyOrbitType()
     expect(symmetry).toBe('ASYM')
   })
 
   it('should produce variants that can be rotated', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
 
     const variants = navalBase.variants()
     expect(variants).toBeDefined()
@@ -111,16 +111,16 @@ describe('Hybrid shape', () => {
     expect(variants.list.length).toBe(8)
     const id = variants.list[0]
     expect(id).toBeInstanceOf(Mask)
-    expect(id.toAsciiWith()).toBe('221\n..1\n...')
+    expect(id.toAsciiWith()).toBe('221\n..1')
     const rotate = variants.list[1]
     expect(rotate).toBeInstanceOf(Mask)
-    expect(rotate.toAsciiWith()).toBe('.2.\n.2.\n11.')
+    expect(rotate.toAsciiWith()).toBe('.2\n.2\n11')
     const flip = variants.list[4]
     expect(flip).toBeInstanceOf(Mask)
-    expect(flip.toAsciiWith()).toBe('122\n1..\n...')
+    expect(flip.toAsciiWith()).toBe('122\n1..')
     const flipRotate = variants.list[5]
     expect(flipRotate).toBeInstanceOf(Mask)
-    expect(flipRotate.toAsciiWith()).toBe('11.\n.2.\n.2.') //'..1\n221\n...')
+    expect(flipRotate.toAsciiWith()).toBe('11\n.2\n.2') //'..1\n221\n...')
   })
   it('test assembleColorLayers', () => {
     expect(navalPier instanceof Mask).toBe(true)
@@ -289,7 +289,7 @@ describe('Hybrid shape', () => {
   it('should produce correct variants', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
 
     expect(navalBase.board.store.bitsPerCell).toBe(2)
     expect(navalBase.subGroups).toHaveLength(2)
@@ -309,7 +309,7 @@ describe('Hybrid shape', () => {
     // expect(temp.toString()).toBe('221\n..1\n...')
 
     expect(a.ascii(orbit[1])).toBe('.2.\n.2.\n11.')
-    const symmetry = navalBase.board.actions.classifyActionGroup()
+    const symmetry = navalBase.board.actions.classifyOrbitType()
     expect(symmetry).toBe('ASYM')
     const variants = navalBase.variants()
     expect(variants).toBeDefined()

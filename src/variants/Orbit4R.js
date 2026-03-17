@@ -8,12 +8,12 @@ export class Orbit4R extends FlippableVariant {
     this.list = Mask.listFromCoordsSquare(variants) || Orbit4F.variantsOf(board)
   }
   static variantsOf (board) {
-    // same variants as Orbit4R, but different transitions  e.g. r,f,rf
-    return Orbit4F.variantsOf(board)
-  }
-  static cell3 (full, subGroups) {
-    // same variants as Orbit4R, but different transitions  e.g. r,f,rf
-    return Orbit4F.cell3(full, subGroups)
+    return [
+      board.square.defaultVariant.shrinkToOccupied(),
+      board.square.r90().shrinkToOccupied(),
+      board.square.r180().shrinkToOccupied(),
+      board.square.r270().shrinkToOccupied()
+    ]
   }
 
   static setBehaviour = FlippableVariant.setBehaviour.bind(null, Orbit4R)

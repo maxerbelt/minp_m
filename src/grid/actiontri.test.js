@@ -70,7 +70,7 @@ describe('ActionsTri', () => {
     })
 
     it('classifies symmetry', () => {
-      const cls = actions.classifyActionGroup()
+      const cls = actions.classifyOrbitType()
       expect(typeof cls).toBe('string')
       expect(['SYM', 'C2', 'C3', 'D3']).toContain(cls)
     })

@@ -49,7 +49,7 @@ describe('Actions', () => {
     })
 
     it('classifies symmetry for Packed', () => {
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(['SYM', 'O2R', 'O2F', 'O4R', 'O4F', 'ASYM']).toContain(
         classification
       )
@@ -90,8 +90,8 @@ describe('Actions', () => {
 
       // Both should produce valid classifications
       const validClasses = ['SYM', 'O2R', 'O2F', 'O4R', 'O4F', 'ASYM']
-      expect(validClasses).toContain(actionsBig.classifyActionGroup())
-      expect(validClasses).toContain(actionsSmall.classifyActionGroup())
+      expect(validClasses).toContain(actionsBig.classifyOrbitType())
+      expect(validClasses).toContain(actionsSmall.classifyOrbitType())
     })
   })
 })

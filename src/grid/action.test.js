@@ -163,7 +163,7 @@ describe('Actions', () => {
     })
   })
 
-  describe('classifyActionGroup', () => {
+  describe('classifyOrbitType', () => {
     it('should return c1 for high symmetry', () => {
       const fullMask = new Mask(4, 4)
       for (let y = 0; y < 4; y++) {
@@ -172,19 +172,19 @@ describe('Actions', () => {
         }
       }
       const a = new Actions(4, 4, fullMask)
-      expect(a.classifyActionGroup()).toBe('SYM')
+      expect(a.classifyOrbitType()).toBe('SYM')
     })
 
     it('should return SYM for high symmetry', () => {
       const singleMask = new Mask(4, 4)
       singleMask.set(0, 0)
       const a = new Actions(4, 4, singleMask)
-      expect(a.classifyActionGroup()).toBe('SYM')
+      expect(a.classifyOrbitType()).toBe('SYM')
     })
 
     it('should return valid symmetry classification', () => {
       try {
-        const sym = actions.classifyActionGroup()
+        const sym = actions.classifyOrbitType()
         const validSymmetries = ['ASYM', 'O4R', 'O4F', 'O2R', 'O2F', 'SYM']
         expect(validSymmetries.includes(sym)).toBe(true)
       } catch (err) {
@@ -216,7 +216,7 @@ describe('Actions', () => {
         throw err
       }
       try {
-        const sym = acts.classifyActionGroup()
+        const sym = acts.classifyOrbitType()
         expect(sym).toBe('O4R')
       } catch (err) {
         err.message += `\n\noactions:\n${JSON.stringify(acts, null, 2)}`
@@ -249,7 +249,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('O4R')
     } catch (err) {
       err.message += `\n\noactions:\n${JSON.stringify(acts, null, 2)}`
@@ -281,7 +281,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('SYM')
     } catch (err) {
       err.message += `\n\noactions:\n${JSON.stringify(acts, null, 2)}`
@@ -316,7 +316,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('O4F')
     } catch (err) {
       err.message += `\n\noactions:\n${serializedData(acts)}`
@@ -349,7 +349,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('O2R')
     } catch (err) {
       err.message += `\n\noactions:\n${serializedData(acts)}`
@@ -381,7 +381,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('ASYM')
     } catch (err) {
       err.message += `\n\noactions:\n${JSON.stringify(acts, null, 2)}`
@@ -415,7 +415,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('ASYM')
     } catch (err) {
       err.message += `\n\noactions:\n${JSON.stringify(acts, null, 2)}`
@@ -449,7 +449,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('O2F')
     } catch (err) {
       err.message += errorMsg('actions', acts)
@@ -482,7 +482,7 @@ describe('Actions', () => {
       throw err
     }
     try {
-      const sym = acts.classifyActionGroup()
+      const sym = acts.classifyOrbitType()
       expect(sym).toBe('O2F')
     } catch (err) {
       err.message += `\n\noactions:\n${serializedData(acts)}`

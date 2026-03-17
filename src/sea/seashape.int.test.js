@@ -44,7 +44,7 @@ describe('Sea Shape', () => {
   it('should produce variants with correct symmetries', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
 
     expect(carrierMask.store.bitsPerCell).toBe(1)
 
@@ -64,14 +64,14 @@ describe('Sea Shape', () => {
     expect(a.ascii(symmetries[3])).toBe('1111.\n.1111\n.....\n.....\n.....')
 
     expect(a.ascii(orbit[2])).toBe('1....\n11...\n11...\n11...\n.1...')
-    const symmetry = carrierMask.actions.classifyActionGroup()
+    const symmetry = carrierMask.actions.classifyOrbitType()
     expect(symmetry).toBe('O4F')
   })
 
   it('should produce variants that can be rotated', () => {
     /// pre-condition: subGroups and board are set up correctly before calling variants()
     /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
-    /// board should have classifyActionGroup give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
 
     const variants = aCarrier.variants()
     expect(variants).toBeDefined()

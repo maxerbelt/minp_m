@@ -124,9 +124,9 @@ describe('DraggedShip integration', () => {
       expect(variants.index).toBe(0)
 
       expect(variants.list[0].store.bitsPerCell).toBe(1)
-      expect(variants.list[0].width).toBe(5)
+      expect(variants.list[0].width).toBe(2)
       expect(variants.list[0].height).toBe(5)
-      expect(variants.list[0].toAscii).toBe('1....\n11...\n11...\n11...\n.1...')
+      expect(variants.list[0].toAscii).toBe('1.\n11\n11\n11\n.1')
 
       //  expect(variants.variant().toAscii).toBe(
       //    '1....\n11...\n11...\n11...\n.1...'

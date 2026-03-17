@@ -74,7 +74,7 @@ export class ActionsHex extends ActionsBase {
   }
 
   // hex symmetry requires a custom classification
-  classifyActionGroup () {
+  classifyOrbitType () {
     const maps = this.transformMaps
     const b = this.template
     const k = this.order

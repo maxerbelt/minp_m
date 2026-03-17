@@ -31,6 +31,7 @@ describe('DraggedShip', () => {
   let Ghost
   let mockGhostInstance
   let DraggedShip
+  let mockVariant
 
   beforeEach(async () => {
     // Import mocked modules before running tests
@@ -53,7 +54,14 @@ describe('DraggedShip', () => {
       canPlace: jest.fn().mockReturnValue(true),
       inAllBounds: jest.fn().mockReturnValue(true)
     }
-
+    mockVariant = {
+      variant: 'mask',
+      shinkToOccupied: jest.fn().mockReturnValue({
+        width: 2,
+        height: 5,
+        toAscii: '1.\n11\n11\n11\n.1'
+      })
+    }
     // Create mock ship object
     mockShip = {
       id: 'ship-1',
@@ -66,15 +74,16 @@ describe('DraggedShip', () => {
           canRotate: true,
           canTransform: true,
           placeable: jest.fn().mockReturnValue(mockPlaceable),
-          variant: jest.fn().mockReturnValue({ variant: 'test' }),
-          boardFor: jest.fn().mockReturnValue({ board: 'test' }),
+          variant: jest.fn().mockReturnValue(mockVariant),
+          boardFor: jest.fn().mockReturnValue(mockVariant),
           special: jest.fn().mockReturnValue({ special: 'prop' }),
-          rotate: jest.fn(),
-          leftRotate: jest.fn(),
-          flip: jest.fn(),
-          nextForm: jest.fn()
+          rotate: jest.fn().mockReturnValue(mockVariant),
+          leftRotate: jest.fn().mockReturnValue(mockVariant),
+          flip: jest.fn().mockReturnValue(mockVariant),
+          nextForm: jest.fn().mockReturnValue(mockVariant)
         })
       }),
+
       placeVariant: jest.fn().mockReturnValue([{ cell: 'data' }]),
       addToGrid: jest.fn(),
       cells: [{ r: 0, c: 0 }]

@@ -13,12 +13,12 @@ export class RotatableVariant extends Variants {
   }
 
   rotate () {
-    this.setByIndex(this.r1(this.index))
+    return this.setByIndex(this.r1(this.index))
   }
   flip () {
     this.setByIndex(this.f1(this.index))
   }
   leftRotate () {
-    this.setByIndex(this.rf1(this.index))
+    return this.setByIndex(this.rf1(this.index))
   }
 }

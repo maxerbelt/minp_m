@@ -53,7 +53,7 @@ describe('Actions (Store32 backend)', () => {
     })
 
     it('classifies symmetry with Store32', () => {
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(['SYM', 'O2R', 'O2F', 'O4R', 'O4F', 'ASYM']).toContain(
         classification
       )
@@ -97,7 +97,7 @@ describe('Actions (Store32 backend)', () => {
     })
 
     it('classifies symmetry with Packed + Store32', () => {
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(['SYM', 'O2R', 'O2F', 'O4R', 'O4F', 'ASYM']).toContain(
         classification
       )

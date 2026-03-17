@@ -105,7 +105,7 @@ describe('ActionsHex', () => {
 
     it('classifies symmetry', () => {
       // Just verify it returns a string
-      const classification = actions.classifyActionGroup()
+      const classification = actions.classifyOrbitType()
       expect(typeof classification).toBe('string')
       expect(['SYM', 'C2', 'C3', 'C6', 'D3', 'D6']).toContain(classification)
     })
