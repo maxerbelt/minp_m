@@ -12,6 +12,9 @@ export class CellsToBePlaced {
   get cells () {
     return this.board.toCoords
   }
+  displacedArea (width, height) {
+    return this.board.dilateExpand(1, 0).toMask(width, height)
+  }
   isCandidate (r, c) {
     return this.board.at(r, c) > 0
   }

@@ -530,6 +530,10 @@ export class Ship {
    */
   placeVariant (placeable, r, c) {
     const placement = placeable.placeAt(r, c)
+    this.placePlacement(placement)
+  }
+
+  placePlacement (placement) {
     this.cells = placement.cells
     if (placement.weapons) {
       this.variant = placement.variant

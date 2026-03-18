@@ -51,6 +51,7 @@ export class StoreBig extends StoreBase {
   }
 
   invertedBits (bitboard) {
+    if (bitboard === 0n) return this.fullBits
     return this.fullBits & ~bitboard
   }
 

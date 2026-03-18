@@ -1,6 +1,6 @@
 import { bh } from '../terrain/bh.js'
 import { randomPlaceShape } from '../utils.js'
-import { randomElement } from '../utilities.js'
+import { randomElement, shuffleArray } from '../utilities.js'
 import { gameStatus } from './StatusUI.js'
 import { enemyUI } from './enemyUI.js'
 import { LoadOut } from './LoadOut.js'
@@ -133,11 +133,13 @@ class Enemy extends Waters {
   }
   placeStep (ships, attempt1) {
     this.disableBtns(true)
-    for (let attempt2 = 0; attempt2 < 25; attempt2++) {
+    for (let attempt2 = 0; attempt2 < 50; attempt2++) {
       this.resetShipCells()
       let ok = true
-      for (const ship of ships) {
-        const placed = randomPlaceShape(ship, this.shipCellGrid)
+      const mask = bh.map.blankMask
+      const ss = shuffleArray([...ships])
+      for (const ship of ss) {
+        const placed = randomPlaceShape(ship, this.shipCellGrid, mask)
         if (!placed) {
           ok = false
           break

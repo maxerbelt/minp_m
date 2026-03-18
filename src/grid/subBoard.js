@@ -60,6 +60,12 @@ export class SubBoard extends SubMask {
       }
     }
   }
+  toMask (newWidth, newHeight) {
+    const newMask = this.mask.emptyMaskOfSize(newWidth, newHeight)
+    this.copyToMask(newMask)
+    return newMask
+  }
+
   /**
    * Get all occupied cells as [x, y] coordinate array
    * Returns window-relative coordinates (0 to width-1, 0 to height-1)

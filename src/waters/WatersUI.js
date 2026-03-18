@@ -185,7 +185,7 @@ export class WatersUI {
     }
   }
   revealShip (ship) {
-    for (const [r, c] of ship.cells) {
+    for (const [c, r] of ship.cells) {
       const cell = this.gridCellAt(r, c)
       this.displayAsRevealed(cell, ship)
     }
@@ -419,7 +419,7 @@ export class WatersUI {
   surroundCells (cells) {
     const map = bh.map
     let surroundings = new Set()
-    for (const [r, c] of cells) {
+    for (const [c, r] of cells) {
       // surrounding water misses
       this.surround(map, r, c, surroundings)
     }

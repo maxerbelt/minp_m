@@ -275,6 +275,16 @@ export class MaskBase extends CanvasGrid {
   joinFromBits (bits) {
     return this._bitOps.createUnionMask(bits)
   }
+  joinWith (bb) {
+    if (bb instanceof MaskBase) {
+      this._validation.assertCompatibleWith(bb)
+      this.joinWithBits(bb.bits)
+    }
+  }
+  joinWithBits (bits) {
+    this.bits = this._bitOps.or(bits)
+  }
+
   bitSub (bits) {
     return this._bitOps.subtract(bits)
   }
@@ -313,6 +323,12 @@ export class MaskBase extends CanvasGrid {
   join (bb) {
     this._validation.assertCompatibleWith(bb)
     return this.joinFromBits(bb.bits)
+  }
+  *bitsOccupied () {
+    return yield* this.store.bitsOccupied(this.bits)
+  }
+  *bitsEmpty () {
+    return yield* this.store.bitsOccupied(this.invertedBits)
   }
   get outerBorderBits () {
     return this._borderRegions.getOuterBorderBits()

@@ -10,25 +10,70 @@ export function toTitleCase (str) {
   return str
 }
 
-export function randomPlaceShape (ship, shipCellGrid) {
+function shuffleArray (array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1))
+    let temp = array[i]
+    array[i] = array[j]
+    array[j] = temp
+  }
+  return array
+}
+
+export function randomPlaceShape (ship, shipCellGrid, mask) {
   const letter = ship.letter
   const shape = ship.shape()
+  const minSize = shape.minSize
   const map = bh.map
   if (!shape) throw new Error('No shape for letter ' + letter)
   let placeables = shape.placeables()
+  const maxR = map.rows - minSize + 1
+  const maxC = map.cols - minSize + 1
 
-  // try random placements
-  const maxAttempts = 5000
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    for (const placeable of placeables) {
+  console.log(
+    `map: ${map.rows}x${map.cols}, shape: ${shape.height}x${shape.width}, placeables: ${placeables.length}`
+  )
+  console.log(`mask ${mask.height}x${mask.width}:`)
+
+  const locations = shuffleArray([
+    ...mask
+      .bitsEmpty()
+      .map(i => mask.indexer.location(i))
+      .filter(loc => loc[1] < maxR && loc[0] < maxC)
+  ])
+  console.log(`mask ${mask.height}x${mask.width}:`)
+  console.log(locations)
+
+  for (const [c0, r0] of locations) {
+    const places = shuffleArray(placeables)
+    for (const placeable of places) {
       // compute bounds for random origin so variant fits
-      const maxR = placeable.height()
-      const maxC = placeable.width()
-      const r0 = Math.floor(Math.random() * (map.rows - maxR))
-      const c0 = Math.floor(Math.random() * (map.cols - maxC))
-      if (placeable.canPlace(r0, c0, shipCellGrid)) {
-        ship.placeVariant(placeable, r0, c0)
+      //  const maxR = map.rows - placeable.height()
+      //   const maxC = map.cols - placeable.width()
+      //   if (r0 > maxR || c0 > maxC) continue
+
+      const placement = placeable.placeAt(c0, r0)
+      if (placement.canPlace(shipCellGrid)) {
+        ship.placePlacement(placement)
+        const displaced = placement.displacedArea(mask.width, mask.height)
+        console.log(
+          `Trying to place ${letter} at (${r0}, ${c0}) with shape ${shape.height}x${shape.width} and displaced area ${displaced.occupancy}`
+        )
+        mask.joinWith(displaced)
         ship.addToGrid(shipCellGrid)
+        console.log(`Mask after placing ${letter}: 
+          ${mask.toAsciiWith()}`)
+        const shipCell = mask.emptyMask
+        for (const [r, row] of shipCellGrid.entries()) {
+          for (const [c, cell] of row.entries()) {
+            if (cell) {
+              shipCell.set(c, r)
+            }
+          }
+        }
+        console.log(`Ship cell after placing ${letter}:
+          ${shipCell.toAsciiWith()}`)
+
         return ship.cells
       }
     }

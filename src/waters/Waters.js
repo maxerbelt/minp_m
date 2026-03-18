@@ -77,8 +77,9 @@ export class Waters {
     if (!this.shipCellGrid || !Array.isArray(this.shipCellGrid)) {
       this.resetShipCells()
     }
+    const mask = bh.map.blankMask
     for (const ship of ships) {
-      const placedCells = randomPlaceShape(ship, this.shipCellGrid)
+      const placedCells = randomPlaceShape(ship, this.shipCellGrid, mask)
       if (!placedCells) {
         this.resetShipCells()
         onPlacementReset?.()
@@ -724,7 +725,7 @@ export class Waters {
       ship.cells,
       ship.letter,
       (r, c) => this.recordAutoMiss(r, c),
-      (r, c, letter) => this.UI.cellSunkAt(r, c, letter)
+      (c, r, letter) => this.UI.cellSunkAt(r, c, letter)
     )
     this.checkFleetSunk()
   }
