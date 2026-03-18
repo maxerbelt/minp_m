@@ -1,6 +1,8 @@
 import { StoreBase } from './storeBase.js'
 import { areArraysOrderedAndEqual } from '../variants/normalize.js'
 import { BitMath } from './bitMath.js'
+import { bitSafeArr } from './bitHelpers.js'
+
 const OP_AND = 0
 const OP_OR = 1
 const OP_XOR = 2
@@ -56,6 +58,9 @@ export class Store32 extends StoreBase {
   }
   emptyBitboard () {
     return this.newWords()
+  }
+  *bitsOccupied (bitboard, size = this.size) {
+    return yield* bitSafeArr(size, bitboard)
   }
   // Normalize input bitboard to a Uint32Array of length `this.words`
   normalizeBitboard (bitboard) {
@@ -311,10 +316,8 @@ export class Store32 extends StoreBase {
     const bitShift = gridWidth * bitsPerCell
     let srcForUp = src
     let srcForDown = src
-    if (edgeMasks && edgeMasks.notTop)
-      srcForUp = this.bitAnd(src, edgeMasks.notTop)
-    if (edgeMasks && edgeMasks.notBottom)
-      srcForDown = this.bitAnd(src, edgeMasks.notBottom)
+    if (edgeMasks?.notTop) srcForUp = this.bitAnd(src, edgeMasks.notTop)
+    if (edgeMasks?.notBottom) srcForDown = this.bitAnd(src, edgeMasks.notBottom)
 
     const upShifted = this.shiftBits(srcForUp, -bitShift)
     const downShifted = this.shiftBits(srcForDown, bitShift)

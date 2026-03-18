@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-/* global describe, it,  expect, beforeEach, afterEach, jest */
+/* global describe, it,  expect, jest */
 import { jest } from '@jest/globals'
 
 import { CellsToBePlaced } from './CellsToBePlaced.js'
@@ -453,7 +453,7 @@ describe('CellsToBePlaced', () => {
       })
 
       const grid = makeGrid(5, 5, null)
-      grid[2][4] = 'SHIP' // second cell
+      grid[4][2] = 'SHIP' // second cell
       expect(placing.isOverlapping(grid)).toBe(true)
     })
   })
@@ -489,8 +489,8 @@ describe('CellsToBePlaced', () => {
       const target = { boundsChecker: () => true, getZone: () => {} }
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 0, target)
 
-      const grid = makeGrid(5, 5, null)
-      grid[2][5] = 'SHIP' // neighbor of second cell at (2,4)
+      const grid = makeGrid(6, 6, null)
+      grid[5][2] = 'SHIP' // neighbor of second cell at (2,4)
       expect(placing.isTouching(grid)).toBe(true)
     })
   })
@@ -638,7 +638,7 @@ describe('CellsToBePlaced', () => {
       const grid = makeGrid(10, 10, null)
       expect(placing.canPlace(grid)).toBe(true)
 
-      grid[5][7] = 'SHIP' // occupy one cell
+      grid[7][5] = 'SHIP' // occupy one cell
       expect(placing.canPlace(grid)).toBe(false)
     })
   })

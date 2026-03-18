@@ -630,7 +630,7 @@ export class Ship {
    * Add ship to grid at its current position
    */
   addToGrid (shipCellGrid) {
-    for (const [r, c] of this.cells) {
+    for (const [c, r] of this.board.locations()) {
       shipCellGrid[r][c] = { id: this.id, letter: this.letter }
     }
   }

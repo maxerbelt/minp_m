@@ -21,7 +21,7 @@ export class StoreBase {
     this.bitsPerCell = bitsPerCell
     this.width = width
     this.height = height
-    this.all = new BitGrid(this, width, height)
+    this.all = new BitGrid(this, width, height, bitsPerCell === 1)
     this.cellMask = storeType(cellMask)
 
     this.bShift = storeType(bShift)
@@ -47,7 +47,7 @@ export class StoreBase {
     return this.cellMask << this.storeType(pos)
   }
   grid (width, height) {
-    return new BitGrid(this, width, height)
+    return new BitGrid(this, width, height, this.bitsPerCell === 1)
   }
   numValue (bitboard, pos) {
     return Number(this.rightShift(bitboard, pos))

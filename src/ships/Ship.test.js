@@ -92,7 +92,7 @@ describe('Ship basic behaviors', () => {
     )
     s.addToGrid(grid)
     expect(grid[1][1]).toEqual({ id: 3, letter: 'C' })
-    expect(grid[1][2]).toEqual({ id: 3, letter: 'C' })
+    expect(grid[2][1]).toEqual({ id: 3, letter: 'C' })
 
     s.removeFromPlacement()
     expect(s.cells.length).toBe(0)

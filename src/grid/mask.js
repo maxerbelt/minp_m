@@ -237,6 +237,11 @@ export class Mask extends MaskBase {
     msk.fromCoords(coords)
     return msk
   }
+  static fromCoordsInv (coords, width = null, height = null) {
+    const inv = coords.map(c => [c[1], c[0], c[2] || 1]) // Swap x and y
+
+    return Mask.fromCoords(inv, width, height)
+  }
   emptyOfSize (newWidth, newHeight) {
     const msk = new Mask(newWidth, newHeight, null, null, this.depth)
     return msk

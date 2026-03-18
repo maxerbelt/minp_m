@@ -1,5 +1,6 @@
 import { StoreBase } from './storeBase.js'
 import { popcountBigInt } from './placeTools.js'
+import { bitsSafeBI } from './bitHelpers.js'
 const one = 1n
 const zero = 0n
 
@@ -15,6 +16,7 @@ export class StoreBig extends StoreBase {
     this.wordsPerRow = width ? Math.ceil(width / this.cellsPerWord) : 0
     this.maxCellInWord = this.cellsPerWord - 1
   }
+
   getBitAt (bitboard, bitPosition) {
     return this.extractBit(bitboard, bitPosition) === 1n
   }
@@ -22,12 +24,14 @@ export class StoreBig extends StoreBase {
   extractBit (bitboard, bitPosition) {
     return this.extractRange(bitboard, bitPosition, 1n)
   }
-
+  *bitsOccupied (bitboard, size = this.size) {
+    return yield* bitsSafeBI(size, bitboard)
+  }
   getIdx (bitboard, idx) {
     const bitPosition = idx * this.bitsPerCell
     return this.extractCell(bitboard, bitPosition)
   }
-   hasIdxSet(bitboard, idx) {
+  hasIdxSet (bitboard, idx) {
     return this.getIdx(bitboard, idx) > 0n
   }
 
@@ -618,7 +622,6 @@ export class StoreBig extends StoreBase {
       : null
   }
 
-
   isBitSet (bitboard, bitPosition) {
     return this.extractBit(bitboard, bitPosition) === 1n
   }
@@ -936,12 +939,11 @@ export class StoreBig extends StoreBase {
     const layerColor = BigInt(color)
     let resultBitboard = 0n
     const singleBitStore = this.singleBitStore
-    for (const [i, cellColor] of this.grid(gridWidth, gridHeight).idxCells(
-      bitboard
+    for (const [i] of this.grid(gridWidth, gridHeight).idxFilledWith(
+      bitboard,
+      layerColor
     )) {
-      if (cellColor === layerColor) {
-        resultBitboard = singleBitStore.setIdx(resultBitboard, i, 1n)
-      }
+      resultBitboard = singleBitStore.setIdx(resultBitboard, i, 1n)
     }
 
     return resultBitboard

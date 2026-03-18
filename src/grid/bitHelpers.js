@@ -31,26 +31,12 @@ export function* bitsBig (bb) {
 export function* bitsSafe (bb, size) {
   // Handle BigInt bitboards
   if (typeof bb === 'bigint') {
-    const lsbIdx = size > 256 ? lsbIndexBig : lsbIndex
-    let tmp = bb
-    while (tmp) {
-      const lsb = tmp & -tmp
-      const i = lsbIdx(lsb)
-      yield i
-      tmp ^= lsb
-    }
-    return
+    return yield* bitsSafeBI(size, bb)
   }
 
   // Handle array-backed bitboards (Uint32Array or Array)
   if (bb && typeof bb.length === 'number') {
-    const words = bb.length
-    const total = size || words * 32
-    for (let i = 0; i < total; i++) {
-      const w = bb[i >>> 5] || 0
-      if (((w >>> (i & 31)) & 1) === 1) yield i
-    }
-    return
+    return yield* bitSafeArr(bb, size)
   }
 
   // Fallback: numeric bitboard (Number)
@@ -64,15 +50,45 @@ export function* bitsSafe (bb, size) {
     tmpNum ^= lsb
   }
 }
-
-function emptyBB () {
-  return 0n
+export function forEachBitSafeBI (bb, size, fn) {
+  const lsbIdx = size > 256 ? lsbIndexBig : lsbIndex
+  let tmp = bb
+  while (tmp) {
+    const lsb = tmp & -tmp
+    const i = lsbIdx(lsb)
+    fn(i)
+    tmp ^= lsb
+  }
 }
-const ONE = 1n
-
-function setBit (bb, i) {
-  return bb | (ONE << BigInt(i))
+export function* bitSafeArr (bb, size) {
+  const words = bb.length
+  const total = size || words * 32
+  for (let i = 0; i < total; i++) {
+    const w = bb[i >>> 5] || 0
+    if (((w >>> (i & 31)) & 1) === 1) yield i
+  }
 }
+export function forEachBitSafeArr (bb, size, fn) {
+  const words = bb.length
+  const total = size || words * 32
+  for (let i = 0; i < total; i++) {
+    const w = bb[i >>> 5] || 0
+    if (((w >>> (i & 31)) & 1) === 1) fn(i)
+  }
+}
+
+export function* bitsSafeBI (size, bb) {
+  const lsbIdx = size > 256 ? lsbIndexBig : lsbIndex
+  let tmp = bb
+  while (tmp) {
+    const lsb = tmp & -tmp
+    const i = lsbIdx(lsb)
+    yield i
+    tmp ^= lsb
+  }
+  return
+}
+
 export function has (bb, i) {
   return (bb >> BigInt(i)) & 1n
 }
