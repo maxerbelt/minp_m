@@ -99,8 +99,8 @@ export class DraggedShip extends SelectedShip {
   placeCells (r, c, shipCellGrid) {
     const r0 = r - this.cursor[0]
     const c0 = c - this.cursor[1]
-    if (this.canPlaceRaw(r0, c0, shipCellGrid)) {
-      return this.addCurrentToShipCells(r0, c0, shipCellGrid)
+    if (this.canPlaceRaw(c0, r0, shipCellGrid)) {
+      return this.addCurrentToShipCells(c0, r0, shipCellGrid)
     }
     return null
   }

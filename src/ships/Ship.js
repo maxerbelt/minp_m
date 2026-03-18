@@ -14,6 +14,7 @@ export class Ship {
     this.letter = letter
     this.hits = Mask.empty(0, 0)
     this.size = 1
+    this.placed = false
     this.sunk = false
     this.variant = 0
     this.weaponPositions = Mask.empty(0, 0)
@@ -53,6 +54,7 @@ export class Ship {
 
   resetBoard () {
     this._cellsArray = []
+    this.placed = false
     this.board = this.shape()?.board || Mask.empty(0, 0)
     this.size = 0
     this.hits = Mask.empty(0, 0)
@@ -534,6 +536,7 @@ export class Ship {
   }
 
   placePlacement (placement) {
+    this.placed = true
     this.cells = placement.cells
     if (placement.weapons) {
       this.variant = placement.variant

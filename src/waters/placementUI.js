@@ -80,7 +80,7 @@ export class PlacementUI extends WatersUI {
         this.cellMiss(r, c)
         this.surroundShipCellAt(ship, r, c)
       },
-      (r, c, ship) => this.cellPlacedAt(r, c, ship)
+      (c, r, ship) => this.cellPlacedAt(r, c, ship)
     )
   }
 
@@ -727,6 +727,7 @@ export class PlacementUI extends WatersUI {
 
     for (const type in groups) {
       const tray = this.getTrayOfType(type)
+      tray.classList.remove('hidden')
       const group = groups[type]
       const height = Ship.maxMinSizeIn(group)
       for (const ship of group) {
@@ -898,13 +899,13 @@ export class PlacementUI extends WatersUI {
   noOfShips () {
     return this.ships.length
   }
-  noOfPlacedShips () {
-    return this.ships.filter(s => s.cells.length > 0).length
+  noOfPlacedShips (ships = this.ships) {
+    return ships.filter(s => s.placed).length
   }
-  displayShipInfo (ships) {
+  displayShipInfo (ships = this.ships) {
     if (!ships) return
     const total = ships.length
-    const placed = ships.filter(s => s.cells.length > 0).length
+    const placed = this.noOfPlacedShips(ships)
     this.score.placed.textContent = `${placed} / ${total}`
 
     if (
