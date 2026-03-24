@@ -332,33 +332,17 @@ export class Friend extends Waters {
   }
 
   selectShot (hits, seeking) {
-    this.score.reveal = this.score.reveal.take(this.score.shot)
-    if (this.score.reveal.occupancy > 0) {
-      this.selectRandomCandidate(this.score.reveal)
+    if (this.finishRevealed()) {
       return
     }
-    if (hits && hits.occupancy > 0) {
-      const cross = hits.clone.dilateCross().take(this.score.shot)
-      if (cross.occupancy > 0) {
-        this.selectRandomCandidate(cross)
-        return
-      }
+    if (this.finishPartiallySunk(hits)) {
+      return
+    }
 
-      const surround = hits.clone.dilate(1).take(this.score.shot)
-      if (surround.occupancy > 0) {
-        this.selectRandomCandidate(surround)
-        return
-      }
+    if (this.finishHints()) {
+      return
     }
-    if (this.score.hints && this.score.hints.occupancy > 0) {
-      const surroundHints = this.score.hints.clone
-        .dilate(1)
-        .take(this.score.shot)
-      if (surroundHints.occupancy > 0) {
-        this.selectRandomCandidate(surroundHints)
-        return
-      }
-    }
+
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
       this.randomEffect(op)
@@ -366,6 +350,48 @@ export class Friend extends Waters {
       this.loadOut.switchToSingleShot()
       this.randomSeek(seeking)
     }
+  }
+
+  finishHints () {
+    const numHints = this.score?.hint?.occupancy || 0
+    if (numHints > 0) {
+      const surroundHints = this.score.hint.clone
+        .dilate(1)
+        .take(this.score.shot)
+
+      if (surroundHints.occupancy > 0) {
+        this.selectRandomCandidate(surroundHints)
+        return true
+      }
+    }
+    return false
+  }
+
+  finishRevealed () {
+    this.score.reveal = this.score.reveal.take(this.score.shot)
+    if (this.score.reveal.occupancy > 0) {
+      this.selectRandomCandidate(this.score.reveal)
+      return true
+    }
+    return false
+  }
+
+  finishPartiallySunk (hits) {
+    const numHits = hits ? hits.occupancy : 0
+    if (numHits > 0) {
+      const cross = hits.clone.dilateCross().take(this.score.shot)
+      if (cross.occupancy > 0) {
+        this.selectRandomCandidate(cross)
+        return true
+      }
+
+      const surround = hits.clone.dilate(1).take(this.score.shot)
+      if (surround.occupancy > 0) {
+        this.selectRandomCandidate(surround)
+        return true
+      }
+    }
+    return false
   }
 
   selectRandomCandidate (candidate) {
@@ -384,23 +410,14 @@ export class Friend extends Waters {
   }
 
   getHits () {
-    const hitss = this.shipsUnsunk().flatMap(s => [...s.hits])
-    if (hitss.length === 0) return bh.map.blankMask
-    const hits = hitss.map(h => {
-      const [r, c] = h.split(',').map(n => Number.parseInt(n))
-      return [r, c]
-    })
-    let results = bh.map.blankMask.fromCoords(hits)
-    return results
+    const blankMask = bh.map.blankMask
+    const hitss = this.shipsUnsunk().reduce((acc, ship) => {
+      acc = acc.join(ship.hits.toMask(blankMask.width, blankMask.height))
+      return acc
+    }, blankMask)
+    return hitss
   }
 
-  getHints () {
-    const hints = this.score.hint
-    return [...hints].map(h => {
-      const [r, c] = h.split(',').map(n => Number.parseInt(n))
-      return [r, c]
-    })
-  }
   seekStep (seeking) {
     const hits = this.getHits()
     this.selectShot(hits, seeking)
@@ -413,7 +430,7 @@ export class Friend extends Waters {
     if (this.isRevealed || this.boardDestroyed) {
       return
     }
-    this.updateWeapon(wps)
+    this.updateWeaponButton(wps)
   }
   stopWaiting () {
     /* only needs implementation if enemy */

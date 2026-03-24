@@ -157,7 +157,7 @@ export class StatusUI {
       this.addToQueue(game, false)
     }
   }
-  displayAmmoStatus (wps, maps, idx = -1, numCoords = -1, selectedWps = null) {
+  displayAmmoStatus (wps, maps, numCoords = -1, selectedWps = null) {
     if (
       !wps ||
       (selectedWps && wps.weapon.letter !== selectedWps.weapon.letter)
@@ -168,7 +168,7 @@ export class StatusUI {
     gameStatus.showMode(weapon?.name || 'Single Shot')
     this.icon1.className = 'mode-icon tally-box'
     this.icon2.className = 'mode-icon tally-box'
-    let idxUsed = idx
+    let idxUsed
     if (weapon.isLimited) {
       const ammo = wps.ammoLeft()
       const letter = weapon.letter
@@ -185,8 +185,6 @@ export class StatusUI {
       idxUsed = this.displaySingleShotStatus()
     }
     this.addToQueue(weapon.stepHint(idxUsed), false)
-
-    return
   }
   displayLimitedAmmoStatus (wps, ammo, weapon, numCoords, maps, letter, select) {
     this.displayAmmoLeft(wps, ammo)

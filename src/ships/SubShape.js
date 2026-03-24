@@ -7,22 +7,7 @@ export class SubShape {
     this.subterrain = subterrain
     this.faction = 1
   }
-  get cells () {
-    return this._cellsArray || this.board.toCoords
-  }
-  set cells (cells) {
-    this._cellsArray = cells
-    this.setBoard(Mask.fromCoordsSquare(cells))
-  }
-  setBoard (board) {
-    this.board = board
-    this.size = board.width
-  }
-  resetBoard () {
-    this._cellsArray = []
-    this.board = Mask.empty(0, 0)
-    this.size = 0
-  }
+
   clone () {
     return new SubShape(this.validator, this.zoneDetail, this.subterrain)
   }
@@ -55,7 +40,7 @@ export class StandardCells extends SubShape {
           ? secondaryBoard
           : secondaryBoard.expand(occupancyBoard.width, occupancyBoard.height)
       const board = occupancyBoard.take(expandedSecondary)
-      this.setBoard(board)
+      this.board = board
     }
   }
 
@@ -75,6 +60,6 @@ export class StandardCells extends SubShape {
 export class SpecialCells extends SubShape {
   constructor (cells, validator, zoneDetail, subterrain) {
     super(validator, zoneDetail, subterrain)
-    this.cells = cells
+    this.board = Mask.fromCoordsSquare(cells)
   }
 }

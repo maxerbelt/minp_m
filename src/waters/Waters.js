@@ -74,9 +74,7 @@ export class Waters {
     onPlacementReset = Function.prototype
   ) {
     // Ensure shipCellGrid is initialized before attempting placements
-    if (!this.shipCellGrid || !Array.isArray(this.shipCellGrid)) {
-      this.resetShipCells()
-    }
+    this.checkShipGrid()
     const mask = bh.map.blankMask
     for (const ship of ships) {
       const placedCells = randomPlaceShape(ship, this.shipCellGrid, mask)
@@ -93,15 +91,15 @@ export class Waters {
     }
     return isPlacementSuccessful
   }
-  autoPlace2 () {
-    this.resetShipCells()
-
-    // Ensure ships are initialized from base shapes before attempting placement
-    if (!this.ships || this.ships.length === 0) {
-      this.ships = this.createCandidateShips()
+  checkShipGrid () {
+    if (!this.shipCellGrid || !Array.isArray(this.shipCellGrid)) {
+      this.resetShipCells()
     }
+  }
 
-    const ships = this.ships
+  autoPlace2 () {
+    const ships = this.initShips()
+
     for (let attempt = 0; attempt < 100; attempt++) {
       let isPlacementSuccessful = true
       isPlacementSuccessful = this.attemptToPlaceShips(
@@ -114,14 +112,8 @@ export class Waters {
     }
   }
   autoPlace () {
-    this.resetShipCells()
+    const ships = this.initShips()
 
-    // Ensure ships are initialized from base shapes before attempting placement
-    if (!this.ships || this.ships.length === 0) {
-      this.ships = this.createCandidateShips()
-    }
-
-    const ships = this.ships
     for (let attempt = 0; attempt < 100; attempt++) {
       let isPlacementSuccessful = true
       isPlacementSuccessful = this.attemptToPlaceShips(
@@ -139,18 +131,27 @@ export class Waters {
       if (isPlacementSuccessful) return true
     }
   }
-  loadForEdit (map) {
-    map = map || bh.map
+
+  initShips () {
     this.resetShipCells()
 
     // Ensure ships are initialized from base shapes
+    return this.initShipsForEdit()
+  }
+
+  initShipsForEdit () {
     if (!this.ships || this.ships.length === 0) {
       this.ships = this.createCandidateShips()
     }
+    return this.ships
+  }
 
-    const placedShips = map.example
-    if (!placedShips) {
-      this.autoPlace()
+  loadForEdit (map) {
+    map = map || bh.map
+
+    this.initShipsForEdit()
+    const placedShips = this.checkValidPlacement(placedShips, map)
+    if (placedShips === null) {
       return
     }
 
@@ -187,7 +188,7 @@ export class Waters {
   }
 
   placeMatchingShip (matchingShip, ship) {
-    matchingShip.placeAtCells(ship.cells)
+    matchingShip.placeAtBoard(ship.board)
     matchingShip.addToGrid(this.shipCellGrid)
     this.UI.placement(ship.cells, this, matchingShip)
     const dragship = this.UI.getTrayItem(ship.id)
@@ -215,26 +216,22 @@ export class Waters {
       }
     }
   }
+  checkValidPlacement (placed, map = bh.map) {
+    const placedShips = placed || map.example
 
+    if (placedShips.ships == null || placedShips.ships.length === 0) {
+      this.autoPlace()
+      return null
+    }
+    return placedShips
+  }
   load (placedShips) {
     const map = bh.map
-    this.resetShipCells()
+    this.initShips()
 
-    // Ensure ships are initialized from base shapes before attempting to load
-    if (!this.ships || this.ships.length === 0) {
-      this.ships = this.createCandidateShips()
-    }
-
-    placedShips =
-      placedShips || JSON.parse(localStorage.getItem(this.clipboardKey()))
-
-    // Check if placedShips is null or map doesn't match before trying to access it
-    if (!placedShips || map.title !== placedShips.map) {
-      placedShips = map.example
-      if (!placedShips) {
-        this.autoPlace()
-        return
-      }
+    placedShips = this.getPlacedShips(placedShips, map)
+    if (placedShips === null) {
+      return
     }
 
     const { shipId, weaponId } = placedShips.ships.reduce(
@@ -248,7 +245,8 @@ export class Waters {
       },
       { shipId: 1, weaponId: 1 }
     )
-
+    Ship.id = shipId + 1
+    WeaponSystem.id = weaponId + 1
     const matchableShips = this.placeMatchingShips(
       placedShips,
       this.placeMatchingShip.bind(this)
@@ -258,6 +256,18 @@ export class Waters {
     } else {
       console.log(`${matchableShips.length} ships not matched`)
     }
+  }
+
+  getPlacedShips (placedShips, map) {
+    placedShips =
+      placedShips || JSON.parse(localStorage.getItem(this.clipboardKey()))
+
+    // Check if placedShips is null or map doesn't match before trying to access it
+    if (map.title !== placedShips?.map || '') {
+      placedShips = null
+    }
+    placedShips = this.checkValidPlacement(placedShips, map)
+    return placedShips
   }
 
   resetMap (map) {
@@ -282,7 +292,7 @@ export class Waters {
     }
 
     if (this.cursorChange)
-      this.loadOut.onCursorChange = this.cursorChange.bind(this)
+      this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
   }
   makeLoadOut (map, ships) {
     ships = ships || this.weaponShips
@@ -836,24 +846,33 @@ export class Waters {
     }
     return totalShots
   }
-
-  updateMode (wps1) {
+  get isEnded () {
     if (this.isRevealed || this.boardDestroyed) {
       this.stopWaiting?.()
       this.opponent?.stopWaiting()
+      this._oldWeaponLetter = null
+      return true
+    }
+    return false
+  }
+
+  updateMode (wps1, cursorInfo) {
+    if (this.isEnded) {
       return
     }
-    this.updateWeapon(wps1)
+    this.updateWeaponButton(wps1, cursorInfo)
 
-    this.updateWeaponStatus(this.loadOut.selectedWeapon)
+    this.updateWeaponStatus(wps1 || this.loadOut.selectedWeapon, cursorInfo)
   }
-  updateWeapon (wps1) {
-    const wps = wps1 || this.loadOut.getCurrentWeaponSystem()
-    const letter = wps1?.weapon?.letter
+  updateWeaponButton (wps1, cursorInfo) {
+    const wps = wps1 || cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
+    const letter = wps?.weapon?.letter
+    if (letter === this._oldWeaponLetter) {
+      return
+    }
+    this._oldWeaponLetter = letter
     const next = this.loadOut.getNextWeapon(letter)
     if (this.UI.weaponBtn) this.UI.weaponBtn.innerHTML = next.buttonHtml
-    const cursorIdx = this.loadOut.getCursorIndex()
-    return { wps, cursorIdx }
   }
 
   fireShot (weapon, r, c, power, key) {

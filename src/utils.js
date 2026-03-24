@@ -30,10 +30,10 @@ export function randomPlaceShape (ship, shipCellGrid, mask) {
   const maxR = map.rows - minSize + 1
   const maxC = map.cols - minSize + 1
 
-  console.log(
-    `map: ${map.rows}x${map.cols}, shape: ${shape.height}x${shape.width}, placeables: ${placeables.length}`
-  )
-  console.log(`mask ${mask.height}x${mask.width}:`)
+  //  console.log(
+  //    `map: ${map.rows}x${map.cols}, shape: ${shape.height}x${shape.width}, placeables: ${placeables.length}`
+  //  )
+  //  console.log(`mask ${mask.height}x${mask.width}:`)
 
   const locations = shuffleArray([
     ...mask
@@ -41,8 +41,8 @@ export function randomPlaceShape (ship, shipCellGrid, mask) {
       .map(i => mask.indexer.location(i))
       .filter(loc => loc[1] < maxR && loc[0] < maxC)
   ])
-  console.log(`mask ${mask.height}x${mask.width}:`)
-  console.log(locations)
+  // console.log(`mask ${mask.height}x${mask.width}:`)
+  // console.log(locations)
 
   for (const [c0, r0] of locations) {
     const places = shuffleArray(placeables)
@@ -56,13 +56,13 @@ export function randomPlaceShape (ship, shipCellGrid, mask) {
       if (placement.canPlace(shipCellGrid)) {
         ship.placePlacement(placement)
         const displaced = placement.displacedArea(mask.width, mask.height)
-        console.log(
-          `Trying to place ${letter} at (${r0}, ${c0}) with shape ${shape.height}x${shape.width} and displaced area ${displaced.occupancy}`
-        )
+        // console.log(
+        //   `Trying to place ${letter} at (${r0}, ${c0}) with shape ${shape.height}x${shape.width} and displaced area ${displaced.occupancy}`
+        // )
         mask.joinWith(displaced)
         ship.addToGrid(shipCellGrid)
-        console.log(`Mask after placing ${letter}: 
-          ${mask.toAsciiWith()}`)
+        //       console.log(`Mask after placing ${letter}:
+        //         ${mask.toAsciiWith()}`)
         const shipCell = mask.emptyMask
         for (const [r, row] of shipCellGrid.entries()) {
           for (const [c, cell] of row.entries()) {
@@ -71,8 +71,8 @@ export function randomPlaceShape (ship, shipCellGrid, mask) {
             }
           }
         }
-        console.log(`Ship cell after placing ${letter}:
-          ${shipCell.toAsciiWith()}`)
+        //   console.log(`Ship cell after placing ${letter}:
+        //    ${shipCell.toAsciiWith()}`)
 
         return ship.cells
       }

@@ -100,7 +100,7 @@ function highlightAoE (model, r, c) {
  * Start battle hide/seek gameplay
  * Transitions UI from placement to battle mode
  */
-function _playBattleHide () {
+function __playBattleHide () {
   stateManager.switchToMode('hide-seek', {
     onBefore: () => {
       friendUI.seekMode()
@@ -134,10 +134,14 @@ function _playBattleHide () {
  */
 function _onClickAuto () {
   friend.autoPlace2()
+  _playBattleHide()
+}
+function _playBattleHide () {
   if (!bh.test) {
-    _playBattleHide()
+    __playBattleHide()
   }
 }
+
 function onClickUndo () {
   if (!friendUI.placingShips) {
     friendUI.placeMode()
@@ -299,9 +303,9 @@ function _onNavBarReady () {
     friend.load(null)
     friend.updateUI(friend.ships)
     friendUI.gotoNextStageAfterPlacement()
-    if (!bh.test) {
-      _playBattleHide()
-    }
+    _playBattleHide()
+  } else {
+    friendUI._playBattleHide = _playBattleHide
   }
 }
 

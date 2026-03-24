@@ -428,7 +428,7 @@ export class MaskBase extends CanvasGrid {
   // ============================================================================
   _expandLayersToWidth (layers) {
     return layers.map(layer => {
-      if (typeof layer.expandBits === 'function') {
+      if (typeof layer?.expandBits === 'function') {
         return layer.expandBits(this.width)
       }
       // If it's just bits (bigint), expand them

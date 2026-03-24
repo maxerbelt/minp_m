@@ -2,6 +2,7 @@ import { bh } from '../terrain/bh.js'
 import { parsePair, makeKeyAndId } from '../utilities.js'
 import { Mask } from '../grid/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
+import { SubBoard } from '../grid/subBoard.js'
 
 function firstElement (arr) {
   return arr && arr.length > 0 ? arr[0] : null
@@ -26,7 +27,7 @@ export class Ship {
   }
   set cells (cells) {
     this._cellsArray = cells
-    this.setBoard(Mask.fromCoordsSquare(cells))
+    this.board = Mask.fromCoordsSquare(cells)
   }
   get board () {
     return this._board || this._shape?.board || Mask.empty(0, 0)
@@ -34,10 +35,7 @@ export class Ship {
   set board (board) {
     this._board = board
     this.size = board.occupancy
-    this._updateHitsMaskSize()
-  }
-  setBoard (board) {
-    this.board = board
+    this.hits = board.emptyMask
   }
   get height () {
     return this.board.height
@@ -56,21 +54,8 @@ export class Ship {
     this._cellsArray = []
     this.placed = false
     this.board = this.shape()?.board || Mask.empty(0, 0)
-    this.size = 0
-    this.hits = Mask.empty(0, 0)
   }
 
-  /**
-   * Internal: Update hits mask dimensions to match board
-   */
-  _updateHitsMaskSize () {
-    if (
-      this.hits.width !== this.board.width ||
-      this.hits.height !== this.board.height
-    ) {
-      this.hits = Mask.empty(this.board.width, this.board.height)
-    }
-  }
   static id = 1
 
   static next () {
@@ -94,21 +79,21 @@ export class Ship {
     }
   }
   resetHits () {
-    this.hits = Mask.empty(this.board.width, this.board.height)
+    this.hits = this.board?.emptyMask
   }
 
   /**
    * Record a hit at coordinates (r, c)
    */
   recordHit (r, c) {
-    this.hits.set(r, c, 1)
+    this.hits.set(c, r, 1)
   }
 
   /**
    * Check if ship has been hit at (r, c)
    */
   isHitAt (r, c) {
-    return this.hits.test(r, c)
+    return this.hits.test(c, r)
   }
 
   /**
@@ -526,6 +511,14 @@ export class Ship {
     this.sunk = false
     return cells
   }
+  /**
+   * Place ship at given cells with automatic hit/sunk reset
+   */
+  placeAtBoard (board) {
+    this.board = board
+    this.resetHits()
+    this.sunk = false
+  }
 
   /**
    * Place using variant placement object
@@ -537,7 +530,7 @@ export class Ship {
 
   placePlacement (placement) {
     this.placed = true
-    this.cells = placement.cells
+    this.board = placement.board
     if (placement.weapons) {
       this.variant = placement.variant
       this.weapons = placement.weapons
@@ -629,7 +622,7 @@ export class Ship {
       variant: this.variant,
       cells: this.cells,
       weapons: this.weapons,
-      hitPositions: this.hits.toCoords()
+      hitPositions: this.hits.toCoords
     }
   }
 

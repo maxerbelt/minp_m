@@ -128,24 +128,11 @@ export class GameStateManager {
   switchToMode (newMode, options = {}) {
     const { onBefore = null, onAfter = null, updateURL = false } = options
 
-    // Call pre-transition hook
-    if (typeof onBefore === 'function') {
-      try {
-        onBefore()
-      } catch (error) {
-        console.error(`Error in onBefore callback: ${error.message}`)
-      }
-    }
+    this.call(onBefore, 'before')
 
     // Call exit callback for previous mode
     const prevCallbacks = this.modeCallbacks.get(this.currentMode)
-    if (prevCallbacks?.onExit && typeof prevCallbacks.onExit === 'function') {
-      try {
-        prevCallbacks.onExit()
-      } catch (error) {
-        console.error(`Error in mode exit callback: ${error.message}`)
-      }
-    }
+    this.call(prevCallbacks?.onExit, 'exit')
 
     // Cleanup managers from previous mode
     this._cleanupModeManagers(this.currentMode)
@@ -154,32 +141,36 @@ export class GameStateManager {
     this.previousMode = this.currentMode
     this.currentMode = newMode
     this.modeHistory.push({ mode: newMode, timestamp: Date.now() })
-
-    // Call enter callback for new mode
     const newCallbacks = this.modeCallbacks.get(newMode)
-    if (newCallbacks?.onEnter && typeof newCallbacks.onEnter === 'function') {
-      try {
-        newCallbacks.onEnter()
-      } catch (error) {
-        console.error(`Error in mode enter callback: ${error.message}`)
-      }
+    if (!this.hasState('init', newMode)) {
+      this.call(newCallbacks?.onInit, 'init')
+      this.saveState('init', newMode, 'init')
     }
+    // Call enter callback for new mode
+    this.call(newCallbacks?.onEnter, 'enter')
 
     // Update URL if requested
     if (updateURL) {
       this._updateHistoryState({ mode: newMode })
     }
 
-    // Call post-transition hook
-    if (typeof onAfter === 'function') {
-      try {
-        onAfter()
-      } catch (error) {
-        console.error(`Error in onAfter callback: ${error.message}`)
-      }
-    }
+    this.call(onAfter, 'after')
 
     return true
+  }
+
+  call (fn = null, fnName = '') {
+    if (fn && typeof fn === 'function') {
+      try {
+        fn()
+      } catch (error) {
+        console.error(
+          `Error in ${fn.name || fnName || 'anonymous'} callback: ${
+            error.message
+          }`
+        )
+      }
+    }
   }
 
   /**

@@ -16,7 +16,6 @@ export class CustomUI extends PlacementUI {
     this.acceptBtn = document.getElementById('acceptBtn')
     this.stopBtn = document.getElementById('stopBtn')
     this.undoBtn = document.getElementById('undoBtn')
-    this.autoBtn = document.getElementById('autoBtn')
     this.publishBtn = document.getElementById('publishBtn')
     this.saveBtn = document.getElementById('saveBtn')
     this.tips = ['Use shapes create land and sea']

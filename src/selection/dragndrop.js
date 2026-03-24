@@ -344,7 +344,7 @@ class DragNDrop {
     const placing = selection.placeable().placeAt(r0, c0)
     const canPlace = placing.canPlace(shipCellGrid)
     const cells = [...placing.board.locations()]
-    console.log('place: ', cells)
+    //  console.log('place: ', cells)
     for (const [cc, rr] of cells) {
       if (map.inBounds(rr, cc)) {
         const cell = viewModel.gridCellAt(rr, cc)

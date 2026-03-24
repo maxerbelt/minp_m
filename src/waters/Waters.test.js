@@ -99,14 +99,14 @@ describe('Waters', () => {
 
   test('store saves placedShips to localStorage', () => {
     // Mock localStorage
-    const originalLocalStorage = window.localStorage
+    const originalLocalStorage = globalThis.localStorage
     const localStorageMock = {
       setItem: jest.fn(),
       getItem: jest.fn(),
       removeItem: jest.fn(),
       clear: jest.fn()
     }
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(globalThis, 'localStorage', {
       value: localStorageMock,
       configurable: true
     })
@@ -116,7 +116,7 @@ describe('Waters', () => {
       expect.any(String)
     )
     // Restore original localStorage
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(globalThis, 'localStorage', {
       value: originalLocalStorage,
       configurable: true
     })
@@ -355,7 +355,7 @@ describe('Waters', () => {
         removeItem: jest.fn(),
         clear: jest.fn()
       }
-      Object.defineProperty(window, 'localStorage', {
+      Object.defineProperty(globalThis, 'localStorage', {
         value: localStorageMock,
         configurable: true
       })
@@ -387,7 +387,7 @@ describe('Waters', () => {
         removeItem: jest.fn(),
         clear: jest.fn()
       }
-      Object.defineProperty(window, 'localStorage', {
+      Object.defineProperty(globalThis, 'localStorage', {
         value: localStorageMock,
         configurable: true
       })
@@ -428,7 +428,7 @@ describe('Waters', () => {
         removeItem: jest.fn(),
         clear: jest.fn()
       }
-      Object.defineProperty(window, 'localStorage', {
+      Object.defineProperty(globalThis, 'localStorage', {
         value: localStorageMock,
         configurable: true
       })

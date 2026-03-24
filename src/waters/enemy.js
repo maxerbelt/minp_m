@@ -14,7 +14,7 @@ class Enemy extends Waters {
     this.preamble = 'The enemy was '
     this.isRevealed = false
     this.timeoutId = null
-    this.weaponHander = null
+    this.weaponSelectHander = null
     this.revealHander = null
     this.enemyWaters = true
     this.steps.player = Player.enemy
@@ -37,7 +37,7 @@ class Enemy extends Waters {
     if (weapon.postSelectCursor > 0) {
       this.UI.cellWeaponActive(r, c, '', weapon.tag)
     }
-    this.updateWeaponStatus(rack)
+    this.updateMode(rack)
   }
   onChangeWeapon (wletter) {
     this.loadOut.switchToWeapon(wletter)
@@ -99,12 +99,12 @@ class Enemy extends Waters {
     gameStatus.showMode('')
   }
 
-  cursorChange (oldCursor, newCursor) {
-    this.updateMode()
+  cursorChange (oldCursor, newCursorInfo) {
+    const newCursor = newCursorInfo?.cursor
     if (newCursor === oldCursor) return
     const board = this.UI.board.classList
     if (oldCursor !== '') board.remove(oldCursor)
-    if (newCursor !== '') board.add(newCursor)
+    this.updateMode(newCursorInfo.wps, newCursorInfo)
   }
 
   hasAmmo () {
@@ -217,7 +217,7 @@ class Enemy extends Waters {
   onClickCell (r, c) {
     if (!this.isTurn()) return
     this.UI.removeHighlightAoE()
-    this.setWeaponHanders()
+    this.setWeaponFireHanders()
 
     if (this.launchSelectedWeapon(r, c)) return
 
@@ -226,7 +226,7 @@ class Enemy extends Waters {
     this.loadOut.aimWeapon(bh.map, r, c)
   }
 
-  setWeaponHanders () {
+  setWeaponFireHanders () {
     this.loadOut.onDestroy = this.tryFireAt2.bind(this)
     this.loadOut.destroyOneOfMany = this.destroyOne.bind(this)
   }
@@ -299,7 +299,7 @@ class Enemy extends Waters {
     return true
   }
   fireAt2 (weapon, effect) {
-    this.updateMode()
+    //this.updateMode()
     // Mega Bomb mode: affect 3x3 area centered on (r,c)
     this.processCarpetBomb(weapon, effect)
   }
@@ -321,7 +321,7 @@ class Enemy extends Waters {
     ))
     // update status
     this.updateResultsOfBomb(weapon, hits, sunks, reveals, info, shots)
-    this.updateWeaponStatus()
+    this.updateMode()
     this.flash()
   }
   deactivateWeapon (ro, co) {
@@ -330,16 +330,31 @@ class Enemy extends Waters {
     this.UI.cellWeaponDeactivate(ro, co)
   }
 
-  updateWeaponStatus (rack) {
+  updateWeaponStatus (rack, cursorInfo) {
+    const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
+    const cursorIdx = cursorInfo?.idx || this.loadOut.getCursorIndex()
+    const newCursor =
+      cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
+
+    this.updateCursor(newCursor)
+
     gameStatus.displayAmmoStatus(
-      this.loadOut.getCurrentWeaponSystem(),
+      wps,
       bh.maps,
-      // this.loadOut.cursorIndex(),
-      null,
       this.loadOut.selectedCoordinates.length,
       rack
     )
   }
+  updateCursor (newCursor) {
+    const oldCursor = this._oldCursor || ''
+    if (newCursor !== oldCursor) {
+      this._oldCursor = newCursor
+      const board = this.UI.board.classList
+      if (oldCursor !== '') board.remove(oldCursor)
+      if (newCursor !== '') board.add(newCursor)
+    }
+  }
+
   dropBomb (weapon, effect, hits, sunks, reveals, info, shots) {
     const map = bh.map
 
@@ -370,16 +385,24 @@ class Enemy extends Waters {
   }
 
   wireupButtons () {
-    if (!this.weaponHander)
-      this.weaponHander = enemy.onClickWeaponMode.bind(enemy)
-    if (!this.revealHander) this.revealHander = enemy.onClickReveal.bind(enemy)
-    this.UI.weaponBtn.addEventListener('click', this.weaponHander)
-    this.UI.revealBtn.addEventListener('click', this.revealHander)
+    let weaponSelectHander
+    let revealHander
+    if (this.weaponSelectHander == null) {
+      weaponSelectHander = enemy.onClickWeaponMode.bind(enemy)
+      this.weaponSelectHander = weaponSelectHander
+    }
+    if (this.revealHander == null) {
+      revealHander = enemy.onClickReveal.bind(enemy)
+      this.revealHander = revealHander
+    }
+    this.UI.weaponBtn.addEventListener('click', weaponSelectHander)
+    this.UI.revealBtn.addEventListener('click', revealHander)
   }
   resetModel () {
     this.score.reset()
     this.resetMap()
-
+    this._oldCursor = null
+    this._oldWeaponLetter = null
     this.loadOut.OutOfAllAmmo = () => {
       this.UI.weaponBtn.disabled = true
       this.UI.weaponBtn.textcontent = 'single shot'

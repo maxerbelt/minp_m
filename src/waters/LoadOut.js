@@ -113,7 +113,10 @@ export class LoadOut {
 
   getNextWeapon (weaponLetter) {
     if (weaponLetter) {
-      const idx = this.getWeaponIndexForLetter(weaponLetter)
+      let idx = this.getWeaponIndexForLetter(weaponLetter)
+      if (idx < 0) {
+        idx = 0
+      }
       const nextIdx = this.getNextWeaponIndex(idx)
       const nextWeaponSystem = this.weaponSystems[nextIdx]
       return nextWeaponSystem?.weapon
@@ -163,20 +166,23 @@ export class LoadOut {
       .flatMap(wps => wps.weapon.cursors)
       .filter(cursor => cursor !== '')
   }
-
-  getCurrentCursor () {
-    const weapon = this.getCurrentWeapon()
+  getCurrentCursorInfo () {
+    const wps = this.getCurrentWeaponSystem()
+    const weapon = wps.weapon
     const cursorCount = weapon.cursors.length
     if (
       this.selectedCoordinates.length >= weapon.points ||
       this.selectedCoordinates.length >= cursorCount
     )
-      return ''
+      return { cursor: '', wps, idx: -1 }
     const index = this.selectedCoordinates.length
-    return weapon.cursors[index]
+    return { cursor: weapon.cursors[index], wps, idx: index }
+  }
+  getCurrentCursor () {
+    return this.getCurrentCursorInfo().cursor
   }
   notifyCursorChange (oldCursor) {
-    this.onCursorChangeCallback(oldCursor, this.getCurrentCursor())
+    this.onCursorChangeCallback(oldCursor, this.getCurrentCursorInfo())
   }
   removeCurrentWeaponSystem () {
     const oldCursor = this.getCurrentCursor()
@@ -228,9 +234,12 @@ export class LoadOut {
     this.notifyCursorChange(oldCursor)
   }
   getWeaponIndexForLetter (weaponLetter) {
-    return this.weaponSystems.findIndex(
-      wps => wps.weapon.letter === weaponLetter && wps.ammo > 0
+    let weaponIdx = this.weaponSystems.findIndex(
+      wps =>
+        wps.weapon.letter === weaponLetter &&
+        (!wps.weapon.isLimited || wps.ammo > 0)
     )
+    return weaponIdx
   }
   switchToWeapon (weaponLetter) {
     const idx = this.getWeaponIndexForLetter(weaponLetter)

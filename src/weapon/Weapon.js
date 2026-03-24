@@ -112,8 +112,10 @@ export class Weapon {
   cursorLaunchTo (coords, rr, cc, onEnd, map, viewModel, opposingViewModel) {
     map = map || bh.map
     const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
+    // const tt = target.toReversed()
     const [sr, sc] = map.randomEdge(...target)
     const start1 = opposingViewModel.gridCellAt(sr, sc)
+
     const end1 = viewModel.gridCellAt(...target)
 
     this.animateFlying(
@@ -257,8 +259,16 @@ export class Weapon {
     )
   }
 
-  animateExplode (target, container, end, onEnd, cellSize, type, power, shake) {
-    shake = shake || 'shake'
+  animateExplode (
+    target,
+    container,
+    end,
+    onEnd,
+    cellSize,
+    type,
+    power,
+    shake = 'shake'
+  ) {
     container =
       container || document.getElementById('battleship-game-container')
     end = end || this.centerOf(target)

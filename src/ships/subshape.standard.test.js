@@ -179,7 +179,7 @@ describe('SubShape', () => {
         // First setup some initial cells in the board
         const initialCells = [[99, 99]]
         const initialBoard = Mask.fromCoordsSquare(initialCells)
-        standardCells.setBoard(initialBoard)
+        standardCells.board = initialBoard
 
         // Now replace them with setCells
         const allCells = [

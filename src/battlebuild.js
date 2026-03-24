@@ -88,7 +88,7 @@ function onClickClear () {
   if (customUI.placingShips) {
     clearShips()
     customUI.setTrays()
-    newPlacement()
+    _initializePlacement()
     customUI.displayShipTrackingInfo(custom)
     return
   }

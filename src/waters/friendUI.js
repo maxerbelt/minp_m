@@ -142,6 +142,7 @@ export class FriendUI extends PlacementUI {
       this.setReadyModeAfterPlacement()
     } else {
       this.setReadyAndSeekModeAfterPlacement()
+      this._playBattleHide?.()
     }
   }
 
