@@ -121,6 +121,14 @@ export class Weapon {
     this.animateFlying(
       start1,
       end1,
+      viewModel.cellSizeScreen(),
+      map,
+      viewModel,
+      0,
+      0.9,
+      'cursor ' + this.cursors.at(-1),
+      false
+    ).then(
       this.launchTo.bind(
         this,
         coords,
@@ -130,14 +138,7 @@ export class Weapon {
         map,
         viewModel,
         opposingViewModel
-      ),
-      viewModel.cellSizeScreen(),
-      map,
-      viewModel,
-      0,
-      0.9,
-      'cursor ' + this.cursors.at(-1),
-      false
+      )
     )
   }
 
@@ -222,18 +223,21 @@ export class Weapon {
     } else {
       sourceCell = viewModel.gridCellAt(0, 0)
     }
-    const next = hasCandidates ? onEnd.bind(target) : onEnd
     const targetCell = viewModel.gridCellAt(target[0], target[1])
     this.animateFlying(
       sourceCell,
       targetCell,
-      next,
       viewModel.cellSizeScreen(),
       map,
       viewModel
-    )
+    ).then(() => {
+      if (hasCandidates) {
+        onEnd(target)
+      } else {
+        onEnd()
+      }
+    })
   }
-
   centerOf (el) {
     const r = el.getBoundingClientRect()
     return {
@@ -243,13 +247,12 @@ export class Weapon {
   }
   animateSplashExplode (target, cellSize) {
     if (this.explodeOnSplash)
-      this.animateExplode(target, null, null, null, cellSize, this.splashType)
+      this.animateExplode(target, null, null, cellSize, this.splashType)
   }
 
   animateDetonation (target, cellSize) {
     this.animateExplode(
       target,
-      null,
       null,
       null,
       cellSize,
@@ -258,12 +261,31 @@ export class Weapon {
       'shake-heavy'
     )
   }
-
+  async animateExplodeThen (
+    target,
+    container,
+    end,
+    cellSize,
+    type,
+    power,
+    onEnd,
+    shake = 'shake'
+  ) {
+    await this.animateExplode(
+      target,
+      container,
+      end,
+      cellSize,
+      type,
+      power,
+      shake
+    )
+    if (onEnd) onEnd()
+  }
   animateExplode (
     target,
     container,
     end,
-    onEnd,
     cellSize,
     type,
     power,
@@ -309,34 +331,34 @@ export class Weapon {
 
     container.classList.add(shake)
     // DESTROY at end
-    explody.addEventListener(
-      'animationend',
-      () => {
-        container.classList.remove(shake)
-        explody1.remove()
-        if (onEnd) onEnd()
-      },
-      { once: true }
-    )
-
-    container.appendChild(explody1)
-    // force style recalc then start animation
-    explody.getBoundingClientRect()
-    requestAnimationFrame(() => {
-      explody.classList.add('play')
+    return new Promise(resolve => {
+      explody.addEventListener(
+        'animationend',
+        () => {
+          container.classList.remove(shake)
+          explody1.remove()
+          resolve()
+        },
+        { once: true }
+      )
+      container.appendChild(explody1)
+      // force style recalc then start animation
+      explody.getBoundingClientRect()
+      requestAnimationFrame(() => {
+        explody.classList.add('play')
+      })
     })
   }
 
   animateFlying (
     source,
     target,
-    onEnd,
     cellSz,
     map,
     viewModel,
-    rotation,
+    rotation = 0,
     duration = 0.7,
-    classname,
+    classname = this.classname,
     doesExplode = true
   ) {
     const { container, end, start, cellSize } = this.initAnimate(
@@ -344,41 +366,46 @@ export class Weapon {
       target,
       source
     )
-
-    if (
-      !this.checkAnimate(
+    return new Promise((resolve, reject) => {
+      this.checkAnimate(
         target,
         container,
         end,
-        onEnd,
         cellSize,
         map,
         viewModel,
         doesExplode
       )
-    )
-      return
+        .then(shouldAnimate => {
+          if (!shouldAnimate) {
+            resolve()
+            return
+          }
+        })
+        .catch(err => reject(err))
 
-    const pointer = this.animateFlyingBase(
-      end,
-      start,
-      container,
-      rotation,
-      duration,
-      classname
-    )
+      const pointer = this.animateFlyingBase(
+        end,
+        start,
+        container,
+        rotation,
+        duration,
+        classname
+      )
 
-    this.finishAnimate(
-      pointer,
-      target,
-      container,
-      end,
-      onEnd,
-      cellSize,
-      map,
-      viewModel,
-      doesExplode
-    )
+      this.finishAnimate(
+        pointer,
+        target,
+        container,
+        end,
+        cellSize,
+        map,
+        viewModel,
+        doesExplode
+      )
+        .then(() => resolve())
+        .catch(err => reject(err))
+    })
   }
 
   finishAnimate (
@@ -386,62 +413,54 @@ export class Weapon {
     target,
     container,
     end,
-    onEnd,
     cellSize,
     map,
     viewModel,
     doesExplode
   ) {
-    pointer.addEventListener('animationend', () => {
-      if (doesExplode) {
-        pointer.remove()
-        this.animateTargetExplode(
-          target,
-          container,
-          end,
-          onEnd,
-          cellSize,
-          map,
-          viewModel
-        )
-      } else {
+    return new Promise(resolve => {
+      pointer.addEventListener('animationend', () => {
+        if (doesExplode && this.explodeOnTarget) {
+          pointer.remove()
+          this.animateTargetExplode(
+            target,
+            container,
+            end,
+            cellSize,
+            map,
+            viewModel
+          ).then(() => resolve())
+          return
+        }
         const tId = setTimeout(() => {
           pointer.remove()
+          resolve()
         }, 500)
-      }
+      })
     })
   }
 
-  checkAnimate (
-    target,
-    container,
-    end,
-    onEnd,
-    cellSize,
-    map,
-    viewModel,
-    doesExplode
-  ) {
-    if (!this.animateOnTarget) {
-      if (doesExplode) {
-        this.animateTargetExplode(
-          target,
-          container,
-          end,
-          onEnd,
-          cellSize,
-          map,
-          viewModel
-        )
-        return false
+  checkAnimate (target, container, end, cellSize, map, viewModel, doesExplode) {
+    return new Promise(resolve => {
+      if (!this.animateOnTarget) {
+        if (doesExplode) {
+          this.animateTargetExplode(
+            target,
+            container,
+            end,
+            cellSize,
+            map,
+            viewModel
+          ).then(() => resolve(false))
+          return
+        }
       }
-    }
-    return true
+      resolve(true)
+    })
   }
-  animateTargetExplode (target, container, end, onEnd, cellSize) {
-    if (this.explodeOnTarget)
-      this.animateExplode(target, container, end, onEnd, cellSize)
-    else if (onEnd) onEnd()
+
+  animateTargetExplode (target, container, end, cellSize) {
+    return this.animateExplode(target, container, end, cellSize)
   }
   initAnimate (cellSize, target, source) {
     cellSize = cellSize || 30
@@ -456,16 +475,16 @@ export class Weapon {
     end,
     start,
     container,
-    rotation,
+    rotation = 0,
     duration = 0.7,
-    classname
+    classname = this.classname
   ) {
     const dx = end.x - start.x
     const dy = end.y - start.y
     const angle = rotation || (Math.atan2(dy, dx) * 180) / Math.PI
 
     const pointer = document.createElement('div')
-    classname = classname || this.classname
+
     pointer.className = 'flying-weapon ' + classname
 
     pointer.style.setProperty('--start-x', `${start.x}px`)

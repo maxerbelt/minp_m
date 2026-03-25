@@ -32,12 +32,14 @@ export class LoadOut {
       targetCoordinates[0],
       targetCoordinates[1]
     )
-    weapon.animateExplode(
+    weapon.animateExplodeThen(
       targetCell,
       null,
       null,
-      onEnd,
-      viewModel.cellSizeScreen()
+      viewModel.cellSizeScreen(),
+      null,
+      null,
+      onEnd
     )
   }
   loadWeapons () {
@@ -49,7 +51,7 @@ export class LoadOut {
       return obj
     }, {})
     const allWeaponByLetter = this.ships.reduce((racks, ship) => {
-      const weapon = ship.weapon()
+      const weapon = ship.getPrimaryWeapon()
       if (weapon) {
         const key = weapon.letter
         const previousRack = racks[key]
@@ -209,7 +211,7 @@ export class LoadOut {
     return this.getLoadedWeapons().find(rack => rack.id === rackId)
   }
   getAllRacks () {
-    return this.ships.flatMap(ship => ship.weaponList())
+    return this.ships.flatMap(ship => ship.getAllWeapons())
   }
   getShipById (shipId) {
     return this.ships.find(ship => ship.id === shipId)

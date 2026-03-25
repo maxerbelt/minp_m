@@ -29,7 +29,13 @@ export class BitGrid {
   }
 
   *locations () {
-    for (let i = 0; i < this.area; i++) {
+    for (const i of this.indices()) {
+      const { x, y } = this.indexToLocation(i)
+      yield [x, y]
+    }
+  }
+  *locationsFast (bitboard) {
+    for (const [i] of this.idxFilled(bitboard)) {
       const { x, y } = this.indexToLocation(i)
       yield [x, y]
     }

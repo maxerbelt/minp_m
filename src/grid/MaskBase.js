@@ -368,12 +368,14 @@ export class MaskBase extends CanvasGrid {
     return result
   }
   *locations () {
-    for (const [x, y] of this.indexer.bitKeys(this.bits)) {
+    const all = this.store.all
+    for (const [x, y] of all.locationsFast(this.bits)) {
       yield [x, y]
     }
   }
   *cells () {
-    for (const [x, y] of this.indexer.keys(this.bits)) {
+    const all = this.store.all
+    for (const [x, y] of all.locations()) {
       yield [x, y]
     }
   }

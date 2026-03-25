@@ -81,7 +81,7 @@ export class steps {
   addShip (ship) {
     this.sourceShip = ship
     if (bh.terrain.hasAttachedWeapons) {
-      const letter = ship.weapon().letter
+      const letter = ship.getPrimaryWeapon().letter
       if (letter !== this.rack?.wletter) {
         this.onChangeWeapon(letter)
       }

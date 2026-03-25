@@ -75,27 +75,6 @@ function _onClickSeek () {
   _playBattleHide()
 }
 
-function highlightAoE (model, r, c) {
-  const map = bh.map
-  if (!map.inBounds(r, c)) return
-  const viewModel = model.UI
-  const coordinates =
-    model.loadOut?.selectedCoordinates || model.loadOut?.coordinates
-  const wps =
-    model.loadOut?.selectedWeapon || model.loadOut.getCurrentWeaponSystem()
-  const weapon = wps?.weapon
-  viewModel.removeHighlightAoE()
-  const newCoords = [...coordinates, [r, c]]
-  if (!weapon || weapon.points > newCoords.length) return
-  const cells = weapon.splashAoe(map, newCoords)
-  for (const [rr, cc, power] of cells) {
-    if (map.inBounds(rr, cc)) {
-      const cellClass = bh.spashTags[power]
-      const cell = viewModel.gridCellAt(rr, cc)
-      cell.classList.add(cellClass, 'target')
-    }
-  }
-}
 /**
  * Start battle hide/seek gameplay
  * Transitions UI from placement to battle mode
@@ -119,12 +98,6 @@ function __playBattleHide () {
       enemy.UI.resetBoardSize()
       friend.setupUntried()
       newGame('hide', _resetFriendBoard, friendUI)
-      enemy.UI.buildBoardHover(
-        highlightAoE,
-        enemy.UI.removeHighlightAoE,
-        enemy.UI,
-        enemy
-      )
     }
   })
 }

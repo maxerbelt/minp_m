@@ -1,13 +1,15 @@
 import { bh } from '../terrain/bh.js'
 import { all, mixed } from '../terrain/terrain.js'
 import { dragNDrop } from '../selection/dragndrop.js'
-
+import { Ship } from '../ships/Ship.js'
 export class ScoreUI {
   constructor (playerPrefix) {
     // Initialization logic
     //
     this.shots = document.getElementById(playerPrefix + '-shots')
+    this.turns = document.getElementById(playerPrefix + '-turns')
     this.hits = document.getElementById(playerPrefix + '-hits')
+    this.misses = document.getElementById(playerPrefix + '-misses')
     this.sunk = document.getElementById(playerPrefix + '-sunk')
     this.hints = document.getElementById(playerPrefix + '-hints')
     this.reveals = document.getElementById(playerPrefix + '-reveals')
@@ -15,7 +17,9 @@ export class ScoreUI {
     this.weaponsPlaced = document.getElementById(playerPrefix + '-weapons')
     this.zone = document.getElementById(playerPrefix + '-zone')
     this.shotsLabel = document.getElementById(playerPrefix + '-shots-label')
+    this.turnsLabel = document.getElementById(playerPrefix + '-turns-label')
     this.hitsLabel = document.getElementById(playerPrefix + '-hits-label')
+    this.missesLabel = document.getElementById(playerPrefix + '-misses-label')
     this.sunkLabel = document.getElementById(playerPrefix + '-sunk-label')
     this.hintsLabel = document.getElementById(playerPrefix + '-hints-label')
     this.revealsLabel = document.getElementById(playerPrefix + '-reveals-label')
@@ -28,35 +32,33 @@ export class ScoreUI {
     this.zoneSync = []
   }
 
-  display (ships, shots, reveals, hints) {
-    if (this.shots) {
-      this.shots.textContent = shots.toString()
-      if (shots > 0) this.shotsLabel?.classList?.remove('hidden')
-      else this.shotsLabel?.classList?.add('hidden')
-    }
+  display (ships, turns, shots, reveals, hints) {
+    this.showCounter(this.turns, turns, this.turnsLabel)
+    this.showCounter(this.shots, shots, this.shotsLabel)
 
-    const hits = ships.reduce((sum, s) => sum + s.hits.size, 0)
-    if (this.hits && hits > 0) {
-      this.hitsLabel?.classList?.remove('hidden')
-      this.hits.textContent = hits.toString()
-    } else {
-      this.hitsLabel?.classList?.add('hidden')
-    }
-    this.hits.textContent = hits.toString()
-    const sunkCount = ships.filter(s => s.sunk).length
+    const hits = Ship.noOfHits(ships)
+    this.showCounter(this.hits, hits, this.hitsLabel)
+    const misses = shots - hits
+    this.showCounter(this.misses, misses, this.missesLabel)
+    const sunkCount = Ship.noOfSunk(ships)
     this.sunk.textContent = `${sunkCount} / ${ships.length}`
-    if (this.hints && hints > 0) {
-      this.hintsLabel?.classList?.remove('hidden')
-      this.hints.textContent = hints.toString()
+
+    this.showCounter(this.hints, hints, this.hintsLabel)
+    this.showCounter(this.reveals, reveals, this.revealsLabel)
+  }
+
+  showCounter (field, hits, label) {
+    if (field && hits > 0) {
+      label?.classList?.remove('hidden')
+      field.textContent = hits.toString()
     } else {
-      this.hintsLabel?.classList?.add('hidden')
+      label?.classList?.add('hidden')
     }
-    if (this.reveals && reveals > 0) {
-      this.revealsLabel?.classList?.remove('hidden')
-      this.reveals.textContent = reveals.toString()
-    } else {
-      this.revealsLabel?.classList?.add('hidden')
-    }
+  }
+
+  displayIfPositive (shots, label) {
+    if (shots > 0) label?.classList?.remove('hidden')
+    else label?.classList?.add('hidden')
   }
 
   createZoneTitle (labelTxt, bag) {

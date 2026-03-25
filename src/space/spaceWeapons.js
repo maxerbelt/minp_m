@@ -45,13 +45,10 @@ export class Missile extends Megabomb {
     this.animateFlying(
       start1,
       end1,
-      () => {
-        onEnd()
-      },
       viewModel.cellSizeScreen(),
       map,
       viewModel
-    )
+    ).then(() => onEnd())
   }
 
   redoCoords (_map, base, coords) {
@@ -165,26 +162,28 @@ export class RailBolt extends Kinetic {
     this.animateFlying(
       start1,
       end1,
-      this.animateFlying.bind(
-        this,
-        start2,
-        end2,
-        () => {
-          start1.classList.add('marker')
-          end1.classList.remove('portal')
-          start2.classList.remove('portal')
-          start2.classList.add('portal')
-          end2.classList.add('marker')
-          onEnd()
-        },
-        viewModel.cellSizeScreen(),
-        map,
-        viewModel
-      ),
       viewModel.cellSizeScreen(),
       map,
       opposingViewModel
     )
+      .then(
+        this.animateFlying.bind(
+          this,
+          start2,
+          end2,
+          viewModel.cellSizeScreen(),
+          map,
+          viewModel
+        )
+      )
+      .then(() => {
+        start1.classList.add('marker')
+        end1.classList.remove('portal')
+        start2.classList.remove('portal')
+        start2.classList.add('portal')
+        end2.classList.add('marker')
+        onEnd()
+      })
   }
 
   static get single () {
@@ -312,23 +311,25 @@ export class GuassRound extends Torpedo {
     this.animateFlying(
       start2,
       end2,
-      this.animateFlying.bind(
-        this,
-        start1,
-        end2,
-        () => {
-          start1.classList.remove('portal')
-          start2.classList.remove('portal')
-          onEnd()
-        },
-        viewModel.cellSizeScreen(),
-        map,
-        viewModel
-      ),
       viewModel.cellSizeScreen(),
       map,
       opposingViewModel
     )
+      .then(
+        this.animateFlying.bind(
+          this,
+          start1,
+          end2,
+          viewModel.cellSizeScreen(),
+          map,
+          viewModel
+        )
+      )
+      .then(() => {
+        start1.classList.remove('portal')
+        start2.classList.remove('portal')
+        onEnd()
+      })
   }
 
   static get single () {

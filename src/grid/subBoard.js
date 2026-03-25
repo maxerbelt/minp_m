@@ -18,7 +18,7 @@ export class SubBoard extends SubMask {
   }
 
   *locations () {
-    for (const [x, y] of this.mask.indexer.bitKeys(this.mask.bits)) {
+    for (const [x, y] of this.mask.locations()) {
       yield this._removeOffset(x, y)
     }
   }

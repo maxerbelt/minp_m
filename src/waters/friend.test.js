@@ -114,7 +114,7 @@ describe('Friend', () => {
         id: 1,
         weapon: jest.fn(),
         loadedWeapon: jest.fn(),
-        weaponList: jest.fn(),
+        getAllWeapons: jest.fn(),
         loadedWeapons: jest.fn(),
         getRackById: jest.fn()
       }

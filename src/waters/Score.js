@@ -5,11 +5,15 @@ export class Score {
     this.reset()
   }
   reset () {
+    this.turns = 0
     this.shot = bh.map.blankMask
     this.reveal = bh.map.blankMask
     this.hint = bh.map.blankMask
     this.wake = bh.map.blankMask
     this.auto = bh.map.blankMask
+  }
+  finishTurn () {
+    this.turns++
   }
   get autoMisses () {
     return this.auto.occupancy
@@ -40,7 +44,12 @@ export class Score {
   }
 
   counts () {
-    return [this.noOfShots(), this.reveal.occupancy, this.hint.occupancy]
+    return [
+      this.turns,
+      this.noOfShots(),
+      this.reveal.occupancy,
+      this.hint.occupancy
+    ]
   }
   noOfShots () {
     return Math.max(0, this.shot.occupancy - this.autoMisses)

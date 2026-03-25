@@ -3,7 +3,6 @@
 /* global describe, it, expect, beforeEach */
 import { Store32 } from './store32.js'
 import { Packed } from './packed.js'
-import e from 'express'
 
 function ascii (bits, packed) {
   const presult = packed.clone

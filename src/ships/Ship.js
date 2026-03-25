@@ -61,6 +61,14 @@ export class Ship {
   static next () {
     Ship.id++
   }
+
+  static noOfHits (ships) {
+    return ships.reduce((sum, s) => sum + s.getTotalHits(), 0)
+  }
+  static noOfSunk (ships) {
+    return ships.reduce((sum, s) => sum + (s.sunk ? 1 : 0), 0)
+  }
+
   getTurn () {
     return this.getPrimaryWeapon()?.getTurn(this.variant) || ''
   }

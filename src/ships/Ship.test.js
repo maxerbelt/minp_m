@@ -31,7 +31,7 @@ describe('Ship basic behaviors', () => {
     Ship.id = saved
   })
 
-  it('weaponList, weaponEntries, hasWeapon, weaponSystem, weapon, makeKeyIds', () => {
+  it('getAllWeapons, weaponEntries, hasWeapon, weaponSystem, weapon, makeKeyIds', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
       '1,2': {

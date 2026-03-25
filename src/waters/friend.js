@@ -15,6 +15,7 @@ export class Friend extends Waters {
   }
 
   onEndTurn () {
+    // this.score.finishTurn()
     if (this?.opponent && !this.opponent.boardDestroyed) {
       this.opponent.onBeginTurn()
     }
@@ -30,11 +31,11 @@ export class Friend extends Waters {
 
   updateBombResultsFromResult (result) {
     if (!result) return
-    const { hits, sunks, reveals, info, shots } = result
+    const { hits, sunk, reveals, info, shots } = result
     this.updateResultsOfBomb(
-      this.loadOut.SShot(),
+      this.loadOut.getSingleShot(),
       hits,
-      sunks,
+      sunk,
       reveals,
       info,
       shots
@@ -49,7 +50,7 @@ export class Friend extends Waters {
   }
 
   sShot (r, c) {
-    const sShot = this.loadOut.SShot()
+    const sShot = this.loadOut.getSingleShot()
     return this.seekHit(sShot, r, c, 4)
   }
 
@@ -174,7 +175,7 @@ export class Friend extends Waters {
     }
     const { hits, sunks, reveals, info, shots } = result
     this.updateResultsOfBomb(
-      this.loadOut.SShot(),
+      this.loadOut.getSingleShot(),
       hits,
       sunks,
       reveals,

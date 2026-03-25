@@ -21,13 +21,13 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
     return result
   }
   isWrongZone () {
-    const cells = this.board.locations()
-    const result = cells.some(([r, c]) => {
+    const cells = [...this.board.locations()]
+    const result = cells.some(([c, r]) => {
       return this.isInMatchingZone(r, c) === false
     })
-    for (const [r, c] of this.board.locations()) {
+    for (const [c, r] of cells) {
       const match = this.isInMatchingZone(r, c) ? 1 : 0
-      this.notGood.set(r, c, match)
+      this.notGood.set(c, r, match)
     }
     return result
   }

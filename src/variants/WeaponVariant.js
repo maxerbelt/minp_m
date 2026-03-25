@@ -44,7 +44,8 @@ export class WeaponVariant extends SpecialVariant {
     const result = new PlaceableW(
       grandparentPrototype.placeable.call(this, idx),
       this.subGroups.map(
-        (g, i) => new Placeable(this.special(idx, i), g.validator, g.zoneDetail)
+        (g, i) =>
+          new Placeable(this.specialBoard(idx, i), g.validator, g.zoneDetail)
       )
     )
     result.variantIndex = idx

@@ -585,7 +585,7 @@ export class Waters {
             this.onClickOppoCell.bind(this, r, c, ship.id)
           )
           cell.dataset.listen = true
-          const w = ship.weapon()
+          const w = ship.getPrimaryWeapon()
           const cursor = w?.launchCursor
           if (cursor) cell.classList.add(cursor)
         }
@@ -996,7 +996,7 @@ export class Waters {
     if (this.UI.placing && this.UI.placeTally) {
       this.UI.placeTally(ships)
     } else {
-      this.UI.score.display(ships, noOfShots, reveals, hints)
+      this.UI.score.display(ships, ...this.score.counts())
       this.UI.score.buildTally(ships, weaponSystems, this.UI)
     }
   }

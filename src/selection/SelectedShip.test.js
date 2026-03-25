@@ -130,12 +130,6 @@ describe('SelectedShip', () => {
       expect(result.variant).toEqual('mask')
     })
 
-    it('should delegate special() to variants', () => {
-      const result = selectedShip.special()
-      expect(mockVariants.special).toHaveBeenCalled()
-      expect(result).toEqual({ special: 'prop' })
-    })
-
     it('should delegate rotate() to variants', () => {
       const result = selectedShip.rotate()
       expect(mockVariants.rotate).toHaveBeenCalled()

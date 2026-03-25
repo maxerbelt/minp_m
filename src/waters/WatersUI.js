@@ -85,6 +85,13 @@ export class WatersUI {
       this.delayEffect(r, c, effect, mindelay, maxdelay, power)
     }
   }
+  delayAsyncEffects (coords, effect, mindelay = 380, maxdelay = 730) {
+    return Promise.allSettled(
+      coords.map(([r, c, power]) =>
+        this.delayAsyncEffect(r, c, effect, mindelay, maxdelay, power)
+      )
+    )
+  }
   delayEffect (r, c, effect, mindelay = 380, maxdelay = 730, power) {
     const range = maxdelay - mindelay
     const delay = Math.floor(Math.random() * range) + mindelay
@@ -92,6 +99,18 @@ export class WatersUI {
       const cell = this.gridCellAt(r, c)
       effect(cell, power)
     }, delay)
+  }
+  delayAsyncEffect (r, c, effect, mindelay = 380, maxdelay = 730, power = null) {
+    return new Promise((resolve, reject) => {
+      const range = maxdelay - mindelay
+      const delay = Math.floor(Math.random() * range) + mindelay
+      const timerId = setTimeout(() => {
+        const cell = this.gridCellAt(r, c)
+        effect(cell, power)
+          .then(() => resolve())
+          .catch(err => reject(err))
+      }, delay)
+    })
   }
   displayShipCellBase (cell, ship) {
     const letter = ship?.letter || '-'
@@ -125,7 +144,7 @@ export class WatersUI {
     if (!ship.weapons || Object.values(ship.weapons).length === 0) return
     const letter = ship?.letter || '-'
     cell.dataset.sletter = letter
-    const wletter = ship.weapon().letter
+    const wletter = ship.getPrimaryWeapon().letter
     cell.dataset.wletters = wletter
     cell.dataset.variant = ship.variant
     const turn = ship.getTurn()

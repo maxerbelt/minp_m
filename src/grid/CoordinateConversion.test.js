@@ -1,6 +1,5 @@
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach, afterEach, jest */
-import e from 'express'
 import { CoordinateConversion } from './CoordinateConversion.js'
 import { Mask } from './mask.js'
 

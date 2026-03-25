@@ -34,7 +34,7 @@ describe('LoadOut', () => {
       weapon: () => mockWeapon,
       hasAmmoLeft: () => true,
       loadedWeapon: () => ({ weapon: mockWeapon }),
-      weaponList: () => [{ weapon: mockWeapon }],
+      getAllWeapons: () => [{ weapon: mockWeapon }],
       loadedWeapons: () => [{ id: 1, weapon: mockWeapon }],
       getRackById: id => (id === 1 ? { id: 1 } : undefined),
       id: 1

@@ -45,13 +45,6 @@ export class SpecialVariant extends RotatableVariant {
     return board.extractColorLayer(groupIndex)
   }
 
-  special (index = this.index, groupIndex = 1) {
-    const variant = this.variant(index)
-      .filter(s => s[2] === groupIndex)
-      .map(s => [s[0], s[1]])
-    return variant
-  }
-
   placeable (index) {
     const idx = index || this.index
     return new Placeable3(

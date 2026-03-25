@@ -44,6 +44,7 @@ class Enemy extends Waters {
   }
 
   onEndTurn () {
+    this.opponent?.score.finishTurn()
     if (
       this.opponent === null ||
       this.opponent === undefined ||

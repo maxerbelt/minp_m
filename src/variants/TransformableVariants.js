@@ -65,11 +65,6 @@ export class TransformableVariants extends Variants {
   get maxSize () {
     return Math.max(...this.forms.map(f => f.variants().maxSize))
   }
-  special (index, groupIndex = 1) {
-    const idx = index || this.index
-    const { formIndex, variantIndex } = this.positionInForms(idx)
-    return this.forms[formIndex].variants().special(variantIndex, groupIndex)
-  }
 
   placeable (index) {
     const { formIndex, variantIndex } = this.positionInForms(index)

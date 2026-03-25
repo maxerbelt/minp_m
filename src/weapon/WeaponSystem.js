@@ -175,7 +175,7 @@ export class CombinedWeaponSystem extends WeaponSystem {
 
 export class AttachedWeaponSystems extends WeaponSystem {
   constructor (ship) {
-    super(ship.weapon(), -1)
+    super(ship.getPrimaryWeapon(), -1)
     this.ships = [ship]
   }
   add (ship) {
@@ -220,7 +220,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
   }
 
   getLeafWeapons () {
-    return this.ships.flatMap(s => s.weaponList())
+    return this.ships.flatMap(s => s.getAllWeapons())
   }
   getLoadedWeapon () {
     return randomElement(this.getLoadedWeapons())

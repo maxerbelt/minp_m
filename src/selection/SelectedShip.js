@@ -28,9 +28,6 @@ export class SelectedShip {
   board () {
     return this.variants.boardFor()
   }
-  special () {
-    return this.variants.special()
-  }
   rotate () {
     return this.variants.rotate()
   }

@@ -138,22 +138,6 @@ describe('Ship.shape() method call safety', () => {
         expect(variants.special).toBeDefined()
       }).not.toThrow()
     })
-
-    it('shape().variants() should work with Hybrid shapes', () => {
-      expect(() => {
-        const variants = mockShapeHybrid.variants()
-        expect(variants.special).toBeDefined()
-        const special = variants.special()
-        expect(special).toEqual([[1, 1]])
-      }).not.toThrow()
-    })
-
-    it('shape().variants() should work with Transformer shapes', () => {
-      expect(() => {
-        const variants = mockShapeTransformer.variants()
-        expect(variants.special).toBeDefined()
-      }).not.toThrow()
-    })
   })
 
   describe('Safety checks for null/undefined shape', () => {
@@ -206,12 +190,6 @@ describe('Ship.shape() method call safety', () => {
     it('Hybrid shapes should be checkable with isHybrid flag', () => {
       expect(mockShapeHybrid.isHybrid).toBe(true)
       expect(mockShapeRegular.isHybrid).toBeUndefined()
-    })
-
-    it('Hybrid shapes can have special() cells from variants', () => {
-      const variants = mockShapeHybrid.variants()
-      const special = variants.special()
-      expect(special).toEqual([[1, 1]])
     })
 
     it('Hybrid shape variants should return proper structure', () => {

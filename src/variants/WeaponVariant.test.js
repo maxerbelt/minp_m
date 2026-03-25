@@ -76,10 +76,7 @@ jest.unstable_mockModule('./SpecialVariant.js', () => {
     buildBoard3 (symmetry, board) {
       this.list = [board]
     }
-    // provide special method used by WeaponVariant.placeable
-    special (idx, i) {
-      return [`cell-${idx}-${i}`]
-    }
+
     static setBehaviourTo () {}
   }
   return { SpecialVariant }

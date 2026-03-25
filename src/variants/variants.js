@@ -48,9 +48,7 @@ export class Variants {
   variant (index = this.index) {
     return this.boardFor(index).toCoords
   }
-  special (_index) {
-    return []
-  }
+
   placeable (index = this.index) {
     return new Placeable(this.boardFor(index), this.validator, this.zoneDetail)
   }
