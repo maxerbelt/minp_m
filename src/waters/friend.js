@@ -72,48 +72,48 @@ export class Friend extends Waters {
   }
 
   seekBomb (weapon, effect) {
-    const { hits, sunks, reveals, info, shots } = this.seekBombRaw(
+    const { hits, sunk, reveals, info, shots } = this.seekBombRaw(
       weapon,
       effect
     )
-    this.updateResultsOfBomb(weapon, hits, sunks, reveals, info, shots)
+    this.updateResultsOfBomb(weapon, hits, sunk, reveals, info, shots)
   }
   seekBombRaw (weapon, effect) {
     const map = bh.map
     this.updateUI()
     let hits = 0
     let reveals = 0
-    let sunks = ''
+    let sunk = ''
     let info = ''
     let shots = 0
     for (const [r, c, power] of effect) {
-      ;({ hits, sunks, reveals, shots, info } = this.applyToPosition(
+      ;({ hits, sunk, reveals, shots, info } = this.applyToPosition(
         map,
         r,
         c,
         weapon,
         power,
         hits,
-        sunks,
+        sunk,
         reveals,
         shots,
         info
       ))
     }
     if (hits > 0) this.flash('long')
-    return { hits, sunks, reveals, info, shots }
+    return { hits, sunk, reveals, info, shots }
   }
 
-  applyToPosition (map, r, c, weapon, power, hits, sunks, reveals, shots, info) {
+  applyToPosition (map, r, c, weapon, power, hits, sunk, reveals, shots, info) {
     if (map.inBounds(r, c)) {
       const result = this.seekHit(weapon, r, c, power)
       if (result?.hits) hits += result.hits
-      if (result?.sunk) sunks += result.sunk
+      if (result?.sunk) sunk += result.sunk
       if (result?.reveals) reveals += result.reveals
       if (result?.shots) shots += result.shots
       if (result?.info) info += result.info + ' '
     }
-    return { hits, sunks, reveals, shots, info }
+    return { hits, sunk, reveals, shots, info }
   }
 
   randomBomb (seeking) {
@@ -125,8 +125,9 @@ export class Friend extends Waters {
         if (this.isCancelled(seeking)) return
         const { r, c } = this.randomLocation(map)
         if (this.score.newShotKey(r, c)) {
-          this.launchRandomWeapon(r, c, false)
-          this.loadOut.aimWeapon(bh.map, r, c, this.loadOut.selectedWeapon)
+          if (!this.launchRandomWeapon(r, c, false)) {
+            this.loadOut.aimWeapon(bh.map, r, c, this.loadOut.selectedWeapon)
+          }
           return
         }
       }
@@ -173,11 +174,11 @@ export class Friend extends Waters {
       result = this.sShot(loc[0], loc[1], false)
       if (result?.shots && result.shots > 0) return
     }
-    const { hits, sunks, reveals, info, shots } = result
+    const { hits, sunk, reveals, info, shots } = result
     this.updateResultsOfBomb(
       this.loadOut.getSingleShot(),
       hits,
-      sunks,
+      sunk,
       reveals,
       info,
       shots
@@ -399,11 +400,11 @@ export class Friend extends Waters {
     this.loadOut.switchToSingleShot()
     const [r, c] = candidate.randomOccupied
     const result = this.sShot(r, c, false)
-    const { hits, sunks, reveals, info, shots } = result
+    const { hits, sunk, reveals, info, shots } = result
     this.updateResultsOfBomb(
       this.loadOut.getSingleShot(),
       hits,
-      sunks,
+      sunk,
       reveals,
       info,
       shots

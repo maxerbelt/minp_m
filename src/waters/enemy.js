@@ -308,20 +308,20 @@ class Enemy extends Waters {
   processCarpetBomb (weapon, effect) {
     let hits = 0
     let reveals = 0
-    let sunks = ''
+    let sunk = ''
     let info = ''
     let shots = 0
-    ;({ hits, sunks, reveals, info, shots } = this.dropBomb(
+    ;({ hits, sunk, reveals, info, shots } = this.dropBomb(
       weapon,
       effect,
       hits,
-      sunks,
+      sunk,
       reveals,
       info,
       shots
     ))
     // update status
-    this.updateResultsOfBomb(weapon, hits, sunks, reveals, info, shots)
+    this.updateResultsOfBomb(weapon, hits, sunk, reveals, info, shots)
     this.updateMode()
     this.flash()
   }
@@ -356,7 +356,7 @@ class Enemy extends Waters {
     }
   }
 
-  dropBomb (weapon, effect, hits, sunks, reveals, info, shots) {
+  dropBomb (weapon, effect, hits, sunk, reveals, info, shots) {
     const map = bh.map
 
     for (const position of effect) {
@@ -365,13 +365,13 @@ class Enemy extends Waters {
       if (map.inBounds(r, c)) {
         const result = this.processShot(weapon, r, c, power)
         if (result?.hits) hits += result.hits
-        if (result?.sunk) sunks += result.sunk
+        if (result?.sunk) sunk += result.sunk
         if (result?.reveals) reveals += result.reveals
         if (result?.shots) shots += result.shots
         if (result?.info) info += result.info + ' '
       }
     }
-    return { hits, sunks, reveals, info, shots }
+    return { hits, sunk, reveals, info, shots }
   }
 
   onClickWeaponMode () {
