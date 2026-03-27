@@ -109,16 +109,16 @@ export class Weapon {
   redoCoords (_map, base, coords) {
     return [base, coords[0]]
   }
-  cursorLaunchTo (coords, rr, cc, onEnd, map, viewModel, opposingViewModel) {
+  cursorLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel) {
     map = map || bh.map
     const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
     // const tt = target.toReversed()
     const [sr, sc] = map.randomEdge(...target)
     const start1 = opposingViewModel.gridCellAt(sr, sc)
-
     const end1 = viewModel.gridCellAt(...target)
+    const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
 
-    this.animateFlying(
+    return this.animateFlying(
       start1,
       end1,
       viewModel.cellSizeScreen(),
@@ -126,19 +126,11 @@ export class Weapon {
       viewModel,
       0,
       0.9,
-      'cursor ' + this.cursors.at(-1),
-      false
+      'cursor ' + flyCursor,
+      false,
+      true
     ).then(
-      this.launchTo.bind(
-        this,
-        coords,
-        r,
-        c,
-        onEnd,
-        map,
-        viewModel,
-        opposingViewModel
-      )
+      this.launchTo.bind(this, coords, r, c, map, viewModel, opposingViewModel)
     )
   }
 
@@ -146,7 +138,6 @@ export class Weapon {
     coords,
     rr,
     cc,
-    onEnd,
     map,
     viewModel,
     opposingViewModel,
@@ -154,11 +145,10 @@ export class Weapon {
     launch
   ) {
     launch = launch || this.launchToRaw
-    launch(
+    return launch(
       coords,
       rr,
       cc,
-      onEnd,
       map,
       viewModel,
       opposingViewModel,
@@ -180,7 +170,6 @@ export class Weapon {
     coords,
     rr,
     cc,
-    onEnd,
     map,
     viewModel,
     opposingViewModel,
@@ -191,7 +180,6 @@ export class Weapon {
       coords,
       rr,
       cc,
-      onEnd,
       map,
       viewModel,
       opposingViewModel,
@@ -204,7 +192,6 @@ export class Weapon {
     coords,
     rr,
     cc,
-    onEnd,
     map,
     viewModel,
     opposingViewModel,
@@ -224,18 +211,16 @@ export class Weapon {
       sourceCell = viewModel.gridCellAt(0, 0)
     }
     const targetCell = viewModel.gridCellAt(target[0], target[1])
-    this.animateFlying(
-      sourceCell,
-      targetCell,
-      viewModel.cellSizeScreen(),
-      map,
-      viewModel
-    ).then(() => {
-      if (hasCandidates) {
-        onEnd(target)
-      } else {
-        onEnd()
-      }
+    return new Promise(resolve => {
+      this.animateFlying(
+        sourceCell,
+        targetCell,
+        viewModel.cellSizeScreen(),
+        map,
+        viewModel
+      ).then(() => {
+        resolve({ hasCandidates, target })
+      })
     })
   }
   centerOf (el) {
@@ -261,27 +246,7 @@ export class Weapon {
       'shake-heavy'
     )
   }
-  async animateExplodeThen (
-    target,
-    container,
-    end,
-    cellSize,
-    type,
-    power,
-    onEnd,
-    shake = 'shake'
-  ) {
-    await this.animateExplode(
-      target,
-      container,
-      end,
-      cellSize,
-      type,
-      power,
-      shake
-    )
-    if (onEnd) onEnd()
-  }
+
   animateExplode (
     target,
     container,
@@ -359,7 +324,8 @@ export class Weapon {
     rotation = 0,
     duration = 0.7,
     classname = this.classname,
-    doesExplode = true
+    doesExplode = true,
+    animateOnTarget = this.animateOnTarget
   ) {
     const { container, end, start, cellSize } = this.initAnimate(
       cellSz,
@@ -367,22 +333,20 @@ export class Weapon {
       source
     )
     return new Promise((resolve, reject) => {
-      this.checkAnimate(
-        target,
-        container,
-        end,
-        cellSize,
-        map,
-        viewModel,
-        doesExplode
-      )
-        .then(shouldAnimate => {
-          if (!shouldAnimate) {
-            resolve()
-            return
-          }
-        })
-        .catch(err => reject(err))
+      if (!animateOnTarget) {
+        this.checkAnimate(
+          target,
+          container,
+          end,
+          cellSize,
+          map,
+          viewModel,
+          doesExplode
+        )
+          .then(resolve)
+          .catch(err => reject(err))
+        return
+      }
 
       const pointer = this.animateFlyingBase(
         end,
@@ -502,6 +466,7 @@ export class StandardShot extends Weapon {
   constructor () {
     super('Standard Shot', '-', false, true, 1)
     this.cursors = ['']
+    this.launchCursor = 'crosshair'
     this.tag = 'single'
     this.hints = ['Click On Square To Fire']
     this.buttonHtml = '<span class="shortcut">S</span>ingle Shot'

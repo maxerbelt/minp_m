@@ -26,20 +26,19 @@ export class LoadOut {
     this.launch = LoadOut.launchDefault.bind(this, this.viewModel)
   }
 
-  static launchDefault (viewModel, coordinates, onEnd, weapon) {
+  static launchDefault (viewModel, coordinates, weapon) {
     const targetCoordinates = coordinates.at(-1)
     const targetCell = viewModel.gridCellAt(
       targetCoordinates[0],
       targetCoordinates[1]
     )
-    weapon.animateExplodeThen(
+    return weapon.animateExplode(
       targetCell,
       null,
       null,
       viewModel.cellSizeScreen(),
       null,
-      null,
-      onEnd
+      null
     )
   }
   loadWeapons () {
@@ -327,19 +326,39 @@ export class LoadOut {
       this.clearSelectedCoordinates()
       this.useAmmo(wps)
       this.checkNoAmmo()
-      this.launch(
-        fireCoordinates,
-        this.fireWeapon.bind(this, map, fireCoordinates, wps),
-        weapon,
-        wps
-      )
+      const fireWeapon = this.fireWeapon.bind(this, map, fireCoordinates, wps)
+      this.launch(fireCoordinates, weapon, wps).then(result => {
+        if (result?.hasCandidates) {
+          fireWeapon(result?.target)
+        } else {
+          fireWeapon()
+        }
+      })
     }
+  }
+  aimSingleShot (map, row, col, sShot) {
+    sShot = sShot || this.getSingleShotWps()
+    const weapon = sShot.weapon
+    const fireSingleShot = this.fireSingleShot.bind(
+      this,
+      map,
+      [row, col],
+      sShot
+    )
+    this.launch([[row, col, 4]], weapon, sShot).then(() => {
+      fireSingleShot()
+    })
   }
 
   dismissSelection () {
     this.clearSelectedCoordinates()
   }
-
+  fireSingleShot (map, coordinates, sShot) {
+    sShot = sShot || this.getSingleShotWps()
+    const c = coordinates || this.coord
+    const weapon = sShot.weapon
+    this.onDestroy(weapon, [c])
+  }
   fireWeapon (map, coordinates, weaponSystem, target) {
     const c = coordinates || this.coord
     const wps = weaponSystem || this.getCurrentWeaponSystem()

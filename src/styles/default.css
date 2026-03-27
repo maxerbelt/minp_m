@@ -12,3 +12,8 @@ body.space {
 body.space img.logo {
     content: var(--logo-image-space);
 }
+
+.flying-weapon.cursor.crosshair {
+    background-image: var(--cross-cursor-image);
+
+}

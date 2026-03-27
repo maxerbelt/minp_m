@@ -42,6 +42,7 @@ export class Waters {
     this.UI = ui
     this.shipCellGrid = []
     this.boardDestroyed = false
+    this.preamble1 = 'You '
     this.preamble0 = 'Your'
     this.preamble = 'You were '
     this.steps = new steps()
@@ -397,9 +398,9 @@ export class Waters {
       rack.launchCoord = [launchR, launchC]
 
       rack.hintCoord = [hintR, hintC]
-      this.loadOut.launch = (coords, onEnd) => {
+      this.loadOut.launch = coords => {
         this.steps.fire()
-        this.launchTo(coords, hintR, hintC, rack, onEnd)
+        return this.launchTo(coords, hintR, hintC, rack)
       }
       this.loadOut.selectedWeapon = rack
     }
@@ -519,8 +520,8 @@ export class Waters {
     const currentShip = this.loadOut.getShipByWeaponId(currentWeapon.id)
     const weaponName = currentWeapon.weapon?.name || 'weapon'
     if (autoSelectWarning) this.autoSelectWarning(weaponName, currentShip)
-    this.loadOut.launch = (coords, onEnd, weapon, wps) => {
-      this.launchWeapon(wps, coords, onEnd, weapon)
+    this.loadOut.launch = (coords, weapon, wps) => {
+      return this.launchWeapon(wps, coords, weapon)
     }
     return true
   }
@@ -536,13 +537,21 @@ export class Waters {
   launchUnattachedWeapon (r, c) {
     const unAttached = this.getUnattachedWeaponSystem()
     if (unAttached) {
-      this.loadOut.launch = (coords, onEnd) => {
-        this.launchTo(coords, bh.map.rows - 1, 0, unAttached, onEnd)
+      this.loadOut.launch = coords => {
+        return this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
       this.loadOut.aimWeapon(bh.map, r, c, unAttached)
       return true
     }
     return false
+  }
+  launchSingleShot (r, c, sShot) {
+    sShot = sShot || this.loadOut.getSingleShotWps()
+
+    this.loadOut.launch = coords => {
+      return this.launchTo(coords, bh.map.rows - 1, 0, sShot)
+    }
+    this.loadOut.aimSingleShot(bh.map, r, c, sShot)
   }
   getUnattachedWeaponSystem () {
     if (bh.seekingMode) {
@@ -552,22 +561,21 @@ export class Waters {
     }
   }
 
-  launchTo (coords, rr, cc, currentWeapon, onEnd) {
-    currentWeapon.weapon.launchTo(
+  launchTo (coords, rr, cc, currentWeapon) {
+    return currentWeapon.weapon.launchTo(
       coords,
       rr,
       cc,
-      onEnd,
       bh.map,
       this.UI,
       this.opponent?.UI,
       this
     )
   }
-  launchWeapon (wps, coords, onEnd) {
+  launchWeapon (wps, coords) {
     const { r, c } = this.steps.sourceHint || { r: 0, c: 0 }
     this.steps.fire()
-    this.launchTo(coords, r, c, wps, onEnd)
+    return this.launchTo(coords, r, c, wps)
   }
 
   setupAttachedAim () {
@@ -770,7 +778,7 @@ export class Waters {
     this.displayInfo(info + this.sunkDescription(ship))
   }
 
-  checkForHit (weapon, r, c, power, key, shipCell) {
+  checkForHit (weapon, r, c, power, shipCell) {
     if (!shipCell) {
       return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
     }
@@ -875,7 +883,7 @@ export class Waters {
     if (this.UI.weaponBtn) this.UI.weaponBtn.innerHTML = next.buttonHtml
   }
 
-  fireShot (weapon, r, c, power, key) {
+  fireShot (weapon, r, c, power) {
     const shipCell = this.shipCellAt(r, c)
     if (!shipCell) {
       if (power > 0) {
@@ -884,14 +892,14 @@ export class Waters {
       }
       return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
     }
-    return this.checkForHit(weapon, r, c, power, key, shipCell)
+    return this.checkForHit(weapon, r, c, power, shipCell)
   }
 
   hitDescription (hits) {
     if (this.opponent) {
-      return this.preamble + ' Hit (x' + hits.toString() + ')'
+      return this.preamble + 'Hit (x' + hits.toString() + ')'
     } else {
-      return hits.toString() + ' Hits'
+      return hits.toString() + 'Hits'
     }
   }
   revealDescription (reveals) {
@@ -901,23 +909,39 @@ export class Waters {
       return reveals.toString() + 'revealed'
     }
   }
-
+  displayMisses (weapon, reveals = 0, messageInfo = '') {
+    if (reveals > 0) {
+      this.displayInfo(messageInfo + this.revealDescription(reveals))
+    } else {
+      // if (weapon.letter === '-') return // don't display miss for single shot
+      let missMessage
+      if (this.opponent) {
+        if (weapon.letter === '-') {
+          missMessage = `${this.opponent.preamble1}missed`
+        } else {
+          missMessage = `${this.opponent.preamble1}${weapon.name} missed ${this.preamble0} ships`
+        }
+      } else {
+        if (weapon.letter === '-') {
+          return // don't display miss for single shot
+        } else {
+          missMessage = `${this.opponent.preamble1} ${weapon.name} missed everything!`
+        }
+        this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
+      }
+      this.displayInfo(messageInfo + missMessage)
+    }
+  }
   updateResultsOfBomb (weapon, hits, sunks, reveals = 0, info = '') {
     const messageInfo = info ? info + ' ' : ''
     if (this.boardDestroyed) {
-      // already handled  in updateUI
-    } else if (hits === 0 && reveals > 0) {
-      this.displayInfo(messageInfo + this.revealDescription(reveals))
-    } else if (hits === 0) {
-      if (weapon.letter === '-') return // don't display miss for bomb splash
-      if (this.opponent) {
-        this.displayInfo(
-          messageInfo + `The ${weapon.name} missed ${this.preamble0} ships`
-        )
-      } else {
-        this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
-      }
-    } else if (sunks.length === 0) {
+      return
+    }
+    if (hits === 0) {
+      this.displayMisses(weapon, reveals, messageInfo)
+      return
+    }
+    if (sunks.length === 0) {
       let message = this.hitDescription(hits)
       if (reveals > 0) {
         message += ` and ${this.revealDescription(reveals)}`
@@ -967,31 +991,33 @@ export class Waters {
       this.effect(cell, 'flames', 'long')
     }
   }
+  isHitInvalid (r, c, power, hasFlame, hasFlash) {
+    if (!bh.inBounds(r, c)) return true
 
-  processShot (weapon, r, c, power) {
-    if (power > 0) this.flame(r, c, weapon.hasFlash)
-
+    if (hasFlame && power > 0) this.flame(r, c, hasFlash)
     const key =
       power > 0 ? this.score.createShotKey(r, c) : this.score.newShotKey(r, c)
     if (key === null) {
+      return true
+    }
+    return false
+  }
+  processShot (weapon, r, c, power) {
+    if (this.isHitInvalid(r, c, power, true, weapon.hasFlash)) {
       // if we are here, it is because of carpet bomb, so we can just
       return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
     }
 
-    const result = this.fireShot(weapon, r, c, power, key)
+    const result = this.fireShot(weapon, r, c, power)
 
     this.updateUI(this.ships)
     return result
   }
 
   updateUI (ships) {
-    this.updateTally(
-      ships,
-      this.loadOut.getAllLimitedWeaponSystems(),
-      ...this.score.counts()
-    )
+    this.updateTally(ships, this.loadOut.getAllLimitedWeaponSystems())
   }
-  updateTally (ships, weaponSystems, noOfShots, reveals, hints) {
+  updateTally (ships, weaponSystems) {
     ships = ships || this.ships
     if (this.UI.placing && this.UI.placeTally) {
       this.UI.placeTally(ships)

@@ -139,12 +139,11 @@ export class Kinetic extends Weapon {
     return getExtendedLinePoints(r, c, r1, c1, power)
   }
 
-  launchTo (coords, rr, cc, onEnd, map, viewModel, opposingViewModel, model) {
+  launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     return this.launchRightTo(
       coords,
       rr,
       cc,
-      onEnd,
       map,
       viewModel,
       opposingViewModel,
@@ -223,12 +222,11 @@ export class Torpedo extends Weapon {
     ammo = ammo || this.ammo
     return new Torpedo(ammo)
   }
-  launchTo (coords, rr, cc, onEnd, map, viewModel, opposingViewModel, model) {
+  launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     return this.launchRightTo(
       coords,
       rr,
       cc,
-      onEnd,
       map,
       viewModel,
       opposingViewModel,

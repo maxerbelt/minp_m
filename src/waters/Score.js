@@ -20,24 +20,24 @@ export class Score {
   }
   newShotKey (r, c) {
     // return true if the coordinate is a new shot (not already present)
-    if (this.shot.test(r, c)) return null
+    if (this.shot.test(c, r)) return null
     return true
   }
 
   shotReveal (r, c) {
-    this.shot.clear(r, c)
-    this.reveal.set(r, c)
+    this.shot.clear(c, r)
+    this.reveal.set(c, r)
   }
   hintReveal (r, c) {
-    this.hint.set(r, c)
+    this.hint.set(c, r)
   }
   wakeReveal (r, c) {
-    this.wake.set(r, c)
+    this.wake.set(c, r)
   }
   createShotKey (r, c) {
     const isCreated = this.newShotKey(r, c)
     if (isCreated) {
-      this.shot.set(r, c)
+      this.shot.set(c, r)
       return true
     }
     return null
@@ -58,7 +58,7 @@ export class Score {
   addAutoMiss (r, c) {
     const isCreated = this.createShotKey(r, c)
     if (!isCreated) return null // already shot here
-    this.auto.set(r, c)
+    this.auto.set(c, r)
     return true
   }
 }

@@ -12,6 +12,7 @@ class Enemy extends Waters {
     super(enemyUI)
     this.preamble0 = 'Enemy'
     this.preamble = 'The enemy was '
+    this.preamble1 = 'The enemy '
     this.isRevealed = false
     this.timeoutId = null
     this.weaponSelectHander = null

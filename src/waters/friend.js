@@ -49,24 +49,11 @@ export class Friend extends Waters {
     return false
   }
 
-  sShot (r, c) {
-    const sShot = this.loadOut.getSingleShot()
-    return this.seekHit(sShot, r, c, 4)
-  }
-
   seekHit (weapon, r, c, power) {
-    if (!bh.inBounds(r, c))
+    if (this.isHitInvalid(r, c, power, true, weapon.hasFlash))
       return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
 
-    if (power > 0) this.flame(r, c, weapon.hasFlash)
-    const key =
-      power > 0 ? this.score.createShotKey(r, c) : this.score.newShotKey(r, c)
-    if (key === null) {
-      // if we are here, it is because of carpet bomb, so we can just
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
-    }
-
-    const result = this.fireShot(weapon, r, c, power, key)
+    const result = this.fireShot(weapon, r, c, power)
     this.updateUI(this.ships)
     return result
   }
@@ -79,7 +66,6 @@ export class Friend extends Waters {
     this.updateResultsOfBomb(weapon, hits, sunk, reveals, info, shots)
   }
   seekBombRaw (weapon, effect) {
-    const map = bh.map
     this.updateUI()
     let hits = 0
     let reveals = 0
@@ -88,7 +74,6 @@ export class Friend extends Waters {
     let shots = 0
     for (const [r, c, power] of effect) {
       ;({ hits, sunk, reveals, shots, info } = this.applyToPosition(
-        map,
         r,
         c,
         weapon,
@@ -104,8 +89,8 @@ export class Friend extends Waters {
     return { hits, sunk, reveals, info, shots }
   }
 
-  applyToPosition (map, r, c, weapon, power, hits, sunk, reveals, shots, info) {
-    if (map.inBounds(r, c)) {
+  applyToPosition (r, c, weapon, power, hits, sunk, reveals, shots, info) {
+    if (bh.inBounds(r, c)) {
       const result = this.seekHit(weapon, r, c, power)
       if (result?.hits) hits += result.hits
       if (result?.sunk) sunk += result.sunk
@@ -156,10 +141,11 @@ export class Friend extends Waters {
     this.launchRandomWeapon(r, 0, false)
     this.loadOut.aimWeapon(map, r, map.cols - 1, this.loadOut.selectedWeapon)
   }
-
+  isHitValid (r, c) {
+    return !this.isHitInvalid(r, c, 4, false, false)
+  }
   randomSeek (seeking) {
     const maxAttempts = 13
-    let result = null
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (this.isCancelled(seeking)) return
       const loc = this.randomLoc()
@@ -171,18 +157,11 @@ export class Friend extends Waters {
         this.testContinue = false
         return
       }
-      result = this.sShot(loc[0], loc[1], false)
-      if (result?.shots && result.shots > 0) return
+      if (this.isHitValid(loc[0], loc[1])) {
+        this.launchSingleShot(loc[0], loc[1])
+        return
+      }
     }
-    const { hits, sunk, reveals, info, shots } = result
-    this.updateResultsOfBomb(
-      this.loadOut.getSingleShot(),
-      hits,
-      sunk,
-      reveals,
-      info,
-      shots
-    )
   }
 
   restartBoard () {
@@ -203,12 +182,11 @@ export class Friend extends Waters {
     }
     this.armWeapons()
   }
-  launchTo (coords, rr, cc, currentWeapon, onEnd) {
-    currentWeapon.weapon.cursorLaunchTo(
+  launchTo (coords, rr, cc, currentWeapon) {
+    return currentWeapon.weapon.cursorLaunchTo(
       coords,
       rr,
       cc,
-      onEnd,
       bh.map,
       this.UI,
       this.opponent?.UI
@@ -238,11 +216,11 @@ export class Friend extends Waters {
     const noOfLocs = locs.length
 
     if (noOfLocs === 0) return null
-    if (noOfLocs === 1) return locs[0].split(',').map(x => Number.parseInt(x))
+    if (noOfLocs === 1) return locs[0]
 
     const idx = Math.floor(Math.random() * locs.length)
 
-    return locs[idx].split(',').map(x => Number.parseInt(x))
+    return locs[idx]
   }
 
   randomLine () {
@@ -265,9 +243,9 @@ export class Friend extends Waters {
     const idx = line.findIndex(i => i[1] < line[0][1])
 
     if (idx < 3) {
-      return Number.parseInt(line[0])
+      return line[0]
     }
-    return Number.parseInt(line[Math.floor(Math.random() * (idx - 1))])
+    return line[Math.floor(Math.random() * (idx - 1))]
   }
 
   seek () {
@@ -380,35 +358,31 @@ export class Friend extends Waters {
 
   finishPartiallySunk (hits) {
     const numHits = hits ? hits.occupancy : 0
-    if (numHits > 0) {
-      const cross = hits.clone.dilateCross().take(this.score.shot)
-      if (cross.occupancy > 0) {
-        this.selectRandomCandidate(cross)
-        return true
-      }
-
-      const surround = hits.clone.dilate(1).take(this.score.shot)
-      if (surround.occupancy > 0) {
-        this.selectRandomCandidate(surround)
-        return true
-      }
+    if (numHits <= 0) return false
+    const shots = this.score.shot
+    console.log('shot', shots.occupancy, shots.toAscii)
+    let cross = hits.clone.dilateCross()
+    console.log('cross', cross.toAscii)
+    cross = cross.take(shots)
+    console.log('candidates', cross.toAscii)
+    if (cross.occupancy > 0) {
+      this.selectRandomCandidate(cross)
+      return true
     }
-    return false
+
+    const surround = hits.clone.dilate(1).take(this.score.shot)
+    console.log('surround', surround.toAscii)
+    if (surround.occupancy > 0) {
+      this.selectRandomCandidate(surround)
+      return true
+    }
   }
 
   selectRandomCandidate (candidate) {
     this.loadOut.switchToSingleShot()
-    const [r, c] = candidate.randomOccupied
-    const result = this.sShot(r, c, false)
-    const { hits, sunk, reveals, info, shots } = result
-    this.updateResultsOfBomb(
-      this.loadOut.getSingleShot(),
-      hits,
-      sunk,
-      reveals,
-      info,
-      shots
-    )
+    const [c, r] = candidate.randomOccupied
+    console.log('selecting candidate', r, c)
+    this.launchSingleShot(r, c, false)
   }
 
   getHits () {
@@ -422,6 +396,7 @@ export class Friend extends Waters {
 
   seekStep (seeking) {
     const hits = this.getHits()
+    console.log('hits', hits.toAscii)
     this.selectShot(hits, seeking)
     this.steps.endTurn()
   }
