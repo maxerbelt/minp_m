@@ -109,7 +109,7 @@ export class Weapon {
   redoCoords (_map, base, coords) {
     return [base, coords[0]]
   }
-  cursorLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel) {
+  async cursorLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel) {
     map = map || bh.map
     const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
     // const tt = target.toReversed()
@@ -118,7 +118,7 @@ export class Weapon {
     const end1 = viewModel.gridCellAt(...target)
     const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
 
-    return this.animateFlying(
+    await this.animateFlying(
       start1,
       end1,
       viewModel.cellSizeScreen(),
@@ -129,9 +129,8 @@ export class Weapon {
       'cursor ' + flyCursor,
       false,
       true
-    ).then(
-      this.launchTo.bind(this, coords, r, c, map, viewModel, opposingViewModel)
     )
+    return await this.launchTo(coords, r, c, map, viewModel, opposingViewModel)
   }
 
   launchRightTo (
@@ -188,7 +187,7 @@ export class Weapon {
     )
   }
 
-  launchToRaw (
+  async launchToRaw (
     coords,
     rr,
     cc,
@@ -211,17 +210,14 @@ export class Weapon {
       sourceCell = viewModel.gridCellAt(0, 0)
     }
     const targetCell = viewModel.gridCellAt(target[0], target[1])
-    return new Promise(resolve => {
-      this.animateFlying(
-        sourceCell,
-        targetCell,
-        viewModel.cellSizeScreen(),
-        map,
-        viewModel
-      ).then(() => {
-        resolve({ hasCandidates, target })
-      })
-    })
+    await this.animateFlying(
+      sourceCell,
+      targetCell,
+      viewModel.cellSizeScreen(),
+      map,
+      viewModel
+    )
+    return { hasCandidates, target }
   }
   centerOf (el) {
     const r = el.getBoundingClientRect()
@@ -315,7 +311,7 @@ export class Weapon {
     })
   }
 
-  animateFlying (
+  async animateFlying (
     source,
     target,
     cellSz,
@@ -332,33 +328,8 @@ export class Weapon {
       target,
       source
     )
-    return new Promise((resolve, reject) => {
-      if (!animateOnTarget) {
-        this.checkAnimate(
-          target,
-          container,
-          end,
-          cellSize,
-          map,
-          viewModel,
-          doesExplode
-        )
-          .then(resolve)
-          .catch(err => reject(err))
-        return
-      }
-
-      const pointer = this.animateFlyingBase(
-        end,
-        start,
-        container,
-        rotation,
-        duration,
-        classname
-      )
-
-      this.finishAnimate(
-        pointer,
+    if (!animateOnTarget) {
+      return await this.checkAnimate(
         target,
         container,
         end,
@@ -367,12 +338,30 @@ export class Weapon {
         viewModel,
         doesExplode
       )
-        .then(() => resolve())
-        .catch(err => reject(err))
-    })
+    }
+
+    const pointer = this.animateFlyingBase(
+      end,
+      start,
+      container,
+      rotation,
+      duration,
+      classname
+    )
+
+    return await this.finishAnimate(
+      pointer,
+      target,
+      container,
+      end,
+      cellSize,
+      map,
+      viewModel,
+      doesExplode
+    )
   }
 
-  finishAnimate (
+  async finishAnimate (
     pointer,
     target,
     container,
@@ -382,45 +371,48 @@ export class Weapon {
     viewModel,
     doesExplode
   ) {
-    return new Promise(resolve => {
-      pointer.addEventListener('animationend', () => {
-        if (doesExplode && this.explodeOnTarget) {
-          pointer.remove()
-          this.animateTargetExplode(
-            target,
-            container,
-            end,
-            cellSize,
-            map,
-            viewModel
-          ).then(() => resolve())
-          return
-        }
-        const tId = setTimeout(() => {
-          pointer.remove()
-          resolve()
-        }, 500)
-      })
+    await new Promise(resolve => {
+      pointer.addEventListener('animationend', resolve, { once: true })
     })
+    if (doesExplode && this.explodeOnTarget) {
+      pointer.remove()
+      await this.animateTargetExplode(
+        target,
+        container,
+        end,
+        cellSize,
+        map,
+        viewModel
+      )
+      return
+    }
+    await new Promise(resolve => setTimeout(resolve, 500))
+    pointer.remove()
   }
 
-  checkAnimate (target, container, end, cellSize, map, viewModel, doesExplode) {
-    return new Promise(resolve => {
-      if (!this.animateOnTarget) {
-        if (doesExplode) {
-          this.animateTargetExplode(
-            target,
-            container,
-            end,
-            cellSize,
-            map,
-            viewModel
-          ).then(() => resolve(false))
-          return
-        }
+  async checkAnimate (
+    target,
+    container,
+    end,
+    cellSize,
+    map,
+    viewModel,
+    doesExplode
+  ) {
+    if (!this.animateOnTarget) {
+      if (doesExplode) {
+        await this.animateTargetExplode(
+          target,
+          container,
+          end,
+          cellSize,
+          map,
+          viewModel
+        )
+        return false
       }
-      resolve(true)
-    })
+    }
+    return true
   }
 
   animateTargetExplode (target, container, end, cellSize) {

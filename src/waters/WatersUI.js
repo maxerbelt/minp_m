@@ -85,12 +85,11 @@ export class WatersUI {
       this.delayEffect(r, c, effect, mindelay, maxdelay, power)
     }
   }
-  delayAsyncEffects (coords, effect, mindelay = 380, maxdelay = 730) {
-    return Promise.allSettled(
-      coords.map(([r, c, power]) =>
-        this.delayAsyncEffect(r, c, effect, mindelay, maxdelay, power)
-      )
+  async delayAsyncEffects (coords, effect, mindelay = 380, maxdelay = 730) {
+    const promises = coords.map(([r, c, power]) =>
+      this.delayAsyncEffect(r, c, effect, mindelay, maxdelay, power)
     )
+    return await Promise.allSettled(promises)
   }
   delayEffect (r, c, effect, mindelay = 380, maxdelay = 730, power) {
     const range = maxdelay - mindelay
@@ -100,17 +99,19 @@ export class WatersUI {
       effect(cell, power)
     }, delay)
   }
-  delayAsyncEffect (r, c, effect, mindelay = 380, maxdelay = 730, power = null) {
-    return new Promise((resolve, reject) => {
-      const range = maxdelay - mindelay
-      const delay = Math.floor(Math.random() * range) + mindelay
-      const timerId = setTimeout(() => {
-        const cell = this.gridCellAt(r, c)
-        effect(cell, power)
-          .then(() => resolve())
-          .catch(err => reject(err))
-      }, delay)
-    })
+  async delayAsyncEffect (
+    r,
+    c,
+    effect,
+    mindelay = 380,
+    maxdelay = 730,
+    power = null
+  ) {
+    const range = maxdelay - mindelay
+    const delay = Math.floor(Math.random() * range) + mindelay
+    await new Promise(resolve => setTimeout(resolve, delay))
+    const cell = this.gridCellAt(r, c)
+    await effect(cell, power)
   }
   displayShipCellBase (cell, ship) {
     const letter = ship?.letter || '-'

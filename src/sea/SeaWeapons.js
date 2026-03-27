@@ -318,31 +318,26 @@ export class Flack extends Weapon {
     return [[0, coords[0][1]], coords[0]]
   }
 
-  animateTargetExplode (target, container, end, cellSize, map, viewModel) {
-    return new Promise((resolve, reject) => {
-      const coord = coordsFromCell(target)
-      const effects = this.aoe(map, [coord]).filter(([, , power]) => power > 0)
+  async animateTargetExplode (target, container, end, cellSize, map, viewModel) {
+    const coord = coordsFromCell(target)
+    const effects = this.aoe(map, [coord]).filter(([, , power]) => power > 0)
 
-      viewModel
-        .delayAsyncEffects(
-          effects,
-          (cell, power) => {
-            this.animateExplode(
-              cell,
-              null,
-              null,
-              Function.prototype,
-              cellSize,
-              'air',
-              power
-            )
-          },
-          0,
-          500
+    await viewModel.delayAsyncEffects(
+      effects,
+      (cell, power) => {
+        this.animateExplode(
+          cell,
+          null,
+          null,
+          Function.prototype,
+          cellSize,
+          'air',
+          power
         )
-        .then(() => resolve())
-        .catch(err => reject(err))
-    })
+      },
+      0,
+      500
+    )
   }
 
   aoe (map, coords) {
