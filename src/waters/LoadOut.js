@@ -357,7 +357,7 @@ export class LoadOut {
     sShot = sShot || this.getSingleShotWps()
     const c = coordinates || this.coord
     const weapon = sShot.weapon
-    this.onDestroy(weapon, [c])
+    this.onDestroy(weapon, [[...c, 4]])
   }
   fireWeapon (map, coordinates, weaponSystem, target) {
     const c = coordinates || this.coord

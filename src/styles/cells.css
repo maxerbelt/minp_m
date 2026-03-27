@@ -306,6 +306,10 @@
     animation: flyweapon var(--duration) linear forwards;
 }
 
+.flying-weapon.cursor.crosshair {
+    background-image: var(--cross-cursor-image);
+}
+
 /* Keyframes */
 @keyframes flyweapon {
     0% {
