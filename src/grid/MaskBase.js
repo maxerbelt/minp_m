@@ -382,28 +382,33 @@ export class MaskBase extends CanvasGrid {
   // ============================================================================
   // Color Layer Operations
   // ============================================================================
-  _createMaskFromBits (bits) {
+  _createSingleBitMaskFromBits (bits) {
     const mask = this.emptyMaskOfSize(this.width, this.height, 1)
+    mask.bits = bits
+    return mask
+  }
+  _createMaskFromBits (bits) {
+    const mask = this.emptyMaskOfSize(this.width, this.height, this.depth)
     mask.bits = bits
     return mask
   }
   extractColorLayerBits (color) {
     return this.store.extractColorLayer(
       this.bits,
+      color,
       this.width,
-      this.height,
-      color
+      this.height
     )
   }
   extractColorLayer (color) {
-    return this._createMaskFromBits(this.extractColorLayerBits(color))
+    return this._createSingleBitMaskFromBits(this.extractColorLayerBits(color))
   }
   extractColorLayersBits () {
     return this.store.extractColorLayers(this.bits, this.width, this.height)
   }
   extractColorLayers () {
     return this.extractColorLayersBits().map(bits =>
-      this._bitOps.createMaskFromBits(bits)
+      this._createSingleBitMaskFromBits(bits)
     )
   }
 
@@ -454,7 +459,7 @@ export class MaskBase extends CanvasGrid {
   }
   addToLayers (layers) {
     return this.addToLayersBits(layers).map(bits =>
-      this._createMaskFromBits(bits)
+      this._createSingleBitMaskFromBits(bits)
     )
   }
   addLayersBits (layers) {

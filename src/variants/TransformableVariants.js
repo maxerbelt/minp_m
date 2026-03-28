@@ -99,11 +99,12 @@ export class TransformableVariants extends Variants {
     return Math.max(...this.forms.map(f => f.variants().width()))
   }
 
-  setByIndex (index = this.index) {
-    const { formIndex, variantIndex } = this.positionInForms(index)
+  setByIndex (index) {
+    const idx = index == null ? this.index : index
+    const { formIndex, variantIndex } = this.positionInForms(idx)
     this.currentForm = this.forms[formIndex]
     this.currentForm.setByIndex(variantIndex)
-    this.index = index
+    this.index = idx
     this.onChange()
   }
 

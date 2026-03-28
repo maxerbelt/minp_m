@@ -3,7 +3,7 @@ import { placingTarget } from './makeCell3.js'
 import { Mask } from '../grid/mask.js'
 export class Placeable {
   constructor (board, validator, zoneDetail, target) {
-    this.board = board.clone.shrinkToOccupied()
+    this.board = board // board.clone.shrinkToOccupied()
     this.validator = validator
     this.zoneDetail = zoneDetail || 0
     this.target = target || placingTarget

@@ -23,8 +23,9 @@ export class Variants {
     return this.list.length
   }
 
-  boardFor (index = this.index) {
-    return this.list[index]
+  boardFor (index) {
+    const idx = index == null ? this.index : index
+    return this.list[idx]
   }
   indexUnder (cellHeight) {
     const hasMultipleVariants = this.list.length > 1
@@ -45,12 +46,14 @@ export class Variants {
     const board = this.boardFor(index).shrinkToOccupied()
     return { index, board }
   }
-  variant (index = this.index) {
-    return this.boardFor(index).toCoords
+  variant (index) {
+    const idx = index == null ? this.index : index
+    return this.boardFor(idx).toCoords
   }
 
-  placeable (index = this.index) {
-    return new Placeable(this.boardFor(index), this.validator, this.zoneDetail)
+  placeable (index) {
+    const idx = index == null ? this.index : index
+    return new Placeable(this.boardFor(idx), this.validator, this.zoneDetail)
   }
   variations () {
     let variants0 = this.list

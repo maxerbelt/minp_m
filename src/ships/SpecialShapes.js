@@ -19,11 +19,13 @@ export class Transformer extends Shape {
     this.totalVariants = forms.reduce((acc, f) => acc + f.variants().length, 0)
     this.canTransform = true
   }
-  boardFor (index = this.index) {
-    return this.formVariants.boardFor(index)
+  boardFor (index) {
+    const idx = index == null ? this.index : index
+    return this.formVariants.boardFor(idx)
   }
-  variant (index = this.index) {
-    return this.formVariants.variant(index)
+  variant (index) {
+    const idx = index == null ? this.index : index
+    return this.formVariants.variant(idx)
   }
   get index () {
     return this.formVariants.index
@@ -164,22 +166,36 @@ export class Hybrid extends Shape {
       tip || `place ${description} so that the parts are in the correct area`,
       racks
     )
-    this.primary = subGroups[0]
-    this.secondary = subGroups[1]
 
-    if (this.secondary) {
-      this.primary.setBoardFromSecondary(this.board, this.secondary.board)
-      this.board.addLayers([this.secondary.board])
+    const width = this.board.width
+    const height = this.board.height
+    let layers = []
+    const [head, ...tail] = subGroups
+    for (const subGroup of tail) {
+      this.fixSpecialGroup(subGroup, width, height, head, layers)
     }
+    if (layers.length > 0) {
+      this.board.addLayers(layers)
+    }
+    this.fixSubGroup(head, width, height)
+    this.primary = head
+    this.secondary = tail[0]
     this.subGroups = subGroups
-
-    for (const group of subGroups) {
-      group.faction = group.board.occupancy / this.size
-    }
     this.descriptionText = description
     // this.terrain = seaAndLand
     this.subterrain = mixed
     this.canBeOn = Function.prototype
+  }
+  fixSpecialGroup (subGroup, width, height, head, layers) {
+    this.fixSubGroup(subGroup, width, height)
+    head.setBoardFromSecondary(this.board, subGroup.board)
+    layers.push(subGroup.board)
+  }
+  fixSubGroup (subGroup, width, height) {
+    if (subGroup.board.width !== width || subGroup.board.height !== height) {
+      subGroup.board = subGroup.board.expand(width, height)
+    }
+    subGroup.faction = subGroup.board.occupancy / this.size
   }
   displacementFor (subterrain) {
     const groups = this.subGroups.filter(g => g.subterrain === subterrain)

@@ -188,14 +188,14 @@ describe('StoreBig', () => {
 
   describe('extractColorLayers', () => {
     it('should return empty array for empty bitboard', () => {
-      const store1 = new StoreBig(2, 100, 1, 4, 4)
+      const store1 = new StoreBig(2, 16, 1, 4, 4)
       const bitboard = 0n
       const result = store1.extractColorLayers(bitboard, 4, 4)
       expect(result).toHaveLength(0)
     })
 
     it('should create single color layer for 1-bit board', () => {
-      const store1 = new StoreBig(1, 100, 1, 4, 4)
+      const store1 = new StoreBig(1, 16, 1, 4, 4)
       let bitboard = 0n
       bitboard = store1.addBit(bitboard, 0)
       bitboard = store1.addBit(bitboard, 5)
@@ -206,31 +206,79 @@ describe('StoreBig', () => {
       expect(store1.occupancy(result[0])).toBe(3)
     })
 
-    it('should separate multiple colors correctly', () => {
-      const store1 = new StoreBig(2, 100, 2, 4, 4)
+    it('should separate multiple colors correctly (line)', () => {
+      const store1 = new StoreBig(2, 4, 2, 4, 1)
       let bitboard = 0n
       // Set colors at specific positions
       bitboard = store1.setIdx(bitboard, 0, 1n) // Position 0, color 1
       bitboard = store1.setIdx(bitboard, 1, 2n) // Position 1, color 2
       bitboard = store1.setIdx(bitboard, 2, 1n) // Position 2, color 1
       bitboard = store1.setIdx(bitboard, 3, 3n) // Position 3, color 3
+      expect(ascii(4, 1, bitboard, 4)).toBe('1213')
 
-      const result = store1.extractColorLayers(bitboard, 4, 4)
-      expect(result).toHaveLength(3) // Colors 1-3 (no color 0)
-      expect(store1.occupancy(result[0])).toBeGreaterThan(0) // Color 1 at index 0
-      expect(store1.occupancy(result[1])).toBeGreaterThan(0) // Color 2 at index 1
-      expect(store1.occupancy(result[2])).toBeGreaterThan(0) // Color 3 at index 2
+      const result = store1.extractColorLayers(bitboard, 4, 1)
+      expect(result).toHaveLength(3)
+      expect(ascii(4, 1, result[0])).toBe('1.1.')
+      expect(ascii(4, 1, result[1])).toBe('.1..')
+      expect(ascii(4, 1, result[2])).toBe('...1')
     })
 
     it('should preserve bit positions when extracting color 1', () => {
-      const store1 = new StoreBig(1, 100, 1, 8, 1)
+      const store1 = new StoreBig(1, 8, 1, 8, 1)
       let bitboard = 0b10101010n
       const result = store1.extractColorLayers(bitboard, 8, 1)
       expect(result[0]).toBe(bitboard) // Color 1 is at index 0
     })
+    it('should separate multiple colors correctly (line)', () => {
+      const store1 = new StoreBig(2, 4, 2, 4, 1)
+      let bitboard = 0n
+      // Set colors at specific positions
+      bitboard = store1.setIdx(bitboard, 0, 1n) // Position 0, color 1
+      bitboard = store1.setIdx(bitboard, 1, 2n) // Position 1, color 2
+      bitboard = store1.setIdx(bitboard, 2, 1n) // Position 2, color 1
+      bitboard = store1.setIdx(bitboard, 3, 3n) // Position 3, color 3
+      expect(ascii(4, 1, bitboard, 4)).toBe('1213')
 
+      const result = store1.extractColorLayers(bitboard, 4, 1)
+      expect(result).toHaveLength(3)
+      expect(ascii(4, 1, result[0])).toBe('1.1.')
+      expect(ascii(4, 1, result[1])).toBe('.1..')
+      expect(ascii(4, 1, result[2])).toBe('...1')
+    })
+
+    it('should separate multiple colors correctly (naval base)', () => {
+      const store1 = new StoreBig(2, 4, 2, 2, 3)
+      let bitboard = 0n
+      // Set colors at specific positions
+      bitboard = store1.setIdx(bitboard, 1, 2n)
+      bitboard = store1.setIdx(bitboard, 3, 2n)
+      bitboard = store1.setIdx(bitboard, 4, 1n) // Position 2, color 1
+      bitboard = store1.setIdx(bitboard, 5, 1n) // Position 3, color 3
+
+      expect(ascii(2, 3, bitboard, 4)).toBe('.2\n.2\n11')
+
+      const result = store1.extractColorLayers(bitboard, 2, 3)
+      expect(result).toHaveLength(2)
+
+      expect(ascii(2, 3, result[1])).toBe('.1\n.1\n..')
+      expect(ascii(2, 3, result[0])).toBe('..\n..\n11')
+      let layer
+      layer = store1.extractColorLayer(bitboard, 2, 2, 3)
+      expect(ascii(2, 3, layer)).toBe('.1\n.1\n..')
+      layer = store1.extractColorLayer(bitboard, 0, 2, 3)
+      expect(ascii(2, 3, layer)).toBe('1.\n1.\n..')
+      layer = store1.extractColorLayer(bitboard, 1, 2, 3)
+      expect(ascii(2, 3, layer)).toBe('..\n..\n11')
+    })
+
+    it('should preserve bit positions when extracting color 1', () => {
+      const store1 = new StoreBig(1, 8, 1, 8, 1)
+      let bitboard = 0b10101010n
+      const result = store1.extractColorLayers(bitboard, 8, 1)
+      expect(result[0]).toBe(bitboard) // Color 1 is at index 0
+    })
     it('should handle sparse patterns with multiple colors', () => {
-      const store1 = new StoreBig(2, 100, 2, 3, 3)
+      const store1 = new StoreBig(2, 9, 2, 3, 3)
       let bitboard = 0n
       bitboard = store1.setIdx(bitboard, 0, 1n) // Position 0, color 1
       bitboard = store1.setIdx(bitboard, 2, 2n) // Position 2, color 2
@@ -246,7 +294,7 @@ describe('StoreBig', () => {
     })
 
     it('should handle entire row of same color', () => {
-      const store1 = new StoreBig(1, 100, 1, 4, 4)
+      const store1 = new StoreBig(1, 16, 1, 4, 4)
       let bitboard = 0n
       // Set entire first row
       bitboard = store1.addBit(bitboard, 0)

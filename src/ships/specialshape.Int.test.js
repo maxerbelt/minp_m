@@ -9,7 +9,7 @@ import { Hybrid } from './SpecialShapes.js'
 import { SpecialCells, StandardCells } from './SubShape.js'
 import { Mask } from '../grid/mask.js'
 import { Variant3 } from '../variants/Variant3.js'
-
+import { Placeable3 } from '../variants/Placeable3.js'
 const occupancyCoords = [
   [0, 0],
   [1, 0],
@@ -165,6 +165,9 @@ describe('Hybrid shape', () => {
     const assembledMask = new Mask(3, 3, assembled, null, 3)
 
     expect(assembledMask.toAsciiWith()).toBe('112\n..2\n...')
+    const layers = assembledMask.extractColorLayers()
+    expect(layers[0].toAsciiWith()).toBe('11.\n...\n...')
+    expect(layers[1].toAsciiWith()).toBe('..1\n..1\n...')
   })
 
   it('test addLayer', () => {
@@ -277,13 +280,13 @@ describe('Hybrid shape', () => {
     const spb = special.board
     expect(spb instanceof Mask).toBe(true)
     expect(typeof spb.bits).toBe('bigint')
-    expect(spb.width).toBe(2)
+    expect(spb.width).toBe(3)
     expect(spb.height).toBe(2)
-    expect(spb.store.width).toBe(2)
+    expect(spb.store.width).toBe(3)
     expect(spb.store.height).toBe(2)
     expect(spb.store.bitsPerCell).toBe(1)
-    expect(spb.store.size).toBe(4n)
-    expect(spb.toAsciiWith()).toBe('11\n..')
+    expect(spb.store.size).toBe(6n)
+    expect(spb.toAsciiWith()).toBe('11.\n...')
   })
 
   it('should produce correct variants', () => {
@@ -311,6 +314,7 @@ describe('Hybrid shape', () => {
     expect(a.ascii(orbit[1])).toBe('.2.\n.2.\n11.')
     const symmetry = navalBase.board.actions.classifyOrbitType()
     expect(symmetry).toBe('ASYM')
+
     const variants = navalBase.variants()
     expect(variants).toBeDefined()
     expect(variants).toBeInstanceOf(Variant3)
@@ -320,10 +324,77 @@ describe('Hybrid shape', () => {
     expect(variants.list.length).toBe(8)
 
     expect(variants.list[0]).toBeInstanceOf(Mask)
-    const sb = variants.standardGroup.board
 
-    expect(sb instanceof Mask).toBe(true)
-    expect(typeof sb.bits).toBe('bigint')
+    const sg0b = navalBase.subGroups[0].board
+    expect(sg0b).toBeInstanceOf(Mask)
+    expect(sg0b.width).toBe(3)
+    expect(sg0b.height).toBe(2)
+    expect(sg0b.store.bitsPerCell).toBe(1)
+    expect(sg0b.toAsciiWith()).toBe('..1\n..1')
+    const sg1b = navalBase.subGroups[1].board
+    expect(sg1b).toBeInstanceOf(Mask)
+    expect(sg1b.width).toBe(3)
+    expect(sg1b.height).toBe(2)
+    expect(sg1b.store.bitsPerCell).toBe(1)
+    expect(sg1b.toAsciiWith()).toBe('11.\n...')
+
+    const sb = variants.standardGroup.board
+    expect(sb).toBeInstanceOf(Mask)
+    expect(sb.width).toBe(3)
+    expect(sb.height).toBe(2)
+    expect(sb.store.bitsPerCell).toBe(1)
+    expect(sb.toAsciiWith()).toBe('..1\n..1')
+    const spb = variants.specialGroups[0].board
+    expect(spb).toBeInstanceOf(Mask)
+    expect(spb.width).toBe(3)
+    expect(spb.height).toBe(2)
+    expect(spb.store.bitsPerCell).toBe(1)
+    expect(spb.toAsciiWith()).toBe('11.\n...')
+  })
+  it('should produce correct placeables', () => {
+    /// pre-condition: subGroups and board are set up correctly before calling variants()
+    /// board should have both layers combined and subGroups should have correct boards for Variant3 to work properly
+    /// board should have classifyOrbitType give to 'ASYM' for Variant3 work with a shape with  symmetry = 'D'
+
+    const variants = navalBase.variants()
+    expect(variants).toBeInstanceOf(Variant3)
+
+    expect(variants.list[0]).toBeInstanceOf(Mask)
+    const placeable = variants.placeable(1)
+    expect(placeable).toBeInstanceOf(Placeable3)
+
+    const bb = placeable.board
+    expect(bb).toBeInstanceOf(Mask)
+    expect(bb.width).toBe(2)
+    expect(bb.height).toBe(3)
+    expect(bb.store.bitsPerCell).toBe(2)
+    expect(bb.toAsciiWith()).toBe('.2\n.2\n11')
+
+    const layers = bb.extractColorLayers()
+    expect(layers[0].toAsciiWith()).toBe('..\n..\n11')
+    expect(layers[1].toAsciiWith()).toBe('.1\n.1\n..')
+    const special = bb.extractColorLayer(2)
+    expect(special.toAsciiWith()).toBe('.1\n.1\n..')
+
+    expect(bb.toAsciiWith()).toBe('.2\n.2\n11')
+    special.bits = bb.store.extractColorLayer(bb.bits, 1, 2, 3)
+    expect(special.toAsciiWith()).toBe('..\n..\n11')
+
+    const standard = bb.extractColorLayer(1)
+    expect(standard.toAsciiWith()).toBe('..\n..\n11')
+
+    const spb = placeable.subGroups[1].board
+    expect(spb).toBeInstanceOf(Mask)
+    expect(spb.width).toBe(2)
+    expect(spb.height).toBe(3)
+    expect(spb.store.bitsPerCell).toBe(1)
+    expect(spb.toAsciiWith()).toBe('.1\n.1\n..')
+    const sb = placeable.subGroups[0].board
+    expect(sb).toBeInstanceOf(Mask)
+    expect(sb.width).toBe(2)
+    expect(sb.height).toBe(3)
+    expect(sb.store.bitsPerCell).toBe(1)
+    expect(sb.toAsciiWith()).toBe('..\n..\n11')
   })
 
   it('should initialize with correct board', () => {

@@ -36,17 +36,18 @@ export class SpecialVariant extends RotatableVariant {
     })
   }
 
-  boardFor (index = this.index) {
-    return this.list[index]
+  boardFor (index) {
+    const idx = index == null ? this.index : index
+    return this.list[idx]
   }
 
-  specialBoard (index = this.index, groupIndex = 1) {
+  specialBoard (index, groupIndex) {
     const board = this.boardFor(index)
-    return board.extractColorLayer(groupIndex)
+    return board.extractColorLayer(groupIndex + 1)
   }
 
   placeable (index) {
-    const idx = index || this.index
+    const idx = index == null ? this.index : index
     return new Placeable3(
       super.placeable(idx),
       this.subGroups.map(

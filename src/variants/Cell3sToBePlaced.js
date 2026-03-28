@@ -16,7 +16,7 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
   isInMatchingZone (r, c) {
     const zoneInfo = this.zoneInfo(r, c, 2)
     const result = this.subGroups.some(
-      g => g.isCandidate(r, c) && g.validator(zoneInfo)
+      g => g.isCandidate(c, r) && g.validator(zoneInfo)
     )
     return result
   }

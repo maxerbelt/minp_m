@@ -1,4 +1,4 @@
-import { ShipGroups } from '../ships/ShipGroups.js'
+import { ShipGroups } from '../../../ships/ShipGroups.js'
 
 export const riverGroups = new ShipGroups(
   {
