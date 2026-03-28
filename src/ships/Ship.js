@@ -311,11 +311,6 @@ export class Ship {
   getLoadedWeapons () {
     return this.getAllWeapons().filter(w => this._isWeaponLoaded(w))
   }
-  /**   * Check if ship has any ammunition remaining (legacy name for hasAmmoRemaining)
-   */
-  hasAmmoLeft () {
-    return this.hasAmmoRemaining()
-  }
 
   /**   * Check if ship has ammunition remaining
    */
@@ -329,7 +324,7 @@ export class Ship {
   getTotalAmmo () {
     if (this.sunk) return 0
     return this.getAllWeapons().reduce(
-      (sum, w) => sum + (w.ammoLeft?.() ?? 0),
+      (sum, w) => sum + (w.ammoRemaining?.() ?? 0),
       0
     )
   }

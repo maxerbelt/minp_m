@@ -52,9 +52,13 @@ export class WeaponSystem {
   }
   hasAmmo () {
     if (!this.weapon.isLimited) return true
-    return this.ammoLeft() > 0
+    return this.hasAmmoRemaining()
   }
-  ammoLeft () {
+  hasAmmoRemaining () {
+    return this.ammo > 0
+  }
+
+  ammoRemaining () {
     return this.ammo
   }
   useAmmo () {
@@ -106,8 +110,12 @@ export class CombinedWeaponSystem extends WeaponSystem {
   getRacks () {
     return this.wpss.flatMap(w => w.getRacks())
   }
-  ammoLeft () {
-    return this.wpss.reduce((sum, w) => sum + w.ammoLeft(), 0)
+  hasAmmoRemaining () {
+    return this.wpss.some(w => w.hasAmmoRemaining())
+  }
+
+  ammoRemaining () {
+    return this.wpss.reduce((sum, w) => sum + w.ammoRemaining(), 0)
   }
   ammoTotal () {
     return this.wpss.reduce((sum, w) => sum + w.ammoTotal(), 0)
@@ -183,14 +191,14 @@ export class AttachedWeaponSystems extends WeaponSystem {
     return this
   }
   armedShips () {
-    return this.ships.filter(s => s.hasAmmoLeft())
+    return this.ships.filter(s => s.hasAmmoRemaining())
   }
   getRacks () {
     const racks = this.ships.flatMap(s => s.loadedWeapons())
     return racks
   }
   getRack () {
-    return this.ships.find(s => s.hasAmmoLeft()).loadedWeapon()
+    return this.ships.find(s => s.hasAmmoRemaining()).loadedWeapon()
   }
   getUnattachedWeapon () {
     return null
@@ -203,8 +211,11 @@ export class AttachedWeaponSystems extends WeaponSystem {
     const ship = this.ships.find(s => s.id === id)
     return ship
   }
-  ammoLeft () {
-    return this.ships.reduce((total, s) => total + s.ammoLeft(), 0)
+  hasAmmoRemaining () {
+    return this.ships.some(s => s.hasAmmoRemaining())
+  }
+  ammoRemaining () {
+    return this.ships.reduce((total, s) => total + s.ammoRemaining(), 0)
   }
   ammoTotal () {
     return this.ships.reduce((total, s) => total + s.ammoTotal(), 0)
@@ -213,7 +224,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
     return this.ammoTotal()
   }
   ammoUsed () {
-    return this.ammoTotal() - this.ammoLeft()
+    return this.ammoTotal() - this.ammoRemaining()
   }
   getLoadedWeapons () {
     return this.ships.flatMap(s => s.loadedWeapons())

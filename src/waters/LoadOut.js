@@ -68,7 +68,7 @@ export class LoadOut {
   }
 
   getArmedShips () {
-    return this.ships.filter(ship => ship.hasAmmoLeft())
+    return this.ships.filter(ship => ship.hasAmmoRemaining())
   }
   getUnattachedWeaponSystem () {
     return this.getCurrentWeaponSystem()?.getUnattachedWeapon()
@@ -86,9 +86,9 @@ export class LoadOut {
       0
     )
   }
-  getAmmoLeft () {
+  ammoRemaining () {
     return this.getLimitedWeaponSystems().reduce(
-      (acc, wps) => acc + wps.ammoLeft(),
+      (acc, wps) => acc + wps.hasAmmoRemaining(),
       0
     )
   }
@@ -134,12 +134,12 @@ export class LoadOut {
   hasCurrentAmmo () {
     const currentWeaponSystem = this.getCurrentWeaponSystem()
     if (!currentWeaponSystem.weapon.isLimited) return true
-    return currentWeaponSystem.ammoLeft() > 0
+    return currentWeaponSystem.hasAmmoRemaining()
   }
   hasAllAmmo () {
     const currentWeaponSystem = this.getCurrentWeaponSystem()
     if (!currentWeaponSystem.weapon.isLimited) return true
-    return this.getAmmoLeft() !== 0
+    return this.hasAmmoRemaining()
   }
   useAmmo (weaponSystem) {
     const wps = weaponSystem || this.getCurrentWeaponSystem()
@@ -157,7 +157,7 @@ export class LoadOut {
   }
   checkAllAmmo () {
     for (const wps of this.getLimitedWeaponSystems()) {
-      if (!wps.hasAmmoLeft()) {
+      if (!wps.hasAmmoRemaining()) {
         this.removeCurrentWeaponSystem()
       }
     }

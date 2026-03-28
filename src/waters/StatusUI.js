@@ -170,7 +170,7 @@ export class StatusUI {
     this.icon2.className = 'mode-icon tally-box'
     let idxUsed
     if (weapon.isLimited) {
-      const ammo = wps.ammoLeft()
+      const ammo = wps.ammoRemaining()
       const letter = weapon.letter
       idxUsed = this.displayLimitedAmmoStatus(
         wps,
@@ -187,7 +187,7 @@ export class StatusUI {
     this.addToQueue(weapon.stepHint(idxUsed), false)
   }
   displayLimitedAmmoStatus (wps, ammo, weapon, numCoords, maps, letter, select) {
-    this.displayAmmoLeft(wps, ammo)
+    this.displayAmmoRemaining(wps, ammo)
     if (weapon.numStep >= 2) {
       const idx = weapon.stepIdx(numCoords, select)
       this.diplayWhichLaunchStep(idx)
@@ -242,9 +242,9 @@ export class StatusUI {
     }
   }
 
-  displayAmmoLeft (wps, ammo) {
+  displayAmmoRemaining (wps, ammo) {
     this.counter.classList.remove('hidden')
-    const total = wps.ammoTotal()
+    const total = wps.ammoRemaining()
     this.total.textContent = total
     this.left.textContent = ammo
   }

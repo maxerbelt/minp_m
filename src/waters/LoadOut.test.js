@@ -32,7 +32,7 @@ describe('LoadOut', () => {
     }
     mockShip = {
       weapon: () => mockWeapon,
-      hasAmmoLeft: () => true,
+      hasAmmoRemaining: () => true,
       loadedWeapon: () => ({ weapon: mockWeapon }),
       getAllWeapons: () => [{ weapon: mockWeapon }],
       loadedWeapons: () => [{ id: 1, weapon: mockWeapon }],
