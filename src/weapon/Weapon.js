@@ -117,8 +117,7 @@ export class Weapon {
     const start1 = opposingViewModel.gridCellAt(sr, sc)
     const end1 = viewModel.gridCellAt(...target)
     const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
-
-    await this.animateFlying(
+    const { container, end } = await this.animateFlying(
       start1,
       end1,
       viewModel.cellSizeScreen(),
@@ -130,6 +129,7 @@ export class Weapon {
       false,
       true
     )
+    await this.animateRipple(end1, container, end)
     return await this.launchTo(coords, r, c, map, viewModel, opposingViewModel)
   }
 
@@ -242,8 +242,59 @@ export class Weapon {
       'shake-heavy'
     )
   }
+  async animateRipple (target, container, end) {
+    container =
+      container || document.getElementById('battleship-game-container')
+    end = end || this.centerOf(target)
+    const classlist = target.classList
+    const wanted = ['space', 'asteroid', 'sea', 'land']
 
-  animateExplode (
+    const type = wanted.find(cls => classlist.contains(cls))
+
+    // CREATE wrapper
+    const explody1 = document.createElement('div')
+    const explody = document.createElement('div')
+
+    explody1.className = 'ripple-wrapper'
+    explody.className = 'ripple ' + type
+
+    // Convert viewport coordinates to container-relative coordinates
+    const containerRect = container.getBoundingClientRect()
+    const relX = end.x - containerRect.left
+    const relY = end.y - containerRect.top
+    explody1.style.setProperty('--x', `${relX}px`)
+    explody1.style.setProperty('--y', `${relY}px`)
+
+    // Position explosion to fill wrapper (override fixed position from CSS)
+    explody.style.position = 'absolute'
+    explody.style.inset = '0'
+    explody.style.transform = 'none'
+    explody.style.width = '100%'
+    explody.style.height = '100%'
+
+    // append inner explosion to wrapper and add to DOM so wrapper positioning is used
+    explody1.appendChild(explody)
+
+    // DESTROY at end
+    return new Promise(resolve => {
+      explody.addEventListener(
+        'animationend',
+        () => {
+          explody1.remove()
+          resolve()
+        },
+        { once: true }
+      )
+      container.appendChild(explody1)
+      // force style recalc then start animation
+      explody.getBoundingClientRect()
+      requestAnimationFrame(() => {
+        explody.classList.add('play')
+      })
+    })
+  }
+
+  async animateExplode (
     target,
     container,
     end,
@@ -329,7 +380,7 @@ export class Weapon {
       source
     )
     if (!animateOnTarget) {
-      return await this.checkAnimate(
+      await this.checkAnimate(
         target,
         container,
         end,
@@ -338,6 +389,7 @@ export class Weapon {
         viewModel,
         doesExplode
       )
+      return { container, end, cellSize }
     }
 
     const pointer = this.animateFlyingBase(
@@ -349,7 +401,7 @@ export class Weapon {
       classname
     )
 
-    return await this.finishAnimate(
+    await this.finishAnimate(
       pointer,
       target,
       container,
@@ -359,6 +411,7 @@ export class Weapon {
       viewModel,
       doesExplode
     )
+    return { container, end, cellSize }
   }
 
   async finishAnimate (
@@ -415,7 +468,7 @@ export class Weapon {
     return true
   }
 
-  animateTargetExplode (target, container, end, cellSize) {
+  async animateTargetExplode (target, container, end, cellSize) {
     return this.animateExplode(target, container, end, cellSize)
   }
   initAnimate (cellSize, target, source) {
