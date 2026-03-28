@@ -46,10 +46,11 @@ export class WeaponVariant extends SpecialVariant {
       this.subGroups.map(
         (g, i) =>
           new Placeable(this.specialBoard(idx, i), g.validator, g.zoneDetail)
-      )
+      ),
+      idx,
+      this.weapons
     )
-    result.variantIndex = idx
-    result.weapons = this.weapons
+
     return result
   }
   placeables () {
