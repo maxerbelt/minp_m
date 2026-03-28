@@ -218,7 +218,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
     return this.ships.reduce((total, s) => total + s.ammoRemaining(), 0)
   }
   ammoCapacity () {
-    return this.ships.reduce((total, s) => total + s.getTotalAmmoCapacity(), 0)
+    return this.ships.reduce((total, s) => total + s.ammoCapacityTotal(), 0)
   }
   ammoAttached () {
     return this.ammoCapacity()

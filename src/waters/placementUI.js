@@ -894,7 +894,7 @@ export class PlacementUI extends WatersUI {
     this.publishBtn.disabled = model.hasPlayableShips()
     this.saveBtn.disabled = model.hasFewShips()
     this.score.placed.textContent = model.ships.length.toString()
-    this.score.weaponsPlaced.textContent = model.loadOut.getTotalAmmo()
+    this.score.weaponsPlaced.textContent = model.loadOut.getAmmoCapacity()
   }
   noOfShips () {
     return this.ships.length

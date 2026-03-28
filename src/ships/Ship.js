@@ -315,13 +315,13 @@ export class Ship {
   /**   * Check if ship has ammunition remaining
    */
   hasAmmoRemaining () {
-    return this.getTotalAmmo() > 0
+    return this.ammoRemainingTotal() > 0
   }
 
   /**
    * Get remaining ammunition count across all weapons
    */
-  getTotalAmmo () {
+  ammoRemainingTotal () {
     if (this.sunk) return 0
     return this.getAllWeapons().reduce(
       (sum, w) => sum + (w.ammoRemaining?.() ?? 0),
@@ -332,7 +332,7 @@ export class Ship {
   /**
    * Get total ammunition capacity across all weapons
    */
-  getTotalAmmoCapacity () {
+  ammoCapacityTotal () {
     if (this.sunk) return 0
     return this.getAllWeapons().reduce(
       (sum, w) => sum + (w.ammoCapacity?.() ?? 0),
