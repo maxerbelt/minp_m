@@ -244,7 +244,7 @@ export class StatusUI {
 
   displayAmmoRemaining (wps, ammo) {
     this.counter.classList.remove('hidden')
-    const total = wps.ammoRemaining()
+    const total = wps.ammoCapacity()
     this.total.textContent = total
     this.left.textContent = ammo
   }

@@ -70,10 +70,10 @@ export class WeaponSystem {
     return 0
   }
   ammoUnattached () {
-    return this.ammoTotal() - this.ammoAttached()
+    return this.ammoCapacity() - this.ammoAttached()
   }
 
-  ammoTotal () {
+  ammoCapacity () {
     return this.weapon.ammo
   }
 
@@ -117,8 +117,8 @@ export class CombinedWeaponSystem extends WeaponSystem {
   ammoRemaining () {
     return this.wpss.reduce((sum, w) => sum + w.ammoRemaining(), 0)
   }
-  ammoTotal () {
-    return this.wpss.reduce((sum, w) => sum + w.ammoTotal(), 0)
+  ammoCapacity () {
+    return this.wpss.reduce((sum, w) => sum + w.ammoCapacity(), 0)
   }
   ammoAttached () {
     return this.wpss.reduce((sum, w) => sum + w.ammoAttached(), 0)
@@ -217,14 +217,14 @@ export class AttachedWeaponSystems extends WeaponSystem {
   ammoRemaining () {
     return this.ships.reduce((total, s) => total + s.ammoRemaining(), 0)
   }
-  ammoTotal () {
-    return this.ships.reduce((total, s) => total + s.ammoTotal(), 0)
+  ammoCapacity () {
+    return this.ships.reduce((total, s) => total + s.getTotalAmmoCapacity(), 0)
   }
   ammoAttached () {
-    return this.ammoTotal()
+    return this.ammoCapacity()
   }
   ammoUsed () {
-    return this.ammoTotal() - this.ammoRemaining()
+    return this.ammoCapacity() - this.ammoRemaining()
   }
   getLoadedWeapons () {
     return this.ships.flatMap(s => s.loadedWeapons())

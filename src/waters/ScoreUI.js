@@ -286,11 +286,11 @@ export class ScoreUI {
     rowList.appendChild(row)
   }
   buildWeaponSubRow (weaponSystem, viewModel, weapon, maps, letter, row) {
-    const ammoTotal = weaponSystem.ammoTotal()
+    const ammoCapacity = weaponSystem.ammoCapacity()
     const ammoUsed = weaponSystem.ammoUsed()
     const ammoUnattached = weaponSystem.ammoUnattached()
 
-    for (let i = 0; i < ammoTotal; i++) {
+    for (let i = 0; i < ammoCapacity; i++) {
       this.buildWeaponBox(
         ammoUnattached,
         viewModel,

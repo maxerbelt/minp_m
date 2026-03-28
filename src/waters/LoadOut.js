@@ -82,7 +82,7 @@ export class LoadOut {
 
   getTotalAmmo () {
     return this.getLimitedWeaponSystems().reduce(
-      (acc, wps) => acc + wps.ammoTotal(),
+      (acc, wps) => acc + wps.ammoCapacity(),
       0
     )
   }
