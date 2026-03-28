@@ -128,7 +128,7 @@ export class WatersUI {
   }
 
   visibleShipCell (ship, r, c, cell) {
-    const w = ship?.rackAt(r, c)
+    const w = ship?.rackAt(c, r)
     if (w) {
       this.displayArmedShipCell(ship, cell, w)
     } else {
@@ -194,7 +194,7 @@ export class WatersUI {
       this.setShipCellColors(cell, letter)
 
       const [r, c] = coordsFromCell(cell)
-      const w = ship?.rackAt(r, c)
+      const w = ship?.rackAt(c, r)
       if (w) {
         cell.dataset.ammo = 1
         cell.classList.add('weapon')
