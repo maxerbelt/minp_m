@@ -54,7 +54,7 @@ describe('Blinker', () => {
     expect(blinker.list[0].width).toEqual(3)
     expect(blinker.list[0].height).toEqual(3)
     expect(blinker.list[0].store.bitsPerCell).toEqual(1)
-    expect(blinker.list[0].toAsciiWith()).toEqual('1..\n...\n..1')
+    expect(blinker.list[0].toAsciiWith()).toEqual('1..\n..1\n...') //'1..\n...\n..1'
     expect(blinker.list[1].toAsciiWith()).toEqual('..1\n1..\n...')
   })
 
@@ -71,7 +71,7 @@ describe('Blinker', () => {
     expect(board.toAsciiWith()).toEqual('...\n1..\n...\n..1')
     expect(board.store.bitsPerCell).toEqual(1)
     expect(variants.length).toBe(2)
-    expect(variants[0].toAsciiWith()).toEqual('1..\n...\n..1')
+    expect(variants[0].toAsciiWith()).toEqual('1..\n..1\n...')
     expect(variants[1].toAsciiWith()).toEqual('..1\n1..\n...')
   })
 

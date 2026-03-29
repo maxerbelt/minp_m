@@ -44,11 +44,6 @@ export class StandardCells extends SubShape {
     }
   }
 
-  setBoardFromSpecials (occupancyBoard, secondaryBoards) {
-    const board = occupancyBoard.takeManyMask(secondaryBoards)
-    this.setBoard(board)
-  }
-
   setCells (allCells, secondary) {
     // Create masks from all cells and secondary cells
     // setBoardFromSecond will handle the filtering by removing secondary from occupancy

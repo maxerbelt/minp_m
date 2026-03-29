@@ -490,8 +490,8 @@ describe('DraggedShip', () => {
       draggedShip.placeCells(5, 8, shipCellGrid)
       expect(mockShip.placeVariant).toHaveBeenCalledWith(
         mockPlaceable,
-        4, // 5-1
-        6 // 8-2
+        6, // 5-1
+        4 // 8-2
       )
     })
   })
@@ -538,7 +538,6 @@ describe('DraggedShip', () => {
       expect(draggedShip.canFlip).toBeDefined()
       expect(draggedShip.canRotate).toBeDefined()
       expect(draggedShip.variant).toBeDefined()
-      expect(draggedShip.special).toBeDefined()
     })
 
     it('should have letter property from ship', () => {

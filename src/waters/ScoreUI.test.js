@@ -115,10 +115,10 @@ describe('ScoreUI', () => {
 
     it('should use provided prefix for element IDs', () => {
       const scoreUI2 = new ScoreUI('player2')
-      expect(global.document.getElementById).toHaveBeenCalledWith(
+      expect(globalThis.document.getElementById).toHaveBeenCalledWith(
         'player2-shots'
       )
-      expect(global.document.getElementById).toHaveBeenCalledWith(
+      expect(globalThis.document.getElementById).toHaveBeenCalledWith(
         'player2-hits'
       )
     })
@@ -126,21 +126,21 @@ describe('ScoreUI', () => {
 
   describe('display', () => {
     it('should update shots text content', () => {
-      scoreUI.display([], 5)
+      scoreUI.display([], 1, 5)
       expect(scoreUI.shots.textContent).toBe('5')
     })
 
     it('should calculate and display hits from ships', () => {
       const mockShips = [
-        { hits: new Set([1, 2]) },
-        { hits: new Set([3, 4, 5]) }
+        { getTotalHits: jest.fn(() => 2) },
+        { getTotalHits: jest.fn(() => 3) }
       ]
-      scoreUI.display(mockShips, 0)
+      scoreUI.display(mockShips, 0, 0)
       expect(scoreUI.hits.textContent).toBe('5')
     })
     it('should handle zero shots', () => {
-      scoreUI.display([], 0)
-      expect(scoreUI.shots.textContent).toBe('0')
+      scoreUI.display([], 0, 0)
+      expect(scoreUI.shots.textContent).toBe('')
     })
 
     describe('displacementDescription', () => {

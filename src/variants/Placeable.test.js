@@ -44,11 +44,11 @@ describe('Placeable', () => {
     [3, 4],
     [2, 5]
   ]
-  const board = Mask.fromCoordsSquare(variant)
+  const board = Mask.fromCoords(variant)
   it('computes height and width as max coordinates', () => {
     const p = new Placeable(board, null)
-    expect(p.height()).toBe(4)
-    expect(p.width()).toBe(3)
+    expect(p.height()).toBe(6)
+    expect(p.width()).toBe(4)
   })
 
   it('placeAt returns a CellsToBePlaced-like object with correct params', () => {

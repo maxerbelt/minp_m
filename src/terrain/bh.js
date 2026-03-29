@@ -108,9 +108,9 @@ if (!bhLocal)
 
         if (body.classList.contains(bodyTag)) return
         body.className = 'hidden-battle ' + bodyTag
-        terrainTheme.href = `./styles/${bodyTag}.css`
-        terrainBoot.href = `./styles/${bodyTag}-boot.css`
-        favicon.href = `./images/${bodyTag}/favicons/favicon-48x48.png`
+        terrainTheme.href = `./terrains/${bodyTag}/styles/${bodyTag}.css`
+        terrainBoot.href = `./terrains/${bodyTag}/styles/${bodyTag}-boot.css`
+        favicon.href = `./terrains/${bodyTag}/images/favicons/favicon-48x48.png`
       }
     },
     setTest (urlParams) {

@@ -1,7 +1,7 @@
 :root {
-    --background-image: url('../images/sea/fleet.png');
-    --background-image-space: url('../images/space/spacefleet.png');
-    --logo-image-space: url('../images/space/space-logo.png');
+    --background-image: url('../terrains/sea/images/fleet.png');
+    --background-image-space: url('../terrains/space/images/spacefleet.png');
+    --logo-image-space: url('../terrains/space/images/space-logo.png');
 }
 
 body.space {

@@ -1,10 +1,10 @@
 body.space {
-    background-image: url('../images/space/bg/space-fleet.png');
+    background-image: url('../images/bg/space-fleet.png');
     background-repeat: repeat;
 }
 
 body.space img.logo {
-    content: url('../images/space/logos/space-logo.png');
+    content: url('../images/logos/space-logo.png');
 }
 
 .cell.asteroid.light {

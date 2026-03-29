@@ -448,26 +448,6 @@
     opacity: 0;
 }
 
-.explosion.asteroid {
-    background-image: var(--asteroid-explode-image);
-}
-
-.explosion.sea {
-    background-image: var(--sea-explode-image);
-}
-
-.explosion.land {
-    background-image: var(--land-explode-image);
-}
-
-.explosion.air {
-    background-image: var(--air-explode-image);
-}
-
-.explosion.plasma {
-    background-image: var(--plasma-explode-image);
-}
-
 @keyframes explode-frames {
     0% {
         background-position: 0px 0px;
@@ -639,9 +619,6 @@
 
 
 
-
-
-
 /* destroyed (desaturated) board   */
 .board.destroyed .asteroid.light,
 .board.destroyed .space.light,
@@ -671,8 +648,6 @@
 
     z-index: 1;
 }
-
-
 
 .cell.rightEdge.light {
     border-right: 2px solid #024;

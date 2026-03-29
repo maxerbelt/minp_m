@@ -240,13 +240,13 @@ describe('Hybrid shape', () => {
     const spb = special.board
     expect(spb instanceof Mask).toBe(true)
     expect(typeof spb.bits).toBe('bigint')
-    expect(spb.width).toBe(1)
+    expect(spb.width).toBe(3)
     expect(spb.height).toBe(1)
-    expect(spb.store.width).toBe(1)
+    expect(spb.store.width).toBe(3)
     expect(spb.store.height).toBe(1)
     expect(spb.store.bitsPerCell).toBe(1)
-    expect(spb.store.size).toBe(1n)
-    expect(spb.toAsciiWith()).toBe('1')
+    expect(spb.store.size).toBe(3n)
+    expect(spb.toAsciiWith()).toBe('1..')
   })
 
   it('should produce correct variants', () => {

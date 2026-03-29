@@ -388,7 +388,9 @@ export class Friend extends Waters {
   getHits () {
     const blankMask = bh.map.blankMask
     const hitss = this.shipsUnsunk().reduce((acc, ship) => {
-      acc = acc.join(ship.hits.toMask(blankMask.width, blankMask.height))
+      const hits = ship.hits
+      const shipHits = hits.toMask(blankMask.width, blankMask.height)
+      acc = acc.join(shipHits)
       return acc
     }, blankMask)
     return hitss

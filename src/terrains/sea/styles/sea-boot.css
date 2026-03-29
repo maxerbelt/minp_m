@@ -3,13 +3,12 @@
 }
 
 body {
-    background-image: url('../images/sea/bg/sea-fleet.png');
+    background-image: url('../images/bg/sea-fleet.png');
     background-repeat: repeat;
 }
 
 body img.logo {
-    content: url('../images/sea/logos/sea-logo.png');
-    ;
+    content: url('../images/logos/sea-logo.png');
 }
 
 .cell.land.light {

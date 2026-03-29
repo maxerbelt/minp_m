@@ -4,7 +4,7 @@
 
 /* eslint-env jest */
 
-/* global   test, describe,   expect, beforeEach, jest */
+/* global   it, describe,   expect, beforeEach, jest */
 
 // polyfill structuredClone for Node environments that lack it
 if (typeof globalThis.structuredClone === 'undefined') {
@@ -34,6 +34,7 @@ describe('LoadOut', () => {
       weapon: () => mockWeapon,
       hasAmmoRemaining: () => true,
       loadedWeapon: () => ({ weapon: mockWeapon }),
+      getPrimaryWeapon: () => ({ weapon: mockWeapon }),
       getAllWeapons: () => [{ weapon: mockWeapon }],
       loadedWeapons: () => [{ id: 1, weapon: mockWeapon }],
       getRackById: id => (id === 1 ? { id: 1 } : undefined),
@@ -51,7 +52,7 @@ describe('LoadOut', () => {
     loadOut.onOutOfAllAmmo = jest.fn()
   })
 
-  test('getCursorIndex returns selectedCoordinates length', () => {
+  it('getCursorIndex returns selectedCoordinates length', () => {
     loadOut.selectedCoordinates = [
       [1, 2],
       [3, 4]
@@ -59,7 +60,7 @@ describe('LoadOut', () => {
     expect(loadOut.getCursorIndex()).toBe(2)
   })
 
-  test('isArmed returns true when conditions met', () => {
+  it('isArmed returns true when conditions met', () => {
     loadOut.selectedWeapon = { weapon: { postSelectCursor: 2 } }
     loadOut.selectedCoordinates = [
       [1, 2],
@@ -69,26 +70,26 @@ describe('LoadOut', () => {
     expect(loadOut.isArmed()).toBe(true)
   })
 
-  test('isNotArming returns correct value', () => {
+  it('isNotArming returns correct value', () => {
     loadOut.isRackSelectable = false
     expect(loadOut.isNotArming()).toBe(true)
     loadOut.isRackSelectable = true
     expect(loadOut.isNotArming()).toBe(false)
   })
 
-  test('isArming returns correct value', () => {
+  it('isArming returns correct value', () => {
     loadOut.isRackSelectable = false
     expect(loadOut.isArming()).toBe(false)
     loadOut.isRackSelectable = true
     expect(loadOut.isArming()).toBe(true)
   })
 
-  test('aimWeapon triggers launch and ammo usage', () => {
+  it('aimWeapon triggers launch and ammo usage', () => {
     loadOut.selectedCoordinates = []
     loadOut.selectedWeapon = { weapon: { postSelectCursor: 2 } }
     loadOut.useAmmo = jest.fn()
     loadOut.checkNoAmmo = jest.fn()
-    loadOut.launch = jest.fn()
+    loadOut.launch = jest.fn(() => new Promise(resolve => resolve()))
     // Call aimWeapon twice to fill selectedCoordinates
     loadOut.aimWeapon({}, 1, 2)
     loadOut.aimWeapon({}, 3, 4)
@@ -97,13 +98,13 @@ describe('LoadOut', () => {
     expect(loadOut.checkNoAmmo).toHaveBeenCalled()
   })
 
-  test('dismissSelection clears selectedCoordinates', () => {
+  it('dismissSelection clears selectedCoordinates', () => {
     loadOut.selectedCoordinates = [[1, 2]]
     loadOut.dismissSelection()
     expect(loadOut.selectedCoordinates).toEqual([])
   })
 
-  test('fireWeapon calls onDestroy or onReveal', () => {
+  it('fireWeapon calls onDestroy or onReveal', () => {
     const map = {}
     const coords = [[1, 2]]
     const wps = {
@@ -123,7 +124,7 @@ describe('LoadOut', () => {
     expect(loadOut.onReveal).toHaveBeenCalled()
   })
 
-  test('destroyOneOfMany calls onDestroy with target', () => {
+  it('destroyOneOfMany calls onDestroy with target', () => {
     loadOut.onDestroy = jest.fn()
     loadOut.destroyOneOfMany(mockWeapon, ['affected'], { id: 1 })
     expect(loadOut.onDestroy).toHaveBeenCalledWith(mockWeapon, ['affected'], {

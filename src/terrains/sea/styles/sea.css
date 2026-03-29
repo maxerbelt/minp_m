@@ -1,39 +1,23 @@
 :root {
-    --bomb-cursor-image: url('../images/sea/bomb32.png');
-    --flying-bomb-image: url('../images/sea/flyingbomb40.png');
-    --flying-torpedo-image: url('../images/sea/flyingtorpedo40.png');
-    --flying-flack-image: url('../images/sea/flyingFlack40.png');
-    --flying-strike-image: url('../images/sea/flyingstrike40.png');
-    --box-flack-image: url('../images/sea/boxFlack28.png');
-    --sea-explode-image: url('../images/sea/sea-explosion.png');
-    --land-explode-image: url('../images/sea/land-explosion.png');
-    --strike-cursor-image: url('../images/sea/strike32.png');
-    --satelite-cursor-image: url('../images/sea/sat32.png');
-    --cluster-cursor-image: url('../images/sea/cluster32.png');
-    --dish-cursor-image: url('../images/sea/dish32.png');
-    --sweep-cursor-image: url('../images/sea/sweep32.png');
-    --torpedo-cursor-image: url('../images/sea/torpedo32.png');
-    --periscope-cursor-image: url('../images/sea/periscope32.png');
-    --background-image: url('../images/sea/fleet.png');
+    --bomb-cursor-image: url('../images/bomb32.png');
+    --flying-bomb-image: url('../images/flyingbomb40.png');
+    --flying-torpedo-image: url('../images/flyingtorpedo40.png');
+    --flying-flack-image: url('../images/flyingFlack40.png');
+    --flying-strike-image: url('../images/flyingstrike40.png');
+    --box-flack-image: url('../images/boxFlack28.png');
+    --sea-explode-image: url('../images/sea-explosion.png');
+    --land-explode-image: url('../images/land-explosion.png');
+    --strike-cursor-image: url('../images/strike32.png');
+    --satelite-cursor-image: url('../images/sat32.png');
+    --cluster-cursor-image: url('../images/cluster32.png');
+    --dish-cursor-image: url('../images/dish32.png');
+    --sweep-cursor-image: url('../images/sweep32.png');
+    --torpedo-cursor-image: url('../images/torpedo32.png');
+    --periscope-cursor-image: url('../images/periscope32.png');
+    --background-image: url('../images/fleet.png');
+    --air-explode-image: url('../images/air-explosion.png');
 }
 
-
-
-.cell.land.light {
-    background: #348239;
-}
-
-.cell.land.dark {
-    background: #296334;
-}
-
-.cell.sea.light {
-    background: #1a78d6;
-}
-
-.cell.sea.dark {
-    background: #1761b0;
-}
 
 .explosion.sea {
     background-image: var(--sea-explode-image);
@@ -41,6 +25,10 @@
 
 .explosion.land {
     background-image: var(--land-explode-image);
+}
+
+.explosion.air {
+    background-image: var(--air-explode-image);
 }
 
 .board.strike {
@@ -137,45 +125,45 @@
 
 
 #modeIcon1.megabomb::before {
-    background-image: url('../images/sea/boxbomb40.png');
+    background-image: url('../images/boxbomb40.png');
 }
 
 #modeIcon1.flack::before {
-    background-image: url('../images/sea/boxflack40.png');
+    background-image: url('../images/boxflack40.png');
 }
 
 
 #modeIcon1.kinetic-strike::before {
-    background-image: url('../images/sea/sat56.png');
+    background-image: url('../images/sat56.png');
 }
 
 #modeIcon2.kinetic-strike::before {
-    background-image: url('../images/sea/boxstrike56.png');
+    background-image: url('../images/boxstrike56.png');
 }
 
 #modeIcon1.kinetic-strike.off::before {
-    background-image: url('../images/sea/satol56.png');
+    background-image: url('../images/satol56.png');
 }
 
 #modeIcon2.kinetic-strike.off::before {
-    background-image: url('../images/sea/boxstrikeol56.png');
+    background-image: url('../images/boxstrikeol56.png');
 }
 
 
 #modeIcon1.torpedo::before {
-    background-image: url('../images/sea/boxtorpedo40.png');
+    background-image: url('../images/boxtorpedo40.png');
 }
 
 #modeIcon2.torpedo::before {
-    background-image: url('../images/sea/periscope56.png');
+    background-image: url('../images/periscope56.png');
 }
 
 #modeIcon1.torpedo.off::before {
-    background-image: url('../images/sea/boxtorpedool56.png');
+    background-image: url('../images/boxtorpedool56.png');
 }
 
 #modeIcon2.torpedo.off::before {
-    background-image: url('../images/sea/periscopeol56.png');
+    background-image: url('../images/periscopeol56.png');
 }
 
 .battleship.print-preview div.tally-row.weapon.megabomb div.tally-box::before {
@@ -195,11 +183,11 @@
 }
 
 .battleship:not(.print-preview) div.tally-row.weapon.megabomb div.tally-box:not(.hit):not(.damaged)::before {
-    background-image: url('../images/sea/boxbomb28.png');
+    background-image: url('../images/boxbomb28.png');
 }
 
 .battleship:not(.print-preview) div.tally-row.weapon.megabomb div.tally-box.used::before {
-    background-image: url('../images/sea/boxbombol28.png');
+    background-image: url('../images/boxbombol28.png');
     opacity: 0.6;
 }
 
@@ -209,27 +197,27 @@
 }
 
 .battleship:not(.print-preview) div.tally-row.weapon.flack div.tally-box.used::before {
-    background-image: url('../images/sea/boxflackol28.png');
+    background-image: url('../images/boxflackol28.png');
 
 }
 
 
 .battleship:not(.print-preview) div.tally-row.weapon.kinetic-strike div.tally-box:not(.hit):not(.damaged)::before {
-    background-image: url('../images/sea/boxstrike28.png');
+    background-image: url('../images/boxstrike28.png');
 
 }
 
 .battleship:not(.print-preview) div.tally-row.weapon.kinetic-strike div.tally-box.used::before {
-    background-image: url('../images/sea/boxstrikeol28.png');
+    background-image: url('../images/boxstrikeol28.png');
 
 }
 
 .battleship:not(.print-preview) div.tally-row.weapon.torpedo div.tally-box:not(.hit):not(.damaged)::before {
-    background-image: url('../images/sea/boxtorpedo28.png');
+    background-image: url('../images/boxtorpedo28.png');
 
 }
 
 .battleship:not(.print-preview) div.tally-row.weapon.torpedo div.tally-box.used::before {
-    background-image: url('../images/sea/boxtorpedool28.png');
+    background-image: url('../images/boxtorpedool28.png');
     opacity: 0.6;
 }

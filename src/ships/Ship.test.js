@@ -63,8 +63,8 @@ describe('Ship basic behaviors', () => {
   it('ammoRemaining and ammoCapacityTotal reflect sunk state', () => {
     const s = new Ship(2, 'y', 'B')
     s.weapons = {
-      '0,0': { id: 1, ammoRemaining: () => 3, ammoCapacityTotal: () => 5 },
-      '0,1': { id: 2, ammoRemaining: () => 2, ammoCapacityTotal: () => 4 }
+      '0,0': { id: 1, ammoRemaining: () => 3, ammoCapacity: () => 5 },
+      '0,1': { id: 2, ammoRemaining: () => 2, ammoCapacity: () => 4 }
     }
 
     expect(s.ammoCapacityTotal()).toBe(9)
@@ -458,7 +458,7 @@ describe('Ship - ammo calculations with edge cases', () => {
   it('ammoRemaining with no weapons', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {}
-    expect(s.ammoRemaining()).toBe(0)
+    expect(s.ammoRemainingTotal()).toBe(0)
   })
 
   it('ammoCapacityTotal with no weapons', () => {
@@ -480,9 +480,9 @@ describe('Ship - ammo calculations with edge cases', () => {
   it('ammoCapacityTotal sums across all weapons', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
-      '1,1': { ammoRemaining: () => 5, ammoCapacityTotal: () => 20 },
-      '2,2': { ammoRemaining: () => 3, ammoCapacityTotal: () => 10 },
-      '3,3': { ammoRemaining: () => 0, ammoCapacityTotal: () => 5 }
+      '1,1': { ammoRemaining: () => 5, ammoCapacity: () => 20 },
+      '2,2': { ammoRemaining: () => 3, ammoCapacity: () => 10 },
+      '3,3': { ammoRemaining: () => 0, ammoCapacity: () => 5 }
     }
     expect(s.ammoCapacityTotal()).toBe(35)
   })
@@ -500,7 +500,7 @@ describe('Ship - ammo calculations with edge cases', () => {
   it('ammoCapacityTotal is zero when sunk', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
-      '1,1': { ammoRemaining: () => 50, ammoCapacityTotal: () => 100 }
+      '1,1': { ammoRemaining: () => 50, ammoCapacity: () => 100 }
     }
     expect(s.ammoCapacityTotal()).toBe(100)
     s.sunk = true

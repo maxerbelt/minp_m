@@ -85,7 +85,7 @@ describe('Score', () => {
     })
 
     it('should return null if shot already exists at location', () => {
-      score.shot.set(3, 4)
+      score.createShotKey(3, 4)
       const key = score.newShotKey(3, 4)
       expect(key).toBeNull()
     })
@@ -109,7 +109,7 @@ describe('Score', () => {
     })
 
     it('should return null if location already shot', () => {
-      score.shot.set(2, 3)
+      score.createShotKey(2, 3)
       const key = score.createShotKey(2, 3)
       expect(key).toBeNull()
     })
@@ -147,7 +147,7 @@ describe('Score', () => {
     })
 
     it('should remove from shot set', () => {
-      score.shot.set(1, 2)
+      score.createShotKey(1, 2)
       const initialSize = score.shot.occupancy
       score.shotReveal(1, 2)
       expect(score.shot.occupancy).toBe(initialSize - 1)
@@ -238,7 +238,7 @@ describe('Score', () => {
 
     it('should add auto miss to shot set', () => {
       score.addAutoMiss(4, 5)
-      expect(score.shot.test(4, 5)).toBe(true)
+      expect(score.newShotKey(4, 5)).toBe(null)
     })
 
     it('should prevent duplicate auto misses', () => {

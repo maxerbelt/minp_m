@@ -55,9 +55,9 @@ describe('Cell3sToBePlaced behaviors', () => {
 
   test('isWrongZone annotates cells with match flags and returns true when some wrong', () => {
     const cells = [
-      [0, 0],
-      [0, 1],
-      [0, 2]
+      [0, 0, 1],
+      [0, 1, 2],
+      [0, 2, 1]
     ]
     const board = Mask.fromCoords(cells)
     const target = {
@@ -73,13 +73,13 @@ describe('Cell3sToBePlaced behaviors', () => {
       subGroups: [
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0,
+            isCandidate: (c, r) => r === r0 && c === c0,
             validator: z => z === 'X'
           })
         },
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0 + 1,
+            isCandidate: (c, r) => r === r0 && c === c0 + 1,
             validator: z => z === 'YES'
           })
         }

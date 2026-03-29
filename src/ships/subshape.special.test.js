@@ -30,7 +30,7 @@ describe('SubShape special cells', () => {
           mockZoneDetail,
           mockSubterrain
         )
-        expect(specialCells.cells).toBe(cells)
+        expect(specialCells.board.toAscii).toBe('1..\n.1.\n..1')
       })
 
       it('should initialize with parent properties', () => {
@@ -54,7 +54,7 @@ describe('SubShape special cells', () => {
           mockZoneDetail,
           mockSubterrain
         )
-        expect(specialCells.cells).toEqual([])
+        expect(specialCells.board.occupancy).toBe(0)
       })
 
       it('should be instance of SpecialCells and SubShape', () => {
@@ -74,9 +74,9 @@ describe('SubShape special cells', () => {
           [1, 1]
         ]
         const cells2 = [
-          [5, 5],
-          [6, 6],
-          [7, 7]
+          [0, 1],
+          [0, 2],
+          [0, 3]
         ]
         const special1 = new SpecialCells(
           cells1,
@@ -90,39 +90,8 @@ describe('SubShape special cells', () => {
           mockZoneDetail,
           mockSubterrain
         )
-        expect(special1.cells).toBe(cells1)
-        expect(special2.cells).toBe(cells2)
-      })
-
-      it('should maintain cell array reference', () => {
-        const cells = [
-          [0, 0],
-          [1, 1]
-        ]
-        const specialCells = new SpecialCells(
-          cells,
-          mockValidator,
-          mockZoneDetail,
-          mockSubterrain
-        )
-        cells.push([2, 2])
-        expect(specialCells.cells).toContainEqual([2, 2])
-      })
-
-      it('should handle cells with various coordinate values', () => {
-        const cells = [
-          [-100, 200],
-          [0, 0],
-          [999, 999],
-          [-1, -1]
-        ]
-        const specialCells = new SpecialCells(
-          cells,
-          mockValidator,
-          mockZoneDetail,
-          mockSubterrain
-        )
-        expect(specialCells.cells).toEqual(cells)
+        expect(special1.board.toAscii).toBe('1.\n.1')
+        expect(special2.board.toAscii).toBe('....\n1...\n1...\n1...')
       })
     })
   })

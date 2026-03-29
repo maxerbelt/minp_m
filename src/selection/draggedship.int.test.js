@@ -291,7 +291,6 @@ describe('DraggedShip integration', () => {
       expect(draggedShip.canFlip).toBeDefined()
       expect(draggedShip.canRotate).toBeDefined()
       expect(draggedShip.variant).toBeDefined()
-      expect(draggedShip.special).toBeDefined()
     })
 
     it('should have letter property from ship', () => {

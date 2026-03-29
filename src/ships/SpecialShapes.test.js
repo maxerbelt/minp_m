@@ -403,8 +403,6 @@ describe('Hybrid', () => {
       board: { occupancy: 2 },
       subterrain: { title: 'Water' },
       faction: 0,
-      setCells: jest.fn(),
-      setBoard: jest.fn(),
       setBoardFromSecondary: jest.fn()
     }
 
@@ -417,8 +415,6 @@ describe('Hybrid', () => {
       board: { occupancy: 3 },
       subterrain: { title: 'Land' },
       faction: 0,
-      setCells: jest.fn(),
-      setBoard: jest.fn(),
       setBoardFromSecondary: jest.fn()
     }
 
@@ -599,8 +595,6 @@ describe('Hybrid', () => {
         board: { occupancy: 1 },
         subterrain: { title: 'Water' },
         faction: 0,
-        setCells: jest.fn(),
-        setBoard: jest.fn(),
         setBoardFromSecondary: jest.fn()
       }
       const group2 = {
@@ -612,8 +606,6 @@ describe('Hybrid', () => {
         board: { occupancy: 3 },
         subterrain: { title: 'Land' },
         faction: 0,
-        setCells: jest.fn(),
-        setBoard: jest.fn(),
         setBoardFromSecondary: jest.fn()
       }
       const h = new Hybrid(
@@ -640,8 +632,6 @@ describe('Hybrid', () => {
         board: { occupancy: 1 },
         subterrain: { title: 'Water' },
         faction: 0,
-        setCells: jest.fn(),
-        setBoard: jest.fn(),
         setBoardFromSecondary: jest.fn()
       }
       const h = new Hybrid('Single', 'S', 'ASYM', [[0, 0]], [group], null, {})

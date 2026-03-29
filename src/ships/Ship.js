@@ -2,7 +2,6 @@ import { bh } from '../terrain/bh.js'
 import { parsePair, makeKeyAndId } from '../utilities.js'
 import { Mask } from '../grid/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
-import { SubBoard } from '../grid/subBoard.js'
 
 function firstElement (arr) {
   return arr && arr.length > 0 ? arr[0] : null
