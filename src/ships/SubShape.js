@@ -48,7 +48,8 @@ export class StandardCells extends SubShape {
     // Create masks from all cells and secondary cells
     // setBoardFromSecond will handle the filtering by removing secondary from occupancy
     const occupancyBoard = Mask.fromCoordsSquare(allCells)
-    const secondaryBoard = Mask.fromCoordsSquare(secondary.cells)
+    const secondaryBoard =
+      secondary.board || Mask.empty(occupancyBoard.width, occupancyBoard.height)
     this.setBoardFromSecondary(occupancyBoard, secondaryBoard)
   }
 }

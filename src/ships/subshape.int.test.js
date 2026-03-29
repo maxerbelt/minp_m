@@ -54,10 +54,7 @@ describe('SubShape special cells', () => {
         [3, 3]
       ]
       standard.setCells(allCells, secondary)
-      expect(standard.cells).toEqual([
-        [0, 0],
-        [3, 3]
-      ])
+      expect(standard.board.toAscii).toBe('1...\n....\n....\n...1')
     })
 
     it('should maintain faction property across inheritance', () => {
