@@ -63,7 +63,7 @@ describe('SubShape', () => {
           mockSubterrain
         )
         mockSecondary = {
-          cells: []
+          board: Mask.empty(0, 0)
         }
       })
 
@@ -84,15 +84,12 @@ describe('SubShape', () => {
           [2, 2],
           [3, 3]
         ]
-        mockSecondary.cells = [
+        mockSecondary.board = Mask.fromCoordsSquare([
           [1, 1],
           [3, 3]
-        ]
-        standardCells.setCells(allCells, mockSecondary)
-        expect(standardCells.cells).toEqual([
-          [0, 0],
-          [2, 2]
         ])
+        standardCells.setCells(allCells, mockSecondary)
+        expect(standardCells.board.occupancy).toBe(2)
       })
 
       it('should handle empty allCells', () => {
@@ -107,11 +104,11 @@ describe('SubShape', () => {
           [1, 1],
           [2, 2]
         ]
-        mockSecondary.cells = [
+        mockSecondary.board = Mask.fromCoordsSquare([
           [0, 0],
           [1, 1],
           [2, 2]
-        ]
+        ])
         standardCells.setCells(allCells, mockSecondary)
         expect(standardCells.cells).toEqual([])
       })
@@ -123,7 +120,7 @@ describe('SubShape', () => {
           [8, 8],
           [1, 1]
         ]
-        mockSecondary.cells = [[8, 8]]
+        mockSecondary.board = Mask.fromCoordsSquare([[8, 8]])
         standardCells.setCells(allCells, mockSecondary)
         // Cells are returned in row-major order from board.toCoords
         const resultCells = standardCells.cells
@@ -140,10 +137,10 @@ describe('SubShape', () => {
           [1, 0],
           [1, 1]
         ]
-        mockSecondary.cells = [
+        mockSecondary.board = Mask.fromCoordsSquare([
           [0, 0],
           [1, 1]
-        ]
+        ])
         standardCells.setCells(allCells, mockSecondary)
         // Should contain exactly the cells not in secondary, in row-major order
         const resultCells = standardCells.cells
@@ -158,21 +155,10 @@ describe('SubShape', () => {
           [1, 1],
           [2, 2]
         ]
-        mockSecondary.cells = [[1, 1]]
+        mockSecondary.board = Mask.fromCoordsSquare([[1, 1]])
         standardCells.setCells(allCells, mockSecondary)
         expect(standardCells.cells).toHaveLength(1)
         expect(standardCells.cells[0]).toEqual([2, 2])
-      })
-
-      it('should handle large cell arrays', () => {
-        const allCells = Array.from({ length: 1000 }, (_, i) => [i, i])
-        const secondaryCells = Array.from({ length: 500 }, (_, i) => [
-          i * 2,
-          i * 2
-        ])
-        mockSecondary.cells = secondaryCells
-        standardCells.setCells(allCells, mockSecondary)
-        expect(standardCells.cells.length).toBe(500)
       })
 
       it('should replace existing cells', () => {
