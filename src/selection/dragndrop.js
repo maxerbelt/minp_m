@@ -351,7 +351,7 @@ class DragNDrop {
         let cellClass = 'bad'
         if (canPlace) {
           cellClass = 'good'
-        } else if (placing.notGood.at(rr, cc) > 0) {
+        } else if (placing.notGood.at(cc, rr) > 0) {
           cellClass = 'notgood'
         }
         cell.classList.add(cellClass)
