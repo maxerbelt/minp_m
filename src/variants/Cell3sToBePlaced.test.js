@@ -61,7 +61,7 @@ describe('Cell3sToBePlaced behaviors', () => {
     ]
     const board = Mask.fromCoords(cells)
     const target = {
-      getZone: (r, c, z) => (c === 21 && z === 2 ? 'YES' : 'NO')
+      getZone: (r, c, z) => (r === 21 && z === 2 ? 'YES' : 'NO')
     }
 
     const placable3 = {
@@ -79,7 +79,7 @@ describe('Cell3sToBePlaced behaviors', () => {
         },
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (c, r) => r === r0 && c === c0 + 1,
+            isCandidate: (c, r) => r === r0 + 1 && c === c0,
             validator: z => z === 'YES'
           })
         }
