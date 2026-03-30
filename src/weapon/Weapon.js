@@ -246,6 +246,8 @@ export class Weapon {
     container =
       container || document.getElementById('battleship-game-container')
     end = end || this.centerOf(target)
+
+    console.log('animateRipple', { target, container, end })
     const classlist = target.classList
     const wanted = ['space', 'asteroid', 'sea', 'land']
 
@@ -306,6 +308,7 @@ export class Weapon {
     container =
       container || document.getElementById('battleship-game-container')
     end = end || this.centerOf(target)
+    console.log('animateExplode', { target, container, end })
     const classlist = target.classList
     const wanted = ['space', 'asteroid', 'sea', 'land']
 
@@ -348,6 +351,7 @@ export class Weapon {
         'animationend',
         () => {
           container.classList.remove(shake)
+          console.log('explosion animation', explody1)
           explody1.remove()
           resolve()
         },
@@ -428,6 +432,7 @@ export class Weapon {
       pointer.addEventListener('animationend', resolve, { once: true })
     })
     if (doesExplode && this.explodeOnTarget) {
+      console.log('pointer', pointer)
       pointer.remove()
       await this.animateTargetExplode(
         target,
@@ -475,6 +480,7 @@ export class Weapon {
     cellSize = cellSize || 30
     const container = document.getElementById('battleship-game-container')
     const end = this.centerOf(target)
+    console.log('initAnimateFlying', { target, container, end })
     const start = this.centerOf(source)
     start.y -= this.animateOffsetY
     return { container, end, start, cellSize }

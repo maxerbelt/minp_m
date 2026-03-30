@@ -30,7 +30,6 @@ const mockUI = {
   cellSizeScreen: jest.fn(),
   surroundCells: jest.fn(),
   surroundCellElement: jest.fn(),
-  delayEffect: jest.fn(),
   makeDroppable: jest.fn(),
   reset: jest.fn(),
   buildBoard: jest.fn(),

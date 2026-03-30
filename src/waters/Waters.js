@@ -16,6 +16,8 @@ import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { steps } from './steps.js'
+import { Delay } from '../core/Delay.js'
+import { Animator } from '../core/Animator.js'
 
 function popFirst (arr, predicate, obj) {
   // find index of first match
@@ -963,32 +965,17 @@ export class Waters {
       this.displayInfo(messageInfo + message)
     }
   }
-  effectById (id, tempEffect) {
-    const element = document.getElementById(id)
-    this.effect(element, tempEffect)
-  }
-  effect (element, tempEffect, long) {
-    element.classList.add(tempEffect)
-    element.addEventListener(
-      'animationend',
-      () => {
-        element.classList.remove(tempEffect, long)
-      },
-      { once: true }
-    )
-  }
+
   flash (long) {
-    this.effectById('battleship-game', 'flash')
-    this.effect(this.UI.board, 'burst', long)
+    Animator.runId('battleship-game', 'flash')
+    Animator.run(this.UI.board, 'burst', long)
   }
   flame (r, c, bomb) {
+    const cell = this.UI.gridCellAt(r, c)
     if (bomb) {
-      this.UI.delayEffect(r, c, cell => {
-        this.effect(cell, 'flames', 'short')
-      })
+      Animator.runWithRandomDelay(cell, null, null, 'flames', 'short')
     } else {
-      const cell = this.UI.gridCellAt(r, c)
-      this.effect(cell, 'flames', 'long')
+      Animator.run(cell, 'flames', 'long')
     }
   }
   isHitInvalid (r, c, power, hasFlame, hasFlash) {

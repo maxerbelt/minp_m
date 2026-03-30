@@ -1,7 +1,7 @@
 import { coordsFromCell, shuffleArray } from '../utilities.js'
 import { Weapon, WeaponCatelogue } from '../weapon/Weapon.js'
 import { getListCanvas } from '../grid/listCanvas.js'
-
+import { Delay } from '../core/Delay.js'
 export class Megabomb extends Weapon {
   constructor (ammo, name, letter) {
     super(name || 'Megabomb', letter || 'M', true, true, 1)
@@ -318,26 +318,39 @@ export class Flack extends Weapon {
     return [[0, coords[0][1]], coords[0]]
   }
 
+  async delayAsyncEffect (
+    cell,
+    mindelay = 380,
+    maxdelay = 730,
+    power = null,
+    cellSize = 30
+  ) {
+    await Delay.randomWait(mindelay, maxdelay)
+    await this.asyncEffect(cell, power, cellSize)
+  }
+  async asyncEffect (cell, power, cellSize) {
+    this.animateExplode(
+      cell,
+      null,
+      null,
+      Function.prototype,
+      cellSize,
+      'air',
+      power
+    )
+  }
+  async delayAsyncEffects (cells, mindelay = 380, maxdelay = 730) {
+    const promises = cells.map(([cell, , , power]) =>
+      this.delayAsyncEffect(cell, mindelay, maxdelay, power)
+    )
+    return await Promise.allSettled(promises)
+  }
   async animateTargetExplode (target, container, end, cellSize, map, viewModel) {
     const coord = coordsFromCell(target)
     const effects = this.aoe(map, [coord]).filter(([, , power]) => power > 0)
+    const cells = [...this.cellsAndCoords(effects)]
 
-    await viewModel.delayAsyncEffects(
-      effects,
-      (cell, power) => {
-        this.animateExplode(
-          cell,
-          null,
-          null,
-          Function.prototype,
-          cellSize,
-          'air',
-          power
-        )
-      },
-      0,
-      500
-    )
+    await this.delayAsyncEffects(cells, 0, 500, cellSize)
   }
 
   aoe (map, coords) {
@@ -351,7 +364,6 @@ export class Flack extends Weapon {
       }
     }
     const middle = shuffleArray(area)
-
     const head = middle.slice(0, 2)
     const leftOver = middle.slice(3)
 

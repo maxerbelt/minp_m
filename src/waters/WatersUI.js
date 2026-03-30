@@ -9,6 +9,7 @@ import {
 } from '../utilities.js'
 
 import { gameStatus } from './StatusUI.js'
+import { Delay } from '../core/Delay.js'
 
 export let noticeTimerId = null
 export let tipsTimerId = null
@@ -79,38 +80,31 @@ export class WatersUI {
       'Invalid cell' + JSON.stringify(result) + 'at ' + r + ',' + c
     )
   }
-
-  delayEffects (coords, effect, mindelay = 380, maxdelay = 730) {
-    for (const [r, c, power] of coords) {
-      this.delayEffect(r, c, effect, mindelay, maxdelay, power)
+  *gridCellsForCoords (coords) {
+    for (const [r, c] of coords) {
+      yield this.gridCellAt(r, c)
     }
   }
-  async delayAsyncEffects (coords, effect, mindelay = 380, maxdelay = 730) {
-    const promises = coords.map(([r, c, power]) =>
-      this.delayAsyncEffect(r, c, effect, mindelay, maxdelay, power)
+  *cellsAndCoords (coords) {
+    for (const [r, c, power] of coords) {
+      yield [this.gridCellAt(r, c), r, c, power]
+    }
+  }
+  async delayAsyncEffects (cells, effect, mindelay = 380, maxdelay = 730) {
+    const promises = cells.map(([cell, , , power]) =>
+      this.delayAsyncEffect(cell, effect, mindelay, maxdelay, power)
     )
     return await Promise.allSettled(promises)
   }
-  delayEffect (r, c, effect, mindelay = 380, maxdelay = 730, power) {
-    const range = maxdelay - mindelay
-    const delay = Math.floor(Math.random() * range) + mindelay
-    const timerId = setTimeout(() => {
-      const cell = this.gridCellAt(r, c)
-      effect(cell, power)
-    }, delay)
-  }
+
   async delayAsyncEffect (
-    r,
-    c,
+    cell,
     effect,
     mindelay = 380,
     maxdelay = 730,
     power = null
   ) {
-    const range = maxdelay - mindelay
-    const delay = Math.floor(Math.random() * range) + mindelay
-    await new Promise(resolve => setTimeout(resolve, delay))
-    const cell = this.gridCellAt(r, c)
+    await Delay.randomWait(mindelay, maxdelay)
     await effect(cell, power)
   }
   displayShipCellBase (cell, ship) {

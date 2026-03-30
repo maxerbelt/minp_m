@@ -1,4 +1,4 @@
-class AudioManager {
+export class AudioManager {
   constructor () {
     this.ctx = new AudioContext()
     this.buffers = new Map()
