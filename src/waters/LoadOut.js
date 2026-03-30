@@ -262,7 +262,7 @@ export class LoadOut {
   }
 
   getNextWeaponIndex (i) {
-    let idx = i !== undefined ? i : this.currentWeaponIndex
+    let idx = i == null ? this.currentWeaponIndex : i
     idx++
     if (idx >= this.weaponSystems.length) {
       idx = 0
@@ -317,7 +317,7 @@ export class LoadOut {
   isArming () {
     return !this.isNotArming()
   }
-  aimWeapon (map, row, col, weaponSystem) {
+  async aimWeapon (map, row, col, weaponSystem) {
     const wps = weaponSystem || this.getCurrentWeaponSystem()
     const weapon = wps.weapon
     const requiredPoints = weapon.points
@@ -329,16 +329,15 @@ export class LoadOut {
       this.useAmmo(wps)
       this.checkNoAmmo()
       const fireWeapon = this.fireWeapon.bind(this, map, fireCoordinates, wps)
-      this.launch(fireCoordinates, weapon, wps).then(result => {
-        if (result?.hasCandidates) {
-          fireWeapon(result?.target)
-        } else {
-          fireWeapon()
-        }
-      })
+      const result = await this.launch(fireCoordinates, weapon, wps)
+      if (result?.hasCandidates) {
+        fireWeapon(result?.target)
+      } else {
+        fireWeapon()
+      }
     }
   }
-  aimSingleShot (map, row, col, sShot) {
+  async aimSingleShot (map, row, col, sShot) {
     sShot = sShot || this.getSingleShotWps()
     const weapon = sShot.weapon
     const fireSingleShot = this.fireSingleShot.bind(
@@ -347,9 +346,8 @@ export class LoadOut {
       [row, col],
       sShot
     )
-    this.launch([[row, col, 4]], weapon, sShot).then(() => {
-      fireSingleShot()
-    })
+    await this.launch([[row, col, 4]], weapon, sShot)
+    fireSingleShot()
   }
 
   dismissSelection () {

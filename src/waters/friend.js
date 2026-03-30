@@ -311,7 +311,7 @@ export class Friend extends Waters {
     }
   }
 
-  selectShot (hits, seeking) {
+  async selectShot (hits, seeking) {
     if (this.finishRevealed()) {
       return
     }
@@ -378,11 +378,10 @@ export class Friend extends Waters {
     }
   }
 
-  selectRandomCandidate (candidate) {
+  async selectRandomCandidate (candidate) {
     this.loadOut.switchToSingleShot()
     const [c, r] = candidate.randomOccupied
-    console.log('selecting candidate', r, c)
-    this.launchSingleShot(r, c, false)
+    await this.launchSingleShot(r, c, false)
   }
 
   getHits () {
@@ -396,10 +395,10 @@ export class Friend extends Waters {
     return hitss
   }
 
-  seekStep (seeking) {
+  async seekStep (seeking) {
     const hits = this.getHits()
-    console.log('hits', hits.toAscii)
-    this.selectShot(hits, seeking)
+
+    await this.selectShot(hits, seeking)
     this.steps.endTurn()
   }
   updateWeaponStatus () {

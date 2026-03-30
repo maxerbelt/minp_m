@@ -546,13 +546,13 @@ export class Waters {
     }
     return false
   }
-  launchSingleShot (r, c, sShot) {
+  async launchSingleShot (r, c, sShot) {
     sShot = sShot || this.loadOut.getSingleShotWps()
 
     this.loadOut.launch = coords => {
       return this.launchTo(coords, bh.map.rows - 1, 0, sShot)
     }
-    this.loadOut.aimSingleShot(bh.map, r, c, sShot)
+    await this.loadOut.aimSingleShot(bh.map, r, c, sShot)
   }
   getUnattachedWeaponSystem () {
     if (bh.seekingMode) {
@@ -848,7 +848,7 @@ export class Waters {
   }
 
   _applyMissEntries (missEntries, totalShots) {
-    for (const { key, cell, damaged } of missEntries) {
+    for (const { cell, damaged } of missEntries) {
       this.score.shot.set(...cell)
       totalShots++
       this.UI.cellMiss(cell[0], cell[1], damaged)

@@ -7,7 +7,7 @@
 /* global   it, describe,   expect, beforeEach, jest */
 
 // polyfill structuredClone for Node environments that lack it
-if (typeof globalThis.structuredClone === 'undefined') {
+if (globalThis.structuredClone == null) {
   globalThis.structuredClone = obj => JSON.parse(JSON.stringify(obj))
 }
 

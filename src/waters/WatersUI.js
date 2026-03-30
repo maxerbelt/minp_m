@@ -11,8 +11,6 @@ import {
 import { gameStatus } from './StatusUI.js'
 import { Delay } from '../core/Delay.js'
 
-export let noticeTimerId = null
-export let tipsTimerId = null
 export const gameHost = {
   containerWidth: 574
 }
@@ -266,9 +264,9 @@ export class WatersUI {
       'turn2',
       'turn3',
       'turn4',
-      'launch'
+      'launch',
+      ...bh.terrain.weapons.tags
     )
-    cell.classList.remove(...bh.terrain.weapons.tags)
     for (const key in cell.dataset) {
       if (key !== 'r' && key !== 'c') delete cell.dataset[key]
     }
@@ -299,8 +297,7 @@ export class WatersUI {
     )
     const tags = bh.terrain.weapons.tags
     const cursors = bh.terrain.weapons.cursors
-    cell.classList.remove(...tags)
-    cell.classList.remove(...cursors)
+    cell.classList.remove(...tags, ...cursors)
     cell.classList.add('frd-hit')
     if (damaged) {
       cell.classList.add(damaged)
@@ -321,9 +318,9 @@ export class WatersUI {
       'wake',
       'empty',
       'weapon',
-      'active'
+      'active',
+      ...bh.terrain.weapons.tags
     )
-    cell.classList.remove(...bh.terrain.weapons.tags)
     cell.classList.add('hit')
     if (damage) {
       cell.classList.add(damage)
@@ -650,6 +647,5 @@ export class WatersUI {
 }
 
 function deactivateWeapon (cell) {
-  cell.classList.remove('active', 'contrast')
-  cell.classList.remove(...bh.terrain.weapons.tags)
+  cell.classList.remove('active', 'contrast', ...bh.terrain.weapons.tags)
 }

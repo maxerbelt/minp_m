@@ -1,7 +1,16 @@
 import { Delay } from './Delay.js'
 
 export class Animator {
-  constructor (className, containerId, container, ...innerDivClassNames) {
+  constructor (
+    className,
+    containerId,
+    container,
+    onlyOne = true,
+    ...innerDivClassNames
+  ) {
+    if (onlyOne) {
+      document.querySelectorAll(className).forEach(el => el.remove())
+    }
     const el = document.createElement('div')
     el.className = className
     this.el = el
@@ -52,12 +61,18 @@ export class Animator {
   }
   async run (...trigger) {
     this.play(...trigger)
-    await Animator.wait(this.el)
+    if (this.innerEl) {
+      await Animator.wait(this.innerEl)
+    } else {
+      await Animator.wait(this.el)
+    }
     this.el.remove()
     if (this.innerEl && this.innerDelay) {
       await Delay.wait(this.innerDelay)
     }
     this.innerEl?.remove()
+    await Delay.wait(2000)
+    this.el.remove()
   }
   play (...trigger) {
     const classNames = trigger.length ? trigger : ['play']
@@ -67,8 +82,11 @@ export class Animator {
     // force style recalc then start animation
     this.el.getBoundingClientRect()
     requestAnimationFrame(() => {
-      this.el.classList.add(...classNames)
-      this.innerEl?.classList.add(...classNames)
+      if (this.innerEl) {
+        this.innerEl.classList.add(...classNames)
+      } else {
+        this.el.classList.add(...classNames)
+      }
     })
   }
   static async run (el, ...className) {

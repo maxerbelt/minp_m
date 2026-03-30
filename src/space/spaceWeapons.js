@@ -147,17 +147,15 @@ export class RailBolt extends Kinetic {
     end1.classList.add('portal')
     start2.classList.add('portal')
     end2.classList.add('marker')
-    return this.animateFlying(start1, end1, viewModel.cellSizeScreen())
-      .then(
-        this.animateFlying.bind(this, start2, end2, viewModel.cellSizeScreen())
-      )
-      .then(() => {
-        start1.classList.add('marker')
-        end1.classList.remove('portal')
-        start2.classList.remove('portal')
-        start2.classList.add('portal')
-        end2.classList.add('marker')
-      })
+    await this.animateFlying(start1, end1, viewModel.cellSizeScreen())
+
+    await this.animateFlying(start2, end2, viewModel.cellSizeScreen())
+
+    start1.classList.add('marker')
+    end1.classList.remove('portal')
+    start2.classList.remove('portal')
+    start2.classList.add('portal')
+    end2.classList.add('marker')
   }
 
   static get single () {
@@ -278,14 +276,10 @@ export class GuassRound extends Torpedo {
     const end2 = viewModel.gridCellAt(target[0], target[1])
     start1.classList.add('portal')
     start2.classList.add('portal')
-    return this.animateFlying(start2, end2, viewModel.cellSizeScreen())
-      .then(
-        this.animateFlying.bind(this, start1, end2, viewModel.cellSizeScreen())
-      )
-      .then(() => {
-        start1.classList.remove('portal')
-        start2.classList.remove('portal')
-      })
+    await this.animateFlying(start2, end2, viewModel.cellSizeScreen())
+    await this.animateFlying(start1, end2, viewModel.cellSizeScreen())
+    start1.classList.remove('portal')
+    start2.classList.remove('portal')
   }
 
   static get single () {

@@ -58,12 +58,10 @@ export class Megabomb extends Weapon {
       }
     }
     for (let i = -1; i < 2; i++) {
-      result.push([r + i, c - 2, 0])
-      result.push([r + i, c + 2, 0])
+      result.push([r + i, c - 2, 0], [r + i, c + 2, 0])
     }
     for (let j = -1; j < 2; j++) {
-      result.push([r - 2, c + j, 0])
-      result.push([r + 2, c + j, 0])
+      result.push([r - 2, c + j, 0], [r + 2, c + j, 0])
     }
     return result
   }

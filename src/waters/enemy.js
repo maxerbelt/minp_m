@@ -6,7 +6,7 @@ import { enemyUI } from './enemyUI.js'
 import { LoadOut } from './LoadOut.js'
 import { Waters } from './Waters.js'
 import { Player } from './steps.js'
-
+import { Delay } from '../core/Delay.js'
 class Enemy extends Waters {
   constructor (enemyUI) {
     super(enemyUI)
@@ -44,7 +44,7 @@ class Enemy extends Waters {
     this.loadOut.switchToWeapon(wletter)
   }
 
-  onEndTurn () {
+  async onEndTurn () {
     this.opponent?.score.finishTurn()
     if (
       this.opponent === null ||
@@ -54,14 +54,11 @@ class Enemy extends Waters {
     )
       return
     this.waitForOpponent()
-    this.timeoutId = setTimeout(() => {
-      this.timeoutId = null
-      this.opponent.seekStep()
-      this.timeoutId = setTimeout(() => {
-        this.timeoutId = null
-        //     this.steps.beginTurn()
-      }, 500)
-    }, 1700)
+    await Delay.wait(50)
+
+    await this.opponent.seekStep()
+
+    //     this.steps.beginTurn()
   }
 
   waitForOpponent () {

@@ -1,7 +1,6 @@
 import { bh } from '../terrain/bh.js'
 import { furtherestFrom } from '../utilities.js'
 import { Animator } from '../core/Animator.js'
-import { Delay } from '../core/Delay.js'
 
 export class Weapon {
   constructor (name, letter, isLimited, destroys, points) {
@@ -84,7 +83,7 @@ export class Weapon {
     return this.aoe(map, coords)
   }
   addSplash () {
-    throw Error('override in derided class')
+    throw new Error('override in derided class')
   }
 
   addNeighbours (map, r, c, p1, p2, newEffect) {
@@ -251,6 +250,7 @@ export class Weapon {
       'ripple-wrapper',
       'battleship-game-container',
       container,
+      true,
       'ripple',
       type
     )
@@ -281,6 +281,7 @@ export class Weapon {
         'explosion-wrapper',
         'battleship-game-container',
         container,
+        true,
         'explosion',
         type
       )
@@ -365,6 +366,7 @@ export class Weapon {
       'flying-weapon-wrapper',
       'battleship-game-container',
       null,
+      true,
       'flying-weapon',
       className
     )
