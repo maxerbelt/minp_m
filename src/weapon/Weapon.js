@@ -1,5 +1,8 @@
 import { bh } from '../terrain/bh.js'
 import { furtherestFrom } from '../utilities.js'
+import { Animator } from '../core/Animator.js'
+import { Delay } from '../core/Delay.js'
+
 export class Weapon {
   constructor (name, letter, isLimited, destroys, points) {
     if (new.target === Weapon) {
@@ -133,7 +136,7 @@ export class Weapon {
     return await this.launchTo(coords, r, c, map, viewModel, opposingViewModel)
   }
 
-  launchRightTo (
+  async launchRightTo (
     coords,
     rr,
     cc,
@@ -152,20 +155,20 @@ export class Weapon {
       viewModel,
       opposingViewModel,
       model,
-      (map, [rr, cc], coords) => {
-        const effect = this.aoe(map, coords)
-        const t = model.getTarget(effect, this)
-        const list = this.redoCoords(map, [rr, cc], coords)
-        if (t) {
-          const source = furtherestFrom(t[0], t[1], list)
-          return [source, t, true]
-        }
-        return list
-      }
+      this.processCoords.bind(this)
     )
   }
-
-  launchTo (
+  processCoords (map, [rr, cc], coords) {
+    const effect = this.aoe(map, coords)
+    const t = model.getTarget(effect, this)
+    const list = this.redoCoords(map, [rr, cc], coords)
+    if (t) {
+      const source = furtherestFrom(t[0], t[1], list)
+      return [source, t, true]
+    }
+    return list
+  }
+  async launchTo (
     coords,
     rr,
     cc,
@@ -175,7 +178,7 @@ export class Weapon {
     model,
     processCoords
   ) {
-    return this.launchToRaw(
+    return await this.launchToRaw(
       coords,
       rr,
       cc,
@@ -210,13 +213,7 @@ export class Weapon {
       sourceCell = viewModel.gridCellAt(0, 0)
     }
     const targetCell = viewModel.gridCellAt(target[0], target[1])
-    await this.animateFlying(
-      sourceCell,
-      targetCell,
-      viewModel.cellSizeScreen(),
-      map,
-      viewModel
-    )
+    await this.animateFlying(sourceCell, targetCell, viewModel.cellSizeScreen())
     return { hasCandidates, target }
   }
   centerOf (el) {
@@ -243,57 +240,24 @@ export class Weapon {
     )
   }
   async animateRipple (target, container, end) {
-    container =
-      container || document.getElementById('battleship-game-container')
     end = end || this.centerOf(target)
 
-    console.log('animateRipple', { target, container, end })
-    const classlist = target.classList
-    const wanted = ['space', 'asteroid', 'sea', 'land']
+    console.log('animateRipple', { target, end })
 
-    const type = wanted.find(cls => classlist.contains(cls))
+    const type = bh.subTerrainTagFromCell(target)
 
     // CREATE wrapper
-    const explody1 = document.createElement('div')
-    const explody = document.createElement('div')
+    const animator = new Animator(
+      'ripple-wrapper',
+      'battleship-game-container',
+      container,
+      'ripple',
+      type
+    )
 
-    explody1.className = 'ripple-wrapper'
-    explody.className = 'ripple ' + type
-
-    // Convert viewport coordinates to container-relative coordinates
-    const containerRect = container.getBoundingClientRect()
-    const relX = end.x - containerRect.left
-    const relY = end.y - containerRect.top
-    explody1.style.setProperty('--x', `${relX}px`)
-    explody1.style.setProperty('--y', `${relY}px`)
-
-    // Position explosion to fill wrapper (override fixed position from CSS)
-    explody.style.position = 'absolute'
-    explody.style.inset = '0'
-    explody.style.transform = 'none'
-    explody.style.width = '100%'
-    explody.style.height = '100%'
-
-    // append inner explosion to wrapper and add to DOM so wrapper positioning is used
-    explody1.appendChild(explody)
-
-    // DESTROY at end
-    return new Promise(resolve => {
-      explody.addEventListener(
-        'animationend',
-        () => {
-          explody1.remove()
-          resolve()
-        },
-        { once: true }
-      )
-      container.appendChild(explody1)
-      // force style recalc then start animation
-      explody.getBoundingClientRect()
-      requestAnimationFrame(() => {
-        explody.classList.add('play')
-      })
-    })
+    animator.moveTo(end)
+    animator.styleInner()
+    await animator.run()
   }
 
   async animateExplode (
@@ -303,169 +267,90 @@ export class Weapon {
     cellSize,
     type,
     power,
-    shake = 'shake'
+    shake = 'shake',
+    animator = null
   ) {
-    container =
-      container || document.getElementById('battleship-game-container')
     end = end || this.centerOf(target)
-    console.log('animateExplode', { target, container, end })
-    const classlist = target.classList
-    const wanted = ['space', 'asteroid', 'sea', 'land']
 
-    type = type || wanted.find(cls => classlist.contains(cls))
+    type = type || bh.subTerrainTagFromCell(target)
 
     // CREATE wrapper
-    const explody1 = document.createElement('div')
-    const explody = document.createElement('div')
+    animator =
+      animator ||
+      new Animator(
+        'explosion-wrapper',
+        'battleship-game-container',
+        container,
+        'explosion',
+        type
+      )
+
     let mod = 1
     if (power !== undefined) {
       mod = 0.5 + power / 2
     }
     const scale = (cellSize * this.splashSize * mod) / 128
-    explody1.className = 'explosion-wrapper'
-    explody.className = 'explosion ' + type
 
-    // Convert viewport coordinates to container-relative coordinates
-    const containerRect = container.getBoundingClientRect()
-    const relX = end.x - containerRect.left
-    const relY = end.y - containerRect.top
-    explody1.style.setProperty('--x', `${relX}px`)
-    explody1.style.setProperty('--y', `${relY}px`)
-    explody.style.setProperty('--scale-start', `${scale * 0.6}`)
-    explody.style.setProperty('--scale-end', `${scale * 1.6}`)
-
-    // Position explosion to fill wrapper (override fixed position from CSS)
-    explody.style.position = 'absolute'
-    explody.style.inset = '0'
-    explody.style.transform = 'none'
-    explody.style.width = '100%'
-    explody.style.height = '100%'
-
-    // append inner explosion to wrapper and add to DOM so wrapper positioning is used
-    explody1.appendChild(explody)
-
-    container.classList.add(shake)
-    // DESTROY at end
-    return new Promise(resolve => {
-      explody.addEventListener(
-        'animationend',
-        () => {
-          container.classList.remove(shake)
-          console.log('explosion animation', explody1)
-          explody1.remove()
-          resolve()
-        },
-        { once: true }
-      )
-      container.appendChild(explody1)
-      // force style recalc then start animation
-      explody.getBoundingClientRect()
-      requestAnimationFrame(() => {
-        explody.classList.add('play')
-      })
-    })
+    animator.moveTo(end)
+    animator.scaleInner(scale * 0.6, scale * 1.6)
+    animator.styleInner()
+    animator.shake(shake)
+    await animator.run()
+    animator.endShake(shake)
   }
 
   async animateFlying (
     source,
     target,
     cellSz,
-    map,
-    viewModel,
     rotation = 0,
     duration = 0.7,
     classname = this.classname,
     doesExplode = true,
     animateOnTarget = this.animateOnTarget
   ) {
-    const { container, end, start, cellSize } = this.initAnimate(
+    const { animator, end, start, cellSize } = this.initAnimate(
       cellSz,
       target,
-      source
-    )
-    if (!animateOnTarget) {
-      await this.checkAnimate(
-        target,
-        container,
-        end,
-        cellSize,
-        map,
-        viewModel,
-        doesExplode
-      )
-      return { container, end, cellSize }
-    }
-
-    const pointer = this.animateFlyingBase(
-      end,
-      start,
-      container,
-      rotation,
-      duration,
+      source,
       classname
     )
-
-    await this.finishAnimate(
-      pointer,
-      target,
-      container,
-      end,
-      cellSize,
-      map,
-      viewModel,
-      doesExplode
-    )
-    return { container, end, cellSize }
-  }
-
-  async finishAnimate (
-    pointer,
-    target,
-    container,
-    end,
-    cellSize,
-    map,
-    viewModel,
-    doesExplode
-  ) {
-    await new Promise(resolve => {
-      pointer.addEventListener('animationend', resolve, { once: true })
-    })
-    if (doesExplode && this.explodeOnTarget) {
-      console.log('pointer', pointer)
-      pointer.remove()
-      await this.animateTargetExplode(
-        target,
-        container,
-        end,
-        cellSize,
-        map,
-        viewModel
-      )
-      return
+    if (!animateOnTarget) {
+      await this.checkAnimate(target, animator, end, cellSize, doesExplode)
+      return { container: animator.container, end, cellSize }
     }
-    await new Promise(resolve => setTimeout(resolve, 500))
-    pointer.remove()
+
+    this.animateFlyingBase(end, start, animator, rotation, duration)
+
+    await this.finishAnimate(target, end, cellSize, doesExplode, animator)
+    return { container: animator.container, end, cellSize }
   }
 
-  async checkAnimate (
-    target,
-    container,
-    end,
-    cellSize,
-    map,
-    viewModel,
-    doesExplode
-  ) {
+  async finishAnimate (target, end, cellSize, doesExplode, animator) {
+    const explode = doesExplode && this.explodeOnTarget
+    if (!explode) {
+      animator.delayInner(500)
+    }
+
+    await animator.run()
+
+    if (explode) {
+      await this.animateExplode(target, animator.container, end, cellSize)
+    }
+  }
+
+  async checkAnimate (target, animator, end, cellSize, doesExplode) {
     if (!this.animateOnTarget) {
       if (doesExplode) {
-        await this.animateTargetExplode(
+        await this.animateExplode(
           target,
-          container,
+          animator.container,
           end,
           cellSize,
-          map,
-          viewModel
+          null,
+          null,
+          null,
+          animator
         )
         return false
       }
@@ -473,43 +358,35 @@ export class Weapon {
     return true
   }
 
-  async animateTargetExplode (target, container, end, cellSize) {
-    return this.animateExplode(target, container, end, cellSize)
-  }
-  initAnimate (cellSize, target, source) {
+  initAnimate (cellSize, target, source, className) {
     cellSize = cellSize || 30
-    const container = document.getElementById('battleship-game-container')
+
+    const animator = new Animator(
+      'flying-weapon-wrapper',
+      'battleship-game-container',
+      null,
+      'flying-weapon',
+      className
+    )
+
     const end = this.centerOf(target)
-    console.log('initAnimateFlying', { target, container, end })
+    console.log('initAnimateFlying', { target, end })
     const start = this.centerOf(source)
     start.y -= this.animateOffsetY
-    return { container, end, start, cellSize }
+    return { animator, end, start, cellSize }
   }
 
-  animateFlyingBase (
-    end,
-    start,
-    container,
-    rotation = 0,
-    duration = 0.7,
-    classname = this.classname
-  ) {
+  animateFlyingBase (end, start, animator, rotation = 0, duration = 0.7) {
     const dx = end.x - start.x
     const dy = end.y - start.y
     const angle = rotation || (Math.atan2(dy, dx) * 180) / Math.PI
 
-    const pointer = document.createElement('div')
-
-    pointer.className = 'flying-weapon ' + classname
-
-    pointer.style.setProperty('--start-x', `${start.x}px`)
-    pointer.style.setProperty('--start-y', `${start.y}px`)
-    pointer.style.setProperty('--end-x', `${end.x}px`)
-    pointer.style.setProperty('--end-y', `${end.y}px`)
-    pointer.style.setProperty('--angle', `${angle}deg`)
-    pointer.style.setProperty('--duration', `${duration}s`)
-    container.appendChild(pointer)
-    return pointer
+    animator.setInnerProperty('--start-x', `${start.x}px`)
+    animator.setInnerProperty('--start-y', `${start.y}px`)
+    animator.setInnerProperty('--end-x', `${end.x}px`)
+    animator.setInnerProperty('--end-y', `${end.y}px`)
+    animator.setInnerProperty('--angle', `${angle}deg`)
+    animator.setInnerProperty('--duration', `${duration}s`)
   }
 }
 

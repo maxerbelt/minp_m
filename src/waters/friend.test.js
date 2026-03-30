@@ -113,10 +113,10 @@ describe('Friend', () => {
         hits: ['0,0'],
         id: 1,
         weapon: jest.fn(),
-        loadedWeapon: jest.fn(),
+        getFirstLoadedWeapon: jest.fn(),
         getAllWeapons: jest.fn(),
         loadedWeapons: jest.fn(),
-        getRackById: jest.fn()
+        getWeaponBySystemId: jest.fn()
       }
     ]
     friend.UI = mockUI

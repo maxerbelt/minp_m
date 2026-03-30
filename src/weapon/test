@@ -1,0 +1,3431 @@
+<html lang="en">
+  <head>
+    <link rel="preload" href="./terrains/sea/styles/sea-boot.css" as="style" />
+    <link
+      rel="preload"
+      href="./terrains/space/styles/space-boot.css"
+      as="style"
+    />
+    <script src="./terrain/terrain-bootstrap.js"></script>
+    <link
+      id="boot-trn"
+      rel="stylesheet"
+      href="./terrains/space/styles/space-boot.css"
+    />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title
+      id="page-title"
+      data-template="Geoff's [terrain] Hide and Seek - {mapName}"
+    >
+      Geoff's Hidden Battles Hide and Seek Game
+    </title>
+
+    <meta
+      name="description"
+      content="Play a challenging of Battleship style game with no-touch placement rules and special ships."
+    />
+    <link
+      id="favicon"
+      rel="icon"
+      type="image/png"
+      href="./terrains/space/images/favicons/favicon-48x48.png"
+    />
+    <link
+      rel="stylesheet"
+      href="./terrains/space/styles/space.css"
+      id="terrainTheme"
+    />
+    <link rel="stylesheet" href="./styles/animation.css" />
+    <link rel="stylesheet" href="./styles/tab.css" />
+    <link rel="stylesheet" href="./styles/battle.css" />
+    <link rel="stylesheet" href="./styles/panel.css" />
+    <link rel="stylesheet" href="./styles/cells.css" />
+    <link rel="stylesheet" href="./styles/status.css" />
+    <link rel="stylesheet" href="./styles/battlehide.css" />
+    <link rel="stylesheet" media="print" href="./styles/print.css" />
+    <script
+      async=""
+      src="https://www.googletagmanager.com/gtag/js?id=G-J2METC1TPT"
+    ></script>
+  </head>
+  <body class="hidden-battle space">
+    <div class="battleship" id="battleship-game">
+      <div id="navbar">
+        <div class="tab-bar-container screen-only">
+          <div class="choose-title-wrapper">
+            <div class="logo-title-wrapper">
+              <a href="https://geoffburns.github.io/battleship">
+                <img
+                  class="logo"
+                  src="./terrains/sea/images/logos/sea-logo.png"
+                  alt="Battleship Logo"
+              /></a>
+              <span> Geoff's Hidden Battle </span>
+            </div>
+            <div
+              class="choose-container choose-terrain-container"
+              id="choose-terrain-container"
+            >
+              <label
+                for="chooseTerrain"
+                class="choose-label"
+                id="choose-terrain-label"
+                >Terrain:
+              </label>
+              <select id="chooseTerrain" class="choose-select">
+                <option value="0">Sea and Land</option>
+                <option value="1">Space and Asteroids</option>
+              </select>
+            </div>
+          </div>
+          <nav class="tab-bar main" aria-label="Main Navigation">
+            <button class="tab-link" id="tab-about" type="button">About</button>
+            <button class="tab-link" id="tab-seek" type="button">
+              Seek Game
+            </button>
+            <button class="tab-link you-are-here" id="tab-hide" type="button">
+              Hide and Seek Game
+            </button>
+            <button class="tab-link" id="tab-build" type="button">
+              Customize Maps
+            </button>
+            <button class="tab-link" id="tab-source" type="button">
+              Source Code
+            </button>
+          </nav>
+        </div>
+        <div class="info-wrap info-top sub-tabs">
+          <div class="heading-container sub-tabs">
+            <div class="tab-bar-container sub-tabs hidden" id="second-tab-bar">
+              <nav class="tab-bar sub-tabs" aria-label="Sub Navigation">
+                <button class="tab-link first" id="tab-add" type="button">
+                  Add
+                </button>
+                <button class="tab-link" id="tab-list" type="button">
+                  List
+                </button>
+                <button class="tab-link" id="tab-import" type="button">
+                  Import
+                </button>
+                <button class="tab-link" id="tab-rules" type="button">
+                  Rules
+                </button>
+                <button class="tab-link" id="tab-print" type="button">
+                  Print
+                </button>
+              </nav>
+            </div>
+            <div class="choose-controls hidden" id="choose-controls">
+              <img
+                class="logo print-only"
+                src="./terrains/sea/images/logos/sea-logo.png"
+                alt="Battleship Logo"
+              />
+              <div class="print-only" id="print-title">
+                Geoff's Hidden Battle (Hide &amp; Seek)
+              </div>
+              <div
+                class="choose-container choose-map-container"
+                id="choose-map-container"
+              >
+                <label
+                  for="chooseMap"
+                  class="choose-label"
+                  id="choose-map-label"
+                  >Choose a Map:
+                </label>
+                <select id="chooseMap" class="choose-select">
+                  <option value="0">Smuggler's Run SS</option>
+                  <option value="1">Smuggler's Run MS</option>
+                  <option value="2">Smuggler's Run M</option>
+                  <option value="3">Smuggler's Run ML</option>
+                  <option value="4">Smuggler's Run L</option>
+                  <option value="5">space-and-asteroids-10-18x6</option>
+                  <option value="6">space-and-asteroids-7-18x10</option>
+                  <option value="7">space-and-asteroids-15-18x6</option>
+                  <option value="8">space-and-asteroids-28-18x10</option>
+                  <option value="9">space-and-asteroids-29-18x10</option>
+                  <option value="10">space-and-asteroids-17-18x6</option>
+                </select>
+              </div>
+              <div
+                class="choose-container choose-height-container hidden"
+                id="height-container"
+              >
+                <label for="chooseHeight" class="choose-label">Height: </label>
+                <select id="chooseHeight" class="choose-select"></select>
+              </div>
+              <div
+                class="choose-container choose-width-container hidden"
+                id="width-container"
+              >
+                <label for="chooseWidth" class="choose-label">Width: </label>
+                <select id="chooseWidth" class="choose-select"></select>
+              </div>
+              <div
+                class="choose-container choose-map-container hidden"
+                id="choose-include"
+              >
+                <label
+                  for="chooseList"
+                  class="choose-label"
+                  id="choose-list-label"
+                  >Include:
+                </label>
+                <select id="chooseList" class="choose-select"></select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="game-container null" id="battleship-game-container">
+        <div class="player-container" id="friend-container">
+          <div class="title-wrap">
+            <h2 id="friend-title" class="centered-title">Friendly Sector</h2>
+          </div>
+          <div class="player-body">
+            <div class="player-main" id="friend-main">
+              <div class="board-wrap">
+                <div
+                  class="board"
+                  id="friend-board"
+                  style="--cols: 18; --rows: 9; --boxSize: 31.88888888888889px"
+                >
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="0"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="1"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="2"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="3"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="5"
+                    style="
+                      color: rgb(51, 153, 204);
+                      background: rgba(51, 153, 204, 0.3);
+                    "
+                    data-letter="F"
+                    data-id="1"
+                  >
+                    F
+                  </div>
+                  <div class="cell space light" data-r="0" data-c="6"></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="7"
+                    data-letter="T"
+                    data-id="2"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="8"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="2"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="9"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="2"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="10"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="2"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="11"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="2"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="12"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="14"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="15"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="0"
+                    data-c="16"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="0"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="0"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="1"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="2"
+                    style="
+                      color: rgb(51, 153, 204);
+                      background: rgba(51, 153, 204, 0.3);
+                    "
+                    data-letter="F"
+                    data-id="1"
+                  >
+                    F
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="3"
+                    style="
+                      color: rgb(51, 153, 204);
+                      background: rgba(51, 153, 204, 0.3);
+                    "
+                    data-letter="F"
+                    data-id="1"
+                  >
+                    F
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="4"
+                    style="
+                      color: rgb(51, 153, 204);
+                      background: rgba(51, 153, 204, 0.3);
+                    "
+                    data-letter="F"
+                    data-id="1"
+                  >
+                    F
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="5"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="6"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="1"
+                    data-c="7"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="1"
+                    data-c="8"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="1"
+                    data-c="9"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="10"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="11"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="12"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="14"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="15"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="1"
+                    data-c="16"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="1"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light rail"
+                    data-r="2"
+                    data-c="0"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark rail"
+                    data-r="2"
+                    data-c="1"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light rail"
+                    data-r="2"
+                    data-c="2"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="2"
+                    data-c="3"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="2"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="2"
+                    data-c="5"
+                    style="
+                      color: rgb(51, 153, 204);
+                      background: rgba(51, 153, 204, 0.3);
+                    "
+                    data-letter="F"
+                    data-id="1"
+                  >
+                    F
+                  </div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="2"
+                    data-c="6"
+                  ></div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="2"
+                    data-c="7"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light"
+                    data-r="2"
+                    data-c="8"
+                    data-letter="S"
+                    data-id="9"
+                    style="
+                      color: rgb(119, 153, 238);
+                      background: rgba(210, 100, 204, 0.3);
+                    "
+                  >
+                    S
+                  </div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="2"
+                    data-c="9"
+                    data-letter="S"
+                    data-id="9"
+                    style="
+                      color: rgb(119, 153, 238);
+                      background: rgba(210, 100, 204, 0.3);
+                    "
+                  >
+                    S
+                  </div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="2"
+                    data-c="10"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="2"
+                    data-c="11"
+                    data-letter="V"
+                    data-id="5"
+                    style="
+                      color: rgb(187, 102, 255);
+                      background: rgba(190, 70, 130, 0.3);
+                    "
+                  >
+                    V
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="2"
+                    data-c="12"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="2"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="2"
+                    data-c="14"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="2"
+                    data-c="15"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="2"
+                    data-c="16"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="2"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark bottomEdge rail"
+                    data-r="3"
+                    data-c="0"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge weapon rail"
+                    data-r="3"
+                    data-c="1"
+                    style="
+                      color: rgb(204, 51, 204);
+                      background: rgba(244, 100, 40, 0.3);
+                    "
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-id="4"
+                    data-letter="R"
+                    data-wletter="|"
+                    data-ammo="1"
+                    data-wid="1"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark rail"
+                    data-r="3"
+                    data-c="2"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light rail"
+                    data-r="3"
+                    data-c="3"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="3"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="3"
+                    data-c="5"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="3"
+                    data-c="6"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light"
+                    data-r="3"
+                    data-c="7"
+                    data-letter="S"
+                    data-id="9"
+                    style="
+                      color: rgb(119, 153, 238);
+                      background: rgba(210, 100, 204, 0.3);
+                    "
+                  >
+                    S
+                  </div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="3"
+                    data-c="8"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light"
+                    data-r="3"
+                    data-c="9"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark leftEdge"
+                    data-r="3"
+                    data-c="10"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="3"
+                    data-c="11"
+                    style="
+                      color: rgb(187, 102, 255);
+                      background: rgba(190, 70, 130, 0.3);
+                    "
+                    data-letter="V"
+                    data-id="5"
+                  >
+                    V
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="3"
+                    data-c="12"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="3"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="3"
+                    data-c="14"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="3"
+                    data-c="15"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="3"
+                    data-c="16"
+                    style="
+                      color: rgb(255, 204, 102);
+                      background: rgba(244, 244, 102, 0.3);
+                    "
+                    data-letter="H"
+                    data-id="10"
+                  >
+                    H
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="3"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light weapon rail"
+                    data-r="4"
+                    data-c="0"
+                    style="
+                      color: rgb(204, 51, 204);
+                      background: rgba(244, 100, 40, 0.3);
+                    "
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-id="4"
+                    data-letter="R"
+                    data-wletter="|"
+                    data-ammo="1"
+                    data-wid="2"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark rail"
+                    data-r="4"
+                    data-c="1"
+                    style="
+                      color: rgb(204, 51, 204);
+                      background: rgba(244, 100, 40, 0.3);
+                    "
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-letter="R"
+                    data-id="4"
+                    data-listen="true"
+                  >
+                    R
+                  </div>
+                  <div
+                    class="cell space light leftEdge bottomEdge weapon rail"
+                    data-r="4"
+                    data-c="2"
+                    style="
+                      color: rgb(204, 51, 204);
+                      background: rgba(244, 100, 40, 0.3);
+                    "
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-id="4"
+                    data-letter="R"
+                    data-wletter="|"
+                    data-ammo="1"
+                    data-wid="3"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark rail"
+                    data-r="4"
+                    data-c="3"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light rightEdge"
+                    data-r="4"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark bottomEdge"
+                    data-r="4"
+                    data-c="5"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light bottomEdge"
+                    data-r="4"
+                    data-c="6"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="4"
+                    data-c="7"
+                    style="
+                      color: rgb(119, 153, 238);
+                      background: rgba(210, 100, 204, 0.3);
+                    "
+                    data-letter="S"
+                    data-id="9"
+                  >
+                    S
+                  </div>
+                  <div class="cell asteroid light" data-r="4" data-c="8"></div>
+                  <div class="cell asteroid dark" data-r="4" data-c="9"></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="4"
+                    data-c="10"
+                    style="
+                      color: rgb(187, 102, 255);
+                      background: rgba(190, 70, 130, 0.3);
+                    "
+                    data-letter="V"
+                    data-id="5"
+                  >
+                    V
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="4"
+                    data-c="11"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="4"
+                    data-c="12"
+                    style="
+                      color: rgb(187, 102, 255);
+                      background: rgba(190, 70, 130, 0.3);
+                    "
+                    data-letter="V"
+                    data-id="5"
+                  >
+                    V
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="4"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="4"
+                    data-c="14"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="4"
+                    data-c="15"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="4"
+                    data-c="16"
+                    style="
+                      color: rgb(255, 204, 102);
+                      background: rgba(244, 244, 102, 0.3);
+                    "
+                    data-letter="H"
+                    data-id="10"
+                  >
+                    H
+                  </div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="4"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark rail"
+                    data-r="5"
+                    data-c="0"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light weapon rail"
+                    data-r="5"
+                    data-c="1"
+                    style="
+                      color: rgb(204, 51, 204);
+                      background: rgba(244, 100, 40, 0.3);
+                    "
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-id="4"
+                    data-letter="R"
+                    data-wletter="|"
+                    data-ammo="1"
+                    data-wid="4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark rail"
+                    data-r="5"
+                    data-c="2"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light leftEdge bottomEdge rail"
+                    data-r="5"
+                    data-c="3"
+                    style=""
+                    data-sletter="R"
+                    data-wletters="|"
+                    data-variant="0"
+                    data-surround="4"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="5"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light topEdge"
+                    data-r="5"
+                    data-c="5"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark rightEdge topEdge"
+                    data-r="5"
+                    data-c="6"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light bottomEdge"
+                    data-r="5"
+                    data-c="7"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark bottomEdge"
+                    data-r="5"
+                    data-c="8"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light bottomEdge"
+                    data-r="5"
+                    data-c="9"
+                  ></div>
+                  <div
+                    class="cell space dark leftEdge"
+                    data-r="5"
+                    data-c="10"
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="5"
+                    data-c="11"
+                    style=""
+                  ></div>
+                  <div class="cell space dark" data-r="5" data-c="12"></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="5"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark rightEdge bottomEdge"
+                    data-r="5"
+                    data-c="14"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light"
+                    data-r="5"
+                    data-c="15"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="5"
+                    data-c="16"
+                    style="
+                      color: rgb(255, 204, 102);
+                      background: rgba(244, 244, 102, 0.3);
+                    "
+                    data-letter="H"
+                    data-id="10"
+                  >
+                    H
+                  </div>
+                  <div
+                    class="cell asteroid light"
+                    data-r="5"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light turn3 rail"
+                    data-r="6"
+                    data-c="0"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4|0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark turn3 rail"
+                    data-r="6"
+                    data-c="1"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4|0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light turn3 rail"
+                    data-r="6"
+                    data-c="2"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="1,3:1|0,4:2|2,4:3|1,5:4|0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark turn3 launch"
+                    data-r="6"
+                    data-c="3"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="6"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="6"
+                    data-c="5"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="6"
+                    data-c="6"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark topEdge"
+                    data-r="6"
+                    data-c="7"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light topEdge"
+                    data-r="6"
+                    data-c="8"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="3"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space dark topEdge"
+                    data-r="6"
+                    data-c="9"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="3"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="6"
+                    data-c="10"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="3"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="6"
+                    data-c="11"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="3"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="6"
+                    data-c="12"
+                    style="
+                      color: rgb(51, 102, 255);
+                      background: rgba(160, 80, 244, 0.3);
+                    "
+                    data-letter="T"
+                    data-id="3"
+                  >
+                    T
+                  </div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="6"
+                    data-c="13"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid light launch"
+                    data-r="6"
+                    data-c="14"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark launch"
+                    data-r="6"
+                    data-c="15"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light launch"
+                    data-r="6"
+                    data-c="16"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="6"
+                    data-c="17"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark turn3 weapon launch"
+                    data-r="7"
+                    data-c="0"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-id="7"
+                    data-letter="M"
+                    data-wletter="+"
+                    data-ammo="1"
+                    data-wid="18"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light turn3 launch"
+                    data-r="7"
+                    data-c="1"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-letter="M"
+                    data-id="7"
+                    data-listen="true"
+                  >
+                    M
+                  </div>
+                  <div
+                    class="cell asteroid dark turn3 weapon launch"
+                    data-r="7"
+                    data-c="2"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-id="7"
+                    data-letter="M"
+                    data-wletter="+"
+                    data-ammo="1"
+                    data-wid="19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light turn3 launch"
+                    data-r="7"
+                    data-c="3"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space dark leftEdge"
+                    data-r="7"
+                    data-c="4"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="7"
+                    data-c="5"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="7"
+                    data-c="6"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="7"
+                    data-c="7"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="7"
+                    data-c="8"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light"
+                    data-r="7"
+                    data-c="9"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="7"
+                    data-c="10"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="7"
+                    data-c="11"
+                    style=""
+                  ></div>
+                  <div class="cell asteroid dark" data-r="7" data-c="12"></div>
+                  <div
+                    class="cell asteroid light launch"
+                    data-r="7"
+                    data-c="13"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark launch"
+                    data-r="7"
+                    data-c="14"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light launch"
+                    data-r="7"
+                    data-c="15"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-letter="M"
+                    data-id="6"
+                    data-listen="true"
+                  >
+                    M
+                  </div>
+                  <div
+                    class="cell asteroid dark launch"
+                    data-r="7"
+                    data-c="16"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light launch"
+                    data-r="7"
+                    data-c="17"
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light turn3 launch"
+                    data-r="8"
+                    data-c="0"
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark turn3 launch"
+                    data-r="8"
+                    data-c="1"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-letter="M"
+                    data-id="7"
+                    data-listen="true"
+                  >
+                    M
+                  </div>
+                  <div
+                    class="cell asteroid light turn3 launch"
+                    data-r="8"
+                    data-c="2"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark turn3 launch"
+                    data-r="8"
+                    data-c="3"
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="3"
+                    data-surround="7"
+                    data-key-ids="0,7:18|2,7:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="8"
+                    data-c="4"
+                    style="
+                      color: rgb(204, 153, 255);
+                      background: rgba(255, 102, 153, 0.3);
+                    "
+                    data-letter="L"
+                    data-id="8"
+                  >
+                    L
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="8"
+                    data-c="5"
+                    style="
+                      color: rgb(204, 153, 255);
+                      background: rgba(255, 102, 153, 0.3);
+                    "
+                    data-letter="L"
+                    data-id="8"
+                  >
+                    L
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="8"
+                    data-c="6"
+                    style="
+                      color: rgb(204, 153, 255);
+                      background: rgba(255, 102, 153, 0.3);
+                    "
+                    data-letter="L"
+                    data-id="8"
+                  >
+                    L
+                  </div>
+                  <div
+                    class="cell space dark"
+                    data-r="8"
+                    data-c="7"
+                    style="
+                      color: rgb(204, 153, 255);
+                      background: rgba(255, 102, 153, 0.3);
+                    "
+                    data-letter="L"
+                    data-id="8"
+                  >
+                    L
+                  </div>
+                  <div
+                    class="cell space light"
+                    data-r="8"
+                    data-c="8"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell space dark"
+                    data-r="8"
+                    data-c="9"
+                    style="
+                      color: rgb(255, 204, 102);
+                      background: rgba(244, 244, 102, 0.3);
+                    "
+                    data-letter="H"
+                    data-id="11"
+                  >
+                    H
+                  </div>
+                  <div
+                    class="cell space light rightEdge"
+                    data-r="8"
+                    data-c="10"
+                    style="
+                      color: rgb(255, 204, 102);
+                      background: rgba(244, 244, 102, 0.3);
+                    "
+                    data-letter="H"
+                    data-id="11"
+                  >
+                    H
+                  </div>
+                  <div
+                    class="cell asteroid dark"
+                    data-r="8"
+                    data-c="11"
+                    style="
+                      color: rgb(255, 204, 102);
+                      background: rgba(244, 244, 102, 0.3);
+                    "
+                    data-letter="H"
+                    data-id="11"
+                  >
+                    H
+                  </div>
+                  <div
+                    class="cell asteroid light"
+                    data-r="8"
+                    data-c="12"
+                    style=""
+                  ></div>
+                  <div
+                    class="cell asteroid dark launch"
+                    data-r="8"
+                    data-c="13"
+                    style=""
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid light weapon launch"
+                    data-r="8"
+                    data-c="14"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-id="6"
+                    data-letter="M"
+                    data-wletter="+"
+                    data-ammo="1"
+                    data-wid="18"
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark launch"
+                    data-r="8"
+                    data-c="15"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-letter="M"
+                    data-id="6"
+                    data-listen="true"
+                  >
+                    M
+                  </div>
+                  <div
+                    class="cell asteroid light weapon launch"
+                    data-r="8"
+                    data-c="16"
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-id="6"
+                    data-letter="M"
+                    data-wletter="+"
+                    data-ammo="1"
+                    data-wid="19"
+                    style="
+                      color: rgb(51, 255, 204);
+                      background: rgba(51, 255, 204, 0.3);
+                    "
+                    data-listen="true"
+                  ></div>
+                  <div
+                    class="cell asteroid dark launch"
+                    data-r="8"
+                    data-c="17"
+                    data-sletter="M"
+                    data-wletters="+"
+                    data-variant="1"
+                    data-surround="6"
+                    data-key-ids="14,8:18|16,8:19"
+                    data-listen="true"
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div class="footer" id="friend-footer">
+              <div class="info-wrap" id="statusLine-wrap">
+                <details class="chevron-box">
+                  <summary>
+                    <div class="status small" id="statusLine">
+                      <div id="gameStatus" class="game-status">
+                        Click On Square To Fire
+                      </div>
+                      <div id="statusRight" class="status right">
+                        <div id="modeStatus" class="mode-status">
+                          Standard Shot
+                        </div>
+                        <img
+                          id="spinner"
+                          class="spinner hidden"
+                          src="./images/loading.gif"
+                          alt="waiting"
+                        />
+                        <div
+                          id="modeIcon1"
+                          class="mode-icon tally-box single"
+                          style="background: white"
+                        ></div>
+                        <div
+                          id="modeIcon2"
+                          class="mode-icon tally-box hidden"
+                        ></div>
+                        <div id="ammoCounter" class="ammo-counter">
+                          <span id="ammoCounterLeft" class="left">∞</span>
+                          <span id="ammoCounterTotal" class="right">∞</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span id="chevron" class="chevron"></span>
+                  </summary>
+                  <div class="status-list-content hidden" id="statusList"></div>
+                </details>
+              </div>
+              <div class="board-wrap alt trays hidden" id="tray-container">
+                <div id="shipTray" class="tray hidden" data-cell-height="3">
+                  <div class="drag-ship-container" data-id="1">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="1"
+                      data-type="ship"
+                      data-id="1"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(4, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div class="cell empty" data-r="0" data-c="0"></div>
+                      <div class="cell empty" data-r="0" data-c="1"></div>
+                      <div class="cell empty" data-r="0" data-c="2"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 153, 204, 0.3);
+                          color: rgb(51, 153, 204);
+                        "
+                      >
+                        F
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 153, 204, 0.3);
+                          color: rgb(51, 153, 204);
+                        "
+                      >
+                        F
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 153, 204, 0.3);
+                          color: rgb(51, 153, 204);
+                        "
+                      >
+                        F
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 153, 204, 0.3);
+                          color: rgb(51, 153, 204);
+                        "
+                      >
+                        F
+                      </div>
+                      <div class="cell empty" data-r="1" data-c="3"></div>
+                      <div class="cell empty" data-r="2" data-c="0"></div>
+                      <div class="cell empty" data-r="2" data-c="1"></div>
+                      <div class="cell empty" data-r="2" data-c="2"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 153, 204, 0.3);
+                          color: rgb(51, 153, 204);
+                        "
+                      >
+                        F
+                      </div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="2">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="1"
+                      data-type="ship"
+                      data-id="2"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(1, var(--boxSize));
+                        grid-template-columns: repeat(5, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="3">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="1"
+                      data-type="ship"
+                      data-id="3"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(1, var(--boxSize));
+                        grid-template-columns: repeat(5, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(160, 80, 244, 0.3);
+                          color: rgb(51, 102, 255);
+                        "
+                      >
+                        T
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="planeTray" class="tray hidden" data-cell-height="3">
+                  <div class="drag-ship-container" data-id="5">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="0"
+                      data-type="ship"
+                      data-id="5"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(3, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(190, 70, 130, 0.3);
+                          color: rgb(187, 102, 255);
+                        "
+                      >
+                        V
+                      </div>
+                      <div class="cell empty" data-r="0" data-c="1"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(190, 70, 130, 0.3);
+                          color: rgb(187, 102, 255);
+                        "
+                      >
+                        V
+                      </div>
+                      <div class="cell empty" data-r="1" data-c="0"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(190, 70, 130, 0.3);
+                          color: rgb(187, 102, 255);
+                        "
+                      >
+                        V
+                      </div>
+                      <div class="cell empty" data-r="1" data-c="2"></div>
+                      <div class="cell empty" data-r="2" data-c="0"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(190, 70, 130, 0.3);
+                          color: rgb(187, 102, 255);
+                        "
+                      >
+                        V
+                      </div>
+                      <div class="cell empty" data-r="2" data-c="2"></div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="6">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="0"
+                      data-type="ship"
+                      data-id="6"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(2, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div class="cell empty" data-r="0" data-c="0"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      ></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      >
+                        M
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      >
+                        M
+                      </div>
+                      <div class="cell empty" data-r="2" data-c="0"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="7">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="0"
+                      data-type="ship"
+                      data-id="7"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(2, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div class="cell empty" data-r="0" data-c="0"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      ></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      >
+                        M
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      >
+                        M
+                      </div>
+                      <div class="cell empty" data-r="2" data-c="0"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(51, 255, 204, 0.3);
+                          color: rgb(51, 255, 204);
+                        "
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="8">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="1"
+                      data-type="ship"
+                      data-id="8"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(1, var(--boxSize));
+                        grid-template-columns: repeat(4, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(255, 102, 153, 0.3);
+                          color: rgb(204, 153, 255);
+                        "
+                      >
+                        L
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(255, 102, 153, 0.3);
+                          color: rgb(204, 153, 255);
+                        "
+                      >
+                        L
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(255, 102, 153, 0.3);
+                          color: rgb(204, 153, 255);
+                        "
+                      >
+                        L
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(255, 102, 153, 0.3);
+                          color: rgb(204, 153, 255);
+                        "
+                      >
+                        L
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="specialTray" class="tray hidden" data-cell-height="3">
+                  <div class="drag-ship-container" data-id="4">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="0"
+                      data-type="ship"
+                      data-id="4"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(3, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div class="cell empty" data-r="0" data-c="0"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 100, 40, 0.3);
+                          color: rgb(204, 51, 204);
+                        "
+                      ></div>
+                      <div class="cell empty" data-r="0" data-c="2"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 100, 40, 0.3);
+                          color: rgb(204, 51, 204);
+                        "
+                      ></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 100, 40, 0.3);
+                          color: rgb(204, 51, 204);
+                        "
+                      >
+                        R
+                      </div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 100, 40, 0.3);
+                          color: rgb(204, 51, 204);
+                        "
+                      ></div>
+                      <div class="cell empty" data-r="2" data-c="0"></div>
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 100, 40, 0.3);
+                          color: rgb(204, 51, 204);
+                        "
+                      ></div>
+                      <div class="cell empty" data-r="2" data-c="2"></div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="10">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="1"
+                      data-type="ship"
+                      data-id="10"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(1, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 244, 102, 0.3);
+                          color: rgb(255, 204, 102);
+                        "
+                      ></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 244, 102, 0.3);
+                          color: rgb(255, 204, 102);
+                        "
+                      >
+                        H
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 244, 102, 0.3);
+                          color: rgb(255, 204, 102);
+                        "
+                      >
+                        H
+                      </div>
+                    </div>
+                  </div>
+                  <div class="drag-ship-container" data-id="11">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="1"
+                      data-type="ship"
+                      data-id="11"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(1, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div
+                        class="cell special"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 244, 102, 0.3);
+                          color: rgb(255, 204, 102);
+                        "
+                      ></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 244, 102, 0.3);
+                          color: rgb(255, 204, 102);
+                        "
+                      >
+                        H
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(244, 244, 102, 0.3);
+                          color: rgb(255, 204, 102);
+                        "
+                      >
+                        H
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="buildingTray" class="tray hidden" data-cell-height="3">
+                  <div class="drag-ship-container" data-id="9">
+                    <div
+                      class="draggable dragListen"
+                      data-variant="0"
+                      data-type="ship"
+                      data-id="9"
+                      style="
+                        display: grid;
+                        place-items: center;
+                        --boxSize: 31.88888888888889px;
+                        grid-template-rows: repeat(3, var(--boxSize));
+                        grid-template-columns: repeat(3, var(--boxSize));
+                        gap: 0px;
+                      "
+                      draggable="true"
+                    >
+                      <div class="cell empty" data-r="0" data-c="0"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(210, 100, 204, 0.3);
+                          color: rgb(119, 153, 238);
+                        "
+                      >
+                        S
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(210, 100, 204, 0.3);
+                          color: rgb(119, 153, 238);
+                        "
+                      >
+                        S
+                      </div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(210, 100, 204, 0.3);
+                          color: rgb(119, 153, 238);
+                        "
+                      >
+                        S
+                      </div>
+                      <div class="cell empty" data-r="1" data-c="1"></div>
+                      <div class="cell empty" data-r="1" data-c="2"></div>
+                      <div
+                        class="cell"
+                        data-r="undefined"
+                        data-c="undefined"
+                        style="
+                          background: rgba(210, 100, 204, 0.3);
+                          color: rgb(119, 153, 238);
+                        "
+                      >
+                        S
+                      </div>
+                      <div class="cell empty" data-r="2" data-c="1"></div>
+                      <div class="cell empty" data-r="2" data-c="2"></div>
+                    </div>
+                  </div>
+                </div>
+                <div id="weaponTray" class="tray empty hidden"></div>
+              </div>
+            </div>
+            <div class="panel-container" id="friend-panel">
+              <div class="board-wrap">
+                <div class="panel alt">
+                  <div class="panel-controls" id="place-controls">
+                    <button
+                      class="place-control hidden"
+                      id="newPlacement"
+                      type="button"
+                    >
+                      <span class="shortcut">C</span>lear
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="rotateBtn"
+                      type="button"
+                      disabled=""
+                    >
+                      <span class="shortcut">R</span>otate
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="flipBtn"
+                      type="button"
+                      disabled=""
+                    >
+                      <span class="shortcut">F</span>lip
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="rotateLeftBtn"
+                      type="button"
+                      disabled=""
+                    >
+                      <span class="shortcut">L</span>eft Rotate
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="transformBtn"
+                      type="button"
+                      disabled=""
+                    >
+                      <span class="shortcut">X</span>form
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="undoBtn"
+                      type="button"
+                      disabled=""
+                    >
+                      <span class="shortcut">U</span>ndo
+                    </button>
+
+                    <button
+                      class="place-control hidden"
+                      id="testBtn"
+                      type="button"
+                    >
+                      <span class="shortcut">T</span>est
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="stopBtn"
+                      type="button"
+                      disabled=""
+                    >
+                      <span class="shortcut">S</span>top
+                    </button>
+                    <button
+                      class="place-control hidden"
+                      id="seekBtn"
+                      type="button"
+                    >
+                      <span class="shortcut">H</span>ide and Seek
+                    </button>
+
+                    <button
+                      class="place-control hidden"
+                      id="autoBtn"
+                      type="button"
+                    >
+                      <span class="shortcut">A</span>uto
+                    </button>
+                    <h4 class="tally-title" id="tally-title">Tally Boxes</h4>
+                  </div>
+                  <div class="tally-box-container" id="friend-tally-container">
+                    <div id="friend-tallyBox">
+                      <div class="tally-group-container">
+                        <div class="tally-col">
+                          <div class="tally-row sea">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(51, 153, 204, 0.3);
+                                color: rgb(51, 153, 204);
+                              "
+                            >
+                              F
+                            </div>
+                          </div>
+                          <div class="tally-row sea">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(160, 80, 244, 0.3);
+                                color: rgb(51, 102, 255);
+                              "
+                            >
+                              T
+                            </div>
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(160, 80, 244, 0.3);
+                                color: rgb(51, 102, 255);
+                              "
+                            >
+                              T
+                            </div>
+                          </div>
+                          <div class="tally-row special">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(244, 244, 102, 0.3);
+                                color: rgb(255, 204, 102);
+                              "
+                            >
+                              H
+                            </div>
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(244, 244, 102, 0.3);
+                                color: rgb(255, 204, 102);
+                              "
+                            >
+                              H
+                            </div>
+                          </div>
+                          <div class="tally-row special">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(244, 100, 40, 0.3);
+                                color: rgb(204, 51, 204);
+                              "
+                            >
+                              R
+                            </div>
+                          </div>
+                        </div>
+                        <div class="tally-col">
+                          <div class="tally-row land">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(210, 100, 204, 0.3);
+                                color: rgb(119, 153, 238);
+                              "
+                            >
+                              S
+                            </div>
+                          </div>
+                          <div class="tally-row air">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(255, 102, 153, 0.3);
+                                color: rgb(204, 153, 255);
+                              "
+                            >
+                              L
+                            </div>
+                          </div>
+                          <div class="tally-row air">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(51, 255, 204, 0.3);
+                                color: rgb(51, 255, 204);
+                              "
+                            >
+                              M
+                            </div>
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(51, 255, 204, 0.3);
+                                color: rgb(51, 255, 204);
+                              "
+                            >
+                              M
+                            </div>
+                          </div>
+                          <div class="tally-row air">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(190, 70, 130, 0.3);
+                                color: rgb(187, 102, 255);
+                              "
+                            >
+                              V
+                            </div>
+                          </div>
+                          <div class="tally-row weapon rail-bolt">
+                            <div
+                              data-wid="5"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="6"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="7"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="8"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                          </div>
+                          <div class="tally-row weapon missile">
+                            <div
+                              data-wid="11"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="12"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="15"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="16"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="info-container">
+                    <div class="info hidden" id="friend-placed-label">
+                      Placed:
+                      <span class="no-wrap" id="friend-placed">11 / 11</span>
+                    </div>
+                    <div class="info hidden" id="friend-turns-label">
+                      Turns: <span id="friend-turns">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-shots-label">
+                      Shots: <span id="friend-shots">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-hits-label">
+                      Hits: <span id="friend-hits">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-misses-label">
+                      Misses: <span id="friend-misses">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-reveals-label">
+                      Reveals: <span id="friend-reveals">0 </span>
+                    </div>
+                    <div class="info hidden" id="friend-hints-label">
+                      Hints: <span id="friend-hints">0 </span>
+                    </div>
+                    <div class="info" id="friend-sunk-label">
+                      Sunk: <span id="friend-sunk">0 / 11</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer-wrap" id="friend-footer-wrap"></div>
+        </div>
+
+        <div class="player-container" id="enemy-container">
+          <div class="title-wrap">
+            <h2 id="enemy-title" class="centered-title">Enemy Sector</h2>
+          </div>
+
+          <div class="player-body">
+            <div class="player-main">
+              <div class="board-wrap">
+                <div
+                  class="board"
+                  id="enemy-board"
+                  style="--cols: 18; --rows: 9; --boxSize: 31.88888888888889px"
+                >
+                  <div class="cell space light" data-r="0" data-c="0"></div>
+                  <div class="cell space dark" data-r="0" data-c="1"></div>
+                  <div class="cell space light" data-r="0" data-c="2"></div>
+                  <div class="cell space dark" data-r="0" data-c="3"></div>
+                  <div class="cell space light" data-r="0" data-c="4"></div>
+                  <div class="cell space dark" data-r="0" data-c="5"></div>
+                  <div class="cell space light" data-r="0" data-c="6"></div>
+                  <div class="cell space dark" data-r="0" data-c="7"></div>
+                  <div class="cell space light" data-r="0" data-c="8"></div>
+                  <div class="cell space dark" data-r="0" data-c="9"></div>
+                  <div class="cell space light" data-r="0" data-c="10"></div>
+                  <div class="cell space dark" data-r="0" data-c="11"></div>
+                  <div class="cell space light" data-r="0" data-c="12"></div>
+                  <div class="cell space dark" data-r="0" data-c="13"></div>
+                  <div class="cell space light" data-r="0" data-c="14"></div>
+                  <div class="cell space dark" data-r="0" data-c="15"></div>
+                  <div class="cell space light" data-r="0" data-c="16"></div>
+                  <div class="cell space dark" data-r="0" data-c="17"></div>
+                  <div class="cell space dark" data-r="1" data-c="0"></div>
+                  <div class="cell space light" data-r="1" data-c="1"></div>
+                  <div class="cell space dark" data-r="1" data-c="2"></div>
+                  <div class="cell space light" data-r="1" data-c="3"></div>
+                  <div class="cell space dark" data-r="1" data-c="4"></div>
+                  <div class="cell space light" data-r="1" data-c="5"></div>
+                  <div class="cell space dark" data-r="1" data-c="6"></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="1"
+                    data-c="7"
+                  ></div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="1"
+                    data-c="8"
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="1"
+                    data-c="9"
+                  ></div>
+                  <div class="cell space dark" data-r="1" data-c="10"></div>
+                  <div class="cell space light" data-r="1" data-c="11"></div>
+                  <div class="cell space dark" data-r="1" data-c="12"></div>
+                  <div class="cell space light" data-r="1" data-c="13"></div>
+                  <div class="cell space dark" data-r="1" data-c="14"></div>
+                  <div class="cell space light" data-r="1" data-c="15"></div>
+                  <div class="cell space dark" data-r="1" data-c="16"></div>
+                  <div class="cell space light" data-r="1" data-c="17"></div>
+                  <div class="cell space light" data-r="2" data-c="0"></div>
+                  <div class="cell space dark" data-r="2" data-c="1"></div>
+                  <div class="cell space light" data-r="2" data-c="2"></div>
+                  <div class="cell space dark" data-r="2" data-c="3"></div>
+                  <div class="cell space light" data-r="2" data-c="4"></div>
+                  <div class="cell space dark" data-r="2" data-c="5"></div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="2"
+                    data-c="6"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="2" data-c="7"></div>
+                  <div class="cell asteroid light" data-r="2" data-c="8"></div>
+                  <div class="cell asteroid dark" data-r="2" data-c="9"></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="2"
+                    data-c="10"
+                  ></div>
+                  <div class="cell space dark" data-r="2" data-c="11"></div>
+                  <div class="cell space light" data-r="2" data-c="12"></div>
+                  <div class="cell space dark" data-r="2" data-c="13"></div>
+                  <div class="cell space light" data-r="2" data-c="14"></div>
+                  <div class="cell space dark" data-r="2" data-c="15"></div>
+                  <div class="cell space light" data-r="2" data-c="16"></div>
+                  <div class="cell space dark" data-r="2" data-c="17"></div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="3"
+                    data-c="0"
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="3"
+                    data-c="1"
+                  ></div>
+                  <div class="cell space dark" data-r="3" data-c="2"></div>
+                  <div class="cell space light" data-r="3" data-c="3"></div>
+                  <div class="cell space dark" data-r="3" data-c="4"></div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="3"
+                    data-c="5"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="3" data-c="6"></div>
+                  <div class="cell asteroid light" data-r="3" data-c="7"></div>
+                  <div class="cell asteroid dark" data-r="3" data-c="8"></div>
+                  <div class="cell asteroid light" data-r="3" data-c="9"></div>
+                  <div
+                    class="cell space dark leftEdge"
+                    data-r="3"
+                    data-c="10"
+                  ></div>
+                  <div class="cell space light" data-r="3" data-c="11"></div>
+                  <div class="cell space dark" data-r="3" data-c="12"></div>
+                  <div class="cell space light" data-r="3" data-c="13"></div>
+                  <div class="cell space dark" data-r="3" data-c="14"></div>
+                  <div class="cell space light" data-r="3" data-c="15"></div>
+                  <div class="cell space dark" data-r="3" data-c="16"></div>
+                  <div class="cell space light" data-r="3" data-c="17"></div>
+                  <div class="cell asteroid light" data-r="4" data-c="0"></div>
+                  <div class="cell asteroid dark" data-r="4" data-c="1"></div>
+                  <div
+                    class="cell space light leftEdge bottomEdge"
+                    data-r="4"
+                    data-c="2"
+                  ></div>
+                  <div class="cell space dark" data-r="4" data-c="3"></div>
+                  <div
+                    class="cell space light rightEdge"
+                    data-r="4"
+                    data-c="4"
+                  ></div>
+                  <div
+                    class="cell asteroid dark bottomEdge"
+                    data-r="4"
+                    data-c="5"
+                  ></div>
+                  <div
+                    class="cell asteroid light bottomEdge"
+                    data-r="4"
+                    data-c="6"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="4" data-c="7"></div>
+                  <div class="cell asteroid light" data-r="4" data-c="8"></div>
+                  <div class="cell asteroid dark" data-r="4" data-c="9"></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="4"
+                    data-c="10"
+                  ></div>
+                  <div class="cell space dark" data-r="4" data-c="11"></div>
+                  <div class="cell space light" data-r="4" data-c="12"></div>
+                  <div class="cell space dark" data-r="4" data-c="13"></div>
+                  <div class="cell space light" data-r="4" data-c="14"></div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="4"
+                    data-c="15"
+                  ></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="4"
+                    data-c="16"
+                  ></div>
+                  <div
+                    class="cell space dark bottomEdge"
+                    data-r="4"
+                    data-c="17"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="5" data-c="0"></div>
+                  <div class="cell asteroid light" data-r="5" data-c="1"></div>
+                  <div class="cell asteroid dark" data-r="5" data-c="2"></div>
+                  <div
+                    class="cell space light leftEdge bottomEdge"
+                    data-r="5"
+                    data-c="3"
+                  ></div>
+                  <div class="cell space dark" data-r="5" data-c="4"></div>
+                  <div
+                    class="cell space light topEdge"
+                    data-r="5"
+                    data-c="5"
+                  ></div>
+                  <div
+                    class="cell space dark rightEdge topEdge"
+                    data-r="5"
+                    data-c="6"
+                  ></div>
+                  <div
+                    class="cell asteroid light bottomEdge"
+                    data-r="5"
+                    data-c="7"
+                  ></div>
+                  <div
+                    class="cell asteroid dark bottomEdge"
+                    data-r="5"
+                    data-c="8"
+                  ></div>
+                  <div
+                    class="cell asteroid light bottomEdge"
+                    data-r="5"
+                    data-c="9"
+                  ></div>
+                  <div
+                    class="cell space dark leftEdge"
+                    data-r="5"
+                    data-c="10"
+                  ></div>
+                  <div class="cell space light" data-r="5" data-c="11"></div>
+                  <div class="cell space dark" data-r="5" data-c="12"></div>
+                  <div
+                    class="cell space light bottomEdge"
+                    data-r="5"
+                    data-c="13"
+                  ></div>
+                  <div
+                    class="cell space dark rightEdge bottomEdge"
+                    data-r="5"
+                    data-c="14"
+                  ></div>
+                  <div class="cell asteroid light" data-r="5" data-c="15"></div>
+                  <div class="cell asteroid dark" data-r="5" data-c="16"></div>
+                  <div class="cell asteroid light" data-r="5" data-c="17"></div>
+                  <div class="cell asteroid light" data-r="6" data-c="0"></div>
+                  <div class="cell asteroid dark" data-r="6" data-c="1"></div>
+                  <div class="cell asteroid light" data-r="6" data-c="2"></div>
+                  <div class="cell asteroid dark" data-r="6" data-c="3"></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="6"
+                    data-c="4"
+                  ></div>
+                  <div class="cell space dark" data-r="6" data-c="5"></div>
+                  <div class="cell space light" data-r="6" data-c="6"></div>
+                  <div
+                    class="cell space dark topEdge"
+                    data-r="6"
+                    data-c="7"
+                  ></div>
+                  <div
+                    class="cell space light topEdge"
+                    data-r="6"
+                    data-c="8"
+                  ></div>
+                  <div
+                    class="cell space dark topEdge"
+                    data-r="6"
+                    data-c="9"
+                  ></div>
+                  <div class="cell space light" data-r="6" data-c="10"></div>
+                  <div class="cell space dark" data-r="6" data-c="11"></div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="6"
+                    data-c="12"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="6" data-c="13"></div>
+                  <div class="cell asteroid light" data-r="6" data-c="14"></div>
+                  <div class="cell asteroid dark" data-r="6" data-c="15"></div>
+                  <div class="cell asteroid light" data-r="6" data-c="16"></div>
+                  <div class="cell asteroid dark" data-r="6" data-c="17"></div>
+                  <div class="cell asteroid dark" data-r="7" data-c="0"></div>
+                  <div class="cell asteroid light" data-r="7" data-c="1"></div>
+                  <div class="cell asteroid dark" data-r="7" data-c="2"></div>
+                  <div class="cell asteroid light" data-r="7" data-c="3"></div>
+                  <div
+                    class="cell space dark leftEdge"
+                    data-r="7"
+                    data-c="4"
+                  ></div>
+                  <div class="cell space light" data-r="7" data-c="5"></div>
+                  <div class="cell space dark" data-r="7" data-c="6"></div>
+                  <div class="cell space light" data-r="7" data-c="7"></div>
+                  <div class="cell space dark" data-r="7" data-c="8"></div>
+                  <div class="cell space light" data-r="7" data-c="9"></div>
+                  <div class="cell space dark" data-r="7" data-c="10"></div>
+                  <div
+                    class="cell space light rightEdge bottomEdge"
+                    data-r="7"
+                    data-c="11"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="7" data-c="12"></div>
+                  <div class="cell asteroid light" data-r="7" data-c="13"></div>
+                  <div class="cell asteroid dark" data-r="7" data-c="14"></div>
+                  <div class="cell asteroid light" data-r="7" data-c="15"></div>
+                  <div class="cell asteroid dark" data-r="7" data-c="16"></div>
+                  <div class="cell asteroid light" data-r="7" data-c="17"></div>
+                  <div class="cell asteroid light" data-r="8" data-c="0"></div>
+                  <div class="cell asteroid dark" data-r="8" data-c="1"></div>
+                  <div class="cell asteroid light" data-r="8" data-c="2"></div>
+                  <div class="cell asteroid dark" data-r="8" data-c="3"></div>
+                  <div
+                    class="cell space light leftEdge"
+                    data-r="8"
+                    data-c="4"
+                  ></div>
+                  <div class="cell space dark" data-r="8" data-c="5"></div>
+                  <div class="cell space light" data-r="8" data-c="6"></div>
+                  <div class="cell space dark" data-r="8" data-c="7"></div>
+                  <div class="cell space light" data-r="8" data-c="8"></div>
+                  <div class="cell space dark" data-r="8" data-c="9"></div>
+                  <div
+                    class="cell space light rightEdge"
+                    data-r="8"
+                    data-c="10"
+                  ></div>
+                  <div class="cell asteroid dark" data-r="8" data-c="11"></div>
+                  <div class="cell asteroid light" data-r="8" data-c="12"></div>
+                  <div class="cell asteroid dark" data-r="8" data-c="13"></div>
+                  <div class="cell asteroid light" data-r="8" data-c="14"></div>
+                  <div class="cell asteroid dark" data-r="8" data-c="15"></div>
+                  <div class="cell asteroid light" data-r="8" data-c="16"></div>
+                  <div class="cell asteroid dark" data-r="8" data-c="17"></div>
+                </div>
+              </div>
+
+              <div class="info-wrap hidden">
+                <div class="status hidden small" id="statusLine2"></div>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="board-wrap">
+                <div class="panel alt">
+                  <div class="panel-controls" id="seek-controls">
+                    <button class="seek-control" id="newPlace2" type="button">
+                      <span class="shortcut">P</span>lace Ships
+                    </button>
+                    <button class="seek-control" id="newGame" type="button">
+                      <span class="shortcut">R</span>estart
+                    </button>
+                    <button class="seek-control" id="weaponBtn" type="button">
+                      <span class="shortcut">R</span>ail Bolt
+                    </button>
+                    <button class="seek-control" id="revealBtn" type="button">
+                      Re<span class="shortcut">v</span>eal
+                    </button>
+                  </div>
+                  <div class="tally-box-container">
+                    <h4 class="tally-title">Tally Boxes</h4>
+                    <div id="enemy-tallyBox">
+                      <div class="tally-group-container">
+                        <div class="tally-col">
+                          <div class="tally-row sea">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(51, 153, 204, 0.3);
+                                color: rgb(51, 153, 204);
+                              "
+                            >
+                              F
+                            </div>
+                          </div>
+                          <div class="tally-row sea">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(160, 80, 244, 0.3);
+                                color: rgb(51, 102, 255);
+                              "
+                            >
+                              T
+                            </div>
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(160, 80, 244, 0.3);
+                                color: rgb(51, 102, 255);
+                              "
+                            >
+                              T
+                            </div>
+                          </div>
+                          <div class="tally-row special">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(244, 244, 102, 0.3);
+                                color: rgb(255, 204, 102);
+                              "
+                            >
+                              H
+                            </div>
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(244, 244, 102, 0.3);
+                                color: rgb(255, 204, 102);
+                              "
+                            >
+                              H
+                            </div>
+                          </div>
+                          <div class="tally-row special">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(244, 100, 40, 0.3);
+                                color: rgb(204, 51, 204);
+                              "
+                            >
+                              R
+                            </div>
+                          </div>
+                        </div>
+                        <div class="tally-col">
+                          <div class="tally-row land">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(210, 100, 204, 0.3);
+                                color: rgb(119, 153, 238);
+                              "
+                            >
+                              S
+                            </div>
+                          </div>
+                          <div class="tally-row air">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(255, 102, 153, 0.3);
+                                color: rgb(204, 153, 255);
+                              "
+                            >
+                              L
+                            </div>
+                          </div>
+                          <div class="tally-row air">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(51, 255, 204, 0.3);
+                                color: rgb(51, 255, 204);
+                              "
+                            >
+                              M
+                            </div>
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(51, 255, 204, 0.3);
+                                color: rgb(51, 255, 204);
+                              "
+                            >
+                              M
+                            </div>
+                          </div>
+                          <div class="tally-row air">
+                            <div
+                              class="tally-box"
+                              style="
+                                background: rgba(190, 70, 130, 0.3);
+                                color: rgb(187, 102, 255);
+                              "
+                            >
+                              V
+                            </div>
+                          </div>
+                          <div class="tally-row weapon rail-bolt">
+                            <div
+                              data-wid="1"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="2"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="3"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="4"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(204, 51, 51);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                          </div>
+                          <div class="tally-row weapon missile">
+                            <div
+                              data-wid="18"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="19"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="18"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                            <div
+                              data-wid="19"
+                              class="tally-box"
+                              style="
+                                font-size: 105%;
+                                background: rgb(255, 216, 102);
+                                color: rgb(0, 0, 0);
+                              "
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="info-container">
+                    <div class="info hidden" id="enemy-turns-label">
+                      Turns: <span id="enemy-turns">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-shots-label">
+                      Shots: <span class="no-wrap" id="enemy-shots">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-hits-label">
+                      Hits: <span class="no-wrap" id="enemy-hits">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-misses-label">
+                      Misses: <span id="enemy-misses">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-reveals-label">
+                      Reveals: <span id="enemy-reveals">0 </span>
+                    </div>
+                    <div class="info hidden" id="enemy-hints-label">
+                      Hints: <span id="enemy-hints">0 </span>
+                    </div>
+                    <div class="info" id="enemy-sunk-label">
+                      Sunk: <span class="no-wrap" id="enemy-sunk">0 / 11</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flying-weapon-wrapper play"
+          style="--x: 411.7708435058594px; --y: 1053.2708740234375px"
+        >
+          <div
+            class="flying-weapon standard-shot play"
+            style="
+              --scale-start: 0.07473958333333333;
+              --scale-end: 0.19930555555555557;
+              position: absolute;
+              inset: 0px;
+              transform: none;
+              width: 100%;
+              height: 100%;
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./navbar/navbar.js"></script>
+    <script type="module" src="./terrain/gameMaps.js"></script>
+    <script type="module" src="./battlehide.js"></script>
+    <!-- Code injected by live-server -->
+    <script>
+      // <![CDATA[  <-- For SVG support
+      if ('WebSocket' in window) {
+        ;(function () {
+          function refreshCSS() {
+            var sheets = [].slice.call(document.getElementsByTagName('link'))
+            var head = document.getElementsByTagName('head')[0]
+            for (var i = 0; i < sheets.length; ++i) {
+              var elem = sheets[i]
+              var parent = elem.parentElement || head
+              parent.removeChild(elem)
+              var rel = elem.rel
+              if (
+                (elem.href && typeof rel != 'string') ||
+                rel.length == 0 ||
+                rel.toLowerCase() == 'stylesheet'
+              ) {
+                var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '')
+                elem.href =
+                  url +
+                  (url.indexOf('?') >= 0 ? '&' : '?') +
+                  '_cacheOverride=' +
+                  new Date().valueOf()
+              }
+              parent.appendChild(elem)
+            }
+          }
+          var protocol =
+            window.location.protocol === 'http:' ? 'ws://' : 'wss://'
+          var address =
+            protocol + window.location.host + window.location.pathname + '/ws'
+          var socket = new WebSocket(address)
+          socket.onmessage = function (msg) {
+            if (msg.data == 'reload') window.location.reload()
+            else if (msg.data == 'refreshcss') refreshCSS()
+          }
+          if (
+            sessionStorage &&
+            !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')
+          ) {
+            console.log('Live reload enabled.')
+            sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true)
+          }
+        })()
+      } else {
+        console.error(
+          'Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.'
+        )
+      }
+      // ]]>
+    </script>
+  </body>
+</html>

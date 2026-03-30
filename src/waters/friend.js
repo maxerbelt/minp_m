@@ -182,7 +182,7 @@ export class Friend extends Waters {
     }
     this.armWeapons()
   }
-  launchTo (coords, rr, cc, currentWeapon) {
+  async launchTo (coords, rr, cc, currentWeapon) {
     return currentWeapon.weapon.cursorLaunchTo(
       coords,
       rr,

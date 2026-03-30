@@ -1,4 +1,4 @@
-import { Terrain } from '../terrain/Terrain.js'
+import { Terrain } from '../terrain/terrain.js'
 import { SubTerrain } from '../terrain/SubTerrain.js'
 import { Zone } from '../terrain/Zone.js'
 

@@ -201,12 +201,14 @@ export class LoadOut {
   }
 
   getFirstRack () {
-    return this.ships[0]?.loadedWeapon()
+    return this.ships[0]?.getFirstLoadedWeapon()
   }
   getShipByWeaponId (weaponId) {
-    return this.ships.find(ship => ship.getRackById(weaponId) !== undefined)
+    return this.ships.find(
+      ship => ship.getWeaponBySystemId(weaponId) !== undefined
+    )
   }
-  getRackById (rackId) {
+  getWeaponBySystemId (rackId) {
     return this.getLoadedWeapons().find(rack => rack.id === rackId)
   }
   getAllRacks () {
@@ -217,7 +219,7 @@ export class LoadOut {
   }
 
   getLoadedWeapons () {
-    return this.ships.flatMap(ship => ship.loadedWeapons())
+    return this.ships.flatMap(ship => ship.getLoadedWeapons())
   }
   switchToPreferredWeapon () {
     const preferences = bh.maps.weaponPreference

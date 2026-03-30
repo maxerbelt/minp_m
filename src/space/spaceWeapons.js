@@ -32,22 +32,23 @@ export class Missile extends Megabomb {
     return new Missile(ammo)
   }
 
-  launchTo (coords, r, c, map, viewModel, opposingViewModel) {
+  async launchTo (coords, r, c, map, viewModel, opposingViewModel) {
     if (!opposingViewModel) {
-      return super.launchTo(coords, r, c, map, viewModel, opposingViewModel)
+      return await super.launchTo(
+        coords,
+        r,
+        c,
+        map,
+        viewModel,
+        opposingViewModel
+      )
     }
     const target = coords[0]
 
     const start1 = opposingViewModel.gridCellAt(r, c)
     const end1 = viewModel.gridCellAt(target[0], target[1])
 
-    return this.animateFlying(
-      start1,
-      end1,
-      viewModel.cellSizeScreen(),
-      map,
-      viewModel
-    )
+    return await this.animateFlying(start1, end1, viewModel.cellSizeScreen())
   }
 
   redoCoords (_map, base, coords) {
@@ -112,8 +113,8 @@ export class RailBolt extends Kinetic {
     ammo = ammo || this.ammo
     return new RailBolt(ammo)
   }
-  launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return this.launchRightTo(
+  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+    return await this.launchRightTo(
       coords,
       rr,
       cc,
@@ -124,7 +125,7 @@ export class RailBolt extends Kinetic {
       this.boltLaunchTo.bind(this)
     )
   }
-  boltLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+  async boltLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     if (!opposingViewModel) {
       return super.launchTo(
         coords,
@@ -146,22 +147,9 @@ export class RailBolt extends Kinetic {
     end1.classList.add('portal')
     start2.classList.add('portal')
     end2.classList.add('marker')
-    return this.animateFlying(
-      start1,
-      end1,
-      viewModel.cellSizeScreen(),
-      map,
-      opposingViewModel
-    )
+    return this.animateFlying(start1, end1, viewModel.cellSizeScreen())
       .then(
-        this.animateFlying.bind(
-          this,
-          start2,
-          end2,
-          viewModel.cellSizeScreen(),
-          map,
-          viewModel
-        )
+        this.animateFlying.bind(this, start2, end2, viewModel.cellSizeScreen())
       )
       .then(() => {
         start1.classList.add('marker')
@@ -236,7 +224,7 @@ export class GuassRound extends Torpedo {
     return result
   }
 
-  launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     return this.launchRightTo(
       coords,
       rr,
@@ -264,7 +252,15 @@ export class GuassRound extends Torpedo {
     }
     return line
   }
-  roundLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+  async roundLaunchTo (
+    coords,
+    rr,
+    cc,
+    map,
+    viewModel,
+    opposingViewModel,
+    model
+  ) {
     if (!opposingViewModel) {
       return super.launchTo(
         coords,
@@ -282,22 +278,9 @@ export class GuassRound extends Torpedo {
     const end2 = viewModel.gridCellAt(target[0], target[1])
     start1.classList.add('portal')
     start2.classList.add('portal')
-    return this.animateFlying(
-      start2,
-      end2,
-      viewModel.cellSizeScreen(),
-      map,
-      opposingViewModel
-    )
+    return this.animateFlying(start2, end2, viewModel.cellSizeScreen())
       .then(
-        this.animateFlying.bind(
-          this,
-          start1,
-          end2,
-          viewModel.cellSizeScreen(),
-          map,
-          viewModel
-        )
+        this.animateFlying.bind(this, start1, end2, viewModel.cellSizeScreen())
       )
       .then(() => {
         start1.classList.remove('portal')

@@ -16,7 +16,6 @@ import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { steps } from './steps.js'
-import { Delay } from '../core/Delay.js'
 import { Animator } from '../core/Animator.js'
 
 function popFirst (arr, predicate, obj) {
@@ -400,7 +399,7 @@ export class Waters {
       rack.launchCoord = [launchR, launchC]
 
       rack.hintCoord = [hintR, hintC]
-      this.loadOut.launch = coords => {
+      this.loadOut.launch = async coords => {
         this.steps.fire()
         return this.launchTo(coords, hintR, hintC, rack)
       }
@@ -447,7 +446,7 @@ export class Waters {
     if (weaponId < 1) {
       return
     }
-    const rack = this.loadOut.getRackById(weaponId)
+    const rack = this.loadOut.getWeaponBySystemId(weaponId)
     this.selectAndArmWps(rack, oppo, launchR, launchC, hintR, hintC)
   }
   launchRandomWeapon (r, c, autoSelectWarning = true) {
@@ -467,7 +466,7 @@ export class Waters {
   selectWeaponId (cell, hintR, hintC, random, ship, oppo) {
     oppo = oppo || this.opponent
     if (ship) {
-      const [key, weapon] = randomElement(ship.weaponEntries())
+      const [key, weapon] = randomElement(ship.getAllWeaponEntries())
 
       const [launchR, launchC] = parsePair(key)
       this.steps.addSource(
@@ -563,8 +562,8 @@ export class Waters {
     }
   }
 
-  launchTo (coords, rr, cc, currentWeapon) {
-    return currentWeapon.weapon.launchTo(
+  async launchTo (coords, rr, cc, currentWeapon) {
+    return await currentWeapon.weapon.launchTo(
       coords,
       rr,
       cc,
@@ -574,10 +573,10 @@ export class Waters {
       this
     )
   }
-  launchWeapon (wps, coords) {
+  async launchWeapon (wps, coords) {
     const { r, c } = this.steps.sourceHint || { r: 0, c: 0 }
     this.steps.fire()
-    return this.launchTo(coords, r, c, wps)
+    return await this.launchTo(coords, r, c, wps)
   }
 
   setupAttachedAim () {

@@ -51,6 +51,18 @@ if (!bhLocal)
     get shipTypes () {
       return terrains?.current?.ships?.types
     },
+    get subTerrains () {
+      return terrains?.current?.subterrains
+    },
+    get subTerrainTags () {
+      return this.subTerrains?.map(st => st.tag)
+    },
+    subTerrainTagFromCell (cell) {
+      const classlist = cell.classList
+      const wanted = this.subTerrainTags
+
+      return wanted.find(cls => classlist.contains(cls))
+    },
     shipType (letter) {
       return terrains?.current?.ships?.types[letter]
     },

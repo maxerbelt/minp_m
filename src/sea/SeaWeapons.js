@@ -1,3 +1,4 @@
+import { bh } from '../terrain/bh.js'
 import { coordsFromCell, shuffleArray } from '../utilities.js'
 import { Weapon, WeaponCatelogue } from '../weapon/Weapon.js'
 import { getListCanvas } from '../grid/listCanvas.js'
@@ -139,8 +140,8 @@ export class Kinetic extends Weapon {
     return getExtendedLinePoints(r, c, r1, c1, power)
   }
 
-  launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return this.launchRightTo(
+  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+    return await this.launchRightTo(
       coords,
       rr,
       cc,
@@ -222,8 +223,8 @@ export class Torpedo extends Weapon {
     ammo = ammo || this.ammo
     return new Torpedo(ammo)
   }
-  launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return this.launchRightTo(
+  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+    return await this.launchRightTo(
       coords,
       rr,
       cc,
@@ -329,7 +330,7 @@ export class Flack extends Weapon {
     await this.asyncEffect(cell, power, cellSize)
   }
   async asyncEffect (cell, power, cellSize) {
-    this.animateExplode(
+    super.animateExplode(
       cell,
       null,
       null,
@@ -345,9 +346,18 @@ export class Flack extends Weapon {
     )
     return await Promise.allSettled(promises)
   }
-  async animateTargetExplode (target, container, end, cellSize, map, viewModel) {
+  async animateExplode (
+    target,
+    container,
+    end,
+    cellSize,
+    type,
+    power,
+    shake = 'shake',
+    animator = null
+  ) {
     const coord = coordsFromCell(target)
-    const effects = this.aoe(map, [coord]).filter(([, , power]) => power > 0)
+    const effects = this.aoe(bh.map, [coord]).filter(([, , power]) => power > 0)
     const cells = [...this.cellsAndCoords(effects)]
 
     await this.delayAsyncEffects(cells, 0, 500, cellSize)

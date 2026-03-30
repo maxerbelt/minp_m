@@ -35,7 +35,7 @@ export class WeaponSystem {
   getRacks () {
     return []
   }
-  getRackById (id) {
+  getWeaponBySystemId (id) {
     return this.id === id ? this : null
   }
   getLeafWeapons () {
@@ -145,9 +145,9 @@ export class CombinedWeaponSystem extends WeaponSystem {
     )
     return ships?.getRack()
   }
-  getRackById (id) {
-    const weapon = this.wpss.find(w => w.getRackById(id) !== null)
-    return weapon?.getRackById(id)
+  getWeaponBySystemId (id) {
+    const weapon = this.wpss.find(w => w.getWeaponBySystemId(id) !== null)
+    return weapon?.getWeaponBySystemId(id)
   }
   getShipById (id) {
     const weapon = this.wpss.find(
@@ -203,9 +203,9 @@ export class AttachedWeaponSystems extends WeaponSystem {
   getUnattachedWeapon () {
     return null
   }
-  getRackById (id) {
-    const ship = this.ships.find(s => s.getRackById(id) !== null)
-    return ship?.getRackById(id)
+  getWeaponBySystemId (id) {
+    const ship = this.ships.find(s => s.getWeaponBySystemId(id) !== null)
+    return ship?.getWeaponBySystemId(id)
   }
   getShipById (id) {
     const ship = this.ships.find(s => s.id === id)

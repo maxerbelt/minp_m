@@ -83,34 +83,8 @@
     transition: opacity 0.4s ease-in-out;
 }
 
-.cell.weapon.rail.active::before {
-    content: '';
-    width: 26px;
-    height: 26px;
-    z-index: 3;
-    background-image: var(--white-rail-image);
-    transition: opacity 0.4s ease-in-out;
-}
 
-.cell.weapon.rlaunch.active::before,
-.cell.weapon.round.active::before {
-    content: '';
-    width: 26px;
-    height: 26px;
-    z-index: 3;
-    background-image: var(--white-round-image);
-    transition: opacity 0.4s ease-in-out;
-}
 
-.cell.weapon.contrast.bolt.active::before,
-.cell.weapon.contrast.rail.active::before {
-    background-image: var(--black-rail-image);
-}
-
-.cell.weapon.contrast.rlaunch.active::before,
-.cell.weapon.contrast.round.active::before {
-    background-image: var(--black-round-image);
-}
 
 .cell.weapon.active.turn2::before {
     -webkit-transform: rotate(90deg);

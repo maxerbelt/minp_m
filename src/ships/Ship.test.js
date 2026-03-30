@@ -142,7 +142,7 @@ describe('Ship - advanced weapon methods', () => {
     expect(weapon).toBeDefined()
   })
 
-  it('getRackById returns weapon by id', () => {
+  it('getWeaponBySystemId returns weapon by id', () => {
     const s = new Ship(1, 'x', 'A')
     const wpSys1 = { id: 10, weapon: { name: 'w1' } }
     const wpSys2 = { id: 11, weapon: { name: 'w2' } }
@@ -182,7 +182,7 @@ describe('Ship - advanced weapon methods', () => {
     expect(loaded.map(([k]) => k)).toEqual(['1,2', '3,4'])
   })
 
-  it('loadedWeapon returns first loaded weapon', () => {
+  it('getFirstLoadedWeapon returns first loaded weapon', () => {
     const s = new Ship(1, 'x', 'A')
     const wp1 = { id: 1, hasAmmo: () => true }
     const wp2 = { id: 2, hasAmmo: () => false }
@@ -192,7 +192,7 @@ describe('Ship - advanced weapon methods', () => {
       '2,3': wp1,
       '3,4': wp3
     }
-    const loaded = s.getLoadedWeapons()[0]
+    const loaded = s.getFirstLoadedWeapon()
     expect(loaded).toBe(wp1)
   })
 
