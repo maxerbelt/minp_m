@@ -2,6 +2,7 @@ import { bh } from '../terrains/all/js/bh.js'
 import { parsePair, makeKeyAndId } from '../utilities.js'
 import { Mask } from '../grid/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
+import { SubBoard } from '../grid/subBoard.js'
 
 function firstElement (arr) {
   return arr && arr.length > 0 ? arr[0] : null
@@ -508,9 +509,8 @@ export class Ship {
    * Place ship at given cells with automatic hit/sunk reset
    */
   placeAtCells (cells) {
-    this.cells = cells
-    this.resetHits()
-    this.sunk = false
+    const board = SubBoard.fromCoords(cells, null, new Mask(0, 0))
+    this.placeAtBoard(board)
     return cells
   }
   /**

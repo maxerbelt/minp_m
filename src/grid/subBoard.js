@@ -38,6 +38,13 @@ export class SubBoard extends SubMask {
   get occupancy () {
     return this.mask.occupancy
   }
+  get toAscii () {
+    return this.mask.toAscii
+  }
+  toAsciiWith (symbols) {
+    return this.mask.toAsciiWith(symbols)
+  }
+
   copyFromMask (largeMask) {
     for (let y = 0; y < this.windowHeight; y++) {
       for (let x = 0; x < this.windowWidth; x++) {

@@ -16,7 +16,7 @@ export class PlacedShips {
 
   pop () {
     const ship = this.ships.pop()
-    ship.unplace()
+    ship.removeFromPlacement()
     return ship
   }
   updateUndo () {

@@ -111,14 +111,14 @@ describe('PlacedShips', () => {
   })
 
   it('pop removes and returns last ship', () => {
-    const ship = { id: 1, unplace: jest.fn() }
+    const ship = { id: 1, removeFromPlacement: jest.fn() }
     placedShipsInstance.ships.push(ship)
 
     const result = placedShipsInstance.pop()
 
     expect(result).toBe(ship)
     expect(placedShipsInstance.ships.length).toBe(0)
-    expect(ship.unplace).toHaveBeenCalled()
+    expect(ship.removeFromPlacement).toHaveBeenCalled()
   })
 
   it('numPlaced returns count of ships', () => {
@@ -181,8 +181,16 @@ describe('PlacedShips', () => {
   })
 
   it('popAndRefresh removes ship, returns it, and re-adds others to grid', () => {
-    const ship1 = { id: 1, unplace: jest.fn(), addToGrid: jest.fn() }
-    const ship2 = { id: 2, unplace: jest.fn(), addToGrid: jest.fn() }
+    const ship1 = {
+      id: 1,
+      removeFromPlacement: jest.fn(),
+      addToGrid: jest.fn()
+    }
+    const ship2 = {
+      id: 2,
+      removeFromPlacement: jest.fn(),
+      addToGrid: jest.fn()
+    }
     placedShipsInstance.ships = [ship1, ship2]
     const returnShip = jest.fn()
     const shipCellGrid = {}

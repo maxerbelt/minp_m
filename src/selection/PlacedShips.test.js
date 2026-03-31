@@ -20,21 +20,21 @@ describe('PlacedShips', () => {
     mockShip1 = {
       id: 'ship-1',
       placeAtCells: jest.fn().mockReturnValue({ placed: true }),
-      unplace: jest.fn(),
+      removeFromPlacement: jest.fn(),
       addToGrid: jest.fn()
     }
 
     mockShip2 = {
       id: 'ship-2',
       placeAtCells: jest.fn().mockReturnValue({ placed: true }),
-      unplace: jest.fn(),
+      removeFromPlacement: jest.fn(),
       addToGrid: jest.fn()
     }
 
     mockShip3 = {
       id: 'ship-3',
       placeAtCells: jest.fn().mockReturnValue({ placed: true }),
-      unplace: jest.fn(),
+      removeFromPlacement: jest.fn(),
       addToGrid: jest.fn()
     }
 
@@ -199,9 +199,9 @@ describe('PlacedShips', () => {
       expect(placedShips.ships.length).toBe(2)
     })
 
-    it('should call unplace on the removed ship', () => {
+    it('should call removeFromPlacement on the removed ship', () => {
       placedShips.pop()
-      expect(mockShip3.unplace).toHaveBeenCalled()
+      expect(mockShip3.removeFromPlacement).toHaveBeenCalled()
     })
 
     it('should pop from the end in order', () => {
@@ -241,9 +241,9 @@ describe('PlacedShips', () => {
       expect(placedShips.ships.length).toBe(2)
     })
 
-    it('should call unplace on removed ship', () => {
+    it('should call removeFromPlacement on removed ship', () => {
       placedShips.popAndRefresh(mockShipCellGrid, mockMark, mockReturnShip)
-      expect(mockShip3.unplace).toHaveBeenCalled()
+      expect(mockShip3.removeFromPlacement).toHaveBeenCalled()
     })
 
     it('should call returnShip with removed ship', () => {
@@ -321,11 +321,11 @@ describe('PlacedShips', () => {
       expect(placedShips.ships).toEqual([])
     })
 
-    it('should not call unplace', () => {
+    it('should not call removeFromPlacement', () => {
       placedShips.popAll(mockReturnShip)
-      expect(mockShip1.unplace).not.toHaveBeenCalled()
-      expect(mockShip2.unplace).not.toHaveBeenCalled()
-      expect(mockShip3.unplace).not.toHaveBeenCalled()
+      expect(mockShip1.removeFromPlacement).not.toHaveBeenCalled()
+      expect(mockShip2.removeFromPlacement).not.toHaveBeenCalled()
+      expect(mockShip3.removeFromPlacement).not.toHaveBeenCalled()
     })
   })
 

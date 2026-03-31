@@ -73,7 +73,7 @@ describe('Ship basic behaviors', () => {
     expect(s.ammoCapacityTotal()).toBe(0)
   })
 
-  it('place, unplace and addToGrid', () => {
+  it('place, removeFromPlacement and addToGrid', () => {
     const s = new Ship(3, 'z', 'C')
     const cells = [
       [1, 1],
@@ -82,10 +82,14 @@ describe('Ship basic behaviors', () => {
     s.shape = () => {
       return new Shape('z', 'C', cells)
     }
+
     s.placeAtCells(cells)
-    expect(s.cells).toBe(cells)
+    expect(s.board.occupancy).toBe(2)
+    expect(s.board.at(1, 1)).toBe(1)
+    expect(s.board.at(1, 2)).toBe(1)
     expect(s.getTotalHits()).toBe(0)
     expect(s.sunk).toBe(false)
+    expect(s.board.toAscii).toBe('1\n1')
 
     const grid = Array.from({ length: 4 }, () =>
       Array.from({ length: 4 }, () => null)
@@ -369,12 +373,12 @@ describe('Ship - placement and grid operations', () => {
     s.sunk = true
     const cells = [[2, 2]]
     s.placeAtCells(cells)
-    expect(s.cells).toBe(cells)
+    expect(s.board.occupancy).toBe(1)
     expect(s.getTotalHits()).toBe(0)
     expect(s.sunk).toBe(false)
   })
 
-  it('unplace clears all state', () => {
+  it('removeFromPlacement clears all state', () => {
     const s = new Ship(1, 'x', 'A')
     s.cells = [
       [1, 1],
@@ -574,9 +578,12 @@ describe('Ship - state isolation between instances', () => {
     ]
     s1.placeAtCells(cells1)
     s2.placeAtCells(cells2)
-    expect(s1.cells).toEqual(cells1)
-    expect(s2.cells).toEqual(cells2)
-    expect(s1.cells).not.toEqual(s2.cells)
+    expect(s1.board.occupancy).toBe(2)
+    expect(s2.board.occupancy).toBe(2)
+    expect(s1.board.at(1, 1)).toBe(1)
+    expect(s1.board.at(1, 2)).toBe(1)
+    expect(s2.board.at(3, 3)).toBe(1)
+    expect(s2.board.at(3, 4)).toBe(1)
   })
 })
 

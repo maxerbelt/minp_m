@@ -190,7 +190,8 @@ export class Waters {
   }
 
   placeMatchingShip (matchingShip, ship) {
-    matchingShip.placeAtBoard(ship.board)
+    matchingShip.placeAtCells(ship.cells)
+
     matchingShip.addToGrid(this.shipCellGrid)
     this.UI.placement(ship.cells, this, matchingShip)
     const dragship = this.UI.getTrayItem(ship.id)
