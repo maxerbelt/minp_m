@@ -3,11 +3,11 @@ import { jest } from '@jest/globals'
 
 /* global describe, jest, require, test, expect, beforeEach, afterEach, jest */
 
-jest.unstable_mockModule('../terrain/terrainUI.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/terrainUI.js', () => ({
   terrainSelect: jest.fn()
 }))
 // provide a stable bh mock so modules that import bh get predictable behavior
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     terrainMaps: {
       current: { mapTitles: () => [], setTo: jest.fn() },
@@ -83,7 +83,7 @@ describe('setupMapSelection and setupMapControl', () => {
     }
     // reset module cache and load bh so tests and modules share same instance
     jest.resetModules()
-    const bhModule = await import('../terrain/bh.js')
+    const bhModule = await import('../terrains/all/js/bh.js')
     bh = bhModule.bh
     // preserve existing terrainMaps
     origTerrainMaps = { ...bh.terrainMaps }
@@ -145,7 +145,7 @@ describe('setupMapSelection and setupMapControl', () => {
     const mod = await import('./setupMapSelection.js')
     setupMapControl = mod.setupMapControl
     setupMapSelection = mod.setupMapSelection
-    const terrainModule = await import('../terrain/terrainUI.js')
+    const terrainModule = await import('../terrains/all/js/terrainUI.js')
     terrainSelect = terrainModule.terrainSelect
     // mock window.location.reload
     globalThis.window = { location: { reload: jest.fn() } }

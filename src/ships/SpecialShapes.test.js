@@ -8,7 +8,7 @@ import { jest } from '@jest/globals'
 let Transformer, Hybrid, TransformableVariants, mixed, Variant3
 
 // Mock dependencies with dynamic imports
-jest.unstable_mockModule('../terrain/terrain.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   mixed: { title: 'Mixed Terrain', type: 'mixed' }
 }))
 
@@ -53,7 +53,7 @@ beforeEach(async () => {
   )
   TransformableVariants = transformableVariantsModule.TransformableVariants
 
-  const terrainModule = await import('../terrain/terrain.js')
+  const terrainModule = await import('../terrains/all/js/terrain.js')
   mixed = terrainModule.mixed
 
   const variant3Module = await import('../variants/Variant3.js')

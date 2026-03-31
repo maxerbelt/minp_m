@@ -1,7 +1,6 @@
-import { bh } from '../terrain/bh.js'
-  
-  
-  import {
+import { bh } from '../terrains/all/js/bh.js'
+
+import {
   drawSegmentTo,
   drawSegmentUpTo,
   drawPie2,

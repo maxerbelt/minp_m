@@ -1,4 +1,4 @@
-import { bh } from './terrain/bh.js'
+import { bh } from './terrains/all/js/bh.js'
 import { gameStatus } from './waters/StatusUI.js'
 import { placedShipsInstance } from './selection/PlacedShips.js'
 import { fetchNavBar } from './navbar/navbar.js'

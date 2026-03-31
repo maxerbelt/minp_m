@@ -19,7 +19,7 @@ const testModulePromise = import('./saveCustomMap.js')
 
 // Mock dependencies
 
-jest.unstable_mockModule('../terrain/terrain.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   // provide any exports used by modules that import terrain.js
   MIN_CUSTOM_WIDTH: 16,
   MAX_CUSTOM_WIDTH: 22,
@@ -35,7 +35,7 @@ jest.unstable_mockModule('../terrain/terrain.js', () => ({
 }))
 
 // saveCustomMap imports bh directly; mock that module as well
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     maps: {
       addCurrentCustomMap: jest.fn()
@@ -51,7 +51,7 @@ jest.unstable_mockModule('./custom.js', () => ({
 }))
 
 const customModule = await import('./custom.js')
-const terrainModule = await import('../terrain/terrain.js')
+const terrainModule = await import('../terrains/all/js/terrain.js')
 
 describe('saveCustomMap', () => {
   let map
@@ -77,7 +77,7 @@ describe('saveCustomMap', () => {
     customModule.custom.placedShips.mockClear()
     terrainModule.bh.maps.addCurrentCustomMap.mockClear()
     // also clear the bh.js mock (used by the module under test)
-    const bhModule = await import('../terrain/bh.js')
+    const bhModule = await import('../terrains/all/js/bh.js')
     bhModule.bh.maps.addCurrentCustomMap.mockClear()
   })
 
@@ -100,7 +100,7 @@ describe('saveCustomMap', () => {
     ])
     expect(customModule.custom.store).toHaveBeenCalled()
     // the code under test loads bh.js directly, so check that mock
-    const bhModule = await import('../terrain/bh.js')
+    const bhModule = await import('../terrains/all/js/bh.js')
     expect(bhModule.bh.maps.addCurrentCustomMap).toHaveBeenCalledWith(['ship1'])
   })
 })

@@ -1,4 +1,4 @@
-import { mixed } from '../terrain/terrain.js'
+import { mixed } from '../terrains/all/js/terrain.js'
 import { Shape } from './Shape.js'
 import { TransformableVariants } from '../variants/TransformableVariants.js'
 import { Variant3 } from '../variants/Variant3.js'

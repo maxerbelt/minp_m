@@ -23,7 +23,7 @@ import {
 } from './dragndrop.js'
 
 // Mock dependencies
-jest.unstable_mockModule('../terrain/terrain.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   bh: {
     terrain: { ships: { types: {}, colors: {}, description: {} } },
     map: {

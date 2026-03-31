@@ -1,9 +1,12 @@
-import { bh } from '../terrain/bh.js'
-import { terrains } from '../terrain/terrains.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { terrains } from '../terrains/all/js/terrains.js'
 import { ChooseFromListUI, ChooseNumberUI } from './chooseUI.js'
 import { saveCustomMap } from '../waters/saveCustomMap.js'
 import { setupTabs } from './setupTabs.js'
-import { terrainSelect, setTerrainParams } from '../terrain/terrainUI.js'
+import {
+  terrainSelect,
+  setTerrainParams
+} from '../terrains/all/js/terrainUI.js'
 import { setupMapSelection, setupMapControl } from './setupMapSelection.js'
 import { validateWidth, validateHeight } from '../validSize.js'
 import { ParameterManager } from './ParameterManager.js'

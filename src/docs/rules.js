@@ -1,5 +1,5 @@
-import { bh } from '../terrain/bh.js'
-import { terrainSelect } from '../terrain/terrainUI.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { terrainSelect } from '../terrains/all/js/terrainUI.js'
 import { fetchComponent } from '../network.js'
 import { fetchNavBar } from '../navbar/navbar.js'
 import {

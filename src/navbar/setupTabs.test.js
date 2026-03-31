@@ -12,7 +12,7 @@ jest.unstable_mockModule('./gtag.js', () => ({
   trackTab: jest.fn()
 }))
 // stable bh mock for DOM-related tests
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     terrainMaps: {
       current: { current: { rows: 2, cols: 3, title: 'm1' } },
@@ -31,7 +31,7 @@ let tabs
 let setupTabs
 
 let bh
-import { terrains } from '../terrain/terrains.js'
+import { terrains } from '../terrains/all/js/terrains.js'
 function makeTabElement () {
   const listeners = {}
   return {
@@ -143,7 +143,7 @@ describe('setupTabs and switchTo', () => {
 
     // reset modules and load bh so test and module share same instance
     jest.resetModules()
-    const bhModule = await import('../terrain/bh.js')
+    const bhModule = await import('../terrains/all/js/bh.js')
     bh = bhModule.bh
     // ensure terrainMaps.current exists to satisfy bh.map getter
     if (!bh.terrainMaps) bh.terrainMaps = { current: {} }

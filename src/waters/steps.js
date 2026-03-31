@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 
 export const Player = Object.freeze({
   friend: 'FRIEND',

@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import { parsePair, makeKeyAndId } from '../utilities.js'
 import { Mask } from '../grid/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'

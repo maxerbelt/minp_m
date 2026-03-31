@@ -1,5 +1,5 @@
-import { bh } from './terrain/bh.js'
-import { terrains } from './terrain/terrains.js'
+import { bh } from './terrains/all/js/bh.js'
+import { terrains } from './terrains/all/js/terrains.js'
 
 export function validateWidth () {
   let width = Number.parseInt(bh.widthUI.choose.value, 10)

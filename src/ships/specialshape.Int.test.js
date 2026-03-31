@@ -3,7 +3,7 @@
 /* global describe, it, expect, beforeEach, jest */
 
 import { expect, jest } from '@jest/globals'
-import { Building, SeaVessel } from '../sea/SeaShape.js'
+import { Building, SeaVessel } from '../terrains/sea/js/SeaShape.js'
 
 import { Hybrid } from './SpecialShapes.js'
 import { SpecialCells, StandardCells } from './SubShape.js'

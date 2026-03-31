@@ -1,5 +1,5 @@
-import { bh } from '../terrain/bh.js'
-import { shuffleArray, randomElement } from '../utilities.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { shuffleArray } from '../utilities.js'
 import { gameStatus } from './StatusUI.js'
 import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Waters } from './Waters.js'

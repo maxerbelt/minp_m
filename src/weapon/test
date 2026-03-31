@@ -6,7 +6,7 @@
       href="./terrains/space/styles/space-boot.css"
       as="style"
     />
-    <script src="./terrain/terrain-bootstrap.js"></script>
+    <script src="./terrains/all/js/terrain-bootstrap.js"></script>
     <link
       id="boot-trn"
       rel="stylesheet"
@@ -3373,7 +3373,7 @@
       </div>
     </div>
     <script type="module" src="./navbar/navbar.js"></script>
-    <script type="module" src="./terrain/gameMaps.js"></script>
+    <script type="module" src="./terrains/all/js/gameMaps.js"></script>
     <script type="module" src="./battlehide.js"></script>
     <!-- Code injected by live-server -->
     <script>

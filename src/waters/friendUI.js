@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'

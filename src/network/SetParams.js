@@ -4,8 +4,8 @@ import {
   getParamMap,
   getParamMapType
 } from './getParam.js'
-import { bh } from '../terrain/bh.js'
-import { terrains } from '../terrain/terrains.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { terrains } from '../terrains/all/js/terrains.js'
 import { toTitleCase } from '../utils.js'
 
 export function updateState (tokens, url) {

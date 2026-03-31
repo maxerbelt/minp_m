@@ -1,5 +1,5 @@
-import { bh } from '../terrain/bh.js'
-import { terrainSelect } from '../terrain/terrainUI.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { terrainSelect } from '../terrains/all/js/terrainUI.js'
 import { ChooseFromListUI } from './chooseUI.js'
 import { ParameterManager } from './ParameterManager.js'
 export function setupMapControl (

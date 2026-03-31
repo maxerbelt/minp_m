@@ -1,9 +1,9 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import { coordsFromCell } from '../utilities.js'
 import { DraggedShip } from './DraggedShip.js'
 import { Brush } from './Brush.js'
 import { cursor } from './cursor.js'
-import { CustomMap } from '../terrain/map.js'
+import { CustomMap } from '../terrains/all/js/map.js'
 
 let selection = null
 

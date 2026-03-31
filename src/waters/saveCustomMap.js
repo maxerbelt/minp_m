@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 import { custom } from './custom.js'
 

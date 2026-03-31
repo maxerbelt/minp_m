@@ -6,7 +6,7 @@ import { jest } from '@jest/globals'
 // Weapon will be imported dynamically after mocks are set up
 let Weapon, StandardShot, standardShot, WeaponCatelogue, bh
 
-jest.unstable_mockModule('../terrain/bh.js', () => {
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
   return {
     bh: {
       seekingMode: false,
@@ -26,7 +26,7 @@ beforeEach(async () => {
   standardShot = weaponModule.standardShot
   WeaponCatelogue = weaponModule.WeaponCatelogue
 
-  const bhModule = await import('../terrain/bh.js')
+  const bhModule = await import('../terrains/all/js/bh.js')
   bh = bhModule.bh
 })
 

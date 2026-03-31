@@ -1,6 +1,6 @@
-import { bh } from '../terrain/bh.js'
-import { trackClick, trackTab } from './gtag.js'
-import { SavedCustomMap } from '../terrain/map.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { trackClick } from './gtag.js'
+import { SavedCustomMap } from '../terrains/all/js/map.js'
 import { createTabManager } from './TabManager.js'
 import { NavigationService } from './NavigationService.js'
 

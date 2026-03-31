@@ -3,8 +3,8 @@
 /* global describe, it,   beforeEach, jest */
 
 import { expect, jest } from '@jest/globals'
-import { Installation, SpaceVessel } from '../space/spaceShapes.js'
-import { space, asteroid } from '../space/space.js'
+import { Installation, SpaceVessel } from '../terrains/space/js/spaceShapes.js'
+import { space, asteroid } from '../terrains/space/js/space.js'
 import { Hybrid } from './SpecialShapes.js'
 import { SpecialCells, StandardCells } from './SubShape.js'
 import { Mask } from '../grid/mask.js'

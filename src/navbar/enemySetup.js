@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import { enemy } from '../waters/enemy.js'
 import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 

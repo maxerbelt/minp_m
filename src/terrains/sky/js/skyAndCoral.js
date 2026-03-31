@@ -1,6 +1,6 @@
-import { Terrain } from '../../../terrain/terrain.js'
-import { SubTerrain } from '../../../terrain/SubTerrain.js'
-import { Zone } from '../../../terrain/Zone.js'
+import { Terrain } from '../../all/js/terrain.js'
+import { SubTerrain } from '../../all/js/SubTerrain.js'
+import { Zone } from '../../all/js/Zone.js'
 
 export const high = new Zone('Heights', 'H', false)
 export const low = new Zone('Lows', 'L', true)

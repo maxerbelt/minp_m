@@ -24,12 +24,12 @@ jest.unstable_mockModule('../waters/saveCustomMap.js', () => ({
   saveCustomMap: jest.fn()
 }))
 jest.unstable_mockModule('./setupTabs.js', () => ({ setupTabs: jest.fn() }))
-jest.unstable_mockModule('../terrain/terrainUI.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/terrainUI.js', () => ({
   terrainSelect: jest.fn(),
   setTerrainParams: jest.fn()
 }))
 // stable bh mock for tests
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     terrainMaps: { current: {}, list: [], setCurrent: null },
     map: { rows: 2, cols: 2, title: 'm1' },
@@ -49,7 +49,7 @@ let setupMapListOptions
 let resetCustomMap
 let setupBuildOptions
 let bh
-import { terrains } from '../terrain/terrains.js'
+import { terrains } from '../terrains/all/js/terrains.js'
 let terrainSelect
 
 describe('setupOptions', () => {
@@ -132,7 +132,7 @@ describe('setupOptions', () => {
     }
     // reset modules and load bh so tests and modules share the same instance
     jest.resetModules()
-    const bhModule = await import('../terrain/bh.js')
+    const bhModule = await import('../terrains/all/js/bh.js')
     bh = bhModule.bh
     origTerrainMapsCurrent = bh.terrainMaps.current
     // prepare terrains bounds by overriding getters with writable values
@@ -182,7 +182,7 @@ describe('setupOptions', () => {
     setupGameOptions = mod.setupGameOptions
     resetCustomMap = mod.resetCustomMap
     setupBuildOptions = mod.setupBuildOptions
-    const terrainModule = await import('../terrain/terrainUI.js')
+    const terrainModule = await import('../terrains/all/js/terrainUI.js')
     terrainSelect = terrainModule.terrainSelect
   })
   afterEach(() => {

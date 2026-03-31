@@ -11,8 +11,8 @@ import { jest } from '@jest/globals'
 let ScoreUI
 
 // Mock dependencies
-// Provide a fake bh module used by ScoreUI (imports from ../terrain/bh.js)
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+// Provide a fake bh module used by ScoreUI (imports from ../terrains/all/js/bh.js)
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     map: {
       subterrainTrackers: {
@@ -34,7 +34,7 @@ jest.unstable_mockModule('../terrain/bh.js', () => ({
 
 // terrain.js is also imported by ScoreUI but only the terrain-related exports
 // are needed here; keep the existing mocks for those.
-jest.unstable_mockModule('../terrain/terrain.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   all: { title: 'All Terrain' },
   mixed: { title: 'Mixed Terrain' },
   bh: {
@@ -333,7 +333,7 @@ describe('ScoreUI', () => {
 
         it('should call setupZoneInfo on subterrain trackers', async () => {
           // pull in the mocked bh module to inspect the spy
-          const bhModule = await import('../terrain/bh.js')
+          const bhModule = await import('../terrains/all/js/bh.js')
           const { bh } = bhModule
           scoreUI.setupZoneInfo()
           expect(bh.map.subterrainTrackers.setupZoneInfo).toHaveBeenCalled()
@@ -342,7 +342,7 @@ describe('ScoreUI', () => {
         it('should set zoneSync to result', async () => {
           const mockResult = [{ zone: 1 }, { zone: 2 }]
           // get the mocked bh module instead of terrain.js
-          const bhModule = await import('../terrain/bh.js')
+          const bhModule = await import('../terrains/all/js/bh.js')
           const { bh } = bhModule
           bh.map.subterrainTrackers.setupZoneInfo.mockReturnValue(mockResult)
           scoreUI.setupZoneInfo()

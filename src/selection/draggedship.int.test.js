@@ -1,6 +1,6 @@
 /* eslint-env jest */
 import { jest } from '@jest/globals'
-import { SeaVessel } from '../sea/SeaShape.js'
+import { SeaVessel } from '../terrains/sea/js/SeaShape.js'
 import { Ship } from '../ships/Ship.js'
 import { Orbit4F } from '../variants/Orbit4F.js'
 /* global describe, require, it, expect, beforeEach, jest */

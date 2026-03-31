@@ -54,7 +54,7 @@ const mockUI = {
 }
 
 // Minimal mocks for bh and dependencies
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     map: {
       rows: 10,

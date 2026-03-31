@@ -1,8 +1,8 @@
-import { bh } from '../terrain/bh.js'
-import { assembleTerrains } from '../terrain/gameMaps.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { assembleTerrains } from '../terrains/all/js/gameMaps.js'
 import { ComponentLoader } from './ComponentLoader.js'
 import { setupTrack } from './gtag.js'
-import { setupTerrain } from '../terrain/terrainUI.js'
+import { setupTerrain } from '../terrains/all/js/terrainUI.js'
 import { setupTabs } from './setupTabs.js'
 import { storeShips } from '../waters/saveCustomMap.js'
 

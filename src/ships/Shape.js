@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import { Invariant } from '../variants/Invariant.js'
 import { Orbit4R } from '../variants/Orbit4R.js'
 import { Asymmetric } from '../variants/asymmetric.js'

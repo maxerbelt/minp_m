@@ -4,7 +4,7 @@
 
 import { expect, jest } from '@jest/globals'
 
-jest.unstable_mockModule('../terrain/bh.js', () => ({
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     terrain: {
       ships: {
@@ -126,7 +126,7 @@ const { Invariant } = await import('../variants/Invariant.js')
 const { Orbit4R } = await import('../variants/Orbit4R.js')
 const { Blinker } = await import('../variants/Blinker.js')
 const { Diagonal } = await import('../variants/Diagonal.js')
-const { bh } = await import('../terrain/bh.js')
+const { bh } = await import('../terrains/all/js/bh.js')
 
 describe('Shape', () => {
   let mockCells

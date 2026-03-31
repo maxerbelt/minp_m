@@ -8,7 +8,7 @@ let setSizeParams
 let setMapParams
 let setMapTypeParams
 
-import { terrains } from '../terrain/terrains.js'
+import { terrains } from '../terrains/all/js/terrains.js'
 describe('SetParams', () => {
   let origPush
   let origDocument
@@ -176,7 +176,7 @@ describe('SetParams', () => {
     terrains.current = { bodyTag: 'sea', tag: 'sea' }
     // ensure terrainMaps responds to setByTag (setTerrainByTag may call through)
     try {
-      const bhModule = await import('../terrain/bh.js')
+      const bhModule = await import('../terrains/all/js/bh.js')
       bhModule.bh.terrainMaps = bhModule.bh.terrainMaps || {}
       bhModule.bh.terrainMaps.setByTag = jest
         .fn()

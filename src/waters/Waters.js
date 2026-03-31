@@ -1,4 +1,4 @@
-import { bh } from '../terrain/bh.js'
+import { bh } from '../terrains/all/js/bh.js'
 import {
   randomElement,
   parsePair,
@@ -10,7 +10,7 @@ import {
 import { placedShipsInstance } from '../selection/PlacedShips.js'
 import { Score } from './Score.js'
 import { gameStatus } from './StatusUI.js'
-import { assembleTerrains } from '../terrain/gameMaps.js'
+import { assembleTerrains } from '../terrains/all/js/gameMaps.js'
 import { randomPlaceShape } from '../utils.js'
 import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'

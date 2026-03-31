@@ -8,7 +8,7 @@ import { Mask } from '../grid/mask.js'
 let Score
 
 // Mock dependencies
-jest.unstable_mockModule('../terrain/bh.js', async () => {
+jest.unstable_mockModule('../terrains/all/js/bh.js', async () => {
   const { Mask } = await import('../grid/mask.js')
   return {
     bh: {
