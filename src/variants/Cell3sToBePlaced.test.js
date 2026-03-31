@@ -36,7 +36,7 @@ describe('Cell3sToBePlaced behaviors', () => {
         // second subgroup: matches only at column offset 1 (the middle cell)
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0 + 1,
+            isCandidate: (r, c) => r === r0 + 1 && c === c0,
             validator: z => z === 'OK'
           })
         }

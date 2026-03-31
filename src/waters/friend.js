@@ -101,7 +101,7 @@ export class Friend extends Waters {
     return { hits, sunk, reveals, shots, info }
   }
 
-  randomBomb (seeking) {
+  async randomBomb (seeking) {
     const map = bh.map
     this.loadOut.onDestroy = this.seekBomb.bind(this)
 
@@ -111,27 +111,32 @@ export class Friend extends Waters {
         const { r, c } = this.randomLocation(map)
         if (this.score.newShotKey(r, c)) {
           if (!this.launchRandomWeapon(r, c, false)) {
-            this.loadOut.aimWeapon(bh.map, r, c, this.loadOut.selectedWeapon)
+            await this.loadOut.aimWeapon(
+              bh.map,
+              r,
+              c,
+              this.loadOut.selectedWeapon
+            )
           }
           return
         }
       }
   }
 
-  destroyOne (weapon, effect, target) {
+  async destroyOne (weapon, effect, target) {
     const candidates = this.getHitCandidates(effect, weapon)
     if (candidates.length < 1) {
-      this.seekBomb(weapon, effect)
+      await this.seekBomb(weapon, effect)
       return
     }
     if (target === null || target === undefined || target?.length < 2) {
-      target = randomElement(candidates)
+      target = await this.randomElement(candidates)
     }
     const newEffect = this.getStrikeSplash(weapon, target)
     this.tryFireAt2(weapon, newEffect)
   }
 
-  randomDestroyOne (seeking) {
+  async randomDestroyOne (seeking) {
     const map = bh.map
     this.loadOut.destroyOneOfMany = this.destroyOne.bind(this)
 
@@ -139,7 +144,12 @@ export class Friend extends Waters {
 
     const r = this.randomLine()
     this.launchRandomWeapon(r, 0, false)
-    this.loadOut.aimWeapon(map, r, map.cols - 1, this.loadOut.selectedWeapon)
+    await this.loadOut.aimWeapon(
+      map,
+      r,
+      map.cols - 1,
+      this.loadOut.selectedWeapon
+    )
   }
   isHitValid (r, c) {
     return !this.isHitInvalid(r, c, 4, false, false)
@@ -183,7 +193,7 @@ export class Friend extends Waters {
     this.armWeapons()
   }
   async launchTo (coords, rr, cc, currentWeapon) {
-    return currentWeapon.weapon.cursorLaunchTo(
+    return await currentWeapon.weapon.cursorLaunchTo(
       coords,
       rr,
       cc,
@@ -248,7 +258,7 @@ export class Friend extends Waters {
     return line[Math.floor(Math.random() * (idx - 1))]
   }
 
-  seek () {
+  async seek () {
     this.testContinue = true
     this.boardDestroyed = false
     this.armWeapons()
@@ -294,7 +304,7 @@ export class Friend extends Waters {
     return { r, c }
   }
 
-  randomEffect (effect, seeking) {
+  async randomEffect (effect, seeking) {
     switch (effect) {
       case 'DestroyOne':
         this.randomDestroyOne(seeking)
@@ -312,27 +322,30 @@ export class Friend extends Waters {
   }
 
   async selectShot (hits, seeking) {
-    if (this.finishRevealed()) {
+    const hasRevealed = await this.finishRevealed()
+    if (hasRevealed) {
       return
     }
-    if (this.finishPartiallySunk(hits)) {
+    const hasPartialSunk = await this.finishPartiallySunk(hits)
+    if (hasPartialSunk) {
       return
     }
 
-    if (this.finishHints()) {
+    const hasHints = await this.finishHints()
+    if (hasHints) {
       return
     }
 
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
-      this.randomEffect(op)
+      await this.randomEffect(op)
     } else {
       this.loadOut.switchToSingleShot()
       this.randomSeek(seeking)
     }
   }
 
-  finishHints () {
+  async finishHints () {
     const numHints = this.score?.hint?.occupancy || 0
     if (numHints > 0) {
       const surroundHints = this.score.hint.clone
@@ -340,23 +353,23 @@ export class Friend extends Waters {
         .take(this.score.shot)
 
       if (surroundHints.occupancy > 0) {
-        this.selectRandomCandidate(surroundHints)
+        await this.selectRandomCandidate(surroundHints)
         return true
       }
     }
     return false
   }
 
-  finishRevealed () {
+  async finishRevealed () {
     this.score.reveal = this.score.reveal.take(this.score.shot)
     if (this.score.reveal.occupancy > 0) {
-      this.selectRandomCandidate(this.score.reveal)
+      await this.selectRandomCandidate(this.score.reveal)
       return true
     }
     return false
   }
 
-  finishPartiallySunk (hits) {
+  async finishPartiallySunk (hits) {
     const numHits = hits ? hits.occupancy : 0
     if (numHits <= 0) return false
     const shots = this.score.shot
@@ -366,14 +379,14 @@ export class Friend extends Waters {
     cross = cross.take(shots)
     console.log('candidates', cross.toAscii)
     if (cross.occupancy > 0) {
-      this.selectRandomCandidate(cross)
+      await this.selectRandomCandidate(cross)
       return true
     }
 
     const surround = hits.clone.dilate(1).take(this.score.shot)
     console.log('surround', surround.toAscii)
     if (surround.occupancy > 0) {
-      this.selectRandomCandidate(surround)
+      await this.selectRandomCandidate(surround)
       return true
     }
   }

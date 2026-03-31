@@ -59,13 +59,17 @@ export class Animator {
   endShake (shake) {
     this.container.classList.remove(shake)
   }
+  get playable () {
+    if (this.innerEl) {
+      return this.innerEl
+    } else {
+      return this.el
+    }
+  }
   async run (...trigger) {
     this.play(...trigger)
-    if (this.innerEl) {
-      await Animator.wait(this.innerEl)
-    } else {
-      await Animator.wait(this.el)
-    }
+    await Animator.wait(this.playable)
+
     this.el.remove()
     if (this.innerEl && this.innerDelay) {
       await Delay.wait(this.innerDelay)
@@ -82,11 +86,7 @@ export class Animator {
     // force style recalc then start animation
     this.el.getBoundingClientRect()
     requestAnimationFrame(() => {
-      if (this.innerEl) {
-        this.innerEl.classList.add(...classNames)
-      } else {
-        this.el.classList.add(...classNames)
-      }
+      this.playable.classList.add(...classNames)
     })
   }
   static async run (el, ...className) {

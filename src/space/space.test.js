@@ -10,9 +10,9 @@ import {
   asteroid,
   all,
   spaceAndAsteroids
-} from './space'
+} from './space.js'
 import { SubTerrain } from '../terrain/SubTerrain.js'
-import { Terrain } from '../terrain/Terrain.js' // match import used in space.js
+import { Terrain } from '../terrain/terrain.js' // match import used in space.js
 import { jest } from '@jest/globals'
 import { Zone } from '../terrain/Zone.js'
 

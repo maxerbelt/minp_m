@@ -127,7 +127,7 @@ export class RailBolt extends Kinetic {
   }
   async boltLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     if (!opposingViewModel) {
-      return super.launchTo(
+      return await super.launchTo(
         coords,
         rr,
         cc,
@@ -223,7 +223,7 @@ export class GuassRound extends Torpedo {
   }
 
   async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return this.launchRightTo(
+    await this.launchRightTo(
       coords,
       rr,
       cc,

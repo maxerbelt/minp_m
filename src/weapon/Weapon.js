@@ -146,7 +146,7 @@ export class Weapon {
     launch
   ) {
     launch = launch || this.launchToRaw
-    return launch(
+    return await launch(
       coords,
       rr,
       cc,

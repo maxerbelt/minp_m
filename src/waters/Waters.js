@@ -401,7 +401,7 @@ export class Waters {
       rack.hintCoord = [hintR, hintC]
       this.loadOut.launch = async coords => {
         this.steps.fire()
-        return this.launchTo(coords, hintR, hintC, rack)
+        return await this.launchTo(coords, hintR, hintC, rack)
       }
       this.loadOut.selectedWeapon = rack
     }
@@ -538,8 +538,8 @@ export class Waters {
   launchUnattachedWeapon (r, c) {
     const unAttached = this.getUnattachedWeaponSystem()
     if (unAttached) {
-      this.loadOut.launch = coords => {
-        return this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
+      this.loadOut.launch = async coords => {
+        return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
       this.loadOut.aimWeapon(bh.map, r, c, unAttached)
       return true
@@ -547,13 +547,17 @@ export class Waters {
     return false
   }
   async launchSingleShot (r, c, sShot) {
-    sShot = sShot || this.loadOut.getSingleShotWps()
-
-    this.loadOut.launch = coords => {
-      return this.launchTo(coords, bh.map.rows - 1, 0, sShot)
-    }
-    await this.loadOut.aimSingleShot(bh.map, r, c, sShot)
+    const map = bh.map
+    const { fireSingleShot, coordinates, wps } = this.loadOut.aimSingleShotInfo(
+      sShot,
+      map,
+      r,
+      c
+    )
+    await this.launchTo(coordinates, bh.map.rows - 1, 0, wps)
+    fireSingleShot()
   }
+
   getUnattachedWeaponSystem () {
     if (bh.seekingMode) {
       return this.loadOut.getCurrentWeaponSystem().getLoadedWeapon()
@@ -562,8 +566,8 @@ export class Waters {
     }
   }
 
-  async launchTo (coords, rr, cc, currentWeapon) {
-    return await currentWeapon.weapon.launchTo(
+  async launchTo (coords, rr, cc, currentWps) {
+    return await currentWps.weapon.launchTo(
       coords,
       rr,
       cc,

@@ -52,10 +52,10 @@ if (!bhLocal)
       return terrains?.current?.ships?.types
     },
     get subTerrains () {
-      return terrains?.current?.subterrains
+      return terrains?.current?.subterrains || []
     },
     get subTerrainTags () {
-      return this.subTerrains?.map(st => st.tag)
+      return this.subTerrains.map(st => st.tag)
     },
     subTerrainTagFromCell (cell) {
       const classlist = cell.classList

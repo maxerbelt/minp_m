@@ -1,4 +1,7 @@
 export class Delay {
+  constructor (delay) {
+    this.delay = delay
+  }
   static wait (ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
@@ -7,5 +10,23 @@ export class Delay {
     const range = maxdelay - mindelay
     const delay = Math.floor(Math.random() * range) + mindelay
     await Delay.wait(delay)
+  }
+
+  async runLoop (stepFunction = async () => {}, timeDelay = this.delay) {
+    try {
+      while (true) {
+        if (this.isCancelled?.()) {
+          this.onCancel?.()
+          break
+        }
+
+        await stepFunction()
+        await Delay.wait(timeDelay)
+      }
+    } catch (err) {
+      this.onError?.(err)
+    } finally {
+      this.onComplete?.()
+    }
   }
 }

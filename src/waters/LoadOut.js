@@ -318,17 +318,9 @@ export class LoadOut {
     return !this.isNotArming()
   }
   async aimWeapon (map, row, col, weaponSystem) {
-    const wps = weaponSystem || this.getCurrentWeaponSystem()
-    const weapon = wps.weapon
-    const requiredPoints = weapon.points
-    this.addSelectedCoordinates(row, col)
-    if (this.selectedCoordinates.length === requiredPoints) {
-      const fireCoordinates = structuredClone(this.selectedCoordinates)
-      this.selectedWeapon = null
-      this.clearSelectedCoordinates()
-      this.useAmmo(wps)
-      this.checkNoAmmo()
-      const fireWeapon = this.fireWeapon.bind(this, map, fireCoordinates, wps)
+    const info = this.firingInfoIfReady(map, row, col, weaponSystem)
+    if (info) {
+      const { fireCoordinates, fireWeapon, wps, weapon } = info
       const result = await this.launch(fireCoordinates, weapon, wps)
       if (result?.hasCandidates) {
         fireWeapon(result?.target)
@@ -337,7 +329,38 @@ export class LoadOut {
       }
     }
   }
+  firingInfo (wps, map) {
+    const fireCoordinates = structuredClone(this.selectedCoordinates)
+    this.selectedWeapon = null
+    this.clearSelectedCoordinates()
+    this.useAmmo(wps)
+    this.checkNoAmmo()
+    const fireWeapon = this.fireWeapon.bind(this, map, fireCoordinates, wps)
+    return { fireCoordinates, fireWeapon }
+  }
+  firingInfoIfReady (map, row, col, weaponSystem) {
+    const wps = weaponSystem || this.getCurrentWeaponSystem()
+    const weapon = wps.weapon
+    const requiredPoints = weapon.points
+    this.addSelectedCoordinates(row, col)
+    if (this.selectedCoordinates.length === requiredPoints) {
+      const { fireCoordinates, fireWeapon } = this.firingInfo(wps, map)
+      return { fireCoordinates, fireWeapon, wps, weapon }
+    }
+    return null
+  }
   async aimSingleShot (map, row, col, sShot) {
+    const { fireSingleShot, coordinates, wps, weapon } = this.aimSingleShotInfo(
+      sShot,
+      map,
+      row,
+      col
+    )
+    await this.launch(coordinates, weapon, wps)
+    fireSingleShot()
+  }
+
+  aimSingleShotInfo (sShot, map, row, col) {
     sShot = sShot || this.getSingleShotWps()
     const weapon = sShot.weapon
     const fireSingleShot = this.fireSingleShot.bind(
@@ -346,8 +369,8 @@ export class LoadOut {
       [row, col],
       sShot
     )
-    await this.launch([[row, col, 4]], weapon, sShot)
-    fireSingleShot()
+    const coordinates = [[row, col, 4]]
+    return { fireSingleShot, wps: sShot, coordinates, weapon }
   }
 
   dismissSelection () {
