@@ -213,16 +213,21 @@ class Enemy extends Waters {
     }
     return true
   }
-  onClickCell (r, c) {
+  async onClickCell (r, c) {
     if (!this.isTurn()) return
     this.UI.removeHighlightAoE()
     this.setWeaponFireHanders()
+    let hasLaunched = await this.launchSelectedWeapon(r, c)
+    if (hasLaunched) return
+    hasLaunched = await this.launchRandomWeapon(r, c, bh.seekingMode)
+    if (hasLaunched) return
 
-    if (this.launchSelectedWeapon(r, c)) return
-
-    if (this.launchRandomWeapon(r, c, bh.seekingMode)) return
-    this.loadOut.launch = LoadOut.launchDefault.bind(this, this.UI)
-    this.loadOut.aimWeapon(bh.map, r, c)
+    await this.fireWeaponAt(
+      r,
+      c,
+      null,
+      LoadOut.launchDefault.bind(this, this.UI)
+    )
   }
 
   setWeaponFireHanders () {
@@ -246,15 +251,12 @@ class Enemy extends Waters {
   destroyOne (weapon, effect, target) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
     const isAmiss = this.isNoHitCandidates(hitCandidates)
-
     if (isAmiss) {
       if (weapon.crashLoc) {
         const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc)
-        this.tryFireAt2(weapon, splashEffect)
-        return
+        return this.tryFireAt2(weapon, splashEffect)
       }
-      this.tryFireAt2(weapon, effect)
-      return
+      return this.tryFireAt2(weapon, effect)
     }
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
     if (
@@ -263,11 +265,10 @@ class Enemy extends Waters {
       resolvedTarget[1] === weapon.crashLoc[1]
     ) {
       const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc)
-      this.tryFireAt2(weapon, splashEffect)
-      return
+      return this.tryFireAt2(weapon, splashEffect)
     }
     const splashEffect = this.getStrikeSplash(weapon, resolvedTarget)
-    this.tryFireAt2(weapon, splashEffect)
+    return this.tryFireAt2(weapon, splashEffect)
   }
 
   isNoHitCandidates (hitCandidates) {
@@ -286,42 +287,26 @@ class Enemy extends Waters {
       !this.score.newShotKey(effect[0][0], effect[0][1])
     ) {
       gameStatus.addToQueue('Already Shot Here - Try Again', false)
-      return false
+      return LoadOut.noResult
     }
     if (effect.length === 0) {
       gameStatus.addToQueue('Has no effect - Try Again', false)
-      return false
+      return LoadOut.noResult
     }
-    this.fireAt2(weapon, effect)
+    const result = this.processCarpetBomb(weapon, effect)
     this.updateUI()
     this.steps.endTurn()
-    return true
-  }
-  fireAt2 (weapon, effect) {
-    //this.updateMode()
-    // Mega Bomb mode: affect 3x3 area centered on (r,c)
-    this.processCarpetBomb(weapon, effect)
+    return result
   }
 
   processCarpetBomb (weapon, effect) {
-    let hits = 0
-    let reveals = 0
-    let sunk = ''
-    let info = ''
-    let shots = 0
-    ;({ hits, sunk, reveals, info, shots } = this.dropBomb(
-      weapon,
-      effect,
-      hits,
-      sunk,
-      reveals,
-      info,
-      shots
-    ))
+    const { hits, sunk, reveals, info, shots } = this.applyToAoE(effect, weapon)
+
     // update status
     this.updateResultsOfBomb(weapon, hits, sunk, reveals, info, shots)
     this.updateMode()
     this.flash()
+    return { hits, sunk, reveals, info, shots }
   }
   deactivateWeapon (ro, co) {
     if (ro === undefined || co === undefined) return
@@ -352,24 +337,6 @@ class Enemy extends Waters {
       if (oldCursor !== '') board.remove(oldCursor)
       if (newCursor !== '') board.add(newCursor)
     }
-  }
-
-  dropBomb (weapon, effect, hits, sunk, reveals, info, shots) {
-    const map = bh.map
-
-    for (const position of effect) {
-      const [r, c, power] = position
-
-      if (map.inBounds(r, c)) {
-        const result = this.processShot(weapon, r, c, power)
-        if (result?.hits) hits += result.hits
-        if (result?.sunk) sunk += result.sunk
-        if (result?.reveals) reveals += result.reveals
-        if (result?.shots) shots += result.shots
-        if (result?.info) info += result.info + ' '
-      }
-    }
-    return { hits, sunk, reveals, info, shots }
   }
 
   onClickWeaponMode () {

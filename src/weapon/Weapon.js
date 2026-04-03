@@ -213,7 +213,7 @@ export class Weapon {
     }
     const targetCell = viewModel.gridCellAt(target[0], target[1])
     await this.animateFlying(sourceCell, targetCell, viewModel.cellSizeScreen())
-    return { hasCandidates, target }
+    return hasCandidates ? { target } : {}
   }
   centerOf (el) {
     const r = el.getBoundingClientRect()

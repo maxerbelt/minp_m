@@ -6,9 +6,8 @@ export class LoadOut {
     this.onOutOfAllAmmo = Function.prototype
     this.onOutOfAmmo = Function.prototype
     this.stepCount = steps
-    this.onDestroy = Function.prototype
-    this.onReveal = Function.prototype
-    this.onCursorChangeCallback = Function.prototype
+    this.onDestroy = LoadOut.givesNoResult
+    this.onReveal = LoadOut.givesNoResult
     this.onSound = Function.prototype
     this.currentWeaponIndex = 0
     this.viewModel = viewModel
@@ -26,6 +25,17 @@ export class LoadOut {
     this.launch = LoadOut.launchDefault.bind(this, this.viewModel)
   }
 
+  static get noResult () {
+    return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+  }
+  static get missResult () {
+    return { hits: 0, shots: 1, reveals: 0, sunk: '', info: '' }
+  }
+  static get givesNoResult () {
+    return () => {
+      return this.noResult
+    }
+  }
   static launchDefault (viewModel, coordinates, weapon) {
     const targetCoordinates = coordinates.at(-1)
     const targetCell = viewModel.gridCellAt(
@@ -317,16 +327,12 @@ export class LoadOut {
   isArming () {
     return !this.isNotArming()
   }
-  async aimWeapon (map, row, col, weaponSystem) {
+  async aimWeapon (map, row, col, weaponSystem, launch = this.launch) {
     const info = this.firingInfoIfReady(map, row, col, weaponSystem)
     if (info) {
       const { fireCoordinates, fireWeapon, wps, weapon } = info
-      const result = await this.launch(fireCoordinates, weapon, wps)
-      if (result?.hasCandidates) {
-        fireWeapon(result?.target)
-      } else {
-        fireWeapon()
-      }
+      const launchInfo = await launch(fireCoordinates, weapon, wps)
+      return fireWeapon(launchInfo?.target)
     }
   }
   firingInfo (wps, map) {
@@ -349,26 +355,11 @@ export class LoadOut {
     }
     return null
   }
-  async aimSingleShot (map, row, col, sShot) {
-    const { fireSingleShot, coordinates, wps, weapon } = this.aimSingleShotInfo(
-      sShot,
-      map,
-      row,
-      col
-    )
-    await this.launch(coordinates, weapon, wps)
-    fireSingleShot()
-  }
 
-  aimSingleShotInfo (sShot, map, row, col) {
+  aimSingleShotInfo (sShot, row, col) {
     sShot = sShot || this.getSingleShotWps()
     const weapon = sShot.weapon
-    const fireSingleShot = this.fireSingleShot.bind(
-      this,
-      map,
-      [row, col],
-      sShot
-    )
+    const fireSingleShot = this.fireSingleShot.bind(this, [row, col], sShot)
     const coordinates = [[row, col, 4]]
     return { fireSingleShot, wps: sShot, coordinates, weapon }
   }
@@ -376,30 +367,47 @@ export class LoadOut {
   dismissSelection () {
     this.clearSelectedCoordinates()
   }
-  fireSingleShot (map, coordinates, sShot) {
+  fireSingleShot (coordinates, sShot) {
+    const { weapon, affectedArea } = this.fireSingleShotInfo(sShot, coordinates)
+    return this.onDestroy(weapon, affectedArea)
+  }
+  fireSingleShotInfo (sShot, coordinates) {
     sShot = sShot || this.getSingleShotWps()
     const c = coordinates || this.coord
     const weapon = sShot.weapon
-    this.onDestroy(weapon, [[...c, 4]])
+    const affectedArea = [[...c, 4]]
+    return { weapon, affectedArea, sShot }
   }
+
   fireWeapon (map, coordinates, weaponSystem, target) {
+    const { weapon, affectedArea } = this.fireWeaponInfo(
+      coordinates,
+      weaponSystem,
+      map
+    )
+
+    return this.fireAoE(weapon, affectedArea, target)
+  }
+  fireAoE (weapon, affectedArea, target) {
+    if (weapon.destroys) {
+      if (weapon.isOneAndDone) {
+        return this.destroyOneOfMany(weapon, affectedArea, target)
+      }
+      return this.onDestroy(weapon, affectedArea)
+    }
+    return this.onReveal(weapon, affectedArea)
+  }
+  fireWeaponInfo (coordinates, weaponSystem, map) {
     const c = coordinates || this.coord
     const wps = weaponSystem || this.getCurrentWeaponSystem()
     const weapon = wps.weapon
     const affectedArea = weapon.aoe(map, c)
-    if (weapon.destroys) {
-      if (weapon.isOneAndDone) {
-        this.destroyOneOfMany(weapon, affectedArea, target)
-      } else {
-        this.onDestroy(weapon, affectedArea)
-      }
-    } else {
-      this.onReveal(weapon, affectedArea)
-    }
+    return { weapon, affectedArea }
   }
+
   destroyOneOfMany (weapon, affectedArea, target) {
     // Implement the logic for destroying a single target
     // This method can be expanded for more granular control
-    this.onDestroy(weapon, affectedArea, target)
+    return this.onDestroy(weapon, affectedArea, target)
   }
 }

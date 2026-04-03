@@ -4,6 +4,7 @@ import { gameStatus } from './StatusUI.js'
 import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Waters } from './Waters.js'
 import { Player } from './steps.js'
+import { LoadOut } from './LoadOut.js'
 
 export class Friend extends Waters {
   constructor (friendUI) {
@@ -29,18 +30,6 @@ export class Friend extends Waters {
     return hitCoordinates[randomIndex]
   }
 
-  updateBombResultsFromResult (result) {
-    if (!result) return
-    const { hits, sunk, reveals, info, shots } = result
-    this.updateResultsOfBomb(
-      this.loadOut.getSingleShot(),
-      hits,
-      sunk,
-      reveals,
-      info,
-      shots
-    )
-  }
   isCancelled (seeking) {
     if (seeking && (!this.testContinue || this.boardDestroyed)) {
       clearInterval(seeking)
@@ -49,7 +38,7 @@ export class Friend extends Waters {
     return false
   }
 
-  seekHit (weapon, r, c, power) {
+  processShot (weapon, r, c, power) {
     if (this.isHitInvalid(r, c, power, true, weapon.hasFlash))
       return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
 
@@ -59,46 +48,10 @@ export class Friend extends Waters {
   }
 
   seekBomb (weapon, effect) {
-    const { hits, sunk, reveals, info, shots } = this.seekBombRaw(
-      weapon,
-      effect
-    )
-    this.updateResultsOfBomb(weapon, hits, sunk, reveals, info, shots)
-  }
-  seekBombRaw (weapon, effect) {
     this.updateUI()
-    let hits = 0
-    let reveals = 0
-    let sunk = ''
-    let info = ''
-    let shots = 0
-    for (const [r, c, power] of effect) {
-      ;({ hits, sunk, reveals, shots, info } = this.applyToPosition(
-        r,
-        c,
-        weapon,
-        power,
-        hits,
-        sunk,
-        reveals,
-        shots,
-        info
-      ))
-    }
-    if (hits > 0) this.flash('long')
-    return { hits, sunk, reveals, info, shots }
-  }
-
-  applyToPosition (r, c, weapon, power, hits, sunk, reveals, shots, info) {
-    if (bh.inBounds(r, c)) {
-      const result = this.seekHit(weapon, r, c, power)
-      if (result?.hits) hits += result.hits
-      if (result?.sunk) sunk += result.sunk
-      if (result?.reveals) reveals += result.reveals
-      if (result?.shots) shots += result.shots
-      if (result?.info) info += result.info + ' '
-    }
-    return { hits, sunk, reveals, shots, info }
+    const acc = this.applyToAoE(effect, weapon)
+    if (acc.hits > 0) this.flash('long')
+    return acc
   }
 
   async randomBomb (seeking) {
@@ -110,30 +63,31 @@ export class Friend extends Waters {
         if (this.isCancelled(seeking)) return
         const { r, c } = this.randomLocation(map)
         if (this.score.newShotKey(r, c)) {
-          if (!this.launchRandomWeapon(r, c, false)) {
-            await this.loadOut.aimWeapon(
-              bh.map,
+          const hasLaunched = await this.launchRandomWeapon(r, c, false)
+          if (!hasLaunched) {
+            return await this.loadOut.aimWeapon(
+              map,
               r,
               c,
               this.loadOut.selectedWeapon
             )
           }
-          return
+          return LoadOut.noResult
         }
       }
+    return LoadOut.noResult
   }
 
-  async destroyOne (weapon, effect, target) {
+  destroyOne (weapon, effect, target) {
     const candidates = this.getHitCandidates(effect, weapon)
     if (candidates.length < 1) {
-      await this.seekBomb(weapon, effect)
-      return
+      return this.seekBomb(weapon, effect)
     }
     if (target === null || target === undefined || target?.length < 2) {
-      target = await this.randomElement(candidates)
+      target = this.randomElement(candidates)
     }
     const newEffect = this.getStrikeSplash(weapon, target)
-    this.tryFireAt2(weapon, newEffect)
+    return this.tryFireAt2(weapon, newEffect)
   }
 
   async randomDestroyOne (seeking) {
@@ -144,7 +98,7 @@ export class Friend extends Waters {
 
     const r = this.randomLine()
     this.launchRandomWeapon(r, 0, false)
-    await this.loadOut.aimWeapon(
+    return await this.loadOut.aimWeapon(
       map,
       r,
       map.cols - 1,
@@ -296,7 +250,7 @@ export class Friend extends Waters {
     const { r1, c1 } = this.randomLocation(map)
 
     this.loadOut.aimWeapon(map, r, c)
-    this.loadOut.aimWeapon(map, r1, c1)
+    return this.loadOut.aimWeapon(map, r1, c1)
   }
   randomLocation (map) {
     const r = Math.floor(Math.random() * (map.rows - 2)) + 1

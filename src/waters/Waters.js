@@ -98,7 +98,13 @@ export class Waters {
       this.resetShipCells()
     }
   }
-
+  accumulateResult (result, acc) {
+    if (result?.hits) acc.hits += result.hits
+    if (result?.sunk) acc.sunk += result.sunk
+    if (result?.reveals) acc.reveals += result.reveals
+    if (result?.shots) acc.shots += result.shots
+    if (result?.info) acc.info += result.info + ' '
+  }
   autoPlace2 () {
     const ships = this.initShips()
 
@@ -450,8 +456,9 @@ export class Waters {
     const rack = this.loadOut.getWeaponBySystemId(weaponId)
     this.selectAndArmWps(rack, oppo, launchR, launchC, hintR, hintC)
   }
-  launchRandomWeapon (r, c, autoSelectWarning = true) {
-    if (this.launchUnattachedWeapon(r, c)) return true
+  async launchRandomWeapon (r, c, autoSelectWarning = true) {
+    const hasLaunched = await this.launchUnattachedWeapon(r, c)
+    if (hasLaunched) return true
     return this.launchRandomWeaponBase(autoSelectWarning)
   }
 
@@ -527,36 +534,43 @@ export class Waters {
     }
     return true
   }
-
-  launchSelectedWeapon (r, c) {
+  async fireWeaponAt (
+    row,
+    col,
+    weaponSystem = this.loadOut.selectedWeapon,
+    launch = null
+  ) {
+    const result = await this.loadOut.aimWeapon(bh.map, row, col, weaponSystem)
+    this.updateResultsOfBomb(weaponSystem?.weapon, result)
+  }
+  async launchSelectedWeapon (r, c) {
     if (this.loadOut.isArmed()) {
-      this.loadOut.aimWeapon(bh.map, r, c, this.loadOut.selectedWeapon)
+      await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
       return true
     }
     return false
   }
 
-  launchUnattachedWeapon (r, c) {
+  async launchUnattachedWeapon (r, c) {
     const unAttached = this.getUnattachedWeaponSystem()
     if (unAttached) {
-      this.loadOut.launch = async coords => {
+      const launch = async coords => {
         return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
-      this.loadOut.aimWeapon(bh.map, r, c, unAttached)
+      await this.fireWeaponAt(r, c, r, c, unAttached, launch)
       return true
     }
     return false
   }
   async launchSingleShot (r, c, sShot) {
-    const map = bh.map
     const { fireSingleShot, coordinates, wps } = this.loadOut.aimSingleShotInfo(
       sShot,
-      map,
       r,
       c
     )
     await this.launchTo(coordinates, bh.map.rows - 1, 0, wps)
-    fireSingleShot()
+    const result = fireSingleShot()
+    this.updateResultsOfSingleShot(result)
   }
 
   getUnattachedWeaponSystem () {
@@ -786,14 +800,14 @@ export class Waters {
 
   checkForHit (weapon, r, c, power, shipCell) {
     if (!shipCell) {
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+      return LoadOut.noResult
     }
 
     const hitShip = this.getShipFromCell(shipCell)
 
     if (!hitShip) {
       this.UI.cellMiss(r, c)
-      return { hits: 0, shots: 1, reveals: 0, sunk: '', info: '' }
+      return LoadOut.missResult
     }
 
     const shape = bh.shapesByLetter(shipCell.letter)
@@ -804,7 +818,7 @@ export class Waters {
     }
 
     if (protection > power) {
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+      return LoadOut.noResult
     }
     let shots = 0
     if (power < 1) {
@@ -894,9 +908,9 @@ export class Waters {
     if (!shipCell) {
       if (power > 0) {
         this.UI.cellMiss(r, c)
-        return { hits: 0, shots: 1, reveals: 0, sunk: '', info: '' }
+        return LoadOut.missResult
       }
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+      return LoadOut.noResult
     }
     return this.checkForHit(weapon, r, c, power, shipCell)
   }
@@ -938,7 +952,24 @@ export class Waters {
       this.displayInfo(messageInfo + missMessage)
     }
   }
-  updateResultsOfBomb (weapon, hits, sunks, reveals = 0, info = '') {
+  updateResultsOfSingleShot (result) {
+    if (!result) return
+    const { hits, sunk, reveals, info, shots } = result
+    this.updateResultsOfTurn(
+      this.loadOut.getSingleShot(),
+      hits,
+      sunk,
+      reveals,
+      info,
+      shots
+    )
+  }
+  updateResultsOfBomb (weapon, result) {
+    if (!result) return
+    const { hits, sunk, reveals, info, shots } = result
+    this.updateResultsOfTurn(weapon, hits, sunk, reveals, info, shots)
+  }
+  updateResultsOfTurn (weapon, hits, sunks, reveals = 0, info = '') {
     const messageInfo = info ? info + ' ' : ''
     if (this.boardDestroyed) {
       return
@@ -993,10 +1024,24 @@ export class Waters {
     }
     return false
   }
+  applyToAoE (effect, weapon) {
+    let acc = LoadOut.noResult
+    for (const [r, c, power] of effect) {
+      acc = this.applyToPosition(r, c, weapon, power, acc)
+    }
+    return acc
+  }
+  applyToPosition (r, c, weapon, power, acc) {
+    if (bh.inBounds(r, c)) {
+      const result = this.processShot(weapon, r, c, power)
+      this.accumulateResult(result, acc)
+    }
+    return acc
+  }
   processShot (weapon, r, c, power) {
     if (this.isHitInvalid(r, c, power, true, weapon.hasFlash)) {
       // if we are here, it is because of carpet bomb, so we can just
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+      return LoadOut.noResult
     }
 
     const result = this.fireShot(weapon, r, c, power)

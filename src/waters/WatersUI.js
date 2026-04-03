@@ -7,7 +7,7 @@ import {
   parsePair,
   setCellCoords
 } from '../utilities.js'
-
+import { LoadOut } from './LoadOut.js'
 import { gameStatus } from './StatusUI.js'
 import { Delay } from '../core/Delay.js'
 
@@ -336,11 +336,11 @@ export class WatersUI {
       cell.classList.contains('miss') ||
       cell.classList.contains('hit')
     )
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+      return LoadOut.noResult
     cell.classList.add('semi')
     cell.classList.remove('wake')
     cell.textContent = ''
-    return { hits: 0, shots: 1, reveals: 1, sunk: '', info: '' }
+    return LoadOut.missResult
   }
 
   cellHintReveal (r, c) {
