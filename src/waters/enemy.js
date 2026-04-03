@@ -300,13 +300,13 @@ class Enemy extends Waters {
   }
 
   processCarpetBomb (weapon, effect) {
-    const { hits, sunk, reveals, info, shots } = this.applyToAoE(effect, weapon)
+    const results = this.applyToAoE(effect, weapon)
 
     // update status
-    this.updateResultsOfBomb(weapon, hits, sunk, reveals, info, shots)
+    this.updateResultsOfBomb(weapon, results)
     this.updateMode()
     this.flash()
-    return { hits, sunk, reveals, info, shots }
+    return results
   }
   deactivateWeapon (ro, co) {
     if (ro === undefined || co === undefined) return

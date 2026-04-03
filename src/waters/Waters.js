@@ -300,8 +300,15 @@ export class Waters {
       this.loadOut = this.makeLoadOut(map)
     }
 
-    if (this.cursorChange)
-      this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
+    if (this.cursorChange) {
+      if (typeof this.cursorChange === 'function') {
+        this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
+      } else {
+        console.warn(
+          'cursorChange property is not a function, ignoring cursor change callback assignment'
+        )
+      }
+    }
   }
   makeLoadOut (map, ships) {
     ships = ships || this.weaponShips
@@ -540,7 +547,13 @@ export class Waters {
     weaponSystem = this.loadOut.selectedWeapon,
     launch = null
   ) {
-    const result = await this.loadOut.aimWeapon(bh.map, row, col, weaponSystem)
+    const result = await this.loadOut.aimWeapon(
+      bh.map,
+      row,
+      col,
+      weaponSystem,
+      launch
+    )
     this.updateResultsOfBomb(weaponSystem?.weapon, result)
   }
   async launchSelectedWeapon (r, c) {
@@ -557,7 +570,7 @@ export class Waters {
       const launch = async coords => {
         return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
-      await this.fireWeaponAt(r, c, r, c, unAttached, launch)
+      await this.fireWeaponAt(r, c, unAttached, launch)
       return true
     }
     return false

@@ -123,8 +123,6 @@ export class Weapon {
       start1,
       end1,
       viewModel.cellSizeScreen(),
-      map,
-      viewModel,
       0,
       0.9,
       'cursor ' + flyCursor,
@@ -361,14 +359,14 @@ export class Weapon {
 
   initAnimate (cellSize, target, source, className) {
     cellSize = cellSize || 30
-
+    const classNames = className.split(' ')
     const animator = new Animator(
       'flying-weapon-wrapper',
       'battleship-game-container',
       null,
       true,
       'flying-weapon',
-      className
+      ...classNames
     )
 
     const end = this.centerOf(target)

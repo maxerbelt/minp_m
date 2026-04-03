@@ -9,7 +9,7 @@ export class Animator {
     ...innerDivClassNames
   ) {
     if (onlyOne) {
-      document.querySelectorAll(className).forEach(el => el.remove())
+      document.querySelectorAll(`.${className}`).forEach(el => el.remove())
     }
     const el = document.createElement('div')
     el.className = className
@@ -22,6 +22,7 @@ export class Animator {
       this.innerEl.classList.add(...innerDivClassNames.slice(1))
       el.appendChild(this.innerEl)
     }
+    this.running = false
   }
   moveTo (end) {
     // Convert viewport coordinates to container-relative coordinates
@@ -67,16 +68,18 @@ export class Animator {
     }
   }
   async run (...trigger) {
+    if (this.running) return
+    this.running = true
     this.play(...trigger)
     await Animator.wait(this.playable)
 
-    this.el.remove()
     if (this.innerEl && this.innerDelay) {
       await Delay.wait(this.innerDelay)
     }
     this.innerEl?.remove()
-    await Delay.wait(2000)
+    await Delay.wait(10)
     this.el.remove()
+    this.running = false
   }
   play (...trigger) {
     const classNames = trigger.length ? trigger : ['play']
@@ -84,7 +87,7 @@ export class Animator {
     this.innerEl?.classList.remove(...classNames)
     this.container.appendChild(this.el)
     // force style recalc then start animation
-    this.el.getBoundingClientRect()
+    this.playable.getBoundingClientRect()
     requestAnimationFrame(() => {
       this.playable.classList.add(...classNames)
     })
@@ -126,11 +129,28 @@ export class Animator {
 
   static wait (el) {
     return new Promise(resolve => {
+      const computed = getComputedStyle(el)
+      const duration =
+        parseFloat(computed.animationDuration) * 1000 +
+        parseFloat(computed.animationDelay) * 1000
+
+      if (!duration) {
+        resolve()
+        return
+      }
+
+      let resolved = false
+
       const handler = () => {
+        if (resolved) return
+        resolved = true
         el.removeEventListener('animationend', handler)
         resolve()
       }
+
       el.addEventListener('animationend', handler)
+
+      setTimeout(handler, duration + 50)
     })
   }
 }

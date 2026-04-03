@@ -5,6 +5,7 @@ export class LoadOut {
   constructor (weapons, ships, viewModel, steps) {
     this.onOutOfAllAmmo = Function.prototype
     this.onOutOfAmmo = Function.prototype
+    this.onCursorChangeCallback = Function.prototype
     this.stepCount = steps
     this.onDestroy = LoadOut.givesNoResult
     this.onReveal = LoadOut.givesNoResult
