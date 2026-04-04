@@ -2,7 +2,7 @@
 /* global describe, it, expect, beforeEach, afterEach, jest */
 
 import { CoordinateConversion } from './CoordinateConversion.js'
-import { Mask } from './mask.js'
+import { Mask } from './rectangle/mask.js'
 
 describe('CoordinateConversion', () => {
   let mask

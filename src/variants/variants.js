@@ -1,7 +1,6 @@
+import { shuffleArray } from '../core/utilities.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Placeable } from './Placeable.js'
-import { shuffleArray } from '../utilities.js'
-import { normalize } from './normalize.js'
 
 export class Variants {
   constructor (validator, zoneDetail, symmetry) {

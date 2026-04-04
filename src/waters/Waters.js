@@ -6,12 +6,12 @@ import {
   parseTriple,
   findClosestCoord,
   coordsFromCell
-} from '../utilities.js'
+} from '../core/utilities.js'
 import { placedShipsInstance } from '../selection/PlacedShips.js'
 import { Score } from './Score.js'
 import { gameStatus } from './StatusUI.js'
 import { assembleTerrains } from '../terrains/all/js/gameMaps.js'
-import { randomPlaceShape } from '../utils.js'
+import { randomPlaceShape } from '../core/utils.js'
 import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'

@@ -4,7 +4,7 @@
 
 import { expect, jest } from '@jest/globals'
 import { SeaVessel } from './SeaShape.js'
-import { Mask } from '../../../grid/mask.js'
+import { Mask } from '../../../grid/rectangle/mask.js'
 import { Orbit4F } from '../../../variants/Orbit4F.js'
 
 const occupancyCoords = [

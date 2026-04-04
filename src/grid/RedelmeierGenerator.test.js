@@ -6,7 +6,7 @@ import {
   createOrthoPolyominoGenerator,
   createKingPolyominoGenerator
 } from './RedelmeierGenerator.js'
-import { Mask } from './mask.js'
+import { Mask } from './rectangle/mask.js'
 
 describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
   let gen

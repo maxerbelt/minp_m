@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals'
 
 // Mock MaskHex and ActionsHex BEFORE importing hex.js
-jest.unstable_mockModule('./grid/maskHex.js', () => {
+jest.unstable_mockModule('./grid/hexagon/maskHex.js', () => {
   class MaskHex {
     constructor (radius) {
       this.radius = radius
@@ -69,7 +69,7 @@ jest.unstable_mockModule('./grid/maskHex.js', () => {
   return { MaskHex }
 })
 
-jest.unstable_mockModule('./grid/actionHex.js', () => {
+jest.unstable_mockModule('./grid/hexagon/actionHex.js', () => {
   return {
     ActionHex: {
       D3_LABELS: ['id', 'r120', 'r240', 'f0', 'f1', 'f2']

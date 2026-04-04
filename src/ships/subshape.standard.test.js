@@ -3,7 +3,7 @@
 /* global describe, jest, it, expect, beforeEach */
 
 import { SubShape, StandardCells } from './SubShape.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { jest } from '@jest/globals'
 
 describe('SubShape', () => {

@@ -1,5 +1,5 @@
-import { HexDraw } from './grid/hexdraw.js'
-import { HexCanvas } from './ui/HexCanvas.js'
+import { HexDraw } from './ui/hexagon/hexDraw.js'
+import { HexCanvas } from './ui/hexagon/HexCanvas.js'
 
 // Create HexDraw instance with canvas ID, radius, and drawing parameters
 const hexDraw = new HexDraw('c', 6, 300, 300, 25)

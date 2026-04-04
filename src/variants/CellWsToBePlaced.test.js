@@ -3,14 +3,18 @@
 /* global describe, it, test, expect, beforeEach, afterEach, jest */
 
 import { CellWsToBePlaced } from './CellWsToBePlaced.js'
-import { makeKey } from '../utilities.js'
-import { Mask } from '../grid/mask.js'
+import { makeKey } from '../core/utilities.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { jest } from '@jest/globals'
 
 describe('CellWsToBePlaced behaviors', () => {
   test('weapons mapping formed from special subgroup cells and provided weapons array', () => {
     const placable3 = {
-      board: Mask.fromCoords([[0, 0], [0, 1], [0, 2]]),
+      board: Mask.fromCoords([
+        [0, 0],
+        [0, 1],
+        [0, 2]
+      ]),
       cells: [
         [0, 0],
         [0, 1],

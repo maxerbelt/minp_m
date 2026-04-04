@@ -1,8 +1,8 @@
 /* eslint-env jest */
 
 /* global beforeEach, describe, it, expect */
-import { Mask } from './mask.js'
-import { Packed } from './packed.js'
+import { Mask } from './rectangle/mask.js'
+import { Packed } from './rectangle/packed.js'
 import { SubMask } from './SubMask.js'
 import { SubBoard } from './subBoard.js'
 

@@ -1,9 +1,9 @@
 /* eslint-env jest */
 
 /* global beforeEach, describe, it, expect */
-import { Mask } from './mask.js'
+import { Mask } from './rectangle/mask.js'
 import { beforeEach, describe, it, expect, jest } from '@jest/globals'
-import { Packed } from './packed.js'
+import { Packed } from './rectangle/packed.js'
 
 let mask
 // Jest test suite

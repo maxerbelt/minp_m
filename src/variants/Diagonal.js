@@ -1,6 +1,6 @@
 import { Blinker } from './Blinker.js'
 import { FlippableVariant } from './FlippableVariant.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 export class Diagonal extends FlippableVariant {
   constructor (board, validator, zoneDetail, variants) {

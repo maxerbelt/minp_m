@@ -4,9 +4,9 @@ import { WatersUI } from './WatersUI.js'
 import { ClickedShip } from '../selection/selection.js'
 import { cursor } from '../selection/cursor.js'
 import { getShipIdFromElement, dragNDrop } from '../selection/dragndrop.js'
-import { setCellCoords } from '../utilities.js'
+import { setCellCoords } from '../core/utilities.js'
 import { gameStatus } from './StatusUI.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { Ship } from '../ships/Ship.js'
 export class PlacementUI extends WatersUI {
   constructor (terroritory, title) {

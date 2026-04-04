@@ -5,7 +5,7 @@
 import { expect, jest } from '@jest/globals'
 import { ArmedShuttle } from './spaceShapes.js'
 import { Missile } from './spaceWeapons.js'
-import { Mask } from '../../../grid/mask.js'
+import { Mask } from '../../../grid/rectangle/mask.js'
 import { WeaponVariant } from '../../../variants/WeaponVariant.js'
 import { StandardCells, SpecialCells } from '../../../ships/SubShape.js'
 

@@ -1,6 +1,6 @@
 /* eslint-env jest */
 /* global describe,it,expect,beforeEach,jest */
-import { Mask } from './grid/mask.js'
+import { Mask } from './grid/rectangle/mask.js'
 import { jest } from '@jest/globals'
 
 // stub DOM canvas before loading module

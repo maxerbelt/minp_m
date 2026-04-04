@@ -1,5 +1,5 @@
-import { TriDraw } from './grid/triDraw.js'
-import { TriCanvas } from './ui/TriCanvas.js'
+import { TriDraw } from './ui/triangle/triDraw.js'
+import { TriCanvas } from './ui/triangle/TriCanvas.js'
 
 // Create TriDraw instance with canvas ID, side length, and drawing parameters
 // use a larger grid size (side = 12)

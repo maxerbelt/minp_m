@@ -2,7 +2,7 @@
 
 /* global describe, it, expect, beforeEach, test */
 
-import { Mask } from './mask.js'
+import { Mask } from './rectangle/mask.js'
 
 BigInt.prototype.toJSON = function () {
   return this.toString()

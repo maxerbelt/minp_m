@@ -1,4 +1,6 @@
-export class BitMorphology {
+// Todo: use or remove this class. It was intended to hold bit manipulation methods for morphological operations like dilation and erosion, but it may not be necessary if those operations can be implemented directly in the mask classes.
+
+class BitMorphology {
   constructor (store) {
     this.store = store
   }

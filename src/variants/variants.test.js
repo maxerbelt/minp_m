@@ -4,7 +4,7 @@
 import { Asymmetric } from './asymmetric.js'
 import { Orbit4R } from './Orbit4R.js' //
 import { Invariant } from './Invariant.js' //
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { jest } from '@jest/globals'
 
 function allHasLength (received, expectedLength) {

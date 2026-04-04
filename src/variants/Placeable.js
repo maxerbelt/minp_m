@@ -1,6 +1,6 @@
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { placingTarget } from './makeCell3.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 export class Placeable {
   constructor (board, validator, zoneDetail, target) {
     this.board = board // board.clone.shrinkToOccupied()

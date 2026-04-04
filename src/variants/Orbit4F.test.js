@@ -3,7 +3,7 @@
 /* global describe, it, it, expect, beforeEach, jest */
 
 import { Orbit4F } from './Orbit4F.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { SubBoard } from '../grid/subBoard.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 

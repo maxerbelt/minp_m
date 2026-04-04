@@ -1,7 +1,7 @@
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach, afterEach, jest */
 import { SubBoard } from './subBoard.js'
-import { Mask } from './mask.js'
+import { Mask } from './rectangle/mask.js'
 
 const occupancyCoords = [
   [0, 0],

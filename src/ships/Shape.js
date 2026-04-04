@@ -5,9 +5,9 @@ import { Asymmetric } from '../variants/asymmetric.js'
 import { Diagonal } from '../variants/Diagonal.js'
 import { Orbit4F } from '../variants/Orbit4F.js'
 import { Blinker } from '../variants/Blinker.js'
-import { makeKey } from '../utilities.js'
+import { makeKey } from '../core/utilities.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 export const token = 'geoffs-hidden-battle'
 

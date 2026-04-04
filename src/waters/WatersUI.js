@@ -6,7 +6,7 @@ import {
   makeKey,
   parsePair,
   setCellCoords
-} from '../utilities.js'
+} from '../core/utilities.js'
 import { LoadOut } from './LoadOut.js'
 import { gameStatus } from './StatusUI.js'
 import { Delay } from '../core/Delay.js'

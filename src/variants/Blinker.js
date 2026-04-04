@@ -1,6 +1,6 @@
 import { Invariant } from './Invariant.js'
 import { RotatableVariant } from './RotatableVariant.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 export class Blinker extends RotatableVariant {
   constructor (board, validator, zoneDetail, variants) {

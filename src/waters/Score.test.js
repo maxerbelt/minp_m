@@ -2,14 +2,14 @@
 import { jest } from '@jest/globals'
 
 /* global describe, it, expect, jest, beforeEach */
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 // Score will be imported after mocking bh so that our mock takes effect
 let Score
 
 // Mock dependencies
 jest.unstable_mockModule('../terrains/all/js/bh.js', async () => {
-  const { Mask } = await import('../grid/mask.js')
+  const { Mask } = await import('../grid/rectangle/mask.js')
   return {
     bh: {
       map: {

@@ -1,5 +1,5 @@
 import { bh } from '../../../terrains/all/js/bh.js'
-import { coordsFromCell, shuffleArray } from '../../../utilities.js'
+import { coordsFromCell, shuffleArray } from '../../../core/utilities.js'
 import { Weapon, WeaponCatelogue } from '../../../weapon/Weapon.js'
 import { getListCanvas } from '../../../grid/listCanvas.js'
 import { Delay } from '../../../core/Delay.js'

@@ -4,7 +4,7 @@
 import { jest } from '@jest/globals'
 
 import { CellsToBePlaced } from './CellsToBePlaced.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { placingTarget } from './makeCell3.js'
 
 function makeGrid (rows, cols, fill = null) {

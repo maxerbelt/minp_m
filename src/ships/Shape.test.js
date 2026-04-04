@@ -26,7 +26,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   }
 }))
 
-jest.unstable_mockModule('../utilities.js', () => ({
+jest.unstable_mockModule('../core/utilities.js', () => ({
   makeKey: jest.fn((r, c) => `${r},${c}`),
   lazy: jest.fn((obj, prop, fn) => {
     Object.defineProperty(obj, prop, {

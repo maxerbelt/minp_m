@@ -1,5 +1,5 @@
 import { FlippableVariant } from './FlippableVariant.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 export class Orbit4R extends FlippableVariant {
   constructor (board, validator, zoneDetail, variants) {

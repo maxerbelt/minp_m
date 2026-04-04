@@ -1,6 +1,6 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { parsePair, makeKeyAndId } from '../utilities.js'
-import { Mask } from '../grid/mask.js'
+import { parsePair, makeKeyAndId } from '../core/utilities.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { SubBoard } from '../grid/subBoard.js'
 

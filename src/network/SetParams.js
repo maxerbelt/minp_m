@@ -6,7 +6,7 @@ import {
 } from './getParam.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { terrains } from '../terrains/all/js/terrains.js'
-import { toTitleCase } from '../utils.js'
+import { toTitleCase } from '../core/utils.js'
 
 export function updateState (tokens, url) {
   const pageTitle = document.getElementById('page-title')

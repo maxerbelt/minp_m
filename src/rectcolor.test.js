@@ -1,8 +1,8 @@
 /* eslint-env jest */
 /* global describe,it,expect,beforeEach,jest */
 import { expect, jest } from '@jest/globals'
-import { Mask } from './grid/mask.js'
-import { Packed } from './grid/packed.js'
+import { Mask } from './grid/rectangle/mask.js'
+import { Packed } from './grid/rectangle/packed.js'
 // very similar to rect.test.js but targets the rectcolor grid
 
 // Variables to hold dynamically imported functions (so they can be updated per-test)

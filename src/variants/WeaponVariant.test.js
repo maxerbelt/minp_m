@@ -28,7 +28,7 @@ jest.unstable_mockModule('../ships/SubShape.js', () => {
   }
 })
 
-jest.unstable_mockModule('../utilities.js', () => {
+jest.unstable_mockModule('../core/utilities.js', () => {
   return {
     parsePair: jest.fn(p => p)
   }
@@ -82,7 +82,7 @@ jest.unstable_mockModule('./SpecialVariant.js', () => {
   return { SpecialVariant }
 })
 
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 // Variables for dynamically imported modules
 let WeaponVariant,
   StandardCells,
@@ -115,7 +115,7 @@ describe.skip('WeaponVariant', () => {
     StandardCells = subShapeModule.StandardCells
     SpecialCells = subShapeModule.SpecialCells
 
-    const utilitiesModule = await import('../utilities.js')
+    const utilitiesModule = await import('../core/utilities.js')
     parsePair = utilitiesModule.parsePair
 
     const placeableModule = await import('./Placeable.js')

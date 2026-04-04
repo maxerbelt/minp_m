@@ -25,7 +25,7 @@ const fakeCanvas = {
 }
 
 // Mock MaskTri and ActionsTri BEFORE importing tri.js
-jest.unstable_mockModule('./grid/maskTri.js', () => {
+jest.unstable_mockModule('./grid/triangle/maskTri.js', () => {
   class MaskTri {
     constructor (side) {
       this.side = side
@@ -70,7 +70,7 @@ jest.unstable_mockModule('./grid/maskTri.js', () => {
   return { MaskTri }
 })
 
-jest.unstable_mockModule('./grid/actionsTri.js', () => {
+jest.unstable_mockModule('./grid/triangle/actionsTri.js', () => {
   return {
     ActionsTri: {
       D3_LABELS: ['id', 'r120', 'r240', 'f0', 'f1', 'f2']

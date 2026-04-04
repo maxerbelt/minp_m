@@ -1,8 +1,8 @@
-import { CubeIndex } from './CubeIndex.js'
-import { RectIndex } from './RectIndex.js'
-import { TriIndex } from './TriIndex.js'
+import { CubeIndex } from './hexagon/CubeIndex.js'
+import { RectIndex } from './rectangle/RectIndex.js'
+import { TriIndex } from './triangle/TriIndex.js'
 import { TriRectIndex } from './TriRectIndex.js'
-
+//   const TriIndexModule = await import('./triangle/TriIndex.js')
 export const ShapeEnum = {
   triangle: side => ({
     type: 'triangle',

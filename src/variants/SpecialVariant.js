@@ -1,9 +1,9 @@
-import { shuffleArray } from '../utilities.js'
+import { shuffleArray } from '../core/utilities.js'
 import { Placeable } from './Placeable.js'
 import { Placeable3 } from './Placeable3.js'
 import { RotatableVariant } from './RotatableVariant.js'
 import { variantType } from './variantType.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 export class SpecialVariant extends RotatableVariant {
   constructor (symmetry) {

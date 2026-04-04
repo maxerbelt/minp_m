@@ -1,6 +1,6 @@
-import { RectDraw } from './grid/rectdraw.js'
-import { RectCanvas } from './ui/RectCanvas.js'
-import { PolyominoGridManager } from './polyominoGrid.js'
+import { RectDraw } from './ui/rectangle/rectdraw.js'
+import { RectCanvas } from './ui/rectangle/RectCanvas.js'
+import { PolyominoGridManager } from './ui/rectangle/polyominoGrid.js'
 
 // Grid initialization parameters
 const cellSize = 50

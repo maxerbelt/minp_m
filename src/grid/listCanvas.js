@@ -11,7 +11,7 @@ import {
 } from './maskShape.js'
 import { GridBase } from './gridBase.js'
 import { coordsToGrid, coordsToOccBig } from './maskConvert.js'
-import { Actions } from './actions.js'
+import { Actions } from './rectangle/actions.js'
 import { ShapeEnum } from './shapeEnum.js'
 
 export class ListCanvas extends GridBase {

@@ -1,6 +1,6 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
-import { toTitleCase } from '../utils.js'
+import { toTitleCase } from '../core/utils.js'
 import { enemy } from '../waters/enemy.js'
 
 function customSplash (hasPower) {

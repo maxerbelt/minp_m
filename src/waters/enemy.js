@@ -1,6 +1,6 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { randomPlaceShape } from '../utils.js'
-import { randomElement, shuffleArray } from '../utilities.js'
+import { randomPlaceShape } from '../core/utils.js'
+import { randomElement, shuffleArray } from '../core/utilities.js'
 import { gameStatus } from './StatusUI.js'
 import { enemyUI } from './enemyUI.js'
 import { LoadOut } from './LoadOut.js'

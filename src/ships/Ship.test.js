@@ -4,7 +4,7 @@
 
 import { Ship } from './Ship.js'
 import { jest } from '@jest/globals'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { Shape } from './Shape.js'
 
 // Jest it suite

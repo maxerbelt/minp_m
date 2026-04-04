@@ -17,13 +17,16 @@ import { placedShipsInstance } from './selection/PlacedShips.js'
 import { custom } from './waters/custom.js'
 import { switchToEdit, fetchNavBar } from './navbar/navbar.js'
 import { setupBuildOptions } from './navbar/setupOptions.js'
-import { hasMapOfCurrentSize, setNewMapToCorrectSize } from './validSize.js'
+import {
+  hasMapOfCurrentSize,
+  setNewMapToCorrectSize
+} from './terrains/all/js/validSize.js'
 import { tabs, switchTo } from './navbar/setupTabs.js'
 import { trackLevelEnd } from './navbar/gtag.js'
 import { show2ndBar } from './navbar/headerUtils.js'
 import { ButtonManager } from './ui/ButtonManager.js'
 import { KeyboardShortcutManager } from './navbar/KeyboardShortcutManager.js'
-import { UIVisibilityManager } from './UIVisibilityManager.js'
+import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
 
 customUI.resetBoardSize()

@@ -7,7 +7,7 @@ import { Installation, SpaceVessel } from '../terrains/space/js/spaceShapes.js'
 import { space, asteroid } from '../terrains/space/js/space.js'
 import { Hybrid } from './SpecialShapes.js'
 import { SpecialCells, StandardCells } from './SubShape.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { Variant3 } from '../variants/Variant3.js'
 
 const occupancyCoords = [

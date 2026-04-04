@@ -1,4 +1,4 @@
-import { Mask } from './mask.js'
+import { Mask } from './rectangle/mask.js'
 
 /**
  * Redelmeier polyomino generator with proper D4 canonical normalization

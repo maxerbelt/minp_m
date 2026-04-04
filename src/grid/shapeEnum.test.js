@@ -1,9 +1,9 @@
 // src/grid/Shape.test.js
 /* eslint-env jest */
 import { ShapeEnum } from './shapeEnum.js'
-import { TriIndex } from './TriIndex.js'
-import { RectIndex } from './RectIndex.js'
-import { CubeIndex } from './CubeIndex.js'
+import { TriIndex } from './triangle/TriIndex.js'
+import { RectIndex } from './rectangle/RectIndex.js'
+import { CubeIndex } from './hexagon/CubeIndex.js'
 /* global describe, it, expect */
 
 // Jest test suite

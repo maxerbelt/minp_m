@@ -3,7 +3,7 @@
 /* global describe, it,   expect */
 
 import { ListCanvas } from './listCanvas.js'
-import { errorMsg } from './errorMsg.js'
+import { errorMsg } from '../core/errorMsg.js'
 import { ShapeEnum } from './shapeEnum.js'
 import { jest } from '@jest/globals'
 

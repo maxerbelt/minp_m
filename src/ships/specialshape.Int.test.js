@@ -7,7 +7,7 @@ import { Building, SeaVessel } from '../terrains/sea/js/SeaShape.js'
 
 import { Hybrid } from './SpecialShapes.js'
 import { SpecialCells, StandardCells } from './SubShape.js'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { Variant3 } from '../variants/Variant3.js'
 import { Placeable3 } from '../variants/Placeable3.js'
 const occupancyCoords = [

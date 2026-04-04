@@ -1,5 +1,5 @@
+import { parsePair } from '../core/utilities.js'
 import { StandardCells, SpecialCells } from '../ships/SubShape.js'
-import { parsePair } from '../utilities.js'
 import { Placeable } from './Placeable.js'
 import { PlaceableW } from './PlaceableW.js'
 import { SpecialVariant } from './SpecialVariant.js'

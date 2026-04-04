@@ -1,4 +1,4 @@
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 export class SubShape {
   constructor (validator, zoneDetail, subterrain) {

@@ -1,13 +1,13 @@
 /* eslint-env jest */
 import { jest } from '@jest/globals'
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 
 /* global describe, jest, it, expect, beforeEach */
 
 // Placeable will be imported dynamically after mocks are set up
 let Placeable
 
-jest.unstable_mockModule('./CellsToBePlaced', () => {
+jest.unstable_mockModule('./CellsToBePlaced.js', () => {
   const mockCtor = jest
     .fn()
     .mockImplementation((board, r, c, validator, zoneDetail) => {

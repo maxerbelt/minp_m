@@ -1,5 +1,5 @@
 import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
-import { makeKey } from '../utilities.js'
+import { makeKey } from '../core/utilities.js'
 
 export class CellWsToBePlaced extends Cell3sToBePlaced {
   constructor (placable3, rr, cc, weapons, variant) {

@@ -1,5 +1,5 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { coordsFromCell } from '../utilities.js'
+import { coordsFromCell } from '../core/utilities.js'
 import { DraggedShip } from './DraggedShip.js'
 import { Brush } from './Brush.js'
 import { cursor } from './cursor.js'

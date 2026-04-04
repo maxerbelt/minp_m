@@ -1,5 +1,5 @@
 import { SubMask } from './SubMask.js'
-import { minMaxXY } from '../utilities.js'
+import { minMaxXY } from '../core/utilities.js'
 
 export class SubBoard extends SubMask {
   constructor (offsetX, offsetY, width, height, base, template, depth) {

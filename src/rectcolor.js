@@ -1,5 +1,5 @@
-import { ColorPackedDraw } from './grid/colorpackeddraw.js'
-import { ColorPackedRectCanvas } from './ui/ColorPackedRectCanvas.js'
+import { ColorPackedDraw } from './ui/rectangle/colorpackeddraw.js'
+import { ColorPackedRectCanvas } from './ui/rectangle/ColorPackedRectCanvas.js'
 
 // Initialize grid and canvas controller
 let grid = null

@@ -1,4 +1,4 @@
-import { ActionsTri } from './actionsTri.js'
+import { ActionsTri } from './triangle/actionsTri.js'
 import { Indexer } from './indexer.js'
 
 // indexes a right triangle that fits inside an HxW rectangle

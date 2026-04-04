@@ -2,7 +2,7 @@
 
 /* global describe, it, test, expect, beforeEach, afterEach, jest */
 
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
 import { expect, jest } from '@jest/globals'
 

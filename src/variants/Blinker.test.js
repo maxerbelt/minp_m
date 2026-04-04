@@ -3,7 +3,7 @@ import { expect, jest } from '@jest/globals'
 
 /* global describe, jest, beforeEach, it, expect */
 
-import { Mask } from '../grid/mask.js'
+import { Mask } from '../grid/rectangle/mask.js'
 // Variables for dynamically imported modules
 let Blinker, Invariant
 

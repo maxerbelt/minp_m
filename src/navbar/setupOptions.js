@@ -8,7 +8,7 @@ import {
   setTerrainParams
 } from '../terrains/all/js/terrainUI.js'
 import { setupMapSelection, setupMapControl } from './setupMapSelection.js'
-import { validateWidth, validateHeight } from '../validSize.js'
+import { validateWidth, validateHeight } from '../terrains/all/js/validSize.js'
 import { ParameterManager } from './ParameterManager.js'
 import { MapValueStrategy } from './MapValueStrategy.js'
 

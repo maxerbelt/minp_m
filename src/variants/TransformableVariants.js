@@ -1,6 +1,5 @@
-import { shuffleArray } from '../utilities.js'
+import { shuffleArray } from '../core/utilities.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
-import { normalize } from './normalize.js'
 import { Variants } from './variants.js'
 
 export class TransformableVariants extends Variants {

@@ -1,5 +1,5 @@
 const MAX_LINES = 20
-import { randomElement } from '../utilities.js'
+import { randomElement } from '../core/utilities.js'
 export class StatusUI {
   constructor () {
     this.mode = document.getElementById('modeStatus')

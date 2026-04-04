@@ -18,7 +18,7 @@ import { setupEnemy, newGame } from './navbar/enemySetup.js'
 import { makeFriend } from './navbar/headerUtils.js'
 import { ButtonManager } from './ui/ButtonManager.js'
 import { KeyboardShortcutManager } from './navbar/KeyboardShortcutManager.js'
-import { UIVisibilityManager } from './UIVisibilityManager.js'
+import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
 
 const friend = makeFriend()

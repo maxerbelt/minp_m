@@ -1,5 +1,5 @@
-import { ColorPackedHexDraw } from './grid/colorpackedhexdraw.js'
-import { ColorPackedHexCanvas } from './ui/ColorPackedHexCanvas.js'
+import { ColorPackedHexDraw } from './grid/hexagon/colorpackedhexdraw.js'
+import { ColorPackedHexCanvas } from './ui/hexagon/ColorPackedHexCanvas.js'
 
 // Create ColorPackedHexDraw instance with canvas ID and parameters
 const grid = new ColorPackedHexDraw('hexcolor-c', 6, 300, 300, 25, 2)

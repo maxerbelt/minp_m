@@ -15,7 +15,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
   }
 })
 
-jest.unstable_mockModule('../grid/errorMsg.js', () => ({
+jest.unstable_mockModule('../core/errorMsg.js', () => ({
   errorMsg: jest.fn()
 }))
 

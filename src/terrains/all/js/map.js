@@ -1,11 +1,10 @@
-import { makeKey } from '../../../utilities.js'
+import { makeKey, lazy, randomElement } from '../../../core/utilities.js'
 import { oldToken } from './terrain.js'
 import { SubTerrainTrackers } from './SubTerrainTrackers.js'
 import { bh } from './bh.js'
 import { standardShot } from '../../../weapon/Weapon.js'
 import { Megabomb } from '../../sea/js/SeaWeapons.js'
-import { lazy, randomElement } from '../../../utilities.js'
-import { Mask } from '../../../grid/mask.js'
+import { Mask } from '../../../grid/rectangle/mask.js'
 
 // geometry helper
 export const inRange = (r, c) => element =>

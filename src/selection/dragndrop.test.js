@@ -33,7 +33,7 @@ jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   }
 }))
 
-jest.unstable_mockModule('../utilities.js', () => ({
+jest.unstable_mockModule('../core/utilities.js', () => ({
   coordsFromCell: jest.fn().mockReturnValue([2, 3])
 }))
 

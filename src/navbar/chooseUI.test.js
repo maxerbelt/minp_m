@@ -4,7 +4,7 @@
  */
 
 import { jest } from '@jest/globals'
-/* global describe, it, test, expect, beforeEach, afterEach */
+/* global describe, it, expect, beforeEach, afterEach */
 
 import { ChooseFromListUI, ChooseNumberUI } from './chooseUI.js'
 
@@ -57,7 +57,7 @@ describe('ChooseUI subclasses', () => {
       createdMock = true
     }
     const sel = document.createElement('select')
-    sel.id = 'test-select'
+    sel.id = 'it-select'
     document.body.appendChild(sel)
   })
   afterEach(() => {
@@ -67,8 +67,8 @@ describe('ChooseUI subclasses', () => {
     }
   })
 
-  test('ChooseFromListUI populates options and triggers change callback', () => {
-    const selectId = 'test-select'
+  it('ChooseFromListUI populates options and triggers change callback', () => {
+    const selectId = 'it-select'
     const list = ['alpha', 'beta', 'gamma']
     const ui = new ChooseFromListUI(list, selectId)
 
@@ -85,10 +85,10 @@ describe('ChooseUI subclasses', () => {
     expect(cb).toHaveBeenCalledWith('1', 'beta')
   })
 
-  test('ChooseNumberUI creates numeric range and respects default', () => {
-    const ui = new ChooseNumberUI(1, 3, 1, 'test-select')
+  it('ChooseNumberUI creates numeric range and respects default', () => {
+    const ui = new ChooseNumberUI(1, 3, 1, 'it-select')
     ui.setup(() => {})
-    const sel = document.getElementById('test-select')
+    const sel = document.getElementById('it-select')
     expect(sel.options.length).toBe(3)
     // default selection should be first (value '1') when no default provided
     expect(String(sel.options[0].value)).toBe('1')

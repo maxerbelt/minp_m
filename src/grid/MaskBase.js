@@ -1,6 +1,6 @@
 import { CanvasGrid } from './canvasGrid.js'
 import { ForLocation } from './ForLocation.js'
-import { StoreBig } from './storeBig.js'
+import { StoreBig } from './bitStore/storeBig.js'
 import { BitOperations } from './BitOperations.js'
 import { BorderRegions } from './BorderRegions.js'
 import { MorphologicalOps } from './MorphologicalOps.js'
