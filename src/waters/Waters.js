@@ -322,9 +322,8 @@ export class Waters {
     )
   }
   randomWeaponId () {
-    const randomShip = randomElement(
-      this.loadOut.getCurrentWeaponSystem().armedShips()
-    )
+    const armedShips = this.loadOut.getCurrentWeaponSystem().armedShips()
+    const randomShip = randomElement(armedShips)
     if (randomShip) {
       this.steps.addShip(randomShip)
     } else {

@@ -543,7 +543,7 @@ export class PlacementUI extends WatersUI {
 
   appendSplashCell (dragItem, power) {
     const cell = this.makeCell()
-    cell.classList.add(bh.spashTags[power])
+    cell.classList.add(bh.splashTags[power])
     dragItem.appendChild(cell)
   }
 

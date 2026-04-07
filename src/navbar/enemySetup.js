@@ -45,7 +45,7 @@ function highlightAoE (model, r, c) {
   const cells = weapon.splashAoe(map, newCoords)
   for (const [rr, cc, power] of cells) {
     if (map.inBounds(rr, cc)) {
-      const cellClass = bh.spashTags[power]
+      const cellClass = bh.splashTags[power]
       const cell = viewModel.gridCellAt(rr, cc)
       cell.classList.add(cellClass, 'target')
     }

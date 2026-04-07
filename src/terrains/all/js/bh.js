@@ -166,7 +166,7 @@ if (!bhLocal)
       }
       return null
     },
-    get spashTags () {
+    get splashTags () {
       return {
         0: 'destroy-vunerable',
         1: 'destroy-normal',

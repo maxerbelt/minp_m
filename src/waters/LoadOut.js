@@ -220,7 +220,9 @@ export class LoadOut {
     )
   }
   getWeaponBySystemId (rackId) {
-    return this.getLoadedWeapons().find(rack => rack.id === rackId)
+    const loadedWeapons = this.getLoadedWeapons()
+    const foundWeapon = loadedWeapons.find(rack => rack.id === rackId)
+    return foundWeapon
   }
   getAllRacks () {
     return this.ships.flatMap(ship => ship.getAllWeapons())

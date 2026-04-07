@@ -589,16 +589,7 @@ export class WatersUI {
   }
   removeHighlightAoE () {
     for (const el of this.board.children) {
-      el.classList.remove(
-        'destroy-vunerable',
-        'destroy-normal',
-        'destroy-hardened',
-        'reveal-vunerable',
-        'reveal-normal',
-        'reveal-hardened',
-        'weapon-path',
-        'target'
-      )
+      el.classList.remove('target', ...Object.values(bh.splashTags))
     }
   }
   buildBoardHover (onEnter, onLeave, thisRef, weaponSource) {
