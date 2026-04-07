@@ -242,6 +242,7 @@ class Enemy extends Waters {
     this.UI.removeHighlightAoE()
     if (this.loadOut.isNotArming()) return
 
+    this.loadOut.clearSelectedCoordinates()
     const cell = oppo.UI.gridCellAt(hintR, hintC)
     this.steps.addHint(oppo.UI, hintR, hintC, cell)
     this.shadowSource(hintR, hintC, this)
