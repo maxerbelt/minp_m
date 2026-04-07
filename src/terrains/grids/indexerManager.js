@@ -139,31 +139,30 @@ class ShapeManager {
   get display () {
     return this.#options?.['display']
   }
-  preload (types) {
-    // background only — no state change
+
+  async load (types) {
     for (const type of types) {
-      this.preLoadFor(type)
+      await this.loadFor(type)
     }
   }
-
-  preLoadFor (type) {
-    this.getBuilderFor(type)
-      .then(builder => {
-        this.currentIndexerBuilder = builder
-      })
-      .catch(err => {
-        console.error(`Failed to preload indexer for ${type}:`, err)
-      })
+  preload (types = ShapeManager.types) {
+    this.load(types).catch(err => {
+      console.error(`Failed to preload indexers for ${types.join(', ')}:`, err)
+    })
   }
-  loadOptionFor (type, option) {
-    option
-      .loadAllFor(type)
-      .then(builder => {
-        this.currentIndexerBuilder = builder
-      })
-      .catch(err => {
+
+  async loadFor (type) {
+    const builder = await this.getBuilderFor(type)
+    this.currentIndexerBuilder = builder
+  }
+
+  async loadAllOptionFor (type) {
+    const options = Object.values(this.with)
+    await Promise.all(options.map(option => option.loadAllFor(type))).catch(
+      err => {
         console.error(`Failed to preload options for ${type}:`, err)
-      })
+      }
+    )
   }
 }
 

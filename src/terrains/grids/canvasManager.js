@@ -5,14 +5,27 @@ class CanvasManager {
   #drawModuleCache = ShapeManager.newFilledCache({})
   #canvasCache = ShapeManager.newFilledCache({})
   #drawCache = ShapeManager.newFilledCache({})
-  #defaultCache = CanvasManager.newThrowingCacheWith(
-    type => ToTitleCase(type) + ' indexer not loaded'
+  #defaultDrawCache = CanvasManager.newThrowingCacheWith(
+    (type, subType) =>
+      ToTitleCase(type) + ' ' + ToTitleCase(subType) + ' Draw class not loaded'
+  )
+  #defaultCanvasCache = CanvasManager.newThrowingCacheWith(
+    (type, subType) =>
+      ToTitleCase(type) +
+      ' ' +
+      ToTitleCase(subType) +
+      ' Canvas class not loaded'
   )
   name = 'display'
   static newThrowingCacheWith (prop) {
-    return mapToObject(CanvasManager.subTypes, type, (key, type) => {
+    return mapToCache(ShapeManager.Types, key => {
+      return CanvasManager.newThrowingCacheWith(prop, key)
+    })
+  }
+  static newThrowingSubCacheWith (prop, type) {
+    return mapToCache(CanvasManager.subTypes, key => {
       return () => {
-        throw new Error(prop(type))
+        throw new Error(prop(type, key))
       }
     })
   }
@@ -357,6 +370,28 @@ class CanvasManager {
     return { canvas, draw }
   }
 
+  async loadAllFor (type, subTypes = this.subTypes) {
+    const results = {}
+    for (const subType of subTypes) {
+      const { canvas, draw } = await this.loadFor(type, subType)
+      results[subType] = { canvas, draw }
+    }
+    return results
+  }
+  preload (type, subTypes = this.subTypes) {
+    // background only — no state change
+    for (const subType of subTypes) {
+      CanvasManager.loadFor(type, subType)
+        .then(({ canvas, draw }) => {
+          this.canvas = canvas
+          this.draw = draw
+          this.currentSubType = subType
+        })
+        .catch(err => {
+          console.error(`Failed to preload display classes for ${type}:`, err)
+        })
+    }
+  }
   preload (type, subTypes) {
     // background only — no state change
     for (const subType of subTypes) {
@@ -364,14 +399,15 @@ class CanvasManager {
         .then(({ canvas, draw }) => {
           this.canvas = canvas
           this.draw = draw
+          this.currentSubType = subType
         })
         .catch(err => {
-          console.error(`Failed to preload indexer for ${type}:`, err)
+          console.error(`Failed to preload display classes for ${type}:`, err)
         })
     }
   }
 }
-function mapToObject (arr, type, propgetter) {
+function mapToCache (arr, type, propgetter) {
   return arr.reduce((acc, key) => {
     acc[key] = propgetter(key, type)
     return acc
