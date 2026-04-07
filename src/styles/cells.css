@@ -1,3 +1,7 @@
+:root {
+    --default-explode-image: url('../terrains/space/images/space-explosion.png');
+}
+
 .board-wrap {
     background: #0e1530;
     padding: 12px;
@@ -421,26 +425,12 @@
         ripple-fade 0.8s ease-out both;
 }
 
-.ripple.play.land {
-    border: 12px solid rgba(255, 130, 0, 0.7);
-}
 
-.ripple.play.sea {
-    border: 12px solid rgba(232, 204, 0, 0.7);
-}
-
-.ripple.play.space {
-    border: 12px solid rgba(255, 220, 0, 0.7);
-}
-
-.ripple.play.asteroid {
-    border: 12px solid rgba(0, 190, 244, 0.7);
-}
 
 .explosion {
     width: 128px;
     height: 128px;
-    background-image: var(--space-explode-image);
+    background-image: var(--default-explode-image);
     background-repeat: no-repeat;
     background-size: 512px 256px;
     z-index: 7;
@@ -536,7 +526,7 @@
     width: 128px;
     height: 128px;
 
-    background-image: var(--space-explode-image);
+    background-image: var(--default-explode-image);
     background-repeat: no-repeat;
     background-size: 512px 256px;
 

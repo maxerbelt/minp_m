@@ -221,3 +221,11 @@
     background-image: url('../images/boxtorpedool28.png');
     opacity: 0.6;
 }
+
+.ripple.play.land {
+    border: 12px solid rgba(255, 130, 0, 0.7);
+}
+
+.ripple.play.sea {
+    border: 12px solid rgba(232, 204, 0, 0.7);
+}

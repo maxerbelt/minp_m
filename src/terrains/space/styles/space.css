@@ -78,6 +78,14 @@
 
 }
 
+.ripple.play.space {
+    border: 12px solid rgba(255, 220, 0, 0.7);
+}
+
+.ripple.play.asteroid {
+    border: 12px solid rgba(0, 190, 244, 0.7);
+}
+
 .cell.launch,
 .board.launch {
     cursor: var(--launch-cursor-image) 16 6, pointer;
