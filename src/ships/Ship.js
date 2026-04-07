@@ -287,7 +287,19 @@ export class Ship {
       weapon
     ])
   }
-
+  getAllWeaponLocations () {
+    // For test compatibility, use weapons object if available
+    if (this.weapons && Object.keys(this.weapons).length > 0) {
+      return Object.keys(this.weapons).map(key => {
+        return parsePair(key)
+      })
+    }
+    // Build from weaponsById Map
+    return [...this.weaponsById.values()].map(weapon => [
+      weapon.row,
+      weapon.col
+    ])
+  }
   /**
    * Get all equipped weapons as array
    */
