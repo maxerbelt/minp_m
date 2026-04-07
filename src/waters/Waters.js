@@ -545,7 +545,7 @@ export class Waters {
     row,
     col,
     weaponSystem = this.loadOut.selectedWeapon,
-    launch = null
+    launch = this.loadOut.launch
   ) {
     const result = await this.loadOut.aimWeapon(
       bh.map,
