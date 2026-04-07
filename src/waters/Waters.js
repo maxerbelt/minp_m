@@ -480,8 +480,11 @@ export class Waters {
   selectWeaponId (cell, hintR, hintC, random, ship, oppo) {
     oppo = oppo || this.opponent
     if (ship) {
-      const [key, weapon] = randomElement(ship.getAllWeaponEntries())
-
+      const entries = ship.getAllWeaponEntries()
+      //  const [key, weapon]  = randomElement(entries)
+      const [key, weapon] = findClosestCoord(entries, hintR, hintC, ([k]) =>
+        parsePair(k)
+      )
       const [launchR, launchC] = parsePair(key)
       this.steps.addSource(
         oppo.UI,
@@ -500,10 +503,10 @@ export class Waters {
       this.steps.addSource(this.UI, 0, 0, cell || this.UI.gridCellAt(0, 0))
       return { launchR: 0, launchC: 0, weaponId: -1, hintR, hintC }
     }
-    const loaded = this.loadOut.getLoadedWeapons().map(w => w.id)
+    const loaded = new Set(this.loadOut.getLoadedWeapons().map(w => w.id))
     const filteredKeyIds = keyIds.filter(k => {
       const [, , weaponId] = parseTriple(k)
-      return loaded.includes(weaponId)
+      return loaded.has(weaponId)
     })
     const wkey = findClosestCoord(filteredKeyIds, hintR, hintC, k =>
       parseTriple(k)
