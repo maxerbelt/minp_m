@@ -710,3 +710,49 @@
 .cell.col-label {
     border: 0 none !important;
 }
+
+
+@media screen {
+    div#rules.info-wrap .cell:not(.empty) {
+        border: 1px solid rgb(90, 90, 70);
+        /* inside half */
+        outline: 1px solid rgb(90, 90, 70);
+        /* outside half */
+    }
+
+    div.print-preview .cell.destroy-vunerable {
+        background: #c6f683 !important;
+        opacity: 0.8;
+    }
+
+    div.print-preview .cell.destroy-normal {
+        background: #f5c46c !important;
+        opacity: 0.8;
+    }
+
+    div.print-preview .cell.destroy-hardened {
+        background: #f54197 !important;
+        opacity: 0.8;
+    }
+
+    div.print-preview .cell.reveal-vunerable {
+        background: #93ccf6 !important;
+        opacity: 0.8;
+    }
+
+    div.print-preview .cell.reveal-normal {
+        background: #8f8cf5 !important;
+        opacity: 0.8;
+    }
+
+    div.print-preview .cell.reveal-hardened {
+        background: #8d61de !important;
+        opacity: 0.8;
+    }
+
+    div.print-preview .cell.weapon-path {
+        background: #fd6d40;
+        opacity: 0.8;
+    }
+
+}
