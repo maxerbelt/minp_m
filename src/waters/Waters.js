@@ -481,10 +481,9 @@ export class Waters {
     oppo = oppo || this.opponent
     if (ship) {
       const entries = ship.getAllWeaponEntries()
-      //  const [key, weapon]  = randomElement(entries)
-      const [key, weapon] = findClosestCoord(entries, hintR, hintC, ([k]) =>
-        parsePair(k)
-      )
+      const [key, weapon] = random
+        ? randomElement(entries)
+        : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))
       const [launchR, launchC] = parsePair(key)
       this.steps.addSource(
         oppo.UI,

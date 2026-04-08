@@ -18,7 +18,7 @@ class MapList {
 
     this.currentRenameEntry = null
     this.listIncludes = '0'
-    
+
     // Setup rename dialog controls with ButtonManager
     const renameManager = new ButtonManager()
     renameManager.registerButtons({
@@ -153,13 +153,6 @@ class MapList {
     })
 
     return configs
-  }
-    const btn = document.createElement('button')
-    btn.id = name + '-' + idx.toString()
-    btn.textContent = name
-    btn.addEventListener('click', callback.bind(this, map, controls))
-    buttons.appendChild(btn)
-    return btn
   }
 
   addMiniMap (map, boardViewModel, entryContent, idx) {
