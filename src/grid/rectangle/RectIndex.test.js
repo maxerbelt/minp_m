@@ -2,6 +2,9 @@
 /* global describe, it, expect, beforeEach, afterEach */
 import { expect, jest } from '@jest/globals'
 import { RectIndex } from './RectIndex.js'
+import { Connect4 } from './Connect4.js'
+import { Connect4Diagonal } from './Connect4Diagonal.js'
+import { Connect8 } from './Connect8.js'
 import { AsciiGrid } from '../asciiGrid.js'
 
 describe('RectIndex', () => {
@@ -24,6 +27,57 @@ describe('RectIndex', () => {
 
     it('sets correct size as width * height', () => {
       expect(rectIndex.size).toBe(80)
+    })
+
+    it('creates connection objects for 4, 4diag, and 8', () => {
+      expect(rectIndex.connection['4']).toBeInstanceOf(Connect4)
+      expect(rectIndex.connection['4diag']).toBeInstanceOf(Connect4Diagonal)
+      expect(rectIndex.connection['8']).toBeInstanceOf(Connect8)
+    })
+
+    it('neighbors uses the default 8-connection set', () => {
+      expect(rectIndex.neighbors(1, 1)).toEqual([
+        [2, 1],
+        [0, 1],
+        [1, 2],
+        [1, 0],
+        [2, 2],
+        [0, 0],
+        [0, 2],
+        [2, 0]
+      ])
+    })
+
+    it('connection 4 returns orthogonal neighbors', () => {
+      expect(rectIndex.connection['4'].neighbors(1, 1)).toEqual([
+        [2, 1],
+        [0, 1],
+        [1, 2],
+        [1, 0]
+      ])
+    })
+
+    it('connection 4diag returns diagonal neighbors', () => {
+      expect(rectIndex.connection['4diag'].neighbors(1, 1)).toEqual([
+        [2, 2],
+        [0, 0],
+        [0, 2],
+        [2, 0]
+      ])
+    })
+
+    it('connection 8 area includes center and all neighbors', () => {
+      expect(rectIndex.connection['8'].area(1, 1)).toEqual([
+        [1, 1],
+        [2, 1],
+        [0, 1],
+        [1, 2],
+        [1, 0],
+        [2, 2],
+        [0, 0],
+        [0, 2],
+        [2, 0]
+      ])
     })
 
     it('creates instance with different dimensions', () => {

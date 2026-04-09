@@ -3,34 +3,14 @@ import { Indexer } from '../indexer.js'
 import { RectNormalCover } from './RectNormalCover.js'
 import { RectHalfCover } from './RectHalfCover.js'
 import { RectSuperCover } from './RectSuperCover.js'
+import { Connect4 } from './Connect4.js'
+import { Connect4Diagonal } from './Connect4Diagonal.js'
+import { Connect8 } from './Connect8.js'
 
 function mod (n, m) {
   return ((n % m) + m) % m
 }
 
-const othoNeighbors = {
-  E: [+1, 0],
-  W: [-1, 0],
-  N: [0, +1],
-  S: [0, -1]
-}
-
-const othoNeighborValues = Object.values(othoNeighbors)
-const diagNeighbors = {
-  SE: [+1, +1],
-  NW: [-1, -1],
-  SW: [-1, +1],
-  NE: [+1, -1]
-}
-const diagNeighborValues = Object.values(diagNeighbors)
-
-const neighborValues = [...othoNeighborValues, ...diagNeighborValues]
-
-const center = {
-  C: [0, 0]
-}
-const centerValues = Object.values(center)
-const areaValues = [...neighborValues, ...centerValues]
 export class RectIndex extends Indexer {
   constructor (width, height) {
     super(width * height)
@@ -38,11 +18,16 @@ export class RectIndex extends Indexer {
     this.height = height
     this._wrap = false
     this.validate = this.validateClamp
-
+    this.connectType = '8'
     this.cover = {
       normal: new RectNormalCover(this),
       half: new RectHalfCover(this),
       super: new RectSuperCover(this)
+    }
+    this.connection = {
+      4: new Connect4(this),
+      '4diag': new Connect4Diagonal(this),
+      8: new Connect8(this)
     }
   }
 
@@ -204,17 +189,21 @@ export class RectIndex extends Indexer {
       canFlipV: actions.applyMap(maps.fy) !== template
     }
   }
-  neighbors (q, r) {
-    return neighborValues.map(([qq, rr]) => [q + qq, r + rr])
+
+  neighbors (x, y) {
+    return this.connection[this.connectType].neighbors(x, y)
   }
-  othoNeighbors (q, r) {
-    return othoNeighborValues.map(([qq, rr]) => [q + qq, r + rr])
+
+  othoNeighbors (x, y) {
+    return this.connection['4'].neighbors(x, y)
   }
-  diagNeighbors (q, r) {
-    return diagNeighborValues.map(([qq, rr]) => [q + qq, r + rr])
+
+  diagNeighbors (x, y) {
+    return this.connection['4diag'].neighbors(x, y)
   }
-  area (q, r) {
-    return areaValues.map(([qq, rr]) => [q + qq, r + rr])
+
+  area (x, y) {
+    return this.connection['8'].area(x, y)
   }
 
   // ============================================================================

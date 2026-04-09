@@ -4,8 +4,9 @@ import { ActionsBase } from '../ActionsBase.js'
 
 export class Actions extends ActionsBase {
   constructor (width, height, mask = null) {
+    const side = Math.max(width, height)
     // square grid always uses a square dimension
-    super(Math.max(width, height), Math.max(width, height), mask)
+    super(side, side, mask)
 
     // lazily build the transform maps for the square
     lazy(this, 'transformMaps', () => {
