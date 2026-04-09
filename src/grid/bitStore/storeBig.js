@@ -769,13 +769,7 @@ export class StoreBig extends StoreBase {
     const rowBounds = this.findRowBounds(bitboard, gridHeight, gridWidth)
     if (!rowBounds) {
       // No occupied cells
-      return {
-        bitboard: zero,
-        newWidth: 0,
-        newHeight: 0,
-        minRow: 0,
-        minCol: 0
-      }
+      return StoreBig.emptyBoundingBox()
     }
 
     const colBounds = this.findColBounds(
@@ -786,13 +780,7 @@ export class StoreBig extends StoreBase {
     )
     if (!colBounds) {
       // No occupied cells in columns
-      return {
-        bitboard: zero,
-        newWidth: 0,
-        newHeight: 0,
-        minRow: 0,
-        minCol: 0
-      }
+      return StoreBig.emptyBoundingBox()
     }
 
     // Calculate new dimensions
@@ -819,6 +807,18 @@ export class StoreBig extends StoreBase {
       newHeight,
       minRow: rowBounds.minY,
       minCol: colBounds.minX
+    }
+  }
+  emptyBoundingBox () {
+    return StoreBig.emptyBoundingBox()
+  }
+  static emptyBoundingBox () {
+    return {
+      bitboard: zero,
+      newWidth: 0,
+      newHeight: 0,
+      minRow: 0,
+      minCol: 0
     }
   }
 

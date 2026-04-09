@@ -1,4 +1,15 @@
 import { Mask } from './mask.js'
+import { RectIndex } from './RectIndex.js'
+
+const rectIndexCache = new Map()
+
+function getRectIndexForDimensions (width, height) {
+  const cacheKey = `${width}x${height}`
+  if (!rectIndexCache.has(cacheKey)) {
+    rectIndexCache.set(cacheKey, new RectIndex(width, height))
+  }
+  return rectIndexCache.get(cacheKey)
+}
 
 /**
  * Redelmeier polyomino generator with proper D4 canonical normalization
@@ -43,17 +54,14 @@ export class RedelmeierGenerator {
    */
   getCanonicalForm (polyominoBits, width, height, store) {
     // Step 1: Minimize bounding box to origin
-    const boundingBox = this.getBoundingBox(polyominoBits, width, height, store)
-    if (!boundingBox) return [0n, 1, 1] // empty
 
-    const normalizedPolyomino = this.minimizeBoundingBoxToOrigin(
-      polyominoBits,
-      width,
-      height,
-      store
-    )
-    let boundingBoxWidth = boundingBox.maxX - boundingBox.minX + 1
-    let boundingBoxHeight = boundingBox.maxY - boundingBox.minY + 1
+    const {
+      bitboard: normalizedPolyomino,
+      newWidth: boundingBoxWidth,
+      newHeight: boundingBoxHeight
+    } = this.minimizeBoundingBoxToOrigin(polyominoBits, width, height, store)
+
+    if (!normalizedPolyomino) return [0n, 1, 1]
 
     // Step 2: Find minimal form under all 8 D4 symmetries
     return this.findCanonicalFormAmongD4Symmetries(
@@ -69,9 +77,8 @@ export class RedelmeierGenerator {
    * @private
    */
   minimizeBoundingBoxToOrigin (polyominoBits, width, height, store) {
-    if (!polyominoBits) return 0n
-    const { bitboard } = store.shrinkToOccupied(polyominoBits, width, height)
-    return bitboard
+    if (!polyominoBits) return store.emptyBoundingBox()
+    return store.shrinkToOccupied(polyominoBits, width, height)
   }
 
   /**
@@ -88,7 +95,8 @@ export class RedelmeierGenerator {
     let bestRepresentation = this.polyToString(
       normalizedPolyomino,
       boundingBoxWidth,
-      boundingBoxHeight
+      boundingBoxHeight,
+      store
     )
     let bestWidth = boundingBoxWidth
     let bestHeight = boundingBoxHeight
@@ -110,22 +118,22 @@ export class RedelmeierGenerator {
         store
       )
       if (!symmetryBoundingBox) continue
-
-      const minimizedSymmetry = this.minimizeBoundingBoxToOrigin(
+      const {
+        bitboard: minimizedSymmetry,
+        newWidth: minimizedWidth,
+        newHeight: minimizedHeight
+      } = this.minimizeBoundingBoxToOrigin(
         symmetryBits,
         symmetryWidth,
         symmetryHeight,
         store
       )
-      const minimizedWidth =
-        symmetryBoundingBox.maxX - symmetryBoundingBox.minX + 1
-      const minimizedHeight =
-        symmetryBoundingBox.maxY - symmetryBoundingBox.minY + 1
 
       const currentRepresentation = this.polyToString(
         minimizedSymmetry,
         minimizedWidth,
-        minimizedHeight
+        minimizedHeight,
+        store
       )
 
       if (currentRepresentation < bestRepresentation) {
@@ -143,11 +151,11 @@ export class RedelmeierGenerator {
    * Convert polyomino to binary string for lexicographic comparison
    * @private
    */
-  polyToString (polyominoBits, width, height) {
+  polyToString (polyominoBits, width, height, store) {
     let binaryRepresentation = ''
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        binaryRepresentation += this.cellAt(polyominoBits, x, y, width)
+        binaryRepresentation += this.cellAt(polyominoBits, x, y, width, store)
           ? '1'
           : '0'
       }
@@ -374,7 +382,7 @@ export class RedelmeierGenerator {
    */
   cellAt (polyominoBits, x, y, width, store) {
     const cellIndex = this.calculateCellIndex(x, y, width)
-    return ((polyominoBits >> BigInt(cellIndex)) & 1n) === 1n
+    return store.hasIdxSet(polyominoBits, cellIndex)
   }
 
   /**
@@ -383,7 +391,7 @@ export class RedelmeierGenerator {
    */
   setCellAt (polyominoBits, x, y, width, store) {
     const cellIndex = this.calculateCellIndex(x, y, width)
-    return polyominoBits | (1n << BigInt(cellIndex))
+    return store.setIdx(polyominoBits, cellIndex)
   }
 
   /**
@@ -438,26 +446,17 @@ export class RedelmeierGenerator {
 
   /**
    * Get adjacent cell coordinates based on connectivity type
+   * Implement using RectIndex.connection.4 or RectIndex.connection.8
    * @private
    */
   getAdjacentCellCoordinates (x, y, width, height) {
-    const adjacentCells = []
+    const rectIndex = getRectIndexForDimensions(width, height)
+    const connectionKey = this.connectivity === '8' ? 8 : 4
+    const neighborCells = rectIndex.connection[connectionKey].neighbors(x, y)
 
-    // 4-connectivity: orthogonal neighbors
-    if (y > 0) adjacentCells.push([x, y - 1])
-    if (y < height - 1) adjacentCells.push([x, y + 1])
-    if (x > 0) adjacentCells.push([x - 1, y])
-    if (x < width - 1) adjacentCells.push([x + 1, y])
-
-    // 8-connectivity: add diagonal neighbors
-    if (this.connectivity === '8') {
-      if (y > 0 && x > 0) adjacentCells.push([x - 1, y - 1])
-      if (y > 0 && x < width - 1) adjacentCells.push([x + 1, y - 1])
-      if (y < height - 1 && x > 0) adjacentCells.push([x - 1, y + 1])
-      if (y < height - 1 && x < width - 1) adjacentCells.push([x + 1, y + 1])
-    }
-
-    return adjacentCells
+    return neighborCells.filter(
+      ([nx, ny]) => nx >= 0 && nx < width && ny >= 0 && ny < height
+    )
   }
 
   /**
