@@ -121,15 +121,29 @@ export class ActionsBase {
 
   // default normalization delegates to store when available; subclasses
   // may override if custom behaviour is required
-  normalized (bits) {
+  normalized (bits, width = this.width, height = this.height) {
     const b = bits == null ? this.template : bits
     if (this.store && typeof this.store.normalizeUpLeft === 'function') {
-      return this.store.normalizeUpLeft(b, this.width, this.height)
+      return this.store.normalizeUpLeft(b, width, height)
     }
     // fallback: subclasses should override
     throw new Error('normalized() not implemented in subclass')
   }
+  canonicalForm (
+    maps = this.transformMaps,
+    bits = null,
+    width = this.width,
+    height = this.height
+  ) {
+    let best = null
+    for (const image of this.symetriesFor(maps, bits, width, height)) {
+      if (best === null || image < best) {
+        best = image
+      }
+    }
 
+    return best.toString()
+  }
   // helper that chooses the appropriate bitsIndices implementation
   _bitsIndices (b) {
     // Prefer cube over indexer if available
@@ -210,7 +224,12 @@ export class ActionsBase {
     return undefined
   }
 
-  applyMap (map = this._defaultMap(), bits = null) {
+  applyMap (
+    map = this._defaultMap(),
+    bits = null,
+    width = this.width,
+    height = this.height
+  ) {
     let out = this.store?.empty || 0n
     const b = bits == null ? this.template : bits
     for (const i of this._indices(b)) {
@@ -221,15 +240,21 @@ export class ActionsBase {
         out = this.store.setIdx(out, mappedIndex, color)
       }
     }
-    return this.normalized(out)
+    return this.normalized(out, width, height)
   }
-  orbitRaw (maps = this.transformMaps) {
+  orbitRaw (
+    maps = this.transformMaps,
+    bits = null,
+    width = this.width,
+    height = this.height
+  ) {
     if (!maps) return []
+    const b = bits == null ? this.template : bits
     if (Array.isArray(maps)) {
-      return maps.map(m => this.applyMap(m))
+      return maps.map(m => this.applyMap(m, b, width, height))
     }
     // object-style maps (square transforms)
-    return Object.values(maps).map(m => this.applyMap(m))
+    return Object.values(maps).map(m => this.applyMap(m, b, width, height))
   }
   orbit (maps = this.transformMaps) {
     if (maps === this.transformMaps) {
@@ -250,7 +275,15 @@ export class ActionsBase {
   get order () {
     return this.symmetries.length
   }
-
+  symetriesFor (
+    maps = this.transformMap,
+    bits = null,
+    width = this.width,
+    height = this.height
+  ) {
+    const imgs = this.orbitRaw(this.transformMaps, bits, width, height)
+    return [...new Set(imgs)]
+  }
   get symmetries () {
     if (this._symmetries) return [...this._symmetries]
     const imgs = this.orbit(this.transformMaps)
