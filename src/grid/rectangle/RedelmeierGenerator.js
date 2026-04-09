@@ -48,8 +48,8 @@ export class RedelmeierGenerator {
 
     const normalizedPolyomino = this.minimizeBoundingBoxToOrigin(
       polyominoBits,
-      boundingBox,
       width,
+      height,
       store
     )
     let boundingBoxWidth = boundingBox.maxX - boundingBox.minX + 1
@@ -68,28 +68,10 @@ export class RedelmeierGenerator {
    * Normalize polyomino by moving its bounding box to origin (0,0)
    * @private
    */
-  minimizeBoundingBoxToOrigin (polyominoBits, boundingBox, width, store) {
-    const { minX, minY, maxX, maxY } = boundingBox
-    const boundingBoxWidth = maxX - minX + 1
-    const boundingBoxHeight = maxY - minY + 1
-
-    let normalizedBits = 0n
-    for (let y = minY; y <= maxY; y++) {
-      for (let x = minX; x <= maxX; x++) {
-        if (this.cellAt(polyominoBits, x, y, width, store)) {
-          const normalizedX = x - minX
-          const normalizedY = y - minY
-          normalizedBits = this.setCellAt(
-            normalizedBits,
-            normalizedX,
-            normalizedY,
-            boundingBoxWidth,
-            store
-          )
-        }
-      }
-    }
-    return normalizedBits
+  minimizeBoundingBoxToOrigin (polyominoBits, width, height, store) {
+    if (!polyominoBits) return 0n
+    const { bitboard } = store.shrinkToOccupied(polyominoBits, width, height)
+    return bitboard
   }
 
   /**
@@ -131,8 +113,8 @@ export class RedelmeierGenerator {
 
       const minimizedSymmetry = this.minimizeBoundingBoxToOrigin(
         symmetryBits,
-        symmetryBoundingBox,
         symmetryWidth,
+        symmetryHeight,
         store
       )
       const minimizedWidth =
@@ -353,23 +335,29 @@ export class RedelmeierGenerator {
    * @private
    */
   getBoundingBox (polyominoBits, width, height, store) {
-    let minX = width
+    const minBounds = store.boundingBox(width, height, polyominoBits)
+    if (!minBounds) return null
+
     let maxX = -1
-    let minY = height
     let maxY = -1
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         if (this.cellAt(polyominoBits, x, y, width, store)) {
-          minX = Math.min(minX, x)
           maxX = Math.max(maxX, x)
-          minY = Math.min(minY, y)
           maxY = Math.max(maxY, y)
         }
       }
     }
 
-    return maxX >= 0 ? { minX, minY, maxX, maxY } : null
+    return maxX >= 0
+      ? {
+          minX: minBounds.minCol,
+          minY: minBounds.minRow,
+          maxX,
+          maxY
+        }
+      : null
   }
 
   /**

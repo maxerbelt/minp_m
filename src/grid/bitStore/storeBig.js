@@ -571,13 +571,18 @@ export class StoreBig extends StoreBase {
   }
 
   //(bitboard >> BigInt(bitPosition)) & rangeMask
-  findRowBounds (bitboard, gridHeight) {
+  findRowBounds (bitboard, gridHeight, gridWidth) {
     gridHeight = gridHeight || this.height || Number.POSITIVE_INFINITY
+    gridWidth = gridWidth || this.width || Number.POSITIVE_INFINITY
     let minRowIndex = gridHeight
     let maxRowIndex = -1
 
     for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-      const rowOccupancyMask = this.extractRowOccupancy(bitboard, rowIndex)
+      const rowOccupancyMask = this.extractRowOccupancy(
+        bitboard,
+        rowIndex,
+        gridWidth
+      )
 
       if (rowOccupancyMask !== 0n) {
         minRowIndex = Math.min(minRowIndex, rowIndex)
@@ -590,13 +595,14 @@ export class StoreBig extends StoreBase {
       : null
   }
 
-  extractRowOccupancy (bitboard, rowIndex) {
+  extractRowOccupancy (bitboard, rowIndex, gridWidth) {
     // Extract the contiguous row bits for the given row index using a row mask
-    const rowMaskForWidth = this.all.rowMask()
+    gridWidth = gridWidth || this.width
+    const rowMaskForWidth = this.all.rowMask(gridWidth)
     return this.extractRowAtIndex(
       bitboard,
       rowIndex,
-      this.width,
+      gridWidth,
       rowMaskForWidth
     )
   }
@@ -760,7 +766,7 @@ export class StoreBig extends StoreBase {
 
   shrinkToOccupied (bitboard, gridWidth, gridHeight) {
     // Find the bounding box of occupied cells
-    const rowBounds = this.findRowBounds(bitboard, gridHeight)
+    const rowBounds = this.findRowBounds(bitboard, gridHeight, gridWidth)
     if (!rowBounds) {
       // No occupied cells
       return {
