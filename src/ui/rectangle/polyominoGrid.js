@@ -1,7 +1,7 @@
 import {
   createOrthoPolyominoGenerator,
   createKingPolyominoGenerator
-} from '../../grid/RedelmeierGenerator.js'
+} from '../../grid/rectangle/RedelmeierGenerator.js'
 import { Mask } from '../../grid/rectangle/mask.js'
 import { RectDrawColor } from './rectdrawcolor.js'
 

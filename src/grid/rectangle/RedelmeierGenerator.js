@@ -1,4 +1,4 @@
-import { Mask } from './rectangle/mask.js'
+import { Mask } from './mask.js'
 
 /**
  * Redelmeier polyomino generator with proper D4 canonical normalization
@@ -18,6 +18,7 @@ export class RedelmeierGenerator {
       throw new Error("connectivity must be '4' or '8'")
     }
     this.connectivity = connectivity
+    this._boardTemplate = Mask.empty(3, 3)
   }
 
   /**
@@ -32,7 +33,7 @@ export class RedelmeierGenerator {
    */
   createBoard (maxCells) {
     const windowSize = this.calculateWindowSize(maxCells)
-    return Mask.empty(windowSize, windowSize)
+    return this._boardTemplate.expand(windowSize, windowSize)
   }
 
   /**
