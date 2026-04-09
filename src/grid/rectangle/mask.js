@@ -1,40 +1,23 @@
 import { randomElement, minMaxXY } from '../../core/utilities.js'
-import { MaskBase } from '../MaskBase.js'
-import { ShapeEnum } from '../shapeEnum.js'
-import { BlitOperation } from '../BlitOperation.js'
+import { BlitOperation } from '../operations/BlitOperation.js'
 import { SubMask } from '../SubMask.js'
 import { SubBoard } from '../subBoard.js'
 import { StoreBig } from '../bitStore/storeBig.js'
+import { RectMaskBase } from './RectMaskBase.js'
 
-export class Mask extends MaskBase {
-  constructor (width, height, bits, store, depth) {
-    super(ShapeEnum.rectangle(width, height), depth, bits, store)
-  }
-
+export class Mask extends RectMaskBase {
   get _blit () {
     if (!this.__blit) this.__blit = new BlitOperation(this)
     return this.__blit
   }
-  get area () {
-    return this.width * this.height
-  }
+
   emptyBitboard () {
     return 0n
   }
   defaultStore (depth) {
     return new StoreBig(depth, this.area, null, this.width, this.height)
   }
-  getTransformCapabilities () {
-    return this.indexer?.getTransformCapabilities(this) || {}
-  }
-  canRotate () {
-    const capabilities = this.getTransformCapabilities()
-    return capabilities.canRotate || false
-  }
-  canFlip () {
-    const capabilities = this.getTransformCapabilities()
-    return capabilities.canFlip || false
-  }
+
   get defaultVariant () {
     const defaultBits = this.actions?.defaultVariant
     if (defaultBits) {
@@ -43,109 +26,6 @@ export class Mask extends MaskBase {
       throw new Error('No default transform found for this shape')
     }
     return this
-  }
-  rotate () {
-    const rotated = this.actions?.rotate(this.bits)
-    if (rotated) {
-      this.bits = rotated
-    } else {
-      throw new Error('No non-symmetric rotation found for this shape')
-    }
-    return this
-  }
-  r90 () {
-    const rotated = this.actions?.r90Map(this.bits)
-    if (rotated) {
-      this.bits = rotated
-    } else {
-      throw new Error('No 90-degree rotation found for this shape')
-    }
-    return this
-  }
-  r180 () {
-    const rotated = this.actions?.r180Map(this.bits)
-    if (rotated) {
-      this.bits = rotated
-    } else {
-      throw new Error('No 180-degree rotation found for this shape')
-    }
-    return this
-  }
-  r270 () {
-    const rotated = this.actions?.r270Map(this.bits)
-    if (rotated) {
-      this.bits = rotated
-    } else {
-      throw new Error('No 270-degree rotation found for this shape')
-    }
-    return this
-  }
-  fx () {
-    const flipped = this.actions?.fxMap(this.bits)
-    if (flipped) {
-      this.bits = flipped
-    } else {
-      throw new Error('No horizontal flip found for this shape')
-    }
-    return this
-  }
-  fy () {
-    const flipped = this.actions?.fyMap(this.bits)
-    if (flipped) {
-      this.bits = flipped
-    } else {
-      throw new Error('No vertical flip found for this shape')
-    }
-    return this
-  }
-  rotateFlip () {
-    const rotated = this.actions?.rotateFlip(this.bits)
-    if (rotated) {
-      this.bits = rotated
-    } else {
-      throw new Error('No non-symmetric rotation found for this shape')
-    }
-    return this
-  }
-  rotateCCW () {
-    const rotated = this.actions?.rotateCCW(this.bits)
-    if (rotated) {
-      this.bits = rotated
-    } else {
-      throw new Error('No non-symmetric rotation found for this shape')
-    }
-    return this
-  }
-  flip () {
-    const flipped = this.actions?.flip(this.bits)
-    if (flipped) {
-      this.bits = flipped
-    } else {
-      throw new Error('No non-symmetric flip found for this shape')
-    }
-    return this
-  }
-
-  get actions () {
-    if (
-      !this._actions ||
-      !this.store.bitEqual(this._actions?.original?.bits, this.bits)
-    ) {
-      this._actions = this.indexer?.actions(this)
-    }
-    return this._actions
-  }
-
-  // ============================================================================
-  // Coordinate & Bit Position
-  // ============================================================================
-
-  /**
-   * Get bit position for rectangular coordinates (x, y)
-   * @private
-   */
-  bitPos (x, y) {
-    return this.store.bitPos(this.index(x, y))
   }
 
   // ============================================================================
@@ -173,20 +53,6 @@ export class Mask extends MaskBase {
    */
   test (x, y, color = 1) {
     return this.for(x, y).test(color)
-  }
-
-  /**
-   * Add (set) a cell - alias for set
-   */
-  add (x, y, color = 1) {
-    return this.set(x, y, color)
-  }
-
-  /**
-   * Clear (zero out) a cell at (x, y)
-   */
-  clear (x, y) {
-    return this.set(x, y, 0)
   }
 
   // ============================================================================
@@ -228,6 +94,20 @@ export class Mask extends MaskBase {
     if (!coords || coords.length === 0) return null
     return coords.map(c => Mask.fromCoordsSquare(c))
   }
+  static listFromXYcoords (coords) {
+    return Mask.listFromCoords(coords)
+  }
+  static listFromRCcoords (coords) {
+    if (!coords || coords.length === 0) return null
+    return coords.map(c => Mask.fromRCcoords(c))
+  }
+  static listFromXYcoordsSquare (coords) {
+    return Mask.listFromCoordsSquare(coords)
+  }
+  static listFromRCcoordsSquare (coords) {
+    if (!coords || coords.length === 0) return null
+    return coords.map(c => Mask.fromRCcoordsSquare(c))
+  }
   static fromCoords (coords, width = null, height = null) {
     const { maxX, maxY, depth } = minMaxXY(coords)
 
@@ -237,19 +117,22 @@ export class Mask extends MaskBase {
     msk.fromCoords(coords)
     return msk
   }
-  static fromCoordsInv (coords, width = null, height = null) {
-    const inv = coords.map(c => [c[1], c[0], c[2] || 1]) // Swap x and y
 
-    return Mask.fromCoords(inv, width, height)
-  }
   emptyOfSize (newWidth, newHeight) {
     const msk = new Mask(newWidth, newHeight, null, null, this.depth)
     return msk
   }
+  static fromXYcoordsSquare (coords, width = null) {
+    return Mask.fromCoordsSquare(coords, width)
+  }
+  static fromRCcoordsSquare (coords, width = null) {
+    return Mask.fromCoordsSquare(RectMaskBase.invertCoords(coords), width)
+  }
+
   static fromCoordsSquare (coords, width = null) {
     // Handle empty coordinates array
     if (!coords || coords.length === 0) {
-      return new Mask(1, 1, width, width, 2)
+      return new Mask(1, 1, 0n, null, 2)
     }
     const { maxX, maxY, depth } = minMaxXY(coords)
     const size = Math.max(maxX + 1, maxY + 1, width || -Infinity)

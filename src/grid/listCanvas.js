@@ -1,5 +1,3 @@
-import { bh } from '../terrains/all/js/bh.js'
-
 import {
   drawSegmentTo,
   drawSegmentUpTo,
@@ -10,10 +8,8 @@ import {
   intercepts
 } from './maskShape.js'
 import { GridBase } from './gridBase.js'
-import { coordsToGrid, coordsToOccBig } from './maskConvert.js'
+import { coordsToGrid, coordsToOccBig } from './coordsConvert.js'
 import { Actions } from './rectangle/actions.js'
-import { ShapeEnum } from './shapeEnum.js'
-
 export class ListCanvas extends GridBase {
   constructor (shape, list) {
     super(shape)
@@ -21,9 +17,7 @@ export class ListCanvas extends GridBase {
   }
   at (x, y) {
     if (!this.isValid(x, y)) return undefined
-    const item = this.list.find(([x1, y1]) => {
-      x === x1 && y === y1
-    })
+    const item = this.list.find(([x1, y1]) => x === x1 && y === y1)
     if (!item) return 0
     return item[2] || 1
   }
@@ -49,18 +43,10 @@ export class ListCanvas extends GridBase {
       yield [this.list[i][0], this.list[i][1], this.list[i][2] || 1, i, this]
     }
   }
-  static Rect (x, y, list) {
-    return new ListCanvas(ShapeEnum.rectangle(x, y), list || [])
-  }
-  static Tri (s, list) {
-    return new ListCanvas(ShapeEnum.triangle(s), list || [])
-  }
-  static Hex (r, list) {
-    return new ListCanvas(ShapeEnum.hexagon(r), list || [])
-  }
+
   *values () {
-    for (let i = 0; i < this.list.length; i++) {
-      yield this.list[i][2] || 1
+    for (const element of this.list) {
+      yield element[2] || 1
     }
   }
   *keys () {
@@ -118,9 +104,4 @@ export class ListCanvas extends GridBase {
     }
     return out
   }
-}
-export function getListCanvas () {
-  const map = bh.map
-  const points = ListCanvas.Rect(map.cols, map.rows)
-  return points
 }

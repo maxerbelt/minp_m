@@ -2,7 +2,7 @@
 
 /* global beforeEach, describe, it, expect */
 import { Mask } from './mask.js'
-import { coordsToZMasks } from '../maskConvert.js'
+import { coordsToZMasks } from './maskConvert.js'
 
 import { beforeEach, describe, it, expect, jest } from '@jest/globals'
 

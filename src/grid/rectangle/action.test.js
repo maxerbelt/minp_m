@@ -6,7 +6,7 @@ import { beforeEach, describe, it, expect } from '@jest/globals'
 //
 import { Actions } from './actions.js'
 import { Mask } from './mask.js'
-import { coordsToOccBig } from '../maskConvert.js'
+import { coordsToOccBig } from '../coordsConvert.js'
 import { errorMsg } from '../../core/errorMsg.js'
 
 function serializedData (data) {

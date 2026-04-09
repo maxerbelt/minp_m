@@ -1,6 +1,6 @@
 import { Megabomb, Kinetic, Torpedo, Sweep } from '../../sea/js/SeaWeapons.js'
 import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/Weapon.js'
-import { getListCanvas } from '../../../grid/listCanvas.js'
+import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 
 export class Missile extends Megabomb {
   constructor (ammo) {
@@ -163,7 +163,7 @@ export class RailBolt extends Kinetic {
   }
 }
 function getLinePoints (y1, x1, y2, x2, color) {
-  const points = getListCanvas()
+  const points = RectListCanvas.BhMapList()
   // points.drawSegmentTo(x1, y1, x2, y2, color)
   points.drawRay(x1, y1, x2, y2, color)
   return points.list

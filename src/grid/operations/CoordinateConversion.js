@@ -7,7 +7,9 @@ export class CoordinateConversion {
     this.mask = maskInstance
     this.store = maskInstance.store
   }
-
+  static inverted (coords) {
+    return coords.map(c => [c[1], c[0], c[2] || 1])
+  }
   /**
    * Convert current bits to coordinate array
    */

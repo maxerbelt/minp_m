@@ -1,12 +1,12 @@
 import { CanvasGrid } from './canvasGrid.js'
 import { ForLocation } from './ForLocation.js'
 import { StoreBig } from './bitStore/storeBig.js'
-import { BitOperations } from './BitOperations.js'
-import { BorderRegions } from './BorderRegions.js'
-import { MorphologicalOps } from './MorphologicalOps.js'
-import { MaskValidation } from './MaskValidation.js'
+import { BitOperations } from './operations/BitOperations.js'
+import { BorderRegions } from './operations/BorderRegions.js'
+import { MorphologicalOps } from './operations/MorphologicalOps.js'
+import { MaskValidation } from './operations/MaskValidation.js'
 import { AsciiRepresentation } from './AsciiRepresentation.js'
-import { CoordinateConversion } from './CoordinateConversion.js'
+import { CoordinateConversion } from './operations/CoordinateConversion.js'
 
 export class MaskBase extends CanvasGrid {
   constructor (shape, depth = 1, bits, store) {
@@ -66,13 +66,44 @@ export class MaskBase extends CanvasGrid {
     return this.store.bitPos(this.index(...args))
   }
 
-  set (...args) {
-    return this.store.setIdx(this.bits, this.index(...args), 1)
+  // ============================================================================
+  // Cell Access - set, at, test, clear, add
+  // ============================================================================
+
+  /**
+   * Set cell value at (x, y) with optional color
+   */
+  set (x, y, color = 1) {
+    const loc = this.for(x, y)
+    this.bits = loc.set(color)
+    return this.bits
+  }
+  /**
+   * Test if cell at (x, y) matches color value
+   */
+  test (x, y, color = 1) {
+    return this.for(x, y).test(color)
   }
 
-  at (...args) {
-    const pos = this.bitPos(...args)
-    return this.store.numValue(this.bits, pos)
+  /**
+   * Add (set) a cell - alias for set
+   */
+  add (x, y, color = 1) {
+    return this.set(x, y, color)
+  }
+
+  /**
+   * Clear (zero out) a cell at (x, y)
+   */
+  clear (x, y) {
+    return this.set(x, y, 0)
+  }
+
+  /**
+   * Get cell value at (x, y)
+   */
+  at (x, y) {
+    return this.for(x, y).at()
   }
 
   for (...args) {
@@ -84,7 +115,7 @@ export class MaskBase extends CanvasGrid {
   }
 
   get size () {
-    return this._size !== undefined ? this._size : this.occupancy
+    return this._size ? this._size : this.occupancy
   }
   set size (v) {
     const nv = Number(v)

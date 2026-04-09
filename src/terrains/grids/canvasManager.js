@@ -1,25 +1,25 @@
 import { ShapeManager } from './indexerManager.js'
-import { ToTitleCase } from '../../core/utils.js'
+import { toTitleCase } from '../../core/utils.js'
 class CanvasManager {
-  #moduleCache = ShapeManager.newFilledCache({})
-  #drawModuleCache = ShapeManager.newFilledCache({})
-  #canvasCache = ShapeManager.newFilledCache({})
-  #drawCache = ShapeManager.newFilledCache({})
+  #moduleCache = ShapeManager.newCacheWith(() => ({}))
+  #drawModuleCache = ShapeManager.newCacheWith(() => ({}))
+  #canvasCache = ShapeManager.newCacheWith(() => ({}))
+  #drawCache = ShapeManager.newCacheWith(() => ({}))
   #defaultDrawCache = CanvasManager.newThrowingCacheWith(
     (type, subType) =>
-      ToTitleCase(type) + ' ' + ToTitleCase(subType) + ' Draw class not loaded'
+      toTitleCase(type) + ' ' + toTitleCase(subType) + ' Draw class not loaded'
   )
   #defaultCanvasCache = CanvasManager.newThrowingCacheWith(
     (type, subType) =>
-      ToTitleCase(type) +
+      toTitleCase(type) +
       ' ' +
-      ToTitleCase(subType) +
+      toTitleCase(subType) +
       ' Canvas class not loaded'
   )
   name = 'display'
   static newThrowingCacheWith (prop) {
-    return mapToCache(ShapeManager.Types, key => {
-      return CanvasManager.newThrowingCacheWith(prop, key)
+    return mapToCache(ShapeManager.types, key => {
+      return CanvasManager.newThrowingSubCacheWith(prop, key)
     })
   }
   static newThrowingSubCacheWith (prop, type) {
@@ -344,7 +344,7 @@ class CanvasManager {
   }
 
   async getCanvasBuilder (type, subType) {
-    let builder = this._canvasCache[type][subType]
+    let builder = this.#canvasCache[type][subType]
     if (builder) return builder
     const module =
       this.#moduleCache[type][subType] || (await CanvasManager.loaders[type]())
@@ -381,21 +381,7 @@ class CanvasManager {
   preload (type, subTypes = this.subTypes) {
     // background only — no state change
     for (const subType of subTypes) {
-      CanvasManager.loadFor(type, subType)
-        .then(({ canvas, draw }) => {
-          this.canvas = canvas
-          this.draw = draw
-          this.currentSubType = subType
-        })
-        .catch(err => {
-          console.error(`Failed to preload display classes for ${type}:`, err)
-        })
-    }
-  }
-  preload (type, subTypes) {
-    // background only — no state change
-    for (const subType of subTypes) {
-      CanvasManager.loadFor(type, subType)
+      this.loadFor(type, subType)
         .then(({ canvas, draw }) => {
           this.canvas = canvas
           this.draw = draw
@@ -408,6 +394,10 @@ class CanvasManager {
   }
 }
 function mapToCache (arr, type, propgetter) {
+  if (typeof propgetter !== 'function') {
+    propgetter = type
+    type = undefined
+  }
   return arr.reduce((acc, key) => {
     acc[key] = propgetter(key, type)
     return acc

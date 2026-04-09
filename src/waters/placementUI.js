@@ -652,7 +652,7 @@ export class PlacementUI extends WatersUI {
 
   buildDragWeapon (weapon, container) {
     const cells = weapon.dragShape.map(([r, c, value]) => [r, c, value + 1])
-    const board = Mask.fromCoordsInv(cells)
+    const board = Mask.fromRCcoords(cells)
     const dragShip = document.createElement('div')
     dragShip.className = 'drag-ship'
     dragShip.dataset.letter = weapon.letter

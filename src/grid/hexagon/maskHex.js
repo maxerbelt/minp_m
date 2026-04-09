@@ -1,7 +1,7 @@
 import { ActionsHex } from './actionHex.js'
 import { MaskBase } from '../MaskBase.js'
 import { ShapeEnum } from '../shapeEnum.js'
-import { CoordinateConversion } from '../CoordinateConversion.js'
+import { CoordinateConversion } from '../operations/CoordinateConversion.js'
 
 export class MaskHex extends MaskBase {
   constructor (radius, bits, store) {

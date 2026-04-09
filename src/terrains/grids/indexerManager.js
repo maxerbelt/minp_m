@@ -1,11 +1,11 @@
-import { ToTitleCase } from '../../core/utils.js'
+import { toTitleCase } from '../../core/utils.js'
 
 class ShapeManager {
   #options = {}
   #moduleCache = {}
   #builderCache = {}
   #defaultCache = ShapeManager.newThrowingCacheWith(
-    type => ToTitleCase(type) + ' indexer not loaded'
+    type => toTitleCase(type) + ' indexer not loaded'
   )
   state = 'idle'
   current = null

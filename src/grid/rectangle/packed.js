@@ -1,17 +1,16 @@
-import { MaskBase } from '../MaskBase.js'
 import { lazy } from '../../core/utilities.js'
 import { buildTransformMaps } from './buildTransformMaps.js'
-import { ShapeEnum } from '../shapeEnum.js'
 import { Store32 } from '../bitStore/store32.js'
 import { BitMath } from '../bitMath.js'
+import { RectMaskBase } from './RectMaskBase.js'
 
-export class Packed extends MaskBase {
+export class Packed extends RectMaskBase {
   constructor (width, height, bits, store, depth = 4) {
     const bitlength = BitMath.bitLength32(depth)
     store =
       store || new Store32(depth, width * height, bitlength, width, height)
     bits = bits || store.newWords()
-    super(ShapeEnum.rectangle(width, height), depth, bits, store)
+    super(width, height, bits, store, depth)
     this.words = store.words
     lazy(this, 'transformMaps', () => {
       return buildTransformMaps(this.width, this.height)
@@ -35,75 +34,6 @@ export class Packed extends MaskBase {
   emptyOfSize (newWidth, newHeight) {
     const msk = new Packed(newWidth, newHeight, null, null, this.depth)
     return msk
-  }
-  rotate () {
-    const rotated = this.actions?.rotate(this)
-    if (rotated) {
-      this.bits = rotated.bits
-    } else {
-      throw new Error('No non-symmetric rotation found for this shape')
-    }
-  }
-  rotateFlip () {
-    const rotated = this.actions?.rotateFlip(this)
-    if (rotated) {
-      this.bits = rotated.bits
-    } else {
-      throw new Error('No non-symmetric rotation found for this shape')
-    }
-  }
-  rotateCCW () {
-    const rotated = this.actions?.rotateCCW(this)
-    if (rotated) {
-      this.bits = rotated.bits
-    } else {
-      throw new Error('No non-symmetric rotation found for this shape')
-    }
-  }
-  flip () {
-    const flipped = this.actions?.flip(this)
-    if (flipped) {
-      this.bits = flipped.bits
-    } else {
-      throw new Error('No non-symmetric flip found for this shape')
-    }
-  }
-  canRotate () {
-    const capabilities = this.getTransformCapabilities()
-    return capabilities.canRotate || false
-  }
-  canFlip () {
-    const capabilities = this.getTransformCapabilities()
-    return capabilities.canFlip || false
-  }
-  get actions () {
-    if (
-      !this._actions ||
-      !this.store.bitEqual(this._actions?.original?.bits, this.bits)
-    ) {
-      this._actions = this.indexer?.actions(this)
-    }
-    return this._actions
-  }
-  getTransformCapabilities () {
-    return this.indexer?.getTransformCapabilities(this) || {}
-  }
-  // ============================================================================
-  // Indexing & Bit Positioning
-  // ============================================================================
-
-  /**
-   * Convert rectangular (x, y) to linear index
-   */
-  index (x, y) {
-    return y * this.width + x
-  }
-
-  /**
-   * Get bit position in store for rectangular coordinates
-   */
-  bitPos (x, y) {
-    return this.store.bitPos(this.index(x, y))
   }
 
   /**

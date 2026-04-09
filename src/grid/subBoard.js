@@ -172,6 +172,18 @@ export class SubBoard extends SubMask {
     sb.copyFromCoords(coords)
     return sb
   }
+  fromXYcoords (coords, base, template, offsetX = 0, offsetY = 0) {
+    this.fromCoords(coords, base, template, offsetX, offsetY)
+  }
+  fromRCcoords (coords, base, template, offsetX = 0, offsetY = 0) {
+    this.fromCoords(
+      coords.map(c => [c[1], c[0], c[2] || 1]),
+      base,
+      template,
+      offsetX,
+      offsetY
+    )
+  }
   static fromCoordsSquare (coords, base, template) {
     const { minX, maxX, minY, maxY, depth, hasColor } = minMaxXY(coords)
     const size = Math.max(maxX - minX + 1, maxY - minY + 1)

@@ -24,7 +24,7 @@ const mockGrid = [
   ['.', 'b']
 ]
 
-jest.unstable_mockModule('./maskConvert.js', () => ({
+jest.unstable_mockModule('./coordsConvert.js', () => ({
   coordsToGrid: jest.fn(() => mockGrid),
   coordsToOccBig: jest.fn(() => 0n)
 }))
@@ -32,7 +32,7 @@ jest.unstable_mockModule('./maskConvert.js', () => ({
 const { ListCanvas } = await import('./listCanvas.js')
 const { drawSegmentTo, drawPie2, drawRay, drawSegmentFor, drawLineInfinite } =
   await import('./maskShape.js')
-const { coordsToGrid } = await import('./maskConvert.js')
+const { coordsToGrid } = await import('./coordsConvert.js')
 
 describe('ListCanvas', () => {
   test('set adds entries to list', () => {

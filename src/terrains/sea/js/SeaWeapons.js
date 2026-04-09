@@ -1,17 +1,18 @@
 import { bh } from '../../../terrains/all/js/bh.js'
 import { coordsFromCell, shuffleArray } from '../../../core/utilities.js'
 import { Weapon, WeaponCatelogue } from '../../../weapon/Weapon.js'
-import { getListCanvas } from '../../../grid/listCanvas.js'
+import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 import { Delay } from '../../../core/Delay.js'
-export class Megabomb extends Weapon {
+
+export class Bomb extends Weapon {
   constructor (ammo, name, letter) {
-    super(name || 'Megabomb', letter || 'M', true, true, 1)
+    super(name || 'Bomb', letter || '%', true, true, 1)
     this.ammo = ammo
     this.cursors = ['bomb']
     this.hints = ['Click On Square To Drop Bomb']
     this.buttonHtml = '<span class="shortcut">M</span>ega Bomb'
     this.tip =
-      'drag a megabomb on to the map to increase the number of times you can drop bombs'
+      'drag a bomb on to the map to increase the number of times you can drop bombs'
     this.hasFlash = true
     this.tag = 'mega'
     this.splashSize = 2.7
@@ -66,21 +67,40 @@ export class Megabomb extends Weapon {
     return result
   }
 }
+
 function getIntercepts (y1, x1, y2, x2) {
-  const points = getListCanvas()
+  const points = RectListCanvas.BhMapList()
   return points.intercepts(x1, y1, x2, y2)
 }
 function getExtendedLinePoints (y1, x1, y2, x2, color) {
-  const points = getListCanvas()
+  const points = RectListCanvas.BhMapList()
   points.drawLineInfinite(x1, y1, x2, y2, color)
   return points.list
 }
 function getLinePoints (y1, x1, y2, x2, color) {
-  const points = getListCanvas()
+  const points = RectListCanvas.BhMapList()
   // points.drawSegmentTo(x1, y1, x2, y2, color)
   points.drawRay(x1, y1, x2, y2, color)
   return points.list
 }
+
+export class Megabomb extends Bomb {
+  constructor (ammo, name, letter) {
+    super(ammo, name || 'Megabomb', letter || 'M')
+
+    this.hints = ['Click On Square To Drop Bomb']
+    this.buttonHtml = '<span class="shortcut">M</span>ega Bomb'
+    this.tip =
+      'drag a megabomb on to the map to increase the number of times you can drop bombs'
+
+    this.tag = 'mega'
+  }
+  clone (ammo) {
+    ammo = ammo || this.ammo
+    return new Megabomb(ammo)
+  }
+}
+
 export class Kinetic extends Weapon {
   constructor (ammo, name, letter) {
     super(name || 'Kinetic Strike', letter || 'K', true, true, 2)
@@ -394,7 +414,7 @@ export class Flack extends Weapon {
   }
 }
 function getPieSegmentCells (x1, y1, x2, y2, radius = 4, spreadDeg = 22.5) {
-  const points = getListCanvas()
+  const points = RectListCanvas.BhMapList()
   points.drawPie2(x1, y1, x2, y2, radius, this, spreadDeg)
   return points.list
 }

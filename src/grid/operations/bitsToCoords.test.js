@@ -1,7 +1,7 @@
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach, afterEach, jest */
 import { CoordinateConversion } from './CoordinateConversion.js'
-import { Mask } from './rectangle/mask.js'
+import { Mask } from '../rectangle/mask.js'
 
 describe('CoordinateConversion bitsToCoordinates', () => {
   let mask
