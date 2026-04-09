@@ -1,5 +1,6 @@
 import { Mask } from './mask.js'
 import { RectIndex } from './RectIndex.js'
+import { Actions } from './actions.js'
 
 const rectIndexCache = new Map()
 
@@ -91,60 +92,56 @@ export class RedelmeierGenerator {
     boundingBoxHeight,
     store
   ) {
-    let bestPolyomino = normalizedPolyomino
-    let bestRepresentation = this.polyToString(
-      normalizedPolyomino,
+    // Create a Mask for the normalized polyomino
+    const mask = new Mask(
       boundingBoxWidth,
       boundingBoxHeight,
-      store
+      normalizedPolyomino,
+      store,
+      1
     )
-    let bestWidth = boundingBoxWidth
-    let bestHeight = boundingBoxHeight
+    const actions = new Actions(boundingBoxWidth, boundingBoxHeight, mask)
+    const orbit = actions.orbit()
 
-    const d4Symmetries = Array.from(
-      this.generateD4Forms(
-        normalizedPolyomino,
+    let best = null
+    let bestBits = null
+    let bestWidth = 0
+    let bestHeight = 0
+
+    for (const sym of orbit) {
+      const bb = actions.store.boundingBox(
         boundingBoxWidth,
         boundingBoxHeight,
-        store
+        sym
       )
-    )
+      if (!bb) continue
 
-    for (const [symmetryBits, symmetryWidth, symmetryHeight] of d4Symmetries) {
-      const symmetryBoundingBox = this.getBoundingBox(
-        symmetryBits,
-        symmetryWidth,
-        symmetryHeight,
-        store
-      )
-      if (!symmetryBoundingBox) continue
-      const {
-        bitboard: minimizedSymmetry,
-        newWidth: minimizedWidth,
-        newHeight: minimizedHeight
-      } = this.minimizeBoundingBoxToOrigin(
-        symmetryBits,
-        symmetryWidth,
-        symmetryHeight,
-        store
-      )
+      const w = bb.maxCol + 1
+      const h = bb.maxRow + 1
+      const str = this.polyToString(sym, w, h, actions.store)
 
-      const currentRepresentation = this.polyToString(
-        minimizedSymmetry,
-        minimizedWidth,
-        minimizedHeight,
-        store
-      )
-
-      if (currentRepresentation < bestRepresentation) {
-        bestPolyomino = minimizedSymmetry
-        bestRepresentation = currentRepresentation
-        bestWidth = minimizedWidth
-        bestHeight = minimizedHeight
+      if (best === null || str < best) {
+        best = str
+        bestBits = sym
+        bestWidth = w
+        bestHeight = h
       }
     }
 
-    return [bestPolyomino, bestWidth, bestHeight]
+    if (!bestBits) return [0n, 1, 1]
+
+    // Extract the minimized bitboard
+    let minimizedBits = 0n
+    for (let y = 0; y < bestHeight; y++) {
+      for (let x = 0; x < bestWidth; x++) {
+        if (this.cellAt(bestBits, x, y, boundingBoxWidth, actions.store)) {
+          const index = y * bestWidth + x
+          minimizedBits |= 1n << BigInt(index)
+        }
+      }
+    }
+
+    return [minimizedBits, bestWidth, bestHeight]
   }
 
   /**
@@ -161,180 +158,6 @@ export class RedelmeierGenerator {
       }
     }
     return binaryRepresentation
-  }
-
-  /**
-   * Generate all 8 D4 symmetries
-   * @private
-   */
-  *generateD4Forms (polyominoBits, width, height, store) {
-    yield [polyominoBits, width, height]
-
-    if (width === height) {
-      yield* this.generateSquarePolyominoSymmetries(polyominoBits, width, store)
-    } else {
-      yield* this.generateRectangularPolyominoSymmetries(
-        polyominoBits,
-        width,
-        height,
-        store
-      )
-    }
-  }
-
-  /**
-   * Generate all 4 rotations and 4 rotated-flipped forms for square polyominoes
-   * @private
-   */
-  *generateSquarePolyominoSymmetries (polyominoBits, size, store) {
-    // 4 rotations
-    let rotatedForm = polyominoBits
-    for (
-      let rotationIteration = 0;
-      rotationIteration < 3;
-      rotationIteration++
-    ) {
-      rotatedForm = this.rotate90CW(rotatedForm, size, size, store)
-      yield [rotatedForm, size, size]
-    }
-
-    // Flip then 4 rotations
-    let flippedForm = this.flipHorizontal(polyominoBits, size, size, store)
-    yield [flippedForm, size, size]
-
-    rotatedForm = flippedForm
-    for (
-      let rotationIteration = 0;
-      rotationIteration < 3;
-      rotationIteration++
-    ) {
-      rotatedForm = this.rotate90CW(rotatedForm, size, size, store)
-      yield [rotatedForm, size, size]
-    }
-  }
-
-  /**
-   * Generate all rotations and flipped rotations for rectangular polyominoes
-   * Note: rotations swap width and height
-   * @private
-   */
-  *generateRectangularPolyominoSymmetries (polyominoBits, width, height, store) {
-    // Generate 4 rotations (each rotation swaps dimensions)
-    let currentWidth = width
-    let currentHeight = height
-    let rotatedForm = polyominoBits
-
-    // Rotate 90°
-    rotatedForm = this.rotate90CW(
-      rotatedForm,
-      currentWidth,
-      currentHeight,
-      store
-    )
-    yield [rotatedForm, currentHeight, currentWidth]
-
-    // Rotate 180°
-    currentWidth = currentHeight
-    currentHeight = width
-    rotatedForm = this.rotate90CW(
-      rotatedForm,
-      currentWidth,
-      currentHeight,
-      store
-    )
-    yield [rotatedForm, currentHeight, currentWidth]
-
-    // Rotate 270°
-    currentWidth = width
-    currentHeight = height
-    rotatedForm = this.rotate90CW(
-      rotatedForm,
-      currentWidth,
-      currentHeight,
-      store
-    )
-    yield [rotatedForm, currentHeight, currentWidth]
-
-    // Flip and generate rotations
-    let flippedForm = this.flipHorizontal(polyominoBits, width, height, store)
-    yield [flippedForm, width, height]
-
-    currentWidth = width
-    currentHeight = height
-    rotatedForm = flippedForm
-
-    // Flipped + Rotate 90°
-    rotatedForm = this.rotate90CW(
-      rotatedForm,
-      currentWidth,
-      currentHeight,
-      store
-    )
-    yield [rotatedForm, currentHeight, currentWidth]
-
-    // Flipped + Rotate 180°
-    currentWidth = currentHeight
-    currentHeight = width
-    rotatedForm = this.rotate90CW(
-      rotatedForm,
-      currentWidth,
-      currentHeight,
-      store
-    )
-    yield [rotatedForm, currentHeight, currentWidth]
-
-    // Flipped + Rotate 270°
-    currentWidth = width
-    currentHeight = height
-    rotatedForm = this.rotate90CW(
-      rotatedForm,
-      currentWidth,
-      currentHeight,
-      store
-    )
-    yield [rotatedForm, currentHeight, currentWidth]
-  }
-
-  /**
-   * Rotate polyomino bits 90° clockwise
-   * @private
-   */
-  rotate90CW (polyominoBits, width, height, store) {
-    let rotatedBits = 0n
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (this.cellAt(polyominoBits, x, y, width, store)) {
-          // (x,y) -> (height-1-y, x) in rotated system
-          const rotatedX = height - 1 - y
-          const rotatedY = x
-          rotatedBits = this.setCellAt(
-            rotatedBits,
-            rotatedX,
-            rotatedY,
-            height,
-            store
-          )
-        }
-      }
-    }
-    return rotatedBits
-  }
-
-  /**
-   * Flip polyomino horizontally
-   * @private
-   */
-  flipHorizontal (polyominoBits, width, height, store) {
-    let flippedBits = 0n
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (this.cellAt(polyominoBits, x, y, width, store)) {
-          const flippedX = width - 1 - x
-          flippedBits = this.setCellAt(flippedBits, flippedX, y, width, store)
-        }
-      }
-    }
-    return flippedBits
   }
 
   /**
