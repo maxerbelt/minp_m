@@ -46,6 +46,22 @@ export class RectIndex extends Indexer {
     }
   }
 
+  step (...args) {
+    return this.cover.normal.step(...args)
+  }
+
+  stepMove (...args) {
+    return this.cover.normal.stepMove(...args)
+  }
+
+  *yieldSuperCoverCornerCells (...args) {
+    return yield* this.cover.super.yieldSuperCoverCornerCells(...args)
+  }
+
+  *yieldHalfCoverCornerCells (...args) {
+    return yield* this.cover.half.yieldHalfCoverCornerCells(...args)
+  }
+
   *line (...args) {
     return yield* this.cover.normal.line(...args)
   }
