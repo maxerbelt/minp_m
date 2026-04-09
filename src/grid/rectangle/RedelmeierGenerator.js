@@ -92,33 +92,45 @@ export class RedelmeierGenerator {
     boundingBoxHeight,
     store
   ) {
-    // Create a Mask for the normalized polyomino
-    const mask = new Mask(
-      boundingBoxWidth,
-      boundingBoxHeight,
+    const side = Math.max(boundingBoxWidth, boundingBoxHeight)
+    // Expand the normalized polyomino to square grid
+    const squareBits = store.expandToSquare(
       normalizedPolyomino,
-      store,
-      1
+      boundingBoxHeight,
+      boundingBoxWidth
     )
-    const actions = new Actions(boundingBoxWidth, boundingBoxHeight, mask)
-    const orbit = actions.orbit()
+    // Create a Mask for the square polyomino
+    const mask = new Mask(side, side, squareBits, store, 1)
+    const actions = new Actions(side, side, mask)
+
+    // Generate all D4 symmetries using Actions.orbit
+    const symmetries = actions.orbit()
 
     let best = null
     let bestBits = null
     let bestWidth = 0
     let bestHeight = 0
 
-    for (const sym of orbit) {
-      const bb = actions.store.boundingBox(
-        boundingBoxWidth,
-        boundingBoxHeight,
-        sym
-      )
+    for (const sym of symmetries) {
+      const bb = actions.store.boundingBox(side, side, sym)
       if (!bb) continue
 
-      const w = bb.maxCol + 1
-      const h = bb.maxRow + 1
-      const str = this.polyToString(sym, w, h, actions.store)
+      // Find max row and col
+      let maxRow = -1
+      let maxCol = -1
+      for (let y = 0; y < side; y++) {
+        for (let x = 0; x < side; x++) {
+          if (this.cellAt(sym, x, y, side, actions.store)) {
+            if (y > maxRow) maxRow = y
+            if (x > maxCol) maxCol = x
+          }
+        }
+      }
+      if (maxRow < 0) continue
+
+      const w = maxCol + 1
+      const h = maxRow + 1
+      const str = this.polyToString(sym, w, h, actions.store, side)
 
       if (best === null || str < best) {
         best = str
@@ -134,7 +146,7 @@ export class RedelmeierGenerator {
     let minimizedBits = 0n
     for (let y = 0; y < bestHeight; y++) {
       for (let x = 0; x < bestWidth; x++) {
-        if (this.cellAt(bestBits, x, y, boundingBoxWidth, actions.store)) {
+        if (this.cellAt(bestBits, x, y, side, actions.store)) {
           const index = y * bestWidth + x
           minimizedBits |= 1n << BigInt(index)
         }
@@ -148,11 +160,17 @@ export class RedelmeierGenerator {
    * Convert polyomino to binary string for lexicographic comparison
    * @private
    */
-  polyToString (polyominoBits, width, height, store) {
+  polyToString (polyominoBits, width, height, store, gridWidth = width) {
     let binaryRepresentation = ''
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        binaryRepresentation += this.cellAt(polyominoBits, x, y, width, store)
+        binaryRepresentation += this.cellAt(
+          polyominoBits,
+          x,
+          y,
+          gridWidth,
+          store
+        )
           ? '1'
           : '0'
       }
