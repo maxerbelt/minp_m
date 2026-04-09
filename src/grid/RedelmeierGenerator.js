@@ -40,186 +40,318 @@ export class RedelmeierGenerator {
    * Finds the lexicographically smallest equivalent under D4
    * @private
    */
-  getCanonicalForm (bits, width, height, store) {
-    // Step 1: Minimize bounding box
-    const bb = this.getBoundingBox(bits, width, height, store)
-    if (!bb) return [0n, 1, 1] // empty
+  getCanonicalForm (polyominoBits, width, height, store) {
+    // Step 1: Minimize bounding box to origin
+    const boundingBox = this.getBoundingBox(polyominoBits, width, height, store)
+    if (!boundingBox) return [0n, 1, 1] // empty
 
-    const { minX, minY, maxX, maxY } = bb
-    let bbWidth = maxX - minX + 1
-    let bbHeight = maxY - minY + 1
-
-    // Place bounding box cells in minimal rectangle
-    let minimal = 0n
-    for (let y = minY; y <= maxY; y++) {
-      for (let x = minX; x <= maxX; x++) {
-        if (this.cellAt(bits, x, y, width, store)) {
-          const newY = y - minY
-          const newX = x - minX
-          minimal = this.setCellAt(minimal, newX, newY, bbWidth, store)
-        }
-      }
-    }
+    const normalizedPolyomino = this.minimizeBoundingBoxToOrigin(
+      polyominoBits,
+      boundingBox,
+      width,
+      store
+    )
+    let boundingBoxWidth = boundingBox.maxX - boundingBox.minX + 1
+    let boundingBoxHeight = boundingBox.maxY - boundingBox.minY + 1
 
     // Step 2: Find minimal form under all 8 D4 symmetries
-    let best = minimal
-    let bestRep = this.polyToString(minimal, bbWidth, bbHeight)
-
-    const forms = Array.from(
-      this.generateD4Forms(minimal, bbWidth, bbHeight, store)
+    return this.findCanonicalFormAmongD4Symmetries(
+      normalizedPolyomino,
+      boundingBoxWidth,
+      boundingBoxHeight,
+      store
     )
-    for (const form of forms) {
-      let [formBits, formW, formH] = form
-
-      // Re-minimize bounding box for this transformed form
-      const formBB = this.getBoundingBox(formBits, formW, formH, store)
-      if (formBB) {
-        const { minX: fMinX, minY: fMinY, maxX: fMaxX, maxY: fMaxY } = formBB
-        const fW = fMaxX - fMinX + 1
-        const fH = fMaxY - fMinY + 1
-
-        let minForm = 0n
-        for (let y = fMinY; y <= fMaxY; y++) {
-          for (let x = fMinX; x <= fMaxX; x++) {
-            if (this.cellAt(formBits, x, y, formW, store)) {
-              const newY = y - fMinY
-              const newX = x - fMinX
-              minForm = this.setCellAt(minForm, newX, newY, fW, store)
-            }
-          }
-        }
-
-        const rep = this.polyToString(minForm, fW, fH)
-        if (rep < bestRep) {
-          best = minForm
-          bestRep = rep
-          bbWidth = fW
-          bbHeight = fH
-        }
-      }
-    }
-
-    return [best, bbWidth, bbHeight]
   }
 
   /**
-   * Convert polyomino to string for lexicographic comparison
+   * Normalize polyomino by moving its bounding box to origin (0,0)
    * @private
    */
-  polyToString (bits, width, height) {
-    let str = ''
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        str += this.cellAt(bits, x, y, width) ? '1' : '0'
+  minimizeBoundingBoxToOrigin (polyominoBits, boundingBox, width, store) {
+    const { minX, minY, maxX, maxY } = boundingBox
+    const boundingBoxWidth = maxX - minX + 1
+    const boundingBoxHeight = maxY - minY + 1
+
+    let normalizedBits = 0n
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        if (this.cellAt(polyominoBits, x, y, width, store)) {
+          const normalizedX = x - minX
+          const normalizedY = y - minY
+          normalizedBits = this.setCellAt(
+            normalizedBits,
+            normalizedX,
+            normalizedY,
+            boundingBoxWidth,
+            store
+          )
+        }
       }
     }
-    return str
+    return normalizedBits
+  }
+
+  /**
+   * Compare D4 symmetries and find the lexicographically smallest form
+   * @private
+   */
+  findCanonicalFormAmongD4Symmetries (
+    normalizedPolyomino,
+    boundingBoxWidth,
+    boundingBoxHeight,
+    store
+  ) {
+    let bestPolyomino = normalizedPolyomino
+    let bestRepresentation = this.polyToString(
+      normalizedPolyomino,
+      boundingBoxWidth,
+      boundingBoxHeight
+    )
+    let bestWidth = boundingBoxWidth
+    let bestHeight = boundingBoxHeight
+
+    const d4Symmetries = Array.from(
+      this.generateD4Forms(
+        normalizedPolyomino,
+        boundingBoxWidth,
+        boundingBoxHeight,
+        store
+      )
+    )
+
+    for (const [symmetryBits, symmetryWidth, symmetryHeight] of d4Symmetries) {
+      const symmetryBoundingBox = this.getBoundingBox(
+        symmetryBits,
+        symmetryWidth,
+        symmetryHeight,
+        store
+      )
+      if (!symmetryBoundingBox) continue
+
+      const minimizedSymmetry = this.minimizeBoundingBoxToOrigin(
+        symmetryBits,
+        symmetryBoundingBox,
+        symmetryWidth,
+        store
+      )
+      const minimizedWidth =
+        symmetryBoundingBox.maxX - symmetryBoundingBox.minX + 1
+      const minimizedHeight =
+        symmetryBoundingBox.maxY - symmetryBoundingBox.minY + 1
+
+      const currentRepresentation = this.polyToString(
+        minimizedSymmetry,
+        minimizedWidth,
+        minimizedHeight
+      )
+
+      if (currentRepresentation < bestRepresentation) {
+        bestPolyomino = minimizedSymmetry
+        bestRepresentation = currentRepresentation
+        bestWidth = minimizedWidth
+        bestHeight = minimizedHeight
+      }
+    }
+
+    return [bestPolyomino, bestWidth, bestHeight]
+  }
+
+  /**
+   * Convert polyomino to binary string for lexicographic comparison
+   * @private
+   */
+  polyToString (polyominoBits, width, height) {
+    let binaryRepresentation = ''
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        binaryRepresentation += this.cellAt(polyominoBits, x, y, width)
+          ? '1'
+          : '0'
+      }
+    }
+    return binaryRepresentation
   }
 
   /**
    * Generate all 8 D4 symmetries
    * @private
    */
-  *generateD4Forms (bits, width, height, store) {
-    yield [bits, width, height]
+  *generateD4Forms (polyominoBits, width, height, store) {
+    yield [polyominoBits, width, height]
 
-    // Only generate distinct forms for non-square
     if (width === height) {
-      // Square: generate all 8
-      // 4 rotations
-      let rot = bits
-      for (let i = 0; i < 3; i++) {
-        rot = this.rotate90CW(rot, width, height, store)
-        yield [rot, width, height]
-      }
-
-      // Flip then 4 rotations
-      let flipped = this.flipHorizontal(bits, width, height, store)
-      yield [flipped, width, height]
-
-      rot = flipped
-      for (let i = 0; i < 3; i++) {
-        rot = this.rotate90CW(rot, width, height, store)
-        yield [rot, width, height]
-      }
+      yield* this.generateSquarePolyominoSymmetries(polyominoBits, width, store)
     } else {
-      // Rectangular: rotation swaps dimensions
-      let w = width
-      let h = height
-      let rot = bits
-
-      // Rotate 90
-      rot = this.rotate90CW(rot, w, h, store)
-      yield [rot, h, w]
-
-      // Rotate 180
-      rot = this.rotate90CW(rot, h, w, store)
-      yield [rot, w, h]
-
-      // Rotate 270
-      rot = this.rotate90CW(rot, w, h, store)
-      yield [rot, h, w]
-
-      // Flip H
-      let flipped = this.flipHorizontal(bits, width, height, store)
-      yield [flipped, width, height]
-
-      // Flip H + rotations
-      w = width
-      h = height
-      rot = flipped
-
-      rot = this.rotate90CW(rot, w, h, store)
-      yield [rot, h, w]
-
-      rot = this.rotate90CW(rot, h, w, store)
-      yield [rot, w, h]
-
-      rot = this.rotate90CW(rot, w, h, store)
-      yield [rot, h, w]
+      yield* this.generateRectangularPolyominoSymmetries(
+        polyominoBits,
+        width,
+        height,
+        store
+      )
     }
   }
 
   /**
-   * Rotate bits 90° clockwise
+   * Generate all 4 rotations and 4 rotated-flipped forms for square polyominoes
    * @private
    */
-  rotate90CW (bits, width, height, store) {
-    let rotated = 0n
+  *generateSquarePolyominoSymmetries (polyominoBits, size, store) {
+    // 4 rotations
+    let rotatedForm = polyominoBits
+    for (
+      let rotationIteration = 0;
+      rotationIteration < 3;
+      rotationIteration++
+    ) {
+      rotatedForm = this.rotate90CW(rotatedForm, size, size, store)
+      yield [rotatedForm, size, size]
+    }
+
+    // Flip then 4 rotations
+    let flippedForm = this.flipHorizontal(polyominoBits, size, size, store)
+    yield [flippedForm, size, size]
+
+    rotatedForm = flippedForm
+    for (
+      let rotationIteration = 0;
+      rotationIteration < 3;
+      rotationIteration++
+    ) {
+      rotatedForm = this.rotate90CW(rotatedForm, size, size, store)
+      yield [rotatedForm, size, size]
+    }
+  }
+
+  /**
+   * Generate all rotations and flipped rotations for rectangular polyominoes
+   * Note: rotations swap width and height
+   * @private
+   */
+  *generateRectangularPolyominoSymmetries (polyominoBits, width, height, store) {
+    // Generate 4 rotations (each rotation swaps dimensions)
+    let currentWidth = width
+    let currentHeight = height
+    let rotatedForm = polyominoBits
+
+    // Rotate 90°
+    rotatedForm = this.rotate90CW(
+      rotatedForm,
+      currentWidth,
+      currentHeight,
+      store
+    )
+    yield [rotatedForm, currentHeight, currentWidth]
+
+    // Rotate 180°
+    currentWidth = currentHeight
+    currentHeight = width
+    rotatedForm = this.rotate90CW(
+      rotatedForm,
+      currentWidth,
+      currentHeight,
+      store
+    )
+    yield [rotatedForm, currentHeight, currentWidth]
+
+    // Rotate 270°
+    currentWidth = width
+    currentHeight = height
+    rotatedForm = this.rotate90CW(
+      rotatedForm,
+      currentWidth,
+      currentHeight,
+      store
+    )
+    yield [rotatedForm, currentHeight, currentWidth]
+
+    // Flip and generate rotations
+    let flippedForm = this.flipHorizontal(polyominoBits, width, height, store)
+    yield [flippedForm, width, height]
+
+    currentWidth = width
+    currentHeight = height
+    rotatedForm = flippedForm
+
+    // Flipped + Rotate 90°
+    rotatedForm = this.rotate90CW(
+      rotatedForm,
+      currentWidth,
+      currentHeight,
+      store
+    )
+    yield [rotatedForm, currentHeight, currentWidth]
+
+    // Flipped + Rotate 180°
+    currentWidth = currentHeight
+    currentHeight = width
+    rotatedForm = this.rotate90CW(
+      rotatedForm,
+      currentWidth,
+      currentHeight,
+      store
+    )
+    yield [rotatedForm, currentHeight, currentWidth]
+
+    // Flipped + Rotate 270°
+    currentWidth = width
+    currentHeight = height
+    rotatedForm = this.rotate90CW(
+      rotatedForm,
+      currentWidth,
+      currentHeight,
+      store
+    )
+    yield [rotatedForm, currentHeight, currentWidth]
+  }
+
+  /**
+   * Rotate polyomino bits 90° clockwise
+   * @private
+   */
+  rotate90CW (polyominoBits, width, height, store) {
+    let rotatedBits = 0n
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (this.cellAt(bits, x, y, width, store)) {
+        if (this.cellAt(polyominoBits, x, y, width, store)) {
           // (x,y) -> (height-1-y, x) in rotated system
-          const newX = height - 1 - y
-          const newY = x
-          rotated = this.setCellAt(rotated, newX, newY, height, store)
+          const rotatedX = height - 1 - y
+          const rotatedY = x
+          rotatedBits = this.setCellAt(
+            rotatedBits,
+            rotatedX,
+            rotatedY,
+            height,
+            store
+          )
         }
       }
     }
-    return rotated
+    return rotatedBits
   }
 
   /**
-   * Flip horizontally
+   * Flip polyomino horizontally
    * @private
    */
-  flipHorizontal (bits, width, height, store) {
-    let flipped = 0n
+  flipHorizontal (polyominoBits, width, height, store) {
+    let flippedBits = 0n
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (this.cellAt(bits, x, y, width, store)) {
-          flipped = this.setCellAt(flipped, width - 1 - x, y, width, store)
+        if (this.cellAt(polyominoBits, x, y, width, store)) {
+          const flippedX = width - 1 - x
+          flippedBits = this.setCellAt(flippedBits, flippedX, y, width, store)
         }
       }
     }
-    return flipped
+    return flippedBits
   }
 
   /**
-   * Get bounding box of occupied cells
+   * Get bounding box of all occupied cells
+   * Returns object with minX, maxX, minY, maxY or null if empty
    * @private
    */
-  getBoundingBox (bits, width, height, store) {
+  getBoundingBox (polyominoBits, width, height, store) {
     let minX = width
     let maxX = -1
     let minY = height
@@ -227,7 +359,7 @@ export class RedelmeierGenerator {
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (this.cellAt(bits, x, y, width, store)) {
+        if (this.cellAt(polyominoBits, x, y, width, store)) {
           minX = Math.min(minX, x)
           maxX = Math.max(maxX, x)
           minY = Math.min(minY, y)
@@ -240,69 +372,103 @@ export class RedelmeierGenerator {
   }
 
   /**
-   * Check if cell is occupied at (x, y)
+   * Calculate bitboard index from x, y coordinates
    * @private
    */
-  cellAt (bits, x, y, width, store) {
-    const idx = y * width + x
-    return ((bits >> BigInt(idx)) & 1n) === 1n
+  calculateCellIndex (x, y, width) {
+    return y * width + x
   }
 
   /**
-   * Set cell at (x, y)
+   * Check if cell is occupied at (x, y)
    * @private
    */
-  setCellAt (bits, x, y, width, store) {
-    const idx = y * width + x
-    return bits | (1n << BigInt(idx))
+  cellAt (polyominoBits, x, y, width, store) {
+    const cellIndex = this.calculateCellIndex(x, y, width)
+    return ((polyominoBits >> BigInt(cellIndex)) & 1n) === 1n
+  }
+
+  /**
+   * Set cell at (x, y) to occupied
+   * @private
+   */
+  setCellAt (polyominoBits, x, y, width, store) {
+    const cellIndex = this.calculateCellIndex(x, y, width)
+    return polyominoBits | (1n << BigInt(cellIndex))
   }
 
   /**
    * Get frontier cells (unoccupied neighbors of occupied cells)
+   * Sorted for consistent ordering in canonical generation
    * @private
    */
-  getFrontier (bits, width, height, store) {
-    const frontier = new Set()
+  getFrontier (polyominoBits, width, height, store) {
+    const frontierCells = this.buildFrontierSet(
+      polyominoBits,
+      width,
+      height,
+      store
+    )
+    return Array.from(frontierCells).sort((a, b) => a - b)
+  }
+
+  /**
+   * Build set of frontier cell indices by visiting all occupied cells
+   * @private
+   */
+  buildFrontierSet (polyominoBits, width, height, store) {
+    const frontierSet = new Set()
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (this.cellAt(bits, x, y, width, store)) {
-          // Check neighbors
-          const neighbors = this.getNeighbors(x, y, width, height)
-          for (const [nx, ny] of neighbors) {
-            if (!this.cellAt(bits, nx, ny, width, store)) {
-              frontier.add(ny * width + nx)
+        if (this.cellAt(polyominoBits, x, y, width, store)) {
+          const adjacentCells = this.getAdjacentCellCoordinates(
+            x,
+            y,
+            width,
+            height
+          )
+          for (const [adjacentX, adjacentY] of adjacentCells) {
+            if (
+              !this.cellAt(polyominoBits, adjacentX, adjacentY, width, store)
+            ) {
+              const frontierIndex = this.calculateCellIndex(
+                adjacentX,
+                adjacentY,
+                width
+              )
+              frontierSet.add(frontierIndex)
             }
           }
         }
       }
     }
 
-    return Array.from(frontier).sort((a, b) => a - b)
+    return frontierSet
   }
 
   /**
-   * Get neighbors of a cell
+   * Get adjacent cell coordinates based on connectivity type
    * @private
    */
-  getNeighbors (x, y, width, height) {
-    const neighbors = []
+  getAdjacentCellCoordinates (x, y, width, height) {
+    const adjacentCells = []
 
-    // 4-connectivity
-    if (y > 0) neighbors.push([x, y - 1])
-    if (y < height - 1) neighbors.push([x, y + 1])
-    if (x > 0) neighbors.push([x - 1, y])
-    if (x < width - 1) neighbors.push([x + 1, y])
+    // 4-connectivity: orthogonal neighbors
+    if (y > 0) adjacentCells.push([x, y - 1])
+    if (y < height - 1) adjacentCells.push([x, y + 1])
+    if (x > 0) adjacentCells.push([x - 1, y])
+    if (x < width - 1) adjacentCells.push([x + 1, y])
 
-    // 8-connectivity additions
+    // 8-connectivity: add diagonal neighbors
     if (this.connectivity === '8') {
-      if (y > 0 && x > 0) neighbors.push([x - 1, y - 1])
-      if (y > 0 && x < width - 1) neighbors.push([x + 1, y - 1])
-      if (y < height - 1 && x > 0) neighbors.push([x - 1, y + 1])
-      if (y < height - 1 && x < width - 1) neighbors.push([x + 1, y + 1])
+      if (y > 0 && x > 0) adjacentCells.push([x - 1, y - 1])
+      if (y > 0 && x < width - 1) adjacentCells.push([x + 1, y - 1])
+      if (y < height - 1 && x > 0) adjacentCells.push([x - 1, y + 1])
+      if (y < height - 1 && x < width - 1) adjacentCells.push([x + 1, y + 1])
     }
 
-    return neighbors
+    return adjacentCells
   }
 
   /**
@@ -312,48 +478,83 @@ export class RedelmeierGenerator {
    * @private
    */
   *redelmeierRecursive (
-    bits,
+    polyominoBits,
     targetSize,
     currentSize,
     width,
     height,
     store,
-    seen,
-    minFrontierIdx = -1
+    seenCanonicalForms,
+    minimumFrontierIndex = -1
   ) {
     if (currentSize === targetSize) {
-      // Get canonical form
-      const canonical = this.getCanonicalForm(bits, width, height, store)
-      const hash = canonicalToString(canonical[0], canonical[1], canonical[2])
-
-      if (!seen.has(hash)) {
-        seen.add(hash)
-        yield new Mask(canonical[1], canonical[2], canonical[0], store, 1)
-      }
+      yield* this.yieldIfCanonicalFormUnseen(
+        polyominoBits,
+        width,
+        height,
+        store,
+        seenCanonicalForms
+      )
       return
     }
 
-    const frontier = this.getFrontier(bits, width, height, store)
+    const frontierCells = this.getFrontier(polyominoBits, width, height, store)
 
-    // Only consider frontier cells that come after minFrontierIdx
-    for (let i = 0; i < frontier.length; i++) {
-      const cellIdx = frontier[i]
-      if (cellIdx <= minFrontierIdx) continue // Skip cells we've already "considered" as minimum
+    // Only consider frontier cells respecting growth order
+    const validFrontierCells = this.filterFrontierByMinimumIndex(
+      frontierCells,
+      minimumFrontierIndex
+    )
 
-      const newBits = bits | (1n << BigInt(cellIdx))
+    for (const frontierCellIndex of validFrontierCells) {
+      const polyominoWithNewCell =
+        polyominoBits | (1n << BigInt(frontierCellIndex))
 
-      // Recurse with new minimum frontier index (this cell)
-      // This ensures we never explore the same growth path twice
+      // Recurse with new minimum frontier index constraint
       yield* this.redelmeierRecursive(
-        newBits,
+        polyominoWithNewCell,
         targetSize,
         currentSize + 1,
         width,
         height,
         store,
-        seen,
-        cellIdx
+        seenCanonicalForms,
+        frontierCellIndex
       )
+    }
+  }
+
+  /**
+   * Filter frontier cells to only those after a minimum index
+   * This ensures we never explore the same growth path twice
+   * @private
+   */
+  filterFrontierByMinimumIndex (frontierCells, minimumFrontierIndex) {
+    return frontierCells.filter(cellIndex => cellIndex > minimumFrontierIndex)
+  }
+
+  /**
+   * Compute canonical form and yield if not previously seen
+   * @private
+   */
+  *yieldIfCanonicalFormUnseen (
+    polyominoBits,
+    width,
+    height,
+    store,
+    seenCanonicalForms
+  ) {
+    const [canonicalBits, canonicalWidth, canonicalHeight] =
+      this.getCanonicalForm(polyominoBits, width, height, store)
+    const canonicalHash = canonicalToString(
+      canonicalBits,
+      canonicalWidth,
+      canonicalHeight
+    )
+
+    if (!seenCanonicalForms.has(canonicalHash)) {
+      seenCanonicalForms.add(canonicalHash)
+      yield new Mask(canonicalWidth, canonicalHeight, canonicalBits, store, 1)
     }
   }
 
@@ -366,23 +567,17 @@ export class RedelmeierGenerator {
     }
 
     const board = this.createBoard(cellCount)
-    const width = board.width
-    const height = board.height
-    const store = board.store
+    const seedPolyomino = 1n // Start with single cell at index 0
 
-    // Start with single cell at index 0
-    // This is the Redelmeier convention for canonical generation
-    const seed = 1n
-
-    const seen = new Set()
+    const seenCanonicalForms = new Set()
     yield* this.redelmeierRecursive(
-      seed,
+      seedPolyomino,
       cellCount,
       1,
-      width,
-      height,
-      store,
-      seen,
+      board.width,
+      board.height,
+      board.store,
+      seenCanonicalForms,
       -1
     )
   }
@@ -404,57 +599,71 @@ export class RedelmeierGenerator {
    * Count unique polyominoes of a given size
    */
   count (cellCount) {
-    let count = 0
-    for (const _ of this.generate(cellCount)) {
-      count++
-    }
-    return count
+    return this.collectAllPolyominoes(cellCount).length
   }
 
   /**
-   * Collect all polyominoes of a given size
+   * Collect all polyominoes of a given size into an array
    */
   collectAll (cellCount) {
+    return this.collectAllPolyominoes(cellCount)
+  }
+
+  /**
+   * Internal method to collect polyominoes from generator
+   * @private
+   */
+  collectAllPolyominoes (cellCount) {
     const result = []
-    for (const mask of this.generate(cellCount)) {
-      result.push(mask)
+    for (const polyomino of this.generate(cellCount)) {
+      result.push(polyomino)
     }
     return result
   }
 
   /**
-   * Collect polyominoes in a size range
+   * Collect polyominoes in a size range into an array
    */
   collectAllInRange (minSize, maxSize) {
+    return this.collectAllPolyominoesInRange(minSize, maxSize)
+  }
+
+  /**
+   * Internal method to collect polyominoes in range
+   * @private
+   */
+  collectAllPolyominoesInRange (minSize, maxSize) {
     const result = []
-    for (const mask of this.generateRange(minSize, maxSize)) {
-      result.push(mask)
+    for (const polyomino of this.generateRange(minSize, maxSize)) {
+      result.push(polyomino)
     }
     return result
   }
 }
 
 /**
- * Convert canonical polyomino to string for hashing
+ * Convert canonical polyomino representation to unique string hash
  * @private
  */
-function canonicalToString (bits, width, height) {
-  return `${bits.toString(36)}:${width}x${height}`
+function canonicalToString (polyominoBits, width, height) {
+  return `${polyominoBits.toString(36)}:${width}x${height}`
 }
 
 /**
- * Factory functions
+ * Factory functions for common connectivity types
  */
 
 /**
- * Create a 4-connected (orthogonal) polyomino generator
+ * Create a generator for orthogonal (4-connected) polyominoes
+ * Cells connect via shared edges only
  */
 export function createOrthoPolyominoGenerator () {
   return new RedelmeierGenerator('4')
 }
 
 /**
- * Create an 8-connected (king-connected) polyomino generator
+ * Create a generator for king-connected (8-connected) polyominoes
+ * Cells connect via shared edges or corners
  */
 export function createKingPolyominoGenerator () {
   return new RedelmeierGenerator('8')

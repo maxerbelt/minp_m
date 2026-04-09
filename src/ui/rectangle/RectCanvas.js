@@ -172,7 +172,6 @@ export class RectCanvas extends GridCanvas {
           coordIndexer
         )
     }
-    return
   }
 
   /**
