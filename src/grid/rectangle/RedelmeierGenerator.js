@@ -112,31 +112,15 @@ export class RedelmeierGenerator {
     let bestHeight = 0
 
     for (const sym of symmetries) {
-      const bb = actions.store.boundingBox(side, side, sym)
-      if (!bb) continue
+      const bounds = this.getBoundingBox(sym, side, side, actions.store)
+      if (!bounds) continue
 
-      // Find max row and col
-      let maxRow = -1
-      let maxCol = -1
-      for (let y = 0; y < side; y++) {
-        for (let x = 0; x < side; x++) {
-          if (this.cellAt(sym, x, y, side, actions.store)) {
-            if (y > maxRow) maxRow = y
-            if (x > maxCol) maxCol = x
-          }
-        }
-      }
-      if (maxRow < 0) continue
-
-      const w = maxCol + 1
-      const h = maxRow + 1
-      const str = this.polyToString(sym, w, h, actions.store, side)
-
+      const str = this.polyToString(sym, side, side, actions.store, side)
       if (best === null || str < best) {
         best = str
         bestBits = sym
-        bestWidth = w
-        bestHeight = h
+        bestWidth = bounds.maxX + 1
+        bestHeight = bounds.maxY + 1
       }
     }
 
@@ -396,7 +380,10 @@ export class RedelmeierGenerator {
     }
 
     const board = this.createBoard(cellCount)
-    const seedPolyomino = 1n // Start with single cell at index 0
+    const centerX = Math.floor(board.width / 2)
+    const centerY = Math.floor(board.height / 2)
+    const centerIndex = centerY * board.width + centerX
+    const seedPolyomino = 1n << BigInt(centerIndex)
 
     const seenCanonicalForms = new Set()
     yield* this.redelmeierRecursive(

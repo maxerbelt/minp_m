@@ -1,3 +1,10 @@
+/* eslint-env jest */
+/**
+ * @jest-environment jsdom
+ */
+
+import { jest } from '@jest/globals'
+/* global describe, it,  expect, beforeEach, afterEach */
 import { PolyominoGridManager } from './polyominoGrid.js'
 
 describe('PolyominoGridManager', () => {

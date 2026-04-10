@@ -85,11 +85,9 @@ describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
   })
 
   describe('triomino (3 cells)', () => {
-    it('generates triominoes', () => {
+    it('generates exactly 2 canonical triominoes', () => {
       const count = gen.count(3)
-      // Currently generates some duplicates
-      // TODO: Improve canonical form to get exactly 2
-      expect(count).toBeGreaterThanOrEqual(2)
+      expect(count).toBe(2)
     })
 
     it('all trominoes have 3 occupied cells', () => {
@@ -101,17 +99,14 @@ describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
 
     it('trominoes are connected', () => {
       const polyominoes = gen.collectAll(3)
-      expect(polyominoes.length).toBeGreaterThanOrEqual(2)
-      // Should have straight and L-shaped triominoes
+      expect(polyominoes.length).toBe(2)
     })
   })
 
   describe('tetromino (4 cells)', () => {
-    it('generates tetrominoes', () => {
+    it('generates exactly 5 canonical tetrominoes', () => {
       const count = gen.count(4)
-      // Note: Currently generates 7 (including rotations)
-      // TODO: Improve canonical form to match OEIS A000105 value of 5
-      expect(count).toBeGreaterThanOrEqual(5)
+      expect(count).toBe(5)
     })
 
     it('all tetrominoes have 4 occupied cells', () => {
@@ -121,9 +116,9 @@ describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
       })
     })
 
-    it('generates many tetrominoes (frontier ordering working)', () => {
+    it('generates exactly 5 tetrominoes', () => {
       const polyominoes = gen.collectAll(4)
-      expect(polyominoes.length).toBeGreaterThanOrEqual(5)
+      expect(polyominoes.length).toBe(5)
     })
   })
 
@@ -187,6 +182,40 @@ describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
       // Should be translated and normalized
       expect(canonical[1]).toBeLessThanOrEqual(3)
       expect(canonical[2]).toBeLessThanOrEqual(3)
+    })
+
+    it('canonicalizes horizontal and vertical line trominoes consistently', () => {
+      const board = gen.createBoard(3)
+      const store = board.store
+      const width = board.width
+      const height = board.height
+
+      let horizontalBits = 0n
+      horizontalBits = store.setIdx(horizontalBits, 0, 1n)
+      horizontalBits = store.setIdx(horizontalBits, 1, 1n)
+      horizontalBits = store.setIdx(horizontalBits, 2, 1n)
+
+      let verticalBits = 0n
+      verticalBits = store.setIdx(verticalBits, 0, 1n)
+      verticalBits = store.setIdx(verticalBits, width, 1n)
+      verticalBits = store.setIdx(verticalBits, 2 * width, 1n)
+
+      const canonicalHorizontal = gen.getCanonicalForm(
+        horizontalBits,
+        width,
+        height,
+        store
+      )
+      const canonicalVertical = gen.getCanonicalForm(
+        verticalBits,
+        width,
+        height,
+        store
+      )
+
+      expect(canonicalHorizontal[0]).toBe(canonicalVertical[0])
+      expect(canonicalHorizontal[1]).toBe(canonicalVertical[1])
+      expect(canonicalHorizontal[2]).toBe(canonicalVertical[2])
     })
   })
 
