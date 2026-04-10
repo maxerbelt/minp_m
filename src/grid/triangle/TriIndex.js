@@ -1,59 +1,14 @@
 import { ActionsTri } from './actionsTri.js'
-import { Indexer, deltaAndDirection } from '../indexer.js'
+import { Indexer } from '../indexer.js'
 import { Connect3 } from './Connect3.js'
 import { Connect3Vertex } from './Connect3Vertex.js'
 import { TriConnect6 } from './TriConnect6.js'
 import { TriConnect6Extended } from './TriConnect6Extended.js'
 import { Connect12 } from './Connect12.js'
+import { TriNormalCover } from './TriNormalCover.js'
+import { TriHalfCover } from './TriHalfCover.js'
+import { TriSuperCover } from './TriSuperCover.js'
 
-function direction (endX, startX, endY, startY) {
-  const dxDir = endX - startX
-  const dyDir = endY - startY
-  return { dxDir, dyDir }
-}
-
-function bresenhamStep (
-  errorTerm,
-  deltaY,
-  deltaX,
-  currentX,
-  stepX,
-  currentY,
-  stepY
-) {
-  const doubledError = errorTerm << 1
-  const moveInX = +(doubledError > -deltaY)
-  const moveInY = +(doubledError < deltaX)
-  currentX += moveInX * stepX
-  currentY += moveInY * stepY
-  errorTerm -= moveInX * deltaY
-  errorTerm += moveInY * deltaX
-  return { errorTerm, currentX, currentY }
-}
-
-/**
- * Bresenham step that tracks movement direction for corner detection.
- * Used by super-cover and half-cover algorithms that need to detect
- * when both axes move simultaneously (corner crossing).
- */
-function bresenhamStepMove (
-  errorTerm,
-  deltaY,
-  deltaX,
-  currentX,
-  stepX,
-  currentY,
-  stepY
-) {
-  const doubledError = errorTerm << 1
-  const moveInX = +(doubledError > -deltaY)
-  const moveInY = +(doubledError < deltaX)
-  currentX += moveInX * stepX
-  currentY += moveInY * stepY
-  errorTerm -= moveInX * deltaY
-  errorTerm += moveInY * deltaX
-  return { errorTerm, currentX, currentY, moveInX, moveInY }
-}
 export class TriIndex extends Indexer {
   constructor (side) {
     // pattern: row r has 2*r+1 triangles (odd counts), total size = side*side
@@ -94,6 +49,12 @@ export class TriIndex extends Indexer {
       6: new TriConnect6(this),
       '6extended': new TriConnect6Extended(this),
       12: new Connect12(this)
+    }
+
+    this.cover = {
+      normal: new TriNormalCover(this),
+      half: new TriHalfCover(this),
+      super: new TriSuperCover(this)
     }
   }
   index (r, c) {
@@ -183,92 +144,13 @@ export class TriIndex extends Indexer {
   // ============================================================================
 
   *line (startR, startC, endR, endC, exitCondition) {
-    exitCondition = this._ensureExitCondition(exitCondition, endR, endC)
-    // Delta and direction setup
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endR,
+    return yield* this.cover.normal.line(
       startR,
+      startC,
+      endR,
       endC,
-      startC
+      exitCondition
     )
-
-    // Special case: start == end, return empty (no line segment to draw)
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    // Bresenham error accumulator
-    let errorTerm = deltaX - deltaY
-
-    // Current traversal position
-    let currentR = startR
-    let currentC = startC
-    let step = 1
-    // Main traversal loop
-    while (true) {
-      if (!this.isValid(currentR, currentC)) {
-        console.log(
-          '   [DBG line] !isValid, trying to advance without yielding'
-        )
-        // Position is invalid - try to move there anyway to find the next valid position
-        // by repeatedly calling bresenhamStep
-        for (let attempts = 0; attempts < 10; attempts++) {
-          ;({
-            errorTerm,
-            currentX: currentR,
-            currentY: currentC
-          } = bresenhamStep(
-            errorTerm,
-            deltaY,
-            deltaX,
-            currentR,
-            stepX,
-            currentC,
-            stepY
-          ))
-          if (this.isValid(currentR, currentC)) {
-            break
-          }
-        }
-        if (!this.isValid(currentR, currentC)) {
-          break
-        }
-        // Now continue to the yield logic below
-      }
-      if (step > 60) {
-        console.warn(
-          `Bresenham line exceeded 60 steps, likely infinite loop.  Current position: (${currentR}, ${currentC}), end position: (${endR}, ${endC})`
-        )
-        break
-      }
-      console.log(
-        '   [DBG line] yielding [',
-        currentR,
-        ',',
-        currentC,
-        ',',
-        step,
-        ']'
-      )
-      yield [currentR, currentC, step]
-      step++
-      if (exitCondition(currentR, currentC, step)) {
-        break
-      }
-      ;({
-        errorTerm,
-        currentX: currentR,
-        currentY: currentC
-      } = bresenhamStep(
-        errorTerm,
-        deltaY,
-        deltaX,
-        currentR,
-        stepX,
-        currentC,
-        stepY
-      ))
-    }
   }
 
   // ============================================================================
@@ -280,71 +162,13 @@ export class TriIndex extends Indexer {
    * Detects corner crossings and emits extra cells when both axes move simultaneously.
    */
   *superCoverLine (startR, startC, endR, endC, exitCondition) {
-    exitCondition = this._ensureExitCondition(exitCondition, endR, endC)
-    // Delta and direction setup
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endR,
+    return yield* this.cover.super.line(
       startR,
+      startC,
+      endR,
       endC,
-      startC
+      exitCondition
     )
-
-    // Special case: start == end, return empty
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    // Bresenham error accumulator
-    let errorTerm = deltaX - deltaY
-
-    // Current traversal position
-    let currentR = startR
-    let currentC = startC
-    let step = 1
-    let moveInR = 0
-    let moveInC = 0
-
-    while (true) {
-      if (!this.isValid(currentR, currentC)) {
-        break
-      }
-      if (step > 60) {
-        break
-      }
-      yield [currentR, currentC, step]
-      step++
-      if (exitCondition(currentR, currentC, step)) break
-
-      const previousR = currentR
-      const previousC = currentC
-
-      ;({
-        errorTerm,
-        currentX: currentR,
-        currentY: currentC,
-        moveInX: moveInR,
-        moveInY: moveInC
-      } = bresenhamStepMove(
-        errorTerm,
-        deltaY,
-        deltaX,
-        currentR,
-        stepX,
-        currentC,
-        stepY
-      ))
-
-      // Emit extra cells when corner crossing detected
-      step = yield* this.yieldSuperCoverCornerCells(
-        moveInR,
-        moveInC,
-        previousR,
-        stepX,
-        previousC,
-        stepY,
-        step
-      )
-    }
   }
 
   /**
@@ -352,72 +176,13 @@ export class TriIndex extends Indexer {
    * Detects corner crossings but only emits one extra cell per corner (with bias).
    */
   *halfCoverLine (startR, startC, endR, endC, exitCondition) {
-    exitCondition = this._ensureExitCondition(exitCondition, endR, endC)
-
-    // Delta and direction setup
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endR,
+    return yield* this.cover.half.line(
       startR,
+      startC,
+      endR,
       endC,
-      startC
+      exitCondition
     )
-
-    // Special case: start == end
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    // Bresenham error accumulator
-    let errorTerm = deltaX - deltaY
-
-    // Current traversal position
-    let currentR = startR
-    let currentC = startC
-    let step = 1
-    let moveInR = 0
-    let moveInC = 0
-
-    while (true) {
-      if (!this.isValid(currentR, currentC)) {
-        break
-      }
-      if (step > 60) {
-        break
-      }
-      yield [currentR, currentC, step]
-      step++
-      if (exitCondition(currentR, currentC, step)) break
-
-      const previousR = currentR
-      const previousC = currentC
-
-      ;({
-        errorTerm,
-        currentX: currentR,
-        currentY: currentC,
-        moveInX: moveInR,
-        moveInY: moveInC
-      } = bresenhamStepMove(
-        errorTerm,
-        deltaY,
-        deltaX,
-        currentR,
-        stepX,
-        currentC,
-        stepY
-      ))
-
-      // Emit extra cells when corner crossing detected (max 1 cell for half-cover)
-      step = yield* this.yieldHalfCoverCornerCells(
-        moveInR,
-        moveInC,
-        previousR,
-        stepX,
-        previousC,
-        stepY,
-        step
-      )
-    }
   }
 
   /**
@@ -493,33 +258,15 @@ export class TriIndex extends Indexer {
   }
 
   *ray (startR, startC, endR, endC) {
-    return yield* this.line(
-      startR,
-      startC,
-      endR,
-      endC,
-      this._createBoundaryExitCondition()
-    )
+    return yield* this.cover.normal.ray(startR, startC, endR, endC)
   }
 
   *superCoverRay (startR, startC, endR, endC) {
-    return yield* this.superCoverLine(
-      startR,
-      startC,
-      endR,
-      endC,
-      this._createBoundaryExitCondition()
-    )
+    return yield* this.cover.super.ray(startR, startC, endR, endC)
   }
 
   *halfCoverRay (startR, startC, endR, endC) {
-    return yield* this.halfCoverLine(
-      startR,
-      startC,
-      endR,
-      endC,
-      this._createBoundaryExitCondition()
-    )
+    return yield* this.cover.half.ray(startR, startC, endR, endC)
   }
 
   // ============================================================================
@@ -527,48 +274,27 @@ export class TriIndex extends Indexer {
   // ============================================================================
 
   *segmentTo (startR, startC, endR, endC) {
-    return yield* this.line(
-      startR,
-      startC,
-      endR,
-      endC,
-      this._createEndpointExitCondition(endR, endC)
-    )
+    return yield* this.cover.normal.segmentTo(startR, startC, endR, endC)
   }
 
   *superCoverSegmentTo (startR, startC, endR, endC) {
-    return yield* this.superCoverLine(
-      startR,
-      startC,
-      endR,
-      endC,
-      this._createEndpointExitCondition(endR, endC)
-    )
+    return yield* this.cover.super.segmentTo(startR, startC, endR, endC)
   }
 
   *halfCoverSegmentTo (startR, startC, endR, endC) {
-    return yield* this.halfCoverLine(
-      startR,
-      startC,
-      endR,
-      endC,
-      this._createEndpointExitCondition(endR, endC)
-    )
+    return yield* this.cover.half.segmentTo(startR, startC, endR, endC)
   }
 
   *fullLine (startR, startC, endR, endC) {
-    const { x0, y0, x1, y1 } = this.intercepts(startR, startC, endR, endC)
-    return yield* this.segmentTo(x0, y0, x1, y1)
+    return yield* this.cover.normal.fullLine(startR, startC, endR, endC)
   }
 
   *superCoverFullLine (startR, startC, endR, endC) {
-    const { x0, y0, x1, y1 } = this.intercepts(startR, startC, endR, endC)
-    return yield* this.superCoverSegmentTo(x0, y0, x1, y1)
+    return yield* this.cover.super.fullLine(startR, startC, endR, endC)
   }
 
   *halfCoverFullLine (startR, startC, endR, endC) {
-    const { x0, y0, x1, y1 } = this.intercepts(startR, startC, endR, endC)
-    return yield* this.halfCoverSegmentTo(x0, y0, x1, y1)
+    return yield* this.cover.half.fullLine(startR, startC, endR, endC)
   }
 
   // ============================================================================
@@ -576,32 +302,32 @@ export class TriIndex extends Indexer {
   // ============================================================================
 
   *segmentFor (startR, startC, endR, endC, distance) {
-    return yield* this.line(
+    return yield* this.cover.normal.segmentFor(
       startR,
       startC,
       endR,
       endC,
-      this._createDistanceLimitExitCondition(distance)
+      distance
     )
   }
 
   *superCoverSegmentFor (startR, startC, endR, endC, distance) {
-    return yield* this.superCoverLine(
+    return yield* this.cover.super.segmentFor(
       startR,
       startC,
       endR,
       endC,
-      this._createDistanceLimitExitCondition(distance)
+      distance
     )
   }
 
   *halfCoverSegmentFor (startR, startC, endR, endC, distance) {
-    return yield* this.halfCoverLine(
+    return yield* this.cover.half.segmentFor(
       startR,
       startC,
       endR,
       endC,
-      this._createDistanceLimitExitCondition(distance)
+      distance
     )
   }
 

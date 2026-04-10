@@ -96,6 +96,13 @@ describe('TriIndex', () => {
       expect(triIndex.connection['12']).toBeDefined()
     })
 
+    it('creates a cover object with normal, half, and super modes', () => {
+      expect(triIndex.cover).toBeDefined()
+      expect(triIndex.cover.normal).toBeDefined()
+      expect(triIndex.cover.half).toBeDefined()
+      expect(triIndex.cover.super).toBeDefined()
+    })
+
     it('neighborsEdge delegates to connection["3"]', () => {
       const edgeNeighbors = triIndex.neighborsEdge(1, 1)
       const connectionNeighbors = triIndex.connection['3'].neighbors(1, 1)
