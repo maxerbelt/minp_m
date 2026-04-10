@@ -2,12 +2,7 @@ import { ActionsHex } from './actionHex.js'
 import { lazy } from '../../core/utilities.js'
 import { buildTransformHexMaps } from './buildTransformHexMaps.js'
 import { Indexer, deltaAndDirection } from '../indexer.js'
-
-function direction (endX, startX, endY, startY) {
-  const dxDir = endX - startX
-  const dyDir = endY - startY
-  return { dxDir, dyDir }
-}
+import { Connect6 } from './Connect6.js'
 
 function bresenhamStep (
   errorTerm,
@@ -76,29 +71,6 @@ function buildCube (radius) {
   return { coords, qrsToI, qrToI, iToQrs, size: i }
 }
 
-const neighbors = {
-  E: [+1, 0, -1],
-  W: [-1, 0, +1],
-  SE: [0, +1, -1],
-  NW: [0, -1, +1],
-  SW: [-1, +1, 0],
-  NE: [+1, -1, 0]
-}
-
-const area = {
-  C: [0, 0, 0],
-  E: [+1, 0, -1],
-  W: [-1, 0, +1],
-  SE: [0, +1, -1],
-  NW: [0, -1, +1],
-  SW: [-1, +1, 0],
-  NE: [+1, -1, 0]
-}
-
-const neighborValues = Object.values(neighbors)
-
-const areaValues = Object.values(area)
-
 export class CubeIndex extends Indexer {
   constructor (radius) {
     const { coords, qrsToI, qrToI, iToQrs, size } = buildCube(radius)
@@ -110,6 +82,9 @@ export class CubeIndex extends Indexer {
     this.qrToI = qrToI
     this.iToQrs = iToQrs
     this.size = size
+    this.connection = {
+      6: new Connect6(this)
+    }
     lazy(this, 'transformMaps', () => {
       return buildTransformHexMaps(
         this.coords,
@@ -142,12 +117,17 @@ export class CubeIndex extends Indexer {
       this[wrapperName] = this._createIndicesWrapper(baseName)
     }
   }
-  index (q, r, s) {
-    if (s === undefined) {
-      return this.qrToI.get(`${q},${r}`)
-    } else {
-      return this.qrsToI.get(`${q},${r},${s}`)
-    }
+  index (q, r) {
+    return this.qrToI.get(`${q},${r}`)
+  }
+  indexQR (q, r) {
+    return this.index(q, r)
+  }
+  indexQS (q, s) {
+    return this.index(q, CubeIndex.qsToR(q, s))
+  }
+  indexRS (r, s) {
+    return this.index(CubeIndex.rsToQ(r, s), r)
   }
   location (i) {
     return this.iToQrs.get(i)
@@ -156,7 +136,15 @@ export class CubeIndex extends Indexer {
   isValid (q, r, s) {
     return this.qrsToI.has(`${q},${r},${s}`)
   }
-
+  isValidQR (q, r) {
+    return this.qrToI.has(`${q},${r}`)
+  }
+  isValidQS (q, s) {
+    return this.isValidQR(q, CubeIndex.qsToR(q, s))
+  }
+  isValidRS (r, s) {
+    return this.isValidQR(CubeIndex.rsToQ(r, s), r)
+  }
   /**
    * Override boundary exit condition to handle 3D cube coordinates.
    * Converts (q, r) to (q, r, s) before checking validity.
@@ -169,12 +157,15 @@ export class CubeIndex extends Indexer {
   }
 
   neighbors (q, r) {
-    return neighborValues.map(([qq, rr]) => [q + qq, r + rr])
-  }
-  area (q, r) {
-    return areaValues.map(([qq, rr]) => [q + qq, r + rr])
+    return this.connection[6].neighbors(q, r)
   }
 
+  area (q, r) {
+    return this.connection[6].area(q, r)
+  }
+  direction (start, end) {
+    return this.connection[6].direction(start, end)
+  }
   *entries (bb) {
     for (const [loc, i] of this.qrsToI) {
       yield [...loc, bb.at(...loc), i, bb]
@@ -710,6 +701,18 @@ export class CubeIndex extends Indexer {
     const [q1, r1] = this.intercept(startQ, startR, endQ, endR)
     const [q0, r0] = this.intercept(endQ, endR, startQ, startR)
     return { x0: q0, y0: r0, x1: q1, y1: r1 }
+  }
+
+  static qrToS (q, r) {
+    return -q - r
+  }
+
+  static qsToR (q, s) {
+    return -q - s
+  }
+
+  static rsToQ (r, s) {
+    return -r - s
   }
 
   static getInstance (radius) {

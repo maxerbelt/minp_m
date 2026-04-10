@@ -6,6 +6,7 @@ import {
   dilateHexManhattan,
   erodeHexSeparable
 } from './CubeIndex.js'
+import { Connect6 } from './Connect6.js'
 
 // Jest test suite
 describe('CubeIndex', () => {
@@ -42,6 +43,23 @@ describe('CubeIndex', () => {
       cubeIndex.coords.forEach(([q, r, s]) => {
         expect(q + r + s).toBe(0)
       })
+    })
+
+    it('exposes 6-way connection helper under connection.6', () => {
+      expect(cubeIndex.connection[6]).toBeInstanceOf(Connect6)
+    })
+
+    it('delegates neighbors() and area() through connection.6', () => {
+      const expectedNeighbors = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+        [-1, 1],
+        [1, -1]
+      ]
+      expect(cubeIndex.neighbors(0, 0)).toEqual(expectedNeighbors)
+      expect(cubeIndex.area(0, 0)).toEqual([[0, 0], ...expectedNeighbors])
     })
 
     it('coordinates within radius bounds', () => {
@@ -134,6 +152,23 @@ describe('CubeIndex', () => {
 
       it('transformMaps has 12 elements (6 rotations × 2 for reflection)', () => {
         expect(cubeIndex.transformMaps.length).toBe(12)
+      })
+    })
+
+    describe('cube coordinate helpers', () => {
+      it('computes s from q and r', () => {
+        expect(CubeIndex.qrToS(1, -2)).toBe(1)
+        expect(CubeIndex.qrToS(-3, 2)).toBe(1)
+      })
+
+      it('computes r from q and s', () => {
+        expect(CubeIndex.qsToR(1, -2)).toBe(1)
+        expect(CubeIndex.qsToR(-3, 2)).toBe(1)
+      })
+
+      it('computes q from r and s', () => {
+        expect(CubeIndex.rsToQ(-1, 0)).toBe(1)
+        expect(CubeIndex.rsToQ(2, -3)).toBe(1)
       })
     })
 
