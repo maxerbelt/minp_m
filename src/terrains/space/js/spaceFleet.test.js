@@ -1,9 +1,9 @@
 /* eslint-env jest */
 
 /* global describe, it, it, expect, beforeEach, jest */
-import { spaceFleet } from './spaceFleet'
-import { Transformer, Hybrid } from '../../../ships/SpecialShapes'
-import { SpaceVessel, Shuttle, Installation } from './spaceShapes'
+import { spaceFleet } from './spaceFleet.js'
+import { Transformer, Hybrid } from '../../../ships/SpecialShapes.js'
+import { SpaceVessel, Shuttle, Installation } from './spaceShapes.js'
 import { jest } from '@jest/globals'
 
 // Jest it suite

@@ -1,8 +1,8 @@
-import { Megabomb, Kinetic, Torpedo, Sweep } from '../../sea/js/SeaWeapons.js'
 import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/Weapon.js'
 import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
+import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
-export class Missile extends Megabomb {
+export class Missile extends Bomb {
   constructor (ammo) {
     super(ammo, 'Missile', '+')
     this.plural = 'Missiles'
@@ -83,7 +83,7 @@ export class Missile extends Megabomb {
     return turn
   }
 }
-export class RailBolt extends Kinetic {
+export class RailBolt extends Strike {
   constructor (ammo) {
     super(ammo, 'Rail Bolt', '|')
     this.plural = 'Rail Bolts'
@@ -168,7 +168,7 @@ function getLinePoints (y1, x1, y2, x2, color) {
   points.drawRay(x1, y1, x2, y2, color)
   return points.list
 }
-export class GuassRound extends Torpedo {
+export class GuassRound extends Fish {
   constructor (ammo) {
     super(ammo)
     this.name = 'Gauss Round'
@@ -281,7 +281,7 @@ export class GuassRound extends Torpedo {
   }
 }
 
-export class Scan extends Sweep {
+export class Scan extends Sensor {
   constructor (ammo) {
     super(ammo)
     this.name = 'Scan'

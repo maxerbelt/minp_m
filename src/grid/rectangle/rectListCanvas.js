@@ -8,7 +8,7 @@ export class RectListCanvas extends ListCanvas {
   }
   static BhMapList () {
     const map = bh.map
-    const points = ListCanvas.Rect(map.cols, map.rows)
+    const points = new RectListCanvas(map.cols, map.rows, [])
     return points
   }
 }

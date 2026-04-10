@@ -143,7 +143,7 @@ export class Weapon {
     model,
     launch
   ) {
-    launch = launch || this.launchToRaw
+    launch = launch || this.launchToRaw.bind(this)
     return await launch(
       coords,
       rr,
@@ -155,7 +155,7 @@ export class Weapon {
       this.processCoords.bind(this)
     )
   }
-  processCoords (map, [rr, cc], coords) {
+  processCoords (map, [rr, cc], coords, model) {
     const effect = this.aoe(map, coords)
     const t = model.getTarget(effect, this)
     const list = this.redoCoords(map, [rr, cc], coords)
@@ -198,7 +198,12 @@ export class Weapon {
     processCoords
   ) {
     processCoords = processCoords || this.redoCoords
-    const [[r, c], target, hasCandidates] = processCoords(map, [rr, cc], coords)
+    const [[r, c], target, hasCandidates] = processCoords(
+      map,
+      [rr, cc],
+      coords,
+      model
+    )
     let sourceCell = null
     if (this.nonAttached) {
       sourceCell = viewModel.gridCellAt(r, c)

@@ -3,8 +3,8 @@ import { oldToken } from './terrain.js'
 import { SubTerrainTrackers } from './SubTerrainTrackers.js'
 import { bh } from './bh.js'
 import { standardShot } from '../../../weapon/Weapon.js'
-import { Megabomb } from '../../sea/js/SeaWeapons.js'
 import { Mask } from '../../../grid/rectangle/mask.js'
+import { getCopyNumKey, makeTitle } from './makeTitle.js'
 
 // geometry helper
 export const inRange = (r, c) => element =>
@@ -51,7 +51,7 @@ export class BhMap {
     this.subterrainTrackers = new SubTerrainTrackers(this?.terrain?.subterrains)
     this.subterrainTrackers.calc(this)
     this.isPreGenerated = true
-    this.weapons = [standardShot, new Megabomb(3)]
+    this.weapons = [standardShot]
   }
   get blankMask () {
     return Mask.empty(this.cols, this.rows)
@@ -216,25 +216,6 @@ export class BhMap {
     const exportingMap = this.savedMap(newTitle)
     return exportingMap.jsonString()
   }
-}
-function getCopyNumKey (terrain, cols, rows) {
-  return `${oldToken}.${terrain.key}-index-${cols}x${rows}`
-}
-function getCopyNum (terrain, cols, rows) {
-  return Number.parseInt(
-    localStorage.getItem(getCopyNumKey(terrain, cols, rows))
-  )
-}
-function setCopyNum (terrain, cols, rows, index) {
-  localStorage.setItem(getCopyNumKey(terrain, cols, rows), index)
-}
-function getNextCopyNum (terrain, cols, rows) {
-  return getCopyNum(terrain, cols, rows) + 1 || 1
-}
-function makeTitle (terrain, cols, rows) {
-  const index = getNextCopyNum(terrain, cols, rows)
-  setCopyNum(terrain, cols, rows, index)
-  return `${terrain.key}-${index}-${cols}x${rows}`
 }
 
 export class CustomMap extends BhMap {
