@@ -1,7 +1,7 @@
 import { ActionsHex } from './actionHex.js'
 import { lazy } from '../../core/utilities.js'
 import { buildTransformHexMaps } from './buildTransformHexMaps.js'
-import { Indexer, deltaAndDirection } from '../indexer.js'
+import { Indexer } from '../indexer.js'
 import { Connect6 } from './Connect6.js'
 
 function bresenhamStep (
@@ -116,6 +116,8 @@ export class CubeIndex extends Indexer {
     for (const [wrapperName, baseName] of wrapperPairs) {
       this[wrapperName] = this._createIndicesWrapper(baseName)
     }
+
+    this._boundaryExitCondition = this._createBoundaryExitCondition()
   }
   index (q, r) {
     return this.qrToI.get(`${q},${r}`)
@@ -150,10 +152,13 @@ export class CubeIndex extends Indexer {
    * Converts (q, r) to (q, r, s) before checking validity.
    */
   _createBoundaryExitCondition () {
-    return (q, r) => {
-      const s = -q - r
-      return !this.isValid(q, r, s)
+    if (!this._boundaryExitCondition) {
+      this._boundaryExitCondition = (q, r) => {
+        const s = -q - r
+        return !this.isValid(q, r, s)
+      }
     }
+    return this._boundaryExitCondition
   }
 
   neighbors (q, r) {
@@ -168,27 +173,62 @@ export class CubeIndex extends Indexer {
   }
 
   _axisStepVector (axis, sign, currentQ, currentR, targetQ, targetR) {
-    const qDiff = targetQ - currentQ
-    const rDiff = targetR - currentR
+    const targetS = CubeIndex.qrToS(targetQ, targetR)
+    const currentS = CubeIndex.qrToS(currentQ, currentR)
+    const candidates = this._axisStepCandidates(axis, sign)
+    let bestCandidate = candidates[0]
+    let bestDistance = Number.POSITIVE_INFINITY
 
+    for (const [dq, dr] of candidates) {
+      const nextQ = currentQ + dq
+      const nextR = currentR + dr
+      const nextS = CubeIndex.qrToS(nextQ, nextR)
+      const dQ = targetQ - nextQ
+      const dR = targetR - nextR
+      const dS = targetS - nextS
+      const distance = dQ * dQ + dR * dR + dS * dS
+      if (distance < bestDistance) {
+        bestDistance = distance
+        bestCandidate = [dq, dr]
+      }
+    }
+    return bestCandidate
+  }
+
+  _axisStepCandidates (axis, sign) {
     switch (axis) {
       case 'q':
-        if (sign === 1) {
-          return rDiff < 0 ? [1, -1] : [1, 0]
-        }
-        return rDiff > 0 ? [-1, 1] : [-1, 0]
+        return sign === 1
+          ? [
+              [1, 0],
+              [1, -1]
+            ]
+          : [
+              [-1, 0],
+              [-1, 1]
+            ]
       case 'r':
-        if (sign === 1) {
-          return qDiff < 0 ? [-1, 1] : [0, 1]
-        }
-        return qDiff > 0 ? [1, -1] : [0, -1]
+        return sign === 1
+          ? [
+              [0, 1],
+              [-1, 1]
+            ]
+          : [
+              [0, -1],
+              [1, -1]
+            ]
       case 's':
-        if (sign === 1) {
-          return qDiff < 0 ? [-1, 0] : [0, -1]
-        }
-        return qDiff > 0 ? [1, 0] : [0, 1]
+        return sign === 1
+          ? [
+              [-1, 0],
+              [0, -1]
+            ]
+          : [
+              [1, 0],
+              [0, 1]
+            ]
       default:
-        return [0, 0]
+        return [[0, 0]]
     }
   }
 
@@ -322,9 +362,49 @@ export class CubeIndex extends Indexer {
    * Used by standard line algorithm.
    */
   *line (startQ, startR, endQ, endR, exitCondition) {
+    const boundaryExit = this._boundaryExitCondition
+    const useBresenham = exitCondition === boundaryExit
+
     exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
     const startS = CubeIndex.qrToS(startQ, startR)
     const endS = CubeIndex.qrToS(endQ, endR)
+
+    if (!useBresenham) {
+      const deltaQ = endQ - startQ
+      const deltaR = endR - startR
+      const deltaS = endS - startS
+      const steps = Math.max(
+        Math.abs(deltaQ),
+        Math.abs(deltaR),
+        Math.abs(deltaS)
+      )
+
+      if (steps === 0) {
+        return
+      }
+
+      let step = 1
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps
+        const [currentQ, currentR] = this._cubeRound(
+          startQ + deltaQ * t,
+          startR + deltaR * t,
+          startS + deltaS * t
+        )
+
+        if (!this.isValid(currentQ, currentR, -currentQ - currentR)) {
+          break
+        }
+
+        yield [currentQ, currentR, step]
+        if (exitCondition(currentQ, currentR, step)) {
+          break
+        }
+        step++
+      }
+      return
+    }
+
     const { ordered } = this.direction(
       [startQ, startR, startS],
       [endQ, endR, endS]
@@ -376,6 +456,26 @@ export class CubeIndex extends Indexer {
       currentR += dr
       errorTerm += axis === primary ? -deltaY : deltaX
     }
+  }
+
+  _cubeRound (q, r, s) {
+    let rq = Math.round(q)
+    let rr = Math.round(r)
+    let rs = Math.round(s)
+
+    const qDiff = Math.abs(rq - q)
+    const rDiff = Math.abs(rr - r)
+    const sDiff = Math.abs(rs - s)
+
+    if (qDiff > rDiff && qDiff > sDiff) {
+      rq = -rr - rs
+    } else if (rDiff > sDiff) {
+      rr = -rq - rs
+    } else {
+      rs = -rq - rr
+    }
+
+    return [rq, rr]
   }
 
   /**

@@ -242,6 +242,19 @@ describe('CubeIndex', () => {
         expect(results.length).toBeGreaterThanOrEqual(2)
       })
 
+      it('line from center to a steep target is smooth, not L-shaped', () => {
+        const largeCube = new CubeIndex(3)
+        const results = Array.from(largeCube.line(0, 0, 1, -3)).map(
+          ([q, r]) => [q, r]
+        )
+        expect(results).toEqual([
+          [0, 0],
+          [0, -1],
+          [1, -2],
+          [1, -3]
+        ])
+      })
+
       it('line yields coordinates with increasing step count', () => {
         const results = []
         for (const [q, r, step] of cubeIndex.line(0, 0, 1, -1)) {
