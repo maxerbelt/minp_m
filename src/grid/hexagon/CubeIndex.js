@@ -166,6 +166,32 @@ export class CubeIndex extends Indexer {
   direction (start, end) {
     return this.connection[6].direction(start, end)
   }
+
+  _axisStepVector (axis, sign, currentQ, currentR, targetQ, targetR) {
+    const qDiff = targetQ - currentQ
+    const rDiff = targetR - currentR
+
+    switch (axis) {
+      case 'q':
+        if (sign === 1) {
+          return rDiff < 0 ? [1, -1] : [1, 0]
+        }
+        return rDiff > 0 ? [-1, 1] : [-1, 0]
+      case 'r':
+        if (sign === 1) {
+          return qDiff < 0 ? [-1, 1] : [0, 1]
+        }
+        return qDiff > 0 ? [1, -1] : [0, -1]
+      case 's':
+        if (sign === 1) {
+          return qDiff < 0 ? [-1, 0] : [0, -1]
+        }
+        return qDiff > 0 ? [1, 0] : [0, 1]
+      default:
+        return [0, 0]
+    }
+  }
+
   *entries (bb) {
     for (const [loc, i] of this.qrsToI) {
       yield [...loc, bb.at(...loc), i, bb]
@@ -297,13 +323,16 @@ export class CubeIndex extends Indexer {
    */
   *line (startQ, startR, endQ, endR, exitCondition) {
     exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
-    // Delta and direction setup
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endQ,
-      startQ,
-      endR,
-      startR
+    const startS = CubeIndex.qrToS(startQ, startR)
+    const endS = CubeIndex.qrToS(endQ, endR)
+    const { ordered } = this.direction(
+      [startQ, startR, startS],
+      [endQ, endR, endS]
     )
+    const primary = ordered[0]
+    const secondary = ordered[1]
+    const deltaX = primary.magnitude
+    const deltaY = secondary.magnitude
 
     // Special case: start == end, return empty (no line segment to draw)
     if (deltaX === 0 && deltaY === 0) {
@@ -332,17 +361,20 @@ export class CubeIndex extends Indexer {
       }
       yield [currentQ, currentR, step]
       step++
-      // Exit condition
       if (exitCondition(currentQ, currentR, step)) break
-      ;({ errorTerm, currentQ, currentR } = bresenhamStep(
-        errorTerm,
-        deltaX,
-        deltaY,
+
+      const axis = errorTerm > 0 ? primary : secondary
+      const [dq, dr] = this._axisStepVector(
+        axis.letter,
+        axis.sign,
         currentQ,
         currentR,
-        stepX,
-        stepY
-      ))
+        endQ,
+        endR
+      )
+      currentQ += dq
+      currentR += dr
+      errorTerm += axis === primary ? -deltaY : deltaX
     }
   }
 
@@ -352,26 +384,24 @@ export class CubeIndex extends Indexer {
    */
   *superCoverLine (startQ, startR, endQ, endR, exitCondition) {
     exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
-    // Delta and direction setup
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endQ,
-      startQ,
-      endR,
-      startR
+    const startS = CubeIndex.qrToS(startQ, startR)
+    const endS = CubeIndex.qrToS(endQ, endR)
+    const { ordered } = this.direction(
+      [startQ, startR, startS],
+      [endQ, endR, endS]
     )
+    const primary = ordered[0]
+    const secondary = ordered[1]
+    const deltaX = primary.magnitude
+    const deltaY = secondary.magnitude
 
-    // Bresenham error accumulator
     let errorTerm = deltaX - deltaY
 
-    // Current traversal position
     let currentQ = startQ
     let currentR = startR
     let step = 1
-    let moveInQ = 0
-    let moveInR = 0
     // Main traversal loop
     while (true) {
-      // Bounds check
       const s = -currentQ - currentR
       if (!this.isValid(currentQ, currentR, s)) {
         break
@@ -384,31 +414,32 @@ export class CubeIndex extends Indexer {
       }
       yield [currentQ, currentR, step]
       step++
-      // Exit condition
       if (exitCondition(currentQ, currentR, step)) break
 
-      // Store previous position (needed for supercover extras)
       const previousQ = currentQ
       const previousR = currentR
-
-      ;({ errorTerm, currentQ, currentR, moveInQ, moveInR } = bresenhamStepMove(
-        errorTerm,
-        deltaX,
-        deltaY,
+      const axis = errorTerm > 0 ? primary : secondary
+      const [dq, dr] = this._axisStepVector(
+        axis.letter,
+        axis.sign,
         currentQ,
         currentR,
-        stepX,
-        stepY
-      ))
+        endQ,
+        endR
+      )
+      currentQ += dq
+      currentR += dr
+      const moveInQ = +Boolean(dq)
+      const moveInR = +Boolean(dr)
+      errorTerm += axis === primary ? -deltaY : deltaX
 
-      // Emit extra cells when corner crossing detected
       step = yield* this.yieldSuperCoverCornerCells(
         moveInQ,
         moveInR,
         previousQ,
-        stepX,
+        dq,
         previousR,
-        stepY,
+        dr,
         step
       )
     }
@@ -421,26 +452,24 @@ export class CubeIndex extends Indexer {
   *halfCoverLine (startQ, startR, endQ, endR, exitCondition) {
     exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
 
-    // Delta and direction setup
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endQ,
-      startQ,
-      endR,
-      startR
+    const startS = CubeIndex.qrToS(startQ, startR)
+    const endS = CubeIndex.qrToS(endQ, endR)
+    const { ordered } = this.direction(
+      [startQ, startR, startS],
+      [endQ, endR, endS]
     )
+    const primary = ordered[0]
+    const secondary = ordered[1]
+    const deltaX = primary.magnitude
+    const deltaY = secondary.magnitude
 
-    // Bresenham error accumulator
     let errorTerm = deltaX - deltaY
 
-    // Current traversal position
     let currentQ = startQ
     let currentR = startR
     let step = 1
-    let moveInQ = 0
-    let moveInR = 0
     // Main traversal loop
     while (true) {
-      // Bounds check
       const s = -currentQ - currentR
       if (!this.isValid(currentQ, currentR, s)) {
         break
@@ -453,31 +482,32 @@ export class CubeIndex extends Indexer {
       }
       yield [currentQ, currentR, step]
       step++
-      // Exit condition
       if (exitCondition(currentQ, currentR, step)) break
 
-      // Store previous position (needed for half cover extras)
       const previousQ = currentQ
       const previousR = currentR
-
-      ;({ errorTerm, currentQ, currentR, moveInQ, moveInR } = bresenhamStepMove(
-        errorTerm,
-        deltaX,
-        deltaY,
+      const axis = errorTerm > 0 ? primary : secondary
+      const [dq, dr] = this._axisStepVector(
+        axis.letter,
+        axis.sign,
         currentQ,
         currentR,
-        stepX,
-        stepY
-      ))
+        endQ,
+        endR
+      )
+      currentQ += dq
+      currentR += dr
+      const moveInQ = +Boolean(dq)
+      const moveInR = +Boolean(dr)
+      errorTerm += axis === primary ? -deltaY : deltaX
 
-      // Emit extra cells when corner crossing detected (max 1 cell for half-cover)
       step = yield* this.yieldHalfCoverCornerCells(
         moveInQ,
         moveInR,
         previousQ,
-        stepX,
+        dq,
         previousR,
-        stepY,
+        dr,
         step
       )
     }
