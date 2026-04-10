@@ -1,0 +1,35 @@
+import { TriConnectBase } from './TriConnectBase.js'
+
+export class Connect12 extends TriConnectBase {
+  constructor (triIndex) {
+    super(triIndex)
+    this.valuesUp = [
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, -1, 1],
+      [0, 1, 1],
+      [-1, 0, 1],
+      [-1, -1, 1],
+      [-2, -2, 1],
+      [-2, -1, 1],
+      [-2, 0, 1],
+      [-1, 1, 1],
+      [1, -1, 1],
+      [0, 2, 1]
+    ]
+    this.valuesDown = [
+      [-1, -1, 0],
+      [-1, 0, 0],
+      [0, 1, 0],
+      [0, -1, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [0, -1, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [2, 0, 0],
+      [2, 1, 0],
+      [2, 2, 0]
+    ]
+  }
+}

@@ -1,46 +1,10 @@
 import { ActionsTri } from './actionsTri.js'
 import { Indexer, deltaAndDirection } from '../indexer.js'
-
-const neighborsEdgeUp = {
-  BL: [1, 0, 1],
-  BR: [1, 1, 1],
-  L: [0, -1, 1]
-}
-
-const neighborsEdgeDown = {
-  TL: [-1, -1, 0],
-  TR: [-1, 0, 0],
-  R: [0, 1, 0]
-}
-
-const neighborsVertexDown = {
-  L: [0, -1, 0],
-  B: [1, 0, 0],
-  BR: [1, 1, 0]
-}
-
-const neighborsVertexUp = {
-  R: [0, 1, 1],
-  T: [-1, 0, 1],
-  TL: [-1, -1, 1]
-}
-const neighborsExtendedDown = {
-  X_TL2: [-2, -2, 1],
-  X_TM2: [-2, -1, 1],
-  X_TR2: [-2, 0, 1],
-  X_DR: [-1, 1, 1],
-  X_UL: [1, -1, 1],
-  X_RR2: [0, 2, 1]
-}
-
-const neighborsExtendedUp = {
-  X_BL2: [2, 0, 0],
-  X_BM2: [2, 1, 0],
-  X_BR2: [2, 2, 0],
-  X_DL: [1, -1, 0],
-  X_UR: [-1, 1, 0],
-  X_LL2: [0, -2, 0]
-}
+import { Connect3 } from './Connect3.js'
+import { Connect3Vertex } from './Connect3Vertex.js'
+import { TriConnect6 } from './TriConnect6.js'
+import { TriConnect6Extended } from './TriConnect6Extended.js'
+import { Connect12 } from './Connect12.js'
 
 function direction (endX, startX, endY, startY) {
   const dxDir = endX - startX
@@ -123,6 +87,14 @@ export class TriIndex extends Indexer {
     for (const [wrapperName, baseName] of wrapperPairs) {
       this[wrapperName] = this._createIndicesWrapper(baseName)
     }
+
+    this.connection = {
+      3: new Connect3(this),
+      '3vertex': new Connect3Vertex(this),
+      6: new TriConnect6(this),
+      '6extended': new TriConnect6Extended(this),
+      12: new Connect12(this)
+    }
   }
   index (r, c) {
     if (!this.isValid(r, c)) return undefined
@@ -144,48 +116,45 @@ export class TriIndex extends Indexer {
     return (r + c) & 1
   }
   neighborsEdge (r, c) {
-    const neighbors =
-      this.parity(r, c) === 0 ? neighborsEdgeUp : neighborsEdgeDown
-    const neighborValues = Object.values(neighbors)
-    return neighborValues.map(([dr, dc, bit]) => [r + dr, c + dc, bit])
+    return this.connection['3'].neighbors(r, c)
   }
+
   areaEdge (r, c) {
-    return [[r, c, this.parity(r, c)], ...this.neighborsEdge(r, c)]
+    return this.connection['3'].area(r, c)
   }
+
   neighborsVertex (r, c) {
-    const neighbors =
-      this.parity(r, c) === 0 ? neighborsVertexUp : neighborsVertexDown
-    const neighborValues = Object.values(neighbors)
-    return neighborValues.map(([dr, dc, bit]) => [r + dr, c + dc, bit])
+    return this.connection['3vertex'].neighbors(r, c)
   }
+
   areaVertex (r, c) {
-    return [[r, c, this.parity(r, c)], ...this.neighborsVertex(r, c)]
+    return this.connection['3vertex'].area(r, c)
   }
+
   neighborsExtended (r, c) {
-    const neighbors =
-      this.parity(r, c) === 0 ? neighborsExtendedUp : neighborsExtendedDown
-    const neighborValues = Object.values(neighbors)
-    return neighborValues.map(([dr, dc, bit]) => [r + dr, c + dc, bit])
+    return this.connection['6extended'].neighbors(r, c)
   }
+
   areaExtended (r, c) {
-    return [[r, c, this.parity(r, c)], ...this.neighborsExtended(r, c)]
+    return this.connection['6extended'].area(r, c)
   }
+
   neighbors6 (r, c) {
-    return [...this.neighborsEdge(r, c), ...this.neighborsVertex(r, c)]
+    return this.connection['6'].neighbors(r, c)
   }
+
   area6 (r, c) {
-    return [[r, c, this.parity(r, c)], ...this.neighbors(r, c)]
+    return this.connection['6'].area(r, c)
   }
+
   neighbors (r, c) {
-    return [
-      ...this.neighborsEdge(r, c),
-      ...this.neighborsVertex(r, c),
-      ...this.neighborsExtended(r, c)
-    ]
+    return this.connection['12'].neighbors(r, c)
   }
+
   area (r, c) {
-    return [[r, c, this.parity(r, c)], ...this.neighbors(r, c)]
+    return this.connection['12'].area(r, c)
   }
+
   *rows () {
     for (let r = 0; r < this.side; r++) {
       yield r

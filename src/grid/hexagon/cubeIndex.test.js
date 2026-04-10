@@ -70,6 +70,13 @@ describe('CubeIndex', () => {
       })
     })
 
+    it('exposes cover objects for normal, half, and super line modes', () => {
+      expect(cubeIndex.cover).toBeDefined()
+      expect(cubeIndex.cover.normal).toBeDefined()
+      expect(cubeIndex.cover.half).toBeDefined()
+      expect(cubeIndex.cover.super).toBeDefined()
+    })
+
     describe('index()', () => {
       it('returns same index for 3-arg and 2-arg with same q,r', () => {
         const idx3 = cubeIndex.index(0, 0, 0)

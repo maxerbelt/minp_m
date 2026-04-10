@@ -86,6 +86,55 @@ describe('TriIndex', () => {
     })
   })
 
+  describe('connection helpers', () => {
+    it('creates a connection object with all expected keys', () => {
+      expect(triIndex.connection).toBeDefined()
+      expect(triIndex.connection['3']).toBeDefined()
+      expect(triIndex.connection['3vertex']).toBeDefined()
+      expect(triIndex.connection['6']).toBeDefined()
+      expect(triIndex.connection['6extended']).toBeDefined()
+      expect(triIndex.connection['12']).toBeDefined()
+    })
+
+    it('neighborsEdge delegates to connection["3"]', () => {
+      const edgeNeighbors = triIndex.neighborsEdge(1, 1)
+      const connectionNeighbors = triIndex.connection['3'].neighbors(1, 1)
+      expect(edgeNeighbors).toEqual(connectionNeighbors)
+    })
+
+    it('neighborsVertex delegates to connection["3vertex"]', () => {
+      const vertexNeighbors = triIndex.neighborsVertex(1, 1)
+      const connectionNeighbors = triIndex.connection['3vertex'].neighbors(1, 1)
+      expect(vertexNeighbors).toEqual(connectionNeighbors)
+    })
+
+    it('neighbors6 delegates to connection["6"]', () => {
+      const neighbors6 = triIndex.neighbors6(1, 1)
+      const connectionNeighbors = triIndex.connection['6'].neighbors(1, 1)
+      expect(neighbors6).toEqual(connectionNeighbors)
+    })
+
+    it('area6 delegates to connection["6"] and has 6 neighbors', () => {
+      const area6 = triIndex.area6(1, 1)
+      expect(area6.length).toBe(7)
+      expect(area6[0]).toEqual([1, 1, triIndex.parity(1, 1)])
+      expect(area6.slice(1)).toEqual(triIndex.connection['6'].neighbors(1, 1))
+    })
+
+    it('neighbors delegates to connection["12"]', () => {
+      const neighbors = triIndex.neighbors(1, 1)
+      const connectionNeighbors = triIndex.connection['12'].neighbors(1, 1)
+      expect(neighbors).toEqual(connectionNeighbors)
+    })
+
+    it('area delegates to connection["12"] and has 12 neighbors', () => {
+      const area12 = triIndex.area(1, 1)
+      expect(area12.length).toBe(13)
+      expect(area12[0]).toEqual([1, 1, triIndex.parity(1, 1)])
+      expect(area12.slice(1)).toEqual(triIndex.connection['12'].neighbors(1, 1))
+    })
+  })
+
   describe('line drawing algorithms', () => {
     it('line yields coordinates with step count', () => {
       const results = []

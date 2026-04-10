@@ -3,6 +3,9 @@ import { lazy } from '../../core/utilities.js'
 import { buildTransformHexMaps } from './buildTransformHexMaps.js'
 import { Indexer } from '../indexer.js'
 import { Connect6 } from './Connect6.js'
+import { HexNormalCover } from './HexNormalCover.js'
+import { HexHalfCover } from './HexHalfCover.js'
+import { HexSuperCover } from './HexSuperCover.js'
 
 function bresenhamStep (
   errorTerm,
@@ -115,6 +118,12 @@ export class CubeIndex extends Indexer {
 
     for (const [wrapperName, baseName] of wrapperPairs) {
       this[wrapperName] = this._createIndicesWrapper(baseName)
+    }
+
+    this.cover = {
+      normal: new HexNormalCover(this),
+      half: new HexHalfCover(this),
+      super: new HexSuperCover(this)
     }
 
     this._boundaryExitCondition = this._createBoundaryExitCondition()
@@ -230,6 +239,26 @@ export class CubeIndex extends Indexer {
       default:
         return [[0, 0]]
     }
+  }
+
+  _cubeRound (q, r, s) {
+    let rq = Math.round(q)
+    let rr = Math.round(r)
+    let rs = Math.round(s)
+
+    const qDiff = Math.abs(rq - q)
+    const rDiff = Math.abs(rr - r)
+    const sDiff = Math.abs(rs - s)
+
+    if (qDiff > rDiff && qDiff > sDiff) {
+      rq = -rr - rs
+    } else if (rDiff > sDiff) {
+      rr = -rq - rs
+    } else {
+      rs = -rq - rr
+    }
+
+    return [rq, rr]
   }
 
   *entries (bb) {
@@ -357,346 +386,34 @@ export class CubeIndex extends Indexer {
   // CONCEPT: Bresenham Line Drawing (Reusable pattern across all indexers)
   // ============================================================================
 
-  /**
-   * Core Bresenham line without corner detection.
-   * Used by standard line algorithm.
-   */
   *line (startQ, startR, endQ, endR, exitCondition) {
-    const boundaryExit = this._boundaryExitCondition
-    const useBresenham = exitCondition === boundaryExit
-
-    exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
-    const startS = CubeIndex.qrToS(startQ, startR)
-    const endS = CubeIndex.qrToS(endQ, endR)
-
-    if (!useBresenham) {
-      const deltaQ = endQ - startQ
-      const deltaR = endR - startR
-      const deltaS = endS - startS
-      const steps = Math.max(
-        Math.abs(deltaQ),
-        Math.abs(deltaR),
-        Math.abs(deltaS)
-      )
-
-      if (steps === 0) {
-        return
-      }
-
-      let step = 1
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps
-        const [currentQ, currentR] = this._cubeRound(
-          startQ + deltaQ * t,
-          startR + deltaR * t,
-          startS + deltaS * t
-        )
-
-        if (!this.isValid(currentQ, currentR, -currentQ - currentR)) {
-          break
-        }
-
-        yield [currentQ, currentR, step]
-        if (exitCondition(currentQ, currentR, step)) {
-          break
-        }
-        step++
-      }
-      return
-    }
-
-    const { ordered } = this.direction(
-      [startQ, startR, startS],
-      [endQ, endR, endS]
+    return yield* this.cover.normal.line(
+      startQ,
+      startR,
+      endQ,
+      endR,
+      exitCondition
     )
-    const primary = ordered[0]
-    const secondary = ordered[1]
-    const deltaX = primary.magnitude
-    const deltaY = secondary.magnitude
-
-    // Special case: start == end, return empty (no line segment to draw)
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    // Bresenham error accumulator
-    let errorTerm = deltaX - deltaY
-
-    // Current traversal position
-    let currentQ = startQ
-    let currentR = startR
-    let step = 1
-    // Main traversal loop
-    while (true) {
-      // Bounds check using unsigned comparison trick (avoids two separate >= 0 checks)
-      const s = -currentQ - currentR
-      if (!this.isValid(currentQ, currentR, s)) {
-        break
-      }
-      if (step > 60) {
-        console.warn(
-          `Bresenham line exceeded 60 steps, likely infinite loop.  Current position: (${currentQ}, ${currentR}), end position: (${endQ}, ${endR})`
-        )
-        break
-      }
-      yield [currentQ, currentR, step]
-      step++
-      if (exitCondition(currentQ, currentR, step)) break
-
-      const axis = errorTerm > 0 ? primary : secondary
-      const [dq, dr] = this._axisStepVector(
-        axis.letter,
-        axis.sign,
-        currentQ,
-        currentR,
-        endQ,
-        endR
-      )
-      currentQ += dq
-      currentR += dr
-      errorTerm += axis === primary ? -deltaY : deltaX
-    }
   }
 
-  _cubeRound (q, r, s) {
-    let rq = Math.round(q)
-    let rr = Math.round(r)
-    let rs = Math.round(s)
-
-    const qDiff = Math.abs(rq - q)
-    const rDiff = Math.abs(rr - r)
-    const sDiff = Math.abs(rs - s)
-
-    if (qDiff > rDiff && qDiff > sDiff) {
-      rq = -rr - rs
-    } else if (rDiff > sDiff) {
-      rr = -rq - rs
-    } else {
-      rs = -rq - rr
-    }
-
-    return [rq, rr]
-  }
-
-  /**
-   * Super-cover line: emits all cells touched by the line segment.
-   * Detects corner crossings and emits extra cells when both axes move simultaneously.
-   */
   *superCoverLine (startQ, startR, endQ, endR, exitCondition) {
-    exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
-    const startS = CubeIndex.qrToS(startQ, startR)
-    const endS = CubeIndex.qrToS(endQ, endR)
-    const { ordered } = this.direction(
-      [startQ, startR, startS],
-      [endQ, endR, endS]
+    return yield* this.cover.super.line(
+      startQ,
+      startR,
+      endQ,
+      endR,
+      exitCondition
     )
-    const primary = ordered[0]
-    const secondary = ordered[1]
-    const deltaX = primary.magnitude
-    const deltaY = secondary.magnitude
-
-    let errorTerm = deltaX - deltaY
-
-    let currentQ = startQ
-    let currentR = startR
-    let step = 1
-    // Main traversal loop
-    while (true) {
-      const s = -currentQ - currentR
-      if (!this.isValid(currentQ, currentR, s)) {
-        break
-      }
-      if (step > 60) {
-        console.warn(
-          `Bresenham line exceeded 60 steps, likely infinite loop.  Current position: (${currentQ}, ${currentR}), end position: (${endQ}, ${endR})`
-        )
-        break
-      }
-      yield [currentQ, currentR, step]
-      step++
-      if (exitCondition(currentQ, currentR, step)) break
-
-      const previousQ = currentQ
-      const previousR = currentR
-      const axis = errorTerm > 0 ? primary : secondary
-      const [dq, dr] = this._axisStepVector(
-        axis.letter,
-        axis.sign,
-        currentQ,
-        currentR,
-        endQ,
-        endR
-      )
-      currentQ += dq
-      currentR += dr
-      const moveInQ = +Boolean(dq)
-      const moveInR = +Boolean(dr)
-      errorTerm += axis === primary ? -deltaY : deltaX
-
-      step = yield* this.yieldSuperCoverCornerCells(
-        moveInQ,
-        moveInR,
-        previousQ,
-        dq,
-        previousR,
-        dr,
-        step
-      )
-    }
   }
 
-  /**
-   * Half-cover line: emits cells with rightward bias at corners.
-   * Detects corner crossings but only emits one extra cell per corner (with bias).
-   */
   *halfCoverLine (startQ, startR, endQ, endR, exitCondition) {
-    exitCondition = this._ensureExitCondition(exitCondition, endQ, endR)
-
-    const startS = CubeIndex.qrToS(startQ, startR)
-    const endS = CubeIndex.qrToS(endQ, endR)
-    const { ordered } = this.direction(
-      [startQ, startR, startS],
-      [endQ, endR, endS]
+    return yield* this.cover.half.line(
+      startQ,
+      startR,
+      endQ,
+      endR,
+      exitCondition
     )
-    const primary = ordered[0]
-    const secondary = ordered[1]
-    const deltaX = primary.magnitude
-    const deltaY = secondary.magnitude
-
-    let errorTerm = deltaX - deltaY
-
-    let currentQ = startQ
-    let currentR = startR
-    let step = 1
-    // Main traversal loop
-    while (true) {
-      const s = -currentQ - currentR
-      if (!this.isValid(currentQ, currentR, s)) {
-        break
-      }
-      if (step > 60) {
-        console.warn(
-          `Bresenham line exceeded 60 steps, likely infinite loop.  Current position: (${currentQ}, ${currentR}), end position: (${endQ}, ${endR})`
-        )
-        break
-      }
-      yield [currentQ, currentR, step]
-      step++
-      if (exitCondition(currentQ, currentR, step)) break
-
-      const previousQ = currentQ
-      const previousR = currentR
-      const axis = errorTerm > 0 ? primary : secondary
-      const [dq, dr] = this._axisStepVector(
-        axis.letter,
-        axis.sign,
-        currentQ,
-        currentR,
-        endQ,
-        endR
-      )
-      currentQ += dq
-      currentR += dr
-      const moveInQ = +Boolean(dq)
-      const moveInR = +Boolean(dr)
-      errorTerm += axis === primary ? -deltaY : deltaX
-
-      step = yield* this.yieldHalfCoverCornerCells(
-        moveInQ,
-        moveInR,
-        previousQ,
-        dq,
-        previousR,
-        dr,
-        step
-      )
-    }
-  }
-
-  // ============================================================================
-  // CONCEPT: Corner Crossing Detection (Algorithm-specific handlers)
-  // ============================================================================
-
-  /**
-   * Detects and yields corner-crossing cells for super-cover algorithm.
-   * Pattern: Both axes moved = diagonal step = corner was crossed.
-   */
-  *yieldSuperCoverCornerCells (
-    moveInQ,
-    moveInR,
-    previousQ,
-    stepQ,
-    previousR,
-    stepR,
-    step
-  ) {
-    const crossedCorner = moveInQ & moveInR
-
-    if (crossedCorner) {
-      const extraCell1Q = previousQ + stepQ
-      const extraCell1R = previousR
-
-      const extraCell2Q = previousQ
-      const extraCell2R = previousR + stepR
-
-      const s1 = -extraCell1Q - extraCell1R
-      if (this.isValid(extraCell1Q, extraCell1R, s1)) {
-        yield [extraCell1Q, extraCell1R, step]
-        step++
-      }
-      const s2 = -extraCell2Q - extraCell2R
-      if (this.isValid(extraCell2Q, extraCell2R, s2)) {
-        yield [extraCell2Q, extraCell2R, step]
-        step++
-      }
-    }
-    return step
-  }
-
-  /**
-   * Detects and yields corner-crossing cells for half-cover algorithm.
-   * Half-cover only emits one extra cell (with Q-direction bias).
-   */
-  *yieldHalfCoverCornerCells (
-    moveInQ,
-    moveInR,
-    previousQ,
-    stepQ,
-    previousR,
-    stepR,
-    step
-  ) {
-    const crossedCorner = moveInQ & moveInR
-
-    if (crossedCorner) {
-      const extraCell1Q = previousQ + stepQ
-      const extraCell1R = previousR
-
-      const extraCell2Q = previousQ
-      const extraCell2R = previousR + stepR
-
-      const right = this.isValid(
-        extraCell1Q,
-        extraCell1R,
-        -extraCell1Q - extraCell1R
-      )
-      if (right) {
-        yield [extraCell1Q, extraCell1R, step]
-        step++
-        return step
-      }
-
-      const below = this.isValid(
-        extraCell2Q,
-        extraCell2R,
-        -extraCell2Q - extraCell2R
-      )
-      if (below) {
-        yield [extraCell2Q, extraCell2R, step]
-        step++
-      }
-    }
-    return step
   }
 
   // ============================================================================
@@ -704,33 +421,15 @@ export class CubeIndex extends Indexer {
   // ============================================================================
 
   *ray (startQ, startR, endQ, endR) {
-    return yield* this.line(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      this._createBoundaryExitCondition()
-    )
+    return yield* this.cover.normal.ray(startQ, startR, endQ, endR)
   }
 
   *superCoverRay (startQ, startR, endQ, endR) {
-    return yield* this.superCoverLine(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      this._createBoundaryExitCondition()
-    )
+    return yield* this.cover.super.ray(startQ, startR, endQ, endR)
   }
 
   *halfCoverRay (startQ, startR, endQ, endR) {
-    return yield* this.halfCoverLine(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      this._createBoundaryExitCondition()
-    )
+    return yield* this.cover.half.ray(startQ, startR, endQ, endR)
   }
 
   // ============================================================================
@@ -738,48 +437,27 @@ export class CubeIndex extends Indexer {
   // ============================================================================
 
   *segmentTo (startQ, startR, endQ, endR) {
-    return yield* this.line(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      this._createEndpointExitCondition(endQ, endR)
-    )
+    return yield* this.cover.normal.segmentTo(startQ, startR, endQ, endR)
   }
 
   *superCoverSegmentTo (startQ, startR, endQ, endR) {
-    return yield* this.superCoverLine(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      this._createEndpointExitCondition(endQ, endR)
-    )
+    return yield* this.cover.super.segmentTo(startQ, startR, endQ, endR)
   }
 
   *halfCoverSegmentTo (startQ, startR, endQ, endR) {
-    return yield* this.halfCoverLine(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      this._createEndpointExitCondition(endQ, endR)
-    )
+    return yield* this.cover.half.segmentTo(startQ, startR, endQ, endR)
   }
 
   *fullLine (startQ, startR, endQ, endR) {
-    const { x0, y0, x1, y1 } = this.intercepts(startQ, startR, endQ, endR)
-    return yield* this.segmentTo(x0, y0, x1, y1)
+    return yield* this.cover.normal.fullLine(startQ, startR, endQ, endR)
   }
 
   *superCoverFullLine (startQ, startR, endQ, endR) {
-    const { x0, y0, x1, y1 } = this.intercepts(startQ, startR, endQ, endR)
-    return yield* this.superCoverSegmentTo(x0, y0, x1, y1)
+    return yield* this.cover.super.fullLine(startQ, startR, endQ, endR)
   }
 
   *halfCoverFullLine (startQ, startR, endQ, endR) {
-    const { x0, y0, x1, y1 } = this.intercepts(startQ, startR, endQ, endR)
-    return yield* this.halfCoverSegmentTo(x0, y0, x1, y1)
+    return yield* this.cover.half.fullLine(startQ, startR, endQ, endR)
   }
 
   // ============================================================================
@@ -787,32 +465,32 @@ export class CubeIndex extends Indexer {
   // ============================================================================
 
   *segmentFor (startQ, startR, endQ, endR, distance) {
-    return yield* this.line(
+    return yield* this.cover.normal.segmentFor(
       startQ,
       startR,
       endQ,
       endR,
-      this._createDistanceLimitExitCondition(distance)
+      distance
     )
   }
 
   *superCoverSegmentFor (startQ, startR, endQ, endR, distance) {
-    return yield* this.superCoverLine(
+    return yield* this.cover.super.segmentFor(
       startQ,
       startR,
       endQ,
       endR,
-      this._createDistanceLimitExitCondition(distance)
+      distance
     )
   }
 
   *halfCoverSegmentFor (startQ, startR, endQ, endR, distance) {
-    return yield* this.halfCoverLine(
+    return yield* this.cover.half.segmentFor(
       startQ,
       startR,
       endQ,
       endR,
-      this._createDistanceLimitExitCondition(distance)
+      distance
     )
   }
 
