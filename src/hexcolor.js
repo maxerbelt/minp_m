@@ -1,4 +1,4 @@
-import { ColorPackedHexDraw } from './grid/hexagon/colorpackedhexdraw.js'
+import { ColorPackedHexDraw } from './ui/hexagon/colorpackedhexdraw.js'
 import { ColorPackedHexCanvas } from './ui/hexagon/ColorPackedHexCanvas.js'
 
 // Create ColorPackedHexDraw instance with canvas ID and parameters
