@@ -134,6 +134,33 @@ describe('TriIndex', () => {
       expect(neighbors).toEqual(connectionNeighbors)
     })
 
+    it('neighbors returns the union of edge, vertex, and extended triangle neighbors', () => {
+      const base = new TriIndex(8)
+      const r = 4
+      const c = 4
+      const expected = new Set([
+        ...base.neighborsEdge(r, c).map(([nr, nc]) => `${nr},${nc}`),
+        ...base.neighborsVertex(r, c).map(([nr, nc]) => `${nr},${nc}`),
+        ...base.neighborsExtended(r, c).map(([nr, nc]) => `${nr},${nc}`)
+      ])
+      const actual = new Set(
+        base.neighbors(r, c).map(([nr, nc]) => `${nr},${nc}`)
+      )
+      expect(actual).toEqual(expected)
+      expect(actual.size).toBe(12)
+    })
+
+    it('neighbors returns 12 valid coordinates for a down-parity interior triangle', () => {
+      const base = new TriIndex(20)
+      const r = 4
+      const c = 5
+      const neighbors = base.neighbors(r, c)
+      expect(neighbors.length).toBe(12)
+      expect(neighbors.every(([nr, nc]) => base.isValid(nr, nc))).toBe(true)
+      const unique = new Set(neighbors.map(([nr, nc]) => `${nr},${nc}`))
+      expect(unique.size).toBe(12)
+    })
+
     it('area delegates to connection["12"] and has 12 neighbors', () => {
       const area12 = triIndex.area(1, 1)
       expect(area12.length).toBe(13)

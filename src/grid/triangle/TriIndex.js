@@ -52,7 +52,7 @@ export class TriIndex extends Indexer {
     return r >= 0 && r < this.side && c >= 0 && c <= 2 * r
   }
   parity (r, c) {
-    return (r + c) & 1
+    return c & 1
   }
 
   _gridToCube (row, col) {

@@ -112,6 +112,91 @@ export class MaskTri extends MaskBase {
   }
 
   // ============================================================================
+  // Triangle-specific morphological operations
+  // ============================================================================
+
+  /**
+   * Expand set bits by triangle connectivity radius
+   */
+  dilateBits (radius = 1) {
+    let bits = this.bits
+    for (let step = 0; step < radius; step++) {
+      let nextBits = bits
+      for (const [r, c] of this.indexer.bitKeys(bits)) {
+        const neighbors = this.indexer.neighbors(r, c)
+        for (const [nr, nc] of neighbors) {
+          if (!this.indexer.isValid(nr, nc)) continue
+          const idx = this.indexer.index(nr, nc)
+          nextBits = this.store.addBit(nextBits, idx)
+        }
+      }
+      bits = nextBits
+    }
+    return bits
+  }
+
+  /**
+   * Shrink set bits by triangle connectivity radius
+   */
+  erodeBits (radius = 1) {
+    let bits = this.bits
+    for (let step = 0; step < radius; step++) {
+      let nextBits = this.store.empty
+      for (const [r, c, idx] of this.indexer.bitKeys(bits)) {
+        const neighbors = this.indexer.neighbors(r, c)
+        let survives = true
+        for (const [nr, nc] of neighbors) {
+          if (!this.indexer.isValid(nr, nc)) {
+            survives = false
+            break
+          }
+          if (!this.test(nr, nc)) {
+            survives = false
+            break
+          }
+        }
+        if (survives) {
+          nextBits = this.store.addBit(nextBits, idx)
+        }
+      }
+      bits = nextBits
+    }
+    return bits
+  }
+
+  /**
+   * Cross dilation on triangle grid expands only edge-adjacent neighbors
+   */
+  dilateCrossBits () {
+    let bits = this.bits
+    let nextBits = bits
+    for (const [r, c] of this.indexer.bitKeys(bits)) {
+      const neighbors = this.indexer.neighborsEdge(r, c)
+      for (const [nr, nc] of neighbors) {
+        if (!this.indexer.isValid(nr, nc)) continue
+        const idx = this.indexer.index(nr, nc)
+        nextBits = this.store.addBit(nextBits, idx)
+      }
+    }
+    return nextBits
+  }
+
+  dilate (radius = 1) {
+    this.bits = this.dilateBits(radius)
+    return this
+  }
+
+  erode (radius = 1) {
+    this.bits = this.erodeBits(radius)
+    return this
+  }
+
+  dilateCross () {
+    this.bits = this.dilateCrossBits()
+    return this
+  }
+
+  // ============================================================================
   // Cell Access - at, test, clear
   // ============================================================================
 
@@ -208,8 +293,17 @@ export class MaskTri extends MaskBase {
   }
 
   // ============================================================================
-  // Coordinate Conversion
+  // Clone / Factory Methods
   // ============================================================================
+
+  /**
+   * Create a clone of this triangular mask with identical side, depth, and bits
+   */
+  get clone () {
+    const mask = new MaskTri(this.side, null, null)
+    mask.bits = this.cloneBits
+    return mask
+  }
 
   /**
    * Load coordinates into this mask

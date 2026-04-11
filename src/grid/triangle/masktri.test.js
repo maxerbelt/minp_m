@@ -77,6 +77,61 @@ describe('MaskTri', () => {
     expect(mask2.test(0, 0)).toBe(true)
   })
 
+  it('dilateBits expands across triangle axes beyond the same row', () => {
+    mask.set(1, 1)
+    const dilated = new MaskTri(3)
+    dilated.bits = mask.dilateBits(1)
+
+    expect(dilated.test(0, 0)).toBe(true)
+    expect(dilated.test(2, 1)).toBe(true)
+    expect(dilated.test(1, 0)).toBe(true)
+    expect(dilated.test(1, 2)).toBe(true)
+  })
+
+  it('dilateBits from a down-oriented triangle includes all 12 neighbors', () => {
+    const maskDown = new MaskTri(10)
+    maskDown.set(4, 5)
+    const dilated = new MaskTri(10)
+    dilated.bits = maskDown.dilateBits(1)
+
+    expect(dilated.test(4, 5)).toBe(true)
+    expect(dilated.toCoords.length).toBe(13)
+  })
+
+  it('dilateBits from a centered cell includes all 12 triangle neighbors', () => {
+    const large = new MaskTri(8)
+    large.set(4, 4)
+    const dilated = new MaskTri(8)
+    dilated.bits = large.dilateBits(1)
+
+    expect(dilated.bits).not.toBe(0n)
+    expect(dilated.test(4, 4)).toBe(true)
+    expect(dilated.toCoords.length).toBe(13)
+  })
+
+  it('dilateCrossBits expands only to the 3 edge neighbors of a triangle cell', () => {
+    const large = new MaskTri(5)
+    large.set(2, 1)
+    const dilated = new MaskTri(5)
+    dilated.bits = large.dilateCrossBits()
+
+    expect(dilated.test(2, 1)).toBe(true)
+    expect(dilated.toCoords.length).toBe(4)
+  })
+
+  it('erodeBits removes cells missing triangle neighbors at the edge', () => {
+    mask.set(1, 1)
+    mask.set(1, 0)
+    mask.set(1, 2)
+    mask.set(2, 1)
+    mask.set(2, 2)
+    // intentionally omit one valid neighbor so center cell should erode
+    const eroded = new MaskTri(3)
+    eroded.bits = mask.erodeBits(1)
+
+    expect(eroded.test(1, 1)).toBe(false)
+  })
+
   it('toCoords returns list of set coords', () => {
     mask.set(0, 0)
     mask.set(1, 1)
@@ -89,6 +144,16 @@ describe('MaskTri', () => {
     const actions = mask.actions
     expect(actions).toBeInstanceOf(ActionsTri)
     expect(mask.actions).toBe(actions)
+  })
+
+  it('clone creates a valid triangular mask with same side and bits', () => {
+    mask.set(0, 0)
+    mask.set(1, 1)
+    const clone = mask.clone
+    expect(clone).toBeInstanceOf(MaskTri)
+    expect(clone.side).toBe(mask.side)
+    expect(clone.test(0, 0)).toBe(true)
+    expect(clone.test(1, 1)).toBe(true)
   })
 
   describe('setIndex - regression tests for clear/toggle actions', () => {
