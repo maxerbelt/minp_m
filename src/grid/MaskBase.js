@@ -404,7 +404,7 @@ export class MaskBase extends CanvasGrid {
       yield [x, y]
     }
   }
-  *cells () {
+  *allXYlocations () {
     const all = this.store.all
     for (const [x, y] of all.locations()) {
       yield [x, y]

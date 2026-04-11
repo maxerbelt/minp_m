@@ -192,7 +192,7 @@ function createPolyominoDragImage (polyomino, polyominoId, cellSize = 50) {
 
   // Draw polyomino cells
   ctx.fillStyle = color
-  for (const [x, y] of polyomino.cells()) {
+  for (const [x, y] of polyomino.allXYlocations()) {
     if (polyomino.at(x, y)) {
       const canvasX = padding + x * cellSize
       const canvasY = padding + y * cellSize
@@ -366,7 +366,7 @@ function setupDragAndDrop () {
         polyIndex: polyGrid.polyominoes.indexOf(poly),
         width: poly.poly.width,
         height: poly.poly.height,
-        cells: Array.from(poly.poly.cells())
+        cells: Array.from(poly.poly.allXYlocations())
       })
     )
 
@@ -478,7 +478,7 @@ function setupDragAndDrop () {
       }
 
       // Check if cells are empty
-      for (const [px, py] of poly.cells()) {
+      for (const [px, py] of poly.allXYlocations()) {
         if (poly.at(px, py)) {
           const gx = coords.gridX + px
           const gy = coords.gridY + py
@@ -491,7 +491,7 @@ function setupDragAndDrop () {
 
     // Place the polyomino on the main grid
     const poly = sourcePoly.poly
-    for (const [px, py] of poly.cells()) {
+    for (const [px, py] of poly.allXYlocations()) {
       if (poly.at(px, py)) {
         const gx = coords.gridX + px
         const gy = coords.gridY + py

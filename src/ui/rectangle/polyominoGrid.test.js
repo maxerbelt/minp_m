@@ -80,7 +80,7 @@ describe('PolyominoGridManager', () => {
     expect(placed).toBe(true)
     expect(manager.polyominoes.length).toBe(1)
     // Verify polyomino cells were written into the gridMask
-    const placedCells = Array.from(manager.gridMask.cells()).filter(
+    const placedCells = Array.from(manager.gridMask.allXYlocations()).filter(
       ([x, y]) => manager.gridMask.at(x, y) === 1
     )
     expect(placedCells.length).toBeGreaterThan(0)

@@ -439,7 +439,7 @@ export class PlacementUI extends WatersUI {
       'style',
       `display:grid;place-items: center;--boxSize:${this.cellSizeString()};grid-template-rows:repeat(${maxR}, var(--boxSize));grid-template-columns:repeat(${maxC}, var(--boxSize));gap:0px;`
     )
-    for (const [c, r] of board.cells()) {
+    for (const [c, r] of board.allXYlocations()) {
       const color = board.at(c, r)
       this.createDragShipCell(dragShip, letter, r, c, color)
     }

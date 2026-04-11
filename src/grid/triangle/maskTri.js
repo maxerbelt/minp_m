@@ -323,7 +323,7 @@ export class MaskTri extends MaskBase {
     let top = st.empty
     let bottom = st.empty
 
-    for (const [r, c] of this.indexer.cells()) {
+    for (const [r, c] of this.indexer.allRClocations()) {
       const i = this.index(r, c)
 
       // Check each edge condition and add bit if true

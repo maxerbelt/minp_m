@@ -119,7 +119,7 @@ export class PolyominoGridManager {
     const toCheck = new Set()
 
     // First pass: check if cells are empty
-    for (const [x, y] of poly.cells()) {
+    for (const [x, y] of poly.allXYlocations()) {
       if (poly.at(x, y)) {
         const gridX = startX + x
         const gridY = startY + y
@@ -161,7 +161,7 @@ export class PolyominoGridManager {
       return false
     }
 
-    for (const [x, y] of poly.cells()) {
+    for (const [x, y] of poly.allXYlocations()) {
       if (poly.at(x, y)) {
         const gridX = startX + x
         const gridY = startY + y
@@ -191,7 +191,7 @@ export class PolyominoGridManager {
    * Remove a polyomino by id
    */
   removePolyomino (polyId) {
-    for (const [x, y] of this.gridMask.cells()) {
+    for (const [x, y] of this.gridMask.allXYlocations()) {
       if (this.gridMask.at(x, y) === polyId) {
         this.gridMask.clear(x, y)
         if (this.rectDrawColor) {
@@ -225,7 +225,7 @@ export class PolyominoGridManager {
       let placed = false
 
       // Try all positions
-      for (const [x, y] of this.gridMask.cells()) {
+      for (const [x, y] of this.gridMask.allXYlocations()) {
         if (this.canPlacePolyomino(poly, x, y, this.nextPolyId)) {
           this.placePolyomino(poly, x, y, this.nextPolyId)
           this.nextPolyId++

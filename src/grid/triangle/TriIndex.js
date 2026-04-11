@@ -132,7 +132,7 @@ export class TriIndex extends Indexer {
       yield [r, c]
     }
   }
-  *cells () {
+  *allRClocations () {
     for (const r of this.rows()) {
       for (const [, c] of this.row(r)) {
         yield [r, c]
