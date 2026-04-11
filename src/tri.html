@@ -68,6 +68,43 @@
             <option value="clear">Clear</option>
             <option value="toggle">Toggle</option>
           </select>
+          <fieldset
+            style="
+              display: inline-block;
+              margin-left: 15px;
+              border: 1px solid #ccc;
+              padding: 5px;
+              border-radius: 4px;
+            "
+          >
+            <legend
+              style="
+                font-size: 11px;
+                font-weight: bold;
+                padding: 0 5px;
+                margin-left: -5px;
+              "
+            >
+              Cover Type:
+            </legend>
+            <label style="margin-right: 8px">
+              <input
+                type="radio"
+                name="tri-cover-type"
+                value="normal"
+                checked
+              />
+              Normal
+            </label>
+            <label style="margin-right: 8px">
+              <input type="radio" name="tri-cover-type" value="half" />
+              Half
+            </label>
+            <label>
+              <input type="radio" name="tri-cover-type" value="super" />
+              Super
+            </label>
+          </fieldset>
         </div>
       </span>
       <span id="gridButtons" style="margin-left: 8px">

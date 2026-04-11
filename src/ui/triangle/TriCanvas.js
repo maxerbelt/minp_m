@@ -127,17 +127,36 @@ export class TriCanvas extends GridCanvas {
     const indexer = this.grid.indexer
     const [sr, sc] = indexer.location(startIdx)
     const [er, ec] = indexer.location(endIdx)
+    const coverType = this.coverType || 'normal'
     let coords = []
 
     switch (this.currentTool) {
       case 'segment':
-        coords = Array.from(indexer.segmentTo(sr, sc, er, ec))
+        if (coverType === 'half') {
+          coords = Array.from(indexer.halfCoverSegmentTo(sr, sc, er, ec))
+        } else if (coverType === 'super') {
+          coords = Array.from(indexer.superCoverSegmentTo(sr, sc, er, ec))
+        } else {
+          coords = Array.from(indexer.segmentTo(sr, sc, er, ec))
+        }
         break
       case 'ray':
-        coords = Array.from(indexer.ray(sr, sc, er, ec))
+        if (coverType === 'half') {
+          coords = Array.from(indexer.halfCoverRay(sr, sc, er, ec))
+        } else if (coverType === 'super') {
+          coords = Array.from(indexer.superCoverRay(sr, sc, er, ec))
+        } else {
+          coords = Array.from(indexer.ray(sr, sc, er, ec))
+        }
         break
       case 'full':
-        coords = Array.from(indexer.fullLine(sr, sc, er, ec))
+        if (coverType === 'half') {
+          coords = Array.from(indexer.halfCoverFullLine(sr, sc, er, ec))
+        } else if (coverType === 'super') {
+          coords = Array.from(indexer.superCoverFullLine(sr, sc, er, ec))
+        } else {
+          coords = Array.from(indexer.fullLine(sr, sc, er, ec))
+        }
         break
       default:
         return []
@@ -415,8 +434,7 @@ export class TriCanvas extends GridCanvas {
   }
 
   getCoverTypeRadioSelector () {
-    // Triangle grids don't have cover type selector
-    return null
+    return 'input[name="tri-cover-type"]'
   }
 
   /**
