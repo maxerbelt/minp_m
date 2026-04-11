@@ -54,6 +54,7 @@ export class GridCanvas {
     if (this._canvasListenersAttached) return
 
     this._canvasListenersAttached = true
+    if (this.canvas) this.canvas.__lineToolsListenersAttached = true
     this.canvas.addEventListener('mousemove', e => this.onCanvasMouseMove(e))
     this.canvas.addEventListener('mouseleave', () => {
       if (this.grid) {
@@ -73,7 +74,7 @@ export class GridCanvas {
     const hit = this.hitTest(e)
 
     // Update hover preview on grid
-    if (this.currentTool && this.lineStart) {
+    if (this.currentTool && this.lineStart != null) {
       // When drawing a line, show preview
       if (hit) {
         this.updateLinePreview(this.lineStart, hit)
@@ -96,7 +97,7 @@ export class GridCanvas {
     const hit = this.hitTest(e)
     if (!hit) return
 
-    if (!this.lineStart) {
+    if (this.lineStart == null) {
       this.setLineStartPoint(hit)
     } else {
       this.completeLine(this.lineStart, hit)

@@ -1,5 +1,4 @@
-import { TriCoverBase, triBresenhamStepMove } from './TriCoverBase.js'
-import { deltaAndDirection } from '../indexer.js'
+import { TriCoverBase } from './TriCoverBase.js'
 
 export class TriHalfCover extends TriCoverBase {
   constructor (triIndex) {
@@ -22,64 +21,41 @@ export class TriHalfCover extends TriCoverBase {
       endR,
       endC
     )
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endR,
-      startR,
-      endC,
-      startC
+
+    const coordinates = Array.from(
+      this.triIndex._cubeLineCoords(startR, startC, endR, endC)
     )
-
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    let errorTerm = deltaX - deltaY
-
-    let currentR = startR
-    let currentC = startC
     let step = 1
-    let moveInR = 0
-    let moveInC = 0
 
-    while (true) {
+    for (let index = 0; index < coordinates.length; index++) {
+      const [currentR, currentC] = coordinates[index]
+
       if (!this.triIndex.isValid(currentR, currentC)) {
         break
       }
       if (step > 60) {
         break
       }
+
       yield [currentR, currentC, step]
       step++
       if (exitCondition(currentR, currentC, step)) break
 
-      const previousR = currentR
-      const previousC = currentC
+      if (index + 1 < coordinates.length) {
+        const [nextR, nextC] = coordinates[index + 1]
+        const moveInR = nextR !== currentR ? 1 : 0
+        const moveInC = nextC !== currentC ? 1 : 0
 
-      ;({
-        errorTerm,
-        currentX: currentR,
-        currentY: currentC,
-        moveInX: moveInR,
-        moveInY: moveInC
-      } = triBresenhamStepMove(
-        errorTerm,
-        deltaY,
-        deltaX,
-        currentR,
-        stepX,
-        currentC,
-        stepY
-      ))
-
-      step = yield* this.yieldHalfCoverCornerCells(
-        moveInR,
-        moveInC,
-        previousR,
-        stepX,
-        previousC,
-        stepY,
-        step
-      )
+        step = yield* this.yieldHalfCoverCornerCells(
+          moveInR,
+          moveInC,
+          currentR,
+          nextR - currentR,
+          currentC,
+          nextC - currentC,
+          step
+        )
+      }
     }
   }
 

@@ -1,5 +1,4 @@
-import { TriCoverBase, triBresenhamStep } from './TriCoverBase.js'
-import { deltaAndDirection } from '../indexer.js'
+import { TriCoverBase } from './TriCoverBase.js'
 
 export class TriNormalCover extends TriCoverBase {
   constructor (triIndex) {
@@ -22,73 +21,27 @@ export class TriNormalCover extends TriCoverBase {
       endR,
       endC
     )
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endR,
-      startR,
-      endC,
-      startC
-    )
 
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    let errorTerm = deltaX - deltaY
-
-    let currentR = startR
-    let currentC = startC
     let step = 1
 
-    while (true) {
-      if (!this.triIndex.isValid(currentR, currentC)) {
-        for (let attempts = 0; attempts < 10; attempts++) {
-          ;({
-            errorTerm,
-            currentX: currentR,
-            currentY: currentC
-          } = triBresenhamStep(
-            errorTerm,
-            deltaY,
-            deltaX,
-            currentR,
-            stepX,
-            currentC,
-            stepY
-          ))
-          if (this.triIndex.isValid(currentR, currentC)) {
-            break
-          }
-        }
-        if (!this.triIndex.isValid(currentR, currentC)) {
-          break
-        }
-      }
-
+    for (const [currentR, currentC] of this.triIndex._cubeLineCoords(
+      startR,
+      startC,
+      endR,
+      endC
+    )) {
       if (step > 60) {
         console.warn(
-          `Bresenham line exceeded 60 steps, likely infinite loop.  Current position: (${currentR}, ${currentC}), end position: (${endR}, ${endC})`
+          `Triangle line exceeded 60 steps, likely infinite loop. Current position: (${currentR}, ${currentC}), end position: (${endR}, ${endC})`
         )
         break
       }
 
       yield [currentR, currentC, step]
-      step++
       if (exitCondition(currentR, currentC, step)) {
         break
       }
-      ;({
-        errorTerm,
-        currentX: currentR,
-        currentY: currentC
-      } = triBresenhamStep(
-        errorTerm,
-        deltaY,
-        deltaX,
-        currentR,
-        stepX,
-        currentC,
-        stepY
-      ))
+      step++
     }
   }
 

@@ -76,6 +76,78 @@ export class TriIndex extends Indexer {
   parity (r, c) {
     return (r + c) & 1
   }
+
+  _rcToCube (r, c) {
+    const q = c - r
+    const s = -c
+    return [q, r, s]
+  }
+
+  _cubeToRc (q, r, s) {
+    return [r, -s]
+  }
+
+  _cubeRound (q, r, s) {
+    let rq = Math.round(q)
+    let rr = Math.round(r)
+    let rs = Math.round(s)
+
+    const qDiff = Math.abs(rq - q)
+    const rDiff = Math.abs(rr - r)
+    const sDiff = Math.abs(rs - s)
+
+    if (qDiff > rDiff && qDiff > sDiff) {
+      rq = -rr - rs
+    } else if (rDiff > sDiff) {
+      rr = -rq - rs
+    } else {
+      rs = -rq - rr
+    }
+
+    return [rq, rr, rs]
+  }
+
+  *_cubeLineCoords (startR, startC, endR, endC) {
+    const [startQ, startRR, startS] = this._rcToCube(startR, startC)
+    const [endQ, endRR, endS] = this._rcToCube(endR, endC)
+    const deltaQ = endQ - startQ
+    const deltaR = endRR - startRR
+    const deltaS = endS - startS
+    const steps = Math.max(Math.abs(deltaQ), Math.abs(deltaR), Math.abs(deltaS))
+
+    if (steps === 0) {
+      if (this.isValid(startR, startC)) {
+        yield [startR, startC]
+      }
+      return
+    }
+
+    let previousR = null
+    let previousC = null
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps
+      const [q, r, s] = this._cubeRound(
+        startQ + deltaQ * t,
+        startR + deltaR * t,
+        startS + deltaS * t
+      )
+      const [currentR, currentC] = this._cubeToRc(q, r, s)
+
+      if (currentR === previousR && currentC === previousC) {
+        continue
+      }
+
+      if (!this.isValid(currentR, currentC)) {
+        break
+      }
+
+      yield [currentR, currentC]
+      previousR = currentR
+      previousC = currentC
+    }
+  }
+
   neighborsEdge (r, c) {
     return this.connection['3'].neighbors(r, c)
   }

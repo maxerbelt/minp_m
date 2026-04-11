@@ -222,7 +222,7 @@ export class TriCanvas extends GridCanvas {
     const hit = this.hitTest(e)
     if (hit == null) return
 
-    if (!this.lineStart) {
+    if (this.lineStart == null) {
       this.setLineStartPoint(hit)
     } else {
       this.completeLine(this.lineStart, hit)

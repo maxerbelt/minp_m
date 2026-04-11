@@ -120,7 +120,7 @@ triDraw.previewCells = []
 const origToggleTri = triDraw.toggleCell.bind(triDraw)
 triDraw.toggleCell = function (idx) {
   // when a line tool is active, don't toggle cells directly
-  if (currentTool) return
+  if ((triCanvas && triCanvas.currentTool) || currentTool) return
 
   // Apply currentAction to single cell
   const mask = this.mask
@@ -244,15 +244,20 @@ function setTool (tool) {
   if (triDraw) triDraw.previewCells = []
 }
 
-// Attach canvas listeners only if triCanvas hasn't done it already
-if (!triDraw.canvas.__lineToolsListenersAttached && !triCanvas) {
+// Initialize on module load if DOM is available
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  initializeTriCanvas()
+}
+
+// Fallback canvas listeners when TriCanvas is not available
+if (!triCanvas && !triDraw.canvas.__lineToolsListenersAttached) {
   triDraw.canvas.__lineToolsListenersAttached = true
 
   const onCanvasMouseMove = e => {
     // Update hover info label
     updateTriHoverInfo(e)
 
-    if (!currentTool || !lineStart) return
+    if (!currentTool || lineStart == null) return
     const rect = triDraw.canvas.getBoundingClientRect()
     const px = e.clientX - rect.left
     const py = e.clientY - rect.top
@@ -297,13 +302,6 @@ if (!triDraw.canvas.__lineToolsListenersAttached && !triCanvas) {
 
   triDraw.canvas.addEventListener('mousemove', onCanvasMouseMove)
   triDraw.canvas.addEventListener('click', onCanvasClick)
-}
-
-/**
- * Initialize on module load if DOM is available
- */
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  initializeTriCanvas()
 }
 
 // exports for testing

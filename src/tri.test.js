@@ -484,6 +484,68 @@ describe('tri.js line tool handling', () => {
     expect(Array.isArray(td.previewCells)).toBe(true)
   })
 
+  it('GridCanvas treats lineStart 0 as valid start point', async () => {
+    const { GridCanvas } = await import('./ui/GridCanvas.js')
+
+    class TestCanvas extends GridCanvas {
+      constructor (canvasId, grid, config) {
+        super(canvasId, grid, config)
+        this.completeLine = jest.fn()
+        this.updateLinePreview = jest.fn()
+        this.updateHoverInfo = jest.fn()
+      }
+
+      hitTest () {
+        return 1
+      }
+    }
+
+    const testGrid = {
+      canvas: fakeCanvas,
+      previewCells: [],
+      hoverLocation: null,
+      redraw: jest.fn()
+    }
+
+    const testCanvas = new TestCanvas('c', testGrid)
+    testCanvas.currentTool = 'segment'
+    testCanvas.lineStart = 0
+
+    testCanvas.onCanvasClick({})
+    expect(testCanvas.completeLine).toHaveBeenCalledWith(0, 1)
+    expect(testCanvas.lineStart).toBeNull()
+
+    testCanvas.lineStart = 0
+    testCanvas.onCanvasMouseMove({})
+    expect(testCanvas.updateLinePreview).toHaveBeenCalledWith(0, 1)
+  })
+
+  it('single cell mode allows direct toggle when TriCanvas is active', async () => {
+    const triModule = await import('./tri.js')
+    const { triDraw: td, triCanvas } = triModule
+
+    expect(triCanvas).toBeDefined()
+    triCanvas.currentTool = null
+    td.mask.setIndex.mockClear()
+
+    td.toggleCell(5)
+
+    expect(td.mask.setIndex).toHaveBeenCalledWith(5, 1)
+  })
+
+  it('line tool mode blocks direct toggle when TriCanvas is active', async () => {
+    const triModule = await import('./tri.js')
+    const { triDraw: td, triCanvas } = triModule
+
+    expect(triCanvas).toBeDefined()
+    triCanvas.currentTool = 'segment'
+    td.mask.setIndex.mockClear()
+
+    td.toggleCell(5)
+
+    expect(td.mask.setIndex).not.toHaveBeenCalled()
+  })
+
   it('canvas listeners attached for line tool interaction', () => {
     expect(fakeCanvas.addEventListener).toBeDefined()
   })
