@@ -77,43 +77,83 @@ export class TriIndex extends Indexer {
     return (r + c) & 1
   }
 
-  _rcToCube (r, c) {
-    const q = c - r
-    const s = -c
-    return [q, r, s]
+  _gridToCube (row, col) {
+    const q = col - row
+    const s = -col
+    return [q, row, s]
   }
 
-  _cubeToRc (q, r, s) {
+  _cubeToGrid (q, r, s) {
     return [r, -s]
   }
 
-  _cubeRound (q, r, s) {
-    let rq = Math.round(q)
-    let rr = Math.round(r)
-    let rs = Math.round(s)
+  _roundCubeCoordinates (q, r, s) {
+    let roundedQ = Math.round(q)
+    let roundedR = Math.round(r)
+    let roundedS = Math.round(s)
 
-    const qDiff = Math.abs(rq - q)
-    const rDiff = Math.abs(rr - r)
-    const sDiff = Math.abs(rs - s)
+    const qDiff = Math.abs(roundedQ - q)
+    const rDiff = Math.abs(roundedR - r)
+    const sDiff = Math.abs(roundedS - s)
 
     if (qDiff > rDiff && qDiff > sDiff) {
-      rq = -rr - rs
+      roundedQ = -roundedR - roundedS
     } else if (rDiff > sDiff) {
-      rr = -rq - rs
+      roundedR = -roundedQ - roundedS
     } else {
-      rs = -rq - rr
+      roundedS = -roundedQ - roundedR
     }
 
-    return [rq, rr, rs]
+    return [roundedQ, roundedR, roundedS]
+  }
+
+  _computeCubeLineDeltas (startRow, startCol, endRow, endCol) {
+    const [startQ, startCubeR, startS] = this._gridToCube(startRow, startCol)
+    const [endQ, endCubeR, endS] = this._gridToCube(endRow, endCol)
+
+    return {
+      startQ,
+      startCubeR,
+      startS,
+      endQ,
+      endCubeR,
+      endS,
+      deltaQ: endQ - startQ,
+      deltaCubeR: endCubeR - startCubeR,
+      deltaS: endS - startS
+    }
+  }
+
+  _cubeLineStepCount (deltaQ, deltaCubeR, deltaS) {
+    return Math.max(Math.abs(deltaQ), Math.abs(deltaCubeR), Math.abs(deltaS))
+  }
+
+  _calculateCubePositionAtStep (
+    step,
+    totalSteps,
+    startQ,
+    startCubeR,
+    startS,
+    deltaQ,
+    deltaCubeR,
+    deltaS
+  ) {
+    const progress = step / totalSteps
+    return this._roundCubeCoordinates(
+      startQ + deltaQ * progress,
+      startCubeR + deltaCubeR * progress,
+      startS + deltaS * progress
+    )
+  }
+
+  _isDuplicateGridCell (currentR, currentC, previousR, previousC) {
+    return currentR === previousR && currentC === previousC
   }
 
   *_cubeLineCoords (startR, startC, endR, endC) {
-    const [startQ, startRR, startS] = this._rcToCube(startR, startC)
-    const [endQ, endRR, endS] = this._rcToCube(endR, endC)
-    const deltaQ = endQ - startQ
-    const deltaR = endRR - startRR
-    const deltaS = endS - startS
-    const steps = Math.max(Math.abs(deltaQ), Math.abs(deltaR), Math.abs(deltaS))
+    const { startQ, startCubeR, startS, deltaQ, deltaCubeR, deltaS } =
+      this._computeCubeLineDeltas(startR, startC, endR, endC)
+    const steps = this._cubeLineStepCount(deltaQ, deltaCubeR, deltaS)
 
     if (steps === 0) {
       if (this.isValid(startR, startC)) {
@@ -125,16 +165,20 @@ export class TriIndex extends Indexer {
     let previousR = null
     let previousC = null
 
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps
-      const [q, r, s] = this._cubeRound(
-        startQ + deltaQ * t,
-        startRR + deltaR * t,
-        startS + deltaS * t
+    for (let step = 0; step <= steps; step++) {
+      const [q, cubeR, s] = this._calculateCubePositionAtStep(
+        step,
+        steps,
+        startQ,
+        startCubeR,
+        startS,
+        deltaQ,
+        deltaCubeR,
+        deltaS
       )
-      const [currentR, currentC] = this._cubeToRc(q, r, s)
+      const [currentR, currentC] = this._cubeToGrid(q, cubeR, s)
 
-      if (currentR === previousR && currentC === previousC) {
+      if (this._isDuplicateGridCell(currentR, currentC, previousR, previousC)) {
         continue
       }
 
