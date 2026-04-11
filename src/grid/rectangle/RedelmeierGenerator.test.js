@@ -4,6 +4,7 @@
 import {
   RedelmeierGenerator,
   createOrthoPolyominoGenerator,
+  createDiagonalPolyominoGenerator,
   createKingPolyominoGenerator
 } from './RedelmeierGenerator.js'
 import { Mask } from './mask.js'
@@ -22,6 +23,10 @@ describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
 
     it('accepts "8" connectivity', () => {
       expect(() => new RedelmeierGenerator('8')).not.toThrow()
+    })
+
+    it('accepts "4diag" connectivity', () => {
+      expect(() => new RedelmeierGenerator('4diag')).not.toThrow()
     })
 
     it('rejects invalid connectivity', () => {
@@ -325,6 +330,15 @@ describe('RedelmeierGenerator - King-Connected (8-connected)', () => {
         expect(isConnected(p, '8')).toBe(true)
       })
     })
+
+    it('all diagonal-polyominoes are 4diag-connected', () => {
+      const diagonalGen = new RedelmeierGenerator('4diag')
+      const polyominoes = diagonalGen.collectAll(3)
+      expect(polyominoes.length).toBeGreaterThan(0)
+      polyominoes.forEach(p => {
+        expect(isConnected(p, '4diag')).toBe(true)
+      })
+    })
   })
 })
 
@@ -339,6 +353,12 @@ describe('Factory functions', () => {
     const gen = createKingPolyominoGenerator()
     expect(gen).toBeInstanceOf(RedelmeierGenerator)
     expect(gen.connectivity).toBe('8')
+  })
+
+  it('createDiagonalPolyominoGenerator returns 4diag-connected generator', () => {
+    const gen = createDiagonalPolyominoGenerator()
+    expect(gen).toBeInstanceOf(RedelmeierGenerator)
+    expect(gen.connectivity).toBe('4diag')
   })
 
   it('factory generators produce polyominoes', () => {
@@ -375,10 +395,10 @@ function isConnected (mask, connectivity) {
 
     // Check neighbors based on connectivity
     const neighbors = []
-    // Orthogonal
-    neighbors.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1])
-    // Diagonal (for 8-connectivity)
-    if (connectivity === '8') {
+    if (connectivity === '4' || connectivity === '8') {
+      neighbors.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1])
+    }
+    if (connectivity === '8' || connectivity === '4diag') {
       neighbors.push(
         [x - 1, y - 1],
         [x + 1, y - 1],

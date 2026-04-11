@@ -26,8 +26,8 @@ function getRectIndexForDimensions (width, height) {
  */
 export class RedelmeierGenerator {
   constructor (connectivity = '4') {
-    if (!['4', '8'].includes(connectivity)) {
-      throw new Error("connectivity must be '4' or '8'")
+    if (!['4', '4diag', '8'].includes(connectivity)) {
+      throw new Error("connectivity must be '4', '4diag' or '8'")
     }
     this.connectivity = connectivity
     this._boardTemplate = Mask.empty(3, 3)
@@ -276,7 +276,12 @@ export class RedelmeierGenerator {
    */
   getAdjacentCellCoordinates (x, y, width, height) {
     const rectIndex = getRectIndexForDimensions(width, height)
-    const connectionKey = this.connectivity === '8' ? 8 : 4
+    const connectionKey =
+      this.connectivity === '8'
+        ? 8
+        : this.connectivity === '4diag'
+        ? '4diag'
+        : 4
     const neighborCells = rectIndex.connection[connectionKey].neighbors(x, y)
 
     return neighborCells.filter(
@@ -483,4 +488,8 @@ export function createOrthoPolyominoGenerator () {
  */
 export function createKingPolyominoGenerator () {
   return new RedelmeierGenerator('8')
+}
+
+export function createDiagonalPolyominoGenerator () {
+  return new RedelmeierGenerator('4diag')
 }

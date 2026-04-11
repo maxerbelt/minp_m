@@ -165,39 +165,15 @@
         </div>
         <div style="display: flex; flex-direction: column; gap: 2px">
           <div style="margin-bottom: 10px">
-            <fieldset
-              style="
-                display: inline-block;
-                border: 1px solid #ccc;
-                padding: 5px;
-                border-radius: 4px;
-                margin-right: 15px;
-              "
-            >
-              <legend
-                style="
-                  font-size: 11px;
-                  font-weight: bold;
-                  padding: 0 5px;
-                  margin-left: -5px;
-                "
+            <label style="margin-right: 15px">
+              Polyomino Connectivity:
+              <select
+                id="poly-connectivity"
+                style="margin-left: 8px; padding: 4px 8px"
               >
-                Polyomino Connectivity:
-              </legend>
-              <label style="margin-right: 8px">
-                <input
-                  type="radio"
-                  name="poly-connectivity"
-                  value="4"
-                  checked
-                />
-                4-Connected
-              </label>
-              <label>
-                <input type="radio" name="poly-connectivity" value="8" />
-                8-Connected
-              </label>
-            </fieldset>
+                <option value="4" selected>4</option>
+              </select>
+            </label>
             <label style="margin-right: 15px">
               Polyomino Size:
               <select id="poly-size" style="margin-left: 8px; padding: 4px 8px">

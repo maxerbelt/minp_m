@@ -1,5 +1,6 @@
 import {
   createOrthoPolyominoGenerator,
+  createDiagonalPolyominoGenerator,
   createKingPolyominoGenerator
 } from '../../grid/rectangle/RedelmeierGenerator.js'
 import { Mask } from '../../grid/rectangle/mask.js'
@@ -95,6 +96,8 @@ export class PolyominoGridManager {
     const generator =
       this.connectivity === '4'
         ? createOrthoPolyominoGenerator()
+        : this.connectivity === '4diag'
+        ? createDiagonalPolyominoGenerator()
         : createKingPolyominoGenerator()
 
     this.availablePolyominoes = generator.collectAll(this.polyominoSize)

@@ -1,5 +1,6 @@
 import { RectDraw } from './ui/rectangle/rectdraw.js'
 import { RectCanvas } from './ui/rectangle/RectCanvas.js'
+import { RectIndex } from './grid/rectangle/RectIndex.js'
 import { PolyominoGridManager } from './ui/rectangle/polyominoGrid.js'
 
 // Grid initialization parameters
@@ -116,6 +117,24 @@ function setTool (tool) {
 /**
  * Main initialization function callable by tests after DOM is ready
  */
+function populateConnectivityDropdown () {
+  if (typeof document === 'undefined') return
+
+  const dropdown = document.getElementById('poly-connectivity')
+  if (!dropdown) return
+
+  const rectIndex = new RectIndex(1, 1)
+  dropdown.innerHTML = Object.keys(rectIndex.connection)
+    .map(
+      key => `
+      <option value="${key}" ${key === '4' ? 'selected' : ''}>
+        ${key}
+      </option>
+    `
+    )
+    .join('')
+}
+
 function initializeRect () {
   initializeGridIfNeeded()
   initializePolyominoGridIfNeeded()
@@ -123,6 +142,7 @@ function initializeRect () {
     rectCanvas.initializeAll()
     wireCoordinateModeRadios()
   }
+  populateConnectivityDropdown()
   wirePolyominoGridControls()
 }
 
@@ -513,12 +533,10 @@ function wirePolyominoGridControls () {
   if (typeof document === 'undefined') return
 
   // Connectivity radio buttons - when changed, update polyGrid settings
-  const connectivityRadios = document.querySelectorAll(
-    'input[name="poly-connectivity"]'
-  )
-  connectivityRadios.forEach(radio => {
-    radio.addEventListener('change', e => {
-      if (e.target.checked && polyGrid) {
+  const connectivityDropdown = document.getElementById('poly-connectivity')
+  if (connectivityDropdown) {
+    connectivityDropdown.addEventListener('change', e => {
+      if (polyGrid) {
         polyGrid.connectivity = e.target.value
         polyGrid.availablePolyominoes = []
         polyGrid.currentPolyominoIndex = 0
@@ -526,7 +544,7 @@ function wirePolyominoGridControls () {
         polyGrid.showPolyomino(0)
       }
     })
-  })
+  }
 
   // Size dropdown - when changed, update polyGrid settings
   const sizeDropdown = document.getElementById('poly-size')
