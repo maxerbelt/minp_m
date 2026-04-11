@@ -19,29 +19,7 @@ export class TriIndex extends Indexer {
     this.width = 2 * side - 1
     this.height = side
 
-    // ============================================================================
-    // CONCEPT: Automatically generate Indices wrappers from base methods
-    // ============================================================================
-    // Each wrapper appends this.index as the indexer parameter to the base method.
-    // This eliminates nearly-identical manual wrapper method implementations.
-    const wrapperPairs = [
-      ['rayIndices', 'ray'],
-      ['superCoverRayIndices', 'superCoverRay'],
-      ['halfCoverRayIndices', 'halfCoverRay'],
-      ['segmentToIndices', 'segmentTo'],
-      ['superCoverSegmentToIndices', 'superCoverSegmentTo'],
-      ['halfCoverSegmentToIndices', 'halfCoverSegmentTo'],
-      ['fullLineIndices', 'fullLine'],
-      ['superCoverFullLineIndices', 'superCoverFullLine'],
-      ['halfCoverFullLineIndices', 'halfCoverFullLine'],
-      ['segmentForIndices', 'segmentFor'],
-      ['superCoverSegmentForIndices', 'superCoverSegmentFor'],
-      ['halfCoverSegmentForIndices', 'halfCoverSegmentFor']
-    ]
-
-    for (const [wrapperName, baseName] of wrapperPairs) {
-      this[wrapperName] = this._createIndicesWrapper(baseName)
-    }
+    this._installIndexIteratorWrappers()
 
     this.connection = {
       3: new Connect3(this),
@@ -259,48 +237,6 @@ export class TriIndex extends Indexer {
   // CONCEPT: Bresenham Line Drawing (Reusable pattern across all indexers)
   // ============================================================================
 
-  *line (startR, startC, endR, endC, exitCondition) {
-    return yield* this.cover.normal.line(
-      startR,
-      startC,
-      endR,
-      endC,
-      exitCondition
-    )
-  }
-
-  // ============================================================================
-  // CONCEPT: Ray Casting (Start from a point, traverse until boundary)
-  // ============================================================================
-
-  /**
-   * Super-cover line: emits all cells touched by the line segment.
-   * Detects corner crossings and emits extra cells when both axes move simultaneously.
-   */
-  *superCoverLine (startR, startC, endR, endC, exitCondition) {
-    return yield* this.cover.super.line(
-      startR,
-      startC,
-      endR,
-      endC,
-      exitCondition
-    )
-  }
-
-  /**
-   * Half-cover line: emits cells with bias at corners.
-   * Detects corner crossings but only emits one extra cell per corner (with bias).
-   */
-  *halfCoverLine (startR, startC, endR, endC, exitCondition) {
-    return yield* this.cover.half.line(
-      startR,
-      startC,
-      endR,
-      endC,
-      exitCondition
-    )
-  }
-
   /**
    * Detects and yields corner-crossing cells for super-cover algorithm.
    * Pattern: Both axes moved = diagonal step = corner was crossed.
@@ -373,96 +309,6 @@ export class TriIndex extends Indexer {
     return step
   }
 
-  *ray (startR, startC, endR, endC) {
-    return yield* this.cover.normal.ray(startR, startC, endR, endC)
-  }
-
-  *superCoverRay (startR, startC, endR, endC) {
-    return yield* this.cover.super.ray(startR, startC, endR, endC)
-  }
-
-  *halfCoverRay (startR, startC, endR, endC) {
-    return yield* this.cover.half.ray(startR, startC, endR, endC)
-  }
-
-  // ============================================================================
-  // CONCEPT: Shape-Specific Segment Methods (segmentTo and fullLine variants)
-  // ============================================================================
-
-  *segmentTo (startR, startC, endR, endC) {
-    return yield* this.cover.normal.segmentTo(startR, startC, endR, endC)
-  }
-
-  *superCoverSegmentTo (startR, startC, endR, endC) {
-    return yield* this.cover.super.segmentTo(startR, startC, endR, endC)
-  }
-
-  *halfCoverSegmentTo (startR, startC, endR, endC) {
-    return yield* this.cover.half.segmentTo(startR, startC, endR, endC)
-  }
-
-  *fullLine (startR, startC, endR, endC) {
-    return yield* this.cover.normal.fullLine(startR, startC, endR, endC)
-  }
-
-  *superCoverFullLine (startR, startC, endR, endC) {
-    return yield* this.cover.super.fullLine(startR, startC, endR, endC)
-  }
-
-  *halfCoverFullLine (startR, startC, endR, endC) {
-    return yield* this.cover.half.fullLine(startR, startC, endR, endC)
-  }
-
-  // ============================================================================
-  // CONCEPT: Distance-Limited Segments (segmentFor variant)
-  // ============================================================================
-
-  *segmentFor (startR, startC, endR, endC, distance) {
-    return yield* this.cover.normal.segmentFor(
-      startR,
-      startC,
-      endR,
-      endC,
-      distance
-    )
-  }
-
-  *superCoverSegmentFor (startR, startC, endR, endC, distance) {
-    return yield* this.cover.super.segmentFor(
-      startR,
-      startC,
-      endR,
-      endC,
-      distance
-    )
-  }
-
-  *halfCoverSegmentFor (startR, startC, endR, endC, distance) {
-    return yield* this.cover.half.segmentFor(
-      startR,
-      startC,
-      endR,
-      endC,
-      distance
-    )
-  }
-
-  intercept (startR, startC, endR, endC) {
-    let mr = startR
-    let mc = startC
-
-    for (const [r, c] of this.ray(startR, startC, endR, endC)) {
-      mr = r
-      mc = c
-    }
-    return [mr, mc]
-  }
-
-  intercepts (startR, startC, endR, endC) {
-    const [r1, c1] = this.intercept(startR, startC, endR, endC)
-    const [r0, c0] = this.intercept(endR, endC, startR, startC)
-    return { x0: r0, y0: c0, x1: r1, y1: c1 }
-  }
   actions (bb) {
     if (this._actions && this._actions?.original?.bits === bb.bits) {
       return this._actions

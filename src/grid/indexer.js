@@ -69,60 +69,176 @@ export class Indexer {
   }
 
   // ============================================================================
-  // CONCEPT: Indexer Defaults (Validation helpers, reusable pattern)
+  // CONCEPT: Reusable adapters for subclass behaviors
   // ============================================================================
 
   /**
-   * Ensures indexer is a valid function, defaults to coordinate tuple.
-   * Pattern: Identical across RectIndex, CubeIndex, and TriIndex.
+   * Converts an iterable of coordinate tuples into an iterable of indices.
+   * This is used by the common *Indices methods across all indexers.
    */
-  _ensureIndexer (indexer) {
+  _createIndexIteratorWrapper (baseMethodName) {
+    const baseMethod = this[baseMethodName]
+    return function* (...args) {
+      for (const coordinate of baseMethod.call(this, ...args)) {
+        const x = coordinate[0]
+        const y = coordinate[1]
+        const index = this.index(x, y)
+        if (index !== undefined) {
+          yield index
+        }
+      }
+    }
+  }
+
+  _installIndexIteratorWrappers () {
+    const wrapperPairs = [
+      ['rayIndices', 'ray'],
+      ['superCoverRayIndices', 'superCoverRay'],
+      ['halfCoverRayIndices', 'halfCoverRay'],
+      ['segmentToIndices', 'segmentTo'],
+      ['superCoverSegmentToIndices', 'superCoverSegmentTo'],
+      ['halfCoverSegmentToIndices', 'halfCoverSegmentTo'],
+      ['fullLineIndices', 'fullLine'],
+      ['superCoverFullLineIndices', 'superCoverFullLine'],
+      ['halfCoverFullLineIndices', 'halfCoverFullLine'],
+      ['segmentForIndices', 'segmentFor'],
+      ['superCoverSegmentForIndices', 'superCoverSegmentFor'],
+      ['halfCoverSegmentForIndices', 'halfCoverSegmentFor']
+    ]
+
+    for (const [wrapperName, baseMethodName] of wrapperPairs) {
+      this[wrapperName] = this._createIndexIteratorWrapper(baseMethodName)
+    }
+  }
+
+  _createIndicesWrapper (baseMethodName) {
+    return this._createIndexIteratorWrapper(baseMethodName)
+  }
+
+  _resolveCoordinateMapper (indexer) {
     if (indexer == null || typeof indexer !== 'function') {
       return (x, y, step) => [x, y, step]
     }
     return indexer
   }
 
-  /**
-   * Ensures exit condition is valid, defaults to exact endpoint match.
-   * Pattern: Identical across RectIndex, CubeIndex, and TriIndex.
-   */
-  _ensureExitCondition (exitCondition, endX, endY) {
+  _ensureIndexer (indexer) {
+    return this._resolveCoordinateMapper(indexer)
+  }
+
+  _resolveExitCondition (exitCondition, endX, endY) {
     if (exitCondition == null || typeof exitCondition !== 'function') {
       return (x, y) => x === endX && y === endY
     }
     return exitCondition
   }
-  _ensureValidate (validate) {
+
+  _ensureExitCondition (exitCondition, endX, endY) {
+    return this._resolveExitCondition(exitCondition, endX, endY)
+  }
+
+  _resolveValidationStrategy (validate) {
     if (validate == null || typeof validate !== 'function') {
       return this.validate.bind(this)
     }
     return validate
   }
-  /**
-   * Creates a wrapper generator that converts coordinates to indices.
-   * Used to generate *Indices methods from base *line/*ray/*segment methods.
-   * Pattern: Works identically for RectIndex, CubeIndex, and TriIndex.
-   *
-   * Example:
-   *   this.rayIndices = this._createIndicesWrapper('ray')
-   *   yield* this.rayIndices(startX, startY, endX, endY)
-   *   // Internally calls: yield* this.ray(startX, startY, endX, endY)
-   *   // And converts each coordinate yielded into an index
-   */
-  _createIndicesWrapper (baseName) {
-    const baseMethod = this[baseName]
-    return function* (...args) {
-      for (const coord of baseMethod.call(this, ...args)) {
-        // coord could be [x, y] or [x, y, step] - extract x and y
-        const x = coord[0]
-        const y = coord[1]
-        const idx = this.index(x, y)
-        if (idx !== undefined) {
-          yield idx
-        }
-      }
+
+  _ensureValidate (validate) {
+    return this._resolveValidationStrategy(validate)
+  }
+
+  _delegateCoverMethod (coverType, baseName, args) {
+    const cover = this?.cover?.[coverType]
+    if (!cover) {
+      throw new Error(`Missing cover object for type ${coverType}`)
     }
+    const method = cover[baseName]
+    if (typeof method !== 'function') {
+      throw new TypeError(`Missing cover delegate ${coverType}.${baseName}`)
+    }
+    return method.apply(cover, args)
+  }
+
+  *_delegateCoverGenerator (coverType, baseName, ...args) {
+    return yield* this._delegateCoverMethod(coverType, baseName, args)
+  }
+
+  *line (...args) {
+    return yield* this._delegateCoverGenerator('normal', 'line', ...args)
+  }
+
+  *superCoverLine (...args) {
+    return yield* this._delegateCoverGenerator('super', 'line', ...args)
+  }
+
+  *halfCoverLine (...args) {
+    return yield* this._delegateCoverGenerator('half', 'line', ...args)
+  }
+
+  *ray (...args) {
+    return yield* this._delegateCoverGenerator('normal', 'ray', ...args)
+  }
+
+  *superCoverRay (...args) {
+    return yield* this._delegateCoverGenerator('super', 'ray', ...args)
+  }
+
+  *halfCoverRay (...args) {
+    return yield* this._delegateCoverGenerator('half', 'ray', ...args)
+  }
+
+  *segmentTo (...args) {
+    return yield* this._delegateCoverGenerator('normal', 'segmentTo', ...args)
+  }
+
+  *superCoverSegmentTo (...args) {
+    return yield* this._delegateCoverGenerator('super', 'segmentTo', ...args)
+  }
+
+  *halfCoverSegmentTo (...args) {
+    return yield* this._delegateCoverGenerator('half', 'segmentTo', ...args)
+  }
+
+  *fullLine (...args) {
+    return yield* this._delegateCoverGenerator('normal', 'fullLine', ...args)
+  }
+
+  *superCoverFullLine (...args) {
+    return yield* this._delegateCoverGenerator('super', 'fullLine', ...args)
+  }
+
+  *halfCoverFullLine (...args) {
+    return yield* this._delegateCoverGenerator('half', 'fullLine', ...args)
+  }
+
+  *segmentFor (...args) {
+    return yield* this._delegateCoverGenerator('normal', 'segmentFor', ...args)
+  }
+
+  *superCoverSegmentFor (...args) {
+    return yield* this._delegateCoverGenerator('super', 'segmentFor', ...args)
+  }
+
+  *halfCoverSegmentFor (...args) {
+    return yield* this._delegateCoverGenerator('half', 'segmentFor', ...args)
+  }
+
+  intercept (startX, startY, endX, endY) {
+    let lastX = startX
+    let lastY = startY
+
+    for (const [x, y] of this.ray(startX, startY, endX, endY)) {
+      lastX = x
+      lastY = y
+    }
+    return [lastX, lastY]
+  }
+
+  intercepts (startX, startY, endX, endY) {
+    const [x1, y1] = this.intercept(startX, startY, endX, endY)
+    const [x0, y0] = this.intercept(endX, endY, startX, startY)
+    return { x0, y0, x1, y1 }
   }
 
   *list (coords) {
@@ -132,6 +248,10 @@ export class Indexer {
         yield i
       }
     }
+  }
+
+  *indicesFromCoords (coords) {
+    yield* this.list(coords)
   }
 
   bitsFromCoords (bbc, coords) {
@@ -150,6 +270,10 @@ export class Indexer {
       coords.push(args)
     }
     return coords
+  }
+
+  coordinatesFromBitboard (bb) {
+    return this.bitsToCoords(bb)
   }
 
   *keys () {

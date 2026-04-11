@@ -5,15 +5,21 @@ export class RectHalfCover extends RectCoverBase {
   constructor (rectIndex) {
     super(rectIndex)
     const wrapperPairs = [
-      ['halfCoverRayIndices', 'halfCoverRay'],
-      ['halfCoverSegmentToIndices', 'halfCoverSegmentTo'],
-      ['halfCoverFullLineIndices', 'halfCoverFullLine'],
-      ['halfCoverSegmentForIndices', 'halfCoverSegmentFor']
+      ['halfCoverRayIndices', 'ray'],
+      ['halfCoverSegmentToIndices', 'segmentTo'],
+      ['halfCoverFullLineIndices', 'fullLine'],
+      ['halfCoverSegmentForIndices', 'segmentFor']
     ]
 
     for (const [wrapperName, baseName] of wrapperPairs) {
       this[wrapperName] = this._createIndicesWrapper(baseName)
     }
+
+    this.halfCoverLine = this.line.bind(this)
+    this.halfCoverRay = this.ray.bind(this)
+    this.halfCoverSegmentTo = this.segmentTo.bind(this)
+    this.halfCoverFullLine = this.fullLine.bind(this)
+    this.halfCoverSegmentFor = this.segmentFor.bind(this)
   }
 
   /**
@@ -53,7 +59,7 @@ export class RectHalfCover extends RectCoverBase {
     return step
   }
 
-  *halfCoverLine (startX, startY, endX, endY, exitCondition, indexer, validate) {
+  *line (startX, startY, endX, endY, exitCondition, indexer, validate) {
     indexer = this.rectIndex._ensureIndexer(indexer)
     exitCondition = this.rectIndex._ensureExitCondition(
       exitCondition,
@@ -129,10 +135,10 @@ export class RectHalfCover extends RectCoverBase {
     }
   }
 
-  *halfCoverRay (startX, startY, endX, endY, indexer, validate) {
+  *ray (startX, startY, endX, endY, indexer, validate) {
     // stop once the current position is outside validity to avoid endless
     // traversal.  Use the same exit condition pattern as in other generators.
-    return yield* this.halfCoverLine(
+    return yield* this.line(
       startX,
       startY,
       endX,
@@ -143,38 +149,22 @@ export class RectHalfCover extends RectCoverBase {
     )
   }
 
-  *halfCoverSegmentTo (startX, startY, endX, endY, indexer, validate) {
-    return yield* this.halfCoverLine(
-      startX,
-      startY,
-      endX,
-      endY,
-      null,
-      indexer,
-      validate
-    )
+  *segmentTo (startX, startY, endX, endY, indexer, validate) {
+    return yield* this.line(startX, startY, endX, endY, null, indexer, validate)
   }
 
-  *halfCoverFullLine (startX, startY, endX, endY, indexer, validate) {
+  *fullLine (startX, startY, endX, endY, indexer, validate) {
     const { x0, y0, x1, y1 } = this.rectIndex.intercepts(
       startX,
       startY,
       endX,
       endY
     )
-    return yield* this.halfCoverSegmentTo(x0, y0, x1, y1, indexer, validate)
+    return yield* this.segmentTo(x0, y0, x1, y1, indexer, validate)
   }
 
-  *halfCoverSegmentFor (
-    startX,
-    startY,
-    endX,
-    endY,
-    distance,
-    indexer,
-    validate
-  ) {
-    return yield* this.halfCoverLine(
+  *segmentFor (startX, startY, endX, endY, distance, indexer, validate) {
+    return yield* this.line(
       startX,
       startY,
       endX,

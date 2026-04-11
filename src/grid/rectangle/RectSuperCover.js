@@ -5,15 +5,21 @@ export class RectSuperCover extends RectCoverBase {
   constructor (rectIndex) {
     super(rectIndex)
     const wrapperPairs = [
-      ['superCoverRayIndices', 'superCoverRay'],
-      ['superCoverSegmentToIndices', 'superCoverSegmentTo'],
-      ['superCoverFullLineIndices', 'superCoverFullLine'],
-      ['superCoverSegmentForIndices', 'superCoverSegmentFor']
+      ['superCoverRayIndices', 'ray'],
+      ['superCoverSegmentToIndices', 'segmentTo'],
+      ['superCoverFullLineIndices', 'fullLine'],
+      ['superCoverSegmentForIndices', 'segmentFor']
     ]
 
     for (const [wrapperName, baseName] of wrapperPairs) {
       this[wrapperName] = this._createIndicesWrapper(baseName)
     }
+
+    this.superCoverLine = this.line.bind(this)
+    this.superCoverRay = this.ray.bind(this)
+    this.superCoverSegmentTo = this.segmentTo.bind(this)
+    this.superCoverFullLine = this.fullLine.bind(this)
+    this.superCoverSegmentFor = this.segmentFor.bind(this)
   }
 
   /**
@@ -53,15 +59,7 @@ export class RectSuperCover extends RectCoverBase {
     return step
   }
 
-  *superCoverLine (
-    startX,
-    startY,
-    endX,
-    endY,
-    exitCondition,
-    indexer,
-    validate
-  ) {
+  *line (startX, startY, endX, endY, exitCondition, indexer, validate) {
     indexer = this.rectIndex._ensureIndexer(indexer)
     exitCondition = this.rectIndex._ensureExitCondition(
       exitCondition,
@@ -136,10 +134,10 @@ export class RectSuperCover extends RectCoverBase {
     }
   }
 
-  *superCoverRay (startX, startY, endX, endY, indexer, validate) {
+  *ray (startX, startY, endX, endY, indexer, validate) {
     // stop once the current position is outside validity to avoid endless
     // traversal.  Use the same exit condition pattern as in other generators.
-    return yield* this.superCoverLine(
+    return yield* this.line(
       startX,
       startY,
       endX,
@@ -150,38 +148,22 @@ export class RectSuperCover extends RectCoverBase {
     )
   }
 
-  *superCoverSegmentTo (startX, startY, endX, endY, indexer, validate) {
-    return yield* this.superCoverLine(
-      startX,
-      startY,
-      endX,
-      endY,
-      null,
-      indexer,
-      validate
-    )
+  *segmentTo (startX, startY, endX, endY, indexer, validate) {
+    return yield* this.line(startX, startY, endX, endY, null, indexer, validate)
   }
 
-  *superCoverFullLine (startX, startY, endX, endY, indexer, validate) {
+  *fullLine (startX, startY, endX, endY, indexer, validate) {
     const { x0, y0, x1, y1 } = this.rectIndex.intercepts(
       startX,
       startY,
       endX,
       endY
     )
-    return yield* this.superCoverSegmentTo(x0, y0, x1, y1, indexer, validate)
+    return yield* this.segmentTo(x0, y0, x1, y1, indexer, validate)
   }
 
-  *superCoverSegmentFor (
-    startX,
-    startY,
-    endX,
-    endY,
-    distance,
-    indexer,
-    validate
-  ) {
-    return yield* this.superCoverLine(
+  *segmentFor (startX, startY, endX, endY, distance, indexer, validate) {
+    return yield* this.line(
       startX,
       startY,
       endX,

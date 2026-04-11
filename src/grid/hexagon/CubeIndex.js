@@ -96,36 +96,13 @@ export class CubeIndex extends Indexer {
       )
     })
 
-    // ============================================================================
-    // CONCEPT: Automatically generate Indices wrappers from base methods
-    // ============================================================================
-    // Each wrapper appends this.index as the indexer parameter to the base method.
-    // This eliminates nearly-identical manual wrapper method implementations.
-    const wrapperPairs = [
-      ['rayIndices', 'ray'],
-      ['superCoverRayIndices', 'superCoverRay'],
-      ['halfCoverRayIndices', 'halfCoverRay'],
-      ['segmentToIndices', 'segmentTo'],
-      ['superCoverSegmentToIndices', 'superCoverSegmentTo'],
-      ['halfCoverSegmentToIndices', 'halfCoverSegmentTo'],
-      ['fullLineIndices', 'fullLine'],
-      ['superCoverFullLineIndices', 'superCoverFullLine'],
-      ['halfCoverFullLineIndices', 'halfCoverFullLine'],
-      ['segmentForIndices', 'segmentFor'],
-      ['superCoverSegmentForIndices', 'superCoverSegmentFor'],
-      ['halfCoverSegmentForIndices', 'halfCoverSegmentFor']
-    ]
-
-    for (const [wrapperName, baseName] of wrapperPairs) {
-      this[wrapperName] = this._createIndicesWrapper(baseName)
-    }
-
     this.cover = {
       normal: new HexNormalCover(this),
       half: new HexHalfCover(this),
       super: new HexSuperCover(this)
     }
 
+    this._installIndexIteratorWrappers()
     this._boundaryExitCondition = this._createBoundaryExitCondition()
   }
   index (q, r) {
@@ -385,131 +362,6 @@ export class CubeIndex extends Indexer {
   // ============================================================================
   // CONCEPT: Bresenham Line Drawing (Reusable pattern across all indexers)
   // ============================================================================
-
-  *line (startQ, startR, endQ, endR, exitCondition) {
-    return yield* this.cover.normal.line(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      exitCondition
-    )
-  }
-
-  *superCoverLine (startQ, startR, endQ, endR, exitCondition) {
-    return yield* this.cover.super.line(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      exitCondition
-    )
-  }
-
-  *halfCoverLine (startQ, startR, endQ, endR, exitCondition) {
-    return yield* this.cover.half.line(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      exitCondition
-    )
-  }
-
-  // ============================================================================
-  // CONCEPT: Ray Casting (Start from a point, traverse until boundary)
-  // ============================================================================
-
-  *ray (startQ, startR, endQ, endR) {
-    return yield* this.cover.normal.ray(startQ, startR, endQ, endR)
-  }
-
-  *superCoverRay (startQ, startR, endQ, endR) {
-    return yield* this.cover.super.ray(startQ, startR, endQ, endR)
-  }
-
-  *halfCoverRay (startQ, startR, endQ, endR) {
-    return yield* this.cover.half.ray(startQ, startR, endQ, endR)
-  }
-
-  // ============================================================================
-  // CONCEPT: Shape-Specific Segment Methods (segmentTo and fullLine variants)
-  // ============================================================================
-
-  *segmentTo (startQ, startR, endQ, endR) {
-    return yield* this.cover.normal.segmentTo(startQ, startR, endQ, endR)
-  }
-
-  *superCoverSegmentTo (startQ, startR, endQ, endR) {
-    return yield* this.cover.super.segmentTo(startQ, startR, endQ, endR)
-  }
-
-  *halfCoverSegmentTo (startQ, startR, endQ, endR) {
-    return yield* this.cover.half.segmentTo(startQ, startR, endQ, endR)
-  }
-
-  *fullLine (startQ, startR, endQ, endR) {
-    return yield* this.cover.normal.fullLine(startQ, startR, endQ, endR)
-  }
-
-  *superCoverFullLine (startQ, startR, endQ, endR) {
-    return yield* this.cover.super.fullLine(startQ, startR, endQ, endR)
-  }
-
-  *halfCoverFullLine (startQ, startR, endQ, endR) {
-    return yield* this.cover.half.fullLine(startQ, startR, endQ, endR)
-  }
-
-  // ============================================================================
-  // CONCEPT: Distance-Limited Segments (segmentFor variants)
-  // ============================================================================
-
-  *segmentFor (startQ, startR, endQ, endR, distance) {
-    return yield* this.cover.normal.segmentFor(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      distance
-    )
-  }
-
-  *superCoverSegmentFor (startQ, startR, endQ, endR, distance) {
-    return yield* this.cover.super.segmentFor(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      distance
-    )
-  }
-
-  *halfCoverSegmentFor (startQ, startR, endQ, endR, distance) {
-    return yield* this.cover.half.segmentFor(
-      startQ,
-      startR,
-      endQ,
-      endR,
-      distance
-    )
-  }
-
-  intercept (startQ, startR, endQ, endR) {
-    let mq = startQ
-    let mr = startR
-
-    for (const [q, r] of this.ray(startQ, startR, endQ, endR)) {
-      mq = q
-      mr = r
-    }
-    return [mq, mr]
-  }
-
-  intercepts (startQ, startR, endQ, endR) {
-    const [q1, r1] = this.intercept(startQ, startR, endQ, endR)
-    const [q0, r0] = this.intercept(endQ, endR, startQ, startR)
-    return { x0: q0, y0: r0, x1: q1, y1: r1 }
-  }
 
   static qrToS (q, r) {
     return -q - r
