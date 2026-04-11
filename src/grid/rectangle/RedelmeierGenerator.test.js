@@ -287,10 +287,24 @@ describe('RedelmeierGenerator - King-Connected (8-connected)', () => {
       expect(count).toBe(1)
     })
 
-    it('generates king-dominoes', () => {
-      // With 8-connectivity, dominoes might have variations
+    it('generates exactly 2 king-dominoes', () => {
       const count = gen.count(2)
-      expect(count).toBeGreaterThanOrEqual(1)
+      expect(count).toBe(2)
+    })
+
+    it('generates exactly 5 king-connected trominoes', () => {
+      const count = gen.count(3)
+      expect(count).toBe(5)
+    })
+
+    it('generates exactly 22 king-connected tetrominoes', () => {
+      const count = gen.count(4)
+      expect(count).toBe(22)
+    })
+
+    it('generates exactly 94 king-connected pentominoes', () => {
+      const count = gen.count(5)
+      expect(count).toBe(94)
     })
 
     it('generates more or equal king-polyominoes than orthogonal for larger sizes', () => {

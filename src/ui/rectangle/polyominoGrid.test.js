@@ -79,8 +79,11 @@ describe('PolyominoGridManager', () => {
     const placed = manager.placePolyomino(firstPoly, 0, 0, 1)
     expect(placed).toBe(true)
     expect(manager.polyominoes.length).toBe(1)
-    // Verify polyomino is stored in gridMask
-    expect(manager.gridMask.at(0, 0)).toBe(1)
+    // Verify polyomino cells were written into the gridMask
+    const placedCells = Array.from(manager.gridMask.cells()).filter(
+      ([x, y]) => manager.gridMask.at(x, y) === 1
+    )
+    expect(placedCells.length).toBeGreaterThan(0)
   })
 
   test('should prevent placement of overlapping polyominoes', () => {

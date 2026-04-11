@@ -520,8 +520,10 @@ function wirePolyominoGridControls () {
     radio.addEventListener('change', e => {
       if (e.target.checked && polyGrid) {
         polyGrid.connectivity = e.target.value
-        // Optionally auto-generate on connectivity change
-        // polyGrid.fillGrid()
+        polyGrid.availablePolyominoes = []
+        polyGrid.currentPolyominoIndex = 0
+        polyGrid.loadPolyominoes()
+        polyGrid.showPolyomino(0)
       }
     })
   })
@@ -532,8 +534,10 @@ function wirePolyominoGridControls () {
     sizeDropdown.addEventListener('change', e => {
       if (polyGrid) {
         polyGrid.polyominoSize = parseInt(e.target.value)
-        // Optionally auto-generate on size change
-        // polyGrid.fillGrid()
+        polyGrid.availablePolyominoes = []
+        polyGrid.currentPolyominoIndex = 0
+        polyGrid.loadPolyominoes()
+        polyGrid.showPolyomino(0)
       }
     })
   }
