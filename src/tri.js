@@ -1,5 +1,6 @@
 import { TriDraw } from './ui/triangle/triDraw.js'
 import { TriCanvas } from './ui/triangle/TriCanvas.js'
+import { drawTri, triToPixel, pixelToTri } from './ui/triangle/triDrawHelper.js'
 
 // Create TriDraw instance with canvas ID, side length, and drawing parameters
 // use a larger grid size (side = 12)

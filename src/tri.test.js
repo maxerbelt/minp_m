@@ -546,6 +546,39 @@ describe('tri.js line tool handling', () => {
     expect(td.mask.setIndex).not.toHaveBeenCalled()
   })
 
+  it('triCanvas.grid.toggleCell safely ignores null hits', async () => {
+    const triModule = await import('./tri.js')
+    const { triCanvas } = triModule
+    expect(triCanvas).toBeDefined()
+    expect(() => triCanvas.grid.toggleCell(null)).not.toThrow()
+  })
+
+  it('single action on TriCanvas sets cell when empty', async () => {
+    const { TriDraw } = await import('./ui/triangle/triDraw.js')
+    const { TriCanvas } = await import('./ui/triangle/TriCanvas.js')
+
+    const triDraw = new TriDraw('c', 3, 300, 300, 25)
+    const triCanvas = new TriCanvas('c', triDraw)
+
+    triCanvas.grid.mask.setIndex = jest.fn((idx, value) => {
+      triCanvas.grid.mask.bits = BigInt(1) << BigInt(idx)
+      return triCanvas.grid.mask.bits
+    })
+    triCanvas.grid.setBits = jest.fn(function (bits) {
+      this.bits = bits
+    })
+
+    triCanvas.currentTool = null
+    triCanvas.currentAction = 'set'
+    triCanvas.grid.mask.bits = 0n
+
+    triCanvas.grid.toggleCell(0)
+
+    expect(triCanvas.grid.mask.setIndex).toHaveBeenCalledWith(0, 1)
+    expect(triCanvas.grid.setBits).toHaveBeenCalledWith(1n)
+    expect(triCanvas.grid.mask.bits).toBe(1n)
+  })
+
   it('canvas listeners attached for line tool interaction', () => {
     expect(fakeCanvas.addEventListener).toBeDefined()
   })

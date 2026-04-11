@@ -129,7 +129,7 @@ export class TriIndex extends Indexer {
       const t = i / steps
       const [q, r, s] = this._cubeRound(
         startQ + deltaQ * t,
-        startR + deltaR * t,
+        startRR + deltaR * t,
         startS + deltaS * t
       )
       const [currentR, currentC] = this._cubeToRc(q, r, s)
@@ -139,7 +139,7 @@ export class TriIndex extends Indexer {
       }
 
       if (!this.isValid(currentR, currentC)) {
-        break
+        continue
       }
 
       yield [currentR, currentC]

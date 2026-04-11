@@ -92,10 +92,17 @@ export class GridCanvas {
    * Handle canvas click - start or complete line drawing
    */
   onCanvasClick (e) {
-    if (!this.grid || !this.currentTool) return
+    if (!this.grid) return
 
     const hit = this.hitTest(e)
-    if (!hit) return
+    if (hit == null) return
+
+    if (this.currentTool == null) {
+      if (typeof this.grid.toggleCell === 'function') {
+        this.grid.toggleCell(hit)
+      }
+      return
+    }
 
     if (this.lineStart == null) {
       this.setLineStartPoint(hit)

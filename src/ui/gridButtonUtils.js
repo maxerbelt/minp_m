@@ -55,7 +55,7 @@ export function updateLinePreviewRedraw (
   lineEnd,
   computePreviewFn
 ) {
-  if (!grid || !lineStart || !lineEnd) return
+  if (!grid || lineStart == null || lineEnd == null) return
   grid.previewCells = computePreviewFn(lineStart, lineEnd)
   grid.redraw()
 }
@@ -64,7 +64,7 @@ export function updateLinePreviewRedraw (
  * Handle two-point line completion: apply operation and reset tool state
  */
 export function completeLineShape (grid, lineStart, lineEnd, applyFn, updateFn) {
-  if (!grid || !lineStart || !lineEnd) return
+  if (!grid || lineStart == null || lineEnd == null) return
   applyFn(lineStart, lineEnd)
   grid.previewCells = []
   grid.redraw()

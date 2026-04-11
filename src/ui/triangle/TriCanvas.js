@@ -28,6 +28,7 @@ export class TriCanvas extends GridCanvas {
 
     const origToggle = this.grid.toggleCell.bind(this.grid)
     this.grid.toggleCell = idx => {
+      if (idx == null) return
       // Don't toggle when line tool active
       if (this.currentTool) return
 

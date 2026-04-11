@@ -205,6 +205,7 @@ export class TriDraw extends DrawBase {
     this.canvas.addEventListener('click', e => {
       const { x, y } = this.getCanvasMouseCoords(e)
       const hit = this._hitTest(x, y)
+      if (hit == null) return
       this.toggleCell(hit)
     })
   }

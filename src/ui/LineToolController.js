@@ -77,11 +77,11 @@ export class LineToolController {
    * @returns {boolean} - Whether the click was handled
    */
   onCanvasClick (hit) {
-    if (!this.isActive() || !hit) {
+    if (!this.isActive() || hit == null) {
       return false
     }
 
-    if (!this.lineStart) {
+    if (this.lineStart == null) {
       this.setLineStart(hit)
       return true
     } else {
@@ -111,7 +111,7 @@ export class LineToolController {
    * @param {[number, number]} end - Current cursor position
    */
   updatePreview (end) {
-    if (!this.isActive() || !this.lineStart) {
+    if (!this.isActive() || this.lineStart == null) {
       return
     }
 
