@@ -200,12 +200,14 @@ describe('TriDraw', () => {
     it('returns null outside grid', () => {
       expect(td._hitTest(-5, -5)).toBeNull()
     })
-    it('finds index at approximate origin', () => {
+    it('finds index at approximate origin even when cell is empty', () => {
       const hit = td._hitTest(td.offsetX, td.offsetY)
-      expect(hit).toBeNull() // default bits 0 so hit returns null
+      expect(hit).toBe(0)
+    })
+    it('still returns index when cell is set', () => {
       td.bits = 1n // set first cell
-      const hit2 = td._hitTest(td.offsetX, td.offsetY)
-      expect(hit2).toBe(0)
+      const hit = td._hitTest(td.offsetX, td.offsetY)
+      expect(hit).toBe(0)
     })
   })
 })

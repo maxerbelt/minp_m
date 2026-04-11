@@ -217,11 +217,7 @@ export class TriDraw extends DrawBase {
   _hitTest (px, py) {
     const gridCoords = this._pixelToTriCoords(px, py)
     const idx = this._findTriangleIndex(gridCoords)
-    // Only return index if this bit is set
-    if (idx !== null && (this.bits >> BigInt(idx)) & 1n) {
-      return idx
-    }
-    return null
+    return idx
   }
 
   /**
