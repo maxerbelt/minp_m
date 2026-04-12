@@ -24,11 +24,11 @@ export class ListCanvas extends GridBase {
   set (x, y, value) {
     const isDuplicate = this.isDuplicate(x, y)
     if (isDuplicate) return
-    if (value !== undefined && value !== null) {
-      this.list.push([x, y, value])
+    if (value == null) {
+      this.list.push([x, y])
       this._actions = null
     } else {
-      this.list.push([x, y])
+      this.list.push([x, y, value])
       this._actions = null
     }
   }

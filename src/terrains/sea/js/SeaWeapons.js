@@ -140,16 +140,7 @@ export class Flack extends Weapon {
     )
     return await Promise.allSettled(promises)
   }
-  async animateExplode (
-    target,
-    container,
-    end,
-    cellSize,
-    type,
-    power,
-    shake = 'shake',
-    animator = null
-  ) {
+  async animateExplode (target, container, end, cellSize) {
     const coord = coordsFromCell(target)
     const effects = this.aoe(bh.map, [coord]).filter(([, , power]) => power > 0)
     const cells = [...this.cellsAndCoords(effects)]

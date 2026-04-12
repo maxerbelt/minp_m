@@ -135,7 +135,11 @@ export class Strike extends Weapon {
     const r1 = coords[1][0]
     const c1 = coords[1][1]
 
-    return getExtendedLinePoints(r, c, r1, c1, power)
+    return getExtendedLinePoints(r, c, r1, c1, power).map(([x, y, p]) => [
+      y,
+      x,
+      p || power
+    ])
   }
 
   async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
@@ -239,7 +243,12 @@ export class Fish extends Weapon {
     const r1 = coords[1][0]
     const c1 = coords[1][1]
 
-    const line = getLinePoints(r, c, r1, c1, power)
+    const line = getLinePoints(r, c, r1, c1, power).map(([x, y, p]) => [
+      y,
+      x,
+      p || power
+    ])
+
     const landIdx = line.findIndex(([r, c]) => map.isLand(r, c))
 
     if (landIdx >= 0) {

@@ -3,8 +3,8 @@ import { ShapeEnum } from '../shapeEnum.js'
 import { ListCanvas } from '../listCanvas.js'
 
 export class RectListCanvas extends ListCanvas {
-  constructor (x, y, list) {
-    super(ShapeEnum.rectangle(x, y), list || [])
+  constructor (width, height, list) {
+    super(ShapeEnum.rectangle(width, height), list || [])
   }
   static BhMapList () {
     const map = bh.map
