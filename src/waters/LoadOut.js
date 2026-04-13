@@ -43,10 +43,8 @@ export class LoadOut {
       targetCoordinates[0],
       targetCoordinates[1]
     )
-    return weapon.animateExplode(
+    return weapon.animateExplodeRaw(
       targetCell,
-      null,
-      null,
       viewModel.cellSizeScreen(),
       null,
       null

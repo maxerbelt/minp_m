@@ -304,7 +304,6 @@ class Enemy extends Waters {
     const results = this.applyToAoE(effect, weapon)
 
     // update status
-    this.updateResultsOfBomb(weapon, results)
     this.updateMode()
     this.flash()
     return results

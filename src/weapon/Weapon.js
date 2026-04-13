@@ -215,7 +215,7 @@ export class Weapon {
       sourceCell = viewModel.gridCellAt(0, 0)
     }
     const targetCell = viewModel.gridCellAt(target[0], target[1])
-    await this.animateFlying(sourceCell, targetCell, viewModel.cellSizeScreen())
+    await this.animateFlyingOnVM(sourceCell, targetCell, viewModel)
     return hasCandidates ? { target } : {}
   }
   centerOf (el) {
@@ -227,14 +227,12 @@ export class Weapon {
   }
   animateSplashExplode (target, cellSize) {
     if (this.explodeOnSplash)
-      this.animateExplode(target, null, null, cellSize, this.splashType)
+      this.animateExplodeRaw(target, cellSize, this.splashType)
   }
 
   animateDetonation (target, cellSize) {
-    this.animateExplode(
-      target,
-      null,
-      null,
+    this.animateExplodeRaw(
+      target, 
       cellSize,
       'plasma',
       1,
@@ -263,6 +261,45 @@ export class Weapon {
     await animator.run()
   }
 
+
+
+  
+  async animateExplodeWithAnimator (
+    target, 
+    end,
+    cellSize,
+    animator = null,
+    viewModel = null
+  ) {
+       return  await this.animateExplode(
+          target,
+          animator?.container,
+          end,
+          cellSize,
+          null,
+          null,
+          null,
+          animator,
+          viewModel
+        )
+    }
+  async animateExplodeRaw (
+    target, 
+    cellSize,
+    type,
+    power,
+    shake = 'shake') {
+       return await this.animateExplode(
+        target,
+        null,
+        null,
+        cellSize,
+        type,
+        power,
+        shake
+      )
+    }
+
   async animateExplode (
     target,
     container,
@@ -271,7 +308,8 @@ export class Weapon {
     type,
     power,
     shake = 'shake',
-    animator = null
+    animator = null,
+    viewModel = null  
   ) {
     end = end || this.centerOf(target)
 
@@ -302,7 +340,22 @@ export class Weapon {
     await animator.run()
     animator.endShake(shake)
   }
-
+  async animateFlyingOnVM (
+    source,
+    target,
+    viewModel){
+     return await this.animateFlying(
+      source,
+      target,
+      viewModel.cellSizeScreen(),
+     0,
+     0.7,
+     this.classname,
+     true,
+     this.animateOnTarget,
+     viewModel
+    )
+  } 
   async animateFlying (
     source,
     target,
@@ -311,7 +364,8 @@ export class Weapon {
     duration = 0.7,
     classname = this.classname,
     doesExplode = true,
-    animateOnTarget = this.animateOnTarget
+    animateOnTarget = this.animateOnTarget,
+    viewModel = null
   ) {
     const { animator, end, start, cellSize } = this.initAnimate(
       cellSz,
@@ -320,17 +374,17 @@ export class Weapon {
       classname
     )
     if (!animateOnTarget) {
-      await this.checkAnimate(target, animator, end, cellSize, doesExplode)
+      await this.checkAnimate(target, animator, end, cellSize, doesExplode, viewModel)
       return { container: animator.container, end, cellSize }
     }
 
     this.animateFlyingBase(end, start, animator, rotation, duration)
 
-    await this.finishAnimate(target, end, cellSize, doesExplode, animator)
+    await this.finishAnimate(target, end, cellSize, doesExplode, animator, viewModel)
     return { container: animator.container, end, cellSize }
   }
 
-  async finishAnimate (target, end, cellSize, doesExplode, animator) {
+  async finishAnimate (target, end, cellSize, doesExplode, animator, viewModel = null) {
     const explode = doesExplode && this.explodeOnTarget
     if (!explode) {
       animator.delayInner(500)
@@ -339,23 +393,14 @@ export class Weapon {
     await animator.run()
 
     if (explode) {
-      await this.animateExplode(target, animator.container, end, cellSize)
+      await this.animateExplodeWithAnimator(target, end, cellSize,animator, viewModel)
     }
   }
 
-  async checkAnimate (target, animator, end, cellSize, doesExplode) {
+  async checkAnimate (target, animator, end, cellSize, doesExplode, viewModel = null) {
     if (!this.animateOnTarget) {
       if (doesExplode) {
-        await this.animateExplode(
-          target,
-          animator.container,
-          end,
-          cellSize,
-          null,
-          null,
-          null,
-          animator
-        )
+        await this.animateExplodeWithAnimator(target, end, cellSize,animator, viewModel)
         return false
       }
     }

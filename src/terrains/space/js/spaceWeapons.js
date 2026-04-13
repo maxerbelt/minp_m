@@ -48,7 +48,7 @@ export class Missile extends Bomb {
     const start1 = opposingViewModel.gridCellAt(r, c)
     const end1 = viewModel.gridCellAt(target[0], target[1])
 
-    return await this.animateFlying(start1, end1, viewModel.cellSizeScreen())
+    return await this.animateFlyingOnVM(start1, end1, viewModel)
   }
 
   redoCoords (_map, base, coords) {
@@ -147,9 +147,9 @@ export class RailBolt extends Strike {
     end1.classList.add('portal')
     start2.classList.add('portal')
     end2.classList.add('marker')
-    await this.animateFlying(start1, end1, viewModel.cellSizeScreen())
+    await this.animateFlyingOnVM(start1, end1, viewModel)
 
-    await this.animateFlying(start2, end2, viewModel.cellSizeScreen())
+    await this.animateFlyingOnVM(start2, end2, viewModel)
 
     start1.classList.add('marker')
     end1.classList.remove('portal')
@@ -270,8 +270,8 @@ export class GuassRound extends Fish {
     const end2 = viewModel.gridCellAt(target[0], target[1])
     start1.classList.add('portal')
     start2.classList.add('portal')
-    await this.animateFlying(start2, end2, viewModel.cellSizeScreen())
-    await this.animateFlying(start1, end2, viewModel.cellSizeScreen())
+    await this.animateFlyingOnVM(start2, end2, viewModel)
+    await this.animateFlyingOnVM(start1, end2, viewModel)
     start1.classList.remove('portal')
     start2.classList.remove('portal')
   }

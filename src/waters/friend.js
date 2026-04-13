@@ -1,5 +1,5 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { shuffleArray } from '../core/utilities.js'
+import { randomElement, shuffleArray } from '../core/utilities.js'
 import { gameStatus } from './StatusUI.js'
 import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Waters } from './Waters.js'
@@ -84,10 +84,10 @@ export class Friend extends Waters {
       return this.seekBomb(weapon, effect)
     }
     if (target === null || target === undefined || target?.length < 2) {
-      target = this.randomElement(candidates)
+      target = randomElement(candidates)
     }
     const newEffect = this.getStrikeSplash(weapon, target)
-    return this.tryFireAt2(weapon, newEffect)
+    return this.seekBomb(weapon, newEffect)
   }
 
   async randomDestroyOne (seeking) {
@@ -96,7 +96,7 @@ export class Friend extends Waters {
 
     if (this.isCancelled(seeking)) return
 
-    const r = this.randomLine()
+    const r = this.randomRowNum()
     this.launchRandomWeapon(r, 0, false)
     return await this.loadOut.aimWeapon(
       map,
@@ -186,7 +186,10 @@ export class Friend extends Waters {
 
     return locs[idx]
   }
-
+  randomRowNum () {
+    const r = this.randomLine()
+    return Number.parseInt(r?.[0] || '0')
+  }
   randomLine () {
     this.syncUntried()
     let locs = this.untried.toCoords
@@ -195,8 +198,8 @@ export class Friend extends Waters {
       return 0
     }
 
-    const tally = locs.reduce((acc, [r]) => {
-      acc[r] = 1 + (acc[r] || 0)
+    const tally = locs.reduce((acc, [, y]) => {
+      acc[y] = 1 + (acc[y] || 0)
       return acc
     }, {})
 
@@ -204,12 +207,12 @@ export class Friend extends Waters {
     let line = shuffleArray(ordered)
     line.sort((a, b) => b[1] - a[1])
 
-    const idx = line.findIndex(i => i[1] < line[0][1])
+    // const idx = line.findIndex(i => i[1] < line[0][1])
 
-    if (idx < 3) {
-      return line[0]
-    }
-    return line[Math.floor(Math.random() * (idx - 1))]
+    //  if (idx < 3) {
+    return line[0]
+    // }
+    // return line[Math.floor(Math.random() * (idx - 1))]
   }
 
   async seek () {
@@ -328,12 +331,13 @@ export class Friend extends Waters {
     if (numHits <= 0) return false
     const shots = this.score.shot
     console.log('shot', shots.occupancy, shots.toAscii)
-    let cross = hits.clone.dilateCross()
+    const cross = hits.clone.dilateCross()
+    console.log('hits', hits.toAscii)
     console.log('cross', cross.toAscii)
-    cross = cross.take(shots)
-    console.log('candidates', cross.toAscii)
-    if (cross.occupancy > 0) {
-      await this.selectRandomCandidate(cross)
+    const candidates = cross.take(shots)
+    console.log('candidates', candidates.toAscii)
+    if (candidates.occupancy > 0) {
+      await this.selectRandomCandidate(candidates)
       return true
     }
 

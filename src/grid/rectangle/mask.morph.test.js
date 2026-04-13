@@ -90,10 +90,12 @@ describe('Mask - additional methods and edge cases', () => {
       expect(mask.occupancy).toBe(16)
     })
 
-    it('dilateCross only touches cardinal neighbors', () => {
+    it('dilateCross only touches cardinal neighbors in corner', () => {
       mask.set(0, 0)
+      expect(mask.toAscii).toBe('1...\n....\n....\n....')
       expect(mask.occupancy).toBe(1)
       mask.dilateCross()
+      expect(mask.toAscii).toBe('11..\n1...\n....\n....')
       expect(mask.occupancy).toBe(3)
       mask.dilateCross()
       expect(mask.occupancy).toBe(6)
@@ -111,6 +113,18 @@ describe('Mask - additional methods and edge cases', () => {
       expect(mask.occupancy).toBe(15)
       mask.dilateCross()
       expect(mask.occupancy).toBe(16)
+    })
+
+    it('dilateCross only touches cardinal neighbors in middle', () => {
+      mask.set(1, 1)
+      expect(mask.toAscii).toBe('....\n.1..\n....\n....')
+      expect(mask.occupancy).toBe(1)
+      const mask2 = mask.clone.dilateCross()
+      expect(mask2.toAscii).toBe('.1..\n111.\n.1..\n....')
+      expect(mask2.occupancy).toBe(5)
+
+      expect(mask.toAscii).toBe('....\n.1..\n....\n....')
+      expect(mask.occupancy).toBe(1)
     })
     it('erode should shrink the region', () => {
       mask.set(1, 1)
