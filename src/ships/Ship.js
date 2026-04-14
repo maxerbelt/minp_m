@@ -437,16 +437,20 @@ export class Ship {
     const weaponAtPosition = this.rackAt(r, c)
     let info = null
     let damaged = null
+    let hits = []
+    let misses = []
 
     if (weaponAtPosition && model) {
       const result = this._processMagazineHit(weaponAtPosition, model, r, c)
       if (result) {
         damaged = result.damaged
         info = result.info
+        hits = result.hits || []
+        misses = result.misses || []
       }
     }
 
-    return this._determineHitResult(info, damaged)
+    return this._determineHitResult(info, damaged, hits, misses)
   }
 
   /**
@@ -502,7 +506,7 @@ export class Ship {
   /**
    * Internal: Determine final hit result
    */
-  _determineHitResult (info, damaged, hits, misses) {
+  _determineHitResult (info, damaged, hits = [], misses = []) {
     if (this.isSunk()) {
       this.sunk = true
       return { letter: this.letter, info, damaged, list: [], misses: misses }

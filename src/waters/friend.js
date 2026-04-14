@@ -39,16 +39,6 @@ export class Friend extends Waters {
     return false
   }
 
-  processShot (weapon, r, c, power) {
-    if (!bh.inBounds(r, c)) return LoadOut.noResult
-    if (this.isDTap(r, c, power, true, weapon.hasFlash))
-      return LoadOut.doubleTapResult
-
-    const result = this.fireShot(weapon, r, c, power)
-    this.updateUI(this.ships)
-    return result
-  }
-
   seekBomb (weapon, effect) {
     this.updateUI()
     const acc = this.applyToAoE(effect, weapon)
@@ -109,8 +99,9 @@ export class Friend extends Waters {
     )
   }
   isHitValid (r, c) {
-    return !this.isDTap(r, c, 4, false, false)
+    return bh.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
+
   randomSeek (seeking) {
     const maxAttempts = 13
     for (let attempt = 0; attempt < maxAttempts; attempt++) {

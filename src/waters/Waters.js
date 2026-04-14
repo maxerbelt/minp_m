@@ -578,6 +578,10 @@ export class Waters {
     return false
   }
   async launchSingleShot (r, c, sShot) {
+    this.loadOut.onDestroy = (weapon, affectedArea) => {
+      return this.processShot(weapon, ...(affectedArea?.[0] || []))
+    }
+
     const { fireSingleShot, coordinates, wps } = this.loadOut.aimSingleShotInfo(
       sShot,
       r,
@@ -1053,10 +1057,9 @@ export class Waters {
     return acc
   }
   processShot (weapon, r, c, power) {
-    if (this.isDTap(r, c, power, true, weapon.hasFlash)) {
-      // if we are here, it is because of carpet bomb, so we can just
-      return LoadOut.noResult
-    }
+    if (!bh.inBounds(r, c)) return LoadOut.noResult
+    if (this.isDTap(r, c, power, true, weapon.hasFlash))
+      return LoadOut.doubleTapResult
 
     const result = this.fireShot(weapon, r, c, power)
 

@@ -372,15 +372,15 @@ export class LoadOut {
     this.clearSelectedCoordinates()
   }
   fireSingleShot (coordinates, sShot) {
-    const { weapon, affectedArea } = this.fireSingleShotInfo(sShot, coordinates)
-    return this.onDestroy(weapon, affectedArea)
+    const { weapon, affectedLoc } = this.fireSingleShotInfo(sShot, coordinates)
+    return this.onDestroy(weapon, [affectedLoc])
   }
   fireSingleShotInfo (sShot, coordinates) {
     sShot = sShot || this.getSingleShotWps()
     const c = coordinates || this.coord
     const weapon = sShot.weapon
-    const affectedArea = [[...c, 4]]
-    return { weapon, affectedArea, sShot }
+    const affectedLoc = [...c, 4]
+    return { weapon, affectedLoc, sShot }
   }
 
   fireWeapon (map, coordinates, weaponSystem, target) {
