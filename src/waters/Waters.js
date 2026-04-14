@@ -100,6 +100,7 @@ export class Waters {
   }
   accumulateResult (result, acc) {
     if (result?.hits) acc.hits += result.hits
+    if (result?.dtaps) acc.dtaps += result.dtaps
     if (result?.sunk) acc.sunk += result.sunk
     if (result?.reveals) acc.reveals += result.reveals
     if (result?.shots) acc.shots += result.shots
@@ -883,7 +884,7 @@ export class Waters {
   _applyMissEntries (missEntries, totalShots) {
     for (const { cell, damaged } of missEntries) {
       this.score.shot.set(...cell)
-      totalShots++
+      totalShots++ //
       this.UI.cellMiss(cell[0], cell[1], damaged)
     }
     return totalShots
@@ -968,10 +969,11 @@ export class Waters {
   }
   updateResultsOfSingleShot (result) {
     if (!result) return
-    const { hits, sunk, reveals, info, shots } = result
+    const { hits, dtaps, sunk, reveals, info, shots } = result
     this.updateResultsOfTurn(
       this.loadOut.getSingleShot(),
       hits,
+      dtaps,
       sunk,
       reveals,
       info,
@@ -980,10 +982,10 @@ export class Waters {
   }
   updateResultsOfBomb (weapon, result) {
     if (!result) return
-    const { hits, sunk, reveals, info, shots } = result
-    this.updateResultsOfTurn(weapon, hits, sunk, reveals, info, shots)
+    const { hits, dtaps, sunk, reveals, info, shots } = result
+    this.updateResultsOfTurn(weapon, hits, dtaps, sunk, reveals, info, shots)
   }
-  updateResultsOfTurn (weapon, hits, sunks, reveals = 0, info = '') {
+  updateResultsOfTurn (weapon, hits, dtaps, sunks, reveals = 0, info = '') {
     const messageInfo = info ? info + ' ' : ''
     if (this.boardDestroyed) {
       return
@@ -998,21 +1000,24 @@ export class Waters {
         message += ` and ${this.revealDescription(reveals)}`
       }
       this.displayInfo(messageInfo + message)
-    } else if (sunks.length === 1) {
+      return
+    }
+    if (sunks.length === 1) {
       this.displayInfo(
         messageInfo +
           this.hitDescription(hits) +
           ' and ' +
           this.sunkLetterDescription(sunks)
       )
-    } else {
-      let message = this.hitDescription(hits) + ','
-      for (let sunk of sunks) {
-        message += ' and ' + this.sunkLetterDescription(sunk)
-      }
-      message += ' Destroyed'
-      this.displayInfo(messageInfo + message)
+      return
     }
+
+    let message = this.hitDescription(hits) + ','
+    for (let sunk of sunks) {
+      message += ' and ' + this.sunkLetterDescription(sunk)
+    }
+    message += ' Destroyed'
+    this.displayInfo(messageInfo + message)
   }
 
   flash (long) {
@@ -1027,16 +1032,11 @@ export class Waters {
       Animator.run(cell, 'flames', 'long')
     }
   }
-  isHitInvalid (r, c, power, hasFlame, hasFlash) {
-    if (!bh.inBounds(r, c)) return true
-
+  isDTap (r, c, power, hasFlame, hasFlash) {
     if (hasFlame && power > 0) this.flame(r, c, hasFlash)
     const key =
       power > 0 ? this.score.createShotKey(r, c) : this.score.newShotKey(r, c)
-    if (key === null) {
-      return true
-    }
-    return false
+    return key === null
   }
   applyToAoE (effect, weapon) {
     let acc = LoadOut.noResult
@@ -1053,7 +1053,7 @@ export class Waters {
     return acc
   }
   processShot (weapon, r, c, power) {
-    if (this.isHitInvalid(r, c, power, true, weapon.hasFlash)) {
+    if (this.isDTap(r, c, power, true, weapon.hasFlash)) {
       // if we are here, it is because of carpet bomb, so we can just
       return LoadOut.noResult
     }

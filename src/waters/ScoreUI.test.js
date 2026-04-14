@@ -126,7 +126,7 @@ describe('ScoreUI', () => {
 
   describe('display', () => {
     it('should update shots text content', () => {
-      scoreUI.display([], 1, 5)
+      scoreUI.display([], 1, 0, 5)
       expect(scoreUI.shots.textContent).toBe('5')
     })
 

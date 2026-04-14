@@ -16,6 +16,7 @@ export class Friend extends Waters {
   }
 
   onEndTurn () {
+    this.opponent?.score.finishTurn()
     // this.score.finishTurn()
     if (this?.opponent && !this.opponent.boardDestroyed) {
       this.opponent.onBeginTurn()
@@ -39,8 +40,9 @@ export class Friend extends Waters {
   }
 
   processShot (weapon, r, c, power) {
-    if (this.isHitInvalid(r, c, power, true, weapon.hasFlash))
-      return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+    if (!bh.inBounds(r, c)) return LoadOut.noResult
+    if (this.isDTap(r, c, power, true, weapon.hasFlash))
+      return LoadOut.doubleTapResult
 
     const result = this.fireShot(weapon, r, c, power)
     this.updateUI(this.ships)
@@ -51,6 +53,7 @@ export class Friend extends Waters {
     this.updateUI()
     const acc = this.applyToAoE(effect, weapon)
     if (acc.hits > 0) this.flash('long')
+    this.score.dtaps += acc.dtap
     return acc
   }
 
@@ -106,7 +109,7 @@ export class Friend extends Waters {
     )
   }
   isHitValid (r, c) {
-    return !this.isHitInvalid(r, c, 4, false, false)
+    return !this.isDTap(r, c, 4, false, false)
   }
   randomSeek (seeking) {
     const maxAttempts = 13

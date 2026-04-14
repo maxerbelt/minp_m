@@ -404,11 +404,14 @@ export class Ship {
   /**
    * Process multiple cells for damage
    */
-  processCellDamage (model, cells) {
-    const results = { hits: [], misses: [] }
+  _processCellDamage (model, cells) {
+    const results = { hits: [], misses: [], dtaps: 0 }
     for (const cell of cells) {
       const [r, c] = cell
-      if (this.isHitAt(r, c)) continue // Already hit
+      if (this.isHitAt(r, c)) {
+        results.dtaps++
+        continue // Already hit
+      }
       this.processHitAt(model, r, c, results, cell)
     }
     return results
@@ -453,7 +456,7 @@ export class Ship {
     const isLoaded = this._isWeaponLoaded(weaponSystem)
     if (!isLoaded) {
       weaponSystem.damaged = true
-      return { damaged: 'damaged', info: null }
+      return { damaged: 'damaged', info: null, hits: [], misses: [] }
     }
     return this._processLoadedMagazineHit(weaponSystem, model, r, c)
   }
@@ -490,22 +493,21 @@ export class Ship {
   _processDetonation (weapon, cell, viewModel, model, r, c, damaged) {
     const detonationInfo = 'Magazine Detonated'
     weapon.animateDetonation(cell, viewModel.cellSizeScreen())
-    const { hits, misses } = this.processCellDamage(
+    const { hits, misses } = this._processCellDamage(
       model,
       bh.map.surround(r, c)
     )
     return { damaged, info: detonationInfo, hits, misses }
   }
-
   /**
    * Internal: Determine final hit result
    */
-  _determineHitResult (info, damaged) {
+  _determineHitResult (info, damaged, hits, misses) {
     if (this.isSunk()) {
       this.sunk = true
-      return { letter: this.letter, info, damaged, list: [], misses: [] }
+      return { letter: this.letter, info, damaged, list: [], misses: misses }
     }
-    return { letter: '', info, damaged, list: [], misses: [] }
+    return { letter: '', info, damaged, list: hits, misses: misses }
   }
 
   /**

@@ -6,6 +6,7 @@ export class Score {
   }
   reset () {
     this.turns = 0
+    this.dtaps = 0
     this.shot = bh.map.blankMask
     this.reveal = bh.map.blankMask
     this.hint = bh.map.blankMask
@@ -46,6 +47,7 @@ export class Score {
   counts () {
     return [
       this.turns,
+      this.dtaps,
       this.noOfShots(),
       this.reveal.occupancy,
       this.hint.occupancy

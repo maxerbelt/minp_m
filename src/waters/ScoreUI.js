@@ -8,6 +8,7 @@ export class ScoreUI {
     //
     this.shots = document.getElementById(playerPrefix + '-shots')
     this.turns = document.getElementById(playerPrefix + '-turns')
+    this.dtaps = document.getElementById(playerPrefix + '-dtaps')
     this.hits = document.getElementById(playerPrefix + '-hits')
     this.misses = document.getElementById(playerPrefix + '-misses')
     this.sunk = document.getElementById(playerPrefix + '-sunk')
@@ -18,6 +19,7 @@ export class ScoreUI {
     this.zone = document.getElementById(playerPrefix + '-zone')
     this.shotsLabel = document.getElementById(playerPrefix + '-shots-label')
     this.turnsLabel = document.getElementById(playerPrefix + '-turns-label')
+    this.dtapsLabel = document.getElementById(playerPrefix + '-dtaps-label')
     this.hitsLabel = document.getElementById(playerPrefix + '-hits-label')
     this.missesLabel = document.getElementById(playerPrefix + '-misses-label')
     this.sunkLabel = document.getElementById(playerPrefix + '-sunk-label')
@@ -32,9 +34,10 @@ export class ScoreUI {
     this.zoneSync = []
   }
 
-  display (ships, turns, shots, reveals, hints) {
+  display (ships, turns, dtaps, shots, reveals, hints) {
     this.showCounter(this.turns, turns, this.turnsLabel)
     this.showCounter(this.shots, shots, this.shotsLabel)
+    this.showCounter(this.dtaps, dtaps, this.dtapsLabel)
 
     const hits = Ship.noOfHits(ships)
     this.showCounter(this.hits, hits, this.hitsLabel)

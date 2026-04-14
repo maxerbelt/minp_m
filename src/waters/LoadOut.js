@@ -26,11 +26,14 @@ export class LoadOut {
     this.launch = LoadOut.launchDefault.bind(this, this.viewModel)
   }
 
+  static get doubleTapResult () {
+    return { hits: 0, shots: 0, reveals: 0, sunk: '', dtap: 1, info: '' }
+  }
   static get noResult () {
-    return { hits: 0, shots: 0, reveals: 0, sunk: '', info: '' }
+    return { hits: 0, shots: 0, reveals: 0, sunk: '', dtap: 0, info: '' }
   }
   static get missResult () {
-    return { hits: 0, shots: 1, reveals: 0, sunk: '', info: '' }
+    return { hits: 0, shots: 1, reveals: 0, sunk: '', dtap: 0, info: '' }
   }
   static get givesNoResult () {
     return () => {
