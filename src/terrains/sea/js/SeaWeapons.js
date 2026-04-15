@@ -15,6 +15,10 @@ export class Megabomb extends Bomb {
 
     this.tag = 'mega'
   }
+  get flightSound () {
+    const url = new URL('../sounds/bomb-flight.mp3', import.meta.url)
+    return url
+  }
   clone (ammo) {
     ammo = ammo || this.ammo
     return new Megabomb(ammo)
@@ -38,6 +42,10 @@ export class Kinetic extends Strike {
     this.tag = 'kinetic'
     this.splashPower = 0
   }
+  get flightSound () {
+    const url = new URL('../sounds/kinetic-flight.mp3', import.meta.url)
+    return url
+  }
   clone (ammo) {
     ammo = ammo || this.ammo
     return new Kinetic(ammo)
@@ -60,6 +68,11 @@ export class Torpedo extends Fish {
     this.splashType = 'sea'
     this.tag = 'torpedo'
     this.splashPower = 1
+  }
+
+  get flightSound () {
+    const url = new URL('../sounds/torpedo-flight.mp3', import.meta.url)
+    return url
   }
   clone (ammo) {
     ammo = ammo || this.ammo
@@ -104,6 +117,11 @@ export class Flack extends Weapon {
       [1, 3, 1],
       [0, 4, 0]
     ]
+  }
+
+  get flightSound () {
+    const url = new URL('../sounds/flack-flight.mp3', import.meta.url)
+    return url
   }
   clone (ammo) {
     ammo = ammo || this.ammo

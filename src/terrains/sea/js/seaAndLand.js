@@ -2,6 +2,7 @@ import { terrains } from '../../all/js/terrains.js'
 import { Terrain } from '../../all/js/terrain.js'
 import { SubTerrain } from '../../all/js/SubTerrain.js'
 import { Zone } from '../../all/js/Zone.js'
+import { seaWeaponSounds } from './seaWeaponSounds.js'
 
 export const deep = new Zone('Depths', 'D', false)
 export const littoral = new Zone('Shallows', 'L', true)
@@ -30,6 +31,8 @@ export const seaAndLand = new Terrain(
   null,
   [sea, land],
   'SeaAndLand',
-  null
+  null,
+  null,
+  seaWeaponSounds
 )
 terrains.default = seaAndLand

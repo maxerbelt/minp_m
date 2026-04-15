@@ -34,6 +34,17 @@ export class Weapon {
     this.animateOffsetY = 0
     this.classname = this.name.toLowerCase().replaceAll(' ', '-')
   }
+  get flightSound () {
+    return null
+  }
+  playFlightSound () {
+    if (this.flightSound) {
+      bh.audio.playUnLoaded(this.name + '-flight', this.flightSound)
+    }
+  }
+  get boomSound () {
+    return null
+  }
   getTurn () {
     let turn = ''
     return turn
@@ -302,7 +313,7 @@ export class Weapon {
     end = end || this.centerOf(target)
 
     type = type || bh.subTerrainTagFromCell(target)
-
+    bh.playBoom(type)
     // CREATE wrapper
     animator =
       animator ||
@@ -373,7 +384,7 @@ export class Weapon {
       )
       return { container: animator.container, end, cellSize }
     }
-
+    this.playFlightSound()
     this.animateFlyingBase(end, start, animator, rotation, duration)
 
     await this.finishAnimate(
@@ -478,7 +489,10 @@ export class StandardShot extends Weapon {
     this.hints = ['Click On Square To Fire']
     this.buttonHtml = '<span class="shortcut">S</span>ingle Shot'
   }
-
+  get flightSound () {
+    const url = new URL('../terrains/all/sounds/shot.mp3', import.meta.url)
+    return url
+  }
   aoe (_map, coords) {
     return [[coords[0][0], coords[0][1], 4]]
   }

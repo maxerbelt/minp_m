@@ -39,6 +39,7 @@ export const riverAndSwamp = new Terrain(
   'River and Swamp',
   null,
   [river, dryLand, swamp],
-  'RiverAndSwamp    ',
-  null
+  'RiverAndSwamp',
+  'Lands',
+  'Army'
 )

@@ -29,5 +29,6 @@ export const skyAndCoral = new Terrain(
   null,
   [sky, coral],
   'SkyAndCoral',
-  null
+  'Skies',
+  'Flock'
 )

@@ -1,9 +1,11 @@
+import { bh } from './terrains/all/js/bh.js'
 import { fetchNavBar } from './navbar/navbar.js'
 import { setupGameOptions } from './navbar/setupOptions.js'
 import { setupEnemy, newGame } from './navbar/enemySetup.js'
 import { enemyUI } from './waters/enemyUI.js'
 import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
+import { AudioManager } from './core/AudioManager.js'
 
 // Initialize UI manager for visibility control
 const uiManager = new UIVisibilityManager()
@@ -33,6 +35,8 @@ stateManager.registerModeCallbacks('seek', {
 stateManager.saveUIVisibility('seek', {
   'choose-map-container': true
 })
+bh.audio = new AudioManager()
+bh.audio.init()
 
 // Setup seek mode UI
 fetchNavBar('seek', "Geoff's Hidden Battle (Seek)", function () {

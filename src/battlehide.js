@@ -20,6 +20,7 @@ import { ButtonManager } from './ui/ButtonManager.js'
 import { KeyboardShortcutManager } from './navbar/KeyboardShortcutManager.js'
 import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
+import { AudioManager } from './core/AudioManager.js'
 
 const friend = makeFriend()
 placedShipsInstance.registerUndo(friend.UI.undoBtn)
@@ -319,6 +320,7 @@ stateManager.saveUIVisibility('hide-seek', {
 _setupHideButtons()
 dragOverPlacingHandlerSetup(friend, friendUI)
 _setupHideKeyboardShortcuts()
-
+bh.audio = new AudioManager()
+bh.audio.init()
 // Initialize hide mode UI with navbar, then setup game mode
 fetchNavBar('hide', "Geoff's Hidden Battle (Hide & Seek)", _onNavBarReady)

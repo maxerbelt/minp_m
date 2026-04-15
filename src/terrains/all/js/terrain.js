@@ -6,14 +6,15 @@ export class Terrain {
     shipCatelogue,
     subterrains,
     tag,
-    weaponsCatelogue,
     mapHeading,
-    fleetHeading
+    fleetHeading,
+    sounds
   ) {
     this.title = title || 'Unknown'
     this.key = title.toLowerCase().replaceAll(/\s+/g, '-')
     this.ships = shipCatelogue
-    this.weapons = weaponsCatelogue
+    this.weapons = null //weaponsCatelogue
+    this.sounds = sounds
     this.minWidth = MIN_CUSTOM_WIDTH
     this.maxWidth = MAX_CUSTOM_WIDTH
     this.minHeight = MIN_CUSTOM_HEIGHT

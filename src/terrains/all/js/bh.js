@@ -27,6 +27,23 @@ if (!bhLocal)
     get fleetHeading () {
       return terrains.current?.fleetHeading
     },
+    get sounds () {
+      return terrains.current?.sounds
+    },
+    playBoom (type) {
+      const sounds = this.sounds
+      if (!sounds) {
+        console.warn('No sounds defined for current terrain')
+        return
+      }
+      const soundUrl = this.sounds?.[type]
+      if (soundUrl) {
+        console.log('Playing boom sound for type', type, 'from url', soundUrl)
+        this.audio.playUnLoaded(type + 'Boom', soundUrl)
+      } else {
+        console.warn('No boom sound for type', type)
+      }
+    },
     get hasTransforms () {
       return terrains.current?.hasTransforms
     },
