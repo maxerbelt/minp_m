@@ -1,7 +1,11 @@
 function* bresenhamSteps (x0, y0, dx, dy, sx, sy, width, height) {
   let err = dx - dy
   let steps = 1
-  while (x0 >= 0 && x0 < width && y0 >= 0 && y0 < height) {
+  if (dx === 0 && dy === 0) {
+    yield [x0, y0, 1]
+    return
+  }
+  while (x0 >= 0 && x0 < width && y0 >= 0 && y0 < height && steps < 100) {
     yield [x0, y0, steps]
     steps++
     const e2 = 2 * err

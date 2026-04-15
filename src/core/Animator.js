@@ -70,7 +70,9 @@ export class Animator {
   async run (...trigger) {
     if (this.running) return
     this.running = true
-    await Animator.wait(this.playable, this.play.bind(this, ...trigger))
+    this.play(...trigger)
+    await Animator.wait(this.playable)
+    // await Animator.wait(this.playable, this.play.bind(this, ...trigger))
 
     if (this.innerEl && this.innerDelay) {
       await Delay.wait(this.innerDelay)
@@ -87,12 +89,14 @@ export class Animator {
     this.container.appendChild(this.el)
     // force style recalc then start animation
     this.playable.getBoundingClientRect()
-    requestAnimationFrame(() => {
-      this.playable.classList.add(...classNames)
-    })
+    //  requestAnimationFrame(() => {
+    this.playable.classList.add(...classNames)
+    //  })
   }
   static async run (el, ...className) {
-    await Animator.wait(el, Animator.play.bind(null, el, ...className))
+    Animator.play(el, ...className)
+    await Animator.wait(el)
+    // await Animator.wait(el, Animator.play.bind(null, el, ...className))
   }
   static async runWithDelay (el, delay, ...className) {
     await Delay.wait(delay)
