@@ -124,9 +124,9 @@ describe('LoadOut', () => {
     expect(loadOut.onReveal).toHaveBeenCalled()
   })
 
-  it('destroyOneOfMany calls onDestroy with target', () => {
+  it('onDestroyOneOfMany calls onDestroy with target', () => {
     loadOut.onDestroy = jest.fn()
-    loadOut.destroyOneOfMany(mockWeapon, ['affected'], { id: 1 })
+    loadOut.onDestroyOneOfMany(mockWeapon, ['affected'], { id: 1 })
     expect(loadOut.onDestroy).toHaveBeenCalledWith(mockWeapon, ['affected'], {
       id: 1
     })

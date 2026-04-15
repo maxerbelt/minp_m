@@ -119,15 +119,17 @@ export class Weapon {
     const start1 = opposingViewModel.gridCellAt(sr, sc)
     const end1 = viewModel.gridCellAt(...target)
     const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
+    const options = this.defaultAnimateOptions
+    options.classname = 'cursor ' + flyCursor
+    options.duration = 0.9
+    options.animateOnTarget = true
+    options.doesExplode = false
     const { container, end } = await this.animateFlying(
       start1,
       end1,
       viewModel.cellSizeScreen(),
-      0,
-      0.9,
-      'cursor ' + flyCursor,
-      false,
-      true
+      options,
+      viewModel
     )
     await this.animateRipple(end1, container, end)
     return await this.launchTo(coords, r, c, map, viewModel, opposingViewModel)
@@ -231,13 +233,7 @@ export class Weapon {
   }
 
   animateDetonation (target, cellSize) {
-    this.animateExplodeRaw(
-      target, 
-      cellSize,
-      'plasma',
-      1,
-      'shake-heavy'
-    )
+    this.animateExplodeRaw(target, cellSize, 'plasma', 1, 'shake-heavy')
   }
   async animateRipple (target, container, end) {
     end = end || this.centerOf(target)
@@ -261,44 +257,36 @@ export class Weapon {
     await animator.run()
   }
 
-
-
-  
   async animateExplodeWithAnimator (
-    target, 
+    target,
     end,
     cellSize,
     animator = null,
     viewModel = null
   ) {
-       return  await this.animateExplode(
-          target,
-          animator?.container,
-          end,
-          cellSize,
-          null,
-          null,
-          null,
-          animator,
-          viewModel
-        )
-    }
-  async animateExplodeRaw (
-    target, 
-    cellSize,
-    type,
-    power,
-    shake = 'shake') {
-       return await this.animateExplode(
-        target,
-        null,
-        null,
-        cellSize,
-        type,
-        power,
-        shake
-      )
-    }
+    return await this.animateExplode(
+      target,
+      animator?.container,
+      end,
+      cellSize,
+      null,
+      null,
+      null,
+      animator,
+      viewModel
+    )
+  }
+  async animateExplodeRaw (target, cellSize, type, power, shake = 'shake') {
+    return await this.animateExplode(
+      target,
+      null,
+      null,
+      cellSize,
+      type,
+      power,
+      shake
+    )
+  }
 
   async animateExplode (
     target,
@@ -309,7 +297,7 @@ export class Weapon {
     power,
     shake = 'shake',
     animator = null,
-    viewModel = null  
+    viewModel = null
   ) {
     end = end || this.centerOf(target)
 
@@ -340,33 +328,34 @@ export class Weapon {
     await animator.run()
     animator.endShake(shake)
   }
-  async animateFlyingOnVM (
-    source,
-    target,
-    viewModel){
-     return await this.animateFlying(
+  async animateFlyingOnVM (source, target, viewModel) {
+    return await this.animateFlying(
       source,
       target,
       viewModel.cellSizeScreen(),
-     0,
-     0.7,
-     this.classname,
-     true,
-     this.animateOnTarget,
-     viewModel
+      this.defaultAnimateOptions,
+      viewModel
     )
-  } 
+  }
+  get defaultAnimateOptions () {
+    return {
+      rotation: 0,
+      duration: 0.7,
+      classname: this.classname,
+      doesExplode: true,
+      animateOnTarget: this.animateOnTarget
+    }
+  }
+
   async animateFlying (
     source,
     target,
     cellSz,
-    rotation = 0,
-    duration = 0.7,
-    classname = this.classname,
-    doesExplode = true,
-    animateOnTarget = this.animateOnTarget,
+    options = this.defaultAnimateOptions,
     viewModel = null
   ) {
+    const { rotation, duration, classname, doesExplode, animateOnTarget } =
+      options
     const { animator, end, start, cellSize } = this.initAnimate(
       cellSz,
       target,
@@ -374,17 +363,38 @@ export class Weapon {
       classname
     )
     if (!animateOnTarget) {
-      await this.checkAnimate(target, animator, end, cellSize, doesExplode, viewModel)
+      await this.checkAnimate(
+        target,
+        animator,
+        end,
+        cellSize,
+        doesExplode,
+        viewModel
+      )
       return { container: animator.container, end, cellSize }
     }
 
     this.animateFlyingBase(end, start, animator, rotation, duration)
 
-    await this.finishAnimate(target, end, cellSize, doesExplode, animator, viewModel)
+    await this.finishAnimate(
+      target,
+      end,
+      cellSize,
+      doesExplode,
+      animator,
+      viewModel
+    )
     return { container: animator.container, end, cellSize }
   }
 
-  async finishAnimate (target, end, cellSize, doesExplode, animator, viewModel = null) {
+  async finishAnimate (
+    target,
+    end,
+    cellSize,
+    doesExplode,
+    animator,
+    viewModel = null
+  ) {
     const explode = doesExplode && this.explodeOnTarget
     if (!explode) {
       animator.delayInner(500)
@@ -393,14 +403,33 @@ export class Weapon {
     await animator.run()
 
     if (explode) {
-      await this.animateExplodeWithAnimator(target, end, cellSize,animator, viewModel)
+      await this.animateExplodeWithAnimator(
+        target,
+        end,
+        cellSize,
+        animator,
+        viewModel
+      )
     }
   }
 
-  async checkAnimate (target, animator, end, cellSize, doesExplode, viewModel = null) {
+  async checkAnimate (
+    target,
+    animator,
+    end,
+    cellSize,
+    doesExplode,
+    viewModel = null
+  ) {
     if (!this.animateOnTarget) {
       if (doesExplode) {
-        await this.animateExplodeWithAnimator(target, end, cellSize,animator, viewModel)
+        await this.animateExplodeWithAnimator(
+          target,
+          end,
+          cellSize,
+          animator,
+          viewModel
+        )
         return false
       }
     }

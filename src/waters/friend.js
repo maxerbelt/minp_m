@@ -39,7 +39,7 @@ export class Friend extends Waters {
     return false
   }
 
-  seekBomb (weapon, effect) {
+  destroy (weapon, effect) {
     this.updateUI()
     const acc = this.applyToAoE(effect, weapon)
     if (acc.hits > 0) this.flash('long')
@@ -49,7 +49,7 @@ export class Friend extends Waters {
 
   async randomBomb (seeking) {
     const map = bh.map
-    this.loadOut.onDestroy = this.seekBomb.bind(this)
+    this.loadOut.onDestroy = this.destroy.bind(this)
 
     for (let impact = 9; impact > 1; impact--)
       for (let attempt = 0; attempt < 12; attempt++) {
@@ -74,18 +74,18 @@ export class Friend extends Waters {
   destroyOne (weapon, effect, target) {
     const candidates = this.getHitCandidates(effect, weapon)
     if (candidates.length < 1) {
-      return this.seekBomb(weapon, effect)
+      return this.destroy(weapon, effect)
     }
     if (target === null || target === undefined || target?.length < 2) {
       target = randomElement(candidates)
     }
     const newEffect = this.getStrikeSplash(weapon, target)
-    return this.seekBomb(weapon, newEffect)
+    return this.destroy(weapon, newEffect)
   }
 
   async randomDestroyOne (seeking) {
     const map = bh.map
-    this.loadOut.destroyOneOfMany = this.destroyOne.bind(this)
+    this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)
 
     if (this.isCancelled(seeking)) return
 

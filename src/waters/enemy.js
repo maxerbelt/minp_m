@@ -230,11 +230,6 @@ class Enemy extends Waters {
     )
   }
 
-  setWeaponFireHanders () {
-    this.loadOut.onDestroy = this.tryFireAt2.bind(this)
-    this.loadOut.destroyOneOfMany = this.destroyOne.bind(this)
-  }
-
   onClickOppoCell (hintR, hintC) {
     if (!this.isTurn()) return
     const oppo = this.opponent
@@ -255,9 +250,9 @@ class Enemy extends Waters {
     if (isAmiss) {
       if (weapon.crashLoc) {
         const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc)
-        return this.tryFireAt2(weapon, splashEffect)
+        return this.destroy(weapon, splashEffect)
       }
-      return this.tryFireAt2(weapon, effect)
+      return this.destroy(weapon, effect)
     }
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
     if (
@@ -266,10 +261,10 @@ class Enemy extends Waters {
       resolvedTarget[1] === weapon.crashLoc[1]
     ) {
       const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc)
-      return this.tryFireAt2(weapon, splashEffect)
+      return this.destroy(weapon, splashEffect)
     }
     const splashEffect = this.getStrikeSplash(weapon, resolvedTarget)
-    return this.tryFireAt2(weapon, splashEffect)
+    return this.destroy(weapon, splashEffect)
   }
 
   isNoHitCandidates (hitCandidates) {
@@ -282,7 +277,7 @@ class Enemy extends Waters {
     }
     return target
   }
-  tryFireAt2 (weapon, effect) {
+  destroy (weapon, effect) {
     if (
       effect.length === 1 &&
       !this.score.newShotKey(effect[0][0], effect[0][1])

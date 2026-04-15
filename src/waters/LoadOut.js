@@ -395,7 +395,7 @@ export class LoadOut {
   fireAoE (weapon, affectedArea, target) {
     if (weapon.destroys) {
       if (weapon.isOneAndDone) {
-        return this.destroyOneOfMany(weapon, affectedArea, target)
+        return this.onDestroyOneOfMany(weapon, affectedArea, target)
       }
       return this.onDestroy(weapon, affectedArea)
     }
@@ -409,7 +409,7 @@ export class LoadOut {
     return { weapon, affectedArea }
   }
 
-  destroyOneOfMany (weapon, affectedArea, target) {
+  onDestroyOneOfMany (weapon, affectedArea, target) {
     // Implement the logic for destroying a single target
     // This method can be expanded for more granular control
     return this.onDestroy(weapon, affectedArea, target)

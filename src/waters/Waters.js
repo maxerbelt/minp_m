@@ -173,6 +173,11 @@ export class Waters {
     }
   }
 
+  setWeaponFireHanders () {
+    this.loadOut.onDestroy = this.destroy.bind(this)
+    this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)
+  }
+
   placeMatchingShips (placedShips, placer) {
     const matchableShips = [...this.ships]
     for (const ship of placedShips.ships) {
