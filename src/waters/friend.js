@@ -57,12 +57,10 @@ export class Friend extends Waters {
         if (this.score.newShotKey(r, c)) {
           const hasLaunched = await this.launchRandomWeapon(r, c, false)
           if (!hasLaunched) {
-            return await this.loadOut.aimWeapon(
-              map,
-              r,
-              c,
-              this.loadOut.selectedWeapon
-            )
+            const wps = this.currentWeaponSystem
+            const weapon = wps.weapon
+            const score = await this.loadOut.aimWeapon(map, r, c, wps)
+            return { weapon, score }
           }
           return LoadOut.noResult
         }
@@ -89,18 +87,17 @@ export class Friend extends Waters {
 
     const r = this.randomRowNum()
     this.launchRandomWeapon(r, 0, false)
-    return await this.loadOut.aimWeapon(
-      map,
-      r,
-      map.cols - 1,
-      this.loadOut.selectedWeapon
-    )
+    const wps = this.currentWeaponSystem
+    const weapon = wps.weapon
+    const score = await this.loadOut.aimWeapon(map, r, map.cols - 1, wps)
+
+    return { weapon, score }
   }
   isHitValid (r, c) {
     return bh.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
 
-  randomSeek (seeking) {
+  async randomSeek (seeking) {
     const maxAttempts = 13
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (this.isCancelled(seeking)) return
@@ -111,11 +108,11 @@ export class Friend extends Waters {
         clearInterval(seeking)
         this.boardDestroyed = true
         this.testContinue = false
-        return
+        return LoadOut.noResult
       }
       if (this.isHitValid(loc[0], loc[1])) {
-        this.launchSingleShot(loc[0], loc[1])
-        return
+        await this.launchSingleShot(loc[0], loc[1])
+        return null
       }
     }
   }
@@ -237,15 +234,17 @@ export class Friend extends Waters {
     }
     /// reveal
   }
-  randomScan (seeking) {
+  async randomScan (seeking) {
     const map = bh.map
-    this.loadOut.reveal = this.scan.bind(this)
+    this.loadOut.onReveal = this.scan.bind(this)
     if (this.isCancelled(seeking)) return
     const { r, c } = this.randomLocation(map)
     const { r1, c1 } = this.randomLocation(map)
-
-    this.loadOut.aimWeapon(map, r, c)
-    return this.loadOut.aimWeapon(map, r1, c1)
+    const wps = this.currentWeaponSystem
+    const weapon = wps.weapon
+    await this.loadOut.aimWeapon(map, r, c)
+    const score = await this.loadOut.aimWeapon(map, r1, c1, wps)
+    return { weapon, score }
   }
   randomLocation (map) {
     const r = Math.floor(Math.random() * (map.rows - 2)) + 1
@@ -256,17 +255,13 @@ export class Friend extends Waters {
   async randomEffect (effect, seeking) {
     switch (effect) {
       case 'DestroyOne':
-        this.randomDestroyOne(seeking)
-        break
+        return await this.randomDestroyOne(seeking)
       case 'Bomb':
-        this.randomBomb(seeking)
-        break
+        return await this.randomBomb(seeking)
       case 'Scan':
-        this.randomScan(seeking)
-        break
+        return await this.randomScan(seeking)
       case 'Seek':
-        this.randomSeek(seeking)
-        break
+        return await this.randomSeek(seeking)
     }
   }
 
@@ -287,10 +282,10 @@ export class Friend extends Waters {
 
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
-      await this.randomEffect(op)
+      return await this.randomEffect(op)
     } else {
       this.loadOut.switchToSingleShot()
-      this.randomSeek(seeking)
+      return await this.randomSeek(seeking)
     }
   }
 
@@ -361,7 +356,14 @@ export class Friend extends Waters {
   async seekStep (seeking) {
     const hits = this.getHits()
     this.setWeaponFireHanders()
-    await this.selectShot(hits, seeking)
+    const result = await this.selectShot(hits, seeking)
+    if (
+      result &&
+      result !== LoadOut.noResult &&
+      result.score !== LoadOut.noResult
+    ) {
+      this.updateResultsOfBomb(result?.weapon, result.score)
+    }
     this.steps.endTurn()
   }
   updateWeaponStatus () {

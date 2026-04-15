@@ -70,8 +70,7 @@ export class Animator {
   async run (...trigger) {
     if (this.running) return
     this.running = true
-    this.play(...trigger)
-    await Animator.wait(this.playable)
+    await Animator.wait(this.playable, this.play.bind(this, ...trigger))
 
     if (this.innerEl && this.innerDelay) {
       await Delay.wait(this.innerDelay)
@@ -93,8 +92,7 @@ export class Animator {
     })
   }
   static async run (el, ...className) {
-    Animator.play(el, ...className)
-    await Animator.wait(el)
+    await Animator.wait(el, Animator.play.bind(null, el, ...className))
   }
   static async runWithDelay (el, delay, ...className) {
     await Delay.wait(delay)
@@ -127,14 +125,15 @@ export class Animator {
     el.classList.add(...classNames)
   }
 
-  static wait (el) {
+  static wait (el, trigger) {
     return new Promise(resolve => {
       const computed = getComputedStyle(el)
       const duration =
-        parseFloat(computed.animationDuration) * 1000 +
-        parseFloat(computed.animationDelay) * 1000
+        Number.parseFloat(computed.animationDuration) * 1000 +
+        Number.parseFloat(computed.animationDelay) * 1000
 
       if (!duration) {
+        trigger?.()
         resolve()
         return
       }
@@ -149,7 +148,7 @@ export class Animator {
       }
 
       el.addEventListener('animationend', handler)
-
+      trigger?.()
       setTimeout(handler, duration + 50)
     })
   }

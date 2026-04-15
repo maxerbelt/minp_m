@@ -124,7 +124,7 @@ export class Flack extends Weapon {
     await this.asyncEffect(cell, power, cellSize)
   }
   async asyncEffect (cell, power, cellSize) {
-    super.animateExplodeRaw(cell, cellSize, 'air', power)
+    return await super.animateExplode(cell, null, null, cellSize, 'air', power)
   }
   async delayAsyncEffects (cells, mindelay = 380, maxdelay = 730) {
     const promises = cells.map(([cell, , , power]) =>
@@ -144,8 +144,8 @@ export class Flack extends Weapon {
     viewModel = null
   ) {
     const coord = coordsFromCell(target)
-    const effects = this.aoe(bh.map, [coord]).filter(([, , power]) => power > 0)
-    const cells = [...viewModel.cellsAndCoords(effects)]
+    const aoe = this.aoe(bh.map, [coord]).filter(([, , power]) => power > 0)
+    const cells = [...viewModel.cellsAndCoords(aoe)]
 
     await this.delayAsyncEffects(cells, 0, 500, cellSize)
   }

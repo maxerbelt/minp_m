@@ -548,6 +548,14 @@ export class Waters {
     }
     return true
   }
+  get currentWeaponSystem () {
+    return this.loadOut.selectedWeapon || this.loadOut.getCurrentWeaponSystem()
+  }
+  get currentWeapon () {
+    const wps = this.currentWeaponSystem
+    return wps?.weapon
+  }
+
   async fireWeaponAt (
     row,
     col,

@@ -316,7 +316,7 @@ export class Weapon {
       )
 
     let mod = 1
-    if (power !== undefined) {
+    if (power != null) {
       mod = 0.5 + power / 2
     }
     const scale = (cellSize * this.splashSize * mod) / 128
