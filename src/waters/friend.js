@@ -49,7 +49,6 @@ export class Friend extends Waters {
 
   async randomBomb (seeking) {
     const map = bh.map
-    this.loadOut.onDestroy = this.destroy.bind(this)
 
     for (let impact = 9; impact > 1; impact--)
       for (let attempt = 0; attempt < 12; attempt++) {
@@ -85,7 +84,6 @@ export class Friend extends Waters {
 
   async randomDestroyOne (seeking) {
     const map = bh.map
-    this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)
 
     if (this.isCancelled(seeking)) return
 
@@ -362,7 +360,7 @@ export class Friend extends Waters {
 
   async seekStep (seeking) {
     const hits = this.getHits()
-
+    this.setWeaponFireHanders()
     await this.selectShot(hits, seeking)
     this.steps.endTurn()
   }
