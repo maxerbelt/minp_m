@@ -27,6 +27,10 @@ export class Missile extends Bomb {
     this.tag = 'missile'
     this.volatile = true
   }
+  get flightSound () {
+    const url = new URL('../sounds/missile-flight.mp3', import.meta.url)
+    return url
+  }
   clone (ammo) {
     ammo = ammo || this.ammo
     return new Missile(ammo)
@@ -108,6 +112,10 @@ export class RailBolt extends Strike {
       [0, 3, 0],
       [0, 4, 1]
     ]
+  }
+  get flightSound () {
+    const url = new URL('../sounds/rail-flight.mp3', import.meta.url)
+    return url
   }
   clone (ammo) {
     ammo = ammo || this.ammo
@@ -215,7 +223,10 @@ export class GuassRound extends Fish {
     result.push([r - 3, c, 0], [r + 3, c, 0], [r, c - 3, 0], [r, c + 3, 0])
     return result
   }
-
+  get flightSound () {
+    const url = new URL('../sounds/guass-flight.mp3', import.meta.url)
+    return url
+  }
   async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     await this.launchRightTo(
       coords,
