@@ -18,6 +18,11 @@ export class FriendUI extends PlacementUI {
 
     this.addText = ' placed'
     this.removeText = ' unplaced'
+    this.syncTab()
+  }
+
+  syncTab () {
+    this.tab = document.getElementById('tab-hide')
   }
 
   displayFleetSunk () {
@@ -35,6 +40,7 @@ export class FriendUI extends PlacementUI {
   placeMode () {
     this.placingShips = true
     this.readyingShips = false
+    this.hideNSeek()
     const chooseControls = document.getElementById('choose-controls')
     chooseControls.classList.remove('hidden')
     this.newPlacementBtn.classList.remove('hidden')
@@ -53,9 +59,16 @@ export class FriendUI extends PlacementUI {
     this.standardPanels()
     this.showTips()
   }
+  hideNSeek () {
+    if (this.tab) this.tab.textContent = 'Hide and Seek Game'
+  }
+  hide () {
+    if (this.tab) this.tab.textContent = 'Hide Game'
+  }
   readyMode () {
     this.placingShips = false
     this.readyingShips = true
+    this.hideNSeek()
     const chooseControls = document.getElementById('choose-controls')
     chooseControls.classList.add('hidden')
     this.testBtn.classList.remove('hidden')
@@ -81,6 +94,7 @@ export class FriendUI extends PlacementUI {
     this.showTestBtns()
     this.unreadyMode()
     gameStatus.line.classList.add('medium')
+    this.hide()
   }
 
   showTestBtns () {
@@ -104,6 +118,7 @@ export class FriendUI extends PlacementUI {
   seekMode () {
     this.placingShips = false
     this.newPlacementBtn.classList.add('hidden')
+    this.hideNSeek()
     this.unreadyMode()
     this.hideTestBtns()
     gameStatus.line.classList.remove('medium')

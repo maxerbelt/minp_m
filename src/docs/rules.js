@@ -8,11 +8,12 @@ import {
   makeFriend,
   showRules
 } from '../navbar/headerUtils.js'
-fetchNavBar('rules', 'Battleship', async function () {
-  terrainSelect()
-  show2ndBar()
-  hideMapSelector()
-  await fetchComponent('rules', './howToPlay.html')
-  const friend = makeFriend()
-  showRules(friend, bh.terrain.newFleetForTerrain, true)
-})
+
+await fetchNavBar('rules', 'Battleship')
+
+terrainSelect()
+show2ndBar()
+hideMapSelector()
+await fetchComponent('rules', './howToPlay.html')
+const friend = makeFriend()
+showRules(friend, bh.terrain.newFleetForTerrain, true)

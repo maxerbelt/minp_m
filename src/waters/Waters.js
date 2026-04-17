@@ -962,6 +962,7 @@ export class Waters {
     }
   }
   displayMisses (weapon, reveals = 0, messageInfo = '') {
+    const preamble1 = this.opponent ? this.opponent.preamble1 : this.preamble1
     if (reveals > 0) {
       this.displayInfo(messageInfo + this.revealDescription(reveals))
     } else {
@@ -969,15 +970,15 @@ export class Waters {
       let missMessage
       if (this.opponent) {
         if (weapon.letter === '-') {
-          missMessage = `${this.opponent.preamble1}missed`
+          missMessage = `${preamble1}missed`
         } else {
-          missMessage = `${this.opponent.preamble1}${weapon.name} missed ${this.preamble0} ships`
+          missMessage = `${preamble1}${weapon.name} missed ${this.preamble0} ships`
         }
       } else {
         if (weapon.letter === '-') {
           return // don't display miss for single shot
         } else {
-          missMessage = `${this.opponent.preamble1} ${weapon.name} missed everything!`
+          missMessage = `${preamble1} ${weapon.name} missed everything!`
         }
         this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
       }

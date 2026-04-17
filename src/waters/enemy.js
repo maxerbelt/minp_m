@@ -18,6 +18,7 @@ class Enemy extends Waters {
     this.weaponSelectHander = null
     this.revealHander = null
     this.enemyWaters = true
+
     this.steps.player = Player.enemy
     this.steps.onEndTurn = this.onEndTurn.bind(this)
     this.steps.onBeginTurn = this.onBeginTurn.bind(this)
@@ -120,18 +121,9 @@ class Enemy extends Waters {
 
     this.updateUI(enemy.ships)
   }
-  disableBtn (tag, disabled) {
-    const btn = document.getElementById(tag)
-    if (btn) btn.disabled = disabled
-  }
-  disableBtns (disabled) {
-    this.disableBtn('newPlace2', disabled)
-    this.disableBtn('newGame', disabled)
-    this.disableBtn('weaponBtn', disabled)
-    this.disableBtn('weaponBtn', disabled)
-  }
+
   placeStep (ships, attempt1) {
-    this.disableBtns(true)
+    this.UI.disableBtns()
     for (let attempt2 = 0; attempt2 < 50; attempt2++) {
       this.resetShipCells()
       let ok = true
@@ -146,7 +138,7 @@ class Enemy extends Waters {
       }
       if (ok) {
         gameStatus.setTips(['Click On Square To Fire'])
-        this.disableBtns(false)
+        this.UI.enableBtns()
         return
       }
     }
@@ -163,7 +155,7 @@ class Enemy extends Waters {
       return
     }
 
-    this.disableBtns(false)
+    this.UI.enableBtns()
 
     gameStatus.addToQueue('Failed to place all ships after many attempts', true)
     this.boardDestroyed = true
@@ -171,8 +163,7 @@ class Enemy extends Waters {
   }
   placeAll (ships) {
     ships = ships || this.ships
-
-    this.disableBtns(true)
+    this.UI.enableBtns()
 
     setTimeout(() => {
       this.placeStep(ships, 0, true)
@@ -362,6 +353,7 @@ class Enemy extends Waters {
   resetModel () {
     this.score.reset()
     this.resetMap()
+    this.UI.playMode()
     this._oldCursor = null
     this._oldWeaponLetter = null
     this.loadOut.OutOfAllAmmo = () => {

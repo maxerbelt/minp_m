@@ -23,7 +23,7 @@ export function switchToEdit (map, huntMode) {
   globalThis.location.href = location
 }
 
-export async function fetchNavBar (tab, title, callback) {
+export async function fetchNavBar (tab, title) {
   setupTrack()
   const urlParams = new URLSearchParams(globalThis.location.search)
   assembleTerrains()
@@ -40,13 +40,4 @@ export async function fetchNavBar (tab, title, callback) {
 
   // Setup tabs for the current view
   setupTabs(tab)
-
-  // Execute optional callback
-  if (typeof callback === 'function') {
-    try {
-      callback()
-    } catch (error) {
-      console.log(error)
-    }
-  }
 }

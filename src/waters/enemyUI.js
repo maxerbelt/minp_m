@@ -5,8 +5,12 @@ import { trackLevelEnd } from '../navbar/gtag.js'
 class EnemyUI extends WatersUI {
   constructor () {
     super('enemy', 'Enemy')
-    this.weaponBtn = document.getElementById('weaponBtn')
     this.revealBtn = document.getElementById('revealBtn')
+    this.placeBtn = document.getElementById('newPlace2')
+    this.restartBtn = document.getElementById('newGame')
+    this.testBtn = document.getElementById('test2Btn')
+    this.weaponBtn = document.getElementById('weaponBtn')
+    this.playMode()
   }
   displayFleetSunk () {
     gameStatus.showMode('Fleet Destroyed')
@@ -14,12 +18,33 @@ class EnemyUI extends WatersUI {
     this.board.classList.add('destroyed')
     trackLevelEnd(bh.map, true)
   }
-
+  revealMode () {
+    this.revealBtn?.classList?.add('hidden')
+    this.placeBtn?.classList?.remove('hidden')
+    this.restartBtn?.classList?.remove('hidden')
+    this.testBtn?.classList?.remove('hidden')
+    this.weaponBtn?.classList?.add('hidden')
+  }
+  playMode () {
+    this.revealBtn?.classList?.remove('hidden')
+    this.placeBtn?.classList?.add('hidden')
+    this.restartBtn?.classList?.add('hidden')
+    this.testBtn?.classList?.add('hidden')
+    this.weaponBtn?.classList?.remove('hidden')
+  }
+  disableBtns (isDisabled = true) {
+    if (this.revealBtn) this.revealBtn.disabled = isDisabled
+    if (this.placeBtn) this.placeBtn.disabled = isDisabled
+    if (this.restartBtn) this.restartBtn.disabled = isDisabled
+    if (this.testBtn) this.testBtn.disabled = isDisabled
+    if (this.weaponBtn) this.weaponBtn.disabled = isDisabled
+  }
+  enableBtns () {
+    this.disableBtns(false)
+  }
   revealAll (ships) {
-    for (const ship of ships) {
-      this.revealShip(ship)
-    }
-
+    this.revealShips(ships)
+    this.revealMode()
     gameStatus.showMode('Enemy Fleet Revealed')
     gameStatus.addToQueue('You Gave Up')
     this.board.classList.add('destroyed')

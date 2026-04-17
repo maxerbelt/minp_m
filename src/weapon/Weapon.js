@@ -127,7 +127,12 @@ export class Weapon {
     const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
     // const tt = target.toReversed()
     const [sr, sc] = map.randomEdge(...target)
-    const start1 = opposingViewModel.gridCellAt(sr, sc)
+    let start1
+    if (opposingViewModel) {
+      start1 = opposingViewModel.gridCellAt(sr, sc)
+    } else {
+      start1 = viewModel.gridCellAt(sr, sc)
+    }
     const end1 = viewModel.gridCellAt(...target)
     const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
     const options = this.defaultAnimateOptions

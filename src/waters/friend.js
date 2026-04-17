@@ -120,19 +120,13 @@ export class Friend extends Waters {
   restartBoard () {
     this.resetBase()
     this.UI.clearVisuals()
-    for (const ship of this.ships) {
-      ship.reset()
-      this.UI.revealShip(ship)
-    }
+    this.UI.resetShips(this.ships)
     this.armWeapons()
   }
   restartFriendBoard () {
     this.resetBase()
     this.UI.clearFriendVisuals()
-    for (const ship of this.ships) {
-      ship.reset()
-      this.UI.revealShip(ship)
-    }
+    this.UI.resetShips(this.ships)
     this.armWeapons()
   }
   async launchTo (coords, rr, cc, currentWeapon) {

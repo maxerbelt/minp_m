@@ -59,6 +59,19 @@ function _onClickReturnToPlacement () {
     onAfter: _initializePlacement
   })
 }
+function _onClickTest2 () {
+  stateManager.switchToMode('hide-placement', {
+    onBefore: () => {
+      uiManager.hide('enemy-container')
+      const tallyTitle = document.getElementById('tally-title')
+      const tallyBox = document.getElementById('friend-tally-container')
+      tallyBox.prepend(tallyTitle)
+      enemy.opponent = null
+      friend.opponent = null
+    },
+    onAfter: _initializeTest
+  })
+}
 
 /**
  * Reset friend board for new game
@@ -247,6 +260,17 @@ function _initializePlacement () {
 }
 
 /**
+ * Initialize new ship placement state
+ * Setup board, UI, and controls for ship placement
+ */
+function _initializeTest () {
+  friend.test()
+
+  //  _disableHideTransformButtons()
+  //  friendUI.showMapTitle()
+}
+
+/**
  * Disable transform buttons during ship placement
  * @private
  */
@@ -281,6 +305,7 @@ function _onNavBarReady () {
   } else {
     friendUI._playBattleHide = _playBattleHide
   }
+  friendUI.syncTab()
 }
 
 // Register mode callbacks for hide-placement (ship placement phase)
@@ -299,7 +324,7 @@ stateManager.registerModeCallbacks('hide-seek', {
   onInit: () => {
     // Setup seek mode keyboard shortcuts and enemy setup
     _setupSeekKeyboardShortcuts()
-    setupEnemy(_onClickReturnToPlacement)
+    setupEnemy(_onClickReturnToPlacement, _onClickTest2)
   },
   onExit: () => {
     // Managers are auto-cleaned up by stateManager
@@ -323,4 +348,5 @@ _setupHideKeyboardShortcuts()
 bh.audio = new AudioManager()
 bh.audio.init()
 // Initialize hide mode UI with navbar, then setup game mode
-fetchNavBar('hide', "Geoff's Hidden Battle (Hide & Seek)", _onNavBarReady)
+await fetchNavBar('hide', "Geoff's Hidden Battle (Hide & Seek)")
+_onNavBarReady()

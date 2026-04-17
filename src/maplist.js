@@ -359,4 +359,6 @@ function _onNavBarReady (mapList) {
 
 const mapList = new MapList()
 
-fetchNavBar('list', 'List of Hidden Battle Maps', () => _onNavBarReady(mapList))
+await fetchNavBar('list', 'List of Hidden Battle Maps')
+
+_onNavBarReady(mapList)

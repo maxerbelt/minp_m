@@ -39,7 +39,7 @@ bh.audio = new AudioManager()
 bh.audio.init()
 
 // Setup seek mode UI
-fetchNavBar('seek', "Geoff's Hidden Battle (Seek)", function () {
-  stateManager.applyUIVisibility(uiManager, 'seek')
-  _initializeSeekMode()
-})
+await fetchNavBar('seek', "Geoff's Hidden Battle (Seek)")
+
+stateManager.applyUIVisibility(uiManager, 'seek')
+_initializeSeekMode()

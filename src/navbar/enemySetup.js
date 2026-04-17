@@ -3,7 +3,6 @@ import { enemy } from '../waters/enemy.js'
 import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 
 let otherboard = null
-const newGameBtn = document.getElementById('newGame')
 export function newGame (seek, opponentBoard, friendUI) {
   bh.seekingMode = seek === 'seek'
   if (bh.seekingMode) {
@@ -56,17 +55,20 @@ function highlightAoE (model, r, c) {
  * Supports placement (P), new game (R), reveal (V), and mode toggle (M/S)
  * @private
  */
-function _setupSeekShortcuts (placement) {
+function _setupSeekShortcuts (placementHandler, testHandler) {
   // Create keyboard shortcut manager with seek mode handlers
   const shortcutMgr = new KeyboardShortcutManager()
 
   // Register shortcut handlers
   const shortcuts = {
     p: () => {
-      if (placement) placement()
+      if (placementHandler) placementHandler()
+    },
+    t: () => {
+      if (testHandler) testHandler()
     },
     r: () => newGame(),
-    v: () => enemy.onClickReveal(),
+    q: () => enemy.onClickReveal(),
     m: () => enemy.onClickWeaponMode(),
     s: () => enemy.onClickWeaponMode()
   }
@@ -78,19 +80,22 @@ function _setupSeekShortcuts (placement) {
   return () => shortcutMgr.deactivate()
 }
 
-export function setupEnemy (placement) {
+export function setupEnemy (placementHandler, testHandler) {
   // Wire button handlers
-  newGameBtn.addEventListener('click', newGame.bind(null, 'seek', null))
+  enemy.UI.restartBtn.addEventListener(
+    'click',
+    newGame.bind(null, 'seek', null)
+  )
   enemy.wireupButtons()
 
   // Setup optional placement button if provided
-  if (placement) {
-    const newPlaceBtn = document.getElementById('newPlace2')
-    if (newPlaceBtn) {
-      newPlaceBtn.addEventListener('click', placement)
-    }
+  if (placementHandler) {
+    enemy.UI?.placeBtn?.addEventListener('click', placementHandler)
   }
 
+  if (testHandler) {
+    enemy.UI?.testBtn?.addEventListener('click', testHandler)
+  }
   // Setup keyboard shortcuts and return cleanup function
-  return _setupSeekShortcuts(placement)
+  return _setupSeekShortcuts(placementHandler, testHandler)
 }

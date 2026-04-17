@@ -3,19 +3,20 @@ import { fetchComponent } from '../network/network.js'
 import { show2ndBar } from '../navbar/headerUtils.js'
 import { setupPrint } from './setupPrint.js'
 
-fetchNavBar('print', 'Battleship', async function () {
-  show2ndBar()
-  showMapSelector()
+await fetchNavBar('print', 'Battleship')
 
-  await fetchComponent('rules', './howToPlay.html')
+show2ndBar()
+showMapSelector()
 
-  const printMap = setupPrint()
+await fetchComponent('rules', './howToPlay.html')
 
-  if (printMap) {
-    globalThis.print()
-  }
-})
-export function showMapSelector () {
+const printMap = setupPrint()
+
+if (printMap) {
+  globalThis.print()
+}
+
+function showMapSelector () {
   const select = document.getElementById('choose-map-container')
   select.classList.remove('hidden')
   select.classList.add('right')

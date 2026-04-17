@@ -196,6 +196,18 @@ export class WatersUI {
       }
     }
   }
+
+  resetShips (ships) {
+    for (const ship of ships) {
+      ship.reset()
+      this.revealShip(ship)
+    }
+  }
+  revealShips (ships) {
+    for (const ship of ships) {
+      this.revealShip(ship)
+    }
+  }
   revealShip (ship) {
     for (const [c, r] of ship.cells) {
       const cell = this.gridCellAt(r, c)

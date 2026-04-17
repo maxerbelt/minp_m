@@ -232,28 +232,28 @@ stateManager.saveUIVisibility('build', {
 })
 
 // Initialize build mode UI
-fetchNavBar('build', 'Create Your Own Game', function () {
-  show2ndBar()
-  stateManager.applyUIVisibility(uiManager, 'build')
+await fetchNavBar('build', 'Create Your Own Game')
 
-  const editing = setupBuildOptions(
-    customUI.resetBoardSize.bind(customUI),
-    _initializePlacement,
-    'build',
-    () => onClickAccept(true)
-  )
+show2ndBar()
+stateManager.applyUIVisibility(uiManager, 'build')
 
-  // Initialize managers for build mode
-  _setupBuildButtons()
-  _setupBuildKeyboardShortcuts()
+const editing = setupBuildOptions(
+  customUI.resetBoardSize.bind(customUI),
+  _initializePlacement,
+  'build',
+  () => onClickAccept(true)
+)
 
-  if (editing) {
-    custom.loadForEdit(editing)
-  } else {
-    setupDragBrushHandlers(customUI)
-    _initializePlacement()
-  }
+// Initialize managers for build mode
+_setupBuildButtons()
+_setupBuildKeyboardShortcuts()
 
-  tabs.hide?.overrideClickListener(playMap)
-  tabs.seek?.overrideClickListener(seekMap)
-})
+if (editing) {
+  custom.loadForEdit(editing)
+} else {
+  setupDragBrushHandlers(customUI)
+  _initializePlacement()
+}
+
+tabs.hide?.overrideClickListener(playMap)
+tabs.seek?.overrideClickListener(seekMap)
