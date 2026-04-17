@@ -5,6 +5,7 @@ import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Waters } from './Waters.js'
 import { Player } from './steps.js'
 import { LoadOut } from './LoadOut.js'
+import { Delay } from '../core/Delay.js'
 
 export class Friend extends Waters {
   constructor (friendUI) {
@@ -31,12 +32,8 @@ export class Friend extends Waters {
     return hitCoordinates[randomIndex]
   }
 
-  isCancelled (seeking) {
-    if (seeking && (!this.testContinue || this.boardDestroyed)) {
-      clearInterval(seeking)
-      return true
-    }
-    return false
+  isCancelled () {
+    return !this.testContinue
   }
 
   destroy (weapon, effect) {
@@ -47,12 +44,12 @@ export class Friend extends Waters {
     return acc
   }
 
-  async randomBomb (seeking) {
+  async randomBomb () {
     const map = bh.map
 
     for (let impact = 9; impact > 1; impact--)
       for (let attempt = 0; attempt < 12; attempt++) {
-        if (this.isCancelled(seeking)) return
+        if (this.isCancelled()) return this.noResult
         const { r, c } = this.randomLocation(map)
         if (this.score.newShotKey(r, c)) {
           const hasLaunched = await this.launchRandomWeapon(r, c, false)
@@ -79,11 +76,13 @@ export class Friend extends Waters {
     const newEffect = this.getStrikeSplash(weapon, target)
     return this.destroy(weapon, newEffect)
   }
-
-  async randomDestroyOne (seeking) {
+  get noResult () {
+    return { weapon: this.loadOut.getSingleShot(), score: LoadOut.noResult }
+  }
+  async randomDestroyOne () {
     const map = bh.map
 
-    if (this.isCancelled(seeking)) return
+    if (this.isCancelled()) return this.noResult
 
     const r = this.randomRowNum()
     this.launchRandomWeapon(r, 0, false)
@@ -97,21 +96,20 @@ export class Friend extends Waters {
     return bh.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
 
-  async randomSeek (seeking) {
+  async randomSeek () {
     const maxAttempts = 13
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      if (this.isCancelled(seeking)) return
+      if (this.isCancelled()) return this.noResult
       const loc = this.randomLoc()
 
       if (!loc) {
         this.UI.showNotice('something went wrong!')
-        clearInterval(seeking)
         this.boardDestroyed = true
         this.testContinue = false
         return LoadOut.noResult
       }
-      if (this.isHitValid(loc[0], loc[1])) {
-        await this.launchSingleShot(loc[0], loc[1])
+      if (this.isHitValid(loc[1], loc[0])) {
+        await this.launchSingleShot(loc[1], loc[0])
         return null
       }
     }
@@ -197,24 +195,24 @@ export class Friend extends Waters {
     // }
     // return line[Math.floor(Math.random() * (idx - 1))]
   }
-
   async seek () {
+    await this.seekRaw()
+    this.UI.testBtn.disabled = false
+    this.UI.seekBtn.disabled = false
+    this.UI.stopBtn.classList.add('hidden')
+  }
+  async seekRaw () {
     this.testContinue = true
     this.boardDestroyed = false
     this.armWeapons()
     this.score.shot = bh.map.blankMask
     this.setupUntried()
 
-    let seeking = setInterval(() => {
-      if (this.isCancelled(seeking)) {
-        this.UI.testBtn.disabled = false
-        this.UI.seekBtn.disabled = false
-        this.UI.stopBtn.classList.add('hidden')
-        seeking = null
-      } else {
-        this.seekStep(seeking)
-      }
-    }, 270)
+    while (!this.isCancelled()) {
+      await Delay.wait(420)
+      if (this.isCancelled()) return
+      this.seekStep()
+    }
   }
   scan (weapon, effect) {
     this.updateUI()
@@ -228,10 +226,10 @@ export class Friend extends Waters {
     }
     /// reveal
   }
-  async randomScan (seeking) {
+  async randomScan () {
     const map = bh.map
     this.loadOut.onReveal = this.scan.bind(this)
-    if (this.isCancelled(seeking)) return
+    if (this.isCancelled()) return this.noResult
     const { r, c } = this.randomLocation(map)
     const { r1, c1 } = this.randomLocation(map)
     const wps = this.currentWeaponSystem
@@ -246,20 +244,20 @@ export class Friend extends Waters {
     return { r, c }
   }
 
-  async randomEffect (effect, seeking) {
+  async randomEffect (effect) {
     switch (effect) {
       case 'DestroyOne':
-        return await this.randomDestroyOne(seeking)
+        return await this.randomDestroyOne()
       case 'Bomb':
-        return await this.randomBomb(seeking)
+        return await this.randomBomb()
       case 'Scan':
-        return await this.randomScan(seeking)
+        return await this.randomScan()
       case 'Seek':
-        return await this.randomSeek(seeking)
+        return await this.randomSeek()
     }
   }
 
-  async selectShot (hits, seeking) {
+  async selectShot (hits) {
     const hasRevealed = await this.finishRevealed()
     if (hasRevealed) {
       return
@@ -279,7 +277,7 @@ export class Friend extends Waters {
       return await this.randomEffect(op)
     } else {
       this.loadOut.switchToSingleShot()
-      return await this.randomSeek(seeking)
+      return await this.randomSeek()
     }
   }
 
@@ -347,10 +345,10 @@ export class Friend extends Waters {
     return hitss
   }
 
-  async seekStep (seeking) {
+  async seekStep () {
     const hits = this.getHits()
     this.setWeaponFireHanders()
-    const result = await this.selectShot(hits, seeking)
+    const result = await this.selectShot(hits)
     if (
       result &&
       result !== LoadOut.noResult &&

@@ -328,6 +328,7 @@ export class Waters {
     )
   }
   randomWeaponId () {
+    const oppo = this.opponent
     const armedShips = this.loadOut.getCurrentWeaponSystem().armedShips()
     const randomShip = randomElement(armedShips)
     if (randomShip) {
@@ -342,8 +343,12 @@ export class Waters {
       }
     }
 
-    const [r, c] = this.randomSourceHint(randomShip, this.opponent)
-    if (r === null || c === null) {
+    let [r, c] = [null, null]
+    if (oppo) {
+      ;[r, c] = this.randomSourceHint(randomShip, oppo)
+    }
+
+    if (oppo == null || r == null || c == null) {
       return this.selectWeaponId(null, 0, 0, 'random', randomShip)
     }
 
@@ -428,7 +433,8 @@ export class Waters {
 
   addSource (oppo, launchR, launchC, rack) {
     if (this.steps.source === null) {
-      this.steps.addSource(oppo.UI, launchR, launchC, rack?.cell)
+      const viewModel = oppo?.UI || this.UI
+      this.steps.addSource(viewModel, launchR, launchC, rack?.cell)
       console.warn(
         'no source found when selecting and arming weapon, adding source with launch coords'
       )
@@ -485,6 +491,7 @@ export class Waters {
 
   selectWeaponId (cell, hintR, hintC, random, ship, oppo) {
     oppo = oppo || this.opponent
+    const viewModel = oppo?.UI || this.UI
     if (ship) {
       const entries = ship.getAllWeaponEntries()
       const [key, weapon] = random
@@ -492,10 +499,10 @@ export class Waters {
         : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))
       const [launchR, launchC] = parsePair(key)
       this.steps.addSource(
-        oppo.UI,
+        viewModel,
         launchR,
         launchC,
-        cell || oppo.UI.gridCellAt(launchR, launchC)
+        cell || viewModel.gridCellAt(launchR, launchC)
       )
       return { launchR, launchC, weaponId: weapon.id, hintR, hintC }
     }
@@ -521,10 +528,10 @@ export class Waters {
     }
     const [launchR, launchC, weaponId] = parseTriple(wkey)
     this.steps.addSource(
-      oppo.UI,
+      viewModel,
       launchR,
       launchC,
-      cell || oppo.UI.gridCellAt(launchR, launchC)
+      cell || viewModel.gridCellAt(launchR, launchC)
     )
     ship = this.loadOut.getShipByWeaponId(weaponId)
     if (ship) {
@@ -606,7 +613,7 @@ export class Waters {
   }
 
   getUnattachedWeaponSystem () {
-    if (bh.seekingMode) {
+    if (this.opponent == null || bh.seekingMode) {
       return this.loadOut.getCurrentWeaponSystem().getLoadedWeapon()
     } else {
       return this.loadOut.getUnattachedWeaponSystem()
@@ -950,40 +957,42 @@ export class Waters {
   hitDescription (hits) {
     if (this.opponent) {
       return this.preamble + 'Hit (x' + hits.toString() + ')'
-    } else {
-      return hits.toString() + 'Hits'
     }
+    if (hits === 1) {
+      return 'Hit'
+    }
+    return hits.toString() + ' Hits'
   }
   revealDescription (reveals) {
     if (this.opponent) {
       return this.preamble + 'revealed (x' + reveals.toString() + ')'
-    } else {
-      return reveals.toString() + 'revealed'
     }
+    if (reveals === 1) {
+      return 'Reveal'
+    }
+    return reveals.toString() + ' revealed'
   }
   displayMisses (weapon, reveals = 0, messageInfo = '') {
     const preamble1 = this.opponent ? this.opponent.preamble1 : this.preamble1
     if (reveals > 0) {
       this.displayInfo(messageInfo + this.revealDescription(reveals))
-    } else {
-      // if (weapon.letter === '-') return // don't display miss for single shot
-      let missMessage
-      if (this.opponent) {
-        if (weapon.letter === '-') {
-          missMessage = `${preamble1}missed`
-        } else {
-          missMessage = `${preamble1}${weapon.name} missed ${this.preamble0} ships`
-        }
+      return
+    }
+    // if (weapon.letter === '-') return // don't display miss for single shot
+    let missMessage
+    if (this.opponent) {
+      if (weapon.letter === '-') {
+        missMessage = `${preamble1}missed`
       } else {
-        if (weapon.letter === '-') {
-          return // don't display miss for single shot
-        } else {
-          missMessage = `${preamble1} ${weapon.name} missed everything!`
-        }
-        this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
+        missMessage = `${preamble1}${weapon.name} missed ${this.preamble0} ships`
       }
       this.displayInfo(messageInfo + missMessage)
+      return
     }
+    if (weapon.letter === '-') {
+      return // don't display miss for single shot
+    }
+    this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
   }
   updateResultsOfSingleShot (result) {
     if (!result) return

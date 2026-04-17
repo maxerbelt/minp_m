@@ -194,11 +194,11 @@ export class AttachedWeaponSystems extends WeaponSystem {
     return this.ships.filter(s => s.hasAmmoRemaining())
   }
   getRacks () {
-    const racks = this.ships.flatMap(s => s.loadedWeapons())
+    const racks = this.ships.flatMap(s => s.getLoadedWeapons())
     return racks
   }
   getRack () {
-    return this.ships.find(s => s.hasAmmoRemaining()).loadedWeapon()
+    return this.ships.find(s => s.hasAmmoRemaining())?.loadedWeapon()
   }
   getUnattachedWeapon () {
     return null
@@ -227,7 +227,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
     return this.ammoCapacity() - this.ammoRemaining()
   }
   getLoadedWeapons () {
-    return this.ships.flatMap(s => s.loadedWeapons())
+    return this.ships.flatMap(s => s.getLoadedWeapons())
   }
 
   getLeafWeapons () {
