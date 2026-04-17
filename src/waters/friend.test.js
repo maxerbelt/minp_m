@@ -5,7 +5,7 @@
 /* eslint-env jest */
 import { jest } from '@jest/globals'
 
-/* global   test, describe,   expect, beforeEach, jest */
+/* global   it, describe,   expect, beforeEach, jest */
 let Friend
 
 // Mocks
@@ -14,13 +14,15 @@ const mockUI = {
   clearVisuals: jest.fn(),
   clearFriendVisuals: jest.fn(),
   revealShip: jest.fn(),
+  revealShips: jest.fn(),
+  resetShips: jest.fn(),
   buildBoard: jest.fn(),
   makeDroppable: jest.fn(),
   buildTrays: jest.fn(),
   reset: jest.fn(),
   board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
-  testMode: jest.fn(),
-  testBtn: {
+  itMode: jest.fn(),
+  itBtn: {
     disabled: false,
     classList: { add: jest.fn(), remove: jest.fn() }
   },
@@ -70,14 +72,14 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
       inBounds: () => true
     },
     seekingMode: false,
-    test: true,
+    it: true,
     getTerrainByTag: tag => ({ tag }),
-    // some modules call terrainByTitle; provide alias for tests
+    // some modules call terrainByTitle; provide alias for its
     terrainByTitle: title => ({ title })
   }
 }))
 
-// Mock Waters base class to avoid importing heavy dependencies during tests
+// Mock Waters base class to avoid importing heavy dependencies during its
 jest.unstable_mockModule('./Waters.js', () => ({
   Waters: class {
     constructor (ui) {
@@ -139,15 +141,15 @@ describe('Friend', () => {
     }
   })
 
-  test('getRandomHitCoordinate returns null for empty', () => {
+  it('getRandomHitCoordinate returns null for empty', () => {
     expect(friend.getRandomHitCoordinate([])).toBeNull()
   })
 
-  test('getRandomHitCoordinate returns only element for single', () => {
+  it('getRandomHitCoordinate returns only element for single', () => {
     expect(friend.getRandomHitCoordinate([[1, 2]])).toEqual([1, 2])
   })
 
-  test('getRandomHitCoordinate returns one of the elements for multiple', () => {
+  it('getRandomHitCoordinate returns one of the elements for multiple', () => {
     const result = friend.getRandomHitCoordinate([
       [1, 2],
       [3, 4]
@@ -158,17 +160,17 @@ describe('Friend', () => {
     ]).toContainEqual(result)
   })
 
-  test('hasFewShips returns boolean', () => {
+  it('hasFewShips returns boolean', () => {
     friend.displacementRatio = jest.fn(() => 0.1)
     expect(typeof friend.hasFewShips()).toBe('boolean')
   })
 
-  test('hasPlayableShips returns boolean', () => {
+  it('hasPlayableShips returns boolean', () => {
     friend.displacementRatio = jest.fn(() => 0.1)
     expect(typeof friend.hasPlayableShips()).toBe('boolean')
   })
 
-  test('restartBoard calls resetBase and UI.clearVisuals', () => {
+  it('restartBoard calls resetBase and UI.clearVisuals', () => {
     friend.resetBase = jest.fn()
     friend.armWeapons = jest.fn()
     friend.restartBoard()
@@ -177,7 +179,7 @@ describe('Friend', () => {
     expect(friend.armWeapons).toHaveBeenCalled()
   })
 
-  test('restartFriendBoard calls resetBase and UI.clearFriendVisuals', () => {
+  it('restartFriendBoard calls resetBase and UI.clearFriendVisuals', () => {
     friend.resetBase = jest.fn()
     friend.armWeapons = jest.fn()
     friend.restartFriendBoard()

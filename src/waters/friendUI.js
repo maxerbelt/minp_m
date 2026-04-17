@@ -68,7 +68,7 @@ export class FriendUI extends PlacementUI {
   readyMode () {
     this.placingShips = false
     this.readyingShips = true
-    this.hideNSeek()
+    this.hide()
     const chooseControls = document.getElementById('choose-controls')
     chooseControls.classList.add('hidden')
     this.testBtn.classList.remove('hidden')

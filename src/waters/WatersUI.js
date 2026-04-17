@@ -196,7 +196,6 @@ export class WatersUI {
       }
     }
   }
-
   resetShips (ships) {
     for (const ship of ships) {
       ship.reset()
