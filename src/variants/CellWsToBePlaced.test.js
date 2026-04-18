@@ -52,10 +52,10 @@ describe('CellWsToBePlaced behaviors', () => {
       cells: [[0, 0]],
       validator: z => z === 'MATCH',
       zoneDetail: 0,
-      target: { getZone: (r, c) => 'MATCH', boundsChecker: () => true },
+      target: { getZone: () => 'MATCH', boundsChecker: () => true },
       subGroups: [
         {
-          placeAt: (r, c) => ({
+          placeAt: () => ({
             isCandidate: () => true,
             validator: () => true
           })

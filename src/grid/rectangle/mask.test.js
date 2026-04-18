@@ -783,8 +783,6 @@ describe('Mask - additional methods and edge cases', () => {
 
         const mask2 = new Mask(3, 3)
         mask2.set(2, 2)
-
-        const oldDepth = mask1.depth
         const oldBits = mask1.bits
         mask1.addLayers([mask2.bits])
 
@@ -800,7 +798,6 @@ describe('Mask - additional methods and edge cases', () => {
         mask1.set(1, 0)
         mask1.set(0, 1)
 
-        const oldOccupancy = mask1.occupancy
         const mask2 = new Mask(4, 4)
         mask2.set(2, 2)
         mask2.set(3, 3)

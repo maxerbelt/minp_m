@@ -7,7 +7,7 @@
   "scripts": {
     "comment": "Open Terminal - Cmd + J - npm run script-name",
     "help": "node -e \"console.log('\\nAvailable commands:\\n\\nlint,\\ndup,\\nbundle,\\nmadge,\\ndepcruise,\\ntopFanOut,\\ntopFanIn,\\nfan,\\nplato,\\ntest,\\nchat\\nnpm run help    - Show this help message\\n')\"",
-    "lint": "eslint hiddenbattle/",
+    "lint": "eslint src/",
     "dup": "pmd cpd --minimum-tokens 50 --dir ./src/ --exclude ./src/node_modules --language ecmascript your_command | tee staticAnalysis/dup/duplications.txt",
     "bundle": "node merge.js",
     "madge": "staticAnalysis/madge/madge.sh  | tee staticAnalysis/madge/results.txt",

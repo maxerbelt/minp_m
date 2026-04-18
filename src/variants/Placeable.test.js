@@ -102,7 +102,7 @@ describe('Placeable', () => {
   })
   it('inAllBounds delegates to target.allBoundsChecker and returns its result', () => {
     const target = {
-      allBoundsChecker: jest.fn((r, c, h, w) => r === 0 && c === 0)
+      allBoundsChecker: jest.fn((r, c) => r === 0 && c === 0)
     }
     const p = new Placeable(board, null, 0, target)
     expect(p.inAllBounds(0, 0)).toBe(true)

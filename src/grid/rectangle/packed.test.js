@@ -451,7 +451,6 @@ describe('Packed', () => {
         const layer2 = new Packed(3, 3)
         layer2.set(2, 2, 1)
 
-        const oldDepth = p1.depth
         p1.addLayers([layer1.bits, layer2.bits])
 
         // Depth should be layers.length + 2 = 2 + 2 = 4

@@ -1,4 +1,3 @@
-import { makeCell3 } from './makeCell3.js'
 import { Variants } from './variants.js'
 
 export class Invariant extends Variants {

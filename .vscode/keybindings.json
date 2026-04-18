@@ -1,0 +1,23 @@
+[
+  {
+    "key": "cmd+shift+p",
+    "command": "workbench.action.quickOpen"
+  },
+  {
+    "key": "cmd+shift+i",
+    "command": "editor.action.insertSnippet",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "cmd+alt+c",
+    "command": "editor.action.clipboardCopyAction"
+  },
+  {
+    "key": "cmd+alt+v",
+    "command": "editor.action.clipboardPasteAction"
+  },
+  {
+    "key": "cmd+alt+n",
+    "command": "workbench.action.files.newUntitledFile"
+  }
+]

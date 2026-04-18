@@ -85,7 +85,7 @@ describe('ScoreUI', () => {
     }
 
     // Mock document.getElementById
-    global.document.getElementById = jest.fn(id => mockElements[id])
+    globalThis.document.getElementById = jest.fn(id => mockElements[id])
 
     scoreUI = new ScoreUI('player1')
   })
@@ -114,7 +114,8 @@ describe('ScoreUI', () => {
     })
 
     it('should use provided prefix for element IDs', () => {
-      const scoreUI2 = new ScoreUI('player2')
+      void new ScoreUI('player2')
+
       expect(globalThis.document.getElementById).toHaveBeenCalledWith(
         'player2-shots'
       )
@@ -158,10 +159,11 @@ describe('ScoreUI', () => {
 
       describe('createZoneEntry', () => {
         beforeEach(() => {
-          global.document.createElement = jest.fn(tag => ({
+          globalThis.document.createElement = jest.fn(tag => ({
             createElement: jest.fn(),
             appendChild: jest.fn(),
             style: {},
+            className: tag,
             textContent: '',
             classList: { add: jest.fn() }
           }))
@@ -183,7 +185,7 @@ describe('ScoreUI', () => {
 
       describe('createZoneTitle', () => {
         beforeEach(() => {
-          global.document.createElement = jest.fn(() => ({
+          globalThis.document.createElement = jest.fn(() => ({
             appendChild: jest.fn(),
             style: {},
             textContent: ''
@@ -235,8 +237,8 @@ describe('ScoreUI', () => {
 
       describe('buildShipBox', () => {
         beforeEach(() => {
-          global.document.createElement = jest.fn(tag => ({
-            className: '',
+          globalThis.document.createElement = jest.fn(tag => ({
+            className: tag,
             textContent: '',
             style: {},
             classList: { add: jest.fn() }
@@ -250,8 +252,8 @@ describe('ScoreUI', () => {
         })
 
         it('should show X for sunk ships', () => {
-          global.document.createElement = jest.fn(tag => ({
-            className: '',
+          globalThis.document.createElement = jest.fn(tag => ({
+            className: tag,
             textContent: '',
             style: { background: '', color: '' },
             classList: { add: jest.fn() }
@@ -262,8 +264,8 @@ describe('ScoreUI', () => {
         })
 
         it('should show letter for unsunk ships', () => {
-          global.document.createElement = jest.fn(tag => ({
-            className: '',
+          globalThis.document.createElement = jest.fn(tag => ({
+            className: tag,
             textContent: '',
             style: { background: '', color: '' },
             classList: { add: jest.fn() }
@@ -276,8 +278,8 @@ describe('ScoreUI', () => {
 
       describe('buildTallyRow', () => {
         beforeEach(() => {
-          global.document.createElement = jest.fn(tag => ({
-            className: '',
+          globalThis.document.createElement = jest.fn(tag => ({
+            className: tag,
             textContent: '',
             style: {},
             classList: {
@@ -286,7 +288,7 @@ describe('ScoreUI', () => {
             },
             appendChild: jest.fn()
           }))
-          global.document.getElementById = jest.fn(() => null)
+          globalThis.document.getElementById = jest.fn(() => null)
         })
 
         it('should create a tally row', () => {
@@ -306,7 +308,7 @@ describe('ScoreUI', () => {
         })
 
         it('should add sea class for S group', () => {
-          global.document.createElement = jest.fn(() => ({
+          globalThis.document.createElement = jest.fn(() => ({
             className: '',
             classList: {
               add: jest.fn(),

@@ -176,7 +176,7 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       const board = Mask.fromCoords(variant)
       const target = {
-        getZone: jest.fn((r, c, z) => 'ZONE_VALUE'),
+        getZone: jest.fn(() => 'ZONE_VALUE'),
         boundsChecker: () => true
       }
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 5, target)
@@ -500,7 +500,7 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       const board = Mask.fromCoords(variant)
       const target = {
-        boundsChecker: (r, c) => false,
+        boundsChecker: () => false,
         getZone: () => 'VALID'
       }
       const placing = new CellsToBePlaced(
@@ -602,7 +602,7 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       const board = Mask.fromCoords(variant)
       const target = {
-        boundsChecker: (r, c) => false,
+        boundsChecker: () => false,
         getZone: jest.fn()
       }
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)

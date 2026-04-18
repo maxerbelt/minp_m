@@ -266,9 +266,7 @@ export class StatusUI {
     this.left.textContent = '∞'
   }
   flush () {
-    this.scoreQueue = this.scoreQueue.filter(
-      ({ item, isImportant }) => isImportant
-    )
+    this.scoreQueue = this.scoreQueue.filter(({ isImportant }) => isImportant)
     if (!this.important) {
       this.game.textContent = ''
     }

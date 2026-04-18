@@ -124,7 +124,7 @@ describe('storeShips', () => {
   it('deletes mapName if build mode and no placed ships', () => {
     customModule.custom.getPlacedShipCount.mockReturnValue(0)
     params.append('mapName', 'foo')
-    const url = storeShips(params, 'build', 'target', map)
+    storeShips(params, 'build', 'target', map)
     expect(params.has('mapName')).toBe(false)
   })
 

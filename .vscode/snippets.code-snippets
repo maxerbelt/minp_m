@@ -1,0 +1,64 @@
+{
+  "AI Prompt Header": {
+    "prefix": "ai-header",
+    "body": [
+      "# Prompt",
+      "",
+      "## Goal",
+      "$1",
+      "",
+      "## Context",
+      "$2",
+      "",
+      "## Constraints",
+      "- Incremental changes only",
+      "- No rewrites",
+      "- Be specific and actionable",
+      "",
+      "## Output Format",
+      "$3"
+    ]
+  },
+
+  "AI Session Template": {
+    "prefix": "ai-session",
+    "body": [
+      "# AI Session: ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}",
+      "",
+      "## Prompt",
+      "```",
+      "$1",
+      "```",
+      "",
+      "## Response",
+      "```",
+      "$2",
+      "```",
+      "",
+      "## Notes",
+      "- ",
+      "",
+      "## Actions",
+      "- [ ] "
+    ]
+  },
+
+  "AI Summary": {
+    "prefix": "ai-summary",
+    "body": [
+      "# Current State Summary",
+      "",
+      "## Decisions",
+      "- $1",
+      "",
+      "## Patterns Adopted",
+      "- ",
+      "",
+      "## Known Issues",
+      "- ",
+      "",
+      "## Next Steps",
+      "- "
+    ]
+  }
+}

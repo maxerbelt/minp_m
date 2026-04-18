@@ -1,6 +1,3 @@
-export function makeCell3 (cells, subGroups) {
-  return cells.map(([r, c]) => [r, c, subGroupIndex(r, c, subGroups)])
-}
 function isIn (r, c, cells) {
   return cells.some(([rr, cc]) => rr === r && cc === c)
 }

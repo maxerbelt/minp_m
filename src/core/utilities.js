@@ -189,3 +189,69 @@ export function minMaxXY (arr) {
   }
   return { minX, maxX, minY, maxY, depth, hasColor }
 }
+
+export function cloneWithSuffix (node, count) {
+  const parent = node.parentNode
+
+  for (let i = 1; i <= count; i++) {
+    const clone = node.cloneNode(true) // deep clone
+
+    if (clone.id) {
+      clone.id = `${node.id}-${i}`
+    }
+
+    parent.insertBefore(clone, node.nextSibling)
+  }
+}
+
+export function cloneWithSuffixDeep (node, count) {
+  const parent = node.parentNode
+
+  for (let i = 1; i <= count; i++) {
+    const clone = node.cloneNode(true)
+
+    // update root id
+    if (clone.id) {
+      clone.id = `${node.id}-${i}`
+    }
+
+    // update all child ids
+    clone.querySelectorAll('[id]').forEach(el => {
+      el.id = `${el.id}-${i}`
+    })
+
+    parent.insertBefore(clone, node.nextSibling)
+  }
+}
+
+export function cloneWithLifecycle (node, count) {
+  const parent = node.parentNode
+  const cloneClass = `${node.id}-clone`
+
+  // 1. Remove existing clones
+  parent.querySelectorAll(`.${cloneClass}`).forEach(el => el.remove())
+
+  // 2. Create new clones
+  let last = node
+
+  for (let i = 1; i <= count; i++) {
+    const clone = node.cloneNode(true)
+
+    // add class to root clone
+    clone.classList.add(cloneClass)
+
+    // update root id
+    if (clone.id) {
+      clone.id = `${node.id}-${i}`
+    }
+
+    // update all child ids
+    clone.querySelectorAll('[id]').forEach(el => {
+      el.id = `${el.id}-${i}`
+    })
+
+    // insert after previous
+    parent.insertBefore(clone, last.nextSibling)
+    last = clone
+  }
+}

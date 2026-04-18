@@ -185,8 +185,6 @@ describe('Orbit4F', () => {
     })
 
     it('r creates cycle for rotation', () => {
-      const indices = [0, 1, 2, 3]
-      const transitions = indices.map(i => Orbit4F.r(i))
       // After 4 rotations, should return to start
       let current = 0
       for (let i = 0; i < 4; i++) {
