@@ -69,10 +69,13 @@ function _setupSeekShortcuts (placementHandler, testHandler) {
     },
     r: () => newGame(),
     q: () => enemy.onClickReveal(),
-    m: () => enemy.onClickWeaponMode(),
-    s: () => enemy.onClickWeaponMode()
+    s: () => enemy.onClickSingleShotButton()
   }
 
+  const btns = enemy.UI?.weaponBtns || {}
+  for (const letter of Object.values(btns).map(btn => btn.dataset.letter)) {
+    shortcuts[letter.toLowerCase()] = () => enemy.onClickWeaponButtons(letter)
+  }
   shortcutMgr.registerShortcuts(shortcuts)
   shortcutMgr.activate()
 
@@ -95,6 +98,15 @@ export function setupEnemy (placementHandler, testHandler) {
 
   if (testHandler) {
     enemy.UI?.testBtn?.addEventListener('click', testHandler)
+  }
+  enemy.resetModel()
+  const numWeaponButtons = enemy.UI?.weaponBtns?.length || 0
+  if (enemy.UI?.weaponBtn != null && numWeaponButtons === 0) {
+    enemy.UI.weaponBtns = enemy.UI?.weaponButtons(
+      enemy.UI?.weaponBtn,
+      enemy.loadOut?.getLimitedWeaponSystems(),
+      enemy.onClickWeaponButtons.bind(enemy)
+    )
   }
   // Setup keyboard shortcuts and return cleanup function
   return _setupSeekShortcuts(placementHandler, testHandler)

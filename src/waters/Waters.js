@@ -927,7 +927,7 @@ export class Waters {
     if (this.isEnded) {
       return
     }
-    this.updateWeaponButton(wps1, cursorInfo)
+    // this.updateWeaponButton(wps1, cursorInfo)
 
     this.updateWeaponStatus(wps1 || this.loadOut.selectedWeapon, cursorInfo)
   }

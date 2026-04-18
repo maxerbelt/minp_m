@@ -325,6 +325,14 @@ class Enemy extends Waters {
     }
   }
 
+  onClickSingleShotButton () {
+    this.loadOut.switchToSingleShot()
+    this.updateMode(this.loadOut.getCurrentWeaponSystem())
+  }
+  onClickWeaponButtons (letter) {
+    this.loadOut.switchToWeapon(letter)
+    this.updateMode(this.loadOut.getCurrentWeaponSystem())
+  }
   onClickWeaponMode () {
     this.switchMode()
     this.updateMode(this.loadOut.getCurrentWeaponSystem())
@@ -340,7 +348,7 @@ class Enemy extends Waters {
     let weaponSelectHander
     let revealHander
     if (this.weaponSelectHander == null) {
-      weaponSelectHander = enemy.onClickWeaponMode.bind(enemy)
+      weaponSelectHander = enemy.onClickSingleShotButton.bind(enemy)
       this.weaponSelectHander = weaponSelectHander
     }
     if (this.revealHander == null) {

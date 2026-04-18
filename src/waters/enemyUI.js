@@ -12,6 +12,57 @@ class EnemyUI extends WatersUI {
     this.weaponBtn = document.getElementById('weaponBtn')
     this.playMode()
   }
+  //onClickWeaponButtons
+  weaponButtons (node, wpss, callback) {
+    const weaponButtons = []
+    if (!node || !wpss) {
+      console.warn('Weapon buttons node or weapon systems not found')
+      return weaponButtons
+    }
+
+    const numWeapons = wpss?.length || 0
+    if (numWeapons === 0) {
+      console.warn('No weapon systems provided for weapon buttons')
+      return weaponButtons
+    }
+
+    const parent = node?.parentNode
+    const cloneClass = `${node.id}-clone`
+
+    // 1. Remove existing clones
+    parent.querySelectorAll(`.${cloneClass}`).forEach(el => el.remove())
+
+    // 2. Create new clones
+    let last = node
+    const entries = Object.entries(wpss)
+    for (const [i, wps] of entries) {
+      const weapon = wps.weapon
+      const letter = weapon.letter
+      const clone = node.cloneNode(true)
+
+      // add class to root clone
+      clone.classList.add(cloneClass)
+      clone.dataset.letter = letter
+      clone.addEventListener('click', () => callback(letter))
+      clone.innerHTML = weapon.buttonHtml
+
+      // update root id
+      if (clone?.id) {
+        clone.id = `${node.id}-${i}`
+      }
+      /*
+      // update all child ids
+      clone.querySelectorAll('[id]').forEach(el => {
+        el.id = `${el.id}-${i}`
+      })
+*/
+      // insert after previous
+      parent.insertBefore(clone, last.nextSibling)
+      last = clone
+      weaponButtons.push(clone)
+    }
+    return weaponButtons
+  }
   displayFleetSunk () {
     gameStatus.showMode('Fleet Destroyed')
     gameStatus.addToQueue('All Units Destroyed - Well Done!', true)

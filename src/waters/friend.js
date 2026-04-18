@@ -365,7 +365,7 @@ export class Friend extends Waters {
     if (this.isRevealed || this.boardDestroyed) {
       return
     }
-    this.updateWeaponButton(wps)
+    // this.updateWeaponButton(wps)
   }
   stopWaiting () {
     /* only needs implementation if enemy */
