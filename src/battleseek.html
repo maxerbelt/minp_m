@@ -52,7 +52,11 @@
               <div class="info-wrap" id="statusLine-wrap">
                 <details class="chevron-box">
                   <summary>
-                    <div class="status medium" id="statusLine">
+                    <div
+                      class="status medium"
+                      id="statusLine"
+                      aria-live="polite"
+                    >
                       <div id="gameStatus" class="game-status"></div>
                       <div id="statusRight" class="status right">
                         <div id="modeStatus" class="mode-status"></div>
@@ -75,13 +79,14 @@
                 <div class="panel">
                   <div class="panel-controls" id="seek-controls">
                     <button class="seek-control" id="revealBtn" type="button">
-                      <span class="shortcut">Q</span>uit
+                      <span class="shortcut" aria-hidden="true">Q</span>uit
                     </button>
                     <button class="seek-control" id="newGame" type="button">
-                      <span class="shortcut">R</span>estart
+                      <span class="shortcut" aria-hidden="true">R</span>estart
                     </button>
                     <button class="seek-control" id="weaponBtn" type="button">
-                      <span class="shortcut">S</span>ingle Shot
+                      <span class="shortcut" aria-hidden="true">S</span>ingle
+                      Shot
                     </button>
                   </div>
                   <div class="tally-box-container">

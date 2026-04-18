@@ -55,7 +55,11 @@
               <div class="info-wrap" id="statusLine-wrap">
                 <details class="chevron-box">
                   <summary>
-                    <div class="status medium" id="statusLine">
+                    <div
+                      class="status medium"
+                      id="statusLine"
+                      aria-live="polite"
+                    >
                       <div id="gameStatus" class="game-status"></div>
                       <div id="statusRight" class="status right">
                         <div id="modeStatus" class="mode-status"></div>
@@ -95,7 +99,7 @@
                       id="newPlacement"
                       type="button"
                     >
-                      <span class="shortcut">C</span>lear
+                      <span class="shortcut" aria-hidden="true">C</span>lear
                     </button>
                     <button
                       class="place-control"
@@ -103,7 +107,7 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">R</span>otate
+                      <span class="shortcut" aria-hidden="true">R</span>otate
                     </button>
                     <button
                       class="place-control"
@@ -111,7 +115,7 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">F</span>lip
+                      <span class="shortcut" aria-hidden="true">F</span>lip
                     </button>
                     <button
                       class="place-control"
@@ -119,7 +123,8 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">L</span>eft Rotate
+                      <span class="shortcut" aria-hidden="true">L</span>eft
+                      Rotate
                     </button>
                     <button
                       class="place-control"
@@ -127,7 +132,7 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">X</span>form
+                      <span class="shortcut" aria-hidden="true">X</span>form
                     </button>
                     <button
                       class="place-control"
@@ -135,7 +140,7 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">U</span>ndo
+                      <span class="shortcut" aria-hidden="true">U</span>ndo
                     </button>
 
                     <button
@@ -144,7 +149,7 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">T</span>est
+                      <span class="shortcut" aria-hidden="true">T</span>est
                     </button>
                     <button
                       class="place-control hidden"
@@ -152,7 +157,7 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">S</span>top
+                      <span class="shortcut" aria-hidden="true">S</span>top
                     </button>
                     <button
                       class="place-control"
@@ -160,11 +165,12 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">H</span>ide and Seek
+                      <span class="shortcut" aria-hidden="true">H</span>ide and
+                      Seek
                     </button>
 
                     <button class="place-control" id="autoBtn" type="button">
-                      <span class="shortcut">A</span>uto
+                      <span class="shortcut" aria-hidden="true">A</span>uto
                     </button>
                   </div>
                   <div class="tally-box-container" id="friend-tally-container">
@@ -220,7 +226,11 @@
               </div>
 
               <div class="info-wrap hidden">
-                <div class="status hidden" id="statusLine2"></div>
+                <div
+                  class="status hidden"
+                  id="statusLine2"
+                  aria-live="polite"
+                ></div>
               </div>
             </div>
             <div class="panel-container">
@@ -228,13 +238,14 @@
                 <div class="panel">
                   <div class="panel-controls" id="seek-controls">
                     <button class="seek-control" id="revealBtn" type="button">
-                      <span class="shortcut">Q</span>uit
+                      <span class="shortcut" aria-hidden="true">Q</span>uit
                     </button>
                     <button class="seek-control" id="newPlace2" type="button">
-                      <span class="shortcut">P</span>lace Ships
+                      <span class="shortcut" aria-hidden="true">P</span>lace
+                      Ships
                     </button>
                     <button class="seek-control" id="newGame" type="button">
-                      <span class="shortcut">R</span>estart
+                      <span class="shortcut" aria-hidden="true">R</span>estart
                     </button>
                     <button
                       class="place-control hidden"
@@ -242,10 +253,11 @@
                       type="button"
                       disabled
                     >
-                      <span class="shortcut">T</span>est
+                      <span class="shortcut" aria-hidden="true">T</span>est
                     </button>
                     <button class="seek-control" id="weaponBtn" type="button">
-                      <span class="shortcut">S</span>ingle Shot
+                      <span class="shortcut" aria-hidden="true">S</span>ingle
+                      Shot
                     </button>
                   </div>
                   <div class="tally-box-container">
