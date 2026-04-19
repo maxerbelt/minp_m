@@ -3,9 +3,35 @@ import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 
+const UI_MODES = {
+  PLACING: 'placing',
+  READY: 'ready',
+  TESTING: 'testing',
+  SEEKING: 'seeking'
+}
+
+const UI_SELECTORS = {
+  CHOOSE_CONTROLS: '#choose-controls',
+  TAB_HIDE: '#tab-hide'
+}
+
+const UI_CLASSES = {
+  HIDDEN: 'hidden',
+  DESTROYED: 'destroyed',
+  HIT: 'hit',
+  PLACED: 'placed',
+  ACTIVE: 'active',
+  EMPTY: 'empty',
+  WEAPON: 'weapon',
+  MEDIUM: 'medium',
+  SMALL: 'small',
+  ALT: 'alt'
+}
+
 export class FriendUI extends PlacementUI {
   constructor () {
     super('friend', 'Friendly')
+    this.mode = UI_MODES.PLACING
     this.showShips = true
     this.tips = [
       'Drag ships from the trays onto the board.',
@@ -18,18 +44,223 @@ export class FriendUI extends PlacementUI {
 
     this.addText = ' placed'
     this.removeText = ' unplaced'
-    this.syncTab()
+    this._initializeUIElements()
+  }
+
+  _initializeUIElements () {
+    this.chooseControls = document.querySelector(UI_SELECTORS.CHOOSE_CONTROLS)
+    this.tabElement = document.querySelector(UI_SELECTORS.TAB_HIDE)
+  }
+
+  // ============ DOM Helpers ============
+
+  setTabText (text) {
+    if (this.tabElement) {
+      this.tabElement.textContent = text
+    }
+  }
+
+  setClasses (element, classMap) {
+    for (const [className, shouldAdd] of Object.entries(classMap)) {
+      if (shouldAdd) {
+        element?.classList.add(className)
+      } else {
+        element?.classList.remove(className)
+      }
+    }
+  }
+
+  toggleElements (elements, isVisible) {
+    elements.forEach(el => {
+      this.setClasses(el, { [UI_CLASSES.HIDDEN]: !isVisible })
+    })
+  }
+
+  // ============ Mode Management ============
+
+  setMode (newMode) {
+    const modeHandlers = {
+      [UI_MODES.PLACING]: () => this._applyPlacingMode(),
+      [UI_MODES.READY]: () => this._applyReadyMode(),
+      [UI_MODES.TESTING]: () => this._applyTestingMode(),
+      [UI_MODES.SEEKING]: () => this._applySeekingMode()
+    }
+
+    const handler = modeHandlers[newMode]
+    if (handler) {
+      this.mode = newMode
+      handler()
+    }
   }
 
   syncTab () {
-    this.tab = document.getElementById('tab-hide')
+    const tabTextMap = {
+      [UI_MODES.PLACING]: 'Hide and Seek Game',
+      [UI_MODES.READY]: 'Hide Game',
+      [UI_MODES.TESTING]: 'Hide Game',
+      [UI_MODES.SEEKING]: 'Hide and Seek Game'
+    }
+    this.setTabText(tabTextMap[this.mode])
   }
+
+  _applyPlacingMode () {
+    this.setTabText('Hide and Seek Game')
+    this._showPlacingControls()
+    this._hideGameControls()
+    this.showShipTrays()
+    this.showTransformBtns()
+    this.showTips()
+    this.showStatus()
+    this.standardPanels()
+  }
+
+  _applyReadyMode () {
+    this.setTabText('Hide Game')
+    this._hidePlacingControls()
+    this._showGameControls()
+    this.hideShipTrays()
+    this.hideTransformBtns()
+    this._clearBoardCells()
+    this.hideTips()
+    this.showStatus()
+    this.standardPanels()
+    gameStatus.addToQueue(
+      'test your placement or play a game against the computer',
+      false
+    )
+  }
+
+  _applyTestingMode () {
+    this._showGameControls()
+    gameStatus.line.classList.add(UI_CLASSES.MEDIUM)
+    this.setTabText('Hide Game')
+    this.hideShipTrays()
+    this.hideTransformBtns()
+    this.hideTips()
+    gameStatus.game.classList.remove(UI_CLASSES.HIDDEN)
+    gameStatus.mode.classList.remove(UI_CLASSES.HIDDEN)
+    gameStatus.line.classList.remove(UI_CLASSES.HIDDEN)
+  }
+
+  _applySeekingMode () {
+    this.setTabText('Hide and Seek Game')
+    this.hideShipTrays()
+    this.hideTransformBtns()
+    this.hideTips()
+    this._hidePlacingControls()
+    this._hideGameControls()
+    gameStatus.line.classList.remove(UI_CLASSES.MEDIUM)
+    gameStatus.line2.classList.remove(UI_CLASSES.MEDIUM)
+    gameStatus.line2.classList.add(UI_CLASSES.SMALL)
+    this._addAltPanels()
+  }
+
+  // ============ Control Visibility ============
+
+  _showPlacingControls () {
+    this.toggleElements([this.chooseControls, this.newPlacementBtn], true)
+  }
+
+  _hidePlacingControls () {
+    this.toggleElements([this.chooseControls, this.newPlacementBtn], false)
+  }
+
+  _showGameControls () {
+    this.toggleElements([this.testBtn, this.seekBtn], true)
+    this.toggleElements([this.stopBtn], false)
+  }
+
+  _hideGameControls () {
+    this.toggleElements([this.testBtn, this.seekBtn, this.stopBtn], false)
+  }
+
+  // ============ Score Labels ============
+
+  _updateScoreLabels (mode) {
+    const labelMap = {
+      [UI_MODES.PLACING]: {
+        placed: true,
+        shots: false,
+        hits: false,
+        sunk: false,
+        reveals: false,
+        hints: false
+      },
+      [UI_MODES.READY]: {
+        placed: false,
+        shots: true,
+        hits: true,
+        sunk: true,
+        reveals: true,
+        hints: true
+      }
+    }
+
+    const config = labelMap[mode] || {}
+    if (this.score) {
+      this.setClasses(this.score.placedLabel, {
+        [UI_CLASSES.HIDDEN]: !config.placed
+      })
+      this.setClasses(this.score.shotsLabel, {
+        [UI_CLASSES.HIDDEN]: !config.shots
+      })
+      this.setClasses(this.score.hitsLabel, {
+        [UI_CLASSES.HIDDEN]: !config.hits
+      })
+      this.setClasses(this.score.sunkLabel, {
+        [UI_CLASSES.HIDDEN]: !config.sunk
+      })
+      this.setClasses(this.score.revealsLabel, {
+        [UI_CLASSES.HIDDEN]: !config.reveals
+      })
+      this.setClasses(this.score.hintsLabel, {
+        [UI_CLASSES.HIDDEN]: !config.hints
+      })
+    }
+  }
+
+  // ============ Visual Management ============
+
+  _clearBoardCells () {
+    for (const cell of this.board.children) {
+      cell.classList.remove(UI_CLASSES.HIT, UI_CLASSES.PLACED)
+    }
+  }
+
+  _addAltPanels () {
+    const panels = document.getElementsByClassName('panel')
+    for (const panel of panels) {
+      panel.classList.add(UI_CLASSES.ALT)
+    }
+  }
+
+  // ============ Public Mode Methods (for backward compatibility) ============
+
+  placeMode () {
+    this._updateScoreLabels(UI_MODES.PLACING)
+    this.setMode(UI_MODES.PLACING)
+  }
+
+  readyMode () {
+    this._updateScoreLabels(UI_MODES.READY)
+    this.setMode(UI_MODES.READY)
+  }
+
+  testMode () {
+    this.setMode(UI_MODES.TESTING)
+  }
+
+  seekMode () {
+    this.setMode(UI_MODES.SEEKING)
+  }
+
+  // ============ Lifecycle & Game State ============
 
   displayFleetSunk () {
     gameStatus.flush()
     gameStatus.addToQueue('Enemy Fleet Revealed', 'You Gave Up')
     gameStatus.addToQueue('Your Fleet is Destroyed', true)
-    this.board.classList.add('destroyed')
+    this.board.classList.add(UI_CLASSES.DESTROYED)
     trackLevelEnd(bh.map, false)
   }
 
@@ -37,119 +268,26 @@ export class FriendUI extends PlacementUI {
     const cell = this.gridCellAt(r, c)
     this.cellHitBase(cell, damaged)
   }
-  placeMode () {
-    this.placingShips = true
-    this.readyingShips = false
-    this.hideNSeek()
-    const chooseControls = document.getElementById('choose-controls')
-    chooseControls.classList.remove('hidden')
-    this.newPlacementBtn.classList.remove('hidden')
-    this.testBtn.classList.add('hidden')
-    this.seekBtn.classList.add('hidden')
-    this.score.shotsLabel.classList.add('hidden')
-    this.score.hitsLabel.classList.add('hidden')
-    this.score.sunkLabel.classList.add('hidden')
-    this.score.revealsLabel.classList.add('hidden')
-    this.score.hintsLabel.classList.add('hidden')
-    this.score.placedLabel.classList.remove('hidden')
-    this.showTransformBtns()
-    this.stopBtn.classList.add('hidden')
-    this.showShipTrays()
-    this.showStatus()
-    this.standardPanels()
-    this.showTips()
-  }
-  hideNSeek () {
-    if (this.tab) this.tab.textContent = 'Hide and Seek Game'
-  }
-  hide () {
-    if (this.tab) this.tab.textContent = 'Hide Game'
-  }
-  readyMode () {
-    this.placingShips = false
-    this.readyingShips = true
-    this.hide()
-    const chooseControls = document.getElementById('choose-controls')
-    chooseControls.classList.add('hidden')
-    this.testBtn.classList.remove('hidden')
-    this.seekBtn.classList.remove('hidden')
-    this.hideTransformBtns()
-    this.stopBtn.classList.add('hidden')
-    this.hideShipTrays()
-    for (const cell of this.board.children) {
-      cell.classList.remove('hit', 'placed')
-    }
-    this.showStatus()
-    this.standardPanels()
-    this.hideTips()
-    gameStatus.addToQueue(
-      'test your placement or play a game against the computer',
-      false
-    )
-  }
 
-  testMode () {
-    this.placingShips = false
-    this.readyingShips = false
-    this.showTestBtns()
-    this.unreadyMode()
-    gameStatus.line.classList.add('medium')
-    this.hide()
-  }
-
-  showTestBtns () {
-    this.stopBtn.classList.remove('hidden')
-    this.testBtn.classList.remove('hidden')
-    this.seekBtn.classList.remove('hidden')
-  }
-
-  unreadyMode () {
-    this.stopBtn.classList.remove('hidden')
-    this.score.sunkLabel.classList.remove('hidden')
-    this.score.placedLabel.classList.add('hidden')
-    this.hideTransformBtns()
-    this.hideShipTrays()
-    this.hideTips()
-    gameStatus.game.classList.remove('hidden')
-    gameStatus.mode.classList.remove('hidden')
-    gameStatus.line.classList.remove('hidden')
-  }
-
-  seekMode () {
-    this.placingShips = false
-    this.newPlacementBtn.classList.add('hidden')
-    this.hideNSeek()
-    this.unreadyMode()
-    this.hideTestBtns()
-    gameStatus.line.classList.remove('medium')
-    gameStatus.line2.classList.remove('medium')
-    gameStatus.line2.classList.add('small')
-    const panels = document.getElementsByClassName('panel')
-    for (const panel of panels) {
-      panel.classList.add('alt')
-    }
-  }
-  hideTestBtns () {
-    this.testBtn.classList.add('hidden')
-    this.stopBtn.classList.add('hidden')
-    this.seekBtn.classList.add('hidden')
-  }
   cellUseAmmo (r, c, damage) {
     const cell = this.gridCellAt(r, c)
     this.useAmmoInCell(cell, damage)
   }
+
   useAmmoInCell (cell, damage) {
     const dataset = cell.dataset
-    cell.classList.remove('active')
+    cell.classList.remove(UI_CLASSES.ACTIVE)
     if (damage) {
       cell.classList.add(damage)
-      cell.classList.remove('empty', 'weapon')
+      cell.classList.remove(UI_CLASSES.EMPTY, UI_CLASSES.WEAPON)
     } else {
-      cell.classList.add('empty')
+      cell.classList.add(UI_CLASSES.EMPTY)
     }
     dataset.ammo = 0
   }
+
   addContrast () {}
+
   removeShadowWeapon () {}
 
   gotoNextStageAfterPlacement () {

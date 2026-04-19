@@ -7,6 +7,14 @@ import { Player } from './steps.js'
 import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
 
+const SEEK_CONSTANTS = {
+  IMPACT_MIN: 2,
+  IMPACT_START: 9,
+  BOMB_ATTEMPTS: 12,
+  SEEK_MAX_ATTEMPTS: 13,
+  SEEK_DELAY_MS: 420
+}
+
 export class Friend extends Waters {
   constructor (friendUI) {
     super(friendUI)
@@ -16,13 +24,26 @@ export class Friend extends Waters {
     this.steps.onEndTurn = this.onEndTurn.bind(this)
   }
 
+  get map () {
+    return bh.map
+  }
+
+  get noResult () {
+    return { weapon: this.loadOut.getSingleShot(), score: LoadOut.noResult }
+  }
+
   onEndTurn () {
     this.opponent?.score.finishTurn()
-    // this.score.finishTurn()
     if (this?.opponent && !this.opponent.boardDestroyed) {
       this.opponent.onBeginTurn()
     }
   }
+
+  isCancelled () {
+    return !this.testContinue
+  }
+
+  // ============ Location Selection ============
 
   getRandomHitCoordinate (hitCoordinates) {
     const totalHits = hitCoordinates.length
@@ -32,9 +53,46 @@ export class Friend extends Waters {
     return hitCoordinates[randomIndex]
   }
 
-  isCancelled () {
-    return !this.testContinue
+  randomLocation (map) {
+    const r = Math.floor(Math.random() * (map.rows - 2)) + 1
+    const c = Math.floor(Math.random() * (map.cols - 2)) + 1
+    return { r, c }
   }
+
+  syncUntried () {
+    this.untried = this.untried.take(this.score.shot)
+  }
+
+  randomLoc () {
+    this.syncUntried()
+    const locs = this.untried.toCoords
+    return locs.length === 0 ? null : randomElement(locs)
+  }
+
+  randomLine () {
+    this.syncUntried()
+    const locs = this.untried.toCoords
+    if (locs.length === 0) {
+      console.warn('no more locations to choose from')
+      return 0
+    }
+
+    const tally = locs.reduce((acc, [, y]) => {
+      acc[y] = 1 + (acc[y] || 0)
+      return acc
+    }, {})
+
+    const ordered = Object.entries(tally).sort((a, b) => b[1] - a[1])
+
+    return ordered[0]
+  }
+
+  randomRowNum () {
+    const r = this.randomLine()
+    return Number.parseInt(r?.[0] || '0')
+  }
+
+  // ============ Destruction & Effects ============
 
   destroy (weapon, effect) {
     this.updateUI()
@@ -42,27 +100,6 @@ export class Friend extends Waters {
     if (acc.hits > 0) this.flash('long')
     this.score.dtaps += acc.dtap
     return acc
-  }
-
-  async randomBomb () {
-    const map = bh.map
-
-    for (let impact = 9; impact > 1; impact--)
-      for (let attempt = 0; attempt < 12; attempt++) {
-        if (this.isCancelled()) return this.noResult
-        const { r, c } = this.randomLocation(map)
-        if (this.score.newShotKey(r, c)) {
-          const hasLaunched = await this.launchRandomWeapon(r, c, false)
-          if (!hasLaunched) {
-            const wps = this.currentWeaponSystem
-            const weapon = wps.weapon
-            const score = await this.loadOut.aimWeapon(map, r, c, wps)
-            return { weapon, score }
-          }
-          return LoadOut.noResult
-        }
-      }
-    return LoadOut.noResult
   }
 
   destroyOne (weapon, effect, target) {
@@ -76,29 +113,76 @@ export class Friend extends Waters {
     const newEffect = this.getStrikeSplash(weapon, target)
     return this.destroy(weapon, newEffect)
   }
-  get noResult () {
-    return { weapon: this.loadOut.getSingleShot(), score: LoadOut.noResult }
+
+  // ============ Random Actions ============
+
+  async launchTo (coords, rr, cc, currentWeapon) {
+    return await currentWeapon.weapon.cursorLaunchTo(
+      coords,
+      rr,
+      cc,
+      this.map,
+      this.UI,
+      this.opponent?.UI
+    )
   }
-  async randomDestroyOne () {
-    const map = bh.map
 
-    if (this.isCancelled()) return this.noResult
-
-    const r = this.randomRowNum()
-    this.launchRandomWeapon(r, 0, false)
+  async launchRandomWeapon (r, c, shouldWait) {
     const wps = this.currentWeaponSystem
     const weapon = wps.weapon
-    const score = await this.loadOut.aimWeapon(map, r, map.cols - 1, wps)
+    const score = await this.loadOut.aimWeapon(this.map, r, c, wps)
+    return score === LoadOut.noResult
+  }
 
+  async randomBomb () {
+    for (
+      let impact = SEEK_CONSTANTS.IMPACT_START;
+      impact > SEEK_CONSTANTS.IMPACT_MIN;
+      impact--
+    ) {
+      for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
+        if (this.isCancelled()) return this.noResult
+        const { r, c } = this.randomLocation(this.map)
+        if (this.score.newShotKey(r, c)) {
+          const hasLaunched = await this.launchRandomWeapon(r, c, false)
+          if (!hasLaunched) {
+            const wps = this.currentWeaponSystem
+            const weapon = wps.weapon
+            const score = await this.loadOut.aimWeapon(this.map, r, c, wps)
+            return { weapon, score }
+          }
+          return LoadOut.noResult
+        }
+      }
+    }
+    return LoadOut.noResult
+  }
+
+  async randomDestroyOne () {
+    if (this.isCancelled()) return this.noResult
+    const r = this.randomRowNum()
+    await this.launchRandomWeapon(r, 0, false)
+    const wps = this.currentWeaponSystem
+    const weapon = wps.weapon
+    const score = await this.loadOut.aimWeapon(
+      this.map,
+      r,
+      this.map.cols - 1,
+      wps
+    )
     return { weapon, score }
   }
+
   isHitValid (r, c) {
-    return bh.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
+    return this.map.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
 
   async randomSeek () {
-    const maxAttempts = 13
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    for (
+      let attempt = 0;
+      attempt < SEEK_CONSTANTS.SEEK_MAX_ATTEMPTS;
+      attempt++
+    ) {
       if (this.isCancelled()) return this.noResult
       const loc = this.randomLoc()
 
@@ -115,161 +199,107 @@ export class Friend extends Waters {
     }
   }
 
-  restartBoard () {
-    this.resetBase()
-    this.UI.clearVisuals()
-    this.UI.resetShips(this.ships)
-    this.armWeapons()
-  }
-  restartFriendBoard () {
-    this.resetBase()
-    this.UI.clearFriendVisuals()
-    this.UI.resetShips(this.ships)
-    this.armWeapons()
-  }
-  async launchTo (coords, rr, cc, currentWeapon) {
-    return await currentWeapon.weapon.cursorLaunchTo(
-      coords,
-      rr,
-      cc,
-      bh.map,
-      this.UI,
-      this.opponent?.UI
-    )
-  }
-  test () {
-    gameStatus.flush()
-    this.UI.testMode()
-    this.UI.testBtn.disabled = true
-    this.UI.seekBtn.disabled = true
-    this.UI.stopBtn.disabled = false
-
-    this.restartBoard()
-
-    this.seek()
-  }
-  setupUntried () {
-    this.untried = bh.map.fullMask
-  }
-  syncUntried () {
-    this.untried = this.untried.take(this.score.shot)
-  }
-
-  randomLoc () {
-    this.syncUntried()
-    const locs = this.untried.toCoords
-    const noOfLocs = locs.length
-
-    if (noOfLocs === 0) return null
-    if (noOfLocs === 1) return locs[0]
-
-    const idx = Math.floor(Math.random() * locs.length)
-
-    return locs[idx]
-  }
-  randomRowNum () {
-    const r = this.randomLine()
-    return Number.parseInt(r?.[0] || '0')
-  }
-  randomLine () {
-    this.syncUntried()
-    let locs = this.untried.toCoords
-    if (locs.length === 0) {
-      console.warn('no more locations to choose from')
-      return 0
-    }
-
-    const tally = locs.reduce((acc, [, y]) => {
-      acc[y] = 1 + (acc[y] || 0)
-      return acc
-    }, {})
-
-    const ordered = Object.entries(tally)
-    let line = shuffleArray(ordered)
-    line.sort((a, b) => b[1] - a[1])
-
-    // const idx = line.findIndex(i => i[1] < line[0][1])
-
-    //  if (idx < 3) {
-    return line[0]
-    // }
-    // return line[Math.floor(Math.random() * (idx - 1))]
-  }
-  async seek () {
-    await this.seekRaw()
-    this.UI.testBtn.disabled = false
-    this.UI.seekBtn.disabled = false
-    this.UI.stopBtn.classList.add('hidden')
-  }
-  async seekRaw () {
-    this.testContinue = true
-    this.boardDestroyed = false
-    this.armWeapons()
-    this.score.shot = bh.map.blankMask
-    this.setupUntried()
-
-    while (!this.isCancelled()) {
-      await Delay.wait(420)
-      if (this.isCancelled()) return
-      this.seekStep()
-    }
-  }
-  scan (weapon, effect) {
-    this.updateUI()
-    const map = bh.map
-    for (const position of effect) {
-      const [r, c] = position
-
-      if (map.inBounds(r, c)) {
-        /// reveal  what is in this position
-      }
-    }
-    /// reveal
-  }
   async randomScan () {
-    const map = bh.map
     this.loadOut.onReveal = this.scan.bind(this)
     if (this.isCancelled()) return this.noResult
-    const { r, c } = this.randomLocation(map)
-    const { r1, c1 } = this.randomLocation(map)
+    const { r, c } = this.randomLocation(this.map)
+    const { r: r1, c: c1 } = this.randomLocation(this.map)
     const wps = this.currentWeaponSystem
     const weapon = wps.weapon
-    await this.loadOut.aimWeapon(map, r, c)
-    const score = await this.loadOut.aimWeapon(map, r1, c1, wps)
+    await this.loadOut.aimWeapon(this.map, r, c)
+    const score = await this.loadOut.aimWeapon(this.map, r1, c1, wps)
     return { weapon, score }
   }
-  randomLocation (map) {
-    const r = Math.floor(Math.random() * (map.rows - 2)) + 1
-    const c = Math.floor(Math.random() * (map.cols - 2)) + 1
-    return { r, c }
+
+  scan (weapon, effect) {
+    this.updateUI()
+    for (const position of effect) {
+      const [r, c] = position
+      if (this.map.inBounds(r, c)) {
+        // reveal what is in this position
+      }
+    }
   }
 
+  // ============ Effect Dispatch ============
+
   async randomEffect (effect) {
-    switch (effect) {
-      case 'DestroyOne':
-        return await this.randomDestroyOne()
-      case 'Bomb':
-        return await this.randomBomb()
-      case 'Scan':
-        return await this.randomScan()
-      case 'Seek':
-        return await this.randomSeek()
+    const effectHandlers = {
+      DestroyOne: () => this.randomDestroyOne(),
+      Bomb: () => this.randomBomb(),
+      Scan: () => this.randomScan(),
+      Seek: () => this.randomSeek()
     }
+    const handler = effectHandlers[effect]
+    return handler ? await handler() : this.noResult
+  }
+
+  // ============ Shot Selection ============
+
+  async tryFinishCondition (mask, finishAction) {
+    if (mask?.occupancy > 0) {
+      await finishAction(mask)
+      return true
+    }
+    return false
+  }
+
+  async finishRevealed () {
+    this.score.reveal = this.score.reveal.take(this.score.shot)
+    return await this.tryFinishCondition(this.score.reveal, mask =>
+      this.selectRandomCandidate(mask)
+    )
+  }
+
+  async finishPartiallySunk (hits) {
+    if (!hits?.occupancy) return false
+
+    const shots = this.score.shot
+    const cross = hits.clone.dilateCross()
+    const candidates = cross.take(shots)
+
+    if (
+      await this.tryFinishCondition(candidates, m =>
+        this.selectRandomCandidate(m)
+      )
+    ) {
+      return true
+    }
+
+    const surround = hits.clone.dilate(1).take(shots)
+    return await this.tryFinishCondition(surround, m =>
+      this.selectRandomCandidate(m)
+    )
+  }
+
+  async finishHints () {
+    const numHints = this.score?.hint?.occupancy || 0
+    if (numHints > 0) {
+      const surroundHints = this.score.hint.clone
+        .dilate(1)
+        .take(this.score.shot)
+      return await this.tryFinishCondition(surroundHints, m =>
+        this.selectRandomCandidate(m)
+      )
+    }
+    return false
+  }
+
+  async selectRandomCandidate (candidate) {
+    this.loadOut.switchToSingleShot()
+    const [c, r] = candidate.randomOccupied
+    await this.launchSingleShot(r, c, false)
   }
 
   async selectShot (hits) {
-    const hasRevealed = await this.finishRevealed()
-    if (hasRevealed) {
-      return
-    }
-    const hasPartialSunk = await this.finishPartiallySunk(hits)
-    if (hasPartialSunk) {
-      return
-    }
+    const finishMethods = [
+      () => this.finishRevealed(),
+      () => this.finishPartiallySunk(hits),
+      () => this.finishHints()
+    ]
 
-    const hasHints = await this.finishHints()
-    if (hasHints) {
-      return
+    for (const finishMethod of finishMethods) {
+      if (await finishMethod()) return
     }
 
     const op = this.loadOut.switchToPreferredWeapon()
@@ -281,68 +311,41 @@ export class Friend extends Waters {
     }
   }
 
-  async finishHints () {
-    const numHints = this.score?.hint?.occupancy || 0
-    if (numHints > 0) {
-      const surroundHints = this.score.hint.clone
-        .dilate(1)
-        .take(this.score.shot)
+  // ============ Board Management ============
 
-      if (surroundHints.occupancy > 0) {
-        await this.selectRandomCandidate(surroundHints)
-        return true
-      }
+  restartBoard (friendlyMode = false) {
+    this.resetBase()
+    this.UI.clearVisuals()
+    if (friendlyMode) {
+      this.UI.clearFriendVisuals()
     }
-    return false
+    this.UI.resetShips(this.ships)
+    this.armWeapons()
   }
 
-  async finishRevealed () {
-    this.score.reveal = this.score.reveal.take(this.score.shot)
-    if (this.score.reveal.occupancy > 0) {
-      await this.selectRandomCandidate(this.score.reveal)
-      return true
-    }
-    return false
-  }
-
-  async finishPartiallySunk (hits) {
-    const numHits = hits ? hits.occupancy : 0
-    if (numHits <= 0) return false
-    const shots = this.score.shot
-    console.log('shot', shots.occupancy, shots.toAscii)
-    const cross = hits.clone.dilateCross()
-    console.log('hits', hits.toAscii)
-    console.log('cross', cross.toAscii)
-    const candidates = cross.take(shots)
-    console.log('candidates', candidates.toAscii)
-    if (candidates.occupancy > 0) {
-      await this.selectRandomCandidate(candidates)
-      return true
-    }
-
-    const surround = hits.clone.dilate(1).take(this.score.shot)
-    console.log('surround', surround.toAscii)
-    if (surround.occupancy > 0) {
-      await this.selectRandomCandidate(surround)
-      return true
-    }
-  }
-
-  async selectRandomCandidate (candidate) {
-    this.loadOut.switchToSingleShot()
-    const [c, r] = candidate.randomOccupied
-    await this.launchSingleShot(r, c, false)
+  setupUntried () {
+    this.untried = this.map.fullMask
   }
 
   getHits () {
-    const blankMask = bh.map.blankMask
-    const hitss = this.shipsUnsunk().reduce((acc, ship) => {
-      const hits = ship.hits
-      const shipHits = hits.toMask(blankMask.width, blankMask.height)
-      acc = acc.join(shipHits)
-      return acc
+    const blankMask = this.map.blankMask
+    return this.shipsUnsunk().reduce((acc, ship) => {
+      const shipHits = ship.hits.toMask(blankMask.width, blankMask.height)
+      return acc.join(shipHits)
     }, blankMask)
-    return hitss
+  }
+
+  // ============ Test/Seek Loop ============
+
+  test () {
+    gameStatus.flush()
+    this.UI.testMode()
+    this.UI.testBtn.disabled = true
+    this.UI.seekBtn.disabled = true
+    this.UI.stopBtn.disabled = false
+
+    this.restartBoard()
+    this.seek()
   }
 
   async seekStep () {
@@ -358,25 +361,53 @@ export class Friend extends Waters {
     }
     this.steps.endTurn()
   }
+
+  async seek () {
+    await this.seekRaw()
+    this.UI.testBtn.disabled = false
+    this.UI.seekBtn.disabled = false
+    this.UI.stopBtn.classList.add('hidden')
+  }
+
+  async seekRaw () {
+    this.testContinue = true
+    this.boardDestroyed = false
+    this.armWeapons()
+    this.score.shot = this.map.blankMask
+    this.setupUntried()
+
+    while (!this.isCancelled()) {
+      await Delay.wait(SEEK_CONSTANTS.SEEK_DELAY_MS)
+      if (this.isCancelled()) return
+      await this.seekStep()
+    }
+  }
+
+  // ============ UI & Mode ============
+
   updateWeaponStatus () {
     /* only needs implementation if enemy */
   }
+
   updateMode (wps) {
     if (this.isRevealed || this.boardDestroyed) {
       return
     }
-    // this.updateWeaponButton(wps)
   }
+
   stopWaiting () {
     /* only needs implementation if enemy */
   }
+
   deactivateWeapon () {
     /* only needs implementation if enemy */
   }
+
   resetModel () {
     this.score.reset()
     this.resetMap()
   }
+
   buildBoard () {
     this.UI.buildBoard()
     this.resetShipCells()

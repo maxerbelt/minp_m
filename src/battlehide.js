@@ -77,7 +77,7 @@ function _onClickTest2 () {
  * Reset friend board for new game
  */
 function _resetFriendBoard () {
-  friend.restartFriendBoard()
+  friend.restartBoard(true)
   friend.updateUI(friend.ships)
 }
 

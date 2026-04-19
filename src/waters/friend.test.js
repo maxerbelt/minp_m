@@ -182,7 +182,7 @@ describe('Friend', () => {
   it('restartFriendBoard calls resetBase and UI.clearFriendVisuals', () => {
     friend.resetBase = jest.fn()
     friend.armWeapons = jest.fn()
-    friend.restartFriendBoard()
+    friend.restartBoard(true)
     expect(friend.resetBase).toHaveBeenCalled()
     expect(friend.UI.clearFriendVisuals).toHaveBeenCalled()
     expect(friend.armWeapons).toHaveBeenCalled()
