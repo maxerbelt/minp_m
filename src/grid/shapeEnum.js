@@ -1,38 +1,21 @@
-import { CubeIndex } from './hexagon/CubeIndex.js'
-import { RectIndex } from './rectangle/RectIndex.js'
-import { TriIndex } from './triangle/TriIndex.js'
+import { HexagonShape } from './hexagon/HexagonShape.js'
+import { RectangleShape } from './rectangle/RectangleShape.js'
+import { TriangleShape } from './triangle/TriangleShape'
 import { TriRectIndex } from './TriRectIndex.js'
+
+export const TriangleRect = (height, width) => ({
+  type: 'triangle-rect',
+  height,
+  width,
+  get indexer () {
+    return new TriRectIndex(this.height, this.width)
+  }
+})
 //   const TriIndexModule = await import('./triangle/TriIndex.js')
 export const ShapeEnum = {
-  triangle: side => ({
-    type: 'triangle',
-    side,
-    get indexer () {
-      return new TriIndex(this.side)
-    }
-  }),
-  rectangle: (width, height) => ({
-    type: 'rectangle',
-    width,
-    height,
-    get indexer () {
-      return new RectIndex(this.width, this.height)
-    }
-  }),
-  hexagon: radius => ({
-    type: 'hexagon',
-    radius,
-    get indexer () {
-      return CubeIndex.getInstance(this.radius)
-    }
-  }),
+  triangle: TriangleShape,
+  rectangle: RectangleShape,
+  hexagon: HexagonShape,
   //
-  triangleRect: (height, width) => ({
-    type: 'triangle-rect',
-    height,
-    width,
-    get indexer () {
-      return new TriRectIndex(this.height, this.width)
-    }
-  })
+  triangleRect: TriangleRect
 }

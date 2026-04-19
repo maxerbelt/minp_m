@@ -7,49 +7,6 @@ import { HexNormalCover } from './HexNormalCover.js'
 import { HexHalfCover } from './HexHalfCover.js'
 import { HexSuperCover } from './HexSuperCover.js'
 
-function bresenhamStep (
-  errorTerm,
-  deltaQ,
-  deltaR,
-  currentQ,
-  currentR,
-  stepQ,
-  stepR
-) {
-  const doubledError = errorTerm << 1
-  const moveInQ = +(doubledError > -deltaR)
-  const moveInR = +(doubledError < deltaQ)
-  currentQ += moveInQ * stepQ
-  currentR += moveInR * stepR
-  errorTerm -= moveInQ * deltaR
-  errorTerm += moveInR * deltaQ
-  return { errorTerm, currentQ, currentR }
-}
-
-/**
- * Bresenham step that tracks movement direction for corner detection.
- * Used by super-cover and half-cover algorithms that need to detect
- * when both axes move simultaneously (corner crossing).
- */
-function bresenhamStepMove (
-  errorTerm,
-  deltaQ,
-  deltaR,
-  currentQ,
-  currentR,
-  stepQ,
-  stepR
-) {
-  const doubledError = errorTerm << 1
-  const moveInQ = +(doubledError > -deltaR)
-  const moveInR = +(doubledError < deltaQ)
-  currentQ += moveInQ * stepQ
-  currentR += moveInR * stepR
-  errorTerm -= moveInQ * deltaR
-  errorTerm += moveInR * deltaQ
-  return { errorTerm, currentQ, currentR, moveInQ, moveInR }
-}
-
 const cache = new Map()
 
 function buildCube (radius) {

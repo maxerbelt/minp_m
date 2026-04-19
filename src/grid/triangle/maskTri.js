@@ -1,10 +1,10 @@
 import { ActionsTri } from './actionsTri.js'
 import { MaskBase } from '../MaskBase.js'
-import { ShapeEnum } from '../shapeEnum.js'
+import { TriangleShape } from './TriangleShape.js'
 
 export class MaskTri extends MaskBase {
   constructor (side, bits, store) {
-    super(ShapeEnum.triangle(side), 1, bits, store)
+    super(TriangleShape(side), 1, bits, store)
     this.side = side
   }
 

@@ -1,9 +1,9 @@
 import { MaskBase } from '../MaskBase.js'
-import { ShapeEnum } from '../shapeEnum.js'
+import { RectangleShape } from './RectangleShape.js'
 
 export class RectMaskBase extends MaskBase {
   constructor (width, height, bits, store, depth) {
-    super(ShapeEnum.rectangle(width, height), depth, bits, store)
+    super(RectangleShape(width, height), depth, bits, store)
   }
   get area () {
     return this.width * this.height

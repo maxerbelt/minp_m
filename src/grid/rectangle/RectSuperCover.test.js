@@ -1,8 +1,9 @@
 /* eslint-env jest */
-import { expect } from '@jest/globals'
+/* global describe, it, expect, beforeEach, afterEach */
+import { expect, jest } from '@jest/globals'
 import { RectIndex } from './RectIndex.js'
 import { RectSuperCover } from './RectSuperCover.js'
-import { AsciiGrid } from '../asciiGrid.js'
+import { AsciiGrid } from './asciiGrid.js'
 
 describe('RectSuperCover', () => {
   let rectIndex

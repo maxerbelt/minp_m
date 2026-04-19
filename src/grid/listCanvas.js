@@ -9,7 +9,7 @@ import {
 } from './maskShape.js'
 import { GridBase } from './gridBase.js'
 import { coordsToGrid, coordsToOccBig } from './coordsConvert.js'
-import { Actions } from './rectangle/actions.js'
+
 export class ListCanvas extends GridBase {
   constructor (shape, list) {
     super(shape)
@@ -59,7 +59,7 @@ export class ListCanvas extends GridBase {
       return this._actions
     }
     const mask = coordsToOccBig(this.list, this.width)
-    this._actions = new Actions(this.width, this.height, mask)
+    this._actions = this.indexer.actions(mask)
     return this._actions
   }
   intercepts (x0, y0, x1, y1) {

@@ -1,8 +1,8 @@
-import { ShapeEnum } from '../shapeEnum.js'
+import { HexagonShape } from './HexagonShape.js'
 import { ListCanvas } from '../listCanvas.js'
 
 export class HexListCanvas extends ListCanvas {
   constructor (radius, list) {
-    super(ShapeEnum.hexagon(radius), list || [])
+    super(HexagonShape(radius), list || [])
   }
 }

@@ -1,28 +1,25 @@
 /* eslint-env jest */
 
-/* global describe, it, test, expect, beforeEach, jest */
+/* global describe, it, expect, jest */
 
 import {
   jaggedXS,
   jaggedVS,
-  defaultMap,
   jaggedS,
   jaggedMS,
   jaggedM,
   jaggedML,
   JaggedL,
-  NarrowS,
   JaggedLL,
-  NarrowM,
   JaggedVL,
-  JaggedXL,
-  seaMapList
-} from './SeaMaps'
-import { BhMap } from '../../all/js/map'
-
-// Jest test suite
+  JaggedXL
+} from '../scenario/Jagged_Coast.js'
+import { BhMap } from '../../all/js/map.js'
+import { NarrowS, NarrowM } from '../scenario/Narrow_Coast.js'
+import { seaMapList, defaultMap } from './seaMaps.js'
+// Jest it suite
 describe('SeaMaps exports', () => {
-  test('jaggedXS and jaggedVS are BhMap instances with weapons', () => {
+  it('jaggedXS and jaggedVS are BhMap instances with weapons', () => {
     expect(jaggedXS).toBeInstanceOf(BhMap)
     expect(jaggedVS).toBeInstanceOf(BhMap)
     expect(jaggedXS.title).toBe('Jagged Coast XS')
@@ -31,7 +28,7 @@ describe('SeaMaps exports', () => {
     expect(jaggedXS.weapons.length).toBeGreaterThan(0)
   })
 
-  test('all Jagged maps are BhMap instances', () => {
+  it('all Jagged maps are BhMap instances', () => {
     const maps = [
       jaggedS,
       jaggedMS,
@@ -48,24 +45,24 @@ describe('SeaMaps exports', () => {
     })
   })
 
-  test('Narrow maps are BhMap instances', () => {
+  it('Narrow maps are BhMap instances', () => {
     expect(NarrowS).toBeInstanceOf(BhMap)
     expect(NarrowM).toBeInstanceOf(BhMap)
     expect(NarrowS.title).toBe('Narrow Coast S')
     expect(NarrowM.title).toBe('Narrow Coast M')
   })
 
-  test('JaggedLL is BhMap with correct title', () => {
+  it('JaggedLL is BhMap with correct title', () => {
     expect(JaggedLL).toBeInstanceOf(BhMap)
     expect(JaggedLL.title).toBe('Jagged Coast LL')
   })
 
-  test('defaultMap is jaggedSS reference', () => {
+  it('defaultMap is jaggedSS reference', () => {
     expect(defaultMap).toBeInstanceOf(BhMap)
     expect(defaultMap.title).toBe('Jagged Coast SS')
   })
 
-  test('seaMapList contains all 13 maps', () => {
+  it('seaMapList contains all 13 maps', () => {
     expect(Array.isArray(seaMapList)).toBe(true)
     expect(seaMapList.length).toBe(13)
     expect(seaMapList).toContain(jaggedXS)

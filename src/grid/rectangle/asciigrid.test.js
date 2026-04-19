@@ -2,7 +2,7 @@
 
 /* global describe, it, expect */
 
-import { beforeEach, describe, it, expect } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 import { AsciiGrid } from './asciiGrid.js'
 
 // Jest test suite

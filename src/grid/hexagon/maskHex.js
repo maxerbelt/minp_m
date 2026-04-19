@@ -1,11 +1,10 @@
 import { ActionsHex } from './actionHex.js'
 import { MaskBase } from '../MaskBase.js'
-import { ShapeEnum } from '../shapeEnum.js'
-import { CoordinateConversion } from '../operations/CoordinateConversion.js'
+import { HexagonShape } from './HexagonShape.js'
 
 export class MaskHex extends MaskBase {
   constructor (radius, bits, store) {
-    super(ShapeEnum.hexagon(radius), 1, bits, store)
+    super(HexagonShape(radius), 1, bits, store)
     this.radius = radius
   }
 

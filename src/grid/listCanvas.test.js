@@ -1,9 +1,9 @@
 /* eslint-env jest */
 import { jest } from '@jest/globals'
 
-/* global describe, jest,  test, expect */
+/* global describe, jest,  it, expect */
 
-import { ShapeEnum } from './shapeEnum.js'
+import { RectangleShape } from './rectangle/RectangleShape.js'
 
 jest.unstable_mockModule('./maskShape.js', () => {
   const pie = jest.fn()
@@ -35,7 +35,7 @@ const { drawSegmentTo, drawPie2, drawRay, drawSegmentFor, drawLineInfinite } =
 const { coordsToGrid } = await import('./coordsConvert.js')
 
 describe('ListCanvas', () => {
-  test('set adds entries to list', () => {
+  it('set adds entries to list', () => {
     const lc = getLc()
     lc.set(0, 1, 'x')
     lc.set(1, 0)
@@ -45,7 +45,7 @@ describe('ListCanvas', () => {
     ])
   })
 
-  test('grid getter calls coordsToGrid and returns grid', () => {
+  it('grid getter calls coordsToGrid and returns grid', () => {
     const lc = getLc()
     lc.set(0, 0, 'a')
     const grid = lc.grid
@@ -53,14 +53,14 @@ describe('ListCanvas', () => {
     expect(grid).toBe(mockGrid)
   })
 
-  test('asci returns expected ASCII output', () => {
+  it('asci returns expected ASCII output', () => {
     const lc = getLc()
     const ascii = lc.asci
     const expected = 'a.\n.b\n'
     expect(ascii).toBe(expected)
   })
 
-  test('draw methods delegate to maskShape functions', () => {
+  it('draw methods delegate to maskShape functions', () => {
     const lc = getLc(10, 10)
     lc.drawSegmentTo(1, 2, 3, 4, 1)
     expect(drawSegmentTo).toHaveBeenCalledWith(1, 2, 3, 4, lc, 1)
@@ -79,5 +79,5 @@ describe('ListCanvas', () => {
   })
 })
 function getLc (x = 2, y = 2) {
-  return new ListCanvas(ShapeEnum.rectangle(x, y), [])
+  return new ListCanvas(RectangleShape(x, y), [])
 }

@@ -5,7 +5,7 @@ import { RectIndex } from './RectIndex.js'
 import { Connect4 } from './Connect4.js'
 import { Connect4Diagonal } from './Connect4Diagonal.js'
 import { Connect8 } from './Connect8.js'
-import { AsciiGrid } from '../asciiGrid.js'
+import { AsciiGrid } from './asciiGrid.js'
 
 describe('RectIndex', () => {
   let rectIndex

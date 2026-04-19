@@ -2,12 +2,12 @@
 /* global describe, it, expect */
 
 import { CanvasGrid } from './canvasGrid.js'
-import { ShapeEnum } from './shapeEnum.js'
+import { RectangleShape } from './rectangle/RectangleShape.js'
 
 // Jest test suite
 describe('CanvasGrid constructor', () => {
   it('throws when instantiated directly', () => {
-    expect(() => new CanvasGrid(ShapeEnum.rectangle(10, 10))).toThrow(
+    expect(() => new CanvasGrid(RectangleShape(10, 10))).toThrow(
       'base class cannot be instantiated directly. Please extend it.'
     )
   })
@@ -15,7 +15,7 @@ describe('CanvasGrid constructor', () => {
   it('subclass with set can be instantiated and is instance of CanvasGrid', () => {
     class SubGrid extends CanvasGrid {
       constructor (w, h) {
-        super(ShapeEnum.rectangle(w, h))
+        super(RectangleShape(w, h))
       }
       set () {
         return 'ok'
@@ -30,7 +30,7 @@ describe('CanvasGrid constructor', () => {
   it('subclass without set inherits set that throws when called', () => {
     class NoSetGrid extends CanvasGrid {
       constructor (w, h) {
-        super(ShapeEnum.rectangle(w, h))
+        super(RectangleShape(w, h))
       }
     }
     const g = new NoSetGrid(3, 4)

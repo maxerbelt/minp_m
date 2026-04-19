@@ -2,15 +2,14 @@
 
 /* global describe, it,  expect, beforeEach, jest */
 import { jest } from '@jest/globals'
+import { spaceMapList, defaultSpaceMap } from './spaceMaps.js'
 import {
   smugglerSS,
   smugglerMS,
   smugglerM,
   smugglerML,
-  smugglerL,
-  spaceMapList,
-  defaultSpaceMap
-} from './spaceMaps'
+  smugglerL
+} from '../scenario/smugglers_run.js'
 import { BhMap } from '../../all/js/map'
 // Jest it suite
 describe('spaceMaps exports', () => {

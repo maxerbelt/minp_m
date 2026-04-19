@@ -1,10 +1,10 @@
-import { GridBase } from './gridBase.js'
-import { ShapeEnum } from './shapeEnum.js'
-import { AsciiRepresentation } from './AsciiRepresentation.js'
+import { GridBase } from '../gridBase.js'
+import { RectangleShape } from './RectangleShape.js'
+import { AsciiRepresentation } from '../AsciiRepresentation.js'
 
 export class AsciiGrid extends GridBase {
   constructor (width, height, ascii, fillChar = '.') {
-    super(ShapeEnum.rectangle(width, height))
+    super(RectangleShape(width, height))
     this.fillChar = fillChar
     this.string = ascii || fill(fillChar, width, height)
   }

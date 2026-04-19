@@ -1,14 +1,14 @@
 /* eslint-env jest */
 
-/* global describe, it,   expect */
+/* global describe, it, expect */
 
 import { ListCanvas } from './listCanvas.js'
 import { errorMsg } from '../core/errorMsg.js'
-import { ShapeEnum } from './shapeEnum.js'
+import { RectangleShape } from './rectangle/RectangleShape.js'
 import { jest } from '@jest/globals'
 
 function getLc (x = 2, y = 2) {
-  return new ListCanvas(ShapeEnum.rectangle(x, y), [])
+  return new ListCanvas(RectangleShape(x, y), [])
 }
 
 describe('ListCanvas', () => {
