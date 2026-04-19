@@ -114,16 +114,17 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Override hover drawing to show line preview in orange
+   * Override hover drawing to show line preview in orange.
+   * @private
    */
-  setupHoverPreviewOverride () {
+  _overrideGridHoverPreview () {
     if (!this.grid || !this.grid._drawHover) return
-    if (this.grid._drawHover.__isOverridden) return
+    if (this.grid._drawHover._isOverridden) return
 
     const origDrawHover = this.grid._drawHover.bind(this.grid)
     this.grid._drawHover = function () {
-      if (this.previewCells?.length) {
-        for (const i of this.previewCells) {
+      if (this.linePreviewIndices?.length) {
+        for (const i of this.linePreviewIndices) {
           const [q, r] = this.indexer.coords[i]
           const { x, y } = hexToPixel(q, r, this.hexSize)
           drawHex(
@@ -137,7 +138,7 @@ export class HexCanvas extends GridCanvas {
       }
       origDrawHover()
     }
-    this.grid._drawHover.__isOverridden = true
+    this.grid._drawHover._isOverridden = true
   }
 
   /**
@@ -172,103 +173,112 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Compute preview indices for line drawing
+   * Get line drawing method name based on tool and cover type.
+   * @param {string} tool - Tool type (segment, ray, full).
+   * @returns {string} Method name to call on indexer.
+   * @private
    */
-  computePreviewIndices (startIdx, endIdx) {
-    if (startIdx == null || endIdx == null) return []
-    if (!this.currentTool || this.currentTool === 'single') return []
-
-    const indexer = this.grid.indexer
-    const [sq, sr, ss] = indexer.coords[startIdx]
-    const [eq, er, es] = indexer.coords[endIdx]
-    let coords = []
-
-    // Build method name based on tool and cover type
-    let methodName = this.currentTool
-    if (this.coverType === 'superCover') {
-      methodName =
-        'superCover' +
-        this.currentTool.charAt(0).toUpperCase() +
-        this.currentTool.slice(1)
-    } else if (this.coverType === 'halfCover') {
-      methodName =
-        'halfCover' +
-        this.currentTool.charAt(0).toUpperCase() +
-        this.currentTool.slice(1)
+  _getLineMethodName (tool) {
+    let methodName = tool
+    if (this.coverType === COVER_TYPES.SUPER_COVER) {
+      methodName = 'superCover' + tool.charAt(0).toUpperCase() + tool.slice(1)
+    } else if (this.coverType === COVER_TYPES.HALF_COVER) {
+      methodName = 'halfCover' + tool.charAt(0).toUpperCase() + tool.slice(1)
     }
+    return methodName
+  }
+
+  /**
+   * Get line coordinates using tool-specific method.
+   * @param {number} sq - Start q coord.
+   * @param {number} sr - Start r coord.
+   * @param {number} eq - End q coord.
+   * @param {number} er - End r coord.
+   * @returns {Array} Coordinate array.
+   * @private
+   */
+  _getLineCoordinates (sq, sr, eq, er) {
+    const indexer = this.grid.indexer
+    const methodName = this._getLineMethodName(this.currentTool)
+    let coords = []
 
     if (typeof indexer[methodName] === 'function') {
       coords = Array.from(indexer[methodName](sq, sr, eq, er))
     } else {
-      // Fallback to normal methods
+      // Fallback to standard methods
       switch (this.currentTool) {
-        case 'segment':
+        case TOOL_TYPES.SEGMENT:
           coords = Array.from(indexer.segmentTo(sq, sr, eq, er))
           break
-        case 'ray':
+        case TOOL_TYPES.RAY:
           coords = Array.from(indexer.ray(sq, sr, eq, er))
           break
-        case 'full':
+        case TOOL_TYPES.FULL:
           coords = Array.from(indexer.fullLine(sq, sr, eq, er))
           break
         default:
           return []
       }
     }
-
-    const inds = []
-    for (const item of coords) {
-      const q = item[0]
-      const r = item[1]
-      const s = -q - r
-      const i = indexer.index(q, r, s)
-      if (i !== undefined) inds.push(i)
-    }
-    return inds
+    return coords
   }
 
   /**
-   * Update line preview on canvas
+   * Compute preview indices for line drawing.
+   * @param {number} startIdx - Start index.
+   * @param {number} endIdx - End index.
+   * @returns {Array} Indices along the line.
+   */
+  computePreviewIndices (startIdx, endIdx) {
+    if (startIdx == null || endIdx == null) return []
+    if (!this.currentTool || this.currentTool === TOOL_TYPES.SINGLE) return []
+
+    const indexer = this.grid.indexer
+    const [sq, sr] = indexer.coords[startIdx]
+    const [eq, er] = indexer.coords[endIdx]
+
+    const coords = this._getLineCoordinates(sq, sr, eq, er)
+    const indices = []
+
+    for (const [q, r] of coords) {
+      const s = -q - r
+      const i = indexer.index(q, r, s)
+      if (i !== undefined) indices.push(i)
+    }
+    return indices
+  }
+
+  /**
+   * Update line preview on canvas.
    */
   updateLinePreview (start, end) {
-    if (!this.grid || this.currentTool === 'single' || !this.currentTool) return
+    if (
+      !this.grid ||
+      this.currentTool === TOOL_TYPES.SINGLE ||
+      !this.currentTool
+    )
+      return
 
-    this.grid.previewCells = this.computePreviewIndices(start, end)
+    this.grid.linePreviewIndices = this.computePreviewIndices(start, end)
     this.grid.redraw()
   }
 
   /**
-   * Complete line drawing - apply action to all cells in line
+   * Apply line action to all cells in line.
    */
   completeLine (start, end) {
     if (!this.grid) return
     const mask = this.grid.mask
-    const inds = this.computePreviewIndices(start, end)
+    const indices = this.computePreviewIndices(start, end)
 
-    for (const i of inds) {
-      if (this.currentAction === 'set') {
-        mask.bits = mask.setIndex(i, 1)
-      } else if (this.currentAction === 'clear') {
-        mask.bits = mask.setIndex(i, 0)
-      } else if (this.currentAction === 'toggle') {
-        let val
-        if (typeof mask.bits === 'bigint') {
-          val = Number((mask.bits >> BigInt(i)) & 1n)
-        } else {
-          val = mask.atIndex ? mask.atIndex(i) : (mask.bits >> i) & 1
-        }
-        mask.bits = mask.setIndex(i, val ? 0 : 1)
-      }
-    }
-
-    // Ensure draw layer matches mask and refresh UI
+    this._applyActionToIndices(mask, indices)
     this.grid.setBits(mask.bits)
     if (typeof this.grid.redraw === 'function') this.grid.redraw()
     this.updateButtonStates()
   }
 
   /**
-   * Handle canvas click
+   * Handle canvas click.
    */
   onCanvasClick (e) {
     if (!this.grid || !this.currentTool) return
@@ -277,7 +287,7 @@ export class HexCanvas extends GridCanvas {
     if (hit == null) return
 
     // Single mode: delegate to toggleCell
-    if (this.currentTool === 'single') {
+    if (this.currentTool === TOOL_TYPES.SINGLE) {
       this.grid.toggleCell(hit)
       return
     }
@@ -288,7 +298,7 @@ export class HexCanvas extends GridCanvas {
     } else {
       this.completeLine(this.lineStart, hit)
       this.lineStart = null
-      this.grid.previewCells = []
+      this.grid.linePreviewIndices = []
       this.grid.redraw()
       this.updateButtonStates()
     }
@@ -320,14 +330,17 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Check if morphology operation would change mask
+   * Check if morphology operation would change mask.
+   * @param {string} op - Operation type (dilate, erode, cross).
+   * @returns {boolean} True if operation would have effect.
    */
   checkMorphology (op) {
     return checkMorphologyState(this.grid.mask, op)
   }
 
   /**
-   * Get morphology operation capabilities
+   * Get morphology operation capabilities.
+   * @returns {Object} Object with canDilate, canErode, canCross flags.
    */
   getMorphologyCapabilities () {
     return {
@@ -338,45 +351,75 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Update all button states
+   * Update rotate button state.
+   * @param {Array} maps - Transform maps.
+   * @private
    */
-  updateButtonStates () {
-    if (!this.grid) return
-
+  _updateRotateButton (maps) {
+    if (!this.rotateBtn) return
+    const rStep = this.getRotationStep(maps)
     const mask = this.grid.mask
     const actions = this.getCurrentActions()
-    const maps = actions?.transformMaps
     const b = this.grid.bits
+    this.rotateBtn.disabled =
+      rStep === null ||
+      computeTransformedBits(mask, maps?.[rStep], actions) === b
+  }
 
-    // Update rotate button
-    if (this.rotateBtn) {
-      const rStep = this.getRotationStep(maps)
-      this.rotateBtn.disabled =
-        rStep === null ||
-        computeTransformedBits(mask, maps?.[rStep], actions) === b
-    }
+  /**
+   * Update flip buttons state.
+   * @param {Array} maps - Transform maps.
+   * @private
+   */
+  _updateFlipButtons (maps) {
+    if (!this.flipButtons) return
+    const mask = this.grid.mask
+    const actions = this.getCurrentActions()
+    const b = this.grid.bits
+    this.flipButtons.forEach(btn => {
+      const mapIdx = Number(btn.dataset.map)
+      const map = maps?.[mapIdx]
+      btn.disabled = !map || computeTransformedBits(mask, map, actions) === b
+    })
+  }
 
-    // Update flip buttons
-    if (this.flipButtons) {
-      this.flipButtons.forEach(btn => {
-        const mapIdx = Number(btn.dataset.map)
-        const map = maps?.[mapIdx]
-        btn.disabled = !map || computeTransformedBits(mask, map, actions) === b
-      })
-    }
-
-    // Update morphology buttons
+  /**
+   * Update morphology buttons state.
+   * @private
+   */
+  _updateMorphologyButtons () {
     const morph = this.getMorphologyCapabilities()
     if (this.dilateBtn) this.dilateBtn.disabled = !morph.canDilate
     if (this.erodeBtn) this.erodeBtn.disabled = !morph.canErode
+  }
 
-    // Update symmetry display
+  /**
+   * Update symmetry display.
+   * @param {Array} actions - Current actions.
+   * @private
+   */
+  _updateSymmetryDisplay (actions) {
     updateSymmetryAndDetails(
       document.getElementById('hex-symmetry'),
       document.getElementById('hex-symmetry-details'),
       actions,
       null
     )
+  }
+
+  /**
+   * Update all button states.
+   */
+  updateButtonStates () {
+    if (!this.grid) return
+
+    const actions = this.getCurrentActions()
+    const maps = actions?.transformMaps
+
+    this._updateRotateButton(maps)
+    this._updateFlipButtons(maps)
+    this._updateMorphologyButtons()
+    this._updateSymmetryDisplay(actions)
   }
 
   /**
@@ -460,44 +503,55 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Wire rotate button
+   * Wire a button to a handler function.
+   * @param {Element} btn - Button element.
+   * @param {Function} handler - Click handler.
+   * @private
+   */
+  _wireButton (btn, handler) {
+    if (btn) btn.addEventListener('click', handler)
+  }
+
+  /**
+   * Wire transform (rotate and flip) buttons.
    */
   wireTransformButtons () {
-    if (!this.rotateBtn) return
-    this.rotateBtn.addEventListener('click', () => {
+    this._wireButton(this.rotateBtn, () => {
       const maps = this.getCurrentActions()?.transformMaps
       const rStep = this.getRotationStep(maps)
       if (rStep !== null) this.applyTransform(rStep)
     })
 
-    if (this.flipButtons) {
-      this.flipButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const idx = Number(btn.dataset.map)
-          this.applyTransform(idx)
-        })
+    this.flipButtons?.forEach(btn => {
+      this._wireButton(btn, () => {
+        const idx = Number(btn.dataset.map)
+        this.applyTransform(idx)
       })
-    }
+    })
   }
 
   /**
-   * Wire morphology buttons
+   * Wire morphology (dilate, erode) buttons.
    */
   wireMorphologyButtons () {
-    if (this.dilateBtn) {
-      this.dilateBtn.addEventListener('click', () => {
-        this.applyMorphology('dilate')
-      })
-    }
-    if (this.erodeBtn) {
-      this.erodeBtn.addEventListener('click', () => {
-        this.applyMorphology('erode')
-      })
-    }
+    this._wireButton(this.dilateBtn, () => this.applyMorphology('dilate'))
+    this._wireButton(this.erodeBtn, () => this.applyMorphology('erode'))
   }
 
   /**
-   * Wire mask mutation buttons
+   * Apply mask mutation and refresh UI.
+   * @param {Function} getMaskBits - Function to get new mask bits.
+   * @private
+   */
+  _applyMaskMutation (getMaskBits) {
+    this.grid.mask.bits = getMaskBits(this.grid.mask)
+    this.grid.setBits(this.grid.mask.bits)
+    this.grid.redraw()
+    this.updateButtonStates()
+  }
+
+  /**
+   * Wire mask mutation buttons (empty, full, inverse).
    */
   wireActionButtons () {
     if (!this.grid || typeof document === 'undefined') return
@@ -511,18 +565,24 @@ export class HexCanvas extends GridCanvas {
     Object.entries(maskMutations).forEach(([id, getMaskBits]) => {
       const el = document.getElementById(id)
       if (el && el !== this.grid.canvas) {
-        el.addEventListener('click', () => {
-          this.grid.mask.bits = getMaskBits(this.grid.mask)
-          this.grid.setBits(this.grid.mask.bits)
-          this.grid.redraw()
-          this.updateButtonStates()
-        })
+        this._wireButton(el, () => this._applyMaskMutation(getMaskBits))
       }
     })
   }
 
   /**
-   * Set example cells
+   * Cache button element references for later use.
+   * @private
+   */
+  _cacheButtonReferences () {
+    this.rotateBtn = document.getElementById('rotateBtn')
+    this.flipButtons = Array.from(document.querySelectorAll('.flipBtn'))
+    this.dilateBtn = document.getElementById('dilateBtn')
+    this.erodeBtn = document.getElementById('erodeBtn')
+  }
+
+  /**
+   * Set example cells for demonstration.
    */
   setExampleCells () {
     if (!this.grid) return
@@ -534,17 +594,12 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Full initialization
+   * Initialize all UI components and listeners.
    */
   initializeAll () {
     if (!this.grid) return
 
-    // Get and store button references
-    this.rotateBtn = document.getElementById('rotateBtn')
-    this.flipButtons = Array.from(document.querySelectorAll('.flipBtn'))
-    this.dilateBtn = document.getElementById('dilateBtn')
-    this.erodeBtn = document.getElementById('erodeBtn')
-
+    this._cacheButtonReferences()
     this.setExampleCells()
     this.wireButtons()
     this.syncLineActionDropdown()
