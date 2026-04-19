@@ -26,21 +26,29 @@ class Enemy extends Waters {
     this.enemyWaters = true
 
     this.steps.player = Player.enemy
-    this.steps.onEndTurn = this.onEndTurn.bind(this)
-    this.steps.onBeginTurn = this.onBeginTurn.bind(this)
+    this.steps.onEndTurn = this._handleEndTurn.bind(this)
+    this.steps.onBeginTurn = this._handleBeginTurn.bind(this)
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
-    this.steps.onActivate = this.onActivate.bind(this)
-    this.steps.onSelect = this.onSelect.bind(this)
-    this.steps.onHint = this.onHint.bind(this)
-    this.steps.onChangeWeapon = this.onChangeWeapon.bind(this)
+    this.steps.onActivate = this._handleActivate.bind(this)
+    this.steps.onSelect = this._handleSelect.bind(this)
+    this.steps.onHint = this._handleHint.bind(this)
+    this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
   }
 
-  onSelect () {
+  /**
+   * Handles selection event.
+   * @private
+   */
+  _handleSelect () {
     this.UI.board.classList.add('targetting')
     this.UI.board.classList.remove('not-step')
   }
 
-  onActivate (rack, weapon, _wletter, _weaponId, r, c, _cell) {
+  /**
+   * Handles activation event.
+   * @private
+   */
+  _handleActivate (rack, weapon, _wletter, _weaponId, r, c, _cell) {
     this.opponent?.UI?.cellWeaponActive?.(r, c)
     if (weapon.postSelectCursor > 0) {
       this.UI.cellWeaponActive(r, c, '', weapon.tag)
@@ -48,33 +56,48 @@ class Enemy extends Waters {
     this.updateMode(rack)
   }
 
-  onChangeWeapon (wletter) {
+  /**
+   * Handles change weapon event.
+   * @private
+   */
+  _handleChangeWeapon (wletter) {
     this.loadOut.switchToWeapon(wletter)
   }
 
-  async onEndTurn () {
+  /**
+   * Handles end turn event.
+   * @private
+   */
+  async _handleEndTurn () {
     this.opponent?.score.finishTurn()
     if (
       !this.opponent ||
       this.opponent.boardDestroyed ||
       this.opponent.isRevealed
-    ) {
+    )
       return
-    }
-    this.showWaitingForOpponent()
+    this._showWaitingForOpponent()
     await Delay.wait(ENEMY_TURN_DELAY)
     await this.opponent.seekStep()
   }
 
-  showWaitingForOpponent () {
-    this.updateSpinner(true, "Enemy's Turn")
+  /**
+   * Shows waiting state for opponent.
+   * @private
+   */
+  _showWaitingForOpponent () {
+    this._updateSpinner(true, "Enemy's Turn")
     this.UI.board.classList.remove('targetting')
     this.UI.board.classList.add('not-step')
     this.steps.clearSource()
   }
 
-  onBeginTurn () {
-    this.hideWaiting()
+  /**
+   * Handles begin turn event.
+   * @private
+   */
+  _handleBeginTurn () {
+    this._hideWaiting()
     if (this.isGameOver()) {
       this.steps.select()
     } else {
@@ -85,20 +108,36 @@ class Enemy extends Waters {
     }
   }
 
-  hideWaiting () {
-    this.updateSpinner(false, '')
+  /**
+   * Hides waiting state.
+   * @private
+   */
+  _hideWaiting () {
+    this._updateSpinner(false, '')
   }
 
-  updateSpinner (show, mode) {
+  /**
+   * Updates spinner display.
+   * @param {boolean} show - Whether to show spinner.
+   * @param {string} mode - Mode text.
+   * @private
+   */
+  _updateSpinner (show, mode) {
     const spinner = document.getElementById('spinner')
     if (spinner) {
       spinner.classList.toggle('waiting', show)
       spinner.classList.toggle('hidden', !show)
-      if (show) {
-        spinner.src = './images/loading.gif'
-      }
+      if (show) spinner.src = './images/loading.gif'
     }
     gameStatus.showMode(mode)
+  }
+
+  /**
+   * Handles hint event.
+   * @private
+   */
+  _handleHint () {
+    // Placeholder if needed
   }
 
   cursorChange (oldCursor, newCursorInfo) {
@@ -127,41 +166,54 @@ class Enemy extends Waters {
     return this.boardDestroyed || this.isRevealed
   }
 
-  attemptShipPlacement (ships) {
+  /**
+   * Attempts to place ships randomly.
+   * @param {Array} ships - Ships to place.
+   * @returns {boolean} True if successful.
+   * @private
+   */
+  _attemptShipPlacement (ships) {
     this.resetShipCells()
     const mask = bh.map.blankMask
     const shuffledShips = shuffleArray([...ships])
     for (const ship of shuffledShips) {
-      const placed = randomPlaceShape(ship, this.shipCellGrid, mask)
-      if (!placed) {
-        return false
-      }
+      if (!randomPlaceShape(ship, this.shipCellGrid, mask)) return false
     }
     return true
   }
 
-  placeStep (ships, attempt) {
+  /**
+   * Handles ship placement with retries.
+   * @param {Array} ships - Ships to place.
+   * @param {number} attempt - Current attempt number.
+   * @private
+   */
+  _handlePlacement (ships, attempt) {
     this.UI.disableBtns()
     for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS; i++) {
-      if (this.attemptShipPlacement(ships)) {
+      if (this._attemptShipPlacement(ships)) {
         gameStatus.setTips(['Click On Square To Fire'])
         this.UI.enableBtns()
         return
       }
     }
-    this.handlePlacementFailure(ships, attempt)
+    this._handlePlacementFailure(ships, attempt)
   }
 
-  handlePlacementFailure (ships, attempt) {
+  /**
+   * Handles placement failure with retries.
+   * @param {Array} ships - Ships to place.
+   * @param {number} attempt - Current attempt number.
+   * @private
+   */
+  _handlePlacementFailure (ships, attempt) {
     const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
     gameStatus.addToQueue(
       `Having difficulty placing all ships (${totalAttempts} attempts)`,
       true
     )
     if (attempt < MAX_PLACEMENT_RETRIES) {
-      setTimeout(() => {
-        this.placeStep(ships, attempt + 1)
-      }, 0)
+      setTimeout(() => this._handlePlacement(ships, attempt + 1), 0)
       return
     }
     this.UI.enableBtns()
@@ -170,34 +222,50 @@ class Enemy extends Waters {
     throw new Error('Failed to place all ships after many attempts')
   }
 
+  /**
+   * Places all ships.
+   * @param {Array} ships - Ships to place.
+   */
   placeAll (ships = this.ships) {
     this.UI.enableBtns()
-    setTimeout(() => {
-      this.placeStep(ships, 0)
-    }, 0)
+    setTimeout(() => this._handlePlacement(ships, 0), 0)
   }
 
+  /**
+   * Reveals all ships.
+   */
   revealAll () {
     this.UI.clearClasses()
     this.UI.revealAll(this.ships)
-    this.hideWaiting()
+    this._hideWaiting()
     this.opponent?.hideWaiting?.()
     this.boardDestroyed = true
     this.isRevealed = true
   }
 
+  /**
+   * Updates UI components.
+   */
   updateUI () {
-    this.updateStats()
+    this._updateStats()
     this.updateMode()
-    this.updateButtons()
+    this._updateButtons()
     super.updateUI(this.ships)
   }
 
-  updateStats () {
+  /**
+   * Updates stats display.
+   * @private
+   */
+  _updateStats () {
     this.UI.score.display(this.ships, ...this.score.counts())
   }
 
-  updateButtons () {
+  /**
+   * Updates button states.
+   * @private
+   */
+  _updateButtons () {
     const disabled = this.isGameOver() || this.hasNoAmmo()
     this.UI.weaponBtn.disabled = disabled
     this.UI.revealBtn.disabled = this.isGameOver()
