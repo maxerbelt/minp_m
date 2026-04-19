@@ -8,6 +8,26 @@ import {
 } from '../gridButtonUtils.js'
 import { drawHex, hexToPixel } from './hexdrawhelper.js'
 
+// Constants for tool and action types
+const TOOL_TYPES = {
+  SINGLE: 'single',
+  SEGMENT: 'segment',
+  RAY: 'ray',
+  FULL: 'full'
+}
+
+const ACTIONS = {
+  SET: 'set',
+  CLEAR: 'clear',
+  TOGGLE: 'toggle'
+}
+
+const COVER_TYPES = {
+  NORMAL: 'normal',
+  SUPER_COVER: 'superCover',
+  HALF_COVER: 'halfCover'
+}
+
 /**
  * Hexagonal grid canvas UI controller
  * Manages UI and interactions for hexagonal grids
@@ -17,41 +37,76 @@ export class HexCanvas extends GridCanvas {
     super(canvasId, hexDraw, config)
 
     // Override cover type values for hex (uses superCover, halfCover instead of super, half)
-    this.coverType = 'normal' // 'normal' | 'superCover' | 'halfCover'
+    this.coverType = COVER_TYPES.NORMAL
 
     // Setup cell overrides
-    this.setupToggleCellOverride()
-    this.setupHoverPreviewOverride()
+    this._overrideGridToggleCellBehavior()
+    this._overrideGridHoverPreview()
   }
 
   /**
-   * Setup toggle cell to respect action value
+   * Guard clause: ensures grid exists.
+   * @returns {boolean} True if grid exists.
+   * @private
    */
-  setupToggleCellOverride () {
-    if (!this.grid || !this.grid.toggleCell) return
+  _ensureGrid () {
+    return !!this.grid
+  }
 
-    const origToggle = this.grid.toggleCell.bind(this.grid)
+  /**
+   * Apply action (set/clear/toggle) to a single bit value.
+   * @param {number} idx - Index of bit.
+   * @param {number} val - Current bit value (0 or 1).
+   * @returns {number} New bit value after action.
+   * @private
+   */
+  _applyActionToBit (idx, val) {
+    if (this.currentAction === ACTIONS.SET) return 1
+    if (this.currentAction === ACTIONS.CLEAR) return 0
+    if (this.currentAction === ACTIONS.TOGGLE) return val ? 0 : 1
+    return val
+  }
+
+  /**
+   * Get current bit value at index.
+   * @param {Object} mask - Mask object with bits.
+   * @param {number} idx - Index.
+   * @returns {number} Bit value (0 or 1).
+   * @private
+   */
+  _getBitValue (mask, idx) {
+    if (typeof mask.bits === 'bigint') {
+      return Number((mask.bits >> BigInt(idx)) & 1n)
+    }
+    return mask.atIndex ? mask.atIndex(idx) : (mask.bits >> idx) & 1
+  }
+
+  /**
+   * Apply action to multiple indices and update mask.
+   * @param {Object} mask - Mask to update.
+   * @param {Array} indices - Indices to update.
+   * @private
+   */
+  _applyActionToIndices (mask, indices) {
+    for (const idx of indices) {
+      const val = this._getBitValue(mask, idx)
+      const newVal = this._applyActionToBit(idx, val)
+      mask.bits = mask.setIndex(idx, newVal)
+    }
+  }
+
+  /**
+   * Override grid toggle cell to respect action value.
+   * @private
+   */
+  _overrideGridToggleCellBehavior () {
+    if (!this.grid?.toggleCell) return
+
     this.grid.toggleCell = idx => {
-      // Don't toggle when line tool active
-      if (this.currentTool) return
+      // Don't toggle when line tool active or index is null
+      if (this.currentTool || idx == null) return
 
-      // Apply currentAction to single cell
-      if (this.currentAction === 'set') {
-        this.grid.mask.bits = this.grid.mask.setIndex(idx, 1)
-      } else if (this.currentAction === 'clear') {
-        this.grid.mask.bits = this.grid.mask.setIndex(idx, 0)
-      } else if (this.currentAction === 'toggle') {
-        let val
-        if (typeof this.grid.mask.bits === 'bigint') {
-          val = Number((this.grid.mask.bits >> BigInt(idx)) & 1n)
-        } else {
-          val = this.grid.mask.atIndex
-            ? this.grid.mask.atIndex(idx)
-            : (this.grid.mask.bits >> idx) & 1
-        }
-        this.grid.mask.bits = this.grid.mask.setIndex(idx, val ? 0 : 1)
-      }
-
+      this._applyActionToIndices(this.grid.mask, [idx])
       this.grid.setBits(this.grid.mask.bits)
       if (typeof this.grid.redraw === 'function') this.grid.redraw()
       this.updateButtonStates()

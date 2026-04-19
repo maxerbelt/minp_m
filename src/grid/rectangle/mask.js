@@ -117,7 +117,12 @@ export class Mask extends RectMaskBase {
     msk.fromCoords(coords)
     return msk
   }
-
+  static fromRCcoords (coords, width = null) {
+    return Mask.fromCoords(RectMaskBase.invertCoords(coords), width)
+  }
+  static fromXYcoords (coords, width = null) {
+    return Mask.fromCoords(coords, width)
+  }
   emptyOfSize (newWidth, newHeight) {
     const msk = new Mask(newWidth, newHeight, null, null, this.depth)
     return msk

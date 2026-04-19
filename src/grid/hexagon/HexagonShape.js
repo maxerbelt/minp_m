@@ -1,4 +1,4 @@
-import { CubeIndex } from './CubeIndex'
+import { CubeIndex } from './CubeIndex.js'
 
 export const HexagonShape = radius => ({
   type: 'hexagon',

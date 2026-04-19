@@ -1,4 +1,4 @@
-import { spaceMap } from '../js/spaceMap'
+import { spaceMap } from '../js/spaceMap.js'
 
 export const smugglerSS = spaceMap(
   "Smuggler's Run SS",

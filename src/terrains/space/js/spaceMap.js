@@ -1,6 +1,6 @@
-import { standardShot } from '../../../weapon/Weapon'
-import { BhMap } from '../../all/js/map'
-import { spaceAndAsteroids } from './space'
+import { standardShot } from '../../../weapon/Weapon.js'
+import { BhMap } from '../../all/js/map.js'
+import { spaceAndAsteroids } from './space.js'
 
 export function spaceMap (title, size, shipNum, landArea, name) {
   const spaceMap = new BhMap(

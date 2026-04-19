@@ -75,7 +75,7 @@ function onClickDefault () {
   customUI.refreshAllColor()
 
   customUI.score.displayZoneInfo()
-  customUI.resetClearBtn()
+  customUI.updateChangeClearButton()
 }
 function clearShips () {
   customUI.showNotice('ships removed')
@@ -99,7 +99,7 @@ function onClickClear () {
   bh.maps.clearBlank()
   customUI.refreshAllColor()
   customUI.score.displayZoneInfo()
-  customUI.resetClearBtn()
+  customUI.updateChangeClearButton()
 }
 function seekMap () {
   trackLevelEnd(bh.map, true)

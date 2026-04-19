@@ -443,11 +443,10 @@ export class ColorPackedRectCanvas {
     this.grid.previewCells = []
     this._lineToolsInitialized = true
 
-    const origToggle =
-      this.grid.toggleCell && this.grid.toggleCell.bind(this.grid)
+    const origToggle = this.grid?.toggleCell?.bind(this.grid)
     if (origToggle) {
       this.grid.toggleCell = location => {
-        if (this.currentTool) return
+        if (this.currentTool || location == null) return
         return origToggle(location)
       }
     }

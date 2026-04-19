@@ -30,7 +30,7 @@ export class ColorPackedHexCanvas extends HexCanvas {
 
     this.grid.toggleCell = idx => {
       // Don't toggle when line tool active
-      if (this.currentTool) return
+      if (this.currentTool || idx == null) return
 
       const [q, r] = this.grid.indexer.coords[idx]
       const s = -q - r

@@ -417,7 +417,7 @@ class DragNDrop {
       setLandCells(r, c, min, max, map, subterrain)
       recolorCells.call(this, viewModel, r, c, min, max, map)
       viewModel.score.displayZoneInfo()
-      viewModel.resetClearBtn()
+      viewModel.updateChangeClearButton()
     }
     cell.addEventListener('dragenter', handler)
   }

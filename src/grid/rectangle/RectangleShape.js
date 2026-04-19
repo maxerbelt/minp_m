@@ -1,4 +1,4 @@
-import { RectIndex } from './RectIndex'
+import { RectIndex } from './RectIndex.js'
 
 export const RectangleShape = (width, height) => ({
   type: 'rectangle',
