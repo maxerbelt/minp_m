@@ -160,7 +160,7 @@ export class ScoreUI {
   displayAddZoneInfo (model) {
     const map = bh.map
     this.zone.innerHTML = ''
-    const displacedArea = model.displacedArea()
+    const displacedArea = model.calculateDisplacedArea()
 
     this.createAddZoneEntry(
       'Map',
