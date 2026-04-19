@@ -90,11 +90,17 @@ export class TriSuperCover extends TriCoverBase {
   }
 
   *ray (startR, startC, endR, endC) {
-    return yield* this.line(
+    const [boundaryR, boundaryC] = this.triIndex._extendLineEndToBoundary(
       startR,
       startC,
       endR,
-      endC,
+      endC
+    )
+    return yield* this.line(
+      startR,
+      startC,
+      boundaryR,
+      boundaryC,
       this.triIndex._createBoundaryExitCondition()
     )
   }

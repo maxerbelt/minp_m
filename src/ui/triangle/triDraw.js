@@ -2,6 +2,16 @@ import { MaskTri } from '../../grid/triangle/maskTri.js'
 import { drawTri, triToPixel, pixelToTri } from './triDrawHelper.js'
 import { DrawBase } from '../drawBase.js'
 
+// Color constants
+const COLORS = {
+  SET: '#4caf50', // green for set cells
+  UNSET: '#2196F3', // blue for unset cells
+  HOVER: '#FF9800', // orange for hover
+  STROKE: '#333' // dark gray for outline
+}
+
+const TRIANGLE_OFFSET = 0.3 // 30% offset for inverted triangles
+
 export class TriDraw extends DrawBase {
   constructor (canvasId, side = 3, offsetX = 300, offsetY = 300, size = 25) {
     const mask = new MaskTri(side)
@@ -64,45 +74,22 @@ export class TriDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Draw all triangles with color coding: set=green, unset=blue
+   * Draw all triangles with color coding: set=green, unset=blue.
    * @private
    */
   _drawGrid () {
     for (let i = 0; i < this.indexer.size; i++) {
-      this._drawTriAtIndex(i)
+      const [r, c] = this.indexer.location(i)
+      const orient = this._getTriangleOrientation(c)
+      const color = this._getCellColor(i)
+      this._drawTriangleCell(r, c, color, orient)
     }
   }
 
   /**
-   * Draw a single triangle at the given index
-   * @private
-   */
-  _drawTriAtIndex (index) {
-    const [r, c] = this.indexer.location(index)
-    const color = this._getTriColorForIndex(index)
-    const orient = this._getTriangleOrientation(c)
-    this._drawTriangleCell(r, c, color, orient)
-  }
-
-  /**
-   * Determine triangle color based on bit state
-   * @private
-   */
-  _getTriColorForIndex (index) {
-    const isSet = this._isBitSet(index)
-    return isSet ? '#4caf50' : '#2196F3' // green for set, blue for unset
-  }
-
-  /**
-   * Check if a bit at index is set
-   * @private
-   */
-  _isBitSet (index) {
-    return ((this.bits >> BigInt(index)) & 1n) === 1n
-  }
-
-  /**
-   * Get triangle orientation based on column
+   * Get triangle orientation based on column.
+   * @param {number} column - Column index.
+   * @returns {string} 'up' or 'down'.
    * @private
    */
   _getTriangleOrientation (column) {
@@ -110,28 +97,55 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Get vertical offset for inverted triangles
+   * Get vertical offset for inverted triangles.
+   * @param {string} orient - Orientation ('up' or 'down').
+   * @returns {number} Vertical offset in pixels.
    * @private
    */
-  _getTriangleVerticalOffset (orient) {
-    // Inverted triangles sit slightly higher; lift by 30% of row height
-    return orient === 'down' ? -(this.triHeight * 0.3) : 0
+  _getVerticalOffset (orient) {
+    return orient === 'down' ? -(this.triHeight * TRIANGLE_OFFSET) : 0
   }
 
   /**
-   * Draw a triangle cell at grid coordinates
+   * Determine triangle color based on bit state and hover.
+   * @param {number} index - Cell index.
+   * @param {boolean} isHover - Whether cell is being hovered.
+   * @returns {string} Color hex code.
    * @private
    */
-  _drawTriangleCell (r, c, color = '#4caf50', orient = 'up', stroke = '#333') {
+  _getCellColor (index, isHover = false) {
+    if (isHover) return COLORS.HOVER
+    return this._isBitSet(index) ? COLORS.SET : COLORS.UNSET
+  }
+
+  /**
+   * Check if a bit at index is set.
+   * @param {number} index - Cell index.
+   * @returns {boolean} True if bit is set.
+   * @private
+   */
+  _isBitSet (index) {
+    return ((this.bits >> BigInt(index)) & 1n) === 1n
+  }
+
+  /**
+   * Draw a triangle cell at grid coordinates.
+   * @param {number} r - Row coordinate.
+   * @param {number} c - Column coordinate.
+   * @param {string} color - Fill color.
+   * @param {string} orient - Orientation ('up' or 'down').
+   * @private
+   */
+  _drawTriangleCell (r, c, color, orient) {
     const { x, y } = triToPixel(r, c, this.triSize)
-    const yOffset = this._getTriangleVerticalOffset(orient)
+    const yOffset = this._getVerticalOffset(orient)
     drawTri(
       this.ctx,
       x + this.offsetX,
       y + yOffset + this.offsetY,
       this.triSize,
       color,
-      stroke,
+      COLORS.STROKE,
       orient
     )
   }
@@ -141,23 +155,15 @@ export class TriDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Draw the hover triangle if one is selected
+   * Draw the hover triangle if one is selected.
    * @private
    */
   _drawHover () {
-    if (this.hoverLocation !== null) {
-      this._drawHoverCell()
-    }
-  }
-
-  /**
-   * Render the hover highlight at current location
-   * @private
-   */
-  _drawHoverCell () {
+    if (this.hoverLocation === null) return
     const [r, c] = this.indexer.location(this.hoverLocation)
     const orient = this._getTriangleOrientation(c)
-    this._drawTriangleCell(r, c, '#FF9800', orient) // orange for hover
+    const color = this._getCellColor(this.hoverLocation, true)
+    this._drawTriangleCell(r, c, color, orient)
   }
 
   // ============================================================================
@@ -211,30 +217,18 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Hit test to find which triangle is at pixel coordinates
+   * Find triangle index from pixel coordinates.
+   * @param {number} px - Pixel X coordinate.
+   * @param {number} py - Pixel Y coordinate.
+   * @returns {number|null} Index or null if invalid.
    * @private
    */
   _hitTest (px, py) {
-    const gridCoords = this._pixelToTriCoords(px, py)
-    const idx = this._findTriangleIndex(gridCoords)
-    return idx
-  }
-
-  /**
-   * Convert pixel coordinates to triangle grid coordinates
-   * @private
-   */
-  _pixelToTriCoords (px, py) {
-    const x = px - this.offsetX
-    const y = py - this.offsetY
-    return pixelToTri(x, y, this.triSize)
-  }
-
-  /**
-   * Find triangle index from row/column coordinates
-   * @private
-   */
-  _findTriangleIndex ([r, c]) {
+    const [r, c] = pixelToTri(
+      px - this.offsetX,
+      py - this.offsetY,
+      this.triSize
+    )
     if (!this.indexer.isValid(r, c)) return null
     const idx = this.indexer.index(r, c)
     return idx !== undefined ? idx : null

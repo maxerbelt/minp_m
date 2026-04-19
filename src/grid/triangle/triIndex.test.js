@@ -199,14 +199,13 @@ describe('TriIndex', () => {
       expect(lastCoord[1]).toBe(1)
     })
 
-    it('ray from center continues until boundary', () => {
-      const results = []
-      for (const [r, c] of triIndex.ray(0, 0, 1, 0)) {
-        results.push([r, c])
-      }
-      expect(results.length).toBeGreaterThanOrEqual(1)
-      const lastCoord = results[results.length - 1]
-      expect(triIndex.isValid(lastCoord[0], lastCoord[1])).toBe(true)
+    it('ray from center continues past endpoint to boundary', () => {
+      const segmentResults = Array.from(triIndex.segmentTo(0, 0, 1, 0))
+      const rayResults = Array.from(triIndex.ray(0, 0, 1, 0))
+      expect(rayResults.length).toBeGreaterThan(segmentResults.length)
+      const lastCoord = rayResults[rayResults.length - 1]
+      expect(lastCoord[0]).toBe(triIndex.side - 1)
+      expect(lastCoord[1] === 0).toBe(true)
     })
 
     it('segmentTo matches line with endpoint exit condition', () => {
@@ -229,12 +228,12 @@ describe('TriIndex', () => {
       expect(results.length).toBeLessThanOrEqual(2)
     })
 
-    it('fullLine extends to boundaries', () => {
-      const results = []
-      for (const coord of triIndex.fullLine(0, 0, 1, 1)) {
-        results.push(coord)
-      }
-      expect(results.length).toBeGreaterThan(0)
+    it('fullLine extends beyond the original segment', () => {
+      const segmentResults = Array.from(triIndex.segmentTo(1, 1, 2, 2))
+      const fullLineResults = Array.from(triIndex.fullLine(1, 1, 2, 2))
+      expect(fullLineResults.length).toBeGreaterThan(segmentResults.length)
+      expect(fullLineResults[0]).not.toEqual([1, 1])
+      expect(fullLineResults[fullLineResults.length - 1]).not.toEqual([2, 2])
     })
 
     it('line yields valid coordinates', () => {

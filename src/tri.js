@@ -45,7 +45,7 @@ function setMorphologyButtons ({ dilate, erode, cross }) {
 
 function computeMorphChanged (op) {
   if (!triCanvas) return false
-  return triCanvas.computeMorphChanged(op)
+  return triCanvas._canApplyMorphology(op)
 }
 
 function computeTriMorphState (op) {

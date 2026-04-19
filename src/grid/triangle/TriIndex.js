@@ -170,6 +170,25 @@ export class TriIndex extends Indexer {
     }
   }
 
+  _extendLineEndToBoundary (startR, startC, endR, endC) {
+    const [startQ, startCubeR, startS] = this._gridToCube(startR, startC)
+    const [endQ, endCubeR, endS] = this._gridToCube(endR, endC)
+    const deltaQ = endQ - startQ
+    const deltaCubeR = endCubeR - startCubeR
+    const deltaS = endS - startS
+
+    if (deltaQ === 0 && deltaCubeR === 0 && deltaS === 0) {
+      return [startR, startC]
+    }
+
+    const maxScale = Math.max(this.side * 3, 10)
+    return this._cubeToGrid(
+      startQ + deltaQ * maxScale,
+      startCubeR + deltaCubeR * maxScale,
+      startS + deltaS * maxScale
+    )
+  }
+
   neighborsEdge (r, c) {
     return this.connection['3'].neighbors(r, c)
   }
