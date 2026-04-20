@@ -1,4 +1,5 @@
-import { randomElement, minMaxXY } from '../../core/utilities.js'
+import { minMaxXY } from '../../core/utilities.js'
+import { Random } from '../../core/Random.js'
 import { BlitOperation } from '../operations/BlitOperation.js'
 import { SubMask } from '../SubMask.js'
 import { SubBoard } from '../subBoard.js'
@@ -64,7 +65,7 @@ export class Mask extends RectMaskBase {
    */
   get randomOccupied () {
     const coords = this.toCoords
-    return randomElement(coords)
+    return Random.element(coords)
   }
 
   /**

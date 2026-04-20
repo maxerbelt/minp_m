@@ -1,3 +1,5 @@
+import { Random } from './Random.js'
+
 export class Delay {
   constructor (delay) {
     this.delay = delay
@@ -9,8 +11,7 @@ export class Delay {
     await new Promise(resolve => setTimeout(resolve, 0))
   }
   static async randomWait (mindelay = 380, maxdelay = 730) {
-    const range = maxdelay - mindelay
-    const delay = Math.floor(Math.random() * range) + mindelay
+    const delay = Random.integerWithRange(mindelay, maxdelay)
     await Delay.wait(delay)
   }
 

@@ -1,4 +1,4 @@
-import { shuffleArray } from '../core/utilities.js'
+import { Random } from '../core/Random.js'
 import { Placeable } from './Placeable.js'
 import { Placeable3 } from './Placeable3.js'
 import { RotatableVariant } from './RotatableVariant.js'
@@ -68,13 +68,13 @@ export class SpecialVariant extends RotatableVariant {
     let shuffled
     switch (this.list.length) {
       case 8:
-        shuffled = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7])
+        shuffled = Random.shuffleArray([0, 1, 2, 3, 4, 5, 6, 7])
         break
       case 4:
-        shuffled = shuffleArray([0, 1, 2, 3])
+        shuffled = Random.shuffleArray([0, 1, 2, 3])
         break
       case 2:
-        shuffled = shuffleArray([0, 1])
+        shuffled = Random.shuffleArray([0, 1])
         break
       case 1:
         shuffled = [0]

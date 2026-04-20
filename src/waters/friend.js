@@ -1,5 +1,5 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { randomElement, shuffleArray } from '../core/utilities.js'
+import { Random } from '../core/Random.js'
 import { gameStatus } from './StatusUI.js'
 import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Waters } from './Waters.js'
@@ -33,7 +33,7 @@ export class Friend extends Waters {
   }
 
   onEndTurn () {
-    if (this?.opponent==null) {
+    if (this?.opponent == null) {
       return
     }
     this.opponent.score.finishTurn()
@@ -69,7 +69,7 @@ export class Friend extends Waters {
   randomLoc () {
     this.syncUntried()
     const locs = this.untried.toCoords
-    return locs.length === 0 ? null : randomElement(locs)
+    return locs.length === 0 ? null : Random.element(locs)
   }
 
   randomLine () {
@@ -77,7 +77,7 @@ export class Friend extends Waters {
     const locs = this.untried.toCoords
     if (locs.length === 0) {
       console.warn('no more locations to choose from')
-      return 0
+      return ['0', 0]
     }
 
     const tally = locs.reduce((acc, [, y]) => {
@@ -111,7 +111,7 @@ export class Friend extends Waters {
       return this.destroy(weapon, effect)
     }
     if (target === null || target === undefined || target?.length < 2) {
-      target = randomElement(candidates)
+      target = Random.element(candidates)
     }
     const newEffect = this.getStrikeSplash(weapon, target)
     return this.destroy(weapon, newEffect)

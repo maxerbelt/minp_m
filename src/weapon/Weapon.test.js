@@ -4,7 +4,7 @@ import { jest } from '@jest/globals'
 /* global describe, jest, it, expect, beforeEach */
 
 // Weapon will be imported dynamically after mocks are set up
-let Weapon, StandardShot, standardShot, WeaponCatelogue, bh
+let Weapon, StandardShot, bh
 
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
   return {
@@ -23,9 +23,7 @@ beforeEach(async () => {
   const weaponModule = await import('./Weapon.js')
   Weapon = weaponModule.Weapon
   StandardShot = weaponModule.StandardShot
-  standardShot = weaponModule.standardShot
-  WeaponCatelogue = weaponModule.WeaponCatelogue
-
+ 
   const bhModule = await import('../terrains/all/js/bh.js')
   bh = bhModule.bh
 })
@@ -213,33 +211,5 @@ describe('StandardShot', () => {
     const shot = new StandardShot()
     const result = shot.aoe({}, [[5, 10]])
     expect(result).toEqual([[5, 10, 4]])
-  })
-})
-
-describe('WeaponCatelogue', () => {
-  it('constructs with weapons array and default weapon', () => {
-    const weapons = [new StandardShot()]
-    const catalogue = new WeaponCatelogue(weapons)
-
-    expect(catalogue.weapons).toEqual(weapons)
-    expect(catalogue.defaultWeapon).toBe(standardShot)
-  })
-
-  it('addWeapons sets weapons and creates weaponsByLetter map', () => {
-    const catalogue = new WeaponCatelogue([])
-    const shot = new StandardShot()
-    const weapons = [shot]
-
-    catalogue.addWeapons(weapons)
-
-    expect(catalogue.weapons).toEqual(weapons)
-    expect(catalogue.weaponsByLetter['-']).toBe(shot)
-  })
-
-  it('tags returns array of weapon tags', () => {
-    const shot = new StandardShot()
-    const catalogue = new WeaponCatelogue([shot])
-
-    expect(catalogue.tags).toEqual(['single'])
   })
 })

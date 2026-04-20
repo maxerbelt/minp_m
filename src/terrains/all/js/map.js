@@ -1,11 +1,11 @@
-import { makeKey, lazy, randomElement } from '../../../core/utilities.js'
+import { makeKey, lazy } from '../../../core/utilities.js'
+import { Random } from '../../../core/Random.js'
 import { oldToken } from './terrain.js'
 import { SubTerrainTrackers } from './SubTerrainTrackers.js'
 import { bh } from './bh.js'
 import { standardShot } from '../../../weapon/Weapon.js'
 import { Mask } from '../../../grid/rectangle/mask.js'
 import { getCopyNumKey, makeTitle } from './makeTitle.js'
-import { Random } from '../../../core/Random.js'
 
 // geometry helper
 export const inRange = (r, c) => element =>
@@ -92,7 +92,7 @@ export class BhMap {
       list.push(edge)
     }
     if (list.length > 0) {
-      edge = randomElement(list)
+      edge = Random.element(list)
     }
 
     return this.randomEdgeFor(edge)

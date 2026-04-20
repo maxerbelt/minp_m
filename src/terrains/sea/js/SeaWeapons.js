@@ -1,5 +1,6 @@
 import { bh } from '../../../terrains/all/js/bh.js'
-import { coordsFromCell, shuffleArray } from '../../../core/utilities.js'
+import { Random } from '../../../core/Random.js'
+import { coordsFromCell } from '../../../core/utilities.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
 import { Delay } from '../../../core/Delay.js'
@@ -206,7 +207,7 @@ export class Flack extends Weapon {
         area.push([r + i, c + j, 0])
       }
     }
-    const middle = shuffleArray(area)
+    const middle = Random.shuffleArray(area)
     const head = middle.slice(0, 2)
     const leftOver = middle.slice(3)
 
@@ -216,7 +217,7 @@ export class Flack extends Weapon {
     for (let i = -1; i < 2; i++) {
       leftOver.push([r + i, c - 2, 0], [r + i, c + 2, 0])
     }
-    const result = head.concat(shuffleArray(leftOver))
+    const result = head.concat(Random.shuffleArray(leftOver))
     for (let i = 0; i < 8; i++) {
       if (i < 2) {
         result[i][2] = 2

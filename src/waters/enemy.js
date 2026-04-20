@@ -1,6 +1,6 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { randomPlaceShape } from '../core/utils.js'
-import { randomElement, shuffleArray } from '../core/utilities.js'
+import { Random } from '../core/Random.js'
 import { gameStatus } from './StatusUI.js'
 import { enemyUI } from './enemyUI.js'
 import { LoadOut } from './LoadOut.js'
@@ -174,7 +174,7 @@ class Enemy extends Waters {
   _attemptShipPlacement (ships) {
     this.resetShipCells()
     const mask = bh.map.blankMask
-    const shuffledShips = shuffleArray([...ships])
+    const shuffledShips = Random.shuffleArray([...ships])
     for (const ship of shuffledShips) {
       if (!randomPlaceShape(ship, this.shipCellGrid, mask)) return false
     }
@@ -343,7 +343,7 @@ class Enemy extends Waters {
 
   resolveTarget (target, hitCandidates) {
     if (!target || target.length < 2) {
-      return randomElement(hitCandidates)
+      return Random.element(hitCandidates)
     }
     return target
   }

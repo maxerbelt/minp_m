@@ -1,5 +1,6 @@
+import { Random } from './Random.js'
 export function randomElement (array) {
-  const randomIndex = Math.floor(Math.random() * array.length)
+  const randomIndex = Random.integerWithMax(array.length)
   const randomObject = array[randomIndex]
   return randomObject
 }

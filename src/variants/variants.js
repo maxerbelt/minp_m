@@ -1,4 +1,4 @@
-import { shuffleArray } from '../core/utilities.js'
+import { Random } from '../core/Random.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Placeable } from './Placeable.js'
 
@@ -56,7 +56,7 @@ export class Variants {
   }
   variations () {
     let variants0 = this.list
-    return shuffleArray(variants0)
+    return Random.shuffleArray(variants0)
   }
   placeables () {
     let variants0 = this.variations()

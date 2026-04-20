@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-/* global describe, it, test, expect, beforeEach, jest */
+/* global describe, it, it, expect,   jest */
 import {
   Megabomb,
   Kinetic,
@@ -9,10 +9,10 @@ import {
   Sweep,
   seaWeaponsCatalogue
 } from './SeaWeapons'
-import { Weapon, WeaponCatelogue } from '../../../weapon/Weapon'
-// Jest test suite
+import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
+// Jest it suite
 describe('SeaWeapons - Megabomb', () => {
-  test('Megabomb constructor sets properties', () => {
+  it('Megabomb constructor sets properties', () => {
     const bomb = new Megabomb(3)
     expect(bomb.name).toBe('Megabomb')
     expect(bomb.letter).toBe('M')
@@ -22,21 +22,21 @@ describe('SeaWeapons - Megabomb', () => {
     expect(bomb.cursors).toContain('bomb')
   })
 
-  test('Megabomb clone creates new instance with correct ammo', () => {
+  it('Megabomb clone creates new instance with correct ammo', () => {
     const bomb = new Megabomb(2)
     const cloned = bomb.clone(5)
     expect(cloned).toBeInstanceOf(Megabomb)
     expect(cloned.ammo).toBe(5)
   })
 
-  test('Megabomb.aoe returns array from boom method', () => {
+  it('Megabomb.aoe returns array from boom method', () => {
     const bomb = new Megabomb(1)
     const area = bomb.aoe(null, [[2, 2]])
     expect(Array.isArray(area)).toBe(true)
     expect(area.length).toBeGreaterThan(0)
   })
 
-  test('Megabomb.boom returns correct center and surrounding squares', () => {
+  it('Megabomb.boom returns correct center and surrounding squares', () => {
     const bomb = new Megabomb(1)
     const result = bomb.boom(3, 3)
     expect(Array.isArray(result)).toBe(true)
@@ -45,7 +45,7 @@ describe('SeaWeapons - Megabomb', () => {
 })
 
 describe('SeaWeapons - Kinetic', () => {
-  test('Kinetic constructor sets properties', () => {
+  it('Kinetic constructor sets properties', () => {
     const k = new Kinetic(2)
     expect(k.name).toBe('Kinetic Strike')
     expect(k.letter).toBe('K')
@@ -56,14 +56,14 @@ describe('SeaWeapons - Kinetic', () => {
     expect(k.isOneAndDone).toBe(true)
   })
 
-  test('Kinetic clone works', () => {
+  it('Kinetic clone works', () => {
     const k = new Kinetic(1)
     const c = k.clone(4)
     expect(c).toBeInstanceOf(Kinetic)
     expect(c.ammo).toBe(4)
   })
 
-  test('Kinetic has drag shape and splash coordinates', () => {
+  it('Kinetic has drag shape and splash coordinates', () => {
     const k = new Kinetic(1)
     expect(Array.isArray(k.dragShape)).toBe(true)
     expect(Array.isArray(k.splashCoords)).toBe(true)
@@ -71,7 +71,7 @@ describe('SeaWeapons - Kinetic', () => {
 })
 
 describe('SeaWeapons - Torpedo', () => {
-  test('Torpedo constructor sets properties', () => {
+  it('Torpedo constructor sets properties', () => {
     const t = new Torpedo(3)
     expect(t.name).toBe('Torpedo')
     expect(t.letter).toBe('+')
@@ -81,14 +81,14 @@ describe('SeaWeapons - Torpedo', () => {
     expect(Array.isArray(t.cursors)).toBe(true)
   })
 
-  test('Torpedo clone works', () => {
+  it('Torpedo clone works', () => {
     const t = new Torpedo(2)
     const c = t.clone(6)
     expect(c).toBeInstanceOf(Torpedo)
     expect(c.ammo).toBe(6)
   })
 
-  test('Torpedo addSplash checks bounds', () => {
+  it('Torpedo addSplash checks bounds', () => {
     const t = new Torpedo(1)
     const effect = []
     t.addSplash(null, 0, 0, 1, effect)
@@ -97,7 +97,7 @@ describe('SeaWeapons - Torpedo', () => {
 })
 
 describe('SeaWeapons - Flack', () => {
-  test('Flack constructor sets properties', () => {
+  it('Flack constructor sets properties', () => {
     const f = new Flack(2)
     expect(f.name).toBe('Flack')
     expect(f.letter).toBe('F')
@@ -107,14 +107,14 @@ describe('SeaWeapons - Flack', () => {
     expect(Array.isArray(f.splashCoords)).toBe(true)
   })
 
-  test('Flack clone works', () => {
+  it('Flack clone works', () => {
     const f = new Flack(1)
     const c = f.clone(3)
     expect(c).toBeInstanceOf(Flack)
     expect(c.ammo).toBe(3)
   })
 
-  test('Flack has dragShape', () => {
+  it('Flack has dragShape', () => {
     const f = new Flack(1)
     expect(Array.isArray(f.dragShape)).toBe(true)
     expect(f.dragShape.length).toBeGreaterThan(0)
@@ -122,7 +122,7 @@ describe('SeaWeapons - Flack', () => {
 })
 
 describe('SeaWeapons - Sweep', () => {
-  test('Sweep constructor sets properties', () => {
+  it('Sweep constructor sets properties', () => {
     const s = new Sweep(1)
     expect(s.name).toBe('Radar Sweep')
     expect(s.letter).toBe('W')
@@ -131,7 +131,7 @@ describe('SeaWeapons - Sweep', () => {
     expect(Array.isArray(s.cursors)).toBe(true)
   })
 
-  test('Sweep clone works', () => {
+  it('Sweep clone works', () => {
     const s = new Sweep(2)
     const c = s.clone(5)
     expect(c).toBeInstanceOf(Sweep)
@@ -140,13 +140,13 @@ describe('SeaWeapons - Sweep', () => {
 })
 
 describe('seaWeaponsCatalogue', () => {
-  test('catalogue is WeaponCatelogue with weapons', () => {
+  it('catalogue is WeaponCatelogue with weapons', () => {
     expect(seaWeaponsCatalogue).toBeInstanceOf(WeaponCatelogue)
     expect(Array.isArray(seaWeaponsCatalogue.weapons)).toBe(true)
     expect(seaWeaponsCatalogue.weapons.length).toBeGreaterThan(0)
   })
 
-  test('catalogue includes Megabomb, Kinetic, Flack, and Torpedo', () => {
+  it('catalogue includes Megabomb, Kinetic, Flack, and Torpedo', () => {
     const tags = seaWeaponsCatalogue.weapons.map(w => w.tag)
     expect(tags).toContain('mega')
     expect(tags).toContain('kinetic')
