@@ -1,7 +1,7 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { furtherestFrom } from '../core/utilities.js'
 import { Animator } from '../core/Animator.js'
-
+import { Random } from '../core/Random.js'
 export class Weapon {
   constructor (name, letter, isLimited, destroys, points) {
     if (new.target === Weapon) {
@@ -21,6 +21,8 @@ export class Weapon {
     this.isOneAndDone = false
     this.splashPower = -1
     this.splashType = null
+    this.splashMin = null
+    this.splashMax = null
     this.volatile = false
     this.unattachedCursor = 0
     this.postSelectCursor = 0
@@ -29,7 +31,7 @@ export class Weapon {
     this.explodeOnHit = false
     this.animateOnTarget = false
     this.animateOnAoe = false
-    this.splashSize = 1
+    this.splashSize = 1.3
     this.nonAttached = false
     this.animateOffsetY = 0
     this.classname = this.name.toLowerCase().replaceAll(' ', '-')
@@ -291,7 +293,7 @@ export class Weapon {
       null,
       null,
       null,
-      animator,
+      null,
       viewModel
     )
   }
@@ -316,17 +318,18 @@ export class Weapon {
     power,
     shake = 'shake',
     animator = null,
-    viewModel = null
+    viewModel = null,
+    id = null
   ) {
     end = end || this.centerOf(target)
-
+    const idTag = id ? ' explode-at-' + id : ''
     type = type || bh.subTerrainTagFromCell(target)
     bh.playBoom(type)
     // CREATE wrapper
     animator =
       animator ||
       new Animator(
-        'explosion-wrapper',
+        'explosion-wrapper' + idTag,
         'battleship-game-container',
         container,
         true,
@@ -338,7 +341,12 @@ export class Weapon {
     if (power != null) {
       mod = 0.5 + power / 2
     }
-    const scale = (cellSize * this.splashSize * mod) / 128
+    let splash = this.splashSize
+    if (this.splashMin !== null && this.splashMax !== null) {
+      splash = Random.floatWithRange(this.splashMin, this.splashMax)
+    }
+
+    const scale = (cellSize * splash * mod) / 128
 
     animator.moveTo(end)
     animator.scaleInner(scale * 0.6, scale * 1.6)
@@ -511,23 +519,3 @@ export class StandardShot extends Weapon {
 }
 
 export const standardShot = new StandardShot()
-
-export class WeaponCatelogue {
-  constructor (weapons) {
-    this.weapons = weapons
-    this.defaultWeapon = standardShot
-  }
-  addWeapons (weapons) {
-    this.weapons = weapons
-    this.weaponsByLetter = Object.fromEntries(weapons.map(w => [w.letter, w]))
-  }
-  get tags () {
-    return this.weapons.map(w => w.tag)
-  }
-
-  get cursors () {
-    return this.weapons.flatMap(w => {
-      return [...w.cursors, w.launchCursor]
-    })
-  }
-}

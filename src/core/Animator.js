@@ -9,7 +9,14 @@ export class Animator {
     ...innerDivClassNames
   ) {
     if (onlyOne) {
-      document.querySelectorAll(`.${className}`).forEach(el => el.remove())
+      const selector = className
+        .trim()
+        .split(/\s+/)
+        .map(c => `.${c}`)
+        .join('')
+
+      const nodes = document.querySelectorAll(selector)
+      nodes.forEach(el => el.remove())
     }
     const el = document.createElement('div')
     el.className = className

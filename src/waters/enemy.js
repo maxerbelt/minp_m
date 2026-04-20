@@ -212,7 +212,7 @@ class Enemy extends Waters {
       true
     )
     if (attempt < MAX_PLACEMENT_RETRIES) {
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await Delay.yield()
       this._handlePlacement(ships, attempt + 1)
       return
     }
@@ -228,7 +228,7 @@ class Enemy extends Waters {
    */
   async placeAll (ships = this.ships) {
     this.UI.enableBtns()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await Delay.yield()
     this._handlePlacement(ships, 0)
   }
 

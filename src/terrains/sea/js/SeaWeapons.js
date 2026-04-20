@@ -1,6 +1,7 @@
 import { bh } from '../../../terrains/all/js/bh.js'
 import { coordsFromCell, shuffleArray } from '../../../core/utilities.js'
-import { Weapon, WeaponCatelogue } from '../../../weapon/Weapon.js'
+import { Weapon } from '../../../weapon/Weapon.js'
+import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
 import { Delay } from '../../../core/Delay.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
@@ -86,6 +87,9 @@ export class Flack extends Weapon {
     this.ammo = ammo
     this.cursors = ['cluster']
     this.totalCursors = 1
+    this.splashSize = 1.4
+    this.splashMin = 1.2
+    this.splashMax = 1.6
     this.hints = ['Click on square to initiate flack']
     this.buttonHtml = '<span class="shortcut">F</span>lack'
     this.tip = ''
@@ -136,17 +140,41 @@ export class Flack extends Weapon {
     mindelay = 380,
     maxdelay = 730,
     power = null,
-    cellSize = 30
+    cellSize = 30,
+    id = null
   ) {
     await Delay.randomWait(mindelay, maxdelay)
-    await this.asyncEffect(cell, power, cellSize)
+    await this.asyncEffect(cell, power, cellSize, id)
   }
-  async asyncEffect (cell, power, cellSize) {
-    return await super.animateExplode(cell, null, null, cellSize, 'air', power)
+  async asyncEffect (cell, power, cellSize, id) {
+    return await super.animateExplode(
+      cell,
+      null,
+      null,
+      cellSize,
+      'air',
+      power,
+      null,
+      null,
+      null,
+      id
+    )
   }
-  async delayAsyncEffects (cells, mindelay = 380, maxdelay = 730) {
-    const promises = cells.map(([cell, , , power]) =>
-      this.delayAsyncEffect(cell, mindelay, maxdelay, power)
+  async delayAsyncEffects (
+    cells,
+    mindelay = 380,
+    maxdelay = 730,
+    cellSize = 30
+  ) {
+    const promises = cells.map(([cell, r, c, power]) =>
+      this.delayAsyncEffect(
+        cell,
+        mindelay,
+        maxdelay,
+        power,
+        cellSize,
+        `${r}-${c}`
+      )
     )
     return await Promise.allSettled(promises)
   }

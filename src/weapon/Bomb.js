@@ -96,7 +96,7 @@ export class Strike extends Weapon {
       'drag a strike on to the map to increase the number of times you can strike'
     this.isOneAndDone = true
     this.hasFlash = true
-    this.splashSize = 1.65
+    this.splashSize = 1.8
     this.nonAttached = true
     this.animateOnTarget = true
     this.explodeOnTarget = false

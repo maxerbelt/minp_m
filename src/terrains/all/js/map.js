@@ -5,6 +5,7 @@ import { bh } from './bh.js'
 import { standardShot } from '../../../weapon/Weapon.js'
 import { Mask } from '../../../grid/rectangle/mask.js'
 import { getCopyNumKey, makeTitle } from './makeTitle.js'
+import { Random } from '../../../core/Random.js'
 
 // geometry helper
 export const inRange = (r, c) => element =>
@@ -98,12 +99,19 @@ export class BhMap {
   }
 
   randomEdgeFor (edge) {
-    edge = edge || Math.floor(Math.random() * 4)
-    if (edge === 0) return [0, Math.floor(Math.random() * this.cols)]
-    if (edge === 1)
-      return [this.rows - 1, Math.floor(Math.random() * this.cols)]
-    if (edge === 2) return [Math.floor(Math.random() * this.rows), 0]
-    return [Math.floor(Math.random() * this.rows), this.cols - 1]
+    edge = edge || Random.integerWithMax(4)
+    if (edge === 0) return [0, this.randomColumn()]
+    if (edge === 1) return [this.rows - 1, this.randomColumn()]
+    if (edge === 2) return [this.randomRow(), 0]
+    return [this.randomRow(), this.cols - 1]
+  }
+
+  randomRow () {
+    return Random.integerWithMax(this.rows)
+  }
+
+  randomColumn () {
+    return Random.integerWithMax(this.cols)
   }
 
   inBounds (r, c) {
