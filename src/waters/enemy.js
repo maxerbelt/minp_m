@@ -77,6 +77,7 @@ class Enemy extends Waters {
 
     this._showWaitingForOpponent()
     await Delay.wait(ENEMY_TURN_DELAY)
+    this.opponent.testContinue = true
     await this.opponent.seekStep()
   }
 

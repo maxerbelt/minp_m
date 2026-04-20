@@ -36,6 +36,43 @@ export class Weapon {
     this.animateOffsetY = 0
     this.classname = this.name.toLowerCase().replaceAll(' ', '-')
   }
+
+  /**
+   * REFACTORING: Helper to create clones of weapons with optional ammo override
+   * Eliminates duplicate clone() methods in all subclasses
+   */
+  createClone (weaponClass, ammoOverride) {
+    ammoOverride = ammoOverride || this.ammo
+    return new weaponClass(ammoOverride)
+  }
+
+  /**
+   * REFACTORING: Helper to initialize common weapon properties from config object
+   * Reduces constructor bloat by consolidating repeated property assignments
+   */
+  setWeaponProperties (config) {
+    if (config.hints) this.hints = config.hints
+    if (config.buttonHtml) this.buttonHtml = config.buttonHtml
+    if (config.tag) this.tag = config.tag
+    if (config.tip) this.tip = config.tip
+    if (config.splashType) this.splashType = config.splashType
+    if (config.splashPower !== undefined) this.splashPower = config.splashPower
+    if (config.cursors) this.cursors = config.cursors
+    if (config.totalCursors) this.totalCursors = config.totalCursors
+    if (config.launchCursor) this.launchCursor = config.launchCursor
+    if (config.animateOnTarget !== undefined) this.animateOnTarget = config.animateOnTarget
+    if (config.explodeOnTarget !== undefined) this.explodeOnTarget = config.explodeOnTarget
+    if (config.hasFlash !== undefined) this.hasFlash = config.hasFlash
+  }
+
+  /**
+   * REFACTORING: Static helper to generate flight sound URLs
+   * Eliminates duplicate URL generation across all weapon subclasses
+   */
+  static getFlightSoundUrl (soundFileName, moduleUrl) {
+    return new URL(`../sounds/${soundFileName}`, moduleUrl)
+  }
+
   get flightSound () {
     return null
   }

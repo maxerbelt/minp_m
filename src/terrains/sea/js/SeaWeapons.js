@@ -9,76 +9,72 @@ import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 export class Megabomb extends Bomb {
   constructor (ammo, name, letter) {
     super(ammo, name || 'Megabomb', letter || 'M')
-
-    this.hints = ['Click On Square To Drop Bomb']
-    this.buttonHtml = '<span class="shortcut">M</span>ega Bomb'
-    this.tip =
-      'drag a megabomb on to the map to increase the number of times you can drop bombs'
-
-    this.tag = 'mega'
+    this.setWeaponProperties({
+      hints: ['Click On Square To Drop Bomb'],
+      buttonHtml: '<span class="shortcut">M</span>ega Bomb',
+      tip: 'drag a megabomb on to the map to increase the number of times you can drop bombs',
+      tag: 'mega'
+    })
   }
+
   get flightSound () {
-    const url = new URL('../sounds/bomb-flight.mp3', import.meta.url)
-    return url
+    return Weapon.getFlightSoundUrl('bomb-flight.mp3', import.meta.url)
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Megabomb(ammo)
+    return this.createClone(Megabomb, ammo)
   }
 }
 export class Kinetic extends Strike {
   constructor (ammo, name, letter) {
     super(ammo, name || 'Kinetic Strike', letter || 'K', true, true, 2)
     this.cursors = ['satelite', 'strike']
-
     this.totalCursors = 2
-    this.hints = [
-      'Click on square to start kinetic strike',
-      'Click on square end kinetic strike'
-    ]
-    this.buttonHtml = '<span class="shortcut">K</span>inetic Strike'
-    this.tip =
-      'drag a kinetic on to the map to increase the number of times you can strike'
+    this.setWeaponProperties({
+      hints: [
+        'Click on square to start kinetic strike',
+        'Click on square end kinetic strike'
+      ],
+      buttonHtml: '<span class="shortcut">K</span>inetic Strike',
+      tip: 'drag a kinetic on to the map to increase the number of times you can strike',
+      splashType: 'air',
+      tag: 'kinetic',
+      splashPower: 0
+    })
+  }
 
-    this.splashType = 'air'
-    this.tag = 'kinetic'
-    this.splashPower = 0
-  }
   get flightSound () {
-    const url = new URL('../sounds/kinetic-flight.mp3', import.meta.url)
-    return url
+    return Weapon.getFlightSoundUrl('kinetic-flight.mp3', import.meta.url)
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Kinetic(ammo)
+    return this.createClone(Kinetic, ammo)
   }
 }
 export class Torpedo extends Fish {
   constructor (ammo) {
     super(ammo, 'Torpedo', '+')
-
     this.cursors = ['torpedo', 'periscope']
     this.totalCursors = 2
-    this.hints = [
-      'Click on square to start torpedo',
-      'Click on square aim torpedo'
-    ]
-    this.buttonHtml = '<span class="shortcut">T</span>orpedo'
-    this.tip =
-      'drag a torpedo on to the map to increase the number of times you can strike'
-
-    this.splashType = 'sea'
-    this.tag = 'torpedo'
-    this.splashPower = 1
+    this.setWeaponProperties({
+      hints: [
+        'Click on square to start torpedo',
+        'Click on square aim torpedo'
+      ],
+      buttonHtml: '<span class="shortcut">T</span>orpedo',
+      tip: 'drag a torpedo on to the map to increase the number of times you can strike',
+      splashType: 'sea',
+      tag: 'torpedo',
+      splashPower: 1
+    })
   }
 
   get flightSound () {
-    const url = new URL('../sounds/torpedo-flight.mp3', import.meta.url)
-    return url
+    return Weapon.getFlightSoundUrl('torpedo-flight.mp3', import.meta.url)
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Torpedo(ammo)
+    return this.createClone(Torpedo, ammo)
   }
 }
 
@@ -91,16 +87,17 @@ export class Flack extends Weapon {
     this.splashSize = 1.4
     this.splashMin = 1.2
     this.splashMax = 1.6
-    this.hints = ['Click on square to initiate flack']
-    this.buttonHtml = '<span class="shortcut">F</span>lack'
-    this.tip = ''
     this.isOneAndDone = false
     this.nonAttached = true
-    this.animateOnTarget = true
-    this.explodeOnTarget = true
-    this.hasFlash = true
     this.animateOffsetY = 50
-    this.tag = 'flack'
+    this.setWeaponProperties({
+      hints: ['Click on square to initiate flack'],
+      buttonHtml: '<span class="shortcut">F</span>lack',
+      tag: 'flack',
+      animateOnTarget: true,
+      explodeOnTarget: true,
+      hasFlash: true
+    })
     this.splashCoords = [
       [0, 0, 1],
       [1, 1, 2],
@@ -125,12 +122,11 @@ export class Flack extends Weapon {
   }
 
   get flightSound () {
-    const url = new URL('../sounds/flack-flight.mp3', import.meta.url)
-    return url
+    return Weapon.getFlightSoundUrl('flack-flight.mp3', import.meta.url)
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Flack(ammo)
+    return this.createClone(Flack, ammo)
   }
   redoCoords (_map, _base, coords) {
     return [[0, coords[0][1]], coords[0]]
@@ -232,20 +228,20 @@ export class Flack extends Weapon {
 export class Sweep extends Sensor {
   constructor (ammo) {
     super(ammo, 'Radar Sweep', 'W')
-
     this.cursors = ['dish', 'sweep']
     this.totalCursors = 2
-    this.hints = [
-      'Click on square to start radar scan',
-      'Click on square end radar scan'
-    ]
-    this.buttonHtml = 's<span class="shortcut">W</span>eep'
-    this.tip = ''
-    this.tag = 'sweep'
+    this.setWeaponProperties({
+      hints: [
+        'Click on square to start radar scan',
+        'Click on square end radar scan'
+      ],
+      buttonHtml: 's<span class="shortcut">W</span>eep',
+      tag: 'sweep'
+    })
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Sweep(ammo)
+    return this.createClone(Sweep, ammo)
   }
 }
 export const seaWeaponsCatalogue = new WeaponCatelogue([

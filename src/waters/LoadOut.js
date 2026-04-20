@@ -26,14 +26,24 @@ export class LoadOut {
     this.launch = LoadOut.launchDefault.bind(this, this.viewModel)
   }
 
+  /**
+   * REFACTORING: Consolidated result object factory to eliminate duplication
+   * All result objects follow same pattern with only minor variations
+   */
+  static createResult (shots = 0, doubleTap = 0) {
+    return { hits: 0, shots, reveals: 0, sunk: '', dtap: doubleTap, info: '' }
+  }
+
   static get doubleTapResult () {
-    return { hits: 0, shots: 0, reveals: 0, sunk: '', dtap: 1, info: '' }
+    return this.createResult(0, 1)
   }
+
   static get noResult () {
-    return { hits: 0, shots: 0, reveals: 0, sunk: '', dtap: 0, info: '' }
+    return this.createResult(0, 0)
   }
+
   static get missResult () {
-    return { hits: 0, shots: 1, reveals: 0, sunk: '', dtap: 0, info: '' }
+    return this.createResult(1, 0)
   }
   static get givesNoResult () {
     return () => {
@@ -53,27 +63,53 @@ export class LoadOut {
       null
     )
   }
+  /**
+   * REFACTORING: Split weapon loading into focused steps
+   * Improves testability and clarity
+   */
   loadWeapons () {
     const unattachedWeaponSystems = LoadOut.createWeaponSystems(
       this.unattachedWeapons
     )
-    const weaponByLetter = unattachedWeaponSystems.reduce((obj, wps) => {
-      obj[wps.weapon.letter] = wps
-      return obj
+    this.weaponByLetter = this.buildWeaponDictionary(
+      unattachedWeaponSystems
+    )
+    this.weaponSystems = Object.values(this.weaponByLetter)
+  }
+
+  /**
+   * REFACTORING: Extract dictionary building logic from loadWeapons
+   * Separates concerns: weapon system creation vs organization
+   */
+  buildWeaponDictionary (unattachedSystems) {
+    const weaponByLetter = this.createLetterMap(unattachedSystems)
+    return this.addAttachedWeapons(weaponByLetter)
+  }
+
+  /**
+   * REFACTORING: Create letter-indexed map from unattached weapon systems
+   */
+  createLetterMap (weaponSystems) {
+    return weaponSystems.reduce((map, weaponSystem) => {
+      map[weaponSystem.weapon.letter] = weaponSystem
+      return map
     }, {})
-    const allWeaponByLetter = this.ships.reduce((racks, ship) => {
+  }
+
+  /**
+   * REFACTORING: Merge attached weapons into the dictionary
+   */
+  addAttachedWeapons (weaponByLetter) {
+    return this.ships.reduce((map, ship) => {
       const weapon = ship.getPrimaryWeapon()
       if (weapon) {
         const key = weapon.letter
-        const previousRack = racks[key]
-        racks[key] = previousRack
-          ? WeaponSystem.build(previousRack, ship)
+        map[key] = map[key]
+          ? WeaponSystem.build(map[key], ship)
           : new AttachedWeaponSystems(ship)
       }
-      return racks
+      return map
     }, weaponByLetter)
-    this.weaponByLetter = allWeaponByLetter
-    this.weaponSystems = Object.values(weaponByLetter)
   }
   static createWeaponSystems (weapons) {
     return weapons.map(weapon => new WeaponSystem(weapon))
@@ -143,15 +179,24 @@ export class LoadOut {
   hasNoCurrentAmmo () {
     return !this.hasCurrentAmmo()
   }
+  /**
+   * REFACTORING: Simplified using helper to check ammo for any weapon system
+   */
   hasCurrentAmmo () {
-    const currentWeaponSystem = this.getCurrentWeaponSystem()
-    if (!currentWeaponSystem.weapon.isLimited) return true
-    return currentWeaponSystem.hasAmmoRemaining()
+    return this.weaponHasAmmo(this.getCurrentWeaponSystem())
+  }
+
+  /**
+   * REFACTORING: Extract weapon ammo checking logic used in multiple methods
+   */
+  weaponHasAmmo (weaponSystem) {
+    if (!weaponSystem?.weapon.isLimited) return true
+    return weaponSystem.hasAmmoRemaining()
   }
   hasAllAmmo () {
     const currentWeaponSystem = this.getCurrentWeaponSystem()
     if (!currentWeaponSystem.weapon.isLimited) return true
-    return this.hasAmmoRemaining()
+    return this.ammoRemaining() > 0
   }
   useAmmo (weaponSystem) {
     const wps = weaponSystem || this.getCurrentWeaponSystem()
@@ -179,17 +224,31 @@ export class LoadOut {
       .flatMap(wps => wps.weapon.cursors)
       .filter(cursor => cursor !== '')
   }
+  /**
+   * REFACTORING: Improved naming and readability
+   * Renamed wps to weaponSystem, idx to index for clarity
+   */
   getCurrentCursorInfo () {
-    const wps = this.getCurrentWeaponSystem()
-    const weapon = wps.weapon
-    const cursorCount = weapon.cursors.length
-    if (
-      this.selectedCoordinates.length >= weapon.points ||
-      this.selectedCoordinates.length >= cursorCount
-    )
-      return { cursor: '', wps, idx: -1 }
-    const index = this.selectedCoordinates.length
-    return { cursor: weapon.cursors[index], wps, idx: index }
+    const weaponSystem = this.getCurrentWeaponSystem()
+    const weapon = weaponSystem.weapon
+    const currentIndex = this.selectedCoordinates.length
+    
+    if (this.isCursorSelectionComplete(currentIndex, weapon)) {
+      return { cursor: '', weaponSystem, index: -1 }
+    }
+    
+    return {
+      cursor: weapon.cursors[currentIndex],
+      weaponSystem,
+      index: currentIndex
+    }
+  }
+
+  /**
+   * REFACTORING: Extract cursor completion check
+   */
+  isCursorSelectionComplete (currentIndex, weapon) {
+    return currentIndex >= weapon.points || currentIndex >= weapon.cursors.length
   }
   getCurrentCursor () {
     return this.getCurrentCursorInfo().cursor
@@ -197,16 +256,32 @@ export class LoadOut {
   notifyCursorChange (oldCursor) {
     this.onCursorChangeCallback(oldCursor, this.getCurrentCursorInfo())
   }
+  /**
+   * REFACTORING: Split weapon removal into state mutation and notification
+   * Improves clarity and reduces side effects
+   */
   removeCurrentWeaponSystem () {
     const oldCursor = this.getCurrentCursor()
-    const idx = this.currentWeaponIndex
-    this.weaponSystems.splice(idx, 1)
-    if (idx >= this.weaponSystems.length) {
+    this.removeWeaponAtIndex(this.currentWeaponIndex)
+    this.notifyWeaponRemoved(oldCursor)
+  }
+
+  /**
+   * REFACTORING: Extract index management from removal logic
+   */
+  removeWeaponAtIndex (index) {
+    this.weaponSystems.splice(index, 1)
+    if (index >= this.weaponSystems.length) {
       this.currentWeaponIndex = 0
     }
+  }
+
+  /**
+   * REFACTORING: Extract notification logic from removal
+   */
+  notifyWeaponRemoved (oldCursor) {
     this.onOutOfAmmo()
     this.notifyCursorChange(oldCursor)
-    this.onOutOfAmmo()
     if (this.isOutOfAmmo()) {
       this.onOutOfAllAmmo()
     }
@@ -250,18 +325,32 @@ export class LoadOut {
     this.onOutOfAmmo()
     this.notifyCursorChange(oldCursor)
   }
+  /**
+   * REFACTORING: Improved naming and extracted validation logic
+   */
   getWeaponIndexForLetter (weaponLetter) {
-    let weaponIdx = this.weaponSystems.findIndex(
-      wps =>
-        wps.weapon.letter === weaponLetter &&
-        (!wps.weapon.isLimited || wps.ammo > 0)
+    return this.weaponSystems.findIndex(weaponSystem =>
+      this.isWeaponAvailable(weaponSystem, weaponLetter)
     )
-    return weaponIdx
   }
+
+  /**
+   * REFACTORING: Extract weapon availability check
+   * Clarifies the criteria: correct letter and has ammo if limited
+   */
+  isWeaponAvailable (weaponSystem, weaponLetter) {
+    const isCorrectLetter = weaponSystem.weapon.letter === weaponLetter
+    const hasAmmo = !weaponSystem.weapon.isLimited || weaponSystem.ammo > 0
+    return isCorrectLetter && hasAmmo
+  }
+  /**
+   * REFACTORING: Improved naming (wps -> weaponSystem)
+   * Consistent return type handling
+   */
   hasAmmoForWeaponLetter (weaponLetter) {
-    const wps = this.weaponByLetter[weaponLetter]
-    if (!wps) return 0
-    return wps.hasAmmo ? wps.hasAmmo() : false
+    const weaponSystem = this.weaponByLetter[weaponLetter]
+    if (!weaponSystem) return false
+    return weaponSystem.hasAmmo ? weaponSystem.hasAmmo() : false
   }
   switchToWeapon (weaponLetter) {
     const idx = this.getWeaponIndexForLetter(weaponLetter)
@@ -280,13 +369,13 @@ export class LoadOut {
     this.setCurrentWeaponIndex(this.getNextWeaponIndex())
   }
 
-  getNextWeaponIndex (i) {
-    let idx = i == null ? this.currentWeaponIndex : i
-    idx++
-    if (idx >= this.weaponSystems.length) {
-      idx = 0
-    }
-    return idx
+  /**
+   * REFACTORING: Improved naming and clarity
+   * Explicit parameter name and clearer logic
+   */
+  getNextWeaponIndex (currentIndex = null) {
+    const index = (currentIndex ?? this.currentWeaponIndex) + 1
+    return index >= this.weaponSystems.length ? 0 : index
   }
   clearSelectedCoordinates () {
     const oldCursor = this.getCurrentCursor()

@@ -1,39 +1,37 @@
 import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/WeaponCatelogue.js'
 import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
+import { Weapon } from '../../../weapon/Weapon.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
 export class Missile extends Bomb {
   constructor (ammo) {
     super(ammo, 'Missile', '+')
-    this.plural = 'Missiles'
-    this.unattachedCursor = 0 // = 1
+    this.unattachedCursor = 0
     this.postSelectCursor = 0
-    this.givesHint = true
     this.launchCursor = 'launch'
     this.totalCursors = 2
-    this.cursors = ['missile'] //['launch', 'missile']
-    this.animateOnTarget = true
-    this.explodeOnTarget = true
-    this.points = 1
-    this.hints = ['Click On Square To Aim Missile']
-    this.buttonHtml = '<span class="shortcut">M</span>issile'
-    this.tip =
-      'drag a missile on to the map to increase the number of times you can fire missiles'
-    this.hasFlash = true
-    this.splashCoords = this.aoe(null, [
-      [-1, -1],
-      [2, 2]
-    ])
-    this.tag = 'missile'
+    this.cursors = ['missile']
     this.volatile = true
+    this.setWeaponProperties({
+      hints: ['Click On Square To Aim Missile'],
+      buttonHtml: '<span class="shortcut">M</span>issile',
+      tip: 'drag a missile on to the map to increase the number of times you can fire missiles',
+      tag: 'missile',
+      animateOnTarget: true,
+      explodeOnTarget: true,
+      hasFlash: true
+    })
+    this.plural = 'Missiles'
+    this.points = 1
+    this.splashCoords = this.aoe(null, [[-1, -1], [2, 2]])
   }
+
   get flightSound () {
-    const url = new URL('../sounds/missile-flight.mp3', import.meta.url)
-    return url
+    return Weapon.getFlightSoundUrl('missile-flight.mp3', import.meta.url)
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Missile(ammo)
+    return this.createClone(Missile, ammo)
   }
 
   async launchTo (coords, r, c, map, viewModel, opposingViewModel) {
@@ -90,21 +88,22 @@ export class Missile extends Bomb {
 export class RailBolt extends Strike {
   constructor (ammo) {
     super(ammo, 'Rail Bolt', '|')
-    this.plural = 'Rail Bolts'
     this.launchCursor = 'rail'
     this.postSelectCursor = 1
     this.totalCursors = 2
     this.cursors = ['rail', 'bolt']
-    this.hints = [
-      'Click on square to start rail bolt',
-      'Click on square end rail bolt'
-    ]
-    this.buttonHtml = '<span class="shortcut">R</span>ail Bolt'
-    this.tip =
-      'drag a rail bolt on to the map to increase the number of times you can strike'
     this.isOneAndDone = true
-    this.hasFlash = false
-    this.tag = 'rail'
+    this.setWeaponProperties({
+      hints: [
+        'Click on square to start rail bolt',
+        'Click on square end rail bolt'
+      ],
+      buttonHtml: '<span class="shortcut">R</span>ail Bolt',
+      tip: 'drag a rail bolt on to the map to increase the number of times you can strike',
+      tag: 'rail',
+      hasFlash: false
+    })
+    this.plural = 'Rail Bolts'
     this.dragShape = [
       [0, 0, 1],
       [0, 1, 0],
@@ -113,13 +112,13 @@ export class RailBolt extends Strike {
       [0, 4, 1]
     ]
   }
+
   get flightSound () {
-    const url = new URL('../sounds/rail-flight.mp3', import.meta.url)
-    return url
+    return Weapon.getFlightSoundUrl('rail-flight.mp3', import.meta.url)
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new RailBolt(ammo)
+    return this.createClone(RailBolt, ammo)
   }
   async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
     return await this.launchRightTo(
@@ -182,16 +181,17 @@ export class GuassRound extends Fish {
     this.name = 'Gauss Round'
     this.letter = '^'
     this.cursors = ['rlaunch', 'round']
-    this.hints = [
-      'Click on square to start guass round',
-      'Click on square aim guass round'
-    ]
-    this.buttonHtml = '<span class="shortcut">G</span>uass Round'
-    this.tip =
-      'drag a guass round on to the map to increase the number of times you can strike'
     this.isOneAndDone = true
-    this.hasFlash = false
-    this.tag = 'round'
+    this.setWeaponProperties({
+      hints: [
+        'Click on square to start guass round',
+        'Click on square aim guass round'
+      ],
+      buttonHtml: '<span class="shortcut">G</span>uass Round',
+      tip: 'drag a guass round on to the map to increase the number of times you can strike',
+      tag: 'round',
+      hasFlash: false
+    })
     this.dragShape = [
       [1, 0, 1],
       [1, 1, 0],
@@ -200,9 +200,9 @@ export class GuassRound extends Fish {
       [2, 3, 0]
     ]
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new GuassRound(ammo)
+    return this.createClone(GuassRound, ammo)
   }
   boom (r, c) {
     let result = [[r, c, 2]]
@@ -298,16 +298,17 @@ export class Scan extends Sensor {
     this.name = 'Scan'
     this.letter = 'Z'
     this.cursors = ['dish', 'sweep']
-    this.hints = ['Click on square to startscan', 'Click on square end scan']
-    this.buttonHtml = 's<span class="shortcut">W</span>eep'
-    this.tip = ''
     this.isOneAndDone = false
-    this.hasFlash = false
-    this.tag = 'scan'
+    this.setWeaponProperties({
+      hints: ['Click on square to startscan', 'Click on square end scan'],
+      buttonHtml: 's<span class="shortcut">W</span>eep',
+      tag: 'scan',
+      hasFlash: false
+    })
   }
+
   clone (ammo) {
-    ammo = ammo || this.ammo
-    return new Scan(ammo)
+    return this.createClone(Scan, ammo)
   }
 }
 
