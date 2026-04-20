@@ -314,7 +314,7 @@ class Enemy extends Waters {
     this.selectAttachedWeapon(cell, hintR, hintC, this.opponent)
   }
 
-  handleWeaponDestruction (weapon, effect, target) {
+  destroyOne (weapon, effect, target) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
     if (this.isNoHitCandidates(hitCandidates)) {
       if (weapon.crashLoc) {
