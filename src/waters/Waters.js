@@ -15,7 +15,7 @@ import { randomPlaceShape } from '../core/utils.js'
 import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
-import { steps } from './steps.js'
+import { Steps } from './steps.js'
 import { Animator } from '../core/Animator.js'
 
 function popFirst (arr, predicate, obj) {
@@ -46,7 +46,7 @@ export class Waters {
     this.preamble1 = 'You '
     this.preamble0 = 'Your'
     this.preamble = 'You were '
-    this.steps = new steps()
+    this.steps = new Steps()
     this.resetShipCells()
     this.displayInfo = gameStatus.info2.bind(gameStatus)
   }

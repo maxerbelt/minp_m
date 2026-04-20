@@ -2,19 +2,21 @@ const MAX_LINES = 20
 import { randomElement } from '../core/utilities.js'
 export class StatusUI {
   constructor () {
-    this.mode = document.getElementById('modeStatus')
-    this.game = document.getElementById('gameStatus')
-    this.right = document.getElementById('statusRight')
-    this.counter = document.getElementById('ammoCounter')
-    this.total = document.getElementById('ammoCounterTotal')
-    this.left = document.getElementById('ammoCounterLeft')
-    this.icon1 = document.getElementById('modeIcon1')
-    this.icon2 = document.getElementById('modeIcon2')
-    this.line = document.getElementById('statusLine')
-    this.line2 = document.getElementById('statusLine2')
-    this.list = document.getElementById('statusList')
-    this.chevronBox = document.getElementById('chevron-box')
-    this.chevron = document.getElementById('chevron')
+    const getElement = id => document.getElementById(id)
+
+    this.mode = getElement('modeStatus')
+    this.game = getElement('gameStatus')
+    this.right = getElement('statusRight')
+    this.counter = getElement('ammoCounter')
+    this.total = getElement('ammoCounterTotal')
+    this.left = getElement('ammoCounterLeft')
+    this.icon1 = getElement('modeIcon1')
+    this.icon2 = getElement('modeIcon2')
+    this.line = getElement('statusLine')
+    this.line2 = getElement('statusLine2')
+    this.list = getElement('statusList')
+    this.chevronBox = getElement('chevron-box')
+    this.chevron = getElement('chevron')
     this.important = false
     this.scoreQueue = []
     this.tipsQueue = []
@@ -22,8 +24,21 @@ export class StatusUI {
     this.timer = null
     this.waiting = false
   }
+
   clear () {
     this.display('', '')
+  }
+
+  clearTimer () {
+    if (this.timer !== null) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+  }
+
+  scheduleTimer (duration, callback) {
+    this.clearTimer()
+    this.timer = setTimeout(callback, duration)
   }
   get newTip () {
     if (this.tipsQueue.length === 0) return null
@@ -35,35 +50,43 @@ export class StatusUI {
       this.current = next.item
       this.show(next.item, next.isImportant)
       this.waitFor(2500)
-    } else if (this.scoreQueue.length === 0) {
+      return
+    }
+    if (this.scoreQueue.length === 0) {
       this.addTipToQueue()
     }
   }
+
   addTipToQueue () {
     this.waiting = true
-    this.timer = setTimeout(() => {
-      this.timer = null
-      const old = this.current
-      this.current = null
-      this.waiting = false
-      const tip = this.newTip
-      if (this.scoreQueue.length > 0) {
-        this.waiting = false
-        this.nextInQueue()
-      } else if (tip && tip !== old) {
-        this.showSoon(tip, false, 3000)
-      } else {
-        this.addTipToQueue()
-      }
-    }, 1500)
+    this.scheduleTimer(1500, () => this.handleTipTimeout())
+  }
+
+  handleTipTimeout () {
+    this.timer = null
+    const old = this.current
+    this.current = null
+    this.waiting = false
+    const tip = this.newTip
+    if (this.scoreQueue.length > 0) {
+      this.nextInQueue()
+    } else if (tip && tip !== old) {
+      this.showSoon(tip, false, 3000)
+    } else {
+      this.addTipToQueue()
+    }
   }
 
   showImediately (newItem) {
     if (this.current === newItem) return
-    clearTimeout(this.timer)
-    this.timer = null
+    this.clearTimer()
     this.showSoon(newItem, true, 2500)
   }
+
+  showImmediately (newItem) {
+    return this.showImediately(newItem)
+  }
+
   showSoonish (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem) return
     if (this.scoreQueue.length > 0) {
@@ -71,15 +94,16 @@ export class StatusUI {
     }
     this.showSoon(newItem, isImportant, duration)
   }
+
   addToQueue (newItem, isImportant = false) {
     this.scoreQueue.push({ item: newItem, isImportant })
     if (this.waiting) {
-      clearTimeout(this.timer)
-      this.timer = null
+      this.clearTimer()
       this.waiting = false
       this.nextInQueue()
     }
   }
+
   showSoon (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem && !isImportant) return
     if (this.timer === null) {
@@ -89,11 +113,11 @@ export class StatusUI {
       this.addToQueue(newItem, isImportant)
     }
   }
+
   clearQueue () {
     this.scoreQueue = []
     this.tipsQueue = []
-    clearTimeout(this.timer)
-    this.timer = null
+    this.clearTimer()
     this.info('')
   }
   clearMode () {
@@ -136,17 +160,14 @@ export class StatusUI {
 
     // remove excess lines from bottom
     while (this.list.children.length > MAX_LINES) {
-      this.list.removeChild(this.list.lastChild)
+      this.list.lastChild?.remove()
     }
-    const length = this.list.children.length
-    const willShow = length > 0
-    if (willShow) {
-      this.chevron.classList.remove('hidden')
-      this.list.classList.remove('hidden')
-    } else {
-      this.chevron.classList.add('hidden')
-      this.list.classList.add('hidden')
-    }
+    this.setListVisibility(this.list.children.length > 0)
+  }
+
+  setListVisibility (isVisible) {
+    this.chevron.classList.toggle('hidden', !isVisible)
+    this.list.classList.toggle('hidden', !isVisible)
   }
   showMode (mode) {
     this.mode.textContent = mode
@@ -166,8 +187,7 @@ export class StatusUI {
     const weapon = wps.weapon
     const selected = selectedWps ? 1 : 0
     gameStatus.showMode(weapon?.name || 'Single Shot')
-    this.icon1.className = 'mode-icon tally-box'
-    this.icon2.className = 'mode-icon tally-box'
+    this.resetAmmoIcons()
     let idxUsed
     if (weapon.isLimited) {
       const ammo = wps.ammoRemaining()
@@ -185,6 +205,11 @@ export class StatusUI {
       idxUsed = this.displaySingleShotStatus()
     }
     this.addToQueue(weapon.stepHint(idxUsed), false)
+  }
+
+  resetAmmoIcons () {
+    this.icon1.className = 'mode-icon tally-box'
+    this.icon2.className = 'mode-icon tally-box'
   }
   displayLimitedAmmoStatus (wps, ammo, weapon, numCoords, maps, letter, select) {
     this.displayAmmoRemaining(wps, ammo)
@@ -206,15 +231,25 @@ export class StatusUI {
   }
 
   displayLaunchFirstStep (maps, letter, weapon) {
-    this.icon1.textContent = ''
-    this.icon1.style.background = maps.shipColors[letter + `1`]
-    this.icon1.classList.add('mode-icon', 'tally-box', weapon.classname)
+    this.updateIconAppearance(
+      this.icon1,
+      maps.shipColors[letter + '1'],
+      weapon
+    )
   }
 
   displayAimStep (maps, letter, weapon) {
-    this.icon2.textContent = ''
-    this.icon2.style.background = maps.shipColors[letter + `2`]
-    this.icon2.classList.add('mode-icon', 'tally-box', weapon.classname)
+    this.updateIconAppearance(
+      this.icon2,
+      maps.shipColors[letter + '2'],
+      weapon
+    )
+  }
+
+  updateIconAppearance (icon, background, weapon) {
+    icon.textContent = ''
+    icon.style.background = background
+    icon.classList.add('mode-icon', 'tally-box', weapon.classname)
   }
   noLaunchSteps () {
     this.icon1.classList.remove('off')
@@ -222,7 +257,7 @@ export class StatusUI {
     this.icon1.classList.remove('on')
     this.icon2.classList.remove('on')
   }
-  diplayWhichLaunchStep (numCoords) {
+  displayWhichLaunchStep (numCoords) {
     switch (numCoords) {
       case 0:
         this.icon1.classList.remove('off')
@@ -240,6 +275,10 @@ export class StatusUI {
         this.noLaunchSteps()
         break
     }
+  }
+
+  diplayWhichLaunchStep (numCoords) {
+    return this.displayWhichLaunchStep(numCoords)
   }
 
   displayAmmoRemaining (wps, ammo) {

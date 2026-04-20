@@ -10,7 +10,7 @@ export const WeaponMode = Object.freeze({
   targetAim: 'AIM',
   othersTurn: 'OTHERS'
 })
-export class steps {
+export class Steps {
   constructor (player) {
     this.player = player
     this.wletter = null
@@ -25,6 +25,38 @@ export class steps {
     this.onActivate = Function.prototype
     this.onDeactivate = Function.prototype
     this.onHint = Function.prototype
+  }
+
+  shouldChangeWeapon (wletter) {
+    return wletter !== this.sourceRack?.wletter
+  }
+
+  shouldDeactivatePreviousRack (weaponId) {
+    return (
+      this.sourceRack && this.sourceRack.weaponId !== -1 && weaponId !== this.sourceRack.weaponId
+    )
+  }
+
+  shouldActivateNewRack (weapon, weaponId) {
+    return (
+      weapon !== undefined &&
+      weaponId !== -1 &&
+      weaponId !== this.sourceRack?.weaponId
+    )
+  }
+
+  deactivateCurrentSourceRack () {
+    if (this.sourceRack && this.sourceRack.weaponId !== -1) {
+      this.onDeactivate(this.sourceRack.r, this.sourceRack.c)
+    }
+  }
+
+  resetSourceState () {
+    this.source = null
+    this.sourceShip = null
+    this.sourceHint = null
+    this.sourceShadow = null
+    this.sourceRack = null
   }
   select () {
     this.mode = WeaponMode.targetAim
@@ -46,43 +78,28 @@ export class steps {
   }
   addRack (rack, weapon, wletter, weaponId, r, c, cell) {
     weaponId = weaponId || rack.id
-    if (bh.terrain.hasAttachedWeapons) {
-      if (wletter !== this.rack?.wletter) {
-        this.onChangeWeapon(wletter)
-      }
+    if (bh.terrain.hasAttachedWeapons && this.shouldChangeWeapon(wletter)) {
+      this.onChangeWeapon(wletter)
     }
-    if (
-      this.sourceRack?.weaponId !== -1 &&
-      weaponId !== this.sourceRack?.weaponId
-    ) {
-      this.onDeactivate(this.sourceRack?.r, this.sourceRack?.c)
+    if (this.shouldDeactivatePreviousRack(weaponId)) {
+      this.onDeactivate(this.sourceRack.r, this.sourceRack.c)
     }
-    if (
-      weapon !== undefined &&
-      weaponId !== -1 &&
-      weaponId !== this.sourceRack?.weaponId
-    ) {
+    if (this.shouldActivateNewRack(weapon, weaponId)) {
       this.onActivate(rack, weapon, wletter, weaponId, r, c, cell)
     }
     this.sourceRack = { rack, weapon, wletter, weaponId, r, c, cell }
     this.select()
   }
   clearSource () {
-    if (this.sourceRack?.weaponId !== -1) {
-      this.onDeactivate(this.sourceRack?.r, this.sourceRack?.c)
-    }
-    this.source = null
-    this.sourceShip = null
-    this.sourceHint = null
-    this.sourceShadow = null
-    this.sourceRack = null
+    this.deactivateCurrentSourceRack()
+    this.resetSourceState()
   }
 
   addShip (ship) {
     this.sourceShip = ship
     if (bh.terrain.hasAttachedWeapons) {
       const letter = ship.getPrimaryWeapon().letter
-      if (letter !== this.rack?.wletter) {
+      if (letter !== this.sourceRack?.wletter) {
         this.onChangeWeapon(letter)
       }
       this.wletter = letter

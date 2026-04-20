@@ -4,33 +4,32 @@ import { dragNDrop } from '../selection/dragndrop.js'
 import { Ship } from '../ships/Ship.js'
 export class ScoreUI {
   constructor (playerPrefix) {
-    // Initialization logic
-    //
-    this.shots = document.getElementById(playerPrefix + '-shots')
-    this.turns = document.getElementById(playerPrefix + '-turns')
-    this.dtaps = document.getElementById(playerPrefix + '-dtaps')
-    this.hits = document.getElementById(playerPrefix + '-hits')
-    this.misses = document.getElementById(playerPrefix + '-misses')
-    this.sunk = document.getElementById(playerPrefix + '-sunk')
-    this.hints = document.getElementById(playerPrefix + '-hints')
-    this.reveals = document.getElementById(playerPrefix + '-reveals')
-    this.placed = document.getElementById(playerPrefix + '-placed')
-    this.weaponsPlaced = document.getElementById(playerPrefix + '-weapons')
-    this.zone = document.getElementById(playerPrefix + '-zone')
-    this.shotsLabel = document.getElementById(playerPrefix + '-shots-label')
-    this.turnsLabel = document.getElementById(playerPrefix + '-turns-label')
-    this.dtapsLabel = document.getElementById(playerPrefix + '-dtaps-label')
-    this.hitsLabel = document.getElementById(playerPrefix + '-hits-label')
-    this.missesLabel = document.getElementById(playerPrefix + '-misses-label')
-    this.sunkLabel = document.getElementById(playerPrefix + '-sunk-label')
-    this.hintsLabel = document.getElementById(playerPrefix + '-hints-label')
-    this.revealsLabel = document.getElementById(playerPrefix + '-reveals-label')
-    this.placedLabel = document.getElementById(playerPrefix + '-placed-label')
-    this.weaponsLabel = document.getElementById(playerPrefix + '-weapons-label')
-    this.placedLabel = document.getElementById(playerPrefix + '-placed-label')
-    this.weaponsLabel = document.getElementById(playerPrefix + '-weapons-label')
-    this.zoneLabel = document.getElementById(playerPrefix + '-zone-label')
-    this.tallyBox = document.getElementById(playerPrefix + '-tallyBox')
+    const getElement = suffix =>
+      document.getElementById(`${playerPrefix}-${suffix}`)
+
+    this.shots = getElement('shots')
+    this.turns = getElement('turns')
+    this.dtaps = getElement('dtaps')
+    this.hits = getElement('hits')
+    this.misses = getElement('misses')
+    this.sunk = getElement('sunk')
+    this.hints = getElement('hints')
+    this.reveals = getElement('reveals')
+    this.placed = getElement('placed')
+    this.weaponsPlaced = getElement('weapons')
+    this.zone = getElement('zone')
+    this.shotsLabel = getElement('shots-label')
+    this.turnsLabel = getElement('turns-label')
+    this.dtapsLabel = getElement('dtaps-label')
+    this.hitsLabel = getElement('hits-label')
+    this.missesLabel = getElement('misses-label')
+    this.sunkLabel = getElement('sunk-label')
+    this.hintsLabel = getElement('hints-label')
+    this.revealsLabel = getElement('reveals-label')
+    this.placedLabel = getElement('placed-label')
+    this.weaponsLabel = getElement('weapons-label')
+    this.zoneLabel = getElement('zone-label')
+    this.tallyBox = getElement('tallyBox')
     this.zoneSync = []
   }
 
@@ -67,6 +66,7 @@ export class ScoreUI {
   createZoneTitle (labelTxt, bag) {
     return this.createZoneEntry(labelTxt, bag, 'b', 'line-height:1.2;')
   }
+
   createZoneItem (labelTxt, bag) {
     return this.createZoneEntry(
       labelTxt,
@@ -75,17 +75,42 @@ export class ScoreUI {
       'font-size:75%;line-height:1.2'
     )
   }
-  createZoneEntry (labelTxt, bag, stress, style) {
+
+  createZoneEntry (labelTxt, bagOrText, stress, style) {
     const entry = document.createElement('div')
     entry.style = style
     const label = document.createElement(stress)
     label.textContent = labelTxt + ' : '
     entry.appendChild(label)
     const count = document.createElement('span')
-    count.textContent = bag.size.toString()
+    count.textContent =
+      bagOrText && typeof bagOrText.size === 'number'
+        ? bagOrText.size.toString()
+        : String(bagOrText)
     entry.appendChild(count)
     this.zone.appendChild(entry)
     return count
+  }
+
+  createZoneTextEntry (labelTxt, text, stress, style) {
+    return this.createZoneEntry(labelTxt, text, stress, style)
+  }
+
+  createAddZoneEntry (labelTxt, displacedArea, ships, stress, style, extra = 0) {
+    const shipDisplacement =
+      ships.reduce(
+        (accumulator, ship) => accumulator + ship.shape().displacement,
+        0
+      ) + extra
+    const tightness = this.displacementDescription(
+      shipDisplacement / displacedArea
+    )
+    return this.createZoneTextEntry(
+      labelTxt,
+      tightness,
+      stress,
+      style
+    )
   }
 
   displacementDescription (ratio) {
@@ -112,28 +137,6 @@ export class ScoreUI {
       if (ratio < limit) return desc
     }
     return 'very squeezy'
-  }
-
-  createAddZoneEntry (labelTxt, displacedArea, ships, stress, style, extra = 0) {
-    const entry = document.createElement('div')
-    entry.style = style
-    const label = document.createElement(stress)
-    label.textContent = labelTxt + ' : '
-    entry.appendChild(label)
-    const tightness = document.createElement('span')
-
-    const shipDisplacement =
-      ships.reduce(
-        (accumulator, ship) => accumulator + ship.shape().displacement,
-        0
-      ) + extra
-    tightness.textContent = this.displacementDescription(
-      shipDisplacement / displacedArea
-    )
-    //  + ` ${shipDisplacement} / ${displacedArea}`
-    entry.appendChild(tightness)
-    this.zone.appendChild(entry)
-    return tightness
   }
 
   displayZoneInfo () {
@@ -294,36 +297,36 @@ export class ScoreUI {
     const ammoUnattached = weaponSystem.ammoUnattached()
 
     for (let i = 0; i < ammoCapacity; i++) {
-      this.buildWeaponBox(
+      this.buildWeaponBox({
         ammoUnattached,
         viewModel,
         weapon,
-        i,
+        index: i,
         ammoUsed,
         maps,
         letter,
         weaponSystem,
         row
-      )
+      })
     }
   }
 
-  buildWeaponBox (
+  buildWeaponBox ({
     ammoUnattached,
     viewModel,
     weapon,
-    i,
+    index,
     ammoUsed,
     maps,
     letter,
     weaponSystem,
     row
-  ) {
+  }) {
     const hit = weaponSystem.hit
     const damaged = weaponSystem.damaged
     const wid = weaponSystem.id
     const box = document.createElement('div')
-    if (bh.terrain.hasUnattachedWeapons && ammoUnattached > i) {
+    if (bh.terrain.hasUnattachedWeapons && ammoUnattached > index) {
       dragNDrop.makeDraggable(viewModel, box, null, weapon, true)
     }
     box.dataset.wid = wid
@@ -335,7 +338,7 @@ export class ScoreUI {
       box.classList?.add('damaged')
     }
     box.style.fontSize = '105%'
-    if (i < ammoUsed) {
+    if (index < ammoUsed) {
       box.style.background = maps.shipColors[letter]
       box.style.opacity = 0.45
       box.textContent = ''
@@ -377,7 +380,7 @@ export class ScoreUI {
         ...new Set(
           ships.filter(s => s.isInTallyGroup(tallyGroup)).map(s => s.letter)
         )
-      ].toSorted()
+      ].sort((a, b) => a.localeCompare(b))
     }
     this.resetTallyBox()
 
@@ -411,28 +414,21 @@ export class ScoreUI {
       this.buildTallyRow(ships, letter, landColumn, boxer, 'G')
       incLand()
     }
-    const airTrack =
-      count.s < count.g
-        ? { col: seaColumn, inc: incSea }
-        : { col: landColumn, inc: incLand }
+    const airTrack = this.getTallyTrack(count, seaColumn, landColumn)
 
     for (const letter of air) {
       this.buildTallyRow(ships, letter, airTrack.col, boxer, 'A')
       airTrack.inc()
     }
-    const specialTrack =
-      count.s < count.g
-        ? { col: seaColumn, inc: incSea }
-        : { col: landColumn, inc: incLand }
+
+    const specialTrack = this.getTallyTrack(count, seaColumn, landColumn)
     for (const letter of special) {
       this.buildTallyRow(ships, letter, specialTrack.col, boxer, 'X')
       specialTrack.inc()
     }
+
     if (withWeapons && viewModel) {
-      const weaponTrack =
-        count.s < count.g
-          ? { col: seaColumn, inc: incSea }
-          : { col: landColumn, inc: incLand }
+      const weaponTrack = this.getTallyTrack(count, seaColumn, landColumn)
       for (const wps of weaponSystems) {
         this.buildBombRow(weaponTrack.col, viewModel, wps)
       }
@@ -441,5 +437,12 @@ export class ScoreUI {
     surfaceContainer.appendChild(landColumn)
 
     this.tallyBox.appendChild(surfaceContainer)
+  }
+
+  getTallyTrack (count, seaColumn, landColumn) {
+    if (count.s < count.g) {
+      return { col: seaColumn, inc: () => count.s++ }
+    }
+    return { col: landColumn, inc: () => count.g++ }
   }
 }
