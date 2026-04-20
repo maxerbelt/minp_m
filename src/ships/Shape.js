@@ -5,31 +5,33 @@ import { Asymmetric } from '../variants/asymmetric.js'
 import { Diagonal } from '../variants/Diagonal.js'
 import { Orbit4F } from '../variants/Orbit4F.js'
 import { Blinker } from '../variants/Blinker.js'
-import { makeKey } from '../core/utilities.js'
+import { makeKey, parsePair } from '../core/utilities.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 export const token = 'geoffs-hidden-battle'
 
 export class Shape {
+  static variantConstructors = {
+    D: Asymmetric,
+    A: Orbit4F,
+    S: Invariant,
+    H: Orbit4R,
+    L: Blinker,
+    G: Diagonal
+  }
+
   constructor (letter, symmetry, cells, tallyGroup, tip, racks) {
     this.letter = letter
     this.symmetry = symmetry
-    const board = Mask.fromCoords(cells)
-    this._board = board
+    this._board = Mask.fromCoords(cells)
     this._originalCells = cells
-    // Instead of: this.racks = new Set(racks.map(([r, c]) => makeKey(r, c)))
-    this._racksWasNull = racks === null || racks === undefined // Track if racks was null
-    // Extract only [r, c] coordinates from racks (can be array or Set), ignoring any z coordinate
-    let racksCoords = []
-    if (racks && Array.isArray(racks)) {
-      racksCoords = racks.map(([r, c]) => [r, c])
-    }
-    // If racks is already a Set, rackPositions will be empty (since racks getter returns the Set directly)
-    this.rackPositions = Mask.fromCoordsSquare(racksCoords)
+    this._racksWasNull = racks == null
     this._racksSet = racks instanceof Set ? racks : null
-    this.canAttachWeapons =
-      racks && (Array.isArray(racks) ? racks.length > 0 : racks.size > 0)
+    this.rackPositions = Mask.fromCoordsSquare(
+      this._normalizeRackCoordinates(racks)
+    )
+    this.canAttachWeapons = this._hasRackCoordinates(racks)
 
     this.isAttachedToRack = false
     this.terrain = bh.terrain
@@ -39,14 +41,47 @@ export class Shape {
     this.tip = tip
     this.tallyGroup = tallyGroup
     const area = cells.length
-    //  const a2 = board.occupancy
-    this.footBoard = board.dilateExpand()
+    this.footBoard = this._board.dilateExpand()
     this.footPrint = this.footBoard.occupancy
     this.displacement = (area + this.footPrint) / 2
     this.vulnerable = []
     this.hardened = []
     this.immune = []
     this.attachedWeapons = {}
+  }
+
+  _normalizeRackCoordinates (racks) {
+    if (!racks) return []
+
+    const coordinates = racks instanceof Set ? [...racks] : racks
+    return coordinates
+      .map(this._extractRackCoordinates)
+      .filter(([r, c]) => Number.isFinite(r) && Number.isFinite(c))
+  }
+
+  _extractRackCoordinates (value) {
+    if (typeof value === 'string') {
+      return parsePair(value)
+    }
+    if (Array.isArray(value) && value.length >= 2) {
+      return [value[0], value[1]]
+    }
+    return [NaN, NaN]
+  }
+
+  _hasRackCoordinates (racks) {
+    if (!racks) return false
+    if (racks instanceof Set) return racks.size > 0
+    if (Array.isArray(racks)) return racks.length > 0
+    return false
+  }
+
+  _buildRacksFromPositions () {
+    const rackSet = new Set()
+    for (const [r, c] of this.rackPositions.toCoords) {
+      rackSet.add(makeKey(r, c))
+    }
+    return rackSet
   }
 
   get height () {
@@ -79,16 +114,9 @@ export class Shape {
     this.board = Mask.fromCoordsSquare(cells)
   }
   get racks () {
-    // For backward compatibility: return null if racks was originally null
     if (this._racksWasNull) return null
-    // If racks was passed as a Set (from another Shape), return it directly
     if (this._racksSet) return this._racksSet
-    // Otherwise build Set from rackPositions
-    const rackSet = new Set()
-    for (const [r, c] of this.rackPositions.toCoords) {
-      rackSet.add(makeKey(r, c))
-    }
-    return rackSet
+    return this._buildRacksFromPositions()
   }
   canBeOn (subterrain) {
     return this.subterrain === subterrain
@@ -100,50 +128,51 @@ export class Shape {
     return 1
   }
   attachWeapon (ammoBuilder) {
+    this._assertCanAttachWeapons()
+    this._assertWeaponNotAttached()
+
+    this.attachedWeapons = this._buildAttachedWeapons(ammoBuilder)
+    this.isAttachedToRack = true
+    return this.attachedWeapons
+  }
+
+  _assertCanAttachWeapons () {
     if (!this.canAttachWeapons) {
       throw new Error('Cannot attach weapon to shape ' + this.letter)
     }
+  }
+
+  _assertWeaponNotAttached () {
     if (this.isAttachedToRack) {
       throw new Error('Weapon already attached to shape ' + this.letter)
     }
-    this.isAttachedToRack = true
-    const newObject = {}
-    // Instead of: for (const key of [...this.racks])
-    for (const [r, c] of this.rackPositions.toCoords) {
-      const key = makeKey(r, c)
-      newObject[key] = ammoBuilder()
-    }
-    this.attachedWeapons = newObject
-    return this.attachedWeapons
   }
-  get weaponSystem () {
-    const mapValues = w => new WeaponSystem(w)
 
-    return Object.keys(this.attachedWeapons || {}).reduce((acc, key) => {
-      acc[key] = mapValues(this.attachedWeapons[key])
-      return acc
-    }, {})
+  _buildAttachedWeapons (ammoBuilder) {
+    const attached = {}
+    for (const [r, c] of this.rackPositions.toCoords) {
+      attached[makeKey(r, c)] = ammoBuilder()
+    }
+    return attached
+  }
+
+  get weaponSystem () {
+    return Object.fromEntries(
+      Object.entries(this.attachedWeapons || {}).map(([key, weapon]) => [
+        key,
+        new WeaponSystem(weapon)
+      ])
+    )
   }
   boardFor (variantIndex) {
     return this.variants().board(variantIndex)
   }
   variants () {
-    switch (this.symmetry) {
-      case 'D':
-        return new Asymmetric(this.boardSquare, this.validator, this.zoneDetail)
-      case 'A':
-        return new Orbit4F(this.boardSquare, this.validator, this.zoneDetail)
-      case 'S':
-        return new Invariant(this.boardSquare, this.validator, this.zoneDetail)
-      case 'H':
-        return new Orbit4R(this.boardSquare, this.validator, this.zoneDetail)
-      case 'L':
-        return new Blinker(this.boardSquare, this.validator, this.zoneDetail)
-      case 'G':
-        return new Diagonal(this.boardSquare, this.validator, this.zoneDetail)
-      default:
-        throw new Error('Unknown symmetry type for ship letter: ' + this.letter)
+    const VariantClass = Shape.variantConstructors[this.symmetry]
+    if (!VariantClass) {
+      throw new Error('Unknown symmetry type for ship letter: ' + this.letter)
     }
+    return new VariantClass(this.boardSquare, this.validator, this.zoneDetail)
   }
   numVariants () {
     return this.variants().numVariants()

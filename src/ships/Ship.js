@@ -119,12 +119,40 @@ export class Ship {
   }
 
   /**
+   * Internal: Legacy weapons exist when the legacy object is populated.
+   */
+  _hasLegacyWeaponEntries () {
+    return this.weapons && Object.keys(this.weapons).length > 0
+  }
+
+  _weaponEntriesFromIdMap () {
+    return [...this.weaponsById.values()].map(weapon => [
+      `${weapon.row},${weapon.col}`,
+      weapon
+    ])
+  }
+
+  _weaponEntries () {
+    return this._hasLegacyWeaponEntries()
+      ? Object.entries(this.weapons)
+      : this._weaponEntriesFromIdMap()
+  }
+
+  _weaponArray () {
+    return this._hasLegacyWeaponEntries()
+      ? Object.values(this.weapons)
+      : Array.from(this.weaponsById.values())
+  }
+
+  _filterWeaponEntries (predicate) {
+    return this._weaponEntries().filter(([, weapon]) => predicate(weapon))
+  }
+
+  /**
    * Check if any weapons are equipped
    */
   hasWeapons () {
-    if (this.weaponsById.size > 0) return true
-    if (!this.weapons) return false
-    return Object.keys(this.weapons).length > 0
+    return this._weaponArray().length > 0
   }
 
   static createShipsFromShapes (shapes) {
@@ -146,7 +174,7 @@ export class Ship {
    * Get serialized weapon IDs and positions
    */
   serializeWeaponPositions () {
-    return this.getAllWeaponEntries()
+    return this._weaponEntries()
       .map(([coordKey, weapon]) => makeKeyAndId(coordKey, weapon.id))
       .join('|')
   }
@@ -163,33 +191,24 @@ export class Ship {
    * Internal: Find weapon by coordinate key or position
    */
   _findWeaponAt (coordKey) {
-    // Check legacy weapons object first (for backward compatibility with tests)
-    if (this.weapons?.[coordKey]) {
+    if (this._hasLegacyWeaponEntries()) {
       return this.weapons[coordKey]
     }
-    // Search weaponsById Map by coordinates
-    for (const weapon of this.weaponsById.values()) {
-      const weaponKey = `${weapon.row},${weapon.col}`
-      if (weaponKey === coordKey) {
-        return weapon
-      }
-    }
-    return undefined
+    return this._weaponEntries().find(([key]) => key === coordKey)?.[1]
   }
 
   /**
    * Get first weapon system from all weapons
    */
   getPrimaryWeaponSystem () {
-    return firstElement(this.getAllWeapons())
+    return firstElement(this._weaponArray())
   }
 
   /**
    * Get primary weapon from first weapon system
    */
   getPrimaryWeapon () {
-    const system = this.getPrimaryWeaponSystem()
-    return system?.weapon
+    return this.getPrimaryWeaponSystem()?.weapon
   }
   /**
    * Find closest loaded weapon rack to given coordinates
@@ -218,17 +237,10 @@ export class Ship {
    * Find weapon system by its unique ID
    */
   getWeaponBySystemId (id) {
-    // Check weaponsById Map first (preferred)
     if (this.weaponsById.has(id)) {
       return this.weaponsById.get(id)
     }
-    // Fall back to weapons object (for test compatibility)
-    for (const weapon of Object.values(this.weapons || {})) {
-      if (weapon.id === id) {
-        return weapon
-      }
-    }
-    return undefined
+    return this._weaponArray().find(weapon => weapon.id === id)
   }
 
   /**
@@ -249,7 +261,7 @@ export class Ship {
    * Format weapon coordinates and IDs as string (e.g., "1,2:10|2,3:11")
    */
   makeKeyIds () {
-    return this.getAllWeaponEntries()
+    return this._weaponEntries()
       .map(([key, weapon]) => `${key}:${weapon.id}`)
       .join('|')
   }
@@ -258,9 +270,7 @@ export class Ship {
    * Get all [coordKey, weapon] entries for loaded weapons
    */
   getLoadedWeaponEntries () {
-    return this.getAllWeaponEntries().filter(([, weapon]) => {
-      return this._isWeaponLoaded(weapon)
-    })
+    return this._filterWeaponEntries(weapon => this._isWeaponLoaded(weapon))
   }
 
   /**
@@ -277,37 +287,16 @@ export class Ship {
    * Get all [coordKey, weapon] entries as key-value pairs
    */
   getAllWeaponEntries () {
-    // For test compatibility, use weapons object if available
-    if (this.weapons && Object.keys(this.weapons).length > 0) {
-      return Object.entries(this.weapons)
-    }
-    // Build from weaponsById Map
-    return [...this.weaponsById.values()].map(weapon => [
-      `${weapon.row},${weapon.col}`,
-      weapon
-    ])
+    return this._weaponEntries()
   }
   getAllWeaponLocations () {
-    // For test compatibility, use weapons object if available
-    if (this.weapons && Object.keys(this.weapons).length > 0) {
-      return Object.keys(this.weapons).map(key => {
-        return parsePair(key)
-      })
-    }
-    // Build from weaponsById Map
-    return [...this.weaponsById.values()].map(weapon => [
-      weapon.row,
-      weapon.col
-    ])
+    return this._weaponEntries().map(([key]) => parsePair(key))
   }
   /**
    * Get all equipped weapons as array
    */
   getAllWeapons () {
-    if (this.weapons && Object.keys(this.weapons).length > 0) {
-      return Object.values(this.weapons)
-    }
-    return Array.from(this.weaponsById.values())
+    return this._weaponArray()
   }
 
   /**
@@ -519,7 +508,6 @@ export class Ship {
    */
   removeFromPlacement () {
     this.resetBoard()
-    this.resetHits()
     this.sunk = false
   }
 
@@ -536,7 +524,6 @@ export class Ship {
    */
   placeAtBoard (board) {
     this.board = board
-    this.resetHits()
     this.sunk = false
   }
 

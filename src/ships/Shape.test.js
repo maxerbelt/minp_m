@@ -28,6 +28,10 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
 
 jest.unstable_mockModule('../core/utilities.js', () => ({
   makeKey: jest.fn((r, c) => `${r},${c}`),
+  parsePair: jest.fn(key => {
+    const pair = key.split(',')
+    return [Number.parseInt(pair[0]), Number.parseInt(pair[1])]
+  }),
   lazy: jest.fn((obj, prop, fn) => {
     Object.defineProperty(obj, prop, {
       get: function () {
