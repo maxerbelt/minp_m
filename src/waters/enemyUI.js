@@ -41,7 +41,7 @@ class EnemyUI extends WatersUI {
       const clone = node.cloneNode(true)
 
       // add class to root clone
-      clone.classList.add(cloneClass)
+      clone.classList.add(cloneClass, weapon.btnClass)
       clone.dataset.letter = letter
       clone.addEventListener('click', () => callback(letter))
       clone.innerHTML = weapon.buttonHtml

@@ -14,23 +14,27 @@ export class PlacementUI extends WatersUI {
     this.placingShips = true
     this.readyingShips = false
 
-    this.seekBtn = document.getElementById('seekBtn')
-    this.stopBtn = document.getElementById('stopBtn')
-    this.undoBtn = document.getElementById('undoBtn')
-    this.autoBtn = document.getElementById('autoBtn')
-    this.trays = document.getElementById('tray-container')
-    this.shipTray = document.getElementById('shipTray')
-    this.planeTray = document.getElementById('planeTray')
-    this.specialTray = document.getElementById('specialTray')
-    this.brushTray = document.getElementById('brushTray')
-    this.weaponTray = document.getElementById('weaponTray')
-    this.buildingTray = document.getElementById('buildingTray')
+    // REFACTORING: Use ElementCache to eliminate repetitive
+    // document.getElementById() calls
+    this.elements = new ElementCache(terroritory)
+    this.trayManager = new TrayManager(this.elements)
+
+    // Delegate button access through elements
+    this.newPlacementBtn = this.elements.buttons.newPlacement
+    this.rotateBtn = this.elements.buttons.rotate
+    this.rotateLeftBtn = this.elements.buttons.rotateLeft
+    this.flipBtn = this.elements.buttons.flip
+    this.transformBtn = this.elements.buttons.transform
+    this.testBtn = this.elements.buttons.test
+    this.seekBtn = this.elements.buttons.seek
+    this.stopBtn = this.elements.buttons.stop
     this.undoBtn = this.elements.buttons.undo
     this.autoBtn = this.elements.buttons.auto
 
     this.trays = this.elements.trays.container
     this.shipTray = this.elements.trays.ship
     this.planeTray = this.elements.trays.plane
+    this.specialTray = this.elements.trays.special
     this.brushTray = this.elements.trays.brush
     this.weaponTray = this.elements.trays.weapon
     this.buildingTray = this.elements.trays.building
@@ -49,20 +53,22 @@ export class PlacementUI extends WatersUI {
     gameStatus.line.classList.add('medium')
     gameStatus.clearQueue()
   }
+
   standardPanels () {
     const panels = document.getElementsByClassName('panel')
     for (const panel of panels) {
       panel.classList.remove('alt')
     }
   }
+
   hideTransformBtns () {
-    this.rotateBtn.classList.add('hidden')
-    this.rotateLeftBtn.classList.add('hidden')
-    this.transformBtn.classList.add('hidden')
-    this.flipBtn.classList.add('hidden')
     const buttons = [
       this.rotateBtn,
       this.rotateLeftBtn,
+      this.transformBtn,
+      this.flipBtn,
+      this.undoBtn,
+      this.autoBtn
     ]
     buttons.forEach(btn => btn.classList.add('hidden'))
   }
@@ -70,6 +76,7 @@ export class PlacementUI extends WatersUI {
   showTransformBtns () {
     this.rotateBtn.classList.remove('hidden')
     this.rotateLeftBtn.classList.remove('hidden')
+    this.flipBtn.classList.remove('hidden')
     this.undoBtn.classList.remove('hidden')
     this.autoBtn.classList.remove('hidden')
 
@@ -114,6 +121,7 @@ export class PlacementUI extends WatersUI {
       dragNDrop.dragBrushEnter(cell, this)
     }
   }
+
   removeDragShip (dragShip) {
     const container = dragShip.parentElement
     dragShip.remove()
@@ -122,7 +130,6 @@ export class PlacementUI extends WatersUI {
       container.children.length === 0
     ) {
       container.remove()
-
     }
     this.trayManager.checkTrays()
   }
@@ -136,175 +143,72 @@ export class PlacementUI extends WatersUI {
   removeClicked () {
     const elements = document.getElementsByClassName('clicked')
     ;[...elements].forEach(element => {
-      // Perform actions on each element
       element.classList.remove('clicked')
     })
 
     this.rotateBtn.disabled = true
     this.flipBtn.disabled = true
   }
+
   lastItem (tray) {
     const items = tray.children
     const l = items.length
-    if (l === 0) return null
-    else return items[l - 1]
+    return l === 0 ? null : items[l - 1]
   }
 
   getFirstTrayItem () {
-    return (
-      this.planeTray.children[0] ||
-      this.specialTray.children[0] ||
-      this.buildingTray.children[0] ||
-      this.weaponTray.children[0]
+    return DirectionMovement.getFirstItem(
+      DirectionMovement.DIRECTIONS.RIGHT,
+      this.trayManager.elementCache.getAllTrays()
     )
   }
 
   getFirstTrayItemBottomUp () {
-    return (
-      this.weaponTray.children[0] ||
-      this.buildingTray.children[0] ||
-      this.specialTray.children[0] ||
-      this.planeTray.children[0] ||
-      this.shipTray.children[0]
+    return DirectionMovement.getFirstItem(
+      DirectionMovement.DIRECTIONS.UP,
+      this.trayManager.elementCache.getAllTrays()
     )
   }
+
   clickAssignByCursor (arrowkey) {
-    let shipnode = null
-    switch (arrowkey) {
-      case 'ArrowDown':
-      case 'ArrowRight':
-        shipnode = this.getFirstTrayItem()
-        break
-      case 'ArrowUp':
-        shipnode = this.getFirstTrayItemBottomUp()
-        break
-      case 'ArrowLeft':
-        shipnode =
-          this.lastItem(this.weaponTray) ||
-          this.lastItem(this.buildingTray) ||
-          this.lastItem(this.specialTray) ||
-          this.lastItem(this.planeTray) ||
-          this.lastItem(this.shipTray)
-        break
-    }
-    return shipnode
-  }
-  moveToNextTrayItemToTheRight (trays, itemIndex, trayIndex) {
-    let indexT = trayIndex
-    let indexI = itemIndex
-    const traysSize = trays.length
-    do {
-      const tray = trays[indexT]
-      const l = tray.children.length
-      indexI++
-      if (indexI >= l) {
-        indexT++
-        indexI = -1
-        if (indexT === trayIndex) return trays[trayIndex].children[itemIndex]
-        if (indexT >= traysSize) {
-          indexT = 0
-        }
-      } else {
-        return tray.children[indexI]
-      }
-      // eslint-disable-next-line no-constant-condition
-    } while (true)
-  moveToNextTrayItemDown (trays, itemIndex, trayIndex) {
-    let indexT = trayIndex
-    const traysSize = trays.length
-    do {
-      indexT++
-      if (indexT === trayIndex && 0 === itemIndex)
-        return trays[trayIndex].children[itemIndex]
-      if (indexT >= traysSize) {
-        indexT = 0
-      }
-
-      const tray = trays[indexT]
-      const l = tray.children.length
-      if (l > 0) return tray.children[0]
-      // eslint-disable-next-line no-constant-condition
-    } while (true)
-  }
-  moveToNextTrayItemUp (trays, itemIndex, trayIndex) {
-    let indexT = trayIndex
-    const traysSize = trays.length
-    do {
-      indexT--
-      if (indexT === trayIndex && 0 === itemIndex)
-        return trays[trayIndex].children[itemIndex]
-      if (indexT < 0) {
-        indexT = traysSize - 1
-      }
-
-      const tray = trays[indexT]
-      const l = tray.children.length
-      if (l > 0) return tray.children[0]
-      // eslint-disable-next-line no-constant-condition
-    } while (true)
-  }
-  moveToNextTrayItemToTheLeft (trays, itemIndex, trayIndex) {
-    let indexT = trayIndex
-    let indexI = itemIndex
-    const traysSize = trays.length
-    do {
-      if (indexI > 0) {
-        return trays[indexT].children[indexI - 1]
-      } else {
-        indexT--
-        if (indexT < 0) {
-          indexT = traysSize - 1
-        }
-        const tray = trays[indexT]
-        const l = tray.children.length
-        if (indexT === trayIndex) return trays[trayIndex].children[itemIndex]
-      }
-      // eslint-disable-next-line no-constant-condition
-    } while (true)
     const direction = DirectionMovement.fromArrowKey(arrowkey)
+    return DirectionMovement.getFirstItem(
+      direction,
+      this.trayManager.elementCache.getAllTrays()
+    )
   }
+
+  /**
+   * REFACTORING: Removed four nearly-identical moveToNextTrayItem* methods
+   * Replaced with unified DirectionMovement.moveInDirection()
+   */
   moveNextTrayItem (arrowKey, trays, itemIndex, trayIndex) {
-    switch (arrowKey) {
-      case 'ArrowRight':
-        return this.moveToNextTrayItemToTheRight(trays, itemIndex, trayIndex)
-      case 'ArrowDown':
-        return this.moveToNextTrayItemDown(trays, itemIndex, trayIndex)
-      case 'ArrowUp':
-        return this.moveToNextTrayItemUp(trays, itemIndex, trayIndex)
-      case 'ArrowLeft':
-      default:
-    }
+    const direction = DirectionMovement.fromArrowKey(arrowKey)
+    return DirectionMovement.moveInDirection(
+      direction,
+      trays,
+      itemIndex,
+      trayIndex
+    )
   }
 
   getTrays () {
-      this.shipTray,
-      this.planeTray,
-      this.specialTray,
-      this.buildingTray,
-      this.weaponTray
-    ]
     return this.trayManager.elementCache.getAllTrays()
   }
 
+  // REFACTORING: These now delegate to TrayManager
   resetTrays () {
-    let trays = this.getTrays()
-    for (const tray of trays) {
-      tray.innerHTML = ''
-    }
     this.trayManager.resetTrays()
   }
+
   clearTrays () {
-    let trays = this.getTrays()
-    for (const tray of trays) {
-      tray.innerHTML = ''
+    this.trayManager.clearTrays()
   }
+
   setTrays () {
-    let trays = this.getTrays()
-    for (const tray of trays) {
-      tray.innerHTML = ''
-      tray.classList.remove('empty')
-    }
+    this.trayManager.setTrays()
   }
+
   showShipTrays () {
     this.trayManager.showShipTrays()
   }

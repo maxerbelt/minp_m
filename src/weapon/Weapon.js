@@ -37,6 +37,9 @@ export class Weapon {
   get flightSound () {
     return null
   }
+  get btnClass () {
+    return 'weapon-btn-' + this.tag
+  }
   playFlightSound () {
     if (this.flightSound) {
       bh.audio.playUnLoaded(this.name + '-flight', this.flightSound)
@@ -498,6 +501,7 @@ export class StandardShot extends Weapon {
     const url = new URL('../terrains/all/sounds/shot.mp3', import.meta.url)
     return url
   }
+
   aoe (_map, coords) {
     return [[coords[0][0], coords[0][1], 4]]
   }

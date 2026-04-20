@@ -33,8 +33,11 @@ export class Friend extends Waters {
   }
 
   onEndTurn () {
-    this.opponent?.score.finishTurn()
-    if (this?.opponent && !this.opponent.boardDestroyed) {
+    if (this?.opponent==null) {
+      return
+    }
+    this.opponent.score.finishTurn()
+    if (!this.opponent.boardDestroyed) {
       this.opponent._handleBeginTurn()
     }
   }

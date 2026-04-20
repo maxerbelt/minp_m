@@ -1,6 +1,7 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { ScoreUI } from './ScoreUI.js'
 import {
+  addKeyToCell,
   coordsFromCell,
   makeKey,
   parsePair,
@@ -9,15 +10,240 @@ import {
 import { LoadOut } from './LoadOut.js'
 import { gameStatus } from './StatusUI.js'
 import { Delay } from '../core/Delay.js'
-import { CellClassManager } from './helpers/CellClassManager.js'
-import { BoardConfigurator } from './helpers/BoardConfigurator.js'
-import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
-import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 
 export const gameHost = {
   containerWidth: 574
 }
 export const startCharCode = 65
+
+/**
+ * REFACTORING: Unified cell class manipulation to eliminate
+ * duplicate class removal logic across clearCell, clearFriendCell, clearPlaceCell
+ */
+class CellClassManager {
+  static CELL_CLASSES = {
+    display: {
+      hit: 'hit',
+      friendlyHit: 'frd-hit',
+      friendlySunk: 'frd-sunk',
+      enemySunk: 'enm-sunk',
+      miss: 'miss',
+      semi: 'semi',
+      wake: 'wake',
+      semiMiss: 'semi-miss',
+      placed: 'placed'
+    },
+    weapon: {
+      weapon: 'weapon',
+      active: 'active',
+      contrast: 'contrast'
+    },
+    damage: {
+      burnt: 'burnt',
+      damaged: 'damaged',
+      skull: 'skull'
+    },
+    placement: {
+      empty: 'empty',
+      turn2: 'turn2',
+      turn3: 'turn3',
+      turn4: 'turn4',
+      launch: 'launch'
+    },
+    edge: {
+      land: 'land',
+      sea: 'sea',
+      light: 'light',
+      dark: 'dark',
+      rightEdge: 'rightEdge',
+      leftEdge: 'leftEdge',
+      topEdge: 'topEdge',
+      bottomEdge: 'bottomEdge'
+    },
+    hint: {
+      hint: 'hint'
+    }
+  }
+
+  static clearCellClasses (cell, classGroups) {
+    const classesToRemove = classGroups.flatMap(group => Object.values(group))
+    cell.classList.remove(...classesToRemove)
+  }
+
+  static getAllClasses (classGroups) {
+    return classGroups.flatMap(group => Object.values(group))
+  }
+
+  static clearCell (cell) {
+    this.clearCellClasses(cell, [
+      this.CELL_CLASSES.display,
+      this.CELL_CLASSES.damage
+    ])
+  }
+
+  static clearFriendCell (cell) {
+    this.clearCellClasses(cell, [
+      this.CELL_CLASSES.display,
+      this.CELL_CLASSES.damage,
+      this.CELL_CLASSES.placement,
+      this.CELL_CLASSES.hint
+    ])
+  }
+
+  static clearPlaceCell (cell) {
+    this.clearCellClasses(cell, [
+      this.CELL_CLASSES.weapon,
+      this.CELL_CLASSES.damage,
+      this.CELL_CLASSES.placement,
+      { weaponTags: true } // Placeholder: will be populated from bh.terrain.weapons.tags
+    ])
+
+    for (const key in cell.dataset) {
+      if (key !== 'r' && key !== 'c') delete cell.dataset[key]
+    }
+  }
+}
+
+/**
+ * REFACTORING: Consolidate board configuration logic
+ * to eliminate duplication between resetBoardSize and resetBoardSizePrint
+ */
+class BoardConfigurator {
+  static configureBoardGrid (board, map, cellSize) {
+    board.style.setProperty('--cols', map?.cols || 18)
+    board.style.setProperty('--rows', map?.rows || 8)
+    board.style.setProperty('--boxSize', cellSize)
+    board.innerHTML = ''
+  }
+
+  static resetBoardSize (board, map, cellSize) {
+    if (!map) map = bh.map
+    if (!cellSize)
+      cellSize = board.cellSizeString ? board.cellSizeString() : '32px'
+    this.configureBoardGrid(board, map, cellSize)
+  }
+
+  static resetBoardSizePrint (board, map, cellSizePrint) {
+    if (!map) map = bh.map
+    if (!cellSizePrint) cellSizePrint = 600 / (map.cols + 1) + 'px'
+
+    board.style.setProperty('--cols', map.cols + 1)
+    board.style.setProperty('--rows', map.rows + 1)
+    board.style.setProperty('--boxSize', cellSizePrint)
+    board.innerHTML = ''
+  }
+}
+
+/**
+ * REFACTORING: Extract surrounding cells logic to reduce duplication
+ * across surround, surroundObj, surroundList methods
+ */
+class SurroundingCellsHelper {
+  static forEachSurroundingCell (map, r, c, callback) {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const rr = r + dr
+        const cc = c + dc
+        if (map.inBounds(rr, cc)) {
+          callback(rr, cc)
+        }
+      }
+    }
+  }
+
+  static asKeySet (map, r, c) {
+    const result = new Set()
+    this.forEachSurroundingCell(map, r, c, (rr, cc) => {
+      result.add(makeKey(rr, cc))
+    })
+    return result
+  }
+
+  static asObjectMap (map, r, c, maker) {
+    const result = {}
+    this.forEachSurroundingCell(map, r, c, (rr, cc) => {
+      result[makeKey(rr, cc)] = maker(rr, cc)
+    })
+    return result
+  }
+
+  static asArray (map, r, c, maker) {
+    const result = []
+    this.forEachSurroundingCell(map, r, c, (rr, cc) => {
+      result.push(maker(rr, cc))
+    })
+    return result
+  }
+}
+
+/**
+ * REFACTORING: Consolidate ship cell display logic to reduce
+ * duplication across displayShipCellBase, displayLetterShipCell, visibleShipCell
+ */
+class ShipCellDisplayer {
+  static setBaseAttributes (cell, ship) {
+    const letter = ship?.letter || '-'
+    cell.dataset.id = ship?.id
+    cell.dataset.letter = letter
+    return letter
+  }
+
+  static displayLetterCell (cell, ship, maps) {
+    const letter = this.setBaseAttributes(cell, ship)
+    cell.textContent = letter
+    cell.style.color = maps.shipLetterColors[letter] || '#fff'
+    cell.style.background = maps.shipColors[letter] || 'rgba(255,255,255,0.2)'
+  }
+
+  static displayArmedCell (cell, ship, weapon, maps) {
+    const letter = this.setBaseAttributes(cell, ship)
+    const wletter = weapon.weapon.letter
+    const ammo = weapon.ammo
+
+    cell.dataset.wletter = wletter
+    cell.dataset.ammo = ammo
+    cell.dataset.wid = weapon.id
+    cell.dataset.variant = ship.variant
+    cell.textContent = ''
+    cell.classList.add('weapon')
+
+    cell.style.color = maps.shipLetterColors[letter] || '#fff'
+    cell.style.background = maps.shipColors[letter] || 'rgba(255,255,255,0.2)'
+  }
+
+  static displaySurroundAttributes (cell, ship) {
+    if (!ship.weapons || Object.values(ship.weapons).length === 0) return
+
+    const letter = ship?.letter || '-'
+    cell.dataset.sletter = letter
+    const wletter = ship.getPrimaryWeapon().letter
+    cell.dataset.wletters = wletter
+    cell.dataset.variant = ship.variant
+    const turn = ship.getTurn()
+    if (turn && turn !== '') cell.classList.add(turn)
+    cell.dataset.surround = ship.id
+    const keyIds = ship.makeKeyIds()
+    addKeyToCell(cell, 'keyIds', keyIds)
+  }
+
+  static displayAsRevealed (cell, ship, maps) {
+    const letter = ship?.letter || '-'
+    if (!cell) return
+
+    cell.style.color = maps.shipLetterColors[letter] || '#fff'
+    cell.style.background = maps.shipColors[letter] || 'rgba(255,255,255,0.2)'
+
+    const [r, c] = coordsFromCell(cell)
+    const weapon = ship?.rackAt(c, r)
+    if (weapon) {
+      cell.dataset.ammo = 1
+      cell.classList.add('weapon')
+      cell.textContent = ''
+    } else {
+      cell.textContent = letter
+    }
+  }
+}
 
 export class WatersUI {
   constructor (terroritory, title) {

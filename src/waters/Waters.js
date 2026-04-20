@@ -927,19 +927,21 @@ export class Waters {
     if (this.isEnded) {
       return
     }
-    // this.updateWeaponButton(wps1, cursorInfo)
+    this.updateWeaponButtons()
 
     this.updateWeaponStatus(wps1 || this.loadOut.selectedWeapon, cursorInfo)
   }
-  updateWeaponButton (wps1, cursorInfo) {
-    const wps = wps1 || cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
-    const letter = wps?.weapon?.letter
-    if (letter === this._oldWeaponLetter) {
-      return
+  updateWeaponButtons () {
+    if (this.UI?.weaponBtns == null) return
+    for (const btn of this.UI.weaponBtns) {
+      const letter = btn.dataset.letter
+      const hasAmmo = this.loadOut.hasAmmoForWeaponLetter(letter)
+      if (hasAmmo) {
+        btn.classList.remove('hidden')
+      } else {
+        btn.classList.add('hidden')
+      }
     }
-    this._oldWeaponLetter = letter
-    const next = this.loadOut.getNextWeapon(letter)
-    if (this.UI.weaponBtn) this.UI.weaponBtn.innerHTML = next.buttonHtml
   }
 
   fireShot (weapon, r, c, power) {

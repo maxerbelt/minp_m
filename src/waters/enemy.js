@@ -69,13 +69,12 @@ class Enemy extends Waters {
    * @private
    */
   async _handleEndTurn () {
-    this.opponent?.score.finishTurn()
-    if (
-      !this.opponent ||
-      this.opponent.boardDestroyed ||
-      this.opponent.isRevealed
-    )
+    if (this?.opponent == null) {
       return
+    }
+    this.opponent.score.finishTurn()
+    if (this.opponent.boardDestroyed || this.opponent.isRevealed) return
+
     this._showWaitingForOpponent()
     await Delay.wait(ENEMY_TURN_DELAY)
     await this.opponent.seekStep()
@@ -206,14 +205,15 @@ class Enemy extends Waters {
    * @param {number} attempt - Current attempt number.
    * @private
    */
-  _handlePlacementFailure (ships, attempt) {
+  async _handlePlacementFailure (ships, attempt) {
     const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
     gameStatus.addToQueue(
       `Having difficulty placing all ships (${totalAttempts} attempts)`,
       true
     )
     if (attempt < MAX_PLACEMENT_RETRIES) {
-      setTimeout(() => this._handlePlacement(ships, attempt + 1), 0)
+      await new Promise(resolve => setTimeout(resolve, 0))
+      this._handlePlacement(ships, attempt + 1)
       return
     }
     this.UI.enableBtns()
@@ -226,9 +226,10 @@ class Enemy extends Waters {
    * Places all ships.
    * @param {Array} ships - Ships to place.
    */
-  placeAll (ships = this.ships) {
+  async placeAll (ships = this.ships) {
     this.UI.enableBtns()
-    setTimeout(() => this._handlePlacement(ships, 0), 0)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    this._handlePlacement(ships, 0)
   }
 
   /**

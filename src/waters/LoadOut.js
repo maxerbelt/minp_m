@@ -258,6 +258,11 @@ export class LoadOut {
     )
     return weaponIdx
   }
+  hasAmmoForWeaponLetter (weaponLetter) {
+    const wps = this.weaponByLetter[weaponLetter]
+    if (!wps) return 0
+    return wps.hasAmmo ? wps.hasAmmo() : false
+  }
   switchToWeapon (weaponLetter) {
     const idx = this.getWeaponIndexForLetter(weaponLetter)
     if (idx < 0) return false
