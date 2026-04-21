@@ -526,7 +526,7 @@ export class Waters {
     if (!random && !wkey) {
       return this.randomWeaponId()
     }
-    const [launchR, launchC, weaponId] = parseTriple(wkey)
+    const [launchC, launchR, weaponId] = parseTriple(wkey)
     this.steps.addSource(
       viewModel,
       launchR,

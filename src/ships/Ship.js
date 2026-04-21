@@ -1,14 +1,24 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { parsePair, makeKeyAndId } from '../core/utilities.js'
+import { parsePair } from '../core/utilities.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { SubBoard } from '../grid/subBoard.js'
+import { Zip } from '../core/Zip.js'
 
+/**
+ * @param {string | any[]} arr
+ */
 function firstElement (arr) {
   return arr && arr.length > 0 ? arr[0] : null
 }
 
 export class Ship {
+  /**
+   * @param {number} id
+   * @param {string} symmetry
+   * @param {string} letter
+   * @param {{ '1,1': { id: number; }; }} [weapons]
+   */
   constructor (id, symmetry, letter, weapons) {
     this.id = id
     this.symmetry = symmetry
@@ -18,11 +28,53 @@ export class Ship {
     this.placed = false
     this.sunk = false
     this.variant = 0
-    this.weaponPositions = Mask.empty(0, 0)
-    this.weaponsById = new Map()
-    this.weapons = weapons || {}
+    if (weapons) {
+      this.weapons = weapons
+    }
+  }
+
+  get weaponsById () {
+    if (this._weaponsById) {
+      return this._weaponsById
+    }
+    this._weaponsById = new Map()
+    return this._weaponsById
+  }
+  set weaponsById (weaponsById) {
+    console.trace('Setting weaponsById:', weaponsById)
+    let wid
+    const numNew = Object.values(weaponsById).length
+    if (numNew === 0) {
+      return
+    }
+    const numWeapon = this._weaponsById?.size || 0
+    if (numWeapon === 0) {
+      wid = this.weaponsFromShape(weaponsById)
+    } else {
+      wid = this.weaponsFromPlacement(weaponsById)
+    }
+
+    this._weaponsById = wid
+  }
+  get weapons () {
+    if (this._weapons) {
+      return this._weapons
+    }
+    this._weapons = this._weaponEntriesFromIdMap().reduce(
+      (obj, [key, weapon]) => {
+        obj[key] = weapon
+        return obj
+      },
+      {}
+    )
+    return this._weapons
+  }
+  set weapons (weapons) {
+    console.trace()
+    this._weapons = weapons
   }
   get cells () {
+    // console.trace()
     return this._cellsArray || this.board.toCoords
   }
   set cells (cells) {
@@ -51,6 +103,9 @@ export class Ship {
   }
 
   resetBoard () {
+    /**
+     * @type {any[]}
+     */
     this._cellsArray = []
     this.placed = false
     this.board = this.shape()?.board || Mask.empty(0, 0)
@@ -62,11 +117,25 @@ export class Ship {
     Ship.id++
   }
 
+  /**
+   * @param {any[]} ships
+   */
   static noOfHits (ships) {
-    return ships.reduce((sum, s) => sum + s.getTotalHits(), 0)
+    return ships.reduce(
+      (/** @type {any} */ sum, /** @type {{ getTotalHits: () => any; }} */ s) =>
+        sum + s.getTotalHits(),
+      0
+    )
   }
+  /**
+   * @param {any[]} ships
+   */
   static noOfSunk (ships) {
-    return ships.reduce((sum, s) => sum + (s.sunk ? 1 : 0), 0)
+    return ships.reduce(
+      (/** @type {string | number} */ sum, /** @type {{ sunk: any; }} */ s) =>
+        sum + (s.sunk ? 1 : 0),
+      0
+    )
   }
 
   getTurn () {
@@ -92,6 +161,8 @@ export class Ship {
 
   /**
    * Record a hit at coordinates (r, c)
+   * @param {number} r
+   * @param {number} c
    */
   recordHit (r, c) {
     this.hits.set(c, r, 1)
@@ -99,6 +170,8 @@ export class Ship {
 
   /**
    * Check if ship has been hit at (r, c)
+   * @param {any} r
+   * @param {any} c
    */
   isHitAt (r, c) {
     return this.hits.test(c, r)
@@ -118,32 +191,25 @@ export class Ship {
     return this.getTotalHits() === this.board.occupancy
   }
 
-  /**
-   * Internal: Legacy weapons exist when the legacy object is populated.
-   */
-  _hasLegacyWeaponEntries () {
-    return this.weapons && Object.keys(this.weapons).length > 0
-  }
-
   _weaponEntriesFromIdMap () {
-    return [...this.weaponsById.values()].map(weapon => [
+    if (!this._weaponsById) return []
+    return Array.from(this._weaponsById, ([, weapon]) => [
       `${weapon.row},${weapon.col}`,
       weapon
     ])
   }
 
   _weaponEntries () {
-    return this._hasLegacyWeaponEntries()
-      ? Object.entries(this.weapons)
-      : this._weaponEntriesFromIdMap()
+    return Object.entries(this.weapons)
   }
 
   _weaponArray () {
-    return this._hasLegacyWeaponEntries()
-      ? Object.values(this.weapons)
-      : Array.from(this.weaponsById.values())
+    return Object.values(this.weapons)
   }
 
+  /**
+   * @param {{ (weapon: any): any; (arg0: any): unknown; }} predicate
+   */
   _filterWeaponEntries (predicate) {
     return this._weaponEntries().filter(([, weapon]) => predicate(weapon))
   }
@@ -155,11 +221,17 @@ export class Ship {
     return this._weaponArray().length > 0
   }
 
+  /**
+   * @param {{ symmetry: string; letter: string; weaponSystem: {}; }[]} shapes
+   */
   static createShipsFromShapes (shapes) {
     Ship.id = 1
     WeaponSystem.id = 1
     return Ship.extraShipsFromShapes(shapes)
   }
+  /**
+   * @param {{ symmetry: string; letter: string; weaponSystem: {}; }[]} shapes
+   */
   static extraShipsFromShapes (shapes, filter = () => true) {
     const ships = []
     for (const shape of shapes) {
@@ -170,29 +242,25 @@ export class Ship {
     }
     return ships
   }
-  /**
-   * Get serialized weapon IDs and positions
-   */
-  serializeWeaponPositions () {
-    return this._weaponEntries()
-      .map(([coordKey, weapon]) => makeKeyAndId(coordKey, weapon.id))
-      .join('|')
-  }
 
   /**
    * Find weapon system at position (r, c)
+   * @param {number} r
+   * @param {number} c
    */
   rackAt (r, c) {
     const coordKey = `${r},${c}`
     return this._findWeaponAt(coordKey)
   }
-
+  _hasLegacyWeaponEntries
   /**
    * Internal: Find weapon by coordinate key or position
+   * @param {string} coordKey
    */
   _findWeaponAt (coordKey) {
-    if (this._hasLegacyWeaponEntries()) {
-      return this.weapons[coordKey]
+    const result = this.weapons?.[coordKey]
+    if (result) {
+      return result
     }
     return this._weaponEntries().find(([key]) => key === coordKey)?.[1]
   }
@@ -212,6 +280,8 @@ export class Ship {
   }
   /**
    * Find closest loaded weapon rack to given coordinates
+   * @param {number} r
+   * @param {number} c
    */
   findClosestLoadedRack (r, c) {
     const loadedRacks = this.getLoadedWeaponEntries()
@@ -221,20 +291,26 @@ export class Ship {
 
   /**
    * Internal: Calculate closest rack from list by distance
+   * @param {any[]} entries
+   * @param {number} r
+   * @param {number} c
    */
   _findClosestRack (entries, r, c) {
-    return entries.reduce((closest, current) => {
-      const [closestKey] = closest
-      const [currentKey] = current
-      const [closestR, closestC] = closestKey.split(',').map(Number)
-      const [currentR, currentC] = currentKey.split(',').map(Number)
-      const closestDist = Math.hypot(closestR - r, closestC - c)
-      const currentDist = Math.hypot(currentR - r, currentC - c)
-      return currentDist < closestDist ? current : closest
-    })
+    return entries.reduce(
+      (/** @type {[any]} */ closest, /** @type {[any]} */ current) => {
+        const [closestKey] = closest
+        const [currentKey] = current
+        const [closestR, closestC] = closestKey.split(',').map(Number)
+        const [currentR, currentC] = currentKey.split(',').map(Number)
+        const closestDist = Math.hypot(closestR - r, closestC - c)
+        const currentDist = Math.hypot(currentR - r, currentC - c)
+        return currentDist < closestDist ? current : closest
+      }
+    )
   }
   /**
    * Find weapon system by its unique ID
+   * @param {number} id
    */
   getWeaponBySystemId (id) {
     if (this.weaponsById.has(id)) {
@@ -245,6 +321,7 @@ export class Ship {
 
   /**
    * Check if this ship matches the given ID
+   * @param {any} id
    */
   matchesId (id) {
     return this.id === id
@@ -252,6 +329,7 @@ export class Ship {
 
   /**
    * Get self if ID matches, null otherwise
+   * @param {number} id
    */
   getShipById (id) {
     return this.id === id ? this : null
@@ -270,11 +348,14 @@ export class Ship {
    * Get all [coordKey, weapon] entries for loaded weapons
    */
   getLoadedWeaponEntries () {
-    return this._filterWeaponEntries(weapon => this._isWeaponLoaded(weapon))
+    return this._filterWeaponEntries((/** @type {any} */ weapon) =>
+      this._isWeaponLoaded(weapon)
+    )
   }
 
   /**
    * Internal: Check if weapon has ammunition
+   * @param {{ hasAmmo: () => any; ammo: number; }} weapon
    */
   _isWeaponLoaded (weapon) {
     if (typeof weapon.hasAmmo === 'function') {
@@ -340,42 +421,75 @@ export class Ship {
       0
     )
   }
+  /**
+   * @param {import("../terrains/sea/js/SeaShape.js").SeaVessel} shape
+   */
   static createFromShape (shape) {
     const ship = new Ship(Ship.id, shape.symmetry, shape.letter)
     // Convert shape's weapon system to ship format
     if (shape.weaponSystem) {
-      ship.setWeaponsFromShape(shape.weaponSystem)
+      ship.weaponsById = shape.weaponSystem
     }
+
     ship._shape = shape
     return ship
   }
 
   /**
    * Populate weapons from shape's weapon system
+   * @param {any} shapeWeaponSystem
    */
   setWeaponsFromShape (shapeWeaponSystem) {
-    this.weaponsById.clear()
-    this.weaponPositions = Mask.empty(this.size, this.size)
+    this.weaponsById = shapeWeaponSystem
+  }
 
-    for (const [key, weaponSystem] of Object.entries(shapeWeaponSystem)) {
+  /**
+   * @param {Map<any, any> | { weaponsById: Map<any, any>; weaponPositions: any; } | ArrayLike<any> | { [s: string]: any; }} shapeWeaponSystem
+   */
+  weaponsFromShape (shapeWeaponSystem) {
+    let weaponsById = new Map()
+
+    const wpsList = Object.entries(shapeWeaponSystem)
+    for (const [key, weaponSystem] of wpsList) {
       // Skip non-object values (in case of test mocks or invalid data)
       if (typeof weaponSystem !== 'object' || weaponSystem === null) {
         continue
       }
       const [r, c] = parsePair(key)
-      if (r !== undefined && c !== undefined) {
+      if (r != null && c != null) {
         weaponSystem.row = r
         weaponSystem.col = c
-        if (weaponSystem.id !== undefined) {
-          this.weaponsById.set(weaponSystem.id, weaponSystem)
-        }
-        if (this.weaponPositions) {
-          this.weaponPositions.set(r, c, 1)
+        if (weaponSystem.id != null) {
+          weaponsById.set(weaponSystem.id, weaponSystem)
         }
       }
     }
+    return weaponsById
   }
+  /**
+   * @param {Map<any, any> | { weaponsById: Map<any, any>; weaponPositions: any; } | ArrayLike<any> | { [s: string]: any; }} placeWeaponSystem
+   */
+  weaponsFromPlacement (placeWeaponSystem) {
+    let weaponsById = this.weaponsById || new Map()
 
+    const zipped = Zip.lenient(
+      weaponsById.entries(),
+      Object.entries(placeWeaponSystem)
+    )
+    //    for (const [[idKey, weaponSystem], [coordKey, oldWeaponSystem]] of zipped) {
+    for (const [[, weaponSystem], [coordKey]] of zipped) {
+      // Skip non-object values (in case of test mocks or invalid data)
+      if (typeof weaponSystem !== 'object' || weaponSystem === null) {
+        continue
+      }
+      const [r, c] = parsePair(coordKey)
+      if (r != null && c != null) {
+        weaponSystem.row = r
+        weaponSystem.col = c
+      }
+    }
+    return weaponsById
+  }
   /**
    * Create a clone of this ship
    */
@@ -386,12 +500,19 @@ export class Ship {
     return clonedShip
   }
 
+  /**
+   * @param {any} variant
+   * @param {any} r0
+   * @param {any} c0
+   */
   placeCells (variant, r0, c0) {
     const shape = this.shape()
     return shape.placeCells(variant, r0, c0)
   }
   /**
    * Process multiple cells for damage
+   * @param {any} model
+   * @param {any} cells
    */
   _processCellDamage (model, cells) {
     const results = { hits: [], misses: [], dtaps: 0 }
@@ -408,6 +529,11 @@ export class Ship {
 
   /**
    * Internal: Process single cell damage result
+   * @param {any} model
+   * @param {any} r
+   * @param {any} c
+   * @param {{ hits: any; misses: any; dtaps?: number; }} results
+   * @param {any} cell
    */
   processHitAt (model, r, c, results, cell) {
     if (this.board.test(r, c)) {
@@ -420,6 +546,9 @@ export class Ship {
 
   /**
    * Process hit at specific coordinates
+   * @param {any} model
+   * @param {any} r
+   * @param {any} c
    */
   hitAt (model, r, c) {
     this.recordHit(r, c)
@@ -444,6 +573,10 @@ export class Ship {
 
   /**
    * Internal: Process hit on weapon magazine
+   * @param {{ damaged: boolean; }} weaponSystem
+   * @param {any} model
+   * @param {any} r
+   * @param {any} c
    */
   _processMagazineHit (weaponSystem, model, r, c) {
     const isLoaded = this._isWeaponLoaded(weaponSystem)
@@ -456,6 +589,10 @@ export class Ship {
 
   /**
    * Internal: Process hit on loaded magazine with detonation possibility
+   * @param {{ hit: boolean; weapon: { volatile: any; }; }} weaponSystem
+   * @param {{ opponent: { updateUI: () => void; }; UI: any; loadOut: { useAmmo: (arg0: any) => void; }; }} model
+   * @param {any} r
+   * @param {any} c
    */
   _processLoadedMagazineHit (weaponSystem, model, r, c) {
     const damaged = 'skull'
@@ -482,6 +619,13 @@ export class Ship {
 
   /**
    * Internal: Process magazine detonation in adjacent cells
+   * @param {{ animateDetonation: (arg0: any, arg1: any) => void; }} weapon
+   * @param {any} cell
+   * @param {{ cellSizeScreen: () => any; }} viewModel
+   * @param {any} model
+   * @param {any} r
+   * @param {any} c
+   * @param {string} damaged
    */
   _processDetonation (weapon, cell, viewModel, model, r, c, damaged) {
     const detonationInfo = 'Magazine Detonated'
@@ -494,6 +638,8 @@ export class Ship {
   }
   /**
    * Internal: Determine final hit result
+   * @param {string} info
+   * @param {any} damaged
    */
   _determineHitResult (info, damaged, hits = [], misses = []) {
     if (this.isSunk()) {
@@ -513,6 +659,7 @@ export class Ship {
 
   /**
    * Place ship at given cells with automatic hit/sunk reset
+   * @param {number[][]} cells
    */
   placeAtCells (cells) {
     const board = SubBoard.fromCoords(cells, null, new Mask(0, 0))
@@ -521,6 +668,7 @@ export class Ship {
   }
   /**
    * Place ship at given cells with automatic hit/sunk reset
+   * @param {SubBoard} board
    */
   placeAtBoard (board) {
     this.board = board
@@ -529,18 +677,26 @@ export class Ship {
 
   /**
    * Place using variant placement object
+   * @param {{ placeAt: (arg0: any, arg1: any) => any; }} placeable
+   * @param {any} r
+   * @param {any} c
    */
   placeVariant (placeable, r, c) {
     const placement = placeable.placeAt(r, c)
     this.placePlacement(placement)
   }
 
+  /**
+   * @param {{ board: any; weapons: {}; variant: number; }} placement
+   */
   placePlacement (placement) {
     this.placed = true
     this.board = placement.board
     if (placement.weapons) {
       this.variant = placement.variant
-      this.weapons = placement.weapons
+      if (Object.keys(placement.weapons).length > 0) {
+        this.weapons = placement.weapons
+      }
     }
   }
 
@@ -550,6 +706,11 @@ export class Ship {
   getAvailablePlacements () {
     return this.shape?.placeables() || []
   }
+
+  /**
+   * @param {any} r
+   * @param {any} c
+   */
   isRightZone (r, c) {
     const shipType = this.type()
     const isLand = bh.map.isLand(r, c)
@@ -559,6 +720,11 @@ export class Ship {
 
     return true
   }
+  /**
+   * @param {number} r
+   * @param {number} c
+   * @param {any[][]} shipCellGrid
+   */
   noTouchCheck (r, c, shipCellGrid) {
     const map = bh.map
     for (let nr = r - 1; nr <= r + 1; nr++)
@@ -567,13 +733,20 @@ export class Ship {
       }
     return true
   }
+  /**
+   * @param {[any, any][]} placing
+   */
   isAllRightZone (placing) {
-    placing.some(([r, c]) => {
+    return placing.some(([r, c]) => {
       return this.isRightZone(r, c) === false
     })
   }
   /**
    * Check if ship can be placed at variant and position
+   * @param {any} variant
+   * @param {any} r0
+   * @param {any} c0
+   * @param {any} shipCellGrid
    */
   canPlace (variant, r0, c0, shipCellGrid) {
     const placing = this.placeCells(variant, r0, c0)
@@ -590,6 +763,8 @@ export class Ship {
 
   /**
    * Internal: Check placement bounds
+   * @param {[any, any][]} cells
+   * @param {{ inBounds: (arg0: any, arg1: any) => any; }} map
    */
   _isPlacementInBounds (cells, map) {
     return !cells.some(([r, c]) => !map.inBounds(r, c))
@@ -597,6 +772,7 @@ export class Ship {
 
   /**
    * Internal: Check placement zone requirements
+   * @param {any} cells
    */
   _isPlacementInCorrectZone (cells) {
     return !this.isAllRightZone(cells)
@@ -604,6 +780,9 @@ export class Ship {
 
   /**
    * Internal: Check no overlapping ships
+   * @param {[any, any][]} cells
+   * @param {{ inBounds: (arg0: any, arg1: any) => any; }} map
+   * @param {{ [x: string]: { [x: string]: any; }; }} shipCellGrid
    */
   _isPlacementNotOverlapping (cells, map, shipCellGrid) {
     return !cells.some(([r, c]) => map.inBounds(r, c) && shipCellGrid[r][c])
@@ -611,6 +790,8 @@ export class Ship {
 
   /**
    * Internal: Check no adjacent ships
+   * @param {[any, any][]} cells
+   * @param {any} shipCellGrid
    */
   _isPlacementNotTouching (cells, shipCellGrid) {
     return !cells.some(([r, c]) => !this.noTouchCheck(r, c, shipCellGrid))
@@ -635,6 +816,7 @@ export class Ship {
 
   /**
    * Add ship to grid at its current position
+   * @param {any[][]} shipCellGrid
    */
   addToGrid (shipCellGrid) {
     for (const [c, r] of this.board.locations()) {
@@ -650,29 +832,50 @@ export class Ship {
 
     this._shape = bh.shapesByLetter(this.letter)
   }
+  /**
+   * @param {any[]} arr
+   */
   static maxMinSizeIn (arr) {
     const mm = arr.reduce(
-      (m, o) => (o.minSize === 0 ? m : Math.max(m, o.minSize)),
+      (/** @type {number} */ m, /** @type {{ minSize: number; }} */ o) =>
+        o.minSize === 0 ? m : Math.max(m, o.minSize),
       0
     )
     console.log(
       `maxMin Size: ${mm} :`,
-      arr.map(o => `${o.letter}: ${o.width},${o.height}`).join('; ')
+      arr
+        .map(
+          (/** @type {{ letter: any; width: any; height: any; }} */ o) =>
+            `${o.letter}: ${o.width},${o.height}`
+        )
+        .join('; ')
     )
     return mm
   }
+  /**
+   * @param {any[]} arr
+   */
   static minSizeIn (arr) {
     return arr.reduce(
-      (m, o) => (o.minSize === 0 ? m : Math.min(m, o.minSize)),
+      (/** @type {number} */ m, /** @type {{ minSize: number; }} */ o) =>
+        o.minSize === 0 ? m : Math.min(m, o.minSize),
       0
     )
   }
+  /**
+   * @param {any[]} arr
+   */
   static maxSizeIn (arr) {
-    return arr.reduce((m, o) => Math.max(m, o.maxSize), Infinity)
+    return arr.reduce(
+      (/** @type {number} */ m, /** @type {{ maxSize: number; }} */ o) =>
+        Math.max(m, o.maxSize),
+      Infinity
+    )
   }
 
   /**
    * Check if ship belongs to tally group
+   * @param {any} tallyGroup
    */
   isInTallyGroup (tallyGroup) {
     const shape = this.shape()

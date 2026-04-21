@@ -60,8 +60,10 @@ export class Weapon {
     if (config.cursors) this.cursors = config.cursors
     if (config.totalCursors) this.totalCursors = config.totalCursors
     if (config.launchCursor) this.launchCursor = config.launchCursor
-    if (config.animateOnTarget !== undefined) this.animateOnTarget = config.animateOnTarget
-    if (config.explodeOnTarget !== undefined) this.explodeOnTarget = config.explodeOnTarget
+    if (config.animateOnTarget !== undefined)
+      this.animateOnTarget = config.animateOnTarget
+    if (config.explodeOnTarget !== undefined)
+      this.explodeOnTarget = config.explodeOnTarget
     if (config.hasFlash !== undefined) this.hasFlash = config.hasFlash
   }
 
@@ -81,7 +83,7 @@ export class Weapon {
   }
   playFlightSound () {
     if (this.flightSound) {
-      bh.audio.playUnLoaded(this.name + '-flight', this.flightSound)
+      bh.audio.playAfterLoad(this.name + '-flight', this.flightSound)
     }
   }
   get boomSound () {

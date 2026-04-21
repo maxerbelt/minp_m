@@ -66,7 +66,7 @@ export class Shape {
     if (Array.isArray(value) && value.length >= 2) {
       return [value[0], value[1]]
     }
-    return [NaN, NaN]
+    return [Number.NaN, Number.NaN]
   }
 
   _hasRackCoordinates (racks) {
@@ -157,6 +157,9 @@ export class Shape {
   }
 
   get weaponSystem () {
+    if (!this.isAttachedToRack) {
+      return null
+    }
     return Object.fromEntries(
       Object.entries(this.attachedWeapons || {}).map(([key, weapon]) => [
         key,

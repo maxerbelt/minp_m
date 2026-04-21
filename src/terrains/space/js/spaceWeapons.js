@@ -23,7 +23,10 @@ export class Missile extends Bomb {
     })
     this.plural = 'Missiles'
     this.points = 1
-    this.splashCoords = this.aoe(null, [[-1, -1], [2, 2]])
+    this.splashCoords = this.aoe(null, [
+      [-1, -1],
+      [2, 2]
+    ])
   }
 
   get flightSound () {
@@ -91,6 +94,7 @@ export class RailBolt extends Strike {
     this.launchCursor = 'rail'
     this.postSelectCursor = 1
     this.totalCursors = 2
+    this.splashType = undefined
     this.cursors = ['rail', 'bolt']
     this.isOneAndDone = true
     this.setWeaponProperties({

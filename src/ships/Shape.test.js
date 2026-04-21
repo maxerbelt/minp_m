@@ -2,7 +2,7 @@
 
 /* global describe, it, expect, beforeEach, jest */
 
-import { expect, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
@@ -330,7 +330,7 @@ describe('Shape', () => {
 
   describe('weaponSystem', () => {
     it('should return empty object when no weapons attached', () => {
-      expect(shape.weaponSystem).toEqual({})
+      expect(shape.weaponSystem).toBeNull()
     })
 
     it('should convert attached weapons to WeaponSystem objects', () => {
@@ -358,7 +358,7 @@ describe('Shape', () => {
 
     it('should return empty object when attachedWeapons is null', () => {
       shape.attachedWeapons = null
-      expect(shape.weaponSystem).toEqual({})
+      expect(shape.weaponSystem).toBeNull()
     })
   })
 
