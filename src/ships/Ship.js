@@ -252,7 +252,6 @@ export class Ship {
     const coordKey = `${r},${c}`
     return this._findWeaponAt(coordKey)
   }
-  _hasLegacyWeaponEntries
   /**
    * Internal: Find weapon by coordinate key or position
    * @param {string} coordKey
