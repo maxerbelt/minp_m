@@ -14,14 +14,14 @@ import { DirectionMovement } from './helpers/DirectionMovement.js'
 import { UIElementBuilder } from './helpers/UIElementBuilder.js'
 
 export class PlacementUI extends WatersUI {
-  constructor (terroritory, title) {
-    super(terroritory, title)
+  constructor (territory, title) {
+    super(territory, title)
     this.placingShips = true
     this.readyingShips = false
 
     // REFACTORING: Use ElementCache to eliminate repetitive
     // document.getElementById() calls
-    this.elements = new ElementCache(terroritory)
+    this.elements = new ElementCache(territory)
     this.trayManager = new TrayManager(this.elements)
 
     // Delegate button access through elements

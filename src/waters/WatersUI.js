@@ -20,10 +20,10 @@ export const gameHost = {
 export const startCharCode = 65
 
 export class WatersUI {
-  constructor (terroritory, title) {
-    this.board = document.getElementById(terroritory + '-board')
-    this.score = new ScoreUI(terroritory)
-    this.terroritory = terroritory
+  constructor (territory, title) {
+    this.board = document.getElementById(territory + '-board')
+    this.score = new ScoreUI(territory)
+    this.territory = territory
     this.terroritoryTitle = title
     this.placingShips = false
     this.containerWidth = gameHost.containerWidth
@@ -32,7 +32,7 @@ export class WatersUI {
   }
 
   showTitle (name) {
-    const titleEl = document.getElementById(this.terroritory + '-title')
+    const titleEl = document.getElementById(this.territory + '-title')
     titleEl.textContent = this.terroritoryTitle + ' ' + name
   }
 
