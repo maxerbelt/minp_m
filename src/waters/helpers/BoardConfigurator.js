@@ -2,7 +2,7 @@ import { bh } from '../../terrains/all/js/bh.js'
 import { gameHost } from '../WatersUI.js'
 
 /**
- * REFACTORING: Consolidate board configuration logic
+ *  Consolidate board configuration logic
  * to eliminate duplication between resetBoardSize and resetBoardSizePrint
  */
 export class BoardConfigurator {

@@ -1,5 +1,5 @@
 /**
- * REFACTORING: Extract DOM element caching to reduce repetitive
+ *  DOM element caching to reduce repetitive
  * document.getElementById() calls and improve initialization clarity
  */
 export class ElementCache {

@@ -1,5 +1,5 @@
 /**
- * REFACTORING: Unified cell class manipulation to eliminate
+ * Unified cell class manipulation to eliminate
  * duplicate class removal logic across clearCell, clearFriendCell, clearPlaceCell
  */
 export class CellClassManager {
