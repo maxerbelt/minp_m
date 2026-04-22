@@ -5,26 +5,40 @@
 export class ElementCache {
   constructor () {
     this.buttons = {
-      newPlacement: document.getElementById('newPlacement'),
-      rotate: document.getElementById('rotateBtn'),
-      rotateLeft: document.getElementById('rotateLeftBtn'),
-      flip: document.getElementById('flipBtn'),
-      transform: document.getElementById('transformBtn'),
-      test: document.getElementById('testBtn'),
-      seek: document.getElementById('seekBtn'),
-      stop: document.getElementById('stopBtn'),
-      undo: document.getElementById('undoBtn'),
-      auto: document.getElementById('autoBtn')
+      newPlacement:
+        /** @type {HTMLButtonElement} */ document.getElementById(
+          'newPlacement'
+        ),
+      rotate:
+        /** @type {HTMLButtonElement} */ document.getElementById('rotateBtn'),
+      rotateLeft:
+        /** @type {HTMLButtonElement} */ document.getElementById(
+          'rotateLeftBtn'
+        ),
+      flip: /** @type {HTMLButtonElement} */ document.getElementById('flipBtn'),
+      transform:
+        /** @type {HTMLButtonElement} */ document.getElementById(
+          'transformBtn'
+        ),
+      test: /** @type {HTMLButtonElement} */ document.getElementById('testBtn'),
+      seek: /** @type {HTMLButtonElement} */ document.getElementById('seekBtn'),
+      stop: /** @type {HTMLButtonElement} */ document.getElementById('stopBtn'),
+      undo: /** @type {HTMLButtonElement} */ document.getElementById('undoBtn'),
+      auto: /** @type {HTMLButtonElement} */ document.getElementById('autoBtn')
     }
 
     this.trays = {
-      container: document.getElementById('tray-container'),
-      ship: document.getElementById('shipTray'),
-      plane: document.getElementById('planeTray'),
-      special: document.getElementById('specialTray'),
-      brush: document.getElementById('brushTray'),
-      weapon: document.getElementById('weaponTray'),
-      building: document.getElementById('buildingTray')
+      container:
+        /** @type {HTMLDivElement} */ document.getElementById('tray-container'),
+      ship: /** @type {HTMLDivElement} */ document.getElementById('shipTray'),
+      plane: /** @type {HTMLDivElement} */ document.getElementById('planeTray'),
+      special:
+        /** @type {HTMLDivElement} */ document.getElementById('specialTray'),
+      brush: /** @type {HTMLDivElement} */ document.getElementById('brushTray'),
+      weapon:
+        /** @type {HTMLDivElement} */ document.getElementById('weaponTray'),
+      building:
+        /** @type {HTMLDivElement} */ document.getElementById('buildingTray')
     }
   }
 
