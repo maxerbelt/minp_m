@@ -8,6 +8,8 @@ export class BorderRegions {
     this.store = maskInstance.store
   }
 
+  // ==================== OUTER BORDER ====================
+
   /**
    * Get bits representing the outer border (dilation boundary)
    * = dilated region minus original region
@@ -21,10 +23,10 @@ export class BorderRegions {
    * Create mask containing only the outer border
    */
   createOuterBorderMask () {
-    const mask = this.mask.emptyMask
-    mask.bits = this.getOuterBorderBits()
-    return mask
+    return this._createMaskFromBits(this.getOuterBorderBits())
   }
+
+  // ==================== OUTER AREA ====================
 
   /**
    * Get bits representing the outer area
@@ -42,10 +44,10 @@ export class BorderRegions {
    * Create mask containing the outer area
    */
   createOuterAreaMask () {
-    const mask = this.mask.emptyMask
-    mask.bits = this.getOuterAreaBits()
-    return mask
+    return this._createMaskFromBits(this.getOuterAreaBits())
   }
+
+  // ==================== INNER BORDER ====================
 
   /**
    * Get bits representing the inner border (erosion boundary)
@@ -60,10 +62,10 @@ export class BorderRegions {
    * Create mask containing only the inner border
    */
   createInnerBorderMask () {
-    const mask = this.mask.emptyMask
-    mask.bits = this.getInnerBorderBits()
-    return mask
+    return this._createMaskFromBits(this.getInnerBorderBits())
   }
+
+  // ==================== INNER AREA ====================
 
   /**
    * Get bits representing the inner area
@@ -77,24 +79,45 @@ export class BorderRegions {
    * Create mask containing the inner area
    */
   createInnerAreaMask () {
-    const mask = this.mask.emptyMask
-    mask.bits = this.getInnerAreaBits()
-    return mask
+    return this._createMaskFromBits(this.getInnerAreaBits())
   }
+
+  // ==================== LOCATION TESTING ====================
 
   /**
    * Test if a location is on the outer border
    */
   isOnOuterBorder (x, y) {
-    const outerBorderBits = this.getOuterBorderBits()
-    return this.mask.store.isBitSet(outerBorderBits, this.mask.index(x, y))
+    return this._isBitSetAtLocation(this.getOuterBorderBits(), x, y)
   }
 
   /**
    * Test if a location is on the inner border
    */
   isOnInnerBorder (x, y) {
-    const innerBorderBits = this.getInnerBorderBits()
-    return this.mask.store.isBitSet(innerBorderBits, this.mask.index(x, y))
+    return this._isBitSetAtLocation(this.getInnerBorderBits(), x, y)
+  }
+
+  // ==================== PRIVATE HELPERS ====================
+
+  /**
+   * Create a mask instance from bit pattern
+   * Single source of truth for mask creation
+   * @private
+   */
+  _createMaskFromBits (bits) {
+    const mask = this.mask.emptyMask
+    mask.bits = bits
+    return mask
+  }
+
+  /**
+   * Test if a bit is set at the given location
+   * Consolidates location testing logic
+   * @private
+   */
+  _isBitSetAtLocation (bits, x, y) {
+    const locationIndex = this.mask.index(x, y)
+    return this.store.isBitSet(bits, locationIndex)
   }
 }
