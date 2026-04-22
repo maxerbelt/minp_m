@@ -396,7 +396,7 @@ export class PlacementUI extends WatersUI {
   }
 
   appendCell (dragItem, r0, c0, bg, fg, letter, isSpecial) {
-    const cell = this.makeCell()
+    const cell = this.makeCell(r0, c0)
     cell.style.background = bg || 'rgba(255, 209, 102, 0.3)'
     if (letter) cell.style.color = fg || '#ffd166'
     if (isSpecial) {
