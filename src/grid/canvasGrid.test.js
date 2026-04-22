@@ -1,5 +1,6 @@
 /* eslint-env jest */
 /* global describe, it, expect */
+import { describe, it, expect, jest } from '@jest/globals'
 
 import { CanvasGrid } from './canvasGrid.js'
 import { RectangleShape } from './rectangle/RectangleShape.js'
@@ -8,7 +9,7 @@ import { RectangleShape } from './rectangle/RectangleShape.js'
 describe('CanvasGrid constructor', () => {
   it('throws when instantiated directly', () => {
     expect(() => new CanvasGrid(RectangleShape(10, 10))).toThrow(
-      'base class cannot be instantiated directly. Please extend it.'
+      'CanvasGrid is abstract and cannot be instantiated directly. Please extend it.'
     )
   })
 

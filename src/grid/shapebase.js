@@ -11,16 +11,16 @@ export class ShapeBase {
    * Helper to enforce abstract base class pattern.
    * Throws if attempting to instantiate an abstract class directly.
    *
-   * @private
    * @param {Function} abstractClass - The class that should not be instantiated
    * @param {string} [className] - Name of the abstract class for error message
    * @throws {Error} If new.target === abstractClass
    */
-  static #assertAbstractNotInstantiated (
+  static assertAbstractNotInstantiated (
+    concreteClass,
     abstractClass,
     className = abstractClass.name
   ) {
-    if (new.target === abstractClass) {
+    if (concreteClass === abstractClass) {
       throw new Error(
         `${className} is abstract and cannot be instantiated directly. Please extend it.`
       )
@@ -39,7 +39,7 @@ export class ShapeBase {
    * @throws {Error} If instantiated as ShapeBase directly
    */
   constructor (shape) {
-    ShapeBase.#assertAbstractNotInstantiated(ShapeBase)
+    ShapeBase.assertAbstractNotInstantiated(new.target, ShapeBase)
 
     this.shape = shape
     this.indexer = shape.indexer

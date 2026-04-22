@@ -18,24 +18,6 @@ import { ShapeBase } from './shapebase.js'
  */
 export class CanvasGrid extends ShapeBase {
   /**
-   * Helper to enforce abstract base class pattern.
-   *
-   * @param {Function} abstractClass - The class that should not be instantiated
-   * @param {string} [className] - Name for error message
-   * @throws {Error} If new.target === abstractClass
-   */
-  static #assertAbstractNotInstantiated (
-    abstractClass,
-    className = abstractClass.name
-  ) {
-    if (new.target === abstractClass) {
-      throw new Error(
-        `${className} is abstract and cannot be instantiated directly. Please extend it.`
-      )
-    }
-  }
-
-  /**
    * Initializes canvas grid.
    * Enforces abstract class constraint.
    *
@@ -44,7 +26,7 @@ export class CanvasGrid extends ShapeBase {
    */
   constructor (shape) {
     super(shape)
-    CanvasGrid.#assertAbstractNotInstantiated(CanvasGrid)
+    ShapeBase.assertAbstractNotInstantiated(new.target, CanvasGrid)
   }
 
   /**
@@ -54,7 +36,7 @@ export class CanvasGrid extends ShapeBase {
    * @abstract
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @param {*} [color] - The value to set (type depends on grid implementation)
+   * @param {*} color - The value to set (type depends on grid implementation)
    * @returns {void}
    */
   set (x, y, color) {
