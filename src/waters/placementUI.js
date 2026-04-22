@@ -21,28 +21,34 @@ export class PlacementUI extends WatersUI {
 
     // REFACTORING: Use ElementCache to eliminate repetitive
     // document.getElementById() calls
-    this.elements = new ElementCache(territory)
+    this.elements = new ElementCache()
     this.trayManager = new TrayManager(this.elements)
 
     // Delegate button access through elements
-    this.newPlacementBtn = this.elements.buttons.newPlacement
-    this.rotateBtn = this.elements.buttons.rotate
-    this.rotateLeftBtn = this.elements.buttons.rotateLeft
-    this.flipBtn = this.elements.buttons.flip
-    this.transformBtn = this.elements.buttons.transform
-    this.testBtn = this.elements.buttons.test
-    this.seekBtn = this.elements.buttons.seek
-    this.stopBtn = this.elements.buttons.stop
-    this.undoBtn = this.elements.buttons.undo
-    this.autoBtn = this.elements.buttons.auto
 
-    this.trays = this.elements.trays.container
-    this.shipTray = this.elements.trays.ship
-    this.planeTray = this.elements.trays.plane
-    this.specialTray = this.elements.trays.special
-    this.brushTray = this.elements.trays.brush
-    this.weaponTray = this.elements.trays.weapon
-    this.buildingTray = this.elements.trays.building
+    this.newPlacementBtn =
+      /** @type {HTMLButtonElement} */ this.elements.buttons.newPlacement
+    this.rotateBtn =
+      /** @type {HTMLButtonElement} */ this.elements.buttons.rotate
+    this.rotateLeftBtn =
+      /** @type {HTMLButtonElement} */ this.elements.buttons.rotateLeft
+    this.flipBtn = /** @type {HTMLButtonElement} */ this.elements.buttons.flip
+    this.transformBtn =
+      /** @type {HTMLButtonElement} */ this.elements.buttons.transform
+    this.testBtn = /** @type {HTMLButtonElement} */ this.elements.buttons.test
+    this.seekBtn = /** @type {HTMLButtonElement} */ this.elements.buttons.seek
+    this.stopBtn = /** @type {HTMLButtonElement} */ this.elements.buttons.stop
+    this.undoBtn = /** @type {HTMLButtonElement} */ this.elements.buttons.undo
+    this.autoBtn = /** @type {HTMLButtonElement} */ this.elements.buttons.auto
+
+    this.trays = /** @type {HTMLDivElement} */ this.elements.trays.container
+    this.shipTray = /** @type {HTMLDivElement} */ this.elements.trays.ship
+    this.planeTray = /** @type {HTMLDivElement} */ this.elements.trays.plane
+    this.specialTray = /** @type {HTMLDivElement} */ this.elements.trays.special
+    this.brushTray = /** @type {HTMLDivElement} */ this.elements.trays.brush
+    this.weaponTray = /** @type {HTMLDivElement} */ this.elements.trays.weapon
+    this.buildingTray =
+      /** @type {HTMLDivElement} */ this.elements.trays.building
 
     this.tips = []
     this.addText = ' added'
@@ -240,7 +246,7 @@ export class PlacementUI extends WatersUI {
 
   moveAssignByCursor (arrowKey, clickedShip) {
     let shipnode = clickedShip.source
-    const shipId = parseInt(shipnode.dataset.id)
+    const shipId = Number.parseInt(shipnode.dataset.id)
 
     if (shipId === null || shipnode === null) return null
 
