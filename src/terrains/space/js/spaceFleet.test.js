@@ -2,7 +2,8 @@
 
 /* global describe, it, it, expect, beforeEach, jest */
 import { spaceFleet } from './spaceFleet.js'
-import { Transformer, Hybrid } from '../../../ships/SpecialShapes.js'
+import { Transformer } from '../../../ships/Transformer.js'
+import { Hybrid } from '../../../ships/Hybrid.js'
 import { SpaceVessel, Shuttle, Installation } from './spaceShapes.js'
 import { jest } from '@jest/globals'
 

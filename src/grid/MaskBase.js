@@ -267,7 +267,7 @@ export class MaskBase extends CanvasGrid {
 
   applyTransform (bbc, map) {
     let out = bbc.store.empty
-    for (const i of this.bitsIndices(bbc.bits)) {
+    for (const i of this.indexer.bitsIndices(bbc.bits)) {
       out = bbc.store.setIdx(out, map[i], 1n)
     }
     return out
@@ -507,7 +507,8 @@ export class MaskBase extends CanvasGrid {
     const newDepth = layers.length + 2
     this.depth = newDepth
     this.store = this.defaultStore(newDepth, this.width, this.height)
-    this.bits = this.addLayersBits([oldBits, ...layers])
+    const bitss = [...layers].map(layer => layer.bits)
+    this.bits = this.addLayersBits([oldBits, ...bitss])
   }
 
   // ============================================================================

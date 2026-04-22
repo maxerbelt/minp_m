@@ -228,7 +228,6 @@ export class Packed extends RectMaskBase {
   /**
    * Get edge masks for morph operations on packed grid
    * Returns {left, right, top, bottom, notLeft, notRight, notTop, notBottom}
-   * @private
    */
   edgeMasks () {
     // generate independent empty bitboards for each edge mask; previous

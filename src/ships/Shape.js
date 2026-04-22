@@ -8,6 +8,7 @@ import { Blinker } from '../variants/Blinker.js'
 import { makeKey, parsePair } from '../core/utilities.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Mask } from '../grid/rectangle/mask.js'
+import { Zip } from '../core/Zip.js'
 
 export const token = 'geoffs-hidden-battle'
 
@@ -41,19 +42,62 @@ export class Shape {
     this.tip = tip
     this.tallyGroup = tallyGroup
     const area = cells.length
+    this.area = area
     this.footBoard = this._board.dilateExpand()
     this.footPrint = this.footBoard.occupancy
-    this.displacement = (area + this.footPrint) / 2
-    this.vulnerable = []
-    this.hardened = []
-    this.immune = []
-    this.attachedWeapons = {}
+    this.size = area
+  }
+  get attachedWeapons () {
+    return this._attachedWeapons || {}
+  }
+  set attachedWeapons (weapons) {
+    this._attachedWeapons = weapons
+  }
+  get tip () {
+    return this._tip
+  }
+  set tip (newTip) {
+    this._tip = newTip
+  }
+
+  get displacement () {
+    return (this.area + this.footPrint) / 2
+  }
+  set displacement (_newDisplacement) {
+    // Displacement is calculated from area and footprint, so it cannot be set directly.
+    throw new Error(
+      'Displacement cannot be set directly. It is calculated from area and footprint.'
+    )
+  }
+  get vulnerable () {
+    if (this._vulnerable) return this._vulnerable
+    this._vulnerable = []
+    return this._vulnerable
+  }
+  set vulnerable (newVulnerable) {
+    this._vulnerable = newVulnerable
+  }
+  get hardened () {
+    if (this._hardened) return this._hardened
+    this._hardened = []
+    return this._hardened
+  }
+  set hardened (newHardened) {
+    this._hardened = newHardened
+  }
+  get immune () {
+    if (this._immune) return this._immune
+    this._immune = []
+    return this._immune
+  }
+  set immune (newImmune) {
+    this._immune = newImmune
   }
 
   _normalizeRackCoordinates (racks) {
     if (!racks) return []
 
-    const coordinates = racks instanceof Set ? [...racks] : racks
+    const coordinates = Zip.toArray(racks)
     return coordinates
       .map(this._extractRackCoordinates)
       .filter(([r, c]) => Number.isFinite(r) && Number.isFinite(c))

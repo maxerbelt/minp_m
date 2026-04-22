@@ -784,7 +784,7 @@ describe('Mask - additional methods and edge cases', () => {
         const mask2 = new Mask(3, 3)
         mask2.set(2, 2)
         const oldBits = mask1.bits
-        mask1.addLayers([mask2.bits])
+        mask1.addLayers([mask2])
 
         // Depth should increase
         expect(mask1.depth).toBe(3) // old depth (1) + layers.length (1) + 1 = 3
@@ -802,7 +802,7 @@ describe('Mask - additional methods and edge cases', () => {
         mask2.set(2, 2)
         mask2.set(3, 3)
 
-        mask1.addLayers([mask2.bits])
+        mask1.addLayers([mask2])
 
         // The resulting mask should encode both the old mask and the new layers
         // Occupancy in multi-layer mode may be different due to multi-color encoding
@@ -818,7 +818,7 @@ describe('Mask - additional methods and edge cases', () => {
         const layer2 = new Mask(3, 3)
         layer2.set(2, 2)
 
-        mask1.addLayers([layer1.bits, layer2.bits])
+        mask1.addLayers([layer1, layer2])
 
         expect(mask1.depth).toBe(4) // 1 + 2 + 1 = 4
         expect(mask1.bits).not.toBe(0n)
@@ -832,7 +832,7 @@ describe('Mask - additional methods and edge cases', () => {
         mask2.set(2, 2)
 
         const oldStore = mask1.store
-        mask1.addLayers([mask2.bits])
+        mask1.addLayers([mask2])
 
         // Store should be different (new instance)
         expect(mask1.store).not.toBe(oldStore)
@@ -851,7 +851,7 @@ describe('Mask - additional methods and edge cases', () => {
         const layer1bits = new Mask(4, 4)
         layer1bits.set(2, 2)
 
-        mask1.addLayers([layer1bits.bits])
+        mask1.addLayers([layer1bits])
 
         // After addLayers, the bits should be a multi-color bitboard where colors represent layers
         // NOT an array with background prepended
@@ -868,7 +868,7 @@ describe('Mask - additional methods and edge cases', () => {
         const layer1 = new Mask(width, height)
         layer1.set(1, 1)
 
-        mask1.addLayers([layer1.bits])
+        mask1.addLayers([layer1])
 
         expect(mask1.width).toBe(width)
         expect(mask1.height).toBe(height)

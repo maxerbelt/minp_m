@@ -1,7 +1,7 @@
 /**
  * Replacer function for JSON.stringify to handle non-serializable types
  * @private
- * @param {string} key - The key being serialized (unused)
+ * @param {string} _key - The key being serialized (unused)
  * @param {any} value - The value to serialize
  * @returns {any} The serializable representation of the value
  */

@@ -10,7 +10,7 @@ import {
   DeepSeaVessel,
   Plane
 } from './SeaShape.js'
-import { Hybrid } from '../../../ships/SpecialShapes.js'
+import { Hybrid } from '../../../ships/Hybrid.js'
 // Jest it suite
 describe('SeaShips - Buildings', () => {
   it('seaShipsCatalogue is exported and has baseShapes', () => {

@@ -305,7 +305,6 @@ class Enemy extends Waters {
   }
 
   onClickOppoCell (hintR, hintC) {
-    if (!this.canTakeTurn()) return
     if (!this.opponent) return
     this.UI.removeHighlightAoE()
     if (this.loadOut.isNotArming()) return

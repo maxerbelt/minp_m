@@ -9,7 +9,7 @@ import {
 } from './SeaShape.js'
 
 import { seaAndLandShipsCatalogue } from './seaShipsCatalogue.js'
-import { Hybrid } from '../../../ships/SpecialShapes.js'
+import { Hybrid } from '../../../ships/Hybrid.js'
 import { SpecialCells, StandardCells } from '../../../ships/SubShape.js'
 
 const undergroundBunker = new Building('Underground Bunker', 'U', 'H', [

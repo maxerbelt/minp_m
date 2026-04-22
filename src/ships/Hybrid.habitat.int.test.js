@@ -1,11 +1,11 @@
 /* eslint-env jest */
 
-/* global describe, it,   beforeEach, jest */
+/* global describe, it, beforeEach, jest */
 
-import { expect, jest } from '@jest/globals'
+import { describe, it, beforeEach, jest } from '@jest/globals'
 import { Installation, SpaceVessel } from '../terrains/space/js/spaceShapes.js'
 import { space, asteroid } from '../terrains/space/js/space.js'
-import { Hybrid } from './SpecialShapes.js'
+import { Hybrid } from './Hybrid.js'
 import { SpecialCells, StandardCells } from './SubShape.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { Variant3 } from '../variants/Variant3.js'

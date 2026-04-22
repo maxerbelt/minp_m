@@ -2,16 +2,13 @@
 
 /* global describe, it, expect, beforeEach, jest */
 
-import { jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
-// Variables for dynamically imported modules
-let Transformer, Hybrid, TransformableVariants, mixed, Variant3
-
+let Transformer, TransformableVariants
 // Mock dependencies with dynamic imports
 jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   mixed: { title: 'Mixed Terrain', type: 'mixed' }
 }))
-
 jest.unstable_mockModule('./Shape.js', () => ({
   Shape: jest.fn(function (letter, symmetry, cells, group, tip, racks) {
     this.letter = letter
@@ -25,7 +22,6 @@ jest.unstable_mockModule('./Shape.js', () => ({
     this.size = cells ? cells.length : 0
   })
 }))
-
 jest.unstable_mockModule('../variants/TransformableVariants.js', () => ({
   TransformableVariants: jest.fn(function (forms) {
     this.forms = forms
@@ -34,7 +30,6 @@ jest.unstable_mockModule('../variants/TransformableVariants.js', () => ({
     this.placeables = jest.fn().mockReturnValue([])
   })
 }))
-
 jest.unstable_mockModule('../variants/Variant3.js', () => ({
   Variant3: jest.fn(function (cells, subGroups, symmetry) {
     this.cells = cells
@@ -42,22 +37,14 @@ jest.unstable_mockModule('../variants/Variant3.js', () => ({
     this.symmetry = symmetry
   })
 }))
-
 beforeEach(async () => {
-  const specialShapesModule = await import('./SpecialShapes.js')
+  const specialShapesModule = await import('./Transformer.js')
   Transformer = specialShapesModule.Transformer
-  Hybrid = specialShapesModule.Hybrid
 
   const transformableVariantsModule = await import(
     '../variants/TransformableVariants.js'
   )
   TransformableVariants = transformableVariantsModule.TransformableVariants
-
-  const terrainModule = await import('../terrains/all/js/terrain.js')
-  mixed = terrainModule.mixed
-
-  const variant3Module = await import('../variants/Variant3.js')
-  Variant3 = variant3Module.Variant3
 
   jest.clearAllMocks()
 })
@@ -382,271 +369,6 @@ describe('Transformer', () => {
   describe('type', () => {
     it('should return T', () => {
       expect(transformer.type()).toBe('T')
-    })
-  })
-})
-
-describe('Hybrid', () => {
-  let mockSubGroup1
-  let mockSubGroup2
-  let mockSubGroups
-  let hybrid
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-
-    mockSubGroup1 = {
-      cells: [
-        [0, 0],
-        [1, 1]
-      ],
-      board: { occupancy: 2 },
-      subterrain: { title: 'Water' },
-      faction: 0,
-      setBoardFromSecondary: jest.fn()
-    }
-
-    mockSubGroup2 = {
-      cells: [
-        [2, 2],
-        [3, 3],
-        [4, 4]
-      ],
-      board: { occupancy: 3 },
-      subterrain: { title: 'Land' },
-      faction: 0,
-      setBoardFromSecondary: jest.fn()
-    }
-
-    mockSubGroups = [mockSubGroup1, mockSubGroup2]
-
-    hybrid = new Hybrid(
-      'Custom Hybrid',
-      'H',
-      'ASYM',
-      [
-        [0, 0],
-        [1, 1],
-        [2, 2],
-        [3, 3],
-        [4, 4]
-      ],
-      mockSubGroups,
-      'Custom tip',
-      {}
-    )
-  })
-
-  describe('constructor', () => {
-    it('should initialize with provided properties', () => {
-      expect(hybrid.letter).toBe('H')
-      expect(hybrid.symmetry).toBe('ASYM')
-      expect(hybrid.size).toBe(5)
-    })
-
-    it('should set primary to first subgroup', () => {
-      expect(hybrid.primary).toBe(mockSubGroup1)
-    })
-
-    it('should set secondary to second subgroup', () => {
-      expect(hybrid.secondary).toBe(mockSubGroup2)
-    })
-
-    it('should call setBoardFromSecondary on primary', () => {
-      expect(mockSubGroup1.setBoardFromSecondary).toHaveBeenCalledWith(
-        hybrid.board,
-        mockSubGroup2.board
-      )
-    })
-
-    it('should store all subGroups', () => {
-      expect(hybrid.subGroups).toEqual(mockSubGroups)
-    })
-
-    it('should calculate faction for each subgroup', () => {
-      expect(mockSubGroup1.faction).toBe(0.4)
-      expect(mockSubGroup2.faction).toBe(0.6)
-    })
-
-    it('should set description text', () => {
-      expect(hybrid.descriptionText).toBe('Custom Hybrid')
-    })
-
-    it('should set subterrain to mixed', () => {
-      expect(hybrid.subterrain).toBe(mixed)
-    })
-
-    it('should set group to X', () => {
-      expect(hybrid.group).toBe('X')
-    })
-
-    it('should use custom tip if provided', () => {
-      const customHybrid = new Hybrid(
-        'Test',
-        'T',
-        'ASYM',
-        [[0, 0]],
-        [mockSubGroup1],
-        'Custom Tip',
-        {}
-      )
-      expect(customHybrid.tip).toBe('Custom Tip')
-    })
-
-    it('should use default tip if not provided', () => {
-      const defaultHybrid = new Hybrid(
-        'Default Test',
-        'T',
-        'ASYM',
-        [[0, 0]],
-        [mockSubGroup1],
-        null,
-        {}
-      )
-      expect(defaultHybrid.tip).toContain('Default Test')
-    })
-  })
-
-  describe('displacementFor', () => {
-    it('should calculate displacement for matching subterrain', () => {
-      const subterrain = mockSubGroup1.subterrain
-      hybrid.displacement = 10
-      const result = hybrid.displacementFor(subterrain)
-      expect(result).toBe(4)
-    })
-
-    it('should calculate displacement for different subterrain', () => {
-      const subterrain = mockSubGroup2.subterrain
-      hybrid.displacement = 10
-      const result = hybrid.displacementFor(subterrain)
-      expect(result).toBe(6)
-    })
-
-    it('should return 0 if no matching subterrain', () => {
-      const subterrain = { title: 'Sky' }
-      hybrid.displacement = 10
-      const result = hybrid.displacementFor(subterrain)
-      expect(result).toBe(0)
-    })
-
-    it('should handle multiple matching groups', () => {
-      const subterrain = { title: 'Water' }
-      mockSubGroup1.subterrain = subterrain
-      mockSubGroup2.subterrain = subterrain
-      hybrid.displacement = 10
-      const result = hybrid.displacementFor(subterrain)
-      expect(result).toBe(10)
-    })
-
-    it('should handle zero displacement', () => {
-      hybrid.displacement = 0
-      const result = hybrid.displacementFor({ title: 'Water' })
-      expect(result).toBe(0)
-    })
-  })
-
-  describe('variants', () => {
-    it('should return Variant3 instance', () => {
-      const result = hybrid.variants()
-      expect(Variant3).toHaveBeenCalledWith(
-        hybrid.board,
-        [mockSubGroup1, mockSubGroup2],
-        'ASYM'
-      )
-    })
-
-    it('should create variants with correct parameters', () => {
-      hybrid.variants()
-      expect(Variant3).toHaveBeenCalled()
-    })
-  })
-
-  describe('type', () => {
-    it('should return M', () => {
-      expect(hybrid.type()).toBe('M')
-    })
-  })
-
-  describe('sunkDescription', () => {
-    it('should return Destroyed', () => {
-      expect(hybrid.sunkDescription()).toBe('Destroyed')
-    })
-
-    it('should ignore separator parameter', () => {
-      expect(hybrid.sunkDescription('|')).toBe('Destroyed')
-    })
-  })
-
-  describe('description', () => {
-    it('should return description text', () => {
-      expect(hybrid.description()).toBe('Custom Hybrid')
-    })
-
-    it('should return custom description if set', () => {
-      hybrid.descriptionText = 'New Description'
-      expect(hybrid.description()).toBe('New Description')
-    })
-  })
-
-  describe('integration scenarios', () => {
-    it('should handle hybrid with different faction weights', () => {
-      const group1 = {
-        cells: [[0, 0]],
-        board: { occupancy: 1 },
-        subterrain: { title: 'Water' },
-        faction: 0,
-        setBoardFromSecondary: jest.fn()
-      }
-      const group2 = {
-        cells: [
-          [1, 1],
-          [2, 2],
-          [3, 3]
-        ],
-        board: { occupancy: 3 },
-        subterrain: { title: 'Land' },
-        faction: 0,
-        setBoardFromSecondary: jest.fn()
-      }
-      const h = new Hybrid(
-        'Test',
-        'T',
-        'ASYM',
-        [
-          [0, 0],
-          [1, 1],
-          [2, 2],
-          [3, 3]
-        ],
-        [group1, group2],
-        null,
-        {}
-      )
-      expect(group1.faction).toBe(0.25)
-      expect(group2.faction).toBe(0.75)
-    })
-
-    it('should handle single subgroup', () => {
-      const group = {
-        cells: [[0, 0]],
-        board: { occupancy: 1 },
-        subterrain: { title: 'Water' },
-        faction: 0,
-        setBoardFromSecondary: jest.fn()
-      }
-      const h = new Hybrid('Single', 'S', 'ASYM', [[0, 0]], [group], null, {})
-      expect(h.primary).toBe(group)
-      expect(h.secondary).toBe(undefined)
-      expect(group.faction).toBe(1)
-    })
-
-    it('should calculate displacement correctly with multiple calls', () => {
-      const water = mockSubGroup1.subterrain
-      const land = mockSubGroup2.subterrain
-      hybrid.displacement = 20
-      const waterDisp = hybrid.displacementFor(water)
-      const landDisp = hybrid.displacementFor(land)
-      expect(waterDisp + landDisp).toBe(20)
     })
   })
 })

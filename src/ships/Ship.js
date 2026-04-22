@@ -41,12 +41,20 @@ export class Ship {
     return this._weaponsById
   }
   set weaponsById (weaponsById) {
-    console.trace('Setting weaponsById:', weaponsById)
-    let wid
-    const numNew = Object.values(weaponsById).length
+    if (weaponsById instanceof Map) {
+      this._weaponsById = weaponsById
+      return
+    }
+    const weapons = Object.values(weaponsById)
+    const weaponIDs = weapons.map(w => w.id)
+    console.trace('Setting weaponsById:', weaponIDs, weapons)
+
+    const numNew = weapons.length
     if (numNew === 0) {
       return
     }
+
+    let wid
     const numWeapon = this._weaponsById?.size || 0
     if (numWeapon === 0) {
       wid = this.weaponsFromShape(weaponsById)
@@ -60,18 +68,21 @@ export class Ship {
     if (this._weapons) {
       return this._weapons
     }
-    this._weapons = this._weaponEntriesFromIdMap().reduce(
-      (obj, [key, weapon]) => {
-        obj[key] = weapon
-        return obj
-      },
-      {}
-    )
+
+    if (!this._weaponsById?.size) return {}
+    this._weapons = this._idWeaponMapToWeaponPositionObject()
     return this._weapons
   }
+  _idWeaponMapToWeaponPositionObject () {
+    return this._weaponEntriesFromIdMap().reduce((obj, [key, weapon]) => {
+      obj[key] = weapon
+      return obj
+    }, {})
+  }
+
   set weapons (weapons) {
     console.trace()
-    this._weapons = weapons
+    this.weaponsById = weapons
   }
   get cells () {
     // console.trace()
@@ -471,7 +482,7 @@ export class Ship {
   weaponsFromPlacement (placeWeaponSystem) {
     let weaponsById = this.weaponsById || new Map()
 
-    const zipped = Zip.lenient(
+    const zipped = Zip.match(
       weaponsById.entries(),
       Object.entries(placeWeaponSystem)
     )

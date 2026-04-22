@@ -1,6 +1,7 @@
 import { StoreBase } from './storeBase.js'
 import { popcountBigInt } from '../placeTools.js'
 import { bitsSafeBI } from '../bitHelpers.js'
+import { errorMsg } from '../../core/errorMsg.js'
 const one = 1n
 const zero = 0n
 
@@ -447,11 +448,22 @@ export class StoreBig extends StoreBase {
     return this.clampToCell(word) != 0n
   }
   extractRange (bitboard, bitPosition, rangeMask) {
-    const pos =
-      typeof bitPosition === 'bigint' ? bitPosition : BigInt(bitPosition)
-    const bb = typeof bitboard === 'bigint' ? bitboard : BigInt(bitboard)
-    const mask = typeof rangeMask === 'bigint' ? rangeMask : BigInt(rangeMask)
-    return (bb >> pos) & mask
+    try {
+      const pos =
+        typeof bitPosition === 'bigint' ? bitPosition : BigInt(bitPosition)
+      const bb = typeof bitboard === 'bigint' ? bitboard : BigInt(bitboard)
+      const mask = typeof rangeMask === 'bigint' ? rangeMask : BigInt(rangeMask)
+      return (bb >> pos) & mask
+    } catch (error) {
+      throw new Error(
+        errorMsg('Error in extractRange', {
+          bitboard,
+          bitPosition,
+          rangeMask,
+          error
+        })
+      )
+    }
   }
   extractRowAtIndex (bitboard, rowIndex, gridWidth, rowMaskForWidth) {
     const rowStart = this.bitPos(Number(rowIndex) * Number(gridWidth))

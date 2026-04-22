@@ -108,16 +108,20 @@ export class Zip {
    * @param {boolean} padToLongest - true to pad to max length, false to stop at min length
    * @returns {Tuple[]} Array of tuples where each tuple is [element0, element1, ...elementN]
    */
-  static _zip (arrays, padToLongest) {
+  static _zip (arrays, padToLongest, match = false) {
     if (arrays.length === 0) return []
 
     // Convert all inputs to arrays once and cache the results
     const convertedArrays = arrays.map(arr => Zip.toArray(arr))
 
+    const max = Math.max(...convertedArrays.map(arr => arr.length))
+    const min = Math.min(...convertedArrays.map(arr => arr.length))
+    if (match && max !== min) {
+      throw new Error('input collections do not match in sizes')
+    }
+
     // Determine target length based on strategy
-    const targetLength = padToLongest
-      ? Math.max(...convertedArrays.map(arr => arr.length))
-      : Math.min(...convertedArrays.map(arr => arr.length))
+    const targetLength = padToLongest ? max : min
 
     // Build result tuples, padding with undefined as needed in lenient mode
     const result = new Array(targetLength)
@@ -182,5 +186,11 @@ export class Zip {
    */
   static lenientN (...arrays) {
     return Zip._zip(arrays, true)
+  }
+  static match (a, b) {
+    return Zip.matchN(a, b)
+  }
+  static matchN (...arrays) {
+    return Zip._zip(arrays, false, true)
   }
 }

@@ -1,4 +1,5 @@
-import { Transformer, Hybrid } from '../../../ships/SpecialShapes.js'
+import { Transformer } from '../../../ships/Transformer.js'
+import { Hybrid } from '../../../ships/Hybrid.js'
 import { StandardCells, SpecialCells } from '../../../ships/SubShape.js'
 import {
   attackCraft,

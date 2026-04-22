@@ -1,7 +1,7 @@
 /* eslint-env jest */
 
 /* global describe, it, expect, beforeEach */
-
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { Packed } from './packed.js'
 import { Store32 } from '../bitStore/store32.js'
 
@@ -418,7 +418,7 @@ describe('Packed', () => {
 
         const oldDepth = p1.depth
         const oldBits = p1.bits.slice() // clone
-        p1.addLayers([p2.bits])
+        p1.addLayers([p2])
 
         // Depth should be layers.length + 2 = 1 + 2 = 3
         expect(p1.depth).toBe(3)
@@ -436,7 +436,7 @@ describe('Packed', () => {
         p2.set(2, 2, 1)
         p2.set(3, 3, 2)
 
-        p1.addLayers([p2.bits])
+        p1.addLayers([p2])
 
         expect(p1.bits).toBeInstanceOf(Uint32Array)
         expect(p1.bits.length > 0).toBe(true)
@@ -451,7 +451,7 @@ describe('Packed', () => {
         const layer2 = new Packed(3, 3)
         layer2.set(2, 2, 1)
 
-        p1.addLayers([layer1.bits, layer2.bits])
+        p1.addLayers([layer1, layer2])
 
         // Depth should be layers.length + 2 = 2 + 2 = 4
         expect(p1.depth).toBe(4)
@@ -465,7 +465,7 @@ describe('Packed', () => {
         p2.set(2, 2, 1)
 
         const oldStore = p1.store
-        p1.addLayers([p2.bits])
+        p1.addLayers([p2])
 
         // Store should be different (new instance)
         expect(p1.store).not.toBe(oldStore)
@@ -482,7 +482,7 @@ describe('Packed', () => {
         const layer1bits = new Packed(4, 4)
         layer1bits.set(2, 2, 1)
 
-        p1.addLayers([layer1bits.bits])
+        p1.addLayers([layer1bits])
 
         // After addLayers, bits should be properly encoded Uint32Array
         expect(p1.bits).toBeInstanceOf(Uint32Array)
@@ -499,7 +499,7 @@ describe('Packed', () => {
         const layer1 = new Packed(width, height)
         layer1.set(1, 1, 1)
 
-        p1.addLayers([layer1.bits])
+        p1.addLayers([layer1])
 
         expect(p1.width).toBe(width)
         expect(p1.height).toBe(height)
@@ -513,7 +513,7 @@ describe('Packed', () => {
         const layer1 = new Packed(8, 8, null, null, 4)
         layer1.set(1, 1, 1)
 
-        p1.addLayers([layer1.bits])
+        p1.addLayers([layer1])
         expect(p1.width).toBe(8)
         expect(p1.height).toBe(8)
         // Depth should be 1 + 2 = 3
