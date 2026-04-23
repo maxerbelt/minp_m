@@ -1,6 +1,7 @@
 /* eslint-env jest */
 
-/* global describe, it, it, expect,   jest */
+/* global describe, it,  expect,   jest */
+import { describe, it, expect, jest } from '@jest/globals'
 import {
   Megabomb,
   Kinetic,
