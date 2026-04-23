@@ -1,5 +1,8 @@
 /* eslint-env jest */
-/* global describe, it, expect, beforeEach, afterEach, jest */
+
+/* global describe,it,expect,beforeEach,jest */
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+
 import { SubBoard } from './subBoard.js'
 import { Mask } from './rectangle/mask.js'
 
@@ -20,7 +23,6 @@ const occupancyCoords3 = [
   [2, 1, 2]
 ]
 let mask
-let mask3
 
 describe('SubBoard', () => {
   let baseMask
@@ -71,7 +73,7 @@ describe('SubBoard', () => {
 
       const sb = new SubBoard(7, 4, 2, 5, baseMaskInstance)
 
-      const locations = [...sb.locations()]
+      const locations = [...sb.occupiedLocations()]
       expect(locations.length).toBe(8)
       expect(sb.width).toBe(2)
       expect(sb.height).toBe(5)
@@ -224,13 +226,13 @@ describe('SubBoard', () => {
   // Locations Generator
   // ============================================================================
 
-  describe('locations() generator', () => {
+  describe('occupiedLocations() generator', () => {
     it('yields world-relative coordinates of all set cells', () => {
       subBoard.set(2, 2)
       subBoard.set(3, 3)
       subBoard.set(5, 5)
 
-      const locations = Array.from(subBoard.locations())
+      const locations = Array.from(subBoard.occupiedLocations())
 
       expect(locations).toContainEqual([2, 2])
       expect(locations).toContainEqual([3, 3])
@@ -239,7 +241,7 @@ describe('SubBoard', () => {
     })
 
     it('yields nothing for empty SubBoard', () => {
-      const locations = Array.from(subBoard.locations())
+      const locations = Array.from(subBoard.occupiedLocations())
       expect(locations.length).toBe(0)
     })
 
@@ -249,7 +251,7 @@ describe('SubBoard', () => {
       subBoard.set(4, 4)
       subBoard.set(6, 6)
 
-      const locations = Array.from(subBoard.locations())
+      const locations = Array.from(subBoard.occupiedLocations())
 
       // All should fall within [2,2] to [6,6]
       for (const [x, y] of locations) {

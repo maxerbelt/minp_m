@@ -1,11 +1,11 @@
 /* eslint-env jest */
 
-/* global describe, it, it, expect, beforeEach, jest */
+/* global describe, it,  expect, jest */
 import { spaceFleet } from './spaceFleet.js'
 import { Transformer } from '../../../ships/Transformer.js'
 import { Hybrid } from '../../../ships/Hybrid.js'
 import { SpaceVessel, Shuttle, Installation } from './spaceShapes.js'
-import { jest } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
 
 // Jest it suite
 describe('spaceFleet exports', () => {

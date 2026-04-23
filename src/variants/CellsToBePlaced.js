@@ -35,7 +35,7 @@ export class CellsToBePlaced {
     return true
   }
   isWrongZone () {
-    for (const [c, r] of this.board.locations()) {
+    for (const [c, r] of this.board.occupiedLocations()) {
       if (this.isInMatchingZone(r, c) === false) {
         return true
       }
@@ -44,7 +44,7 @@ export class CellsToBePlaced {
   }
 
   isNotInBounds () {
-    for (const [c, r] of this.board.locations()) {
+    for (const [c, r] of this.board.occupiedLocations()){
       if (!this.target.boundsChecker(r, c)) {
         return true
       }
@@ -52,7 +52,7 @@ export class CellsToBePlaced {
     return false
   }
   isOverlapping (shipCellGrid) {
-    for (const [c, r] of this.board.locations()) {
+    for (const [c, r] of this.board.occupiedLocations()) {
       if (shipCellGrid[r][c] !== null) {
         return true
       }
@@ -60,7 +60,7 @@ export class CellsToBePlaced {
     return false
   }
   isTouching (shipCellGrid) {
-    for (const [c, r] of this.board.locations()) {
+    for (const [c, r] of this.board.occupiedLocations()) {
       if (this.noTouch(r, c, shipCellGrid) === false) {
         return true
       }

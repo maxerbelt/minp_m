@@ -139,7 +139,26 @@ export function enterCursor (event, viewModel, model) {
   dragNDrop.handleDropEvent(cell, model, viewModel)
 }
 
-function createSelection (viewModel, ships, shipCellGrid, shipId) {
+function makeSelection (
+  ship,
+  offsetX,
+  offsetY,
+  viewModel,
+  shipElement,
+  variantIndex
+) {
+  return new DraggedShip(
+    ship,
+    offsetX,
+    offsetY,
+    viewModel.cellSize(),
+    shipElement,
+    variantIndex,
+    viewModel.setDragShipContents.bind(viewModel)
+  )
+}
+
+function createSelection (viewModel, ships, shipId) {
   const shipElement =
     shipId === null
       ? viewModel.getFirstTrayItem()
@@ -150,15 +169,7 @@ function createSelection (viewModel, ships, shipCellGrid, shipId) {
   const ship = ships.find(s => s.id === id)
   const variantIndex = Number.parseInt(shipElement.dataset.variant) || 0
 
-  selection = new DraggedShip(
-    ship,
-    0,
-    0,
-    viewModel.cellSize(),
-    shipElement,
-    variantIndex,
-    viewModel.setDragShipContents.bind(viewModel)
-  )
+  selection = makeSelection(ship, 0, 0, viewModel, shipElement, variantIndex)
   selection.shown = false
   cursor.y = 0
   cursor.x = 0
@@ -177,7 +188,7 @@ export function tabCursor (event, viewModel, model) {
     const shipId = clickedShip?.ship.id
     viewModel.removeClicked()
     clickedShip = null
-    createSelection(viewModel, model.ships, model.shipCellGrid, shipId)
+    createSelection(viewModel, model.ships, shipId)
   } else {
     removeSelection()
 
@@ -343,7 +354,7 @@ class DragNDrop {
 
     const placing = selection.placeable().placeAt(r0, c0)
     const canPlace = placing.canPlace(shipCellGrid)
-    const cells = [...placing.board.locations()]
+    const cells = [...placing.board.occupiedLocations()]
     //  console.log('place: ', cells)
     for (const [cc, rr] of cells) {
       if (map.inBounds(rr, cc)) {
@@ -529,18 +540,18 @@ class DragNDrop {
 
     const variantIndex = Number.parseInt(shipElement.dataset.variant)
     cursor.isDragging = true
-    selection = new DraggedShip(
+    selection = makeSelection(
       ship,
       offsetX,
       offsetY,
-      viewModel.cellSize(),
+      viewModel,
       shipElement,
-      variantIndex,
-      viewModel.setDragShipContents.bind(viewModel)
+      variantIndex
     )
     selection.moveTo(e.clientX, e.clientY)
     shipElement.style.opacity = '0.6'
   }
+
   dragStart (viewModel, dragShip, ships) {
     dragShip.addEventListener(
       'dragstart',

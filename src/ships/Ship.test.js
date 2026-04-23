@@ -53,9 +53,12 @@ describe('Ship basic behaviors', () => {
 
     expect(s.getAllWeapons().length).toBe(2)
     expect(s.getAllWeaponEntries().length).toBe(2)
-    expect(s.hasWeapons()).toBe(true)
-    expect(s.getPrimaryWeaponSystem()).toBe(s.getAllWeapons()[0])
-    expect(s.getPrimaryWeapon()).toBe(s.getAllWeapons()[0].weapon)
+    expect(s.hasWeapon).toBe(true)
+    const primary = s.getPrimaryWeaponSystem()
+    expect(primary).toBe(s.weapons['1,2'])
+    const primaryWeapon = s.getPrimaryWeapon()
+    expect(primaryWeapon).toEqual({ name: 'w1' })
+    expect(primaryWeapon).toEqual(primary.weapon)
     expect(s.makeKeyIds()).toBe('1,2:10|2,3:11')
   })
 
@@ -141,7 +144,7 @@ describe('Ship - state management (reset, clone)', () => {
     expect(s.getTotalHits()).toBe(0)
     expect(s.sunk).toBe(false)
 
-    const ws = s._weaponArray()
+    const ws = s._weaponArray
 
     expect(ws.length).toBe(2)
     s.weapons['1,1'].reset()
@@ -302,7 +305,7 @@ describe('Ship - state isolation between instances', () => {
     s1.weapons = { '1,1': { id: 1 } }
     expect(s2.getTotalHits()).toBe(0)
     expect(s2.sunk).toBe(false)
-    expect(s2.hasWeapons()).toBe(false)
+    expect(s2.hasWeapon).toBe(false)
   })
 
   it('multiple ships have independent cells', () => {

@@ -177,10 +177,10 @@ export class AsciiGrid extends GridBase {
 
   /**
    * Creates an AsciiGrid from a mask object.
-   * Iterates mask.locations() and copies set cells to the new grid.
+   * Iterates mask.occupiedLocations) and copies set cells to the new grid.
    *
    * @static
-   * @param {Object} mask - Mask object with width, height, at(x,y), and locations() method
+   * @param {Object} mask - Mask object with width, height, at(x,y), and occupiedLocations) method
    * @param {string} [fillChar='.'] - Character for empty cells
    * @returns {AsciiGrid} New grid populated from mask data
    *
@@ -189,8 +189,7 @@ export class AsciiGrid extends GridBase {
    */
   static fromMask (mask, fillChar = '.') {
     const grid = new AsciiGrid(mask.width, mask.height, null, fillChar)
-    for (const [x, y] of mask.locations()) {
-      const color = mask.at(x, y)
+    for (const [x, y, color] of mask.occupiedLocationsAndValues()) {
       grid.set(x, y, color)
     }
     return grid

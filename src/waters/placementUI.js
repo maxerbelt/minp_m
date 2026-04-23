@@ -509,6 +509,10 @@ export class PlacementUI extends WatersUI {
     const dragShip = document.createElement('div')
     dragShip.className = 'drag-ship'
     const { index, board } = shape.infoShrunkUnder(cellHeight)
+    // const b2 = shape.boardFor(0)
+    // const ascii = board.toAscii
+    // const ascii2 = b2.toAscii
+    //  console.log( `Building drag ship for ${ship.letter} with shape:\n${ascii2} and shrunk shape:\n${ascii}`)
     dragShip.dataset.variant = index
     dragShip.dataset.type = 'ship'
     dragShip.dataset.id = ship.id

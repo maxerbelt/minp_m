@@ -1,6 +1,6 @@
-import { all } from './space.js'
 import { Shape } from '../../../ships/Shape.js'
 import {
+  all,
   spaceAndAsteroids,
   asteroid,
   core,

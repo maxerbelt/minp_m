@@ -85,7 +85,7 @@ export class ShipCellDisplayer {
    * @returns {boolean} True if ship has at least one weapon
    */
   static #hasWeapons (ship) {
-    return ship.weapons && Object.values(ship.weapons).length > 0
+    return ship.hasWeapon
   }
 
   /**

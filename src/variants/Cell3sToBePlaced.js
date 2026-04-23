@@ -21,7 +21,7 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
     return result
   }
   isWrongZone () {
-    const cells = [...this.board.locations()]
+    const cells = [...this.board.occupiedLocations()]
     const result = cells.some(([c, r]) => {
       return this.isInMatchingZone(r, c) === false
     })

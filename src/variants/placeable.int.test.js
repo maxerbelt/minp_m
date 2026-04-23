@@ -1,5 +1,6 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
+
 import { Mask } from '../grid/rectangle/mask.js'
 import { SubBoard } from '../grid/subBoard.js'
 /* global describe, jest, it, expect, beforeEach */
@@ -59,7 +60,7 @@ describe('Placeable integration', () => {
     expect(sb.at(7, 4))
     expect(placing.validator).toBe(validator)
 
-    const locations = [...sb.locations()]
+    const locations = [...sb.occupiedLocations()]
     expect(locations.length).toBe(8)
     expect(sb.width).toBe(2)
     expect(sb.height).toBe(5)
@@ -105,7 +106,7 @@ describe('Placeable integration', () => {
     expect(sb.at(7, 4))
     expect(placing.validator).toBe(validator)
 
-    const locations = [...sb.locations()]
+    const locations = [...sb.occupiedLocations()]
     expect(locations.length).toBe(8)
     expect(sb.width).toBe(2)
     expect(sb.height).toBe(5)

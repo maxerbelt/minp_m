@@ -40,38 +40,16 @@ export class Ship {
     this._weaponsById = new Map()
     return this._weaponsById
   }
-  set weaponsById (weaponsById) {
-    if (weaponsById instanceof Map) {
-      this._weaponsById = weaponsById
-      return
-    }
-    const weapons = Object.values(weaponsById)
-    const weaponIDs = weapons.map(w => w.id)
-    console.trace('Setting weaponsById:', weaponIDs, weapons)
-
-    const numNew = weapons.length
-    if (numNew === 0) {
-      return
-    }
-
-    let wid
-    const numWeapon = this._weaponsById?.size || 0
-    if (numWeapon === 0) {
-      wid = this.weaponsFromShape(weaponsById)
-    } else {
-      wid = this.weaponsFromPlacement(weaponsById)
-    }
-
-    this._weaponsById = wid
-  }
   get weapons () {
     if (this._weapons) {
       return this._weapons
     }
-
     if (!this._weaponsById?.size) return {}
     this._weapons = this._idWeaponMapToWeaponPositionObject()
     return this._weapons
+  }
+  set weapons (weapons) {
+    this._createOrUpdateWeapons(weapons)
   }
   _idWeaponMapToWeaponPositionObject () {
     return this._weaponEntriesFromIdMap().reduce((obj, [key, weapon]) => {
@@ -79,11 +57,77 @@ export class Ship {
       return obj
     }, {})
   }
-
-  set weapons (weapons) {
-    console.trace()
-    this.weaponsById = weapons
+  _createOrUpdateWeapons (weapons) {
+    const type = Zip.getType(weapons)
+    switch (type) {
+      case 'array':
+      case 'set':
+        this._createOrUpdateWeaponsArray([...weapons])
+        return
+      case 'map':
+        this._weaponsById = weapons
+        return
+      case 'object':
+        this._createOrUpdateWeaponsRaw(Object.entries(weapons))
+        return
+      default:
+        throw new Error(
+          'Invalid weaponsById format: expected Map, Array, Set, or Object'
+        )
+    }
   }
+  _importWeapons (weapons) {
+    const numWeapon = this.numWeapons
+    if (numWeapon === 0) {
+      return this._weaponsFromShape(weapons)
+    } else {
+      return this._weaponsFromPlacement(weapons)
+    }
+  }
+  _createOrUpdateWeaponsArray (weapons) {
+    const allAreArrays = weapons.every(Array.isArray)
+    if (allAreArrays) {
+      this._createOrUpdateWeaponsRaw(weapons)
+      return
+    }
+    this._weaponArray = weapons
+  }
+  _createOrUpdateWeaponsRaw (weapons) {
+    const numNew = weapons.length
+    if (numNew === 0) {
+      return
+    }
+    const weaponIDs = weapons.map(w => w.id)
+    console.trace('Setting weaponsById:', weaponIDs, weapons)
+    const { weaponsById, weaponArray } = this._importWeapons(weapons)
+    if (!weaponsById?.size) return {}
+    this._weaponsById = weaponsById
+    this._weaponArray = weaponArray
+    this._weapons = this._idWeaponMapToWeaponPositionObject()
+  }
+  get _weaponArray () {
+    if (this.__weaponArray) {
+      return this.__weaponArray
+    }
+    this.__weaponArray = this._defaultWeaponArray
+    return this.__weaponArray
+  }
+  get _defaultWeaponArray () {
+    return this._weaponsById?.values() || []
+  }
+  set _weaponArray (weapons) {
+    this.__weaponArray = [...weapons]
+  }
+  /**
+   * Check if any weapons are equipped
+   */
+  get hasWeapon () {
+    return this.numWeapons > 0
+  }
+  get numWeapons () {
+    return this._weaponArray.length
+  }
+
   get cells () {
     // console.trace()
     return this._cellsArray || this.board.toCoords
@@ -162,7 +206,7 @@ export class Ship {
    * Internal: Reset state of all equipped weapons
    */
   _resetAllWeapons () {
-    for (const weapon of this.getAllWeapons()) {
+    for (const weapon of this._weaponArray) {
       weapon.reset?.()
     }
   }
@@ -214,22 +258,11 @@ export class Ship {
     return Object.entries(this.weapons)
   }
 
-  _weaponArray () {
-    return Object.values(this.weapons)
-  }
-
   /**
    * @param {{ (weapon: any): any; (arg0: any): unknown; }} predicate
    */
   _filterWeaponEntries (predicate) {
     return this._weaponEntries().filter(([, weapon]) => predicate(weapon))
-  }
-
-  /**
-   * Check if any weapons are equipped
-   */
-  hasWeapons () {
-    return this._weaponArray().length > 0
   }
 
   /**
@@ -279,7 +312,7 @@ export class Ship {
    * Get first weapon system from all weapons
    */
   getPrimaryWeaponSystem () {
-    return firstElement(this._weaponArray())
+    return firstElement(this._weaponArray)
   }
 
   /**
@@ -326,7 +359,7 @@ export class Ship {
     if (this.weaponsById.has(id)) {
       return this.weaponsById.get(id)
     }
-    return this._weaponArray().find(weapon => weapon.id === id)
+    return this._weaponArray.find(weapon => weapon.id === id)
   }
 
   /**
@@ -387,7 +420,7 @@ export class Ship {
    * Get all equipped weapons as array
    */
   getAllWeapons () {
-    return this._weaponArray()
+    return this._weaponArray
   }
 
   /**
@@ -431,36 +464,23 @@ export class Ship {
       0
     )
   }
-  /**
-   * @param {import("../terrains/sea/js/SeaShape.js").SeaVessel} shape
-   */
+
   static createFromShape (shape) {
     const ship = new Ship(Ship.id, shape.symmetry, shape.letter)
     // Convert shape's weapon system to ship format
     if (shape.weaponSystem) {
-      ship.weaponsById = shape.weaponSystem
+      ship.weapons = shape.weaponSystem
     }
 
     ship._shape = shape
     return ship
   }
 
-  /**
-   * Populate weapons from shape's weapon system
-   * @param {any} shapeWeaponSystem
-   */
-  setWeaponsFromShape (shapeWeaponSystem) {
-    this.weaponsById = shapeWeaponSystem
-  }
-
-  /**
-   * @param {Map<any, any> | { weaponsById: Map<any, any>; weaponPositions: any; } | ArrayLike<any> | { [s: string]: any; }} shapeWeaponSystem
-   */
-  weaponsFromShape (shapeWeaponSystem) {
+  _weaponsFromShape (shapeWeaponSystem) {
     let weaponsById = new Map()
+    let weaponArray = []
 
-    const wpsList = Object.entries(shapeWeaponSystem)
-    for (const [key, weaponSystem] of wpsList) {
+    for (const [key, weaponSystem] of shapeWeaponSystem) {
       // Skip non-object values (in case of test mocks or invalid data)
       if (typeof weaponSystem !== 'object' || weaponSystem === null) {
         continue
@@ -471,23 +491,20 @@ export class Ship {
         weaponSystem.col = c
         if (weaponSystem.id != null) {
           weaponsById.set(weaponSystem.id, weaponSystem)
+          weaponArray.push(weaponSystem)
         }
       }
     }
-    return weaponsById
+    return { weaponsById, weaponArray }
   }
-  /**
-   * @param {Map<any, any> | { weaponsById: Map<any, any>; weaponPositions: any; } | ArrayLike<any> | { [s: string]: any; }} placeWeaponSystem
-   */
-  weaponsFromPlacement (placeWeaponSystem) {
-    let weaponsById = this.weaponsById || new Map()
 
-    const zipped = Zip.match(
-      weaponsById.entries(),
-      Object.entries(placeWeaponSystem)
-    )
-    //    for (const [[idKey, weaponSystem], [coordKey, oldWeaponSystem]] of zipped) {
-    for (const [[, weaponSystem], [coordKey]] of zipped) {
+  _weaponsFromPlacement (placeWeaponSystem) {
+    let weaponsById = this.weaponsById
+    let weaponArray = this._weaponArray
+
+    const zipped = Zip.match(weaponArray, placeWeaponSystem)
+    //    for (const [ weaponSystem, [coordKey, oldWeaponSystem]] of zipped) {
+    for (const [weaponSystem, [coordKey]] of zipped) {
       // Skip non-object values (in case of test mocks or invalid data)
       if (typeof weaponSystem !== 'object' || weaponSystem === null) {
         continue
@@ -498,7 +515,7 @@ export class Ship {
         weaponSystem.col = c
       }
     }
-    return weaponsById
+    return { weaponsById, weaponArray }
   }
   /**
    * Create a clone of this ship
@@ -829,7 +846,7 @@ export class Ship {
    * @param {any[][]} shipCellGrid
    */
   addToGrid (shipCellGrid) {
-    for (const [c, r] of this.board.locations()) {
+    for (const [c, r] of this.board.occupiedLocations()) {
       shipCellGrid[r][c] = { id: this.id, letter: this.letter }
     }
   }

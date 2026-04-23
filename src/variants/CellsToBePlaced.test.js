@@ -63,7 +63,7 @@ describe('CellsToBePlaced', () => {
       expect(sb.at(7, 4))
       expect(placing.validator).toBe(validator)
       expect(placing.zoneDetail).toBe(0)
-      const locations = [...sb.locations()]
+      const locations = [...sb.occupiedLocations()]
       expect(locations.length).toBe(8)
       expect(sb.width).toBe(2)
       expect(sb.height).toBe(5)
@@ -102,7 +102,7 @@ describe('CellsToBePlaced', () => {
       expect(sb.at(7, 4))
       expect(placing.validator).toBe(validator)
       expect(placing.zoneDetail).toBe(0)
-      const locations = [...sb.locations()]
+      const locations = [...sb.occupiedLocations()]
       expect(locations.length).toBe(8)
       expect(sb.width).toBe(2)
       expect(sb.height).toBe(5)

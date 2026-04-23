@@ -1,17 +1,19 @@
 /* eslint-env jest */
 
-/* global describe, it, expect, beforeEach, jest */
+/* global describe, it, expect, beforeEach  jest */
 
-import { expect, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { ArmedShuttle } from './spaceShapes.js'
 import { Missile } from './spaceWeapons.js'
 import { Mask } from '../../../grid/rectangle/mask.js'
 import { WeaponVariant } from '../../../variants/WeaponVariant.js'
 import { StandardCells, SpecialCells } from '../../../ships/SubShape.js'
 
+let missileBoat
+
 describe('Armed shape', () => {
-  it('should initialize with correct board', () => {
-    const missileBoat = new ArmedShuttle(
+  beforeEach(async () => {
+    missileBoat = new ArmedShuttle(
       'Missile Boat',
       'M',
       'H',
@@ -29,7 +31,9 @@ describe('Armed shape', () => {
     missileBoat.attachWeapon(() => {
       return Missile.single
     })
+  })
 
+  it('should initialize with correct board', () => {
     expect(missileBoat.board).toBeDefined()
     expect(missileBoat.board instanceof Mask).toBe(true)
     expect(typeof missileBoat.board.bits).toBe('bigint')
@@ -45,7 +49,9 @@ describe('Armed shape', () => {
     expect(missileBoat.board.toAsciiWith()).toBe('.1\n11\n.1')
     expect(missileBoat.board.occupancy).toBe(4)
     expect(missileBoat.board.depth).toBe(2)
+  })
 
+  it('should havecorrect variants', () => {
     const weaponVariant = missileBoat.variants()
     expect(weaponVariant).toBeInstanceOf(WeaponVariant)
     const structure = weaponVariant.standardGroup
@@ -58,5 +64,26 @@ describe('Armed shape', () => {
     const structBoard = structure.board
     expect(structBoard).toBeInstanceOf(Mask)
     expect(structBoard.toAsciiWith()).toBe('..\n11\n..')
+
+    const mag2 = magBoard.expand(structBoard.width, structBoard.height)
+
+    expect(mag2.toAsciiWith()).toBe('.1\n..\n.1')
+    const addBoard = structBoard.clone
+    expect(addBoard.toAsciiWith()).toBe('..\n11\n..')
+    addBoard.addLayers([mag2])
+    expect(addBoard.toAsciiWith()).toBe('.2\n11\n.2')
+    const fullBoard = weaponVariant.board
+    expect(fullBoard.store.bitsPerCell).toBe(2)
+
+    //  expect(fullBoard.toAsciiWith()).toBe('.2\n11\n.2')
+    const b0 = weaponVariant.boardFor(0)
+    expect(b0.toAsciiWith()).toBe('2.\n11\n.2')
+    const b1 = weaponVariant.boardFor(1)
+    expect(b1.toAsciiWith()).toBe('.1\n11\n.1')
+
+    expect(weaponVariant).toBeInstanceOf(WeaponVariant)
+    const { index, board } = missileBoat.infoShrunkUnder(3)
+    expect(index).toBe(0)
+    expect(board.toAsciiWith()).toBe('..\n11\n..')
   })
 })

@@ -1,9 +1,10 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals'
 import { SeaVessel } from '../terrains/sea/js/SeaShape.js'
 import { Ship } from '../ships/Ship.js'
 import { Orbit4F } from '../variants/Orbit4F.js'
-/* global describe, require, it, expect, beforeEach, jest */
+/* global describe, expect, it, beforeEach, jest */
+
+import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 
 // DraggedShip will be imported after mocks are configured
 const shipCellGrid = Array.from({ length: 10 }, () => new Array(10).fill(null))
@@ -155,7 +156,7 @@ describe('DraggedShip integration', () => {
       expect(sb.width).toBe(2)
       expect(sb.height).toBe(5)
       expect(sb.store.bitsPerCell).toBe(1)
-      const locations = [...sb.locations()]
+      const locations = [...sb.occupiedLocations()]
       expect(locations.length).toBe(8)
 
       expect(locations[0]).toEqual([7, 4])

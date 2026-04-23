@@ -1,12 +1,9 @@
 /* eslint-env jest */
 /* global describe,it,expect,beforeEach,jest */
-import { expect, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { Mask } from './grid/rectangle/mask.js'
 import { Packed } from './grid/rectangle/packed.js'
 // very similar to rect.test.js but targets the rectcolor grid
-
-// Variables to hold dynamically imported functions (so they can be updated per-test)
-let setTool2
 
 // stub DOM canvas before loading module
 const cellSize = 50
@@ -153,8 +150,6 @@ describe('rectcolor.js transform and line helpers', () => {
     applyTransform2 = rectcolorModule.applyTransform2
     computePreviewCells2 = rectcolorModule.computePreviewCells2
     drawLineBetween2 = rectcolorModule.drawLineBetween2
-    // Update setTool2 from fresh module to ensure it shares state with computePreviewCells2
-    setTool2 = rectcolorModule.setTool2
 
     // Set up grid with required properties for line tools
     grid.width = 10
@@ -351,7 +346,6 @@ describe('rectcolor dilation diagnostics', () => {
     applyTransform2 = rectcolorModule.applyTransform2
     computePreviewCells2 = rectcolorModule.computePreviewCells2
     drawLineBetween2 = rectcolorModule.drawLineBetween2
-    setTool2 = rectcolorModule.setTool2
 
     grid.width = 10
     grid.height = 10
@@ -437,14 +431,14 @@ describe('rectcolor dilation diagnostics', () => {
     expect(packed.occupancy).toBe(1)
     const all = packed.store.all
     const occ = packed.singleBitMask // Get a mask with bits set where packed has non-zero cells
-    for (const [x, y] of all.locations()) {
+    for (const [x, y] of all.occupiedLocations()) {
       if (packed.at(x, y) !== 0) {
         occ.set(x, y, 1)
       }
     }
     expect(occ.occupancy).toBe(1)
     console.log('[diag] Manual occupancy before dilate:')
-    for (const [x, y] of all.locations()) {
+    for (const [x, y] of all.occupiedLocations()) {
       if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
 
@@ -453,7 +447,7 @@ describe('rectcolor dilation diagnostics', () => {
     occ.dilateCross()
     expect(occ.occupancy).toBe(5)
     console.log('[diag] Manual occupancy after dilate:')
-    for (const [x, y] of all.locations()) {
+    for (const [x, y] of all.occupiedLocations()) {
       if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
 

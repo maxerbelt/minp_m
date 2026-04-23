@@ -1,5 +1,5 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+import { describe, jest, it, expect, beforeEach } from '@jest/globals'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /* global describe, jest, it, expect, beforeEach */
@@ -86,7 +86,7 @@ describe('Placeable', () => {
     expect(sb.at(7, 4))
     expect(placing.validator).toBe(validator)
 
-    const locations = [...sb.locations()]
+    const locations = [...sb.occupiedLocations()]
     expect(locations.length).toBe(8)
     expect(sb.width).toBe(2)
     expect(sb.height).toBe(5)

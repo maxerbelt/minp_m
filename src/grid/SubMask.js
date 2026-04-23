@@ -68,6 +68,9 @@ export class SubMask {
     return [x + this.offsetX, y + this.offsetY]
   }
 
+  _removeOffset (x, y) {
+    return [x - this.offsetX, y - this.offsetY]
+  }
   /**
    * Private helper: Check if coordinates are within window bounds
    * @protected
@@ -171,7 +174,18 @@ export class SubMask {
    */
   location (index) {
     const [absX, absY] = this.mask.location(index)
-    return [absX - this.offsetX, absY - this.offsetY]
+    return this._removeOffset(absX, absY)
+  }
+
+  *occupiedLocations () {
+    for (const [x, y] of this.mask.occupiedLocations()) {
+      yield this._removeOffset(x, y)
+    }
+  }
+  *occupiedLocationsAndValues () {
+    for (const [x, y, value] of this.mask.occupiedLocationsAndValues()) {
+      yield [...this._removeOffset(x, y), value]
+    }
   }
 
   /**

@@ -212,7 +212,8 @@ export class Shape {
     )
   }
   boardFor (variantIndex) {
-    return this.variants().board(variantIndex)
+    const variants = this.variants()
+    return variants.boardFor(variantIndex)
   }
   variants () {
     const VariantClass = Shape.variantConstructors[this.symmetry]

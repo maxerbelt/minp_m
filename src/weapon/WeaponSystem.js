@@ -24,6 +24,7 @@ export class WeaponSystem {
   }
   reset () {
     this.ammo = this.weapon.ammo
+    this.damaged = false
     this.hit = false
   }
   armedShips () {

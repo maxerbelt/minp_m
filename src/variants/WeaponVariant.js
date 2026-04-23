@@ -26,6 +26,10 @@ export class WeaponVariant extends SpecialVariant {
     this.specialGroups.faction = 0
 
     if (specialGroup) {
+      specialGroup.board = specialGroup.board.expand(
+        this.board.width,
+        this.board.height
+      )
       this.standardGroup.setBoardFromSecondary(this.board, specialGroup.board)
       this.board.addLayers([specialGroup.board])
     }

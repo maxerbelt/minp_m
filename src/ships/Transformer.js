@@ -38,6 +38,9 @@ export class Transformer extends Shape {
   get attachedWeapons () {
     return this.currentForm.attachedWeapons
   }
+  get weaponSystem () {
+    return this.currentForm.weaponSystem
+  }
   set attachedWeapons (newAttachedWeapons) {
     if (
       !newAttachedWeapons ||

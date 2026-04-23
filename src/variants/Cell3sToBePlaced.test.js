@@ -1,13 +1,13 @@
 /* eslint-env jest */
 
-/* global describe, it, test, expect, beforeEach, afterEach, jest */
+/* global describe, it,  expect,  jest */
 
 import { Mask } from '../grid/rectangle/mask.js'
 import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
-import { expect, jest } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
 
 describe('Cell3sToBePlaced behaviors', () => {
-  test('isInMatchingZone returns true when subgroup candidate and validator match', () => {
+  it('isInMatchingZone returns true when subgroup candidate and validator match', () => {
     const cells = [
       [0, 0],
       [0, 1],
@@ -53,7 +53,7 @@ describe('Cell3sToBePlaced behaviors', () => {
     expect(placed.isInMatchingZone(10, 12)).toBe(false)
   })
 
-  test('isWrongZone annotates cells with match flags and returns true when some wrong', () => {
+  it('isWrongZone annotates cells with match flags and returns true when some wrong', () => {
     const cells = [
       [0, 0, 1],
       [0, 1, 2],
@@ -88,15 +88,15 @@ describe('Cell3sToBePlaced behaviors', () => {
 
     const placed = new Cell3sToBePlaced(placable3, 20, 20)
     expect(placed.board.occupancy).toBe(3)
-    expect([...placed.board.locations()].length).toBe(3)
-    expect([...placed.board.locations()]).toEqual([
-      [20, 20],
-      [20, 21],
-      [20, 22]
+    expect([...placed.board.occupiedLocations()].length).toBe(3)
+    expect([...placed.board.occupiedLocationsAndValues()]).toEqual([
+      [20, 20, 1n],
+      [20, 21, 2n],
+      [20, 22, 1n]
     ])
     expect(placed.board.fullWidth).toBe(21)
     expect(placed.board.fullHeight).toBe(23)
-    // Before calling isWrongZone, notGood should be empty (all cells are untested)
+    // Before calling isWrongZone, notGood should be empty (all cells are united)
     expect(placed.notGood.occupancy).toBe(0)
 
     const result = placed.isWrongZone()

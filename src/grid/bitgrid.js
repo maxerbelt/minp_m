@@ -82,6 +82,19 @@ export class BitGrid {
       yield [x, y]
     }
   }
+  *locationAndValues (bitboard) {
+    for (const index of this.indices()) {
+      const { x, y } = this.indexToLocation(index)
+      const value = this.store.getIdx(bitboard, index)
+      yield [x, y, value]
+    }
+  }
+  *occupiedLocations (bitboard) {
+    for (const [index] of this.idxFilled(bitboard)) {
+      const { x, y } = this.indexToLocation(index)
+      yield [x, y]
+    }
+  }
 
   /**
    * Generator yielding [x, y] coordinates for only occupied cells.
@@ -91,13 +104,22 @@ export class BitGrid {
    * @generator
    * @yields {Array<number>} [x, y] tuples for occupied cells
    */
-  *locationsFast (bitboard) {
+  *occupiedLocationsAndValues (bitboard) {
+    if (this.store.bitWidth === 1) {
+      return yield* this.occupiedLocationsAndValuesFast(bitboard)
+    }
     for (const [index] of this.idxFilled(bitboard)) {
       const { x, y } = this.indexToLocation(index)
-      yield [x, y]
+      const value = this.store.getIdx(bitboard, index)
+      yield [x, y, value]
     }
   }
-
+  *occupiedLocationsAndValuesFast (bitboard) {
+    for (const [index] of this.idxFilled(bitboard)) {
+      const { x, y } = this.indexToLocation(index)
+      yield [x, y, 1]
+    }
+  }
   /**
    * Converts a linear index to 2D coordinates.
    *
@@ -159,7 +181,6 @@ export class BitGrid {
    * Generator yielding [index, value] pairs using store.bitsOccupied optimization.
    * Used internally by idxFilled when fast mode is enabled.
    *
-   * @private
    * @param {bigint} bitboard - Bitboard to iterate
    * @generator
    * @yields {Array} [index, value] tuples via bitsOccupied
@@ -242,7 +263,6 @@ export class BitGrid {
    * Helper to find extreme value (min or max) using a comparator.
    * Eliminates duplication between minValue and maxValue logic.
    *
-   * @private
    * @param {bigint} bitboard - Bitboard to analyze
    * @param {Function} comparator - Function(current, extreme) → boolean
    * @param {bigint|number} initialValue - Starting value for comparison

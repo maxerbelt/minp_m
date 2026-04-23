@@ -1,13 +1,13 @@
 /* eslint-env jest */
 
-/* global describe, it, it, expect, beforeEach, jest */
+/* global describe,   it, expect, jest */
 
 import { Orbit4F } from './Orbit4F.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { SubBoard } from '../grid/subBoard.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 
-import { jest } from '@jest/globals'
+import { describe, jest, it, expect } from '@jest/globals'
 import { Placeable } from './Placeable.js'
 
 describe('Orbit4F', () => {
@@ -328,7 +328,7 @@ describe('Orbit4F', () => {
       expect(sb.at(7, 4))
       expect(placing.validator)
 
-      const locations = [...sb.locations()]
+      const locations = [...sb.occupiedLocations()]
       expect(locations.length).toBe(8)
       expect(sb.width).toBe(2)
       expect(sb.height).toBe(5)

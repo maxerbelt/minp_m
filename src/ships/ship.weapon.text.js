@@ -130,22 +130,22 @@ describe('Ship - advanced weapon methods', () => {
   })
 })
 describe('Ship - hasWeapons edge cases', () => {
-  it('hasWeapons returns false when null', () => {
+  it('hasWeapon returns false when null', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = null
-    expect(s.hasWeapons()).toBe(false)
+    expect(s.hasWeapon).toBe(false)
   })
 
   it('hasWeapons returns false when undefined', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = undefined
-    expect(s.hasWeapons()).toBe(false)
+    expect(s.hasWeapon).toBe(false)
   })
 
   it('hasWeapons returns false for empty object', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {}
-    expect(s.hasWeapons()).toBe(false)
+    expect(s.hasWeapon).toBe(false)
   })
 
   it('hasWeapons returns true when weapons present', () => {
@@ -153,7 +153,7 @@ describe('Ship - hasWeapons edge cases', () => {
     s.weapons = {
       '1,2': { id: 1 }
     }
-    expect(s.hasWeapons()).toBe(true)
+    expect(s.hasWeapon).toBe(true)
   })
 })
 describe('Ship - makeKeyIds formatting', () => {

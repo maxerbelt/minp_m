@@ -17,11 +17,17 @@ export class SubBoard extends SubMask {
     return [x + this.offsetX, y + this.offsetY]
   }
 
-  *locations () {
-    for (const [x, y] of this.mask.locations()) {
+  *occupiedLocations () {
+    for (const [x, y] of this.mask.occupiedLocations()) {
       yield this._removeOffset(x, y)
     }
   }
+  *occupiedLocationsAndValues () {
+    for (const [x, y, value] of this.mask.occupiedLocationsAndValues()) {
+      yield [...this._removeOffset(x, y), value]
+    }
+  }
+
   /**
   /**
    * Private helper: Check if coordinates are within window bounds

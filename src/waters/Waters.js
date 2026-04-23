@@ -292,20 +292,35 @@ export class Waters {
   }
   armWeapons (map) {
     map = map || bh.map
-    const oppo = this.opponent
-    this.weaponShips = this.ships.filter(s => s.hasWeapons())
+    const weaponShips = this.setWeaponShips(map)
 
-    this.hasAttachedWeapons = this.weaponShips.length > 0
+    this.setLoadOut(map, weaponShips)
+
+    this.setCursorChangeCallback()
+  }
+  setWeaponShips (map) {
+    let weaponShips = this.ships.filter(s => s.hasWeapon)
+    this.hasAttachedWeapons = weaponShips.length > 0
     if (bh.seekingMode && this.hasAttachedWeapons) {
-      this.weaponShips = map.extraArmedFleetForMap
-      this.loadOut = this.makeLoadOut(map, this.weaponShips)
+      weaponShips = map.extraArmedFleetForMap
+    }
+    this.weaponShips = weaponShips
+    return weaponShips
+  }
+
+  setLoadOut (map, weaponShips) {
+    const oppo = this.opponent
+    if (bh.seekingMode && this.hasAttachedWeapons) {
+      this.loadOut = this.makeLoadOut(map, weaponShips)
     } else if (oppo) {
-      const weaponShips = oppo.ships.filter(s => s.hasWeapons())
+      const weaponShips = oppo.ships.filter(s => s.hasWeapon)
       this.loadOut = this.makeLoadOut(map, weaponShips)
     } else {
-      this.loadOut = this.makeLoadOut(map)
+      this.loadOut = this.makeLoadOut(map, weaponShips)
     }
+  }
 
+  setCursorChangeCallback () {
     if (this.cursorChange) {
       if (typeof this.cursorChange === 'function') {
         this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
@@ -316,6 +331,7 @@ export class Waters {
       }
     }
   }
+
   makeLoadOut (map, ships) {
     ships = ships || this.weaponShips
     return new LoadOut(map.weapons, ships, this.UI)

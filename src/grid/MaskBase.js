@@ -398,17 +398,17 @@ export class MaskBase extends CanvasGrid {
     result.height = newHeight
     return result
   }
-  *locations () {
+  *occupiedLocationsAndValues () {
     const all = this.store.all
-    for (const [x, y] of all.locationsFast(this.bits)) {
-      yield [x, y]
-    }
+    return yield* all.occupiedLocationsAndValues(this.bits)
+  }
+  *occupiedLocations () {
+    const all = this.store.all
+    return yield* all.occupiedLocations(this.bits)
   }
   *allXYlocations () {
     const all = this.store.all
-    for (const [x, y] of all.locations()) {
-      yield [x, y]
-    }
+    return yield* all.locations()
   }
   // ============================================================================
   // Color Layer Operations
