@@ -51,7 +51,7 @@ describe('Armed shape', () => {
     expect(missileBoat.board.depth).toBe(2)
   })
 
-  it('should havecorrect variants', () => {
+  it('should have correct variants', () => {
     const weaponVariant = missileBoat.variants()
     expect(weaponVariant).toBeInstanceOf(WeaponVariant)
     const structure = weaponVariant.standardGroup
@@ -60,7 +60,7 @@ describe('Armed shape', () => {
     expect(magazines).toBeInstanceOf(SpecialCells)
     const magBoard = magazines.board
     expect(magBoard).toBeInstanceOf(Mask)
-    expect(magBoard.toAsciiWith()).toBe('.1.\n...\n.1.')
+    expect(magBoard.toAsciiWith()).toBe('.1\n..\n.1')
     const structBoard = structure.board
     expect(structBoard).toBeInstanceOf(Mask)
     expect(structBoard.toAsciiWith()).toBe('..\n11\n..')
@@ -77,13 +77,13 @@ describe('Armed shape', () => {
 
     //  expect(fullBoard.toAsciiWith()).toBe('.2\n11\n.2')
     const b0 = weaponVariant.boardFor(0)
-    expect(b0.toAsciiWith()).toBe('2.\n11\n.2')
+    expect(b0.toAsciiWith()).toBe('.2\n11\n.2')
     const b1 = weaponVariant.boardFor(1)
-    expect(b1.toAsciiWith()).toBe('.1\n11\n.1')
+    expect(b1.toAsciiWith()).toBe('.1.\n212')
 
     expect(weaponVariant).toBeInstanceOf(WeaponVariant)
     const { index, board } = missileBoat.infoShrunkUnder(3)
     expect(index).toBe(0)
-    expect(board.toAsciiWith()).toBe('..\n11\n..')
+    expect(board.toAsciiWith()).toBe('.2\n11\n.2')
   })
 })
