@@ -9,7 +9,7 @@ import {
   Flack,
   Sweep,
   seaWeaponsCatalogue
-} from './SeaWeapons'
+} from './SeaWeapons.js'
 import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
 // Jest it suite
 describe('SeaWeapons - Megabomb', () => {
