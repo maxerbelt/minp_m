@@ -383,55 +383,19 @@ export class BitGrid {
   /**
    * Executes a callback for each row index.
    *
-   * @param {Function} callback - Function(rowIndex) called for each row
+   * @param {(rowIndex: number) => void} callback - Function called with row index
    * @returns {void}
    */
   forEachRow (callback) {
-    for (let row = 0; row < this.height; row++) {
-      callback(row)
-    }
-  }
-
-  /**
-   * Generator yielding all cell indices in order (0 to area-1).
-   *
-   * @generator
-   * @yields {number} Cell index for each grid position
-   */
-  *indices () {
-    yield* this.#rangeGenerator(this.area)
-  }
-
-  /**
-   * Internal: Generate integers from 0 to count-1.
-   * Extracted helper to reduce generator duplication between indices() and rows().
-   *
-   * @param {number} count - Number of values to yield
-   * @generator
-   * @yields {number} Integers 0 through count-1
-   * @private
-   */
-  *#rangeGenerator (count) {
-    for (let i = 0; i < count; i++) {
-      yield i
-    }
-  }
-
-  /**
-   * Generator yielding all row indices (0 to height-1).
-   *
-   * @generator
-   * @yields {number} Row index for each grid row
-   */
-  *rows () {
-    yield* this.#rangeGenerator(this.height)
+    this.#forEachInRange(this.height, callback)
   }
 
   /**
    * Creates a row mask matching the grid's width.
+   * Mask represents one complete row (all columns set for a single row).
    * Delegates to store for format-specific mask generation.
    *
-   * @returns {bigint} Bit mask representing one row
+   * @returns {bigint} Bit mask representing one full row in this grid
    */
   rowMask () {
     return this.store.rowMaskForWidth(this.width)
