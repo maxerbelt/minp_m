@@ -3,15 +3,59 @@ import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
+// ============================================================================
+// Helper Constants & Utility Functions
+// ============================================================================
+
+/** CSS class names for animation state management */
+const CSS_CLASSES = {
+  MARKER: 'marker',
+  PORTAL: 'portal'
+}
+
+/**
+ * Draws a ray line on canvas and returns point list
+ * Converts canvas coordinates to grid coordinates with power tagging
+ * @private
+ * @param {number} rowStart - Starting row coordinate
+ * @param {number} colStart - Starting column coordinate
+ * @param {number} rowEnd - Ending row coordinate
+ * @param {number} colEnd - Ending column coordinate
+ * @param {number} power - Damage power level for each cell
+ * @returns {Array<[number, number, number]>} Array of [row, column, power] tuples
+ */
+function drawRayLinePoints (rowStart, colStart, rowEnd, colEnd, power) {
+  const canvas = RectListCanvas.BhMapList()
+  canvas.drawRay(colStart, rowStart, colEnd, rowEnd, power)
+  return canvas.list
+}
+
+// ============================================================================
+// Missile - Area-of-Effect Explosive
+// ============================================================================
+
+/**
+ * Missile - A targeted explosive weapon dealing splash damage
+ * Extends Bomb with cross-board animation support
+ * @extends Bomb
+ */
 export class Missile extends Bomb {
+  /**
+   * Initializes missile with configuration
+   * @param {number} ammo - Number of missiles available
+   */
   constructor (ammo) {
     super(ammo, 'Missile', '+')
+
+    // Cursor configuration for targeting sequence
     this.unattachedCursor = 0
     this.postSelectCursor = 0
     this.launchCursor = 'launch'
     this.totalCursors = 2
     this.cursors = ['missile']
     this.volatile = true
+
+    // Weapon behavior configuration
     this.setWeaponProperties({
       hints: ['Click On Square To Aim Missile'],
       buttonHtml: '<span class="shortcut">M</span>issile',
@@ -21,82 +65,148 @@ export class Missile extends Bomb {
       explodeOnTarget: true,
       hasFlash: true
     })
+
+    // Display and scoring configuration
     this.plural = 'Missiles'
     this.points = 1
+
+    // Pre-compute splash damage pattern
     this.splashCoords = this.aoe(null, [
       [-1, -1],
       [2, 2]
     ])
   }
 
+  /**
+   * Gets the audio file for missile flight sound
+   * @returns {URL} URL to missile flight sound asset
+   */
   get flightSound () {
     return Weapon.getFlightSoundUrl('missile-flight.mp3', import.meta.url)
   }
 
+  /**
+   * Creates a clone of this missile with optional new ammo count
+   * Implements weapon cloning protocol
+   * @param {number} [ammo] - Ammo count for cloned instance
+   * @returns {Missile} New missile instance
+   */
   clone (ammo) {
     return this.createClone(Missile, ammo)
   }
 
-  async launchTo (coords, r, c, map, viewModel, opposingViewModel) {
+  /**
+   * Normalizes launch coordinates for missile targeting
+   * Maps source and first target coordinate to launch pair format
+   * @param {Object} _map - Game map (unused for missile)
+   * @param {number[]} baseCoords - Source coordinates [row, col]
+   * @param {number[][]} targetCoords - Array of target coordinates
+   * @returns {number[][]} Transformed coordinate pair [baseCoords, targetCoords[0]]
+   */
+  redoCoords (_map, baseCoords, targetCoords) {
+    return [baseCoords, targetCoords[0]]
+  }
+
+  /**
+   * Calculates area-of-effect damage pattern from target coordinates
+   * Delegates to inherited boom() method for standard explosion pattern
+   * @param {Object} _map - Game map (unused for missile)
+   * @param {number[][]} coords - Target coordinates [[row, col]]
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   */
+  aoe (_map, coords) {
+    if (coords.length < 1) return []
+    const [row, col] = coords[0]
+    return this.boom(row, col)
+  }
+
+  /**
+   * Animates missile launch with cross-board support
+   * Routes to parent launchTo if no opposing view model exists
+   * @async
+   * @param {number[][]} coords - Target coordinates [[row, col]]
+   * @param {number} row - Source row coordinate
+   * @param {number} col - Source column coordinate
+   * @param {Object} map - Game map object
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} [opposingViewModel] - Optional opposing player view model
+   * @returns {Promise<Object>} Animation completion result
+   */
+  async launchTo (coords, row, col, map, viewModel, opposingViewModel) {
     if (!opposingViewModel) {
       return await super.launchTo(
         coords,
-        r,
-        c,
+        row,
+        col,
         map,
         viewModel,
         opposingViewModel
       )
     }
-    const target = coords[0]
 
-    const start1 = opposingViewModel.gridCellAt(r, c)
-    const end1 = viewModel.gridCellAt(target[0], target[1])
+    const targetCoord = coords[0]
+    const sourceCell = opposingViewModel.gridCellAt(row, col)
+    const targetCell = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
 
-    return await this.animateFlyingOnVM(start1, end1, viewModel)
+    return await Weapon.prototype.animateFlyingOnVM.call(
+      this,
+      sourceCell,
+      targetCell,
+      viewModel
+    )
   }
 
-  redoCoords (_map, base, coords) {
-    return [base, coords[0]]
+  /**
+   * Determines turn phase for missile variant
+   * Maps variant ID to turn duration classes for animation pacing
+   * @param {number} variant - Weapon variant identifier (0, 2, 3)
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
+   */
+  getTurn (variant) {
+    const turnMap = {
+      0: 'turn4',
+      2: 'turn2',
+      3: 'turn3'
+    }
+    return turnMap[variant] || ''
   }
-  aoe (_map, coords) {
-    if (coords.length < 1) return []
-    const [r, c] = coords[0]
-    let result = this.boom(r, c)
-    return result
-  }
+
+  /**
+   * Creates a single-missile instance for quick access
+   * @static
+   * @returns {Missile} Missile instance with 1 ammo
+   */
   static get single () {
     return new Missile(1)
   }
-
-  getTurn (variant) {
-    let turn = ''
-    switch (variant) {
-      case 0:
-        turn = 'turn4'
-        break
-      case 2:
-        turn = 'turn2'
-        break
-      case 3:
-        turn = 'turn3'
-        break
-      default:
-        turn = ''
-        break
-    }
-    return turn
-  }
 }
+
+// ============================================================================
+// RailBolt - Line-based Strike Weapon with Cross-Board Animation
+// ============================================================================
+
+/**
+ * RailBolt - A two-point targeting weapon with portal-style cross-board animation
+ * Extends Strike with specialized dual-animation launch sequence
+ * @extends Strike
+ */
 export class RailBolt extends Strike {
+  /**
+   * Initializes rail bolt with configuration
+   * @param {number} ammo - Number of rail bolts available
+   */
   constructor (ammo) {
     super(ammo, 'Rail Bolt', '|')
+
+    // Cursor configuration for targeting sequence
     this.launchCursor = 'rail'
     this.postSelectCursor = 1
     this.totalCursors = 2
     this.splashType = undefined
     this.cursors = ['rail', 'bolt']
     this.isOneAndDone = true
+
+    // Weapon behavior configuration
     this.setWeaponProperties({
       hints: [
         'Click on square to start rail bolt',
@@ -107,7 +217,11 @@ export class RailBolt extends Strike {
       tag: 'rail',
       hasFlash: false
     })
+
+    // Display configuration
     this.plural = 'Rail Bolts'
+
+    // Drag-and-drop placement shape
     this.dragShape = [
       [0, 0, 1],
       [0, 1, 0],
@@ -117,85 +231,182 @@ export class RailBolt extends Strike {
     ]
   }
 
+  /**
+   * Gets the audio file for rail bolt flight sound
+   * @returns {URL} URL to rail bolt flight sound asset
+   */
   get flightSound () {
     return Weapon.getFlightSoundUrl('rail-flight.mp3', import.meta.url)
   }
 
+  /**
+   * Creates a clone of this rail bolt with optional new ammo count
+   * Implements weapon cloning protocol
+   * @param {number} [ammo] - Ammo count for cloned instance
+   * @returns {RailBolt} New rail bolt instance
+   */
   clone (ammo) {
     return this.createClone(RailBolt, ammo)
   }
-  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+
+  /**
+   * Initiates rail bolt launch with coordinate transformation
+   * Routes to launchRightTo for coordinate processing before dual-animation launch
+   * @async
+   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} sourceRow - Source row coordinate
+   * @param {number} sourceCol - Source column coordinate
+   * @param {Object} map - Game map object
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} [opposingViewModel] - Optional opposing player view model
+   * @param {Object} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<Object>} Animation completion result
+   */
+  async launchTo (
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel
+  ) {
     return await this.launchRightTo(
       coords,
-      rr,
-      cc,
+      sourceRow,
+      sourceCol,
       map,
       viewModel,
       opposingViewModel,
-      model,
-      this.boltLaunchTo.bind(this)
+      gameModel,
+      this._performRailBoltAnimation.bind(this)
     )
   }
-  async boltLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+
+  /**
+   * Executes dual-board rail bolt animation with portal effect
+   * Routes to parent launchTo if no opposing view model exists
+   * Performs bidirectional animation with marker/portal CSS transitions
+   * @private
+   * @async
+   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} sourceRow - Source row coordinate
+   * @param {number} sourceCol - Source column coordinate
+   * @param {Object} map - Game map object
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} [opposingViewModel] - Optional opposing player view model
+   * @param {Object} [gameModel] - Optional game model
+   * @returns {Promise<void>} Resolves when animations complete
+   */
+  async _performRailBoltAnimation (
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel
+  ) {
     if (!opposingViewModel) {
       return await super.launchTo(
         coords,
-        rr,
-        cc,
+        sourceRow,
+        sourceCol,
         map,
         viewModel,
         opposingViewModel,
-        model
+        gameModel
       )
     }
-    const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
-    const start1 = opposingViewModel.gridCellAt(r, c)
-    const end1 = opposingViewModel.gridCellAt(target[0], target[1])
-    const start2 = viewModel.gridCellAt(r, c)
-    const end2 = viewModel.gridCellAt(target[0], target[1])
 
-    start1.classList.add('marker')
-    end1.classList.add('portal')
-    start2.classList.add('portal')
-    end2.classList.add('marker')
-    await this.animateFlyingOnVM(start1, end1, viewModel)
+    const [[startRow, startCol], targetCoord] = this.redoCoords(
+      map,
+      [sourceRow, sourceCol],
+      coords
+    )
 
-    await this.animateFlyingOnVM(start2, end2, viewModel)
+    const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
+    const targetCell1 = opposingViewModel.gridCellAt(
+      targetCoord[0],
+      targetCoord[1]
+    )
+    const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
 
-    start1.classList.add('marker')
-    end1.classList.remove('portal')
-    start2.classList.remove('portal')
-    start2.classList.add('portal')
-    end2.classList.add('marker')
+    // Perform dual-board animation with portal-style CSS classes
+    sourceCell1.classList.add(CSS_CLASSES.MARKER)
+    targetCell1.classList.add(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+    targetCell2.classList.add(CSS_CLASSES.MARKER)
+
+    await Weapon.prototype.animateFlyingOnVM.call(
+      this,
+      sourceCell1,
+      targetCell1,
+      viewModel
+    )
+    await Weapon.prototype.animateFlyingOnVM.call(
+      this,
+      sourceCell2,
+      targetCell2,
+      viewModel
+    )
+
+    sourceCell1.classList.add(CSS_CLASSES.MARKER)
+    targetCell1.classList.remove(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+    targetCell2.classList.add(CSS_CLASSES.MARKER)
   }
 
+  /**
+   * Creates a single-rail-bolt instance for quick access
+   * @static
+   * @returns {RailBolt} RailBolt instance with 1 ammo
+   */
   static get single () {
     return new RailBolt(1)
   }
 }
-function getLinePoints (y1, x1, y2, x2, color) {
-  const points = RectListCanvas.BhMapList()
-  // points.drawSegmentTo(x1, y1, x2, y2, color)
-  points.drawRay(x1, y1, x2, y2, color)
-  return points.list
-}
+
+// ============================================================================
+// GuassRound - Projectile with Land Detection
+// ============================================================================
+
+/**
+ * GuassRound - A projectile weapon that stops at terrain boundaries
+ * Extends Fish with land-detection trajectory and dual-animation launch
+ * @extends Fish
+ */
 export class GuassRound extends Fish {
+  /**
+   * Initializes Gauss round with configuration
+   * @param {number} ammo - Number of Gauss rounds available
+   */
   constructor (ammo) {
     super(ammo)
+
+    // Weapon identity
     this.name = 'Gauss Round'
     this.letter = '^'
+
+    // Cursor configuration for targeting sequence
     this.cursors = ['rlaunch', 'round']
     this.isOneAndDone = true
+
+    // Weapon behavior configuration
     this.setWeaponProperties({
       hints: [
-        'Click on square to start guass round',
-        'Click on square aim guass round'
+        'Click on square to start gauss round',
+        'Click on square aim gauss round'
       ],
-      buttonHtml: '<span class="shortcut">G</span>uass Round',
-      tip: 'drag a guass round on to the map to increase the number of times you can strike',
+      buttonHtml: '<span class="shortcut">G</span>auss Round',
+      tip: 'drag a gauss round on to the map to increase the number of times you can strike',
       tag: 'round',
       hasFlash: false
     })
+
+    // Drag-and-drop placement shape
     this.dragShape = [
       [1, 0, 1],
       [1, 1, 0],
@@ -203,119 +414,274 @@ export class GuassRound extends Fish {
       [0, 3, 0],
       [2, 3, 0]
     ]
+
+    // Tracks crash location when round hits land
+    this.crashLoc = null
   }
 
+  /**
+   * Creates a clone of this Gauss round with optional new ammo count
+   * Implements weapon cloning protocol
+   * @param {number} [ammo] - Ammo count for cloned instance
+   * @returns {GuassRound} New Gauss round instance
+   */
   clone (ammo) {
     return this.createClone(GuassRound, ammo)
   }
-  boom (r, c) {
-    let result = [[r, c, 2]]
-    for (let i = -1; i < 2; i++) {
-      for (let j = -1; j < 2; j++) {
-        if (i !== 0 || j !== 0) {
-          result.push([r + i, c + j, 1])
+
+  /**
+   * Gets the audio file for Gauss round flight sound
+   * @returns {URL} URL to Gauss round flight sound asset
+   */
+  get flightSound () {
+    return new URL('../sounds/guass-flight.mp3', import.meta.url)
+  }
+
+  /**
+   * Computes blast radius pattern from explosion center
+   * Creates expanding square pattern: center → 3×3 → 5×5 → cardinal distance-3
+   * @param {number} centerRow - Explosion center row
+   * @param {number} centerCol - Explosion center column
+   * @returns {Array<[number, number, number]>} Damage pattern as [row, col, power] tuples
+   */
+  boom (centerRow, centerCol) {
+    const pattern = [[centerRow, centerCol, 2]]
+
+    // Add 3×3 adjacent cells (power 1)
+    for (let rowOffset = -1; rowOffset < 2; rowOffset++) {
+      for (let colOffset = -1; colOffset < 2; colOffset++) {
+        if (rowOffset !== 0 || colOffset !== 0) {
+          pattern.push([centerRow + rowOffset, centerCol + colOffset, 1])
         }
       }
     }
-    for (let i = -1; i < 2; i++) {
-      result.push([r + i, c - 2, 0], [r + i, c + 2, 0])
+
+    // Add distance-2 orthogonal cells (power 0)
+    for (let rowOffset = -1; rowOffset < 2; rowOffset++) {
+      pattern.push(
+        [centerRow + rowOffset, centerCol - 2, 0],
+        [centerRow + rowOffset, centerCol + 2, 0]
+      )
     }
-    for (let j = -1; j < 2; j++) {
-      result.push([r - 2, c + j, 0], [r + 2, c + j, 0])
+    for (let colOffset = -1; colOffset < 2; colOffset++) {
+      pattern.push(
+        [centerRow - 2, centerCol + colOffset, 0],
+        [centerRow + 2, centerCol + colOffset, 0]
+      )
     }
 
-    result.push([r - 3, c, 0], [r + 3, c, 0], [r, c - 3, 0], [r, c + 3, 0])
-    return result
-  }
-  get flightSound () {
-    const url = new URL('../sounds/guass-flight.mp3', import.meta.url)
-    return url
-  }
-  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    await this.launchRightTo(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model,
-      this.boltLaunchTo.bind(this)
+    // Add cardinal distance-3 cells (power 0)
+    pattern.push(
+      [centerRow - 3, centerCol, 0],
+      [centerRow + 3, centerCol, 0],
+      [centerRow, centerCol - 3, 0],
+      [centerRow, centerCol + 3, 0]
     )
+
+    return pattern
   }
 
+  /**
+   * Calculates trajectory path along ray line until land boundary
+   * Stops at first land cell if detected; records crash location
+   * @param {Object} map - Game map for terrain checking
+   * @param {number[][]} coords - Start and end coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} [power=1] - Power level for trajectory cells
+   * @returns {Array<[number, number, number]>} Cells along trajectory with power levels
+   */
   aoe (map, coords, power = 1) {
-    const r = coords[0][0]
-    const c = coords[0][1]
+    const startRow = coords[0][0]
+    const startCol = coords[0][1]
+    const endRow = coords[1][0]
+    const endCol = coords[1][1]
 
-    const r1 = coords[1][0]
-    const c1 = coords[1][1]
+    const trajectoryLine = drawRayLinePoints(
+      startRow,
+      startCol,
+      endRow,
+      endCol,
+      power
+    )
+    const landCollisionIndex = trajectoryLine.findIndex(([row, col]) =>
+      map.isLand(row, col)
+    )
 
-    const line = getLinePoints(r, c, r1, c1, power)
-    const landIdx = line.findIndex(([r, c]) => map.isLand(r, c))
-    this.crashLoc = landIdx >= 0 ? line[landIdx] : null
-    if (landIdx >= 0) {
-      line.length = landIdx + 1
+    // Track crash location if trajectory hits land
+    this.crashLoc =
+      landCollisionIndex >= 0 ? trajectoryLine[landCollisionIndex] : null
+
+    // Truncate trajectory at land boundary (inclusive)
+    if (landCollisionIndex >= 0) {
+      trajectoryLine.length = landCollisionIndex + 1
     }
-    return line
+
+    return trajectoryLine
   }
-  async roundLaunchTo (
+
+  /**
+   * Initiates Gauss round launch with coordinate transformation
+   * Routes to launchRightTo for coordinate processing before dual-animation launch
+   * @async
+   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} sourceRow - Source row coordinate
+   * @param {number} sourceCol - Source column coordinate
+   * @param {Object} map - Game map object
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} [opposingViewModel] - Optional opposing player view model
+   * @param {Object} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<void>} Resolves when animations complete
+   */
+  async launchTo (
     coords,
-    rr,
-    cc,
+    sourceRow,
+    sourceCol,
     map,
     viewModel,
     opposingViewModel,
-    model
+    gameModel
+  ) {
+    return await this.launchRightTo(
+      coords,
+      sourceRow,
+      sourceCol,
+      map,
+      viewModel,
+      opposingViewModel,
+      gameModel,
+      this._performRoundAnimation.bind(this)
+    )
+  }
+
+  /**
+   * Executes dual-board Gauss round animation with portal effect
+   * Routes to parent launchTo if no opposing view model exists
+   * Performs asymmetric animation: source on opposing board → target on primary board
+   * @private
+   * @async
+   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} sourceRow - Source row coordinate
+   * @param {number} sourceCol - Source column coordinate
+   * @param {Object} map - Game map object
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} [opposingViewModel] - Optional opposing player view model
+   * @param {Object} [gameModel] - Optional game model
+   * @returns {Promise<void>} Resolves when animations complete
+   */
+  async _performRoundAnimation (
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel
   ) {
     if (!opposingViewModel) {
-      return super.launchTo(
+      return await super.launchTo(
         coords,
-        rr,
-        cc,
+        sourceRow,
+        sourceCol,
         map,
         viewModel,
         opposingViewModel,
-        model
+        gameModel
       )
     }
-    const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
-    const start1 = opposingViewModel.gridCellAt(r, c)
-    const start2 = viewModel.gridCellAt(r, c)
-    const end2 = viewModel.gridCellAt(target[0], target[1])
-    start1.classList.add('portal')
-    start2.classList.add('portal')
-    await this.animateFlyingOnVM(start2, end2, viewModel)
-    await this.animateFlyingOnVM(start1, end2, viewModel)
-    start1.classList.remove('portal')
-    start2.classList.remove('portal')
+
+    const [[startRow, startCol], targetCoord] = this.redoCoords(
+      map,
+      [sourceRow, sourceCol],
+      coords
+    )
+
+    const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
+    const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+
+    // Perform dual-board animation with portal-style CSS classes
+    sourceCell1.classList.add(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+
+    await Weapon.prototype.animateFlyingOnVM.call(
+      this,
+      sourceCell2,
+      targetCell2,
+      viewModel
+    )
+    await Weapon.prototype.animateFlyingOnVM.call(
+      this,
+      sourceCell1,
+      targetCell2,
+      viewModel
+    )
+
+    sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
   }
 
+  /**
+   * Creates a single-Gauss-round instance for quick access
+   * @static
+   * @returns {GuassRound} GuassRound instance with 1 ammo
+   */
   static get single () {
     return new GuassRound(1)
   }
 }
 
+// ============================================================================
+// Scan - Pie-segment Scanning Weapon
+// ============================================================================
+
+/**
+ * Scan - A detection/scanning weapon generating pie-segment patterns
+ * Extends Sensor for radar-like sweep visualization
+ * @extends Sensor
+ */
 export class Scan extends Sensor {
+  /**
+   * Initializes radar scan with configuration
+   * @param {number} ammo - Number of scans available
+   */
   constructor (ammo) {
     super(ammo)
+
+    // Weapon identity
     this.name = 'Scan'
     this.letter = 'Z'
+
+    // Cursor configuration for targeting sequence
     this.cursors = ['dish', 'sweep']
     this.isOneAndDone = false
+
+    // Weapon behavior configuration
     this.setWeaponProperties({
-      hints: ['Click on square to startscan', 'Click on square end scan'],
+      hints: ['Click on square to start scan', 'Click on square end scan'],
       buttonHtml: 's<span class="shortcut">W</span>eep',
       tag: 'scan',
       hasFlash: false
     })
   }
 
+  /**
+   * Creates a clone of this scan with optional new ammo count
+   * Implements weapon cloning protocol
+   * @param {number} [ammo] - Ammo count for cloned instance
+   * @returns {Scan} New scan instance
+   */
   clone (ammo) {
     return this.createClone(Scan, ammo)
   }
 }
 
+// ============================================================================
+// Weapon Catalogue - Space Terrain Weapons Export
+// ============================================================================
+
+/**
+ * Pre-configured catalogue of space terrain weapons
+ * @type {WeaponCatalogue}
+ */
 export const spaceWeaponsCatalogue = new WeaponCatalogue([
   new Missile(1),
   new RailBolt(1)
