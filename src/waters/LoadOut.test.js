@@ -44,7 +44,7 @@ describe('LoadOut', () => {
       gridCellAt: jest.fn(() => ({ id: 1 })),
       cellSizeScreen: jest.fn(() => 10)
     }
-    loadOut = new LoadOut([mockWeapon], [mockShip], mockViewModel, 1)
+    loadOut = new LoadOut([mockWeapon], [mockShip], mockViewModel)
     loadOut.onDestroy = jest.fn()
     loadOut.onReveal = jest.fn()
     loadOut.onCursorChangeCallback = jest.fn()

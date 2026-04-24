@@ -687,7 +687,6 @@ export class Waters {
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Object} The shadow cell
-   * @private
    */
   createShadowSource (r, c) {
     const opponent = this.opponent
@@ -839,8 +838,8 @@ export class Waters {
     ship = this.loadOut.getShipByWeaponId(weaponId)
     if (ship) {
       this.steps.addShip(ship)
-      const [r, c] = this.sourceHint(ship)
-      this.shadowSource(r, c)
+      const [r, c] = this.generateSourceHint(ship)
+      this.createShadowSource(r, c)
     }
     return { launchR, launchC, weaponId, hintR, hintC }
   }

@@ -69,13 +69,11 @@ export class LoadOut {
    * @param {Weapon[]} weapons - Array of unattached weapons
    * @param {Ship[]} ships - Array of ships with attached weapons
    * @param {ViewModel} viewModel - The view model for grid interactions
-   * @param {number} steps - Number of steps
    */
-  constructor (weapons, ships, viewModel, steps) {
+  constructor (weapons, ships, viewModel) {
     this.onOutOfAllAmmo = Function.prototype
     this.onOutOfAmmo = Function.prototype
     this.onCursorChangeCallback = Function.prototype
-    this.stepCount = steps
     this.onDestroy = LoadOut.givesNoResult
     this.onReveal = LoadOut.givesNoResult
     this.onSound = Function.prototype

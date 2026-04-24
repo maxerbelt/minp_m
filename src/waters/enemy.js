@@ -314,7 +314,7 @@ class Enemy extends Waters {
     this.loadOut.clearSelectedCoordinates()
     const cell = this.opponent.UI.gridCellAt(hintR, hintC)
     this.steps.addHint(this.opponent.UI, hintR, hintC, cell)
-    this.shadowSource(hintR, hintC, this)
+    this.createShadowSource(hintR, hintC)
     this.selectAttachedWeapon(cell, hintR, hintC, this.opponent)
   }
 
