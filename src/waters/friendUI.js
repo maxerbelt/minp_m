@@ -45,6 +45,7 @@ export class FriendUI extends PlacementUI {
     this.addText = ' placed'
     this.removeText = ' unplaced'
     this._initializeUIElements()
+    this._playBattleHide = null
   }
 
   _initializeUIElements () {
@@ -285,10 +286,6 @@ export class FriendUI extends PlacementUI {
     }
     dataset.ammo = 0
   }
-
-  addContrast () {}
-
-  removeShadowWeapon () {}
 
   gotoNextStageAfterPlacement () {
     if (this.isTestEnvironment()) {

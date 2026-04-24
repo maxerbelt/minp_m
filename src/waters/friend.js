@@ -666,7 +666,7 @@ export class Friend extends Waters {
     }
   }
 
-  stopWaiting () {
+  _hideWaiting () {
     /* only needs implementation if enemy */
   }
 

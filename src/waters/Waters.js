@@ -851,9 +851,10 @@ export class Waters {
     if (!currentWeapon) return false
     const currentShip = this.loadOut.getShipByWeaponId(currentWeapon.id)
     const weaponName = currentWeapon.weapon?.name || 'weapon'
-    if (autoSelectWarning) this.autoSelectWarning(weaponName, currentShip)
+    if (autoSelectWarning)
+      this.displayAutoSelectWarning(weaponName, currentShip)
     this.loadOut.launch = (coords, weapon, wps) => {
-      return this.launchWeapon(wps, coords, weapon)
+      return this.launchWeapon(wps, coords)
     }
     return true
   }
@@ -1088,8 +1089,8 @@ export class Waters {
     this.displayInfo('All ' + this.preamble0 + ' Ships Destroyed!')
     this.UI.displayFleetSunk()
     this.boardDestroyed = true
-    this.stopWaiting?.()
-    this.opponent?.stopWaiting()
+    this._hideWaiting?.()
+    this.opponent?._hideWaiting()
   }
   checkFleetSunk () {
     if (this.ships.every(s => s.sunk)) {
@@ -1187,7 +1188,7 @@ export class Waters {
     totalShots = this._applyMissEntries(missEntries, totalShots)
 
     if (hitShip.sunk) {
-      this.markSunk(hitShip, info)
+      this.markSunk(hitShip)
     }
     return {
       hits: totalHits,
@@ -1217,8 +1218,8 @@ export class Waters {
   }
   get isEnded () {
     if (this.isRevealed || this.boardDestroyed) {
-      this.stopWaiting?.()
-      this.opponent?.stopWaiting()
+      this._hideWaiting?.()
+      this.opponent?._hideWaiting()
       this._oldWeaponLetter = null
       return true
     }

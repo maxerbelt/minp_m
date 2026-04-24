@@ -281,6 +281,8 @@ export class WatersUI {
       'semi-miss',
       'wake',
       'weapon',
+      'portal',
+      'marker',
       'turn2',
       'turn3',
       'turn4',
@@ -312,6 +314,8 @@ export class WatersUI {
       'empty',
       'weapon',
       'active',
+      'portal',
+      'marker',
       ...bh.terrain.weapons.tags
     )
     cell.classList.add('hit')
@@ -349,6 +353,14 @@ export class WatersUI {
     cell.classList.add('hint')
     cell.classList.remove('wake')
     cell.textContent = ''
+  }
+
+  addContrast (_cell) {
+    /* only needs implementation if enemy */
+  }
+
+  removeShadowWeapon () {
+    /* only needs implementation if enemy */
   }
 
   cellWeaponActive (r, c, turn, extra) {

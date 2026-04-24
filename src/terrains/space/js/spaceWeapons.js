@@ -352,11 +352,10 @@ export class RailBolt extends Strike {
       viewModel
     )
 
-    sourceCell1.classList.add(CSS_CLASSES.MARKER)
+    sourceCell1.classList.remove(CSS_CLASSES.MARKER)
     targetCell1.classList.remove(CSS_CLASSES.PORTAL)
     sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
-    targetCell2.classList.add(CSS_CLASSES.MARKER)
+    targetCell2.classList.remove(CSS_CLASSES.MARKER)
   }
 
   /**
