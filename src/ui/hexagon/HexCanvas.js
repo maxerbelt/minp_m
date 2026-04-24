@@ -33,6 +33,12 @@ const COVER_TYPES = {
  * Manages UI and interactions for hexagonal grids
  */
 export class HexCanvas extends GridCanvas {
+  /**
+   * Initialize the hexagonal canvas controller
+   * @param {string} canvasId - ID of the canvas element
+   * @param {HexDraw} hexDraw - The hexagonal drawing instance
+   * @param {Object} config - Configuration options
+   */
   constructor (canvasId, hexDraw, config = {}) {
     super(canvasId, hexDraw, config)
 
@@ -42,15 +48,6 @@ export class HexCanvas extends GridCanvas {
     // Setup cell overrides
     this._overrideGridToggleCellBehavior()
     this._overrideGridHoverPreview()
-  }
-
-  /**
-   * Guard clause: ensures grid exists.
-   * @returns {boolean} True if grid exists.
-   * @private
-   */
-  _ensureGrid () {
-    return !!this.grid
   }
 
   /**
@@ -68,9 +65,9 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Get current bit value at index.
-   * @param {Object} mask - Mask object with bits.
-   * @param {number} idx - Index.
+   * Get current bit value at index from mask.
+   * @param {Object} mask - Mask object with bits property.
+   * @param {number} idx - Bit index to check.
    * @returns {number} Bit value (0 or 1).
    * @private
    */
@@ -82,9 +79,9 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Apply action to multiple indices and update mask.
-   * @param {Object} mask - Mask to update.
-   * @param {Array} indices - Indices to update.
+   * Apply action to multiple indices and update mask bits.
+   * @param {Object} mask - Mask object to update.
+   * @param {number[]} indices - Array of bit indices to update.
    * @private
    */
   _applyActionToIndices (mask, indices) {
@@ -96,7 +93,7 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Override grid toggle cell to respect action value.
+   * Override grid toggle cell behavior to respect current action setting.
    * @private
    */
   _overrideGridToggleCellBehavior () {
@@ -105,6 +102,7 @@ export class HexCanvas extends GridCanvas {
     this.grid.toggleCell = idx => {
       // Don't toggle when line tool active or index is null
       if (this.currentTool || idx == null) return
+      if (!this.grid?.mask) return
 
       this._applyActionToIndices(this.grid.mask, [idx])
       this.grid.setBits(this.grid.mask.bits)
@@ -114,11 +112,11 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Override hover drawing to show line preview in orange.
+   * Override grid hover preview to show line preview in orange.
    * @private
    */
   _overrideGridHoverPreview () {
-    if (!this.grid || !this.grid._drawHover) return
+    if (!this.grid?._drawHover) return
     if (this.grid._drawHover._isOverridden) return
 
     const origDrawHover = this.grid._drawHover.bind(this.grid)
@@ -142,29 +140,36 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Sync mask with draw and get current actions
+   * Sync mask bits with current draw bits and return current actions.
+   * @returns {Object|undefined} Current actions from mask.
    */
   syncMaskWithDraw () {
+    if (!this.grid?.mask) return
     this.grid.mask.bits = this.grid.bits
     return this.grid.mask.actions
   }
 
   /**
-   * Get current actions
+   * Get current actions from the grid mask.
+   * @returns {Object|undefined} Current actions object.
    */
   getCurrentActions () {
     return this.grid?.mask?.actions
   }
 
   /**
-   * Get rotation step index from transform maps
+   * Get rotation step index from transform maps.
+   * @param {Array} maps - Array of transform maps.
+   * @returns {number|null} Rotation step index or null.
    */
   getRotationStep (maps) {
     return findRotationStepIndex(maps)
   }
 
   /**
-   * Get hit test result from canvas event
+   * Get hit test result from canvas mouse event.
+   * @param {MouseEvent} e - Mouse event.
+   * @returns {number|null} Hit test index or null.
    */
   hitTest (e) {
     if (!this.grid) return null
@@ -174,7 +179,7 @@ export class HexCanvas extends GridCanvas {
 
   /**
    * Get line drawing method name based on tool and cover type.
-   * @param {string} tool - Tool type (segment, ray, full).
+   * @param {string} tool - Tool type ('segment', 'ray', 'full').
    * @returns {string} Method name to call on indexer.
    * @private
    */
@@ -189,12 +194,12 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Get line coordinates using tool-specific method.
-   * @param {number} sq - Start q coord.
-   * @param {number} sr - Start r coord.
-   * @param {number} eq - End q coord.
-   * @param {number} er - End r coord.
-   * @returns {Array} Coordinate array.
+   * Get line coordinates using tool-specific method from indexer.
+   * @param {number} sq - Start q coordinate.
+   * @param {number} sr - Start r coordinate.
+   * @param {number} eq - End q coordinate.
+   * @param {number} er - End r coordinate.
+   * @returns {Array} Array of [q, r] coordinate pairs.
    * @private
    */
   _getLineCoordinates (sq, sr, eq, er) {
@@ -224,10 +229,10 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Compute preview indices for line drawing.
-   * @param {number} startIdx - Start index.
-   * @param {number} endIdx - End index.
-   * @returns {Array} Indices along the line.
+   * Compute preview indices for line drawing between start and end points.
+   * @param {number} startIdx - Starting cell index.
+   * @param {number} endIdx - Ending cell index.
+   * @returns {number[]} Array of indices along the line.
    */
   computePreviewIndices (startIdx, endIdx) {
     if (startIdx == null || endIdx == null) return []
@@ -249,7 +254,9 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Update line preview on canvas.
+   * Update line preview on canvas for current start and end points.
+   * @param {number} start - Starting cell index.
+   * @param {number} end - Ending cell index.
    */
   updateLinePreview (start, end) {
     if (
@@ -264,7 +271,9 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Apply line action to all cells in line.
+   * Apply line action to all cells along the line from start to end.
+   * @param {number} start - Starting cell index.
+   * @param {number} end - Ending cell index.
    */
   completeLine (start, end) {
     if (!this.grid) return
@@ -278,7 +287,8 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Handle canvas click.
+   * Handle canvas click event for cell interaction and line drawing.
+   * @param {MouseEvent} e - Click event.
    */
   onCanvasClick (e) {
     if (!this.grid || !this.currentTool) return
@@ -293,19 +303,20 @@ export class HexCanvas extends GridCanvas {
     }
 
     // Line tool modes: use two-point drawing
-    if (!this.lineStart) {
-      this.setLineStartPoint(hit)
-    } else {
+    if (this.lineStart) {
       this.completeLine(this.lineStart, hit)
       this.lineStart = null
       this.grid.linePreviewIndices = []
       this.grid.redraw()
       this.updateButtonStates()
+    } else {
+      this.setLineStartPoint(hit)
     }
   }
 
   /**
-   * Update hover info with hex coordinates and neighbor count
+   * Update hover info display with hex coordinates and neighbor count.
+   * @param {MouseEvent} e - Mouse event.
    */
   updateHoverInfo (e) {
     if (!this.grid) return
@@ -330,19 +341,27 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Check if morphology operation would change mask.
-   * @param {string} op - Operation type (dilate, erode, cross).
-   * @returns {boolean} True if operation would have effect.
+   * Check if morphology operation would change the current mask.
+   * @param {string} op - Operation type ('dilate', 'erode', 'cross').
+   * @returns {boolean} True if operation would have an effect.
    */
   checkMorphology (op) {
+    if (!this.grid?.mask) return false
     return checkMorphologyState(this.grid.mask, op)
   }
 
   /**
-   * Get morphology operation capabilities.
-   * @returns {Object} Object with canDilate, canErode, canCross flags.
+   * Get morphology operation capabilities for current mask.
+   * @returns {Object} Object with canDilate, canErode, canCross boolean flags.
    */
   getMorphologyCapabilities () {
+    if (!this.grid?.mask) {
+      return {
+        canDilate: false,
+        canErode: false,
+        canCross: false
+      }
+    }
     return {
       canDilate: this.checkMorphology('dilate'),
       canErode: this.checkMorphology('erode'),
@@ -351,12 +370,12 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Update rotate button state.
-   * @param {Array} maps - Transform maps.
+   * Update rotate button state based on transform maps.
+   * @param {Array} maps - Array of transform maps.
    * @private
    */
   _updateRotateButton (maps) {
-    if (!this.rotateBtn) return
+    if (!this.rotateBtn || !this.grid?.mask) return
     const rStep = this.getRotationStep(maps)
     const mask = this.grid.mask
     const actions = this.getCurrentActions()
@@ -367,12 +386,12 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Update flip buttons state.
-   * @param {Array} maps - Transform maps.
+   * Update flip buttons state based on transform maps.
+   * @param {Array} maps - Array of transform maps.
    * @private
    */
   _updateFlipButtons (maps) {
-    if (!this.flipButtons) return
+    if (!this.flipButtons || !this.grid?.mask) return
     const mask = this.grid.mask
     const actions = this.getCurrentActions()
     const b = this.grid.bits
@@ -384,18 +403,19 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Update morphology buttons state.
+   * Update morphology buttons state based on current mask.
    * @private
    */
   _updateMorphologyButtons () {
+    if (!this.grid?.mask) return
     const morph = this.getMorphologyCapabilities()
     if (this.dilateBtn) this.dilateBtn.disabled = !morph.canDilate
     if (this.erodeBtn) this.erodeBtn.disabled = !morph.canErode
   }
 
   /**
-   * Update symmetry display.
-   * @param {Array} actions - Current actions.
+   * Update symmetry display with current actions.
+   * @param {Object} actions - Current actions object.
    * @private
    */
   _updateSymmetryDisplay (actions) {
@@ -408,7 +428,7 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Update all button states.
+   * Update all button states based on current grid state.
    */
   updateButtonStates () {
     if (!this.grid) return
@@ -423,10 +443,11 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Apply transform operation
+   * Apply transform operation using specified map index.
+   * @param {number} mapIndex - Index of transform map to apply.
    */
   applyTransform (mapIndex) {
-    if (!this.grid) return
+    if (!this.grid?.mask) return
 
     const mask = this.grid.mask
     const actions = this.syncMaskWithDraw()
@@ -457,10 +478,11 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
-   * Apply morphology operation
+   * Apply morphology operation to the current mask.
+   * @param {string} operation - Operation type ('dilate', 'erode', 'cross').
    */
   applyMorphology (operation) {
-    if (!this.grid) return
+    if (!this.grid?.mask) return
 
     const mask = this.grid.mask
     this.syncMaskWithDraw()
@@ -544,6 +566,7 @@ export class HexCanvas extends GridCanvas {
    * @private
    */
   _applyMaskMutation (getMaskBits) {
+    if (!this.grid?.mask) return
     this.grid.mask.bits = getMaskBits(this.grid.mask)
     this.grid.setBits(this.grid.mask.bits)
     this.grid.redraw()
@@ -554,7 +577,7 @@ export class HexCanvas extends GridCanvas {
    * Wire mask mutation buttons (empty, full, inverse).
    */
   wireActionButtons () {
-    if (!this.grid || typeof document === 'undefined') return
+    if (!this.grid?.mask || typeof document === 'undefined') return
 
     const maskMutations = {
       empty: mask => mask.emptyMask.bits,

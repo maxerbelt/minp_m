@@ -31,6 +31,30 @@ export class UIVisibilityManager {
   }
 
   /**
+   * Perform the visibility change operation
+   * @private
+   * @param {HTMLElement} element - The DOM element
+   * @param {string} elementId - The element ID for history
+   * @param {boolean} shouldShow - True to show, false to hide
+   * @param {boolean} recordHistory - Whether to record the change
+   */
+  _performVisibilityChange (element, elementId, shouldShow, recordHistory) {
+    const wasVisible = !element.classList.contains(this.hiddenClassName)
+    const isChanging =
+      (shouldShow && !wasVisible) || (!shouldShow && wasVisible)
+
+    if (shouldShow) {
+      element.classList.remove(this.hiddenClassName)
+    } else {
+      element.classList.add(this.hiddenClassName)
+    }
+
+    if (recordHistory && isChanging) {
+      this._recordVisibilityChange(elementId, shouldShow)
+    }
+  }
+
+  /**
    * Show element by removing hidden class
    * @param {string|HTMLElement} elementOrId - Element ID or element
    * @param {boolean} recordHistory - Whether to record visibility change
@@ -41,12 +65,7 @@ export class UIVisibilityManager {
     if (!element) return false
 
     const elementId = typeof elementOrId === 'string' ? elementOrId : element.id
-    const wasHidden = element.classList.contains(this.hiddenClassName)
-    element.classList.remove(this.hiddenClassName)
-
-    if (recordHistory && wasHidden) {
-      this._recordVisibilityChange(elementId, true)
-    }
+    this._performVisibilityChange(element, elementId, true, recordHistory)
     return true
   }
 
@@ -61,12 +80,7 @@ export class UIVisibilityManager {
     if (!element) return false
 
     const elementId = typeof elementOrId === 'string' ? elementOrId : element.id
-    const wasVisible = !element.classList.contains(this.hiddenClassName)
-    element.classList.add(this.hiddenClassName)
-
-    if (recordHistory && wasVisible) {
-      this._recordVisibilityChange(elementId, false)
-    }
+    this._performVisibilityChange(element, elementId, false, recordHistory)
     return true
   }
 
@@ -111,18 +125,29 @@ export class UIVisibilityManager {
   }
 
   /**
+   * Perform an action on multiple elements
+   * @private
+   * @param {string[]|HTMLElement[]} elementIds - Array of element IDs or elements
+   * @param {string} action - 'show' or 'hide'
+   * @returns {number} - Count of successfully processed elements
+   */
+  _performOnMultiple (elementIds, action) {
+    let count = 0
+    for (const elementId of elementIds) {
+      if (this[action](elementId)) {
+        count++
+      }
+    }
+    return count
+  }
+
+  /**
    * Show multiple elements
    * @param {string[]|HTMLElement[]} elementIds - Array of element IDs or elements
    * @returns {number} - Count of successfully shown elements
    */
   showMultiple (elementIds) {
-    let count = 0
-    for (const elementId of elementIds) {
-      if (this.show(elementId)) {
-        count++
-      }
-    }
-    return count
+    return this._performOnMultiple(elementIds, 'show')
   }
 
   /**
@@ -131,13 +156,7 @@ export class UIVisibilityManager {
    * @returns {number} - Count of successfully hidden elements
    */
   hideMultiple (elementIds) {
-    let count = 0
-    for (const elementId of elementIds) {
-      if (this.hide(elementId)) {
-        count++
-      }
-    }
-    return count
+    return this._performOnMultiple(elementIds, 'hide')
   }
 
   /**

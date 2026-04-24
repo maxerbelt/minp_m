@@ -24,24 +24,59 @@ export class GridUIManager {
     this.buttonHandlers = new Map()
   }
 
+  // ============================================================================
+  // Generic Helper Methods for Button Wiring
+  // ============================================================================
+
+  /**
+   * Wire a set of buttons with consistent event handling
+   * @private
+   * @param {Array<{id: string}>} buttonConfigs - Button configuration objects
+   * @param {string} prefix - Prefix for handler storage keys
+   * @param {Function} handlerFactory - Function that creates event handler from config item
+   */
+  _wireButtons (buttonConfigs, prefix, handlerFactory) {
+    for (const config of buttonConfigs) {
+      const btn = document.getElementById(config.id)
+      if (!btn) continue
+
+      const handler = handlerFactory(config)
+      btn.addEventListener('click', handler)
+      this.buttonHandlers.set(`${prefix}-${config.id}`, handler)
+    }
+  }
+
+  /**
+   * Extract button configurations from a config object using mappings
+   * @private
+   * @param {Object} config - Configuration object
+   * @param {Object<string, {prop: string, value: any}>} mappings - Property to value mappings
+   * @param {string} valueKey - Key to use for the value in result objects
+   * @returns {Array<{id: string, [valueKey]: any}>} Button configurations
+   */
+  _extractButtons (config, mappings, valueKey) {
+    const buttons = []
+    for (const [key, { prop, value }] of Object.entries(mappings)) {
+      if (config[prop]) {
+        buttons.push({ id: config[prop], [valueKey]: value })
+      }
+    }
+    return buttons
+  }
+
   /**
    * Wire morphology buttons (dilate, erode, cross)
    * Provides consistent button handling for grid types
    * @param {Array<{id, operation}>} buttons - Button configurations
    */
   wireMorphologyButtons (buttons = []) {
-    // Use provided buttons or extract from config
     const buttonConfigs =
       buttons.length > 0 ? buttons : this._extractMorphologyButtons()
-
-    for (const { id, operation } of buttonConfigs) {
-      const btn = document.getElementById(id)
-      if (!btn) continue
-
-      const handler = () => this.canvas.applyMorphology(operation)
-      btn.addEventListener('click', handler)
-      this.buttonHandlers.set(`morph-${id}`, handler)
-    }
+    this._wireButtons(
+      buttonConfigs,
+      'morph',
+      config => () => this.canvas.applyMorphology(config.operation)
+    )
   }
 
   /**
@@ -50,18 +85,13 @@ export class GridUIManager {
    * @param {Array<{id, mapName}>} buttons - Button configurations
    */
   wireTransformButtons (buttons = []) {
-    // Use provided buttons or extract from config
     const buttonConfigs =
       buttons.length > 0 ? buttons : this._extractTransformButtons()
-
-    for (const { id, mapName } of buttonConfigs) {
-      const btn = document.getElementById(id)
-      if (!btn) continue
-
-      const handler = () => this.canvas.applyTransform(mapName)
-      btn.addEventListener('click', handler)
-      this.buttonHandlers.set(`transform-${id}`, handler)
-    }
+    this._wireButtons(
+      buttonConfigs,
+      'transform',
+      config => () => this.canvas.applyTransform(config.mapName)
+    )
   }
 
   /**
@@ -71,15 +101,11 @@ export class GridUIManager {
   wireActionButtons (buttons = []) {
     const buttonConfigs =
       buttons.length > 0 ? buttons : this._extractActionButtons()
-
-    for (const { id, action } of buttonConfigs) {
-      const btn = document.getElementById(id)
-      if (!btn) continue
-
-      const handler = () => this._applyAction(action)
-      btn.addEventListener('click', handler)
-      this.buttonHandlers.set(`action-${id}`, handler)
-    }
+    this._wireButtons(
+      buttonConfigs,
+      'action',
+      config => () => this._applyAction(config.action)
+    )
   }
 
   /**
@@ -114,20 +140,12 @@ export class GridUIManager {
    * @private
    */
   _extractMorphologyButtons () {
-    const buttons = []
-    const config = this.morphologyConfig
-
-    if (config.dilateBtn) {
-      buttons.push({ id: config.dilateBtn, operation: 'dilate' })
+    const mappings = {
+      dilate: { prop: 'dilateBtn', value: 'dilate' },
+      erode: { prop: 'erodeBtn', value: 'erode' },
+      cross: { prop: 'crossBtn', value: 'cross' }
     }
-    if (config.erodeBtn) {
-      buttons.push({ id: config.erodeBtn, operation: 'erode' })
-    }
-    if (config.crossBtn) {
-      buttons.push({ id: config.crossBtn, operation: 'cross' })
-    }
-
-    return buttons
+    return this._extractButtons(this.morphologyConfig, mappings, 'operation')
   }
 
   /**
@@ -164,15 +182,12 @@ export class GridUIManager {
    * @private
    */
   _extractActionButtons () {
-    const buttons = []
-    const config = this.actionConfig
-
-    if (config.emptyBtn) buttons.push({ id: config.emptyBtn, action: 'empty' })
-    if (config.fullBtn) buttons.push({ id: config.fullBtn, action: 'full' })
-    if (config.inverseBtn)
-      buttons.push({ id: config.inverseBtn, action: 'inverse' })
-
-    return buttons
+    const mappings = {
+      empty: { prop: 'emptyBtn', value: 'empty' },
+      full: { prop: 'fullBtn', value: 'full' },
+      inverse: { prop: 'inverseBtn', value: 'inverse' }
+    }
+    return this._extractButtons(this.actionConfig, mappings, 'action')
   }
 
   /**

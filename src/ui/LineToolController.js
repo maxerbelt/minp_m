@@ -22,16 +22,23 @@ export class LineToolController {
   }
 
   /**
+   * Clear preview cells on the grid
+   * @private
+   */
+  _clearGridPreview () {
+    if (this.canvas?.grid) {
+      this.canvas.grid.previewCells = []
+    }
+  }
+
+  /**
    * Set the current tool
    * @param {string|null} tool - null | 'single' | 'segment' | 'ray' | 'full'
    */
   setTool (tool) {
     this.currentTool = tool
     this.lineStart = null
-    // Clear preview cells on the grid
-    if (this.canvas?.grid) {
-      this.canvas.grid.previewCells = []
-    }
+    this._clearGridPreview()
     this.eventBus.emit('lineTool:changed', tool)
   }
 
@@ -44,11 +51,10 @@ export class LineToolController {
   }
 
   /**
-   * Set the starting point for line drawing
-   * @param {[number, number]} point - [x, y] coordinates
+   * Clear grid preview and hover state
+   * @private
    */
-  setLineStart (point) {
-    this.lineStart = point
+  _clearGridPreviewAndHover () {
     if (this.canvas?.grid) {
       this.canvas.grid.previewCells = []
       this.canvas.grid.hoverLocation = null
@@ -56,6 +62,15 @@ export class LineToolController {
         this.canvas.grid.redraw()
       }
     }
+  }
+
+  /**
+   * Set the starting point for line drawing
+   * @param {[number, number]} point - [x, y] coordinates
+   */
+  setLineStart (point) {
+    this.lineStart = point
+    this._clearGridPreviewAndHover()
     this.eventBus.emit('lineTool:lineStartSet', point)
   }
 
@@ -64,9 +79,7 @@ export class LineToolController {
    */
   clearLineStart () {
     this.lineStart = null
-    if (this.canvas?.grid) {
-      this.canvas.grid.previewCells = []
-    }
+    this._clearGridPreview()
     this.eventBus.emit('lineTool:lineStartCleared')
   }
 
@@ -133,9 +146,7 @@ export class LineToolController {
   reset () {
     this.currentTool = null
     this.lineStart = null
-    if (this.canvas?.grid) {
-      this.canvas.grid.previewCells = []
-    }
+    this._clearGridPreview()
     this.eventBus.emit('lineTool:reset')
   }
 

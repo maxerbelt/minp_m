@@ -2,6 +2,7 @@ import { RectDraw } from './ui/rectangle/rectdraw.js'
 import { RectCanvas } from './ui/rectangle/RectCanvas.js'
 import { RectIndex } from './grid/rectangle/RectIndex.js'
 import { PolyominoGridManager } from './ui/rectangle/polyominoGrid.js'
+import { Delay } from './core/Delay.js'
 
 const DEFAULT_CELL_SIZE = 50
 const GRID_OFFSET_X = 50
@@ -30,6 +31,14 @@ let dropPreviewData = null
  * @property {number} width
  * @property {number} height
  * @property {Array<unknown>} cells
+ */
+
+/**
+ * @typedef {Object} Polyomino
+ * @property {number} width
+ * @property {number} height
+ * @property {function(number, number): boolean} at
+ * @property {function(): IterableIterator<[number, number]>} allXYlocations
  */
 
 /**
@@ -109,10 +118,6 @@ function initializePolyominoGridIfNeeded () {
 
 function withRectCanvas (callback) {
   if (rectCanvas) callback(rectCanvas)
-}
-
-function withPolyGrid (callback) {
-  if (polyGrid) callback(polyGrid)
 }
 
 function getButtonStates () {
@@ -252,34 +257,44 @@ function getGridCoordsFromEvent (
 }
 
 /**
- * Helper: Create a drag image canvas showing only the polyomino
+ * Get the color for a polyomino based on its ID
+ * @param {number} polyominoId - The ID of the polyomino
+ * @returns {string} The color string
  */
-function createPolyominoDragImage (
-  polyomino,
-  polyominoId,
-  cellSize = DEFAULT_CELL_SIZE
-) {
+function getPolyominoColor (polyominoId) {
+  if (!polyGrid || polyominoId <= 0) return '#4ecdc4'
+  const colorIndex = (polyominoId - 1) % polyGrid.polyominoColors.length
+  return polyGrid.polyominoColors[colorIndex]
+}
+
+/**
+ * Create a canvas with appropriate size for the polyomino
+ * @param {Polyomino} polyomino - The polyomino to size for
+ * @param {number} cellSize - Size of each cell
+ * @returns {HTMLCanvasElement} The created canvas
+ */
+function createDragCanvas (polyomino, cellSize) {
   const padding = 8
   const canvasWidth = Math.max(polyomino.width * cellSize + padding * 2, 32)
   const canvasHeight = Math.max(polyomino.height * cellSize + padding * 2, 32)
-
   const canvas = document.createElement('canvas')
   canvas.width = canvasWidth
   canvas.height = canvasHeight
+  return canvas
+}
 
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return canvas
-
-  let color = '#4ecdc4'
-  if (polyGrid && polyominoId > 0) {
-    const colorIndex = (polyominoId - 1) % polyGrid.polyominoColors.length
-    color = polyGrid.polyominoColors[colorIndex]
-  }
-
+/**
+ * Draw the polyomino on the canvas
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
+ * @param {Polyomino} polyomino - The polyomino to draw
+ * @param {number} cellSize - Size of each cell
+ * @param {string} color - The fill color
+ */
+function drawPolyominoOnCanvas (ctx, polyomino, cellSize, color) {
+  const padding = 8
   ctx.fillStyle = color
   for (const [x, y] of polyomino.allXYlocations()) {
     if (!polyomino.at(x, y)) continue
-
     const canvasX = padding + x * cellSize
     const canvasY = padding + y * cellSize
     ctx.fillRect(canvasX, canvasY, cellSize, cellSize)
@@ -287,18 +302,51 @@ function createPolyominoDragImage (
     ctx.lineWidth = 1
     ctx.strokeRect(canvasX, canvasY, cellSize, cellSize)
   }
+}
 
+/**
+ * Style the drag image canvas
+ * @param {HTMLCanvasElement} canvas - The canvas to style
+ */
+function styleDragCanvas (canvas) {
   canvas.style.position = 'absolute'
   canvas.style.left = '-9999px'
   canvas.style.top = '-9999px'
+}
+
+/**
+ * Append canvas to body and schedule cleanup
+ * @param {HTMLCanvasElement} canvas - The canvas to append and clean up
+ */
+function appendAndScheduleCleanup (canvas) {
   document.body.appendChild(canvas)
-
-  setTimeout(() => {
+  ;(async () => {
+    await Delay.wait(100)
     if (canvas.parentNode === document.body) {
-      document.body.removeChild(canvas)
+      canvas.remove()
     }
-  }, 100)
+  })()
+}
 
+/**
+ * Helper: Create a drag image canvas showing only the polyomino
+ * @param {Polyomino} polyomino - The polyomino to draw
+ * @param {number} polyominoId - The ID of the polyomino for coloring
+ * @param {number} [cellSize=DEFAULT_CELL_SIZE] - Size of each cell
+ * @returns {HTMLCanvasElement} The drag image canvas
+ */
+function createPolyominoDragImage (
+  polyomino,
+  polyominoId,
+  cellSize = DEFAULT_CELL_SIZE
+) {
+  const canvas = createDragCanvas(polyomino, cellSize)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
+  const color = getPolyominoColor(polyominoId)
+  drawPolyominoOnCanvas(ctx, polyomino, cellSize, color)
+  styleDragCanvas(canvas)
+  appendAndScheduleCleanup(canvas)
   return canvas
 }
 
@@ -328,9 +376,9 @@ function drawDropPreview (canvas, dragData, clientX, clientY) {
   if (!rectCanvas.grid) return
 
   rectCanvas.grid.previewCells = dragData.cells.map(cell => {
-    const x = cell[0] !== undefined ? cell[0] : cell
+    const x = cell[0] === undefined ? cell : cell[0]
     const y =
-      cell[1] !== undefined ? cell[1] : Array.isArray(cell) ? cell[0] : 0
+      cell[1] === undefined ? (Array.isArray(cell) ? cell[0] : 0) : cell[1]
     return [coords.gridX + x, coords.gridY + y]
   })
 

@@ -63,7 +63,7 @@ export class ButtonManager {
   cleanup () {
     for (const [buttonName] of this.buttonHandlers) {
       const button = this.uiObject[buttonName]
-      if (button && button.__handlers && Array.isArray(button.__handlers)) {
+      if (button?.__handlers && Array.isArray(button.__handlers)) {
         for (const handler of button.__handlers) {
           if (typeof button.removeEventListener === 'function') {
             button.removeEventListener('click', handler)

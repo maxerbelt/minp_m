@@ -18,6 +18,8 @@ import {
   clearRemovedCells
 } from '../core/MorphologyOps.js'
 
+import { Delay } from '../core/Delay.js'
+
 export {
   bitsChanged,
   isBitboardFull,
@@ -34,11 +36,40 @@ export {
 }
 
 // ============================================================================
+// DOM UTILITY HELPERS
+// ============================================================================
+
+/**
+ * Safely get an element by ID, returning null if not found or document undefined
+ * @param {string} id - Element ID to find
+ * @returns {HTMLElement|null} The element or null
+ */
+function getElementByIdSafe (id) {
+  if (typeof document === 'undefined') return null
+  return document.getElementById(id)
+}
+
+/**
+ * Set disabled state on multiple elements by their IDs
+ * @param {string[]} ids - Array of element IDs
+ * @param {boolean} disabled - Whether to disable the elements
+ */
+function setElementsDisabled (ids, disabled) {
+  ids.forEach(id => {
+    const el = getElementByIdSafe(id)
+    if (el) el.disabled = disabled
+  })
+}
+
+// ============================================================================
 // CANVAS & EVENT HANDLING
 // ============================================================================
 
 /**
  * Extract canvas coordinates from clicking/moving event
+ * @param {Object} grid - Grid object with canvas and _hitTest method
+ * @param {MouseEvent} e - Mouse event with clientX/clientY
+ * @returns {Object|null} Hit test result or null
  */
 export function getCanvasHitTest (grid, e) {
   if (!grid?.canvas) return null
@@ -48,6 +79,10 @@ export function getCanvasHitTest (grid, e) {
 
 /**
  * Update preview cells and trigger redraw
+ * @param {Object} grid - Grid object with previewCells and redraw method
+ * @param {Object|null} lineStart - Starting point coordinates
+ * @param {Object|null} lineEnd - Ending point coordinates
+ * @param {Function} computePreviewFn - Function to compute preview cells
  */
 export function updateLinePreviewRedraw (
   grid,
@@ -62,6 +97,11 @@ export function updateLinePreviewRedraw (
 
 /**
  * Handle two-point line completion: apply operation and reset tool state
+ * @param {Object} grid - Grid object with previewCells and redraw method
+ * @param {Object|null} lineStart - Starting point coordinates
+ * @param {Object|null} lineEnd - Ending point coordinates
+ * @param {Function} applyFn - Function to apply the line operation
+ * @param {Function} [updateFn] - Optional function to call after completion
  */
 export function completeLineShape (grid, lineStart, lineEnd, applyFn, updateFn) {
   if (!grid || lineStart == null || lineEnd == null) return
@@ -77,6 +117,10 @@ export function completeLineShape (grid, lineStart, lineEnd, applyFn, updateFn) 
 
 /**
  * Apply a mutation operation (set, clear, toggle) to a single cell
+ * @param {Object} mask - Mask object with set/clear methods
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {string} operation - Operation type: 'set', 'clear', or 'toggle'
  */
 export function applyMaskMutation (mask, x, y, operation) {
   if (!mask) return
@@ -94,6 +138,10 @@ export function applyMaskMutation (mask, x, y, operation) {
 
 /**
  * Apply a color mutation (set/clear) to a single cell in packed grid
+ * @param {Object} packed - Packed grid object with set method
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} color - Color value to set
  */
 export function applyPackedMutation (packed, x, y, color) {
   if (!packed) return
@@ -102,6 +150,7 @@ export function applyPackedMutation (packed, x, y, color) {
 
 /**
  * Create mapping of button IDs to mask operations
+ * @returns {Object<string, Function>} Map of button IDs to mask bit getters (expects grid parameter)
  */
 export function createMaskMutationMap () {
   return {
@@ -117,10 +166,13 @@ export function createMaskMutationMap () {
 
 /**
  * Wire mask mutation buttons with consistent update pattern
+ * @param {Object<string, Function>} mutationMap - Map of button IDs to mask bit getters
+ * @param {Function} applyFn - Function to apply the mask bits
+ * @param {Function} [updateFn] - Optional function to call after applying
  */
 export function wireMaskMutationButtons (mutationMap, applyFn, updateFn) {
   Object.entries(mutationMap).forEach(([id, getMaskBits]) => {
-    const el = document.getElementById(id)
+    const el = getElementByIdSafe(id)
     if (el) {
       el.addEventListener('click', () => {
         applyFn(getMaskBits())
@@ -136,6 +188,10 @@ export function wireMaskMutationButtons (mutationMap, applyFn, updateFn) {
 
 /**
  * Set disabled state for transform buttons, trying both ID variants
+ * @param {boolean} canRotateCW - Whether clockwise rotation is allowed
+ * @param {boolean} canRotateCCW - Whether counter-clockwise rotation is allowed
+ * @param {boolean} canFlipH - Whether horizontal flip is allowed
+ * @param {boolean} canFlipV - Whether vertical flip is allowed
  */
 export function setTransformButtonStates (
   canRotateCW,
@@ -143,27 +199,18 @@ export function setTransformButtonStates (
   canFlipH,
   canFlipV
 ) {
-  // Try both ID variants (for rect and rectcolor)
-  for (const id of ['rotate-cw', 'rotate-cw2']) {
-    const el = document.getElementById(id)
-    if (el) el.disabled = !canRotateCW
-  }
-  for (const id of ['rotate-ccw', 'rotate-ccw2']) {
-    const el = document.getElementById(id)
-    if (el) el.disabled = !canRotateCCW
-  }
-  for (const id of ['flip-h', 'flip-h2']) {
-    const el = document.getElementById(id)
-    if (el) el.disabled = !canFlipH
-  }
-  for (const id of ['flip-v', 'flip-v2']) {
-    const el = document.getElementById(id)
-    if (el) el.disabled = !canFlipV
-  }
+  setElementsDisabled(['rotate-cw', 'rotate-cw2'], !canRotateCW)
+  setElementsDisabled(['rotate-ccw', 'rotate-ccw2'], !canRotateCCW)
+  setElementsDisabled(['flip-h', 'flip-h2'], !canFlipH)
+  setElementsDisabled(['flip-v', 'flip-v2'], !canFlipV)
 }
 
 /**
- * Set disabled state for morphology buttons
+ * Set disabled state for morphology operation buttons
+ * @param {boolean} dilateDisabled - Whether dilate button should be disabled
+ * @param {boolean} erodeDisabled - Whether erode button should be disabled
+ * @param {boolean} crossDisabled - Whether cross-dilate button should be disabled
+ * @param {string} buttonId - Base button ID to determine suffix
  */
 export function setMorphologyButtonStates (
   dilateDisabled,
@@ -172,9 +219,9 @@ export function setMorphologyButtonStates (
   buttonId
 ) {
   const suffix = buttonId === 'dilate' ? '' : '2'
-  const dilateBtn = document.getElementById(`dilate${suffix}`)
-  const erodeBtn = document.getElementById(`erode${suffix}`)
-  const crossBtn = document.getElementById(`cross-dilate${suffix}`)
+  const dilateBtn = getElementByIdSafe(`dilate${suffix}`)
+  const erodeBtn = getElementByIdSafe(`erode${suffix}`)
+  const crossBtn = getElementByIdSafe(`cross-dilate${suffix}`)
 
   if (dilateBtn) dilateBtn.disabled = dilateDisabled
   if (erodeBtn) erodeBtn.disabled = erodeDisabled
@@ -183,6 +230,9 @@ export function setMorphologyButtonStates (
 
 /**
  * Check if bitboard is completely full and disable dilate accordingly
+ * @param {number} bits - Current bitboard value
+ * @param {number} fullBits - Full bitboard value for comparison
+ * @returns {boolean} True if dilate should be disabled
  */
 export function checkDilateCapacity (bits, fullBits) {
   return isBitboardFull(bits, fullBits)
@@ -194,6 +244,8 @@ export function checkDilateCapacity (bits, fullBits) {
 
 /**
  * Update symmetry display element with current mask symmetry classification
+ * @param {HTMLElement|null} symElement - Element to update with symmetry text
+ * @param {Object} maskActions - Object with classifyOrbitType method
  */
 export function updateSymmetryDisplay (symElement, maskActions) {
   if (!symElement) return
@@ -207,9 +259,12 @@ export function updateSymmetryDisplay (symElement, maskActions) {
 
 /**
  * Wire a single line tool radio button to its setter
+ * @param {string} buttonId - ID of the radio button
+ * @param {*} toolValue - Value to set when button is checked
+ * @param {Function} setToolFn - Function to call with the tool value
  */
 export function wireLineToolButton (buttonId, toolValue, setToolFn) {
-  const btn = document.getElementById(buttonId)
+  const btn = getElementByIdSafe(buttonId)
   if (!btn) return
 
   const handler = () => {
@@ -222,6 +277,7 @@ export function wireLineToolButton (buttonId, toolValue, setToolFn) {
 
 /**
  * Create tool map for converting input values to tool types
+ * @returns {Object<string, string|null>} Map of input values to tool types
  */
 export function createLineToolMap () {
   return {
@@ -234,6 +290,9 @@ export function createLineToolMap () {
 
 /**
  * Wire all line tool radio buttons with common pattern
+ * @param {string} radioSelector - CSS selector for radio buttons
+ * @param {Object<string, *>} toolMap - Map of button values to tool types
+ * @param {Function} setToolFn - Function to call with the selected tool
  */
 export function wireAllLineToolButtons (radioSelector, toolMap, setToolFn) {
   if (typeof document === 'undefined') return
@@ -253,10 +312,11 @@ export function wireAllLineToolButtons (radioSelector, toolMap, setToolFn) {
 
 /**
  * Create or get morphology operation log element
+ * @returns {HTMLElement|null} The log element or null if document unavailable
  */
 export function createMorphLog () {
   if (typeof document === 'undefined') return null
-  const existing = document.getElementById('rectcolor-morph-log')
+  const existing = getElementByIdSafe('rectcolor-morph-log')
   if (existing) return existing
 
   const el = document.createElement('div')
@@ -268,16 +328,20 @@ export function createMorphLog () {
 }
 
 /**
- * Display temporary log message for morphology operations
+ * Display temporary log message for morphology operations with async timeout
+ * @async
+ * @param {HTMLElement|null} logElement - The log element to update
+ * @param {string} text - The message text to display
+ * @param {number} [timeout=3000] - Timeout in milliseconds before clearing (0 to disable)
+ * @returns {Promise<void>}
  */
-export function showMorphLog (logElement, text, timeout = 3000) {
+export async function showMorphLog (logElement, text, timeout = 3000) {
   if (typeof console !== 'undefined') console.log('[rectcolor-morph]', text)
   if (!logElement) return
   logElement.textContent = text
   if (timeout > 0) {
-    setTimeout(() => {
-      if (logElement.textContent === text) logElement.textContent = ''
-    }, timeout)
+    await Delay.wait(timeout)
+    if (logElement.textContent === text) logElement.textContent = ''
   }
 }
 
@@ -287,6 +351,8 @@ export function showMorphLog (logElement, text, timeout = 3000) {
 
 /**
  * Find rotation step map index (first non-identity rotation map)
+ * @param {Object|Array} maps - Transform maps object or array
+ * @returns {string|number|null} Key/index of first rotation map or null
  */
 export function findRotationStepIndex (maps) {
   if (!maps) return null
@@ -319,6 +385,10 @@ export function findRotationStepIndex (maps) {
 
 /**
  * Compute transformed bits by applying a map to current bits
+ * @param {Object} mask - Mask object with bits property
+ * @param {Array<number>|null} map - Transformation map array or null
+ * @param {Object} actions - Actions object with store, indexer, applyMap methods
+ * @returns {number} Transformed bits
  */
 export function computeTransformedBits (mask, map, actions) {
   if (!map) return mask.bits
@@ -341,6 +411,9 @@ export function computeTransformedBits (mask, map, actions) {
 
 /**
  * Classify symmetry with fallback handling
+ * @param {Object} actions - Primary actions object with classifyOrbitType
+ * @param {Object} maskActions - Fallback actions object
+ * @returns {string} Symmetry classification or 'n/a'
  */
 export function getSymmetryClass (actions, maskActions) {
   try {
@@ -364,6 +437,10 @@ export function getSymmetryClass (actions, maskActions) {
 
 /**
  * Update symmetry and details display elements
+ * @param {HTMLElement|null} symElement - Element to update with symmetry text
+ * @param {HTMLElement|null} detailsElement - Element to update with details text
+ * @param {Object} actions - Actions object with transformMaps and template
+ * @param {Object} maskActions - Fallback actions object
  */
 export function updateSymmetryAndDetails (
   symElement,

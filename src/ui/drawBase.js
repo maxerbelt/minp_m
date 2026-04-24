@@ -9,6 +9,13 @@
  * - Redraw cycle orchestration
  */
 export class DrawBase {
+  /**
+   * @param {string} canvasId - ID of the canvas element
+   * @param {*} gridData - Grid data structure
+   * @param {number} [cellSize=25] - Size of each cell in pixels
+   * @param {number} [offsetX=0] - X offset for grid positioning
+   * @param {number} [offsetY=0] - Y offset for grid positioning
+   */
   constructor (canvasId, gridData, cellSize = 25, offsetX = 0, offsetY = 0) {
     this.canvas = document.getElementById(canvasId)
     if (!this.canvas) {
@@ -113,13 +120,23 @@ export class DrawBase {
   }
 
   /**
+   * Handle mouse events that require coordinate conversion and hit testing
+   * @private
+   * @param {MouseEvent} event - The mouse event
+   * @param {Function} callback - Callback function to handle the hit result
+   */
+  _handleMouseEventWithCoords (event, callback) {
+    const { x, y } = this.getCanvasMouseCoords(event)
+    const hit = this._hitTest(x, y)
+    callback(hit)
+  }
+
+  /**
    * Handle mouse move event - update hover and redraw
    * @private
    */
   _onMouseMove (event) {
-    const { x, y } = this.getCanvasMouseCoords(event)
-    const hit = this._hitTest(x, y)
-    this.redrawWithHover(hit)
+    this._handleMouseEventWithCoords(event, hit => this.redrawWithHover(hit))
   }
 
   /**
@@ -135,9 +152,7 @@ export class DrawBase {
    * @private
    */
   _onClick (event) {
-    const { x, y } = this.getCanvasMouseCoords(event)
-    const hit = this._hitTest(x, y)
-    this.toggleCell(hit)
+    this._handleMouseEventWithCoords(event, hit => this.toggleCell(hit))
   }
 
   // ============================================================================
@@ -155,6 +170,7 @@ export class DrawBase {
 
   /**
    * Update hover location and redraw
+   * @param {*} [hoverLocation=null] - The location to hover or null to clear
    */
   redrawWithHover (hoverLocation = null) {
     this.hoverLocation = hoverLocation
@@ -190,6 +206,7 @@ export class DrawBase {
 
   /**
    * Toggle a cell on/off
+   * @param {*} location - The cell location to toggle
    */
   toggleCell (location) {
     throw new Error('toggleCell must be implemented by subclass')
@@ -198,6 +215,9 @@ export class DrawBase {
   /**
    * Hit test to find which cell is at the given pixel coordinates
    * @private
+   * @param {number} px - X pixel coordinate
+   * @param {number} py - Y pixel coordinate
+   * @returns {*} The hit test result
    */
   _hitTest (px, py) {
     throw new Error('_hitTest must be implemented by subclass')

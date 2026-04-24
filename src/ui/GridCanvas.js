@@ -3,6 +3,11 @@
  * Provides common infrastructure for hex, rect, and triangular grid UIs
  */
 export class GridCanvas {
+  /**
+   * @param {string} canvasId - ID of the canvas element
+   * @param {Object} gridInstance - The grid instance with canvas and mask
+   * @param {Object} config - Configuration object for grid-specific settings
+   */
   constructor (canvasId, gridInstance, config = {}) {
     this.canvasId = canvasId
     this.grid = gridInstance
@@ -67,6 +72,7 @@ export class GridCanvas {
 
   /**
    * Handle canvas mouse move - update line preview and hover info
+   * @param {MouseEvent} e - The mouse event
    */
   onCanvasMouseMove (e) {
     if (!this.grid) return
@@ -90,6 +96,7 @@ export class GridCanvas {
 
   /**
    * Handle canvas click - start or complete line drawing
+   * @param {MouseEvent} e - The mouse event
    */
   onCanvasClick (e) {
     if (!this.grid) return
@@ -114,6 +121,7 @@ export class GridCanvas {
 
   /**
    * Set line tool start point and clear preview
+   * @param {*} point - The starting point coordinates
    */
   setLineStartPoint (point) {
     this.lineStart = point
@@ -126,6 +134,7 @@ export class GridCanvas {
 
   /**
    * Clear line tool state
+   * @param {string|null} tool - The tool type or null to disable
    */
   setTool (tool) {
     this.currentTool = tool
@@ -138,6 +147,8 @@ export class GridCanvas {
   /**
    * Get hit test result from canvas event
    * Subclasses must implement coordinate-specific logic
+   * @param {MouseEvent} e - The mouse event
+   * @returns {*} The hit test result (coordinates or null)
    */
   hitTest (e) {
     throw new Error('Must implement hitTest')
@@ -146,6 +157,8 @@ export class GridCanvas {
   /**
    * Update line preview cells based on tool and endpoints
    * Subclasses must implement coordinate-specific line algorithms
+   * @param {*} start - The starting point
+   * @param {*} end - The ending point
    */
   updateLinePreview (start, end) {
     throw new Error('Must implement updateLinePreview')
@@ -154,6 +167,8 @@ export class GridCanvas {
   /**
    * Complete line drawing operation
    * Subclasses must implement action-specific logic
+   * @param {*} start - The starting point
+   * @param {*} end - The ending point
    */
   completeLine (start, end) {
     throw new Error('Must implement completeLine')
@@ -162,6 +177,7 @@ export class GridCanvas {
   /**
    * Update hover info display
    * Subclasses must implement coordinate-specific formatting
+   * @param {MouseEvent} e - The mouse event
    */
   updateHoverInfo (e) {
     throw new Error('Must implement updateHoverInfo')
@@ -179,6 +195,7 @@ export class GridCanvas {
   /**
    * Apply a transform operation
    * Subclasses must implement transform-specific logic
+   * @param {string} mapName - The name of the transform map
    */
   applyTransform (mapName) {
     throw new Error('Must implement applyTransform')
@@ -187,6 +204,7 @@ export class GridCanvas {
   /**
    * Apply morphology operation
    * Subclasses must implement morphology-specific logic
+   * @param {string} operation - The morphology operation type
    */
   applyMorphology (operation) {
     throw new Error('Must implement applyMorphology')
@@ -203,6 +221,69 @@ export class GridCanvas {
     this.wireTransformButtons()
     this.wireMorphologyButtons()
     this.wireActionButtons()
+  }
+
+  // ============================================================================
+  // Helper Methods for Wiring and Syncing UI Elements
+  // ============================================================================
+
+  /**
+   * Wire a single DOM element with an event listener
+   * @private
+   * @param {HTMLElement|null} element - The element to wire
+   * @param {string} event - The event type
+   * @param {EventListener} handler - The event handler
+   */
+  _wireElement (element, event, handler) {
+    if (element) {
+      element.addEventListener(event, handler)
+    }
+  }
+
+  /**
+   * Wire multiple DOM elements matching a selector with an event listener
+   * @private
+   * @param {string} selector - CSS selector for elements
+   * @param {string} event - The event type
+   * @param {EventListener} handler - The event handler
+   */
+  _wireElements (selector, event, handler) {
+    if (typeof document === 'undefined') return
+    const elements = document.querySelectorAll(selector)
+    elements.forEach(element => this._wireElement(element, event, handler))
+  }
+
+  /**
+   * Sync a form control value to a class property with validation
+   * @private
+   * @param {HTMLInputElement|HTMLSelectElement|null} element - The form control
+   * @param {string[]} validValues - Array of valid values
+   * @param {string} property - The property name to set on this instance
+   */
+  _syncValue (element, validValues, property) {
+    if (!element || !element.value) return
+    const value = element.value
+    if (validValues.includes(value)) {
+      this[property] = value
+    }
+  }
+
+  /**
+   * Sync a checked radio button value to a class property with validation
+   * @private
+   * @param {string} selector - CSS selector for radio buttons
+   * @param {string[]} validValues - Array of valid values
+   * @param {string} property - The property name to set on this instance
+   */
+  _syncRadioValue (selector, validValues, property) {
+    if (typeof document === 'undefined') return
+    const checked = document.querySelector(selector + ':checked')
+    if (checked && checked.value) {
+      const value = checked.value
+      if (validValues.includes(value)) {
+        this[property] = value
+      }
+    }
   }
 
   /**
@@ -228,8 +309,8 @@ export class GridCanvas {
       }
     }
 
-    dropdown.addEventListener('change', updateAction)
-    dropdown.addEventListener('input', updateAction)
+    this._wireElement(dropdown, 'change', updateAction)
+    this._wireElement(dropdown, 'input', updateAction)
   }
 
   /**
@@ -238,15 +319,11 @@ export class GridCanvas {
   wireCoverTypeRadios () {
     if (typeof document === 'undefined') return
 
-    const radios = document.querySelectorAll(this.getCoverTypeRadioSelector())
-    if (!radios || radios.length === 0) return
-
-    radios.forEach(radio => {
-      radio.addEventListener('change', e => {
-        if (e.target.checked) {
-          this.coverType = e.target.value
-        }
-      })
+    const selector = this.getCoverTypeRadioSelector()
+    this._wireElements(selector, 'change', e => {
+      if (e.target.checked) {
+        this.coverType = e.target.value
+      }
     })
   }
 
@@ -273,11 +350,15 @@ export class GridCanvas {
 
   /**
    * Get selectors/elements for wiring (subclasses provide specific IDs)
+   * @returns {HTMLSelectElement|null} The line action dropdown element
    */
   getLineActionDropdown () {
     throw new Error('Must implement getLineActionDropdown')
   }
 
+  /**
+   * @returns {string} CSS selector for cover type radio buttons
+   */
   getCoverTypeRadioSelector () {
     throw new Error('Must implement getCoverTypeRadioSelector')
   }
@@ -287,37 +368,25 @@ export class GridCanvas {
    */
   syncLineActionDropdown () {
     const dropdown = this.getLineActionDropdown()
-    if (dropdown && dropdown.value) {
-      const value = dropdown.value
-      if (value === 'set' || value === 'clear' || value === 'toggle') {
-        this.currentAction = value
-      }
-    }
+    this._syncValue(dropdown, ['set', 'clear', 'toggle'], 'currentAction')
   }
 
   /**
    * Sync cover type radio buttons to current state
    */
   syncCoverTypeRadios () {
-    const checked = document.querySelector(
-      this.getCoverTypeRadioSelector() + ':checked'
+    const selector = this.getCoverTypeRadioSelector()
+    this._syncRadioValue(
+      selector,
+      ['normal', 'half', 'super', 'superCover', 'halfCover'],
+      'coverType'
     )
-    if (checked && checked.value) {
-      const value = checked.value
-      if (
-        value === 'normal' ||
-        value === 'half' ||
-        value === 'super' ||
-        value === 'superCover' ||
-        value === 'halfCover'
-      ) {
-        this.coverType = value
-      }
-    }
   }
 
   /**
    * Enable/disable a button
+   * @param {HTMLButtonElement|null} btn - The button element
+   * @param {boolean} disabled - Whether to disable the button
    */
   setButtonDisabled (btn, disabled) {
     if (btn) btn.disabled = disabled

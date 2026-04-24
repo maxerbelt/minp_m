@@ -117,6 +117,33 @@ let currentAction = 'set' // 'set' | 'clear' | 'toggle'
 let lineStart = null
 triDraw.previewCells = []
 
+/**
+ * Apply an action to a list of cell indices
+ * @param {string} action - 'set', 'clear', or 'toggle'
+ * @param {number[]} indices - Array of cell indices
+ */
+function applyActionToIndices (action, indices) {
+  const mask = triDraw.mask
+  for (const i of indices) {
+    if (action === 'set') {
+      mask.bits = mask.setIndex(i, 1)
+    } else if (action === 'clear') {
+      mask.bits = mask.setIndex(i, 0)
+    } else if (action === 'toggle') {
+      let val
+      if (typeof mask.bits === 'bigint') {
+        val = Number((mask.bits >> BigInt(i)) & 1n)
+      } else {
+        val = mask.atIndex ? mask.atIndex(i) : (mask.bits >> i) & 1
+      }
+      mask.bits = mask.setIndex(i, val ? 0 : 1)
+    }
+  }
+  triDraw.setBits(mask.bits)
+  if (typeof triDraw.redraw === 'function') triDraw.redraw()
+  updateButtons()
+}
+
 // Override toggleCell to respect action dropdown and avoid tool conflicts
 const origToggleTri = triDraw.toggleCell.bind(triDraw)
 triDraw.toggleCell = function (idx) {
@@ -124,24 +151,7 @@ triDraw.toggleCell = function (idx) {
   if ((triCanvas && triCanvas.currentTool) || currentTool) return
 
   // Apply currentAction to single cell
-  const mask = this.mask
-  if (currentAction === 'set') {
-    mask.bits = mask.setIndex(idx, 1)
-  } else if (currentAction === 'clear') {
-    mask.bits = mask.setIndex(idx, 0)
-  } else if (currentAction === 'toggle') {
-    let val
-    if (typeof mask.bits === 'bigint') {
-      val = Number((mask.bits >> BigInt(idx)) & 1n)
-    } else {
-      val = mask.atIndex ? mask.atIndex(idx) : (mask.bits >> idx) & 1
-    }
-    mask.bits = mask.setIndex(idx, val ? 0 : 1)
-  }
-
-  this.setBits(mask.bits)
-  if (typeof this.redraw === 'function') this.redraw()
-  updateButtons()
+  applyActionToIndices(currentAction, [idx])
 }
 
 // Enhance hover drawing for preview cells
@@ -210,39 +220,26 @@ function computePreviewIndices (startIdx, endIdx) {
  * Draw a line of cells from start to end index, applying the current action
  */
 function drawLineBetween (startIdx, endIdx) {
-  const mask = triDraw.mask
   const inds = computePreviewIndices(startIdx, endIdx)
-
-  for (const i of inds) {
-    if (currentAction === 'set') {
-      mask.bits = mask.setIndex(i, 1)
-    } else if (currentAction === 'clear') {
-      mask.bits = mask.setIndex(i, 0)
-    } else if (currentAction === 'toggle') {
-      let val
-      if (typeof mask.bits === 'bigint') {
-        val = Number((mask.bits >> BigInt(i)) & 1n)
-      } else {
-        val = mask.atIndex ? mask.atIndex(i) : (mask.bits >> i) & 1
-      }
-      mask.bits = mask.setIndex(i, val ? 0 : 1)
-    }
-  }
-
-  // Ensure the draw layer matches the mask and refresh UI
-  triDraw.setBits(mask.bits)
-  if (typeof triDraw.redraw === 'function') triDraw.redraw()
-  updateButtons()
+  applyActionToIndices(currentAction, inds)
 }
 
 /**
- * Set current line tool
+ * Get the cell index from a mouse event, or null if invalid
+ * @param {MouseEvent} e - The mouse event
+ * @returns {number|null} - The cell index or null
  */
-function setTool (tool) {
-  if (triCanvas) triCanvas.setTool(tool)
-  currentTool = tool
-  lineStart = null
-  if (triDraw) triDraw.previewCells = []
+function getHitIndexFromEvent (e) {
+  const rect = triDraw.canvas.getBoundingClientRect()
+  const px = e.clientX - rect.left
+  const py = e.clientY - rect.top
+  const [r, c] = pixelToTri(
+    px - triDraw.offsetX,
+    py - triDraw.offsetY,
+    triDraw.triSize
+  )
+  if (!triDraw.indexer.isValid(r, c)) return null
+  return triDraw.indexer.index(r, c)
 }
 
 // Initialize on module load if DOM is available
@@ -259,32 +256,15 @@ if (!triCanvas && !triDraw.canvas.__lineToolsListenersAttached) {
     updateTriHoverInfo(e)
 
     if (!currentTool || lineStart == null) return
-    const rect = triDraw.canvas.getBoundingClientRect()
-    const px = e.clientX - rect.left
-    const py = e.clientY - rect.top
-    const [r, c] = pixelToTri(
-      px - triDraw.offsetX,
-      py - triDraw.offsetY,
-      triDraw.triSize
-    )
-    if (!triDraw.indexer.isValid(r, c)) return
-    const hit = triDraw.indexer.index(r, c)
+    const hit = getHitIndexFromEvent(e)
+    if (hit == null) return
     triDraw.previewCells = computePreviewIndices(lineStart, hit)
     triDraw.redraw()
   }
 
   const onCanvasClick = e => {
     if (!currentTool) return
-    const rect = triDraw.canvas.getBoundingClientRect()
-    const px = e.clientX - rect.left
-    const py = e.clientY - rect.top
-    const [r, c] = pixelToTri(
-      px - triDraw.offsetX,
-      py - triDraw.offsetY,
-      triDraw.triSize
-    )
-    if (!triDraw.indexer.isValid(r, c)) return
-    const hit = triDraw.indexer.index(r, c)
+    const hit = getHitIndexFromEvent(e)
     if (hit == null) return
 
     // Two-point drawing: first click sets start, second click draws line

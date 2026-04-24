@@ -1,20 +1,20 @@
 import { HexDraw } from './ui/hexagon/hexDraw.js'
 import { HexCanvas } from './ui/hexagon/HexCanvas.js'
+import {
+  createCanvasInitializer,
+  updateButtons as updateButtonsCommon,
+  setMorphologyButtons as setMorphologyButtonsCommon,
+  checkMorphology as checkMorphologyCommon,
+  getCanvasState,
+  setCanvasState
+} from './canvasCommon.js'
 
 // Create HexDraw instance with canvas ID, radius, and drawing parameters
 const hexDraw = new HexDraw('c', 6, 300, 300, 25)
 
-// Create HexCanvas controller to manage UI
+// Create HexCanvas controller initializer
 let hexCanvas = null
-
-// Initialize canvas controller when DOM is ready
-function initializeHexCanvas () {
-  if (hexCanvas) return
-  if (typeof document === 'undefined') return
-
-  hexCanvas = new HexCanvas('c', hexDraw)
-  hexCanvas.initializeAll()
-}
+const initializeHexCanvas = createCanvasInitializer('c', HexCanvas, hexDraw)
 
 // Set example shape with specific coordinates
 hexDraw.setBitsFromCoords([
@@ -31,19 +31,15 @@ hexDraw.setBitsFromCoords([
  * Delegation functions for backward compatibility and testing
  */
 function updateButtons () {
-  if (hexCanvas) hexCanvas.updateButtonStates()
+  updateButtonsCommon(hexCanvas)
 }
 
 function setMorphologyButtons ({ dilate, erode, cross }) {
-  if (!hexCanvas) return
-  if (dilate) hexCanvas.dilateBtn = dilate
-  if (erode) hexCanvas.erodeBtn = erode
-  if (cross) hexCanvas.crossBtn = cross
+  setMorphologyButtonsCommon(hexCanvas, { dilate, erode, cross })
 }
 
 function computeHexMorph (op) {
-  if (!hexCanvas) return false
-  return hexCanvas.checkMorphology(op)
+  return checkMorphologyCommon(hexCanvas, op)
 }
 
 // ============================================================================
@@ -61,40 +57,32 @@ hexDraw.previewCells = []
  * Getter/setter for backward compatibility with tests
  */
 function getHexCanvasState () {
-  if (!hexCanvas) return null
-  return {
-    currentTool: hexCanvas.currentTool,
-    currentAction: hexCanvas.currentAction,
-    coverType: hexCanvas.coverType,
-    lineStart: hexCanvas.lineStart
-  }
+  return getCanvasState(hexCanvas, {
+    currentTool,
+    currentCoverType,
+    currentAction,
+    lineStart
+  })
 }
 
 function setHexCanvasState (state) {
-  if (!hexCanvas) return
-  if (state.currentTool !== undefined) {
-    hexCanvas.currentTool = state.currentTool
-    currentTool = state.currentTool
-  }
-  if (state.currentAction !== undefined) {
-    hexCanvas.currentAction = state.currentAction
-    currentAction = state.currentAction
-  }
-  if (state.coverType !== undefined) {
-    hexCanvas.coverType = state.coverType
-    currentCoverType = state.coverType
-  }
-  if (state.lineStart !== undefined) {
-    hexCanvas.lineStart = state.lineStart
-    lineStart = state.lineStart
-  }
+  setCanvasState(
+    hexCanvas,
+    {
+      currentTool,
+      currentCoverType,
+      currentAction,
+      lineStart
+    },
+    state
+  )
 }
 
 /**
  * Initialize on module load if DOM is available
  */
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  initializeHexCanvas()
+  hexCanvas = initializeHexCanvas()
 }
 
 // exports for testing
