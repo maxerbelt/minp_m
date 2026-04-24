@@ -158,8 +158,14 @@ export class Waters {
   loadForEdit (map) {
     map = map || bh.map
 
-    let placedShips = this.initShipsForEdit()
-    placedShips = this.checkValidPlacement(placedShips, map)
+    this.initShipsForEdit()
+
+    if (map.example == null) {
+      this.autoPlace()
+      return
+    }
+
+    const placedShips = this.checkValidPlacement(map.example, map)
     if (placedShips === null) {
       return
     }

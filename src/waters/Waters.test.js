@@ -7,7 +7,7 @@
 /* global   it, describe,   expect, beforeEach, jest */
 import { Waters } from './Waters.js'
 import { bh } from '../terrains/all/js/bh.js'
-import { jest } from '@jest/globals'
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // Mocks
 const mockUI = {
