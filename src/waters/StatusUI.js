@@ -1,8 +1,10 @@
 const MAX_LINES = 20
 import { randomElement } from '../core/utilities.js'
+import { Delay } from '../core/Delay.js'
 
 /**
  * Manages game status, tips, and ammo display UI.
+ * Uses async/await patterns with Delay for timer management.
  */
 export class StatusUI {
   /**
@@ -39,8 +41,11 @@ export class StatusUI {
     this.scoreQueue = []
     this.tipsQueue = []
     this.currentNote = null
-    this.timer = null
     this.waiting = false
+
+    // Async queue processing
+    this._shouldCancelQueueLoop = false
+    this._queueLoopActive = false
   }
 
   /**
@@ -51,23 +56,22 @@ export class StatusUI {
   }
 
   /**
-   * Clears any pending timer.
+   * Stops any pending queue processing loop.
+   * @private
    */
-  clearTimer () {
-    if (this.timer !== null) {
-      clearTimeout(this.timer)
-      this.timer = null
-    }
+  _cancelQueueLoop () {
+    this._shouldCancelQueueLoop = true
   }
 
   /**
-   * Schedules a callback after a duration.
-   * @param {number} duration - Duration in milliseconds
-   * @param {Function} callback - Function to call after duration
+   * Handles a delay with potential cancellation.
+   * @private
+   * @async
+   * @param {number} ms - Milliseconds to wait
+   * @returns {Promise<void>}
    */
-  scheduleTimer (duration, callback) {
-    this.clearTimer()
-    this.timer = setTimeout(callback, duration)
+  async _waitWithCancellation (ms) {
+    await Delay.wait(ms)
   }
 
   /**
@@ -81,45 +85,72 @@ export class StatusUI {
 
   /**
    * Processes the next item in the score queue.
+   * @private
+   * @async
+   * @returns {Promise<void>}
    */
-  nextInQueue () {
+  async _processNextInQueue () {
     const next = this.scoreQueue.shift()
     if (next) {
       this.current = next.item
       this.show(next.item, next.isImportant)
-      this.waitFor(2500)
+      await this._waitWithCancellation(2500)
       return
     }
     if (this.scoreQueue.length === 0) {
-      this.addTipToQueue()
+      await this._runQueueLoop()
     }
   }
 
   /**
-   * Adds a tip to the display queue with delay.
+   * Runs the main queue processing loop with tip display.
    * @private
+   * @async
+   * @returns {Promise<void>}
    */
-  addTipToQueue () {
-    this.waiting = true
-    this.scheduleTimer(1500, () => this._handleTipTimeout())
+  async _runQueueLoop () {
+    this._queueLoopActive = true
+    this._shouldCancelQueueLoop = false
+
+    for (;;) {
+      if (this._shouldCancelQueueLoop) {
+        this._queueLoopActive = false
+        return
+      }
+
+      this.waiting = true
+      await this._waitWithCancellation(1500)
+
+      if (this._shouldCancelQueueLoop) {
+        this._queueLoopActive = false
+        return
+      }
+
+      this.waiting = false
+      const old = this.current
+      this.current = null
+      const tip = this.newTip
+
+      if (this.scoreQueue.length > 0) {
+        await this._processNextInQueue()
+        return
+      } else if (tip && tip !== old) {
+        this.showSoon(tip, false, 3000)
+        return
+      }
+      // Loop continues to wait again
+    }
   }
 
   /**
-   * Handles tip display timeout.
+   * Initiates async tip queue processing if not already running.
    * @private
    */
-  _handleTipTimeout () {
-    this.timer = null
-    const old = this.current
-    this.current = null
-    this.waiting = false
-    const tip = this.newTip
-    if (this.scoreQueue.length > 0) {
-      this.nextInQueue()
-    } else if (tip && tip !== old) {
-      this.showSoon(tip, false, 3000)
-    } else {
-      this.addTipToQueue()
+  _startQueueLoopIfNeeded () {
+    if (!this._queueLoopActive) {
+      this._runQueueLoop().catch(err => {
+        console.error('Queue loop error:', err)
+      })
     }
   }
 
@@ -129,7 +160,7 @@ export class StatusUI {
    */
   showImmediately (newItem) {
     if (this.current === newItem) return
-    this.clearTimer()
+    this._cancelQueueLoop()
     this.showSoon(newItem, true, 2500)
   }
 
@@ -142,7 +173,7 @@ export class StatusUI {
   showSoonish (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem) return
     if (this.scoreQueue.length > 0) {
-      return this._addToQueue(newItem, isImportant)
+      return this.__addToQueue(newItem, isImportant)
     }
     this.showSoon(newItem, isImportant, duration)
   }
@@ -156,9 +187,9 @@ export class StatusUI {
   _addToQueue (newItem, isImportant = false) {
     this.scoreQueue.push({ item: newItem, isImportant })
     if (this.waiting) {
-      this.clearTimer()
+      this._cancelQueueLoop()
       this.waiting = false
-      this.nextInQueue()
+      this._startQueueLoopIfNeeded()
     }
   }
 
@@ -170,11 +201,38 @@ export class StatusUI {
    */
   showSoon (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem && !isImportant) return
-    if (this.timer === null) {
+    if (!this._queueLoopActive) {
       this.show(newItem, isImportant)
-      this.waitFor(duration)
+      this._scheduleQueueProcessingAsync(duration)
     } else {
-      this._addToQueue(newItem, isImportant)
+      this.__addToQueue(newItem, isImportant)
+    }
+  }
+
+  /**
+   * Schedules async queue processing after a display duration.
+   * @private
+   * @param {number} duration - Duration in milliseconds
+   */
+  _scheduleQueueProcessingAsync (duration) {
+    this._cancelQueueLoop()
+    this._runDisplayWithDelay(duration).catch(err => {
+      console.error('Display scheduling error:', err)
+    })
+  }
+
+  /**
+   * Shows display item with delay, then starts queue loop.
+   * @private
+   * @async
+   * @param {number} duration - Duration to display in milliseconds
+   * @returns {Promise<void>}
+   */
+  async _runDisplayWithDelay (duration) {
+    await Delay.wait(duration)
+    if (!this._shouldCancelQueueLoop) {
+      this.current = null
+      this._startQueueLoopIfNeeded()
     }
   }
 
@@ -184,7 +242,7 @@ export class StatusUI {
   clearQueue () {
     this.scoreQueue = []
     this.tipsQueue = []
-    this.clearTimer()
+    this._cancelQueueLoop()
     this.info('')
   }
 
@@ -204,19 +262,6 @@ export class StatusUI {
     this.current = newItem
     this._updateStatusDisplay(newItem)
     this.important = isImportant
-  }
-
-  /**
-   * Waits for a duration before processing the next queue item.
-   * @param {number} duration - Duration in milliseconds
-   */
-  waitFor (duration) {
-    clearTimeout(this.timer)
-    this.timer = null
-    this.timer = setTimeout(() => {
-      this.current = null
-      this.nextInQueue()
-    }, duration)
   }
 
   /**
@@ -294,7 +339,7 @@ export class StatusUI {
   display (mode, game) {
     this.showMode(mode)
     if (game) {
-      this._addToQueue(game, false)
+      this.__addToQueue(game, false)
     }
   }
 
@@ -327,7 +372,7 @@ export class StatusUI {
     } else {
       idxUsed = this._displaySingleShotStatus()
     }
-    this._addToQueue(weapon.stepHint(idxUsed), false)
+    this.__addToQueue(weapon.stepHint(idxUsed), false)
   }
 
   /**

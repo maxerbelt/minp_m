@@ -622,7 +622,7 @@ export class WatersUI {
   }
 
   showNotice (notice) {
-    gameStatus.addToQueue(notice, false)
+    gameStatus._addToQueue(notice, false)
   }
 
   showTips () {

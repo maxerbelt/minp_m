@@ -124,7 +124,7 @@ export class FriendUI extends PlacementUI {
     this.hideTips()
     this.showStatus()
     this.standardPanels()
-    gameStatus.addToQueue(
+    gameStatus._addToQueue(
       'test your placement or play a game against the computer',
       false
     )
@@ -258,8 +258,8 @@ export class FriendUI extends PlacementUI {
 
   displayFleetSunk () {
     gameStatus.flush()
-    gameStatus.addToQueue('Enemy Fleet Revealed', 'You Gave Up')
-    gameStatus.addToQueue('Your Fleet is Destroyed', true)
+    gameStatus._addToQueue('Enemy Fleet Revealed', 'You Gave Up')
+    gameStatus._addToQueue('Your Fleet is Destroyed', true)
     this.board.classList.add(UI_CLASSES.DESTROYED)
     trackLevelEnd(bh.map, false)
   }

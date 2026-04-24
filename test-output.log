@@ -1,0 +1,1551 @@
+
+> hiddenbattle@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand
+
+(node:33922) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/grid/rectangle/RedelmeierGenerator.test.js
+CustomEnvironment: setup running
+PASS src/waters/friend.test.js
+CustomEnvironment: setup running
+PASS src/rectcolor.test.js
+  ● Console
+
+    console.log
+      [diag] occupancyMask from depth-4 grid: Packed {
+        shape: { type: 'rectangle', width: 5, height: 5, indexer: [Getter] },
+        indexer: RectIndex {
+          size: 25,
+          width: 5,
+          height: 5,
+          _wrap: false,
+          validate: [Function: validateClamp],
+          connectType: '8',
+          cover: {
+            normal: [RectNormalCover],
+            half: [RectHalfCover],
+            super: [RectSuperCover]
+          },
+          connection: { '4': [Connect4], '8': [Connect8], '4diag': [Connect4Diagonal] },
+          rayIndices: [GeneratorFunction (anonymous)],
+          superCoverRayIndices: [GeneratorFunction (anonymous)],
+          halfCoverRayIndices: [GeneratorFunction (anonymous)],
+          segmentToIndices: [GeneratorFunction (anonymous)],
+          superCoverSegmentToIndices: [GeneratorFunction (anonymous)],
+          halfCoverSegmentToIndices: [GeneratorFunction (anonymous)],
+          fullLineIndices: [GeneratorFunction (anonymous)],
+          superCoverFullLineIndices: [GeneratorFunction (anonymous)],
+          halfCoverFullLineIndices: [GeneratorFunction (anonymous)],
+          segmentForIndices: [GeneratorFunction (anonymous)],
+          superCoverSegmentForIndices: [GeneratorFunction (anonymous)],
+          halfCoverSegmentForIndices: [GeneratorFunction (anonymous)]
+        },
+        width: 5,
+        height: 5,
+        store: <ref *1> Store32 {
+          depth: 2,
+          empty: Uint32Array(1) [ 0 ],
+          one: 1,
+          bitsPerCell: 1,
+          width: 5,
+          height: 5,
+          all: BitGrid { store: [Circular *1], width: 5, height: 5, fast: true },
+          cellMask: 1,
+          bShift: 0,
+          bitWidth: 1,
+          maxBitInCell: 0,
+          MxC: 1,
+          MnC: 0,
+          size: 25,
+          storeType: [Function: toStoreType],
+          wordsPerRow: 1,
+          cellsPerWord: 32,
+          maxCellInWord: 31,
+          bitsPerWord: 32,
+          wordMask: 4294967295,
+          words: 1,
+          cpwShift: 5
+        },
+        bits: Uint32Array(2) [ 4096, 0 ],
+        depth: 2,
+        words: 1
+      }
+
+      at Object.log (src/rectcolor.test.js:396:13)
+
+    console.log
+      [diag] Cells occupied in occ1 grid after copying occupancyMask:
+
+      at Object.log (src/rectcolor.test.js:406:13)
+
+    console.log
+      [diag] Occupied cells: []
+
+      at Object.log (src/rectcolor.test.js:417:13)
+
+    console.log
+      [diag] BIT LAYOUT MISMATCH DETECTED!
+
+      at Object.log (src/rectcolor.test.js:421:15)
+
+    console.log
+      [diag] Expected [(2,2)], got: []
+
+      at Object.log (src/rectcolor.test.js:422:15)
+
+    console.log
+      [diag] Manual occupancy before dilate:
+
+      at Object.log (src/rectcolor.test.js:440:13)
+
+    console.log
+        occ(2,2)=1
+
+      at Object.log (src/rectcolor.test.js:442:39)
+
+    console.log
+      [diag] Manual occupancy after dilate:
+
+      at Object.log (src/rectcolor.test.js:449:13)
+
+    console.log
+        occ(2,1)=1
+
+      at Object.log (src/rectcolor.test.js:451:39)
+
+    console.log
+        occ(1,2)=1
+
+      at Object.log (src/rectcolor.test.js:451:39)
+
+    console.log
+        occ(2,2)=1
+
+      at Object.log (src/rectcolor.test.js:451:39)
+
+    console.log
+        occ(3,2)=1
+
+      at Object.log (src/rectcolor.test.js:451:39)
+
+    console.log
+        occ(2,3)=1
+
+      at Object.log (src/rectcolor.test.js:451:39)
+
+    console.log
+      [diag] Added cells: [ [ 2, 1, 7 ], [ 1, 2, 11 ], [ 3, 2, 13 ], [ 2, 3, 17 ] ]
+
+      at Object.log (src/rectcolor.test.js:457:13)
+
+    console.log
+      [ROOT-CAUSE] Before dilate, packed.bits: Uint32Array(1) [ 4096 ]
+
+      at Object.log (src/rectcolor.test.js:471:13)
+
+    console.log
+      [ROOT-CAUSE] After dilate, packed.bits: Uint32Array(1) [ 473536 ]
+
+      at Object.log (src/rectcolor.test.js:475:13)
+
+    console.log
+      [ROOT-CAUSE] Occupied cells after dilate:
+
+      at Object.log (src/rectcolor.test.js:478:13)
+
+    console.log
+        (1,1)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (2,1)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (3,1)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (1,2)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (2,2)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (3,2)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (1,3)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (2,3)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+        (3,3)
+
+      at Object.log (src/rectcolor.test.js:482:19)
+
+    console.log
+      [ROOT-CAUSE] Added cells count: 8
+
+      at Object.log (src/rectcolor.test.js:490:13)
+
+    console.log
+      [ROOT-CAUSE] Added cells: [
+        [ 1, 1, 6 ],
+        [ 2, 1, 7 ],
+        [ 3, 1, 8 ],
+        [ 1, 2, 11 ],
+        [ 3, 2, 13 ],
+        [ 1, 3, 16 ],
+        [ 2, 3, 17 ],
+        [ 3, 3, 18 ]
+      ]
+
+      at Object.log (src/rectcolor.test.js:491:13)
+
+    console.log
+      [ROOT-CAUSE] EXPECTED: 4 added cells (2D plus sign)
+
+      at Object.log (src/rectcolor.test.js:495:13)
+
+    console.log
+      [ROOT-CAUSE] ACTUAL: 8 added cells
+
+      at Object.log (src/rectcolor.test.js:496:13)
+
+    console.log
+      [ROOT-CAUSE] *** DILATION BUG: Using 8-connectivity instead of 4-connectivity ***
+
+      at Object.log (src/rectcolor.test.js:499:15)
+
+    console.log
+      [ROOT-CAUSE] Testing dilate() on 1-bit Packed(5,5)
+
+      at Object.log (src/rectcolor.test.js:510:13)
+
+    console.log
+      [ROOT-CAUSE] Set only (2,2)=1
+
+      at Object.log (src/rectcolor.test.js:511:13)
+
+    console.log
+      [ROOT-CAUSE] store.words: 1
+
+      at Object.log (src/rectcolor.test.js:517:13)
+
+    console.log
+      [ROOT-CAUSE] bits before: [ 4096 ]
+
+      at Object.log (src/rectcolor.test.js:518:13)
+
+    console.log
+      [ROOT-CAUSE] bits after: Uint32Array(1) [ 473536 ]
+
+      at Object.log (src/rectcolor.test.js:519:13)
+
+    console.log
+      [ROOT-CAUSE] Checking corners...
+
+      at Object.log (src/rectcolor.test.js:530:13)
+
+    console.log
+      [ROOT-CAUSE]   (1,1): 1 (should be 0)
+
+      at Object.log (src/rectcolor.test.js:531:13)
+
+    console.log
+      [ROOT-CAUSE]   (3,1): 1 (should be 0)
+
+      at Object.log (src/rectcolor.test.js:532:13)
+
+    console.log
+      [ROOT-CAUSE]   (1,3): 1 (should be 0)
+
+      at Object.log (src/rectcolor.test.js:533:13)
+
+    console.log
+      [ROOT-CAUSE]   (3,3): 1 (should be 0)
+
+      at Object.log (src/rectcolor.test.js:534:13)
+
+    console.log
+      [ROOT-CAUSE] *** BUG FOUND: dilateSeparable using 8-connectivity ***
+
+      at Object.log (src/rectcolor.test.js:543:15)
+
+    console.log
+      running line color dropdown test
+
+      at Object.log (src/rectcolor.test.js:550:13)
+
+    console.log
+      running color cycle test
+
+      at Object.log (src/rectcolor.test.js:604:13)
+
+    console.log
+      running color cycle reset test
+
+      at Object.log (src/rectcolor.test.js:633:13)
+
+    console.log
+      running tool/color interaction test
+
+      at Object.log (src/rectcolor.test.js:668:13)
+
+    console.log
+      running all tools color test
+
+      at Object.log (src/rectcolor.test.js:705:13)
+
+    console.log
+      running preview cells color test
+
+      at Object.log (src/rectcolor.test.js:738:13)
+
+    console.log
+      running two-point drawing with colors test
+
+      at Object.log (src/rectcolor.test.js:777:13)
+
+PASS src/grid/canvasGrid.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/rect.test.js
+  ● Console
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running updateButtonStates test
+
+      at Object.log (src/rect.test.js:316:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running applyTransform test
+
+      at Object.log (src/rect.test.js:345:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running morph buttons test
+
+      at Object.log (src/rect.test.js:354:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running line tools test
+
+      at Object.log (src/rect.test.js:381:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running line action dropdown test
+
+      at Object.log (src/rect.test.js:436:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running preview cells test
+
+      at Object.log (src/rect.test.js:474:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running radio button state test
+
+      at Object.log (src/rect.test.js:512:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running two-point drawing test
+
+      at Object.log (src/rect.test.js:541:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running tool persistence test
+
+      at Object.log (src/rect.test.js:564:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running action independence test
+
+      at Object.log (src/rect.test.js:586:13)
+
+    console.log
+      rect.test beforeEach
+
+      at Object.log (src/rect.test.js:172:13)
+
+    console.log
+      running drag and drop test
+
+      at Object.log (src/rect.test.js:609:13)
+
+CustomEnvironment: setup running
+PASS src/terrains/all/js/gameMaps.test.js
+CustomEnvironment: setup running
+PASS src/grid/SubMask.test.js
+PASS src/terrains/space/js/spaceFleet.test.js
+CustomEnvironment: setup running
+PASS src/selection/selection.test.js
+PASS src/grid/operations/coordsValid.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/SeaMaps.test.js
+CustomEnvironment: setup running
+PASS src/navbar/setupTabs.test.js
+  ● Console
+
+    console.warn
+      Could not mock location; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.test.js:127:38)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13) TypeError: Cannot redefine property: location
+          at Function.defineProperty (<anonymous>)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.test.js:116:14)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      129 |       try {
+      130 |         if (origLocation && typeof origLocation === 'object') {
+    > 131 |           // avoid mutating location.href/search to prevent jsdom navigation
+          |                 ^
+      132 |           globalThis.location.reload = origLocation.reload || undefined
+      133 |           globalThis.location.assign = origLocation.assign || undefined
+      134 |         }
+
+      at Object.<anonymous> (src/navbar/setupTabs.test.js:131:17)
+
+    console.error
+      Error: Not implemented: navigation (except hash changes)
+          at module.exports (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+          at navigateFetch (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+          at exports.navigate (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+          at LocationImpl._locationObjectNavigate (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:30:5)
+          at LocationImpl._locationObjectSetterNavigate (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:24:17)
+          at LocationImpl.set href [as href] (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:46:10)
+          at Location.set href [as href] (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/generated/Location.js:125:37)
+          at NavigationService.navigateExternal (/Users/aurelie/Documents/github/minp_m/src/navbar/NavigationService.js:111:29)
+          at NavigationService.navigateExternal [as navigateToBlog] (/Users/aurelie/Documents/github/minp_m/src/navbar/NavigationService.js:130:10)
+          at Object.navigateToBlog (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.js:261:59)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.test.js:234:40)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13) {
+        type: 'not implemented'
+      }
+
+      109 |     }
+      110 |
+    > 111 |     globalThis.location.href = url
+          |                             ^
+      112 |   }
+      113 |
+      114 |   /**
+
+      at VirtualConsole.<anonymous> (node_modules/@jest/environment-jsdom-abstract/build/index.js:88:27)
+      at module.exports (node_modules/jsdom/lib/jsdom/browser/not-implemented.js:12:26)
+      at navigateFetch (node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+      at exports.navigate (node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+      at LocationImpl._locationObjectNavigate (node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:30:5)
+      at LocationImpl._locationObjectSetterNavigate (node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:24:17)
+      at LocationImpl.set href [as href] (node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:46:10)
+      at Location.set href [as href] (node_modules/jsdom/lib/jsdom/living/generated/Location.js:125:37)
+      at NavigationService.navigateExternal (src/navbar/NavigationService.js:111:29)
+      at NavigationService.navigateExternal [as navigateToBlog] (src/navbar/NavigationService.js:130:10)
+      at Object.navigateToBlog (src/navbar/setupTabs.js:261:59)
+      at Object.<anonymous> (src/navbar/setupTabs.test.js:234:40)
+
+    console.error
+      Error: Not implemented: navigation (except hash changes)
+          at module.exports (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+          at navigateFetch (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+          at exports.navigate (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+          at LocationImpl._locationObjectNavigate (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:30:5)
+          at LocationImpl._locationObjectSetterNavigate (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:24:17)
+          at LocationImpl.set href [as href] (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:46:10)
+          at Location.set href [as href] (/Users/aurelie/Documents/github/minp_m/node_modules/jsdom/lib/jsdom/living/generated/Location.js:125:37)
+          at NavigationService.navigateExternal (/Users/aurelie/Documents/github/minp_m/src/navbar/NavigationService.js:111:29)
+          at NavigationService.navigateExternal (/Users/aurelie/Documents/github/minp_m/src/navbar/NavigationService.js:139:10)
+          at Object.navigateToSource (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.js:262:60)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.test.js:241:41)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13) {
+        type: 'not implemented'
+      }
+
+      109 |     }
+      110 |
+    > 111 |     globalThis.location.href = url
+          |                             ^
+      112 |   }
+      113 |
+      114 |   /**
+
+      at VirtualConsole.<anonymous> (node_modules/@jest/environment-jsdom-abstract/build/index.js:88:27)
+      at module.exports (node_modules/jsdom/lib/jsdom/browser/not-implemented.js:12:26)
+      at navigateFetch (node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+      at exports.navigate (node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+      at LocationImpl._locationObjectNavigate (node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:30:5)
+      at LocationImpl._locationObjectSetterNavigate (node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:24:17)
+      at LocationImpl.set href [as href] (node_modules/jsdom/lib/jsdom/living/window/Location-impl.js:46:10)
+      at Location.set href [as href] (node_modules/jsdom/lib/jsdom/living/generated/Location.js:125:37)
+      at NavigationService.navigateExternal (src/navbar/NavigationService.js:111:29)
+      at NavigationService.navigateExternal (src/navbar/NavigationService.js:139:10)
+      at Object.navigateToSource (src/navbar/setupTabs.js:262:60)
+      at Object.<anonymous> (src/navbar/setupTabs.test.js:241:41)
+
+    console.warn
+      Could not restore location.reload; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.test.js:186:40)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:948:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      186 |           // restore functions only to avoid navigation
+      187 |           try {
+    > 188 |             globalThis.location.reload = origLocation.reload
+          |                     ^
+      189 |           } catch (e) {
+      190 |             console.warn(
+      191 |               'Could not restore location.reload; tests may cause navigation',
+
+      at Object.<anonymous> (src/navbar/setupTabs.test.js:188:21)
+
+    console.warn
+      Could not restore location.assign; tests may cause navigation TypeError: Cannot assign to read only property 'assign' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupTabs.test.js:191:40)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:948:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      191 |               'Could not restore location.reload; tests may cause navigation',
+      192 |               e
+    > 193 |             )
+          |              ^
+      194 |           }
+      195 |           try {
+      196 |             globalThis.location.assign = origLocation.assign
+
+      at Object.<anonymous> (src/navbar/setupTabs.test.js:193:21)
+
+CustomEnvironment: setup running
+PASS src/ui/rectangle/packeddraw.test.js
+PASS src/grid/triangle/masktri.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/network/SetParams.test.js
+  ● Console
+
+    console.warn
+      No terrain map found for terrain tag setSizeParams
+
+      18 |   const bodyTag = bh?.terrain?.bodyTag
+      19 |   if (!bodyTag) {
+    > 20 |     console.warn('No terrain map found for terrain tag', context)
+         |             ^
+      21 |   }
+      22 |   return bodyTag || 'sea'
+      23 | }
+
+      at warn (src/network/SetParams.js:20:13)
+      at getCurrentBodyTag (src/network/SetParams.js:100:19)
+      at Object.setSizeParams (src/network/SetParams.test.js:157:5)
+
+    console.warn
+      No terrain map found for terrain tag setMapParams
+
+      18 |   const bodyTag = bh?.terrain?.bodyTag
+      19 |   if (!bodyTag) {
+    > 20 |     console.warn('No terrain map found for terrain tag', context)
+         |             ^
+      21 |   }
+      22 |   return bodyTag || 'sea'
+      23 | }
+
+      at warn (src/network/SetParams.js:20:13)
+      at getCurrentBodyTag (src/network/SetParams.js:141:19)
+      at Object.setMapParams (src/network/SetParams.test.js:166:5)
+
+CustomEnvironment: setup running
+PASS src/grid/hexagon/cubeIndex.test.js
+PASS src/grid/bitStore/storebig.color.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/square.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/mask.test.js
+  ● Console
+
+    console.log
+      .111
+      1111
+      1111
+      1111
+
+      at Object.log (src/grid/rectangle/mask.test.js:499:17)
+
+    console.log
+      1111111111111110
+
+      at Object.log (src/grid/rectangle/mask.test.js:500:17)
+
+    console.log
+      Left:
+      1...
+      1...
+      1...
+      1...
+
+      at Object.log (src/grid/rectangle/mask.test.js:520:17)
+
+    console.log
+      Right:
+      ...1
+      ...1
+      ...1
+      ...1
+
+      at Object.log (src/grid/rectangle/mask.test.js:521:17)
+
+    console.log
+      Top:
+      1111
+      ....
+      ....
+      ....
+
+      at Object.log (src/grid/rectangle/mask.test.js:522:17)
+
+    console.log
+      Bottom:
+      ....
+      ....
+      ....
+      1111
+
+      at Object.log (src/grid/rectangle/mask.test.js:523:17)
+
+PASS src/waters/Waters.test.js
+PASS src/grid/triRectIndex.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/operations/coordsToBits.test.js
+PASS src/grid/bitStore/store32.assemble.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/Orbit4R.test.js
+CustomEnvironment: setup running
+PASS src/ships/Shape.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/RectIndex.test.js
+PASS src/grid/hexagon/buildTransformHexMaps.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/triangle/triIndex.test.js
+PASS src/selection/draggedship.int.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/space/js/shuttles.test.js
+PASS src/grid/bitStore/storebig.norm.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/triangle/triDrawHelper.test.js
+CustomEnvironment: setup running
+PASS src/tri.test.js
+PASS src/grid/rectangle/RectSuperCover.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.bounds.test.js
+CustomEnvironment: setup running
+PASS src/ui/hexagon/hexdraw.test.js
+PASS src/grid/bitStore/store32.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/map.test.js
+  ● Console
+
+    console.log
+      Can't Load Map :  saved-map-1
+
+      at Function.log [as load] (src/terrains/all/js/map.js:357:13)
+
+PASS src/weapon/Weapon.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/validSize.test.js
+PASS src/selection/Ghost.test.js
+PASS src/grid/maskShape.test.js
+CustomEnvironment: setup running
+PASS src/selection/dragndrop.test.js
+PASS src/ui/rectangle/polyominoGrid.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/rectangle/RectCanvasColor.test.js
+PASS src/ships/Hybrid.habitat.int.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/navbar/setupOptions.test.js
+  ● Console
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupOptions.test.js:74:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      86 |       }
+      87 |     } catch (e) {
+    > 88 |       console.warn(
+         |               ^
+      89 |         'Could not mock location.reload/assign; tests may cause navigation',
+      90 |         e
+      91 |       )
+
+      at Object.warn (src/navbar/setupOptions.test.js:88:15)
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupOptions.test.js:74:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      86 |       }
+      87 |     } catch (e) {
+    > 88 |       console.warn(
+         |               ^
+      89 |         'Could not mock location.reload/assign; tests may cause navigation',
+      90 |         e
+      91 |       )
+
+      at Object.warn (src/navbar/setupOptions.test.js:88:15)
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupOptions.test.js:74:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      86 |       }
+      87 |     } catch (e) {
+    > 88 |       console.warn(
+         |               ^
+      89 |         'Could not mock location.reload/assign; tests may cause navigation',
+      90 |         e
+      91 |       )
+
+      at Object.warn (src/navbar/setupOptions.test.js:88:15)
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupOptions.test.js:74:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      86 |       }
+      87 |     } catch (e) {
+    > 88 |       console.warn(
+         |               ^
+      89 |         'Could not mock location.reload/assign; tests may cause navigation',
+      90 |         e
+      91 |       )
+
+      at Object.warn (src/navbar/setupOptions.test.js:88:15)
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupOptions.test.js:74:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      86 |       }
+      87 |     } catch (e) {
+    > 88 |       console.warn(
+         |               ^
+      89 |         'Could not mock location.reload/assign; tests may cause navigation',
+      90 |         e
+      91 |       )
+
+      at Object.warn (src/navbar/setupOptions.test.js:88:15)
+
+PASS src/ships/Hybrid.Int.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/SubBoard.test.js
+PASS src/grid/shapeEnum.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/core/utilities.test.js
+CustomEnvironment: setup running
+PASS src/maplist.test.js
+PASS src/terrains/sea/js/SeaShips.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ships/ShipGroups.test.js
+PASS src/selection/PlacedShips.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/rectangle/rectdrawcolor.test.js
+PASS src/hex.test.js
+CustomEnvironment: setup running
+PASS src/waters/ScoreUI.test.js
+PASS src/ships/Hybrid.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/hexagon/packedHex.test.js
+PASS src/grid/hexagon/erodehex.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/listCanvas.test.js
+PASS src/terrains/space/js/spaceShips.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/asciigrid.test.js
+PASS src/grid/triangle/triIndexLine.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/Orbit4F.test.js
+PASS src/terrains/space/js/spaceVessels.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/rectangle/rectdraw.test.js
+PASS src/grid/bitStore/storebig.assemble.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/CellWsToBePlaced.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/MaskInterface.test.js
+PASS src/core/Random.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/triangle/triDraw.test.js
+PASS src/grid/bitStore/storebig.expand.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/variants.test.js
+PASS src/terrains/space/js/installations.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/packed.extra.test.js
+PASS src/grid/bitStore/storebig.erode.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/packed.test.js
+PASS src/terrains/grids/canvasManager.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/RotatableVariant.test.js
+PASS src/ships/Ship.test.js
+  ● Console
+
+    console.error
+      Trace: Setting weaponsById: [ undefined, undefined ] [
+        [
+          '1,2',
+          {
+            id: 10,
+            weapon: [Object],
+            ammo: 1,
+            hasAmmo: [Function: hasAmmo],
+            ammoRemaining: [Function: ammoRemaining],
+            ammoCapacityTotal: [Function: ammoCapacityTotal]
+          }
+        ],
+        [
+          '2,3',
+          {
+            id: 11,
+            weapon: [Object],
+            ammo: 0,
+            hasAmmo: [Function: hasAmmo],
+            ammoRemaining: [Function: ammoRemaining],
+            ammoCapacityTotal: [Function: ammoCapacityTotal]
+          }
+        ]
+      ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:35:14)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at Object.<anonymous> (src/ships/Ship.test.js:35:14)
+
+    console.error
+      Trace: Setting weaponsById: [ undefined, undefined ] [
+        [
+          '0,0',
+          {
+            id: 1,
+            ammoRemaining: [Function: ammoRemaining],
+            ammoCapacity: [Function: ammoCapacity]
+          }
+        ],
+        [
+          '0,1',
+          {
+            id: 2,
+            ammoRemaining: [Function: ammoRemaining],
+            ammoCapacity: [Function: ammoCapacity]
+          }
+        ]
+      ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:67:14)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at Object.<anonymous> (src/ships/Ship.test.js:67:14)
+
+    console.error
+      Trace: Setting weaponsById: [ undefined ] [ [ '1,1', { id: 1 } ] ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at new Ship (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:32:19)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:118:15)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at new Ship (src/ships/Ship.js:32:19)
+      at Object.<anonymous> (src/ships/Ship.test.js:118:15)
+
+    console.error
+      Trace: Setting weaponsById: [ undefined, undefined ] [
+        [ '1,1', { reset: [Function], id: 1 } ],
+        [ '2,2', { reset: [Function], id: 2 } ]
+      ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:133:14)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at Object.<anonymous> (src/ships/Ship.test.js:133:14)
+
+    console.error
+      Trace: Setting weaponsById: [ undefined ] [ [ 'it', 'weapons' ] ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at Function.createFromShape (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:501:19)
+          at Ship.createFromShape [as clone] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:582:29)
+          at Object.clone (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:172:22)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at Function.createFromShape (src/ships/Ship.js:501:19)
+      at Ship.createFromShape [as clone] (src/ships/Ship.js:582:29)
+      at Object.clone (src/ships/Ship.test.js:172:22)
+
+    console.error
+      Trace: Setting weaponsById: [ undefined ] [ [ '1,1', { weapon: [Object], id: 1 } ] ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:238:14)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at Object.<anonymous> (src/ships/Ship.test.js:238:14)
+
+    console.error
+      Trace: Setting weaponsById: [ undefined ] [ [ '1,1', { id: 1 } ] ]
+          at Ship.trace [as _createOrUpdateWeaponsRaw] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:101:13)
+          at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:71:14)
+          at Ship._createOrUpdateWeapons [as weapons] (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.js:52:10)
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/ships/Ship.test.js:305:15)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1006:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:946:3)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+       99 |     }
+      100 |     const weaponIDs = weapons.map(w => w.id)
+    > 101 |     console.trace('Setting weaponsById:', weaponIDs, weapons)
+          |             ^
+      102 |     const { weaponsById, weaponArray } = this._importWeapons(weapons)
+      103 |     if (!weaponsById?.size) return {}
+      104 |     this._weaponsById = weaponsById
+
+      at Ship.trace [as _createOrUpdateWeaponsRaw] (src/ships/Ship.js:101:13)
+      at Ship._createOrUpdateWeaponsRaw [as _createOrUpdateWeapons] (src/ships/Ship.js:71:14)
+      at Ship._createOrUpdateWeapons [as weapons] (src/ships/Ship.js:52:10)
+      at Object.<anonymous> (src/ships/Ship.test.js:305:15)
+
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/space/js/armedshapeIntegration.test.js
+PASS src/grid/rectangle/action.test.js
+  ● Console
+
+    console.log
+      map: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+      at Object.log (src/grid/rectangle/action.test.js:96:15)
+
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/action.store32.test.js
+CustomEnvironment: setup running
+PASS src/terrains/space/js/spaceShapes.test.js
+PASS src/grid/operations/CoordinateConversion.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storeBig.test.js
+CustomEnvironment: setup running
+PASS src/variants/CellsToBePlaced.test.js
+PASS src/terrains/sea/js/seashape.int.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/buildTransformMaps.test.js
+PASS src/waters/Score.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/navbar/chooseUI.test.js
+PASS src/terrains/space/js/spaceMaps.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/seaAndLandMaps.test.js
+PASS src/waters/saveCustomMap.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/selection/selection2.test.js
+PASS src/grid/erode.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/placeable.int.test.js
+PASS src/grid/ForLocation.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/TerrainMaps.test.js
+CustomEnvironment: setup running
+PASS src/ui/hexagon/packedHexDraw.test.js
+PASS src/grid/hexagon/cubeIndexLine.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/mask.draw.test.js
+PASS src/variants/Blinker.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ships/subshape.standard.test.js
+PASS src/navbar/setupMapSelection.test.js
+  ● Console
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupMapSelection.test.js:65:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      77 |       }
+      78 |     } catch (e) {
+    > 79 |       console.warn(
+         |               ^
+      80 |         'Could not mock location.reload/assign; tests may cause navigation',
+      81 |         e
+      82 |       )
+
+      at Object.warn (src/navbar/setupMapSelection.test.js:79:15)
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupMapSelection.test.js:65:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      77 |       }
+      78 |     } catch (e) {
+    > 79 |       console.warn(
+         |               ^
+      80 |         'Could not mock location.reload/assign; tests may cause navigation',
+      81 |         e
+      82 |       )
+
+      at Object.warn (src/navbar/setupMapSelection.test.js:79:15)
+
+    console.warn
+      Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
+          at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupMapSelection.test.js:65:37)
+          at Promise.finally.completed (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1556:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1496:10)
+          at _callCircusHook (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:975:40)
+          at _runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:940:5)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:839:13)
+          at _runTestsForDescribeBlock (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:829:11)
+          at run (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:757:3)
+          at runAndTransformResultsToJestFormat (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/jestAdapterInit.js:1917:21)
+          at jestAdapter (/Users/aurelie/Documents/github/minp_m/node_modules/jest-circus/build/runner.js:100:25)
+          at runTestInternal (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:297:22)
+          at runTest (/Users/aurelie/Documents/github/minp_m/node_modules/jest-runner/build/index.js:365:13)
+
+      77 |       }
+      78 |     } catch (e) {
+    > 79 |       console.warn(
+         |               ^
+      80 |         'Could not mock location.reload/assign; tests may cause navigation',
+      81 |         e
+      82 |       )
+
+      at Object.warn (src/navbar/setupMapSelection.test.js:79:15)
+
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/weapon/WeaponCatelogue.test.js
+PASS src/terrains/space/js/spaceWeapons.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.offset.test.js
+PASS src/variants/Cell3sToBePlaced.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ships/subshape.int.test.js
+PASS src/ships/SubShape.test.js
+CustomEnvironment: setup running
+PASS src/weapon/animateExplode.test.js
+  ● Console
+
+    console.warn
+      No sounds defined for current terrain
+
+      34 |       const sounds = this.sounds
+      35 |       if (!sounds) {
+    > 36 |         console.warn('No sounds defined for current terrain')
+         |                 ^
+      37 |         return
+      38 |       }
+      39 |       const soundUrl = this.sounds?.[type]
+
+      at Object.warn [as playBoom] (src/terrains/all/js/bh.js:36:17)
+      at StandardShot.playBoom [as animateExplode] (src/weapon/Weapon.js:653:8)
+      at Object.animateExplode (src/weapon/animateExplode.test.js:37:18)
+
+PASS src/ships/subshape.clone.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/terrainUI.test.js
+  ● Console
+
+    console.debug
+      Could not update history: DOMException {}
+
+      at debug (src/terrains/all/js/terrainUI.js:119:13)
+
+PASS src/grid/rectangle/mask.morph.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.bitops.test.js
+PASS src/selection/SelectedShip.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/hexagon/actionshex.test.js
+PASS src/grid/rectangle/actions.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/operations/BitOperationsWindowed.test.js
+PASS src/grid/bitStore/store32.color.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/selection/DraggedShip.test.js
+PASS src/grid/rectangle/maskConvert.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/store32_regressions.test.js
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/seaAndLandGroups.test.js
+PASS src/terrains/sea/js/SeaWeapons.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/action.mask.test.js
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/SeaShape.test.js
+PASS src/terrains/grids/indexerManager.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/triangle/actiontri.test.js
+PASS src/terrains/all/js/terrain.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/listCanvas2.test.js
+PASS src/terrains/all/js/zone.minimal.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/maps.test.js
+CustomEnvironment: setup running
+PASS src/waters/LoadOut.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/mask.getset.test.js
+PASS src/grid/bitStore/storebig.offset2.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/Placeable.test.js
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/seaShipsCatalogue.test.js
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/seaAndLand.test.js
+CustomEnvironment: setup running
+PASS src/ui/rectangle/colorpackeddraw.test.js
+PASS src/grid/operations/bitsToCoords.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ships/Tranformer.test.js
+PASS src/ships/ShapeCallTests.test.js
+  ● Console
+
+    console.log
+      shape not found
+
+      at log (src/ships/ShapeCallTests.test.js:178:19)
+
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/core/Zip.test.js
+PASS src/ships/subshape.special.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/hello.test.js
+PASS src/grid/operations/coordsFromTo.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/space/js/space.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+
+Test Suites: 2 skipped, 151 passed, 151 of 153 total
+Tests:       25 skipped, 2747 passed, 2772 total
+Snapshots:   0 total
+Time:        18.314 s, estimated 19 s
+Ran all test suites.

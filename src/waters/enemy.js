@@ -208,7 +208,7 @@ class Enemy extends Waters {
    */
   async _handlePlacementFailure (ships, attempt) {
     const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
-    gameStatus.addToQueue(
+    gameStatus._addToQueue(
       `Having difficulty placing all ships (${totalAttempts} attempts)`,
       true
     )
@@ -218,7 +218,10 @@ class Enemy extends Waters {
       return
     }
     this.UI.enableBtns()
-    gameStatus.addToQueue('Failed to place all ships after many attempts', true)
+    gameStatus._addToQueue(
+      'Failed to place all ships after many attempts',
+      true
+    )
     this.boardDestroyed = true
     throw new Error('Failed to place all ships after many attempts')
   }
@@ -278,11 +281,11 @@ class Enemy extends Waters {
       return false
     }
     if (this.timeoutId) {
-      gameStatus.addToQueue('Wait For Enemy To Finish Their Turn', false)
+      gameStatus._addToQueue('Wait For Enemy To Finish Their Turn', false)
       return false
     }
     if (this.opponent?.boardDestroyed) {
-      gameStatus.addToQueue('Game Over - No More Shots Allowed', true)
+      gameStatus._addToQueue('Game Over - No More Shots Allowed', true)
       return false
     }
     return true
@@ -353,11 +356,11 @@ class Enemy extends Waters {
       effect.length === 1 &&
       !this.score.newShotKey(effect[0][0], effect[0][1])
     ) {
-      gameStatus.addToQueue('Already Shot Here - Try Again', false)
+      gameStatus._addToQueue('Already Shot Here - Try Again', false)
       return LoadOut.noResult
     }
     if (effect.length === 0) {
-      gameStatus.addToQueue('Has no effect - Try Again', false)
+      gameStatus._addToQueue('Has no effect - Try Again', false)
       return LoadOut.noResult
     }
     const result = this.applyWeaponEffect(weapon, effect)
