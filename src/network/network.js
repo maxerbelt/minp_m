@@ -1,18 +1,20 @@
-export async function fetchComponent (insertPoint, component, callback) {
+/**
+ * Fetches an HTML component and inserts it into the DOM.
+ * @param {string} insertPointId - ID of the element to insert content into
+ * @param {string} componentUrl - URL of the component to fetch
+ * @param {Function} [callback] - Optional callback function called after insertion
+ */
+export async function fetchComponent (insertPointId, componentUrl, callback) {
   try {
-    const res = await fetch(component)
+    const response = await fetch(componentUrl)
 
-    // Check if the request was successful
-    if (!res.ok) {
-      // Create a specific error for non-successful HTTP status codes
-      throw new Error(`HTTP error! status: ${res.status}`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
 
-    // Await the promise returned by the .text() method (or .json() if applicable)
-    const html = await res.text()
-    const insertableNode = document.getElementById(insertPoint)
-    // Do something with the html
-    insertableNode.innerHTML = html
+    const html = await response.text()
+    const insertElement = document.getElementById(insertPointId)
+    insertElement.innerHTML = html
 
     if (typeof callback === 'function') {
       try {
@@ -21,9 +23,8 @@ export async function fetchComponent (insertPoint, component, callback) {
         console.log(error)
       }
     }
-  } catch (err) {
-    // The catch block handles any errors from the fetch call itself or from the processing (e.g., .text())
-    console.error(`Failed to load ${insertPoint}:`, err)
-    if (typeof callback === 'function') callback(err)
+  } catch (error) {
+    console.error(`Failed to load ${insertPointId}:`, error)
+    if (typeof callback === 'function') callback(error)
   }
 }
