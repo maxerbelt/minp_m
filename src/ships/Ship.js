@@ -624,7 +624,7 @@ export class Ship {
    * @private
    */
   processHitAt (model, r, c, results, cell) {
-    if (this.board.test(r, c)) {
+    if (this.board.test(c, r)) {
       const { damaged } = this.hitAt(model, r, c)
       results.hits.push({ key: `${r},${c}`, cell, damaged: damaged || 'burnt' })
     } else {

@@ -3,33 +3,60 @@ import { enemy } from '../waters/enemy.js'
 import { setupPrintOptions } from '../navbar/setupOptions.js'
 import { showRules, makeFriend } from '../navbar/headerUtils.js'
 
-let friend = {}
-function resetBoardSize (f, e) {
-  f.UI.resetBoardSizePrint()
-  e.UI.resetBoardSizePrint()
-}
-function refresh (f, e) {
-  f.setMap()
-  e.setMap()
-  f.UI.buildBoardPrint()
-  e.UI.buildBoardPrint()
-  f.UI.showMapTitle()
-  e.UI.showMapTitle()
-  f.UI.score.buildTally(f.ships, f.loadOut.weaponSystems, f.UI)
+/**
+ * @typedef {Object} FleetEntity
+ * @property {Array} ships - Array of ship objects
+ * @property {Object} loadOut - Loadout configuration with weapon systems
+ * @property {Object} UI - UI interface for building boards and scores
+ */
 
-  e.UI.score.buildTally(e.ships, e.loadOut.weaponSystems, e.UI)
+/**
+ * @typedef {Object} PrintCallbacks
+ * @property {Function} resetBoardSize - Callback to reset board size
+ * @property {Function} refresh - Callback to refresh display
+ */
+
+let friendFleet = {}
+
+/**
+ * Resets board size for both friend and enemy fleets
+ * @param {FleetEntity} friend
+ * @param {FleetEntity} enemy
+ */
+function resetBoardSize (friend, enemy) {
+  friend.UI.resetBoardSizePrint()
+  enemy.UI.resetBoardSizePrint()
+}
+
+/**
+ * Refreshes the print display for both fleets
+ * @param {FleetEntity} friend
+ * @param {FleetEntity} enemy
+ */
+function refreshDisplay (friend, enemy) {
+  friend.setMap()
+  enemy.setMap()
+  friend.UI.buildBoardPrint()
+  enemy.UI.buildBoardPrint()
+  friend.UI.showMapTitle()
+  enemy.UI.showMapTitle()
+  friend.UI.score.buildTally(friend.ships, friend.loadOut.weaponSystems, friend.UI)
+  enemy.UI.score.buildTally(enemy.ships, enemy.loadOut.weaponSystems, enemy.UI)
   document.title = "Geoff's Hidden Battle - " + bh.map.title
-
-  showRules(f)
+  showRules(friend)
 }
 
+/**
+ * Sets up print functionality with map selection and display callbacks
+ * @returns {boolean} Whether print setup was successful
+ */
 export function setupPrint () {
-  friend = makeFriend()
+  friendFleet = makeFriend()
   const printMap = setupPrintOptions(
-    resetBoardSize.bind(null, friend, enemy),
-    refresh.bind(null, friend, enemy),
+    resetBoardSize.bind(null, friendFleet, enemy),
+    refreshDisplay.bind(null, friendFleet, enemy),
     'print'
   )
-  refresh(friend, enemy)
+  refreshDisplay(friendFleet, enemy)
   return printMap
 }

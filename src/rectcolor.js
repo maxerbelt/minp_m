@@ -1,18 +1,60 @@
 import { ColorPackedDraw } from './ui/rectangle/colorpackeddraw.js'
 import { ColorPackedRectCanvas } from './ui/rectangle/ColorPackedRectCanvas.js'
 
-// Initialize grid and canvas controller
+const DEFAULT_CELL_SIZE = 50
+const GRID_OFFSET_X = 50
+const GRID_OFFSET_Y = 50
+const GRID_WIDTH = 10
+const GRID_HEIGHT = 10
+const COLOR_BITS = 4
+
 let grid = null
 let rectColorCanvas = null
 
+/**
+ * @typedef {Object} ColorCoord
+ * @property {number} x
+ * @property {number} y
+ * @property {number} color
+ */
+
+/**
+ * @returns {boolean}
+ */
+function isBrowser () {
+  return typeof document !== 'undefined'
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLCanvasElement|null}
+ */
+function getCanvas (id) {
+  if (!isBrowser()) return null
+  const element = document.getElementById(id)
+  return element instanceof HTMLCanvasElement ? element : null
+}
+
+function withGrid (callback) {
+  if (grid) callback(grid)
+}
+
+function withRectColorCanvas (callback) {
+  if (rectColorCanvas) callback(rectColorCanvas)
+}
+
 function initializeGridIfNeeded () {
-  if (grid) return // Already initialized
-  if (typeof document === 'undefined') return // Not in browser
+  if (grid) return
 
-  const canvas = document.getElementById('rectcolor-c')
-  if (!canvas) return // Canvas not ready yet
-
-  grid = new ColorPackedDraw('rectcolor-c', 10, 10, 50, 50, 50, 4)
+  grid = new ColorPackedDraw(
+    'rectcolor-c',
+    GRID_WIDTH,
+    GRID_HEIGHT,
+    DEFAULT_CELL_SIZE,
+    GRID_OFFSET_X,
+    GRID_OFFSET_Y,
+    COLOR_BITS
+  )
 
   grid.setBitsFromCoords([
     [1, 1, 1],
@@ -22,7 +64,7 @@ function initializeGridIfNeeded () {
     [3, 5, 2]
   ])
 
-  grid.redraw()
+  if (isBrowser()) grid.redraw()
 }
 
 /**
@@ -30,83 +72,64 @@ function initializeGridIfNeeded () {
  */
 function initializeRectColorCanvas () {
   if (rectColorCanvas) return
-  if (typeof document === 'undefined') return
 
   initializeGridIfNeeded()
   if (!grid) return
 
   rectColorCanvas = new ColorPackedRectCanvas('rectcolor-c', grid)
-  rectColorCanvas.initializeAll()
+  if (isBrowser()) rectColorCanvas.initializeAll()
 }
-
-// ============================================================================
-// DELEGATION FUNCTIONS FOR BACKWARD COMPATIBILITY
-// ============================================================================
 
 /**
  * Delegation to canvas controller for button state updates.
  */
 function updateButtonStates2 () {
-  if (rectColorCanvas) {
-    rectColorCanvas.updateButtonStates()
-  }
+  withRectColorCanvas(canvas => canvas.updateButtonStates())
 }
 
 /**
  * Delegation to canvas controller for transform operations.
  */
 function applyTransform2 (mapName) {
-  if (rectColorCanvas) {
-    rectColorCanvas.applyTransform(mapName)
-  }
+  withRectColorCanvas(canvas => canvas.applyTransform(mapName))
 }
 
 /**
  * Delegation to canvas controller for line tool setup.
  */
 function setTool2 (tool) {
-  if (rectColorCanvas) {
-    rectColorCanvas.setTool(tool)
-  }
+  withRectColorCanvas(canvas => canvas.setTool(tool))
 }
 
 /**
  * Delegation to canvas controller for line preview computation.
  */
 function computePreviewCells2 (start, end) {
-  if (rectColorCanvas) {
-    return rectColorCanvas.computePreviewCells(start, end)
-  }
-  return []
+  if (!rectColorCanvas) return []
+  return rectColorCanvas.computePreviewCells(start, end)
 }
 
 /**
  * Delegation to canvas controller for line drawing.
  */
 function drawLineBetween2 (start, end) {
-  if (rectColorCanvas) {
-    rectColorCanvas.drawLineBetween(start, end)
-  }
+  withRectColorCanvas(canvas => canvas.drawLineBetween(start, end))
 }
 
 /**
  * Wire line tool buttons - delegated to canvas controller.
  */
 function wireLineToolButtons2 () {
-  if (!grid || typeof document === 'undefined') return
-  if (rectColorCanvas) {
-    rectColorCanvas.wireLineToolButtons()
-  }
+  if (!grid || !isBrowser()) return
+  withRectColorCanvas(canvas => canvas.wireLineToolButtons())
 }
 
 /**
  * Wire cover type radios - delegated to canvas controller.
  */
 function wireCoverTypeRadios2 () {
-  if (typeof document === 'undefined') return
-  if (rectColorCanvas) {
-    rectColorCanvas.wireCoverTypeRadios()
-  }
+  if (!isBrowser()) return
+  withRectColorCanvas(canvas => canvas.wireCoverTypeRadios())
 }
 
 /**
@@ -114,39 +137,31 @@ function wireCoverTypeRadios2 () {
  */
 function attachCanvasListeners2 () {
   if (!grid) return
-  if (rectColorCanvas) {
-    rectColorCanvas.attachCanvasListeners()
-  }
+  withRectColorCanvas(canvas => canvas.attachCanvasListeners())
 }
 
 /**
  * Wire action buttons - delegated to canvas controller via parent class.
  */
 function wireActionButtons2 () {
-  if (!grid || typeof document === 'undefined') return
-  if (rectColorCanvas) {
-    rectColorCanvas.wireActionButtons()
-  }
+  if (!grid || !isBrowser()) return
+  withRectColorCanvas(canvas => canvas.wireActionButtons())
 }
 
 /**
  * Wire transform buttons - delegated to canvas controller via parent class.
  */
 function wireTransformButtons2 () {
-  if (!grid || typeof document === 'undefined') return
-  if (rectColorCanvas) {
-    rectColorCanvas.wireTransformButtons()
-  }
+  if (!grid || !isBrowser()) return
+  withRectColorCanvas(canvas => canvas.wireTransformButtons())
 }
 
 /**
  * Wire morphology buttons - delegated to canvas controller.
  */
 function wireMorphologyButtons2 () {
-  if (!grid || typeof document === 'undefined') return
-  if (rectColorCanvas) {
-    rectColorCanvas.wireMorphologyButtons()
-  }
+  if (!grid || !isBrowser()) return
+  withRectColorCanvas(canvas => canvas.wireMorphologyButtons())
 }
 
 /**
@@ -154,14 +169,8 @@ function wireMorphologyButtons2 () {
  */
 function initializeLineTools () {
   if (!grid) return
-  if (rectColorCanvas) {
-    rectColorCanvas.initializeLineTools()
-  }
+  withRectColorCanvas(canvas => canvas.initializeLineTools())
 }
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
 
 /**
  * Main initialization function.
@@ -169,7 +178,7 @@ function initializeLineTools () {
 function initializeRectcolor () {
   initializeRectColorCanvas()
   if (grid && rectColorCanvas) {
-    grid.redraw()
+    if (isBrowser()) grid.redraw()
     updateButtonStates2()
     wireCoordinateModeRadios2()
   }
@@ -179,24 +188,23 @@ function initializeRectcolor () {
  * Wire coordinate mode radio buttons for rectcolor
  */
 function wireCoordinateModeRadios2 () {
-  if (typeof document === 'undefined' || !grid) return
+  if (!isBrowser() || !grid) return
 
   const radios = document.querySelectorAll('input[name="coord-mode2"]')
   radios.forEach(radio => {
-    radio.addEventListener('change', e => {
-      if (e.target.checked) {
-        grid.coordinateMode = e.target.value
+    radio.addEventListener('change', event => {
+      const target = /** @type {HTMLInputElement} */ (event.target)
+      if (target.checked) {
+        grid.coordinateMode = target.value
       }
     })
   })
 }
 
-// Initialize on module load if DOM is available
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   initializeRectcolor()
 }
 
-// export helpers for testing
 export {
   initializeRectcolor,
   initializeLineTools,

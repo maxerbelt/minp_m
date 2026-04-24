@@ -3,47 +3,118 @@ import { RectCanvas } from './ui/rectangle/RectCanvas.js'
 import { RectIndex } from './grid/rectangle/RectIndex.js'
 import { PolyominoGridManager } from './ui/rectangle/polyominoGrid.js'
 
-// Grid initialization parameters
-const cellSize = 50
-const offsetX = 50
-const offsetY = 50
-const width = 10
-const height = 10
+const DEFAULT_CELL_SIZE = 50
+const GRID_OFFSET_X = 50
+const GRID_OFFSET_Y = 50
+const GRID_WIDTH = 10
+const GRID_HEIGHT = 10
 
-// Initialize grid and controller only if canvas exists (defer for test environments)
 let rectDraw = null
 let rectCanvas = null
 let polyGrid = null
+let draggedPolyominoId = null
+let dropPreviewData = null
+
+/**
+ * @typedef {Object} GridCoords
+ * @property {number} gridX
+ * @property {number} gridY
+ * @property {number} x
+ * @property {number} y
+ */
+
+/**
+ * @typedef {Object} DropPreviewData
+ * @property {number} gridX
+ * @property {number} gridY
+ * @property {number} width
+ * @property {number} height
+ * @property {Array<unknown>} cells
+ */
+
+/**
+ * @typedef {Object} DragData
+ * @property {number} polyId
+ * @property {number} polyIndex
+ * @property {number} width
+ * @property {number} height
+ * @property {Array<unknown>} cells
+ */
+
+/**
+ * @returns {boolean}
+ */
+function isBrowser () {
+  return typeof document !== 'undefined'
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLElement|null}
+ */
+function getElement (id) {
+  if (!isBrowser()) return null
+  return document.getElementById(id)
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLCanvasElement|null}
+ */
+function getCanvas (id) {
+  const element = getElement(id)
+  return element instanceof HTMLCanvasElement ? element : null
+}
+
+/**
+ * @param {HTMLElement|null} element
+ * @param {string} type
+ * @param {EventListenerOrEventListenerObject} listener
+ */
+function addEventListenerIfExists (element, type, listener) {
+  if (element && typeof element.addEventListener === 'function') {
+    element.addEventListener(type, listener)
+  }
+}
 
 function initializeGridIfNeeded () {
   if (rectDraw) return // Already initialized
-  if (typeof document === 'undefined') return // Not in browser
 
-  const canvas = document.getElementById('rect-c')
-  if (!canvas) return // Canvas not ready yet
-
-  rectDraw = new RectDraw('rect-c', width, height, cellSize, offsetX, offsetY)
-  rectCanvas = new RectCanvas('rect-c', rectDraw, { width, height })
+  rectDraw = new RectDraw(
+    'rect-c',
+    GRID_WIDTH,
+    GRID_HEIGHT,
+    DEFAULT_CELL_SIZE,
+    GRID_OFFSET_X,
+    GRID_OFFSET_Y
+  )
+  rectCanvas = new RectCanvas('rect-c', rectDraw, {
+    width: GRID_WIDTH,
+    height: GRID_HEIGHT
+  })
 }
 
 function initializePolyominoGridIfNeeded () {
-  if (polyGrid) return // Already initialized
-  if (typeof document === 'undefined') return // Not in browser
-
-  const canvas = document.getElementById('rect-poly')
-  if (!canvas) return // Canvas not ready yet
+  if (polyGrid) return
 
   polyGrid = new PolyominoGridManager(
     'rect-poly',
-    width,
-    height,
-    cellSize,
-    offsetX,
-    offsetY
+    GRID_WIDTH,
+    GRID_HEIGHT,
+    DEFAULT_CELL_SIZE,
+    GRID_OFFSET_X,
+    GRID_OFFSET_Y
   )
 }
 
-// Expose rectCanvas variables for testing and backward compatibility
+function withRectCanvas (callback) {
+  if (rectCanvas) callback(rectCanvas)
+}
+
+function withPolyGrid (callback) {
+  if (polyGrid) callback(polyGrid)
+}
+
 function getButtonStates () {
   if (!rectCanvas) return {}
   return {
@@ -68,7 +139,7 @@ function setButtonStates (states) {
  * Update button states - delegates to rectCanvas
  */
 function updateButtonStates () {
-  if (rectCanvas) rectCanvas.updateButtonStates()
+  withRectCanvas(canvas => canvas.updateButtonStates())
 }
 
 /**
@@ -76,14 +147,14 @@ function updateButtonStates () {
  */
 function applyTransform (mapName) {
   initializeGridIfNeeded()
-  if (rectCanvas) rectCanvas.applyTransform(mapName)
+  withRectCanvas(canvas => canvas.applyTransform(mapName))
 }
 
 /**
  * Apply morphology operation - delegates to rectCanvas
  */
 function applyMorphology (operation) {
-  if (rectCanvas) rectCanvas.applyMorphology(operation)
+  withRectCanvas(canvas => canvas.applyMorphology(operation))
 }
 
 /**
@@ -99,7 +170,7 @@ function computePreviewCells (start, end) {
  * Draw line between two points - delegates to rectCanvas
  */
 function drawLineBetween (start, end) {
-  if (rectCanvas) rectCanvas.completeLine(start, end)
+  withRectCanvas(canvas => canvas.completeLine(start, end))
 }
 
 /**
@@ -107,21 +178,17 @@ function drawLineBetween (start, end) {
  */
 function setTool (tool) {
   initializeGridIfNeeded()
-  if (rectCanvas) rectCanvas.setTool(tool)
+  withRectCanvas(canvas => canvas.setTool(tool))
 }
-
-// ============================================================================
-// CONCEPT: INITIALIZATION
-// ============================================================================
 
 /**
  * Main initialization function callable by tests after DOM is ready
  */
 function populateConnectivityDropdown () {
-  if (typeof document === 'undefined') return
+  if (!isBrowser()) return
 
-  const dropdown = document.getElementById('poly-connectivity')
-  if (!dropdown) return
+  const dropdown = getElement('poly-connectivity')
+  if (!(dropdown instanceof HTMLSelectElement)) return
 
   const rectIndex = new RectIndex(1, 1)
   dropdown.innerHTML = Object.keys(rectIndex.connection)
@@ -138,10 +205,12 @@ function populateConnectivityDropdown () {
 function initializeRect () {
   initializeGridIfNeeded()
   initializePolyominoGridIfNeeded()
+
   if (rectDraw && rectCanvas) {
     rectCanvas.initializeAll()
     wireCoordinateModeRadios()
   }
+
   populateConnectivityDropdown()
   wirePolyominoGridControls()
 }
@@ -150,22 +219,18 @@ function initializeRect () {
  * Wire coordinate mode radio buttons
  */
 function wireCoordinateModeRadios () {
-  if (typeof document === 'undefined' || !rectDraw) return
+  if (!isBrowser() || !rectDraw) return
 
   const radios = document.querySelectorAll('input[name="coord-mode"]')
   radios.forEach(radio => {
-    radio.addEventListener('change', e => {
-      if (e.target.checked) {
-        rectDraw.coordinateMode = e.target.value
+    addEventListenerIfExists(radio, 'change', event => {
+      const target = /** @type {HTMLInputElement} */ (event.target)
+      if (target.checked) {
+        rectDraw.coordinateMode = target.value
       }
     })
   })
 }
-
-/**
- * Drag and drop state
- */
-let draggedPolyominoId = null
 
 /**
  * Helper: Convert canvas coordinates to grid coordinates
@@ -189,7 +254,11 @@ function getGridCoordsFromEvent (
 /**
  * Helper: Create a drag image canvas showing only the polyomino
  */
-function createPolyominoDragImage (polyomino, polyominoId, cellSize = 50) {
+function createPolyominoDragImage (
+  polyomino,
+  polyominoId,
+  cellSize = DEFAULT_CELL_SIZE
+) {
   const padding = 8
   const canvasWidth = Math.max(polyomino.width * cellSize + padding * 2, 32)
   const canvasHeight = Math.max(polyomino.height * cellSize + padding * 2, 32)
@@ -201,37 +270,29 @@ function createPolyominoDragImage (polyomino, polyominoId, cellSize = 50) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas
 
-  // Background is transparent by default (no fill or border needed)
-
-  // Get polyomino color
-  let color = '#4ecdc4' // default color
+  let color = '#4ecdc4'
   if (polyGrid && polyominoId > 0) {
     const colorIndex = (polyominoId - 1) % polyGrid.polyominoColors.length
     color = polyGrid.polyominoColors[colorIndex]
   }
 
-  // Draw polyomino cells
   ctx.fillStyle = color
   for (const [x, y] of polyomino.allXYlocations()) {
-    if (polyomino.at(x, y)) {
-      const canvasX = padding + x * cellSize
-      const canvasY = padding + y * cellSize
-      ctx.fillRect(canvasX, canvasY, cellSize, cellSize)
+    if (!polyomino.at(x, y)) continue
 
-      // Cell border
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
-      ctx.lineWidth = 1
-      ctx.strokeRect(canvasX, canvasY, cellSize, cellSize)
-    }
+    const canvasX = padding + x * cellSize
+    const canvasY = padding + y * cellSize
+    ctx.fillRect(canvasX, canvasY, cellSize, cellSize)
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
+    ctx.lineWidth = 1
+    ctx.strokeRect(canvasX, canvasY, cellSize, cellSize)
   }
 
-  // Temporarily add to DOM so drag image works (some browsers require this)
   canvas.style.position = 'absolute'
   canvas.style.left = '-9999px'
   canvas.style.top = '-9999px'
   document.body.appendChild(canvas)
 
-  // Schedule removal after drag starts
   setTimeout(() => {
     if (canvas.parentNode === document.body) {
       document.body.removeChild(canvas)
@@ -240,11 +301,6 @@ function createPolyominoDragImage (polyomino, polyominoId, cellSize = 50) {
 
   return canvas
 }
-
-/**
- * Drag drop preview state
- */
-let dropPreviewData = null
 
 /**
  * Helper: Draw preview of where polyomino will land
@@ -256,12 +312,11 @@ function drawDropPreview (canvas, dragData, clientX, clientY) {
     canvas,
     clientX,
     clientY,
-    cellSize,
-    offsetX,
-    offsetY
+    DEFAULT_CELL_SIZE,
+    GRID_OFFSET_X,
+    GRID_OFFSET_Y
   )
 
-  // Store preview data for rendering
   dropPreviewData = {
     gridX: coords.gridX,
     gridY: coords.gridY,
@@ -270,274 +325,263 @@ function drawDropPreview (canvas, dragData, clientX, clientY) {
     cells: dragData.cells
   }
 
-  // Set previewCells on the grid so it will be drawn
-  if (rectCanvas.grid) {
-    rectCanvas.grid.previewCells = dragData.cells.map(cell => {
-      const x = cell[0] !== undefined ? cell[0] : cell
-      const y =
-        cell[1] !== undefined ? cell[1] : Array.isArray(cell) ? cell[0] : 0
-      return [coords.gridX + x, coords.gridY + y]
-    })
-    // Override previewCells color
-    if (!rectCanvas._origDrawHover) {
-      rectCanvas._origDrawHover = rectCanvas.grid._drawHover
-      rectCanvas.grid._drawHover = function () {
-        if (this.previewCells?.length) {
-          for (const [x, y] of this.previewCells) {
-            // Draw with blue color instead of orange
-            const ctx = this.canvas.getContext('2d')
-            const offsetX = 50
-            const offsetY = 50
-            const cellSize = 50
-            ctx.fillStyle = 'rgba(100, 200, 255, 0.4)'
-            ctx.strokeStyle = 'rgba(0, 120, 250, 0.8)'
-            ctx.lineWidth = 2
-            const canvasX = offsetX + x * cellSize + 1
-            const canvasY = offsetY + y * cellSize + 1
-            ctx.fillRect(canvasX, canvasY, cellSize - 2, cellSize - 2)
-            ctx.strokeRect(canvasX, canvasY, cellSize - 2, cellSize - 2)
-          }
-        }
+  if (!rectCanvas.grid) return
+
+  rectCanvas.grid.previewCells = dragData.cells.map(cell => {
+    const x = cell[0] !== undefined ? cell[0] : cell
+    const y =
+      cell[1] !== undefined ? cell[1] : Array.isArray(cell) ? cell[0] : 0
+    return [coords.gridX + x, coords.gridY + y]
+  })
+
+  if (!rectCanvas._origDrawHover) {
+    rectCanvas._origDrawHover = rectCanvas.grid._drawHover
+    rectCanvas.grid._drawHover = function () {
+      if (!this.previewCells?.length) return
+
+      for (const [x, y] of this.previewCells) {
+        const ctx = this.canvas.getContext('2d')
+        ctx.fillStyle = 'rgba(100, 200, 255, 0.4)'
+        ctx.strokeStyle = 'rgba(0, 120, 250, 0.8)'
+        ctx.lineWidth = 2
+        const canvasX = GRID_OFFSET_X + x * DEFAULT_CELL_SIZE + 1
+        const canvasY = GRID_OFFSET_Y + y * DEFAULT_CELL_SIZE + 1
+        ctx.fillRect(
+          canvasX,
+          canvasY,
+          DEFAULT_CELL_SIZE - 2,
+          DEFAULT_CELL_SIZE - 2
+        )
+        ctx.strokeRect(
+          canvasX,
+          canvasY,
+          DEFAULT_CELL_SIZE - 2,
+          DEFAULT_CELL_SIZE - 2
+        )
       }
     }
-    // Trigger redraw to show preview
-    rectCanvas.grid.redraw()
   }
+
+  rectCanvas.grid.redraw()
 }
 
 /**
  * Helper: Clear drop preview
  */
 function clearDropPreview () {
-  if (dropPreviewData) {
-    dropPreviewData = null
-    // Clear preview cells and restore original _drawHover
-    if (rectCanvas && rectCanvas.grid) {
-      rectCanvas.grid.previewCells = []
-      if (rectCanvas._origDrawHover) {
-        rectCanvas.grid._drawHover = rectCanvas._origDrawHover
-        rectCanvas._origDrawHover = null
-      }
-      // Redraw to remove preview
-      rectCanvas.grid.redraw()
-    }
+  if (!dropPreviewData || !rectCanvas?.grid) return
+
+  dropPreviewData = null
+  rectCanvas.grid.previewCells = []
+
+  if (rectCanvas._origDrawHover) {
+    rectCanvas.grid._drawHover = rectCanvas._origDrawHover
+    rectCanvas._origDrawHover = null
   }
+
+  rectCanvas.grid.redraw()
 }
 
 /**
  * Set up drag and drop between polyomino grid and main rect grid
  */
 function setupDragAndDrop () {
-  if (typeof document === 'undefined') return
+  if (!isBrowser()) return
 
-  const polyCanvas = document.getElementById('rect-poly')
-  const rectCanvas = document.getElementById('rect-c')
-  if (!polyCanvas || !rectCanvas) return
+  const sourceCanvas = getCanvas('rect-poly')
+  const targetCanvas = getCanvas('rect-c')
+  if (!sourceCanvas || !targetCanvas) return
 
-  // ===== SOURCE: Polyomino Grid Canvas =====
+  sourceCanvas.addEventListener('mousedown', handlePolyCanvasMouseDown)
+  sourceCanvas.addEventListener('dragstart', handlePolyCanvasDragStart)
+  sourceCanvas.addEventListener('dragend', handlePolyCanvasDragEnd)
 
-  // Track mousedown to identify which polyomino is being dragged
-  polyCanvas.addEventListener('mousedown', e => {
-    initializePolyominoGridIfNeeded()
-    if (!polyGrid) return
+  targetCanvas.addEventListener('dragover', handleTargetCanvasDragOver)
+  targetCanvas.addEventListener('dragenter', handleTargetCanvasDragEnter)
+  targetCanvas.addEventListener('dragleave', handleTargetCanvasDragLeave)
+  targetCanvas.addEventListener('drop', handleTargetCanvasDrop)
+}
 
-    const coords = getGridCoordsFromEvent(
-      polyCanvas,
-      e.clientX,
-      e.clientY,
-      cellSize,
-      offsetX,
-      offsetY
+/**
+ * @param {DataTransfer} dataTransfer
+ * @returns {DragData|null}
+ */
+function parseDragData (dataTransfer) {
+  try {
+    return JSON.parse(dataTransfer.getData('application/json'))
+  } catch {
+    return null
+  }
+}
+
+function handlePolyCanvasMouseDown (event) {
+  initializePolyominoGridIfNeeded()
+  if (!polyGrid) return
+
+  const coords = getGridCoordsFromEvent(
+    /** @type {HTMLCanvasElement} */ (event.currentTarget),
+    event.clientX,
+    event.clientY,
+    DEFAULT_CELL_SIZE,
+    GRID_OFFSET_X,
+    GRID_OFFSET_Y
+  )
+
+  const clickedPolyId = polyGrid.gridMask.at(coords.gridX, coords.gridY)
+  draggedPolyominoId = clickedPolyId > 0 ? clickedPolyId : null
+}
+
+function handlePolyCanvasDragStart (event) {
+  if (draggedPolyominoId === null) {
+    event.preventDefault()
+    return
+  }
+
+  initializePolyominoGridIfNeeded()
+  if (!polyGrid) {
+    event.preventDefault()
+    return
+  }
+
+  const poly = polyGrid.polyominoes.find(p => p.id === draggedPolyominoId)
+  if (!poly) {
+    event.preventDefault()
+    return
+  }
+
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData(
+    'application/json',
+    JSON.stringify({
+      polyId: draggedPolyominoId,
+      polyIndex: polyGrid.polyominoes.indexOf(poly),
+      width: poly.poly.width,
+      height: poly.poly.height,
+      cells: Array.from(poly.poly.allXYlocations())
+    })
+  )
+
+  const dragImage = createPolyominoDragImage(poly.poly, draggedPolyominoId)
+  const imageOffsetX = dragImage.width / 2
+  const imageOffsetY = dragImage.height / 2
+  event.dataTransfer.setDragImage(dragImage, imageOffsetX, imageOffsetY)
+  event.currentTarget.style.opacity = '0.5'
+}
+
+function handlePolyCanvasDragEnd (event) {
+  event.currentTarget.style.opacity = '1'
+  draggedPolyominoId = null
+}
+
+function handleTargetCanvasDragOver (event) {
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'move'
+  event.currentTarget.style.opacity = '0.8'
+
+  const dragData = parseDragData(event.dataTransfer)
+  if (dragData) {
+    drawDropPreview(
+      /** @type {HTMLCanvasElement} */ (event.currentTarget),
+      dragData,
+      event.clientX,
+      event.clientY
     )
+  }
+}
 
-    // Find which polyomino was clicked
-    const clickedPolyId = polyGrid.gridMask.at(coords.gridX, coords.gridY)
-    if (clickedPolyId > 0) {
-      draggedPolyominoId = clickedPolyId
-    }
-  })
+function handleTargetCanvasDragEnter (event) {
+  event.preventDefault()
+  event.currentTarget.style.backgroundColor = 'rgba(100, 150, 255, 0.1)'
+}
 
-  // dragstart: Set up the dragged data
-  polyCanvas.addEventListener('dragstart', e => {
-    if (draggedPolyominoId === null) {
-      e.preventDefault() // Don't drag if no polyomino selected
-      return
-    }
-
-    initializePolyominoGridIfNeeded()
-    if (!polyGrid) {
-      e.preventDefault()
-      return
-    }
-
-    // Find the polyomino object with this ID
-    const poly = polyGrid.polyominoes.find(p => p.id === draggedPolyominoId)
-    if (!poly) {
-      e.preventDefault()
-      return
-    }
-
-    // Store data for dropping
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData(
-      'application/json',
-      JSON.stringify({
-        polyId: draggedPolyominoId,
-        polyIndex: polyGrid.polyominoes.indexOf(poly),
-        width: poly.poly.width,
-        height: poly.poly.height,
-        cells: Array.from(poly.poly.allXYlocations())
-      })
-    )
-
-    // Visual feedback: Create custom drag image showing only the polyomino
-    const dragImage = createPolyominoDragImage(poly.poly, draggedPolyominoId)
-    // Use offset to center the image relative to cursor
-    const offsetX = dragImage.width / 2
-    const offsetY = dragImage.height / 2
-    e.dataTransfer.setDragImage(dragImage, offsetX, offsetY)
-    polyCanvas.style.opacity = '0.5'
-  })
-
-  // dragend: Clean up dragged state
-  polyCanvas.addEventListener('dragend', e => {
-    polyCanvas.style.opacity = '1'
-    draggedPolyominoId = null
-  })
-
-  // ===== TARGET: Main Rect Grid Canvas =====
-
-  // dragover: Allow drop and show preview
-  rectCanvas.addEventListener('dragover', e => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    rectCanvas.style.opacity = '0.8'
-
-    // Update preview as user drags
-    try {
-      const dragData = JSON.parse(e.dataTransfer.getData('application/json'))
-      if (dragData) {
-        drawDropPreview(rectCanvas, dragData, e.clientX, e.clientY)
-      }
-    } catch (err) {
-      // Silently ignore if no valid data
-    }
-  })
-
-  // dragenter: Visual feedback
-  rectCanvas.addEventListener('dragenter', e => {
-    e.preventDefault()
-    rectCanvas.style.backgroundColor = 'rgba(100, 150, 255, 0.1)'
-  })
-
-  // dragleave: Remove visual feedback and preview
-  rectCanvas.addEventListener('dragleave', e => {
-    if (e.target === rectCanvas) {
-      rectCanvas.style.backgroundColor = ''
-      clearDropPreview()
-    }
-  })
-
-  // drop: Place the polyomino on the main grid
-  rectCanvas.addEventListener('drop', e => {
-    e.preventDefault()
-    e.stopPropagation()
-    rectCanvas.style.opacity = '1'
-    rectCanvas.style.backgroundColor = ''
+function handleTargetCanvasDragLeave (event) {
+  if (event.target === event.currentTarget) {
+    event.currentTarget.style.backgroundColor = ''
     clearDropPreview()
+  }
+}
 
-    let dragData
-    try {
-      dragData = JSON.parse(e.dataTransfer.getData('application/json'))
-    } catch (err) {
+function handleTargetCanvasDrop (event) {
+  event.preventDefault()
+  event.stopPropagation()
+  event.currentTarget.style.opacity = '1'
+  event.currentTarget.style.backgroundColor = ''
+  clearDropPreview()
+
+  const dragData = parseDragData(event.dataTransfer)
+  if (!dragData || dragData.polyId === undefined) return
+
+  initializeGridIfNeeded()
+  initializePolyominoGridIfNeeded()
+  if (!rectDraw || !polyGrid) return
+
+  const coords = getGridCoordsFromEvent(
+    /** @type {HTMLCanvasElement} */ (event.currentTarget),
+    event.clientX,
+    event.clientY,
+    DEFAULT_CELL_SIZE,
+    GRID_OFFSET_X,
+    GRID_OFFSET_Y
+  )
+
+  const sourcePoly = polyGrid.polyominoes.find(p => p.id === dragData.polyId)
+  if (!sourcePoly) return
+
+  if (rectDraw.mask.canPlacePolyomino) {
+    if (
+      !rectDraw.mask.canPlacePolyomino(
+        sourcePoly.poly,
+        coords.gridX,
+        coords.gridY
+      )
+    ) {
+      return
+    }
+  } else {
+    const poly = sourcePoly.poly
+    if (
+      coords.gridX < 0 ||
+      coords.gridY < 0 ||
+      coords.gridX + poly.width > rectDraw.width ||
+      coords.gridY + poly.height > rectDraw.height
+    ) {
       return
     }
 
-    if (!dragData || dragData.polyId === undefined) return
-
-    initializeGridIfNeeded()
-    initializePolyominoGridIfNeeded()
-    if (!rectDraw || !polyGrid) return
-
-    // Get the drop location
-    const coords = getGridCoordsFromEvent(
-      rectCanvas,
-      e.clientX,
-      e.clientY,
-      cellSize,
-      offsetX,
-      offsetY
-    )
-
-    // Get the polyomino from polyGrid
-    const sourcePoly = polyGrid.polyominoes.find(p => p.id === dragData.polyId)
-    if (!sourcePoly) return
-
-    // Check if we can place it at the target location
-    if (rectDraw.mask.canPlacePolyomino) {
-      // If mask has canPlacePolyomino, use it
-      if (
-        !rectDraw.mask.canPlacePolyomino(
-          sourcePoly.poly,
-          coords.gridX,
-          coords.gridY
-        )
-      ) {
-        return
-      }
-    } else {
-      // Otherwise, do a simple bounds and empty-cell check
-      const poly = sourcePoly.poly
-      if (
-        coords.gridX < 0 ||
-        coords.gridY < 0 ||
-        coords.gridX + poly.width > rectDraw.width ||
-        coords.gridY + poly.height > rectDraw.height
-      ) {
-        return
-      }
-
-      // Check if cells are empty
-      for (const [px, py] of poly.allXYlocations()) {
-        if (poly.at(px, py)) {
-          const gx = coords.gridX + px
-          const gy = coords.gridY + py
-          if (rectDraw.mask.at(gx, gy) !== 0) {
-            return
-          }
-        }
-      }
-    }
-
-    // Place the polyomino on the main grid
-    const poly = sourcePoly.poly
     for (const [px, py] of poly.allXYlocations()) {
-      if (poly.at(px, py)) {
-        const gx = coords.gridX + px
-        const gy = coords.gridY + py
-        rectDraw.mask.set(gx, gy, 1) // Set to 1 (filled)
+      if (!poly.at(px, py)) continue
+
+      const gx = coords.gridX + px
+      const gy = coords.gridY + py
+      if (rectDraw.mask.at(gx, gy) !== 0) {
+        return
       }
     }
+  }
 
-    // Redraw the main grid
-    if (rectDraw.redraw) {
-      rectDraw.redraw()
-    }
-  })
+  const poly = sourcePoly.poly
+  for (const [px, py] of poly.allXYlocations()) {
+    if (!poly.at(px, py)) continue
+    rectDraw.mask.set(coords.gridX + px, coords.gridY + py, 1)
+  }
+
+  if (rectDraw.redraw) {
+    rectDraw.redraw()
+  }
 }
 
 /**
  * Wire polyomino grid controls
  */
 function wirePolyominoGridControls () {
-  if (typeof document === 'undefined') return
+  if (!isBrowser()) return
 
-  // Connectivity radio buttons - when changed, update polyGrid settings
-  const connectivityDropdown = document.getElementById('poly-connectivity')
-  if (connectivityDropdown) {
-    connectivityDropdown.addEventListener('change', e => {
+  const connectivityDropdown = getElement('poly-connectivity')
+  if (connectivityDropdown instanceof HTMLSelectElement) {
+    addEventListenerIfExists(connectivityDropdown, 'change', event => {
+      const target = /** @type {HTMLSelectElement} */ (event.target)
       if (polyGrid) {
-        polyGrid.connectivity = e.target.value
+        polyGrid.connectivity = target.value
         polyGrid.availablePolyominoes = []
         polyGrid.currentPolyominoIndex = 0
         polyGrid.loadPolyominoes()
@@ -546,12 +590,12 @@ function wirePolyominoGridControls () {
     })
   }
 
-  // Size dropdown - when changed, update polyGrid settings
-  const sizeDropdown = document.getElementById('poly-size')
-  if (sizeDropdown) {
-    sizeDropdown.addEventListener('change', e => {
+  const sizeDropdown = getElement('poly-size')
+  if (sizeDropdown instanceof HTMLSelectElement) {
+    addEventListenerIfExists(sizeDropdown, 'change', event => {
+      const target = /** @type {HTMLSelectElement} */ (event.target)
       if (polyGrid) {
-        polyGrid.polyominoSize = parseInt(e.target.value)
+        polyGrid.polyominoSize = parseInt(target.value)
         polyGrid.availablePolyominoes = []
         polyGrid.currentPolyominoIndex = 0
         polyGrid.loadPolyominoes()
@@ -560,49 +604,37 @@ function wirePolyominoGridControls () {
     })
   }
 
-  // Fill Grid button - trigger placement algorithm
-  const fillButton = document.getElementById('fill-poly-grid')
+  const fillButton = getElement('fill-poly-grid')
   if (fillButton) {
-    fillButton.addEventListener('click', () => {
+    addEventListenerIfExists(fillButton, 'click', () => {
       initializePolyominoGridIfNeeded()
-      if (polyGrid) {
-        polyGrid.fillGrid()
-      }
+      if (polyGrid) polyGrid.fillGrid()
     })
   }
 
-  // Previous button - navigate to previous polyomino
-  const prevButton = document.getElementById('prev-poly-grid')
-  if (prevButton && prevButton.addEventListener) {
-    prevButton.addEventListener('click', () => {
+  const prevButton = getElement('prev-poly-grid')
+  if (prevButton) {
+    addEventListenerIfExists(prevButton, 'click', () => {
       initializePolyominoGridIfNeeded()
-      if (polyGrid && polyGrid.prevPolyomino) {
-        polyGrid.prevPolyomino()
-      }
+      if (polyGrid && polyGrid.prevPolyomino) polyGrid.prevPolyomino()
     })
   }
 
-  // Next button - navigate to next polyomino
-  const nextButton = document.getElementById('next-poly-grid')
-  if (nextButton && nextButton.addEventListener) {
-    nextButton.addEventListener('click', () => {
+  const nextButton = getElement('next-poly-grid')
+  if (nextButton) {
+    addEventListenerIfExists(nextButton, 'click', () => {
       initializePolyominoGridIfNeeded()
-      if (polyGrid && polyGrid.nextPolyomino) {
-        polyGrid.nextPolyomino()
-      }
+      if (polyGrid && polyGrid.nextPolyomino) polyGrid.nextPolyomino()
     })
   }
 
-  // Set up drag and drop between grids
   setupDragAndDrop()
 }
 
-// Initialize on module load if DOM is available
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   initializeRect()
 }
 
-// export for testing
 export {
   initializeRect,
   initializeGridIfNeeded,
