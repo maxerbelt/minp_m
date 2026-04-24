@@ -1,33 +1,54 @@
 /**
- * KeyboardShortcutManager - Handles keyboard events and shortcuts
- * Uses map-based approach for declaring shortcuts with handlers
+ * KeyboardShortcutManager - Maps keyboard keys to handler functions
+ * Provides centralized keyboard event management with case-insensitive key bindings
+ *
+ * @class KeyboardShortcutManager
+ * @description Manages keyboard shortcuts with activation/deactivation lifecycle
  */
 export class KeyboardShortcutManager {
+  /**
+   * Initialize keyboard shortcut manager
+   */
   constructor () {
+    /** @type {Map<string, Function>} Key-to-handler mappings (both cases) */
     this.shortcuts = new Map()
+
+    /** @type {Function|null} Bound keydown handler for event listener cleanup */
     this.handler = null
+
+    /** @type {boolean} Whether keyboard listener is currently active */
     this.isActive = false
   }
 
   /**
-   * Register a keyboard shortcut with its handler
-   * Key can be single char or array of chars for multiple keys
+   * Register one or more keyboard shortcuts
+   * Automatically registers both uppercase and lowercase variants
+   * @param {string|string[]} key - Single key or array of keys to bind
+   * @param {Function} handler - Handler function to invoke: (event) => void
+   * @throws {TypeError} If handler is not a function
+   * @throws {TypeError} If key is not string or array of strings
    */
   registerShortcut (key, handler) {
-    if (Array.isArray(key)) {
-      for (const k of key) {
-        this.shortcuts.set(k.toUpperCase(), handler)
-        this.shortcuts.set(k.toLowerCase(), handler)
-      }
-    } else {
-      this.shortcuts.set(key.toUpperCase(), handler)
-      this.shortcuts.set(key.toLowerCase(), handler)
+    this._validateHandler(handler)
+
+    const keys = Array.isArray(key) ? key : [key]
+
+    for (const singleKey of keys) {
+      this._registerKeyVariant(singleKey, handler)
     }
   }
 
   /**
-   * Register multiple shortcuts at once
-   * shortcuts: { key: handler, ... } or { key: [handlers...], ... }
+   * Register multiple shortcuts in bulk
+   * @param {Object<string, Function>} shortcuts - Object mapping keys to handler functions
+   * @throws {TypeError} If any handler is not a function
+   * @throws {TypeError} If any key is not a string
+   * @example
+   * registerShortcuts({
+   *   'R': () => reset(),
+   *   'P': () => pause(),
+   *   ['S', 'Space']: () => shoot()
+   * })
    */
   registerShortcuts (shortcuts) {
     for (const [key, handler] of Object.entries(shortcuts)) {
@@ -36,7 +57,8 @@ export class KeyboardShortcutManager {
   }
 
   /**
-   * Activate keyboard listening
+   * Enable keyboard event listening
+   * Sets up document keydown listener if not already active
    */
   activate () {
     if (this.isActive) return
@@ -47,7 +69,8 @@ export class KeyboardShortcutManager {
   }
 
   /**
-   * Deactivate keyboard listening
+   * Disable keyboard event listening
+   * Removes keydown listener and cleans up bound handler reference
    */
   deactivate () {
     if (!this.isActive) return
@@ -60,37 +83,71 @@ export class KeyboardShortcutManager {
   }
 
   /**
-   * Check if shortcut manager is active
+   * Check if keyboard listener is currently active
+   * @returns {boolean} True if listening for keyboard events
    */
   isListening () {
     return this.isActive
   }
 
   /**
-   * Clear all registered shortcuts
+   * Remove all registered keyboard shortcuts
    */
   clearShortcuts () {
     this.shortcuts.clear()
   }
 
   /**
-   * Handle keydown event
+   * Clean up resources and deactivate
+   * Stops listening and clears all shortcuts
+   */
+  cleanup () {
+    this.deactivate()
+    this.clearShortcuts()
+  }
+
+  /**
+   * Register a single key variant (respects case sensitivity)
+   * Stores both uppercase and lowercase versions for case-insensitive matching
    * @private
+   * @param {string} key - Single key character
+   * @param {Function} handler - Handler function to invoke
+   */
+  _registerKeyVariant (key, handler) {
+    this.shortcuts.set(key.toUpperCase(), handler)
+    this.shortcuts.set(key.toLowerCase(), handler)
+  }
+
+  /**
+   * Validate handler is a callable function
+   * @private
+   * @param {*} handler - Value to validate as handler
+   * @throws {TypeError} If handler is not a function
+   */
+  _validateHandler (handler) {
+    if (typeof handler !== 'function') {
+      throw new TypeError(
+        `Handler must be a function, received ${typeof handler}`
+      )
+    }
+  }
+
+  /**
+   * Process keydown events and invoke matching handler
+   * Looks up handler for the pressed key (case-insensitive)
+   * @private
+   * @param {KeyboardEvent} event - DOM keydown event
    */
   _handleKeyDown (event) {
     const key = event.key
     const handler = this.shortcuts.get(key)
 
     if (handler && typeof handler === 'function') {
-      handler(event)
+      try {
+        handler(event)
+      } catch (error) {
+        console.error(`Error in keyboard handler for key '${key}':`, error)
+      }
     }
-  }
-
-  /**
-   * Clean up resources
-   */
-  cleanup () {
-    this.deactivate()
-    this.clearShortcuts()
   }
 }

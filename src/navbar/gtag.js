@@ -1,51 +1,71 @@
 import { bh } from '../terrains/all/js/bh.js'
 
+/**
+ * Google Analytics Tracking ID
+ * @type {string}
+ */
+const GA_ID = 'G-J2METC1TPT'
+
+/**
+ * Event names for Google Analytics tracking
+ * @type {Object<string, string>}
+ */
+const EVENT_NAMES = {
+  LEVEL_END: 'level_end',
+  BUTTON_CLICK: 'button_click',
+  TAB_CLICK: 'tab_click'
+}
+
+/**
+ * Global gtag function reference from Google Analytics
+ * @type {Function|undefined}
+ */
 export const gtag = globalThis.gtag
 
+/**
+ * Track level completion event
+ * @param {Object} [map] - Map object with title, terrain, rows, cols properties
+ * @param {boolean} [success=false] - Whether level was completed successfully
+ * @returns {void}
+ */
 export function trackLevelEnd (map, success) {
-  if (typeof globalThis.gtag !== 'function') {
-    console.warn('GA not initialized')
-    return
-  }
-  map = map || bh.map
+  if (!_ensureGAInitialized()) return
 
+  map = map || bh.map
   const params = {
-    level_name: map.title || 'unknown',
-    terrain: map.terrain || 'unknown',
-    height: map.rows || 0,
-    width: map.cols || 0,
-    mode: document.title,
+    ..._buildCommonMapParams(map),
     success: !!success
   }
 
-  globalThis.gtag('event', 'level_end', params)
+  globalThis.gtag('event', EVENT_NAMES.LEVEL_END, params)
 }
 
+/**
+ * Track button click engagement event
+ * @param {Object} [map] - Map object with title, terrain, rows, cols properties
+ * @param {string} button - Button identifier or label
+ * @returns {void}
+ */
 export function trackClick (map, button) {
-  if (typeof globalThis.gtag !== 'function') {
-    console.warn('GA not initialized')
-    return
-  }
-  map = map || bh.map
+  if (!_ensureGAInitialized()) return
 
+  map = map || bh.map
   const params = {
     event_category: 'Engagement',
     event_label: button,
-    level_name: map.title || 'unknown',
-    terrain: map.terrain || 'unknown',
-    height: map.rows || 0,
-    width: map.cols || 0,
-    mode: document.title
+    ..._buildCommonMapParams(map)
   }
 
-  globalThis.gtag('event', 'button_click', params)
+  globalThis.gtag('event', EVENT_NAMES.BUTTON_CLICK, params)
 }
 
+/**
+ * Track tab navigation event
+ * @param {string} tab - Tab identifier or label
+ * @returns {void}
+ */
 export function trackTab (tab) {
-  if (typeof globalThis.gtag !== 'function') {
-    console.warn('GA not initialized')
-    return
-  }
+  if (!_ensureGAInitialized()) return
 
   const params = {
     event_category: 'Engagement',
@@ -53,39 +73,89 @@ export function trackTab (tab) {
     mode: document.title
   }
 
-  globalThis.gtag('event', 'tab_click', params)
+  globalThis.gtag('event', EVENT_NAMES.TAB_CLICK, params)
 }
+
+/**
+ * Initialize Google Analytics tracking
+ * Sets up gtag function and loads GA script if not already present
+ * @returns {void}
+ * @throws {Error} If GA_ID is missing or invalid
+ */
 export function setupTrack () {
-  initGA(GA_ID)
+  _initializeGA(GA_ID)
 }
-const GA_ID = 'G-J2METC1TPT'
 
-function initGA (GA_ID) {
-  if (!GA_ID) throw new Error('initGA: missing GA_ID (G-XXXXXX)')
+/**
+ * Check if GA is initialized and available
+ * Logs warning if gtag not available
+ * @private
+ * @returns {boolean} True if gtag is available
+ */
+function _ensureGAInitialized () {
+  if (typeof globalThis.gtag !== 'function') {
+    console.warn('Google Analytics (gtag) not initialized')
+    return false
+  }
+  return true
+}
 
-  // ensure dataLayer exists
+/**
+ * Build common map-related parameters for GA events
+ * @private
+ * @param {Object} map - Map object with properties
+ * @param {string} [map.title] - Map display title
+ * @param {string} [map.terrain] - Terrain type identifier
+ * @param {number} [map.rows] - Board height
+ * @param {number} [map.cols] - Board width
+ * @returns {Object} Common parameters for GA events
+ */
+function _buildCommonMapParams (map) {
+  return {
+    level_name: map?.title || 'unknown',
+    terrain: map?.terrain || 'unknown',
+    height: map?.rows || 0,
+    width: map?.cols || 0,
+    mode: document.title
+  }
+}
+
+/**
+ * Initialize Google Analytics with gtag configuration and script loading
+ * Safe to call multiple times - checks if script already loaded
+ * @private
+ * @param {string} gaId - Google Analytics ID (format: G-XXXXXX)
+ * @throws {Error} If GA_ID is missing or invalid
+ */
+function _initializeGA (gaId) {
+  if (!gaId) {
+    throw new Error('initGA: missing GA_ID (format: G-XXXXXX)')
+  }
+
+  // Ensure dataLayer exists
   globalThis.dataLayer = globalThis.dataLayer || []
 
-  // define gtag only if not already defined
+  // Define gtag only if not already defined
   if (!globalThis.gtag) {
     globalThis.gtag = function gtag () {
       globalThis.dataLayer.push(arguments)
     }
   }
 
-  // If gtag.js already loaded, don't insert again
+  // Check if GA script already loaded
   const alreadyLoaded = !!document.querySelector(
-    `script[src^="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"]`
+    `script[src^="https://www.googletagmanager.com/gtag/js?id=${gaId}"]`
   )
 
-  // call basic setup immediately (safe to call before script loads)
+  // Call basic setup immediately (safe before script loads)
   globalThis.gtag('js', new Date())
-  globalThis.gtag('config', GA_ID, { debug_mode: true })
+  globalThis.gtag('config', gaId, { debug_mode: true })
 
+  // Load GA script if not already present
   if (!alreadyLoaded) {
     const script = document.createElement('script')
     script.async = true
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
     document.head.appendChild(script)
   }
 }
