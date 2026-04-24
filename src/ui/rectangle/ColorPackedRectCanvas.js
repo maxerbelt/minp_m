@@ -8,6 +8,34 @@ import {
 } from '../gridButtonUtils.js'
 
 /**
+ * Constants for color packed canvas operations
+ */
+const MAX_COLOR_VALUE = 4
+const MIN_COLOR_VALUE = 1
+const EMPTY_CELL_VALUE = 0
+
+/**
+ * @typedef {Object} MorphologyChanges
+ * @property {number} added - Bitmask of added cells
+ * @property {number} removed - Bitmask of removed cells
+ */
+
+/**
+ * @typedef {Object} TransformCapabilities
+ * @property {boolean} canRotateCW - Whether clockwise rotation is possible
+ * @property {boolean} canRotateCCW - Whether counter-clockwise rotation is possible
+ * @property {boolean} canFlipH - Whether horizontal flip is possible
+ * @property {boolean} canFlipV - Whether vertical flip is possible
+ */
+
+/**
+ * @typedef {Object} MorphologyCapabilities
+ * @property {boolean} canDilate - Whether dilation is possible
+ * @property {boolean} canErode - Whether erosion is possible
+ * @property {boolean} canCross - Whether cross dilation is possible
+ */
+
+/**
  * ColorPackedRectCanvas manages colored (packed) rectangular grids.
  * Adds color management, color cycling, and color-aware morphology operations.
  *
@@ -21,30 +49,30 @@ import {
  * - Morphology operations that preserve/add colors while modifying occupancy
  */
 export class ColorPackedRectCanvas {
+  /**
+   * @param {string} canvasId - ID of the canvas element
+   * @param {Object} grid - The grid object with packed property
+   */
   constructor (canvasId, grid) {
     this.canvasId = canvasId
     this.grid = grid
 
     // Line tool state
-    this.currentTool = null // null|'single'|'segment'|'ray'|'full'
+    this.currentTool = null // null|'segment'|'ray'|'full'
     this.lineStart = null
     this.indexer = null
     this._lineToolsInitialized = false
 
     // Color management
     this.currentColor = '1' // '1'|'2'|'3'|'4'|'cycle'
-    this.colorCycleIndex = 1
+    this.colorCycleIndex = MIN_COLOR_VALUE
     this.coverType = 'normal' // 'normal'|'half'|'super'
-
-    // Button references
-    this.dilateBtn = null
-    this.erodeBtn = null
-    this.crossBtn = null
   }
 
   /**
    * Get the next color value based on current color setting.
    * If cycling, advances the cycle index.
+   * @returns {number} The color value to use
    */
   getNextColor () {
     let color =
@@ -54,7 +82,9 @@ export class ColorPackedRectCanvas {
 
     if (this.currentColor === 'cycle') {
       this.colorCycleIndex =
-        this.colorCycleIndex === 4 ? 1 : this.colorCycleIndex + 1
+        this.colorCycleIndex === MAX_COLOR_VALUE
+          ? MIN_COLOR_VALUE
+          : this.colorCycleIndex + 1
     }
 
     return color
@@ -62,113 +92,93 @@ export class ColorPackedRectCanvas {
 
   /**
    * Compute line preview cells based on tool type and coverage mode.
+   * @param {number[]} start - Starting coordinates [x, y]
+   * @param {number[]} end - Ending coordinates [x, y]
+   * @returns {number[][]} Array of coordinate pairs
    */
   computePreviewCells (start, end) {
     if (!start || !end || !this.indexer) return []
 
     const coordIndexer = (x, y) => [x, y]
-    let coords = []
 
     switch (this.currentTool) {
       case 'segment':
-        if (this.coverType === 'super') {
-          coords = Array.from(
-            this.indexer.superCoverSegmentTo(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        } else if (this.coverType === 'half') {
-          coords = Array.from(
-            this.indexer.halfCoverSegmentTo(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        } else {
-          coords = Array.from(
-            this.indexer.segmentTo(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        }
-        break
+        return this._computeSegmentCoords(start, end, coordIndexer)
       case 'ray':
-        if (this.coverType === 'super') {
-          coords = Array.from(
-            this.indexer.superCoverRay(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        } else if (this.coverType === 'half') {
-          coords = Array.from(
-            this.indexer.halfCoverRay(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        } else {
-          coords = Array.from(
-            this.indexer.ray(start[0], start[1], end[0], end[1], coordIndexer)
-          )
-        }
-        break
+        return this._computeRayCoords(start, end, coordIndexer)
       case 'full':
-        if (this.coverType === 'super') {
-          coords = Array.from(
-            this.indexer.superCoverFullLine(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        } else if (this.coverType === 'half') {
-          coords = Array.from(
-            this.indexer.halfCoverFullLine(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        } else {
-          coords = Array.from(
-            this.indexer.fullLine(
-              start[0],
-              start[1],
-              end[0],
-              end[1],
-              coordIndexer
-            )
-          )
-        }
-        break
+        return this._computeFullLineCoords(start, end, coordIndexer)
+      default:
+        return []
     }
-    return coords
+  }
+
+  /**
+   * Compute coordinates for segment tool.
+   * @param {number[]} start - Starting coordinates [x, y]
+   * @param {number[]} end - Ending coordinates [x, y]
+   * @param {Function} coordIndexer - Function to convert coordinates
+   * @returns {number[][]} Array of coordinate pairs
+   * @private
+   */
+  _computeSegmentCoords (start, end, coordIndexer) {
+    const method = this._getIndexerMethod('segment')
+    return Array.from(
+      this.indexer[method](start[0], start[1], end[0], end[1], coordIndexer)
+    )
+  }
+
+  /**
+   * Compute coordinates for ray tool.
+   * @param {number[]} start - Starting coordinates [x, y]
+   * @param {number[]} end - Ending coordinates [x, y]
+   * @param {Function} coordIndexer - Function to convert coordinates
+   * @returns {number[][]} Array of coordinate pairs
+   * @private
+   */
+  _computeRayCoords (start, end, coordIndexer) {
+    const method = this._getIndexerMethod('ray')
+    return Array.from(
+      this.indexer[method](start[0], start[1], end[0], end[1], coordIndexer)
+    )
+  }
+
+  /**
+   * Compute coordinates for full line tool.
+   * @param {number[]} start - Starting coordinates [x, y]
+   * @param {number[]} end - Ending coordinates [x, y]
+   * @param {Function} coordIndexer - Function to convert coordinates
+   * @returns {number[][]} Array of coordinate pairs
+   * @private
+   */
+  _computeFullLineCoords (start, end, coordIndexer) {
+    const method = this._getIndexerMethod('full')
+    return Array.from(
+      this.indexer[method](start[0], start[1], end[0], end[1], coordIndexer)
+    )
+  }
+
+  /**
+   * Get the appropriate indexer method name based on tool and cover type.
+   * @param {string} tool - The tool type ('segment', 'ray', 'full')
+   * @returns {string} The method name to call on indexer
+   * @private
+   */
+  _getIndexerMethod (tool) {
+    const prefix =
+      this.coverType === 'super'
+        ? 'superCover'
+        : this.coverType === 'half'
+        ? 'halfCover'
+        : ''
+    const suffix = tool === 'segment' ? 'To' : tool === 'full' ? 'Line' : ''
+    return `${prefix}${tool}${suffix}`
   }
 
   /**
    * Draw line by applying color values to all cells in the path.
+   * @param {number[]} start - Starting coordinates [x, y]
+   * @param {number[]} end - Ending coordinates [x, y]
    */
   drawLineBetween (start, end) {
     if (!this.grid) return
@@ -181,6 +191,7 @@ export class ColorPackedRectCanvas {
 
   /**
    * Set the current line tool.
+   * @param {string|null} tool - The tool to set ('segment', 'ray', 'full', or null)
    */
   setTool (tool) {
     this.currentTool = tool
@@ -192,13 +203,16 @@ export class ColorPackedRectCanvas {
 
   /**
    * Create an occupancy grid from the packed grid for morphology operations.
+   * @param {Packed} packed - The packed grid
+   * @returns {Packed} Binary occupancy grid
+   * @private
    */
-  createOccupancyGrid (packed) {
+  _createOccupancyGrid (packed) {
     const occ = new Packed(packed.width, packed.height)
     for (let y = 0; y < packed.height; y++) {
       for (let x = 0; x < packed.width; x++) {
         const color = packed.at(x, y)
-        if (color !== 0) {
+        if (color !== EMPTY_CELL_VALUE) {
           occ.set(x, y, 1)
         }
       }
@@ -208,11 +222,15 @@ export class ColorPackedRectCanvas {
 
   /**
    * Check what changes a morphology operation would make without applying it.
+   * @param {Packed} packed - The packed grid
+   * @param {string} operation - The operation type ('dilate', 'erode', 'cross')
+   * @returns {MorphologyChanges} Object with added and removed bitmasks
+   * @private
    */
-  checkOccupancyMorphologyState (packed, operation) {
-    const occ = this.createOccupancyGrid(packed)
+  _checkOccupancyMorphologyState (packed, operation) {
+    const occ = this._createOccupancyGrid(packed)
     const before = occ.bits
-    this.applyMorphologyToOccupancy(occ, operation)
+    this._applyMorphologyToOccupancy(occ, operation)
     const after = occ.bits
     const added = after & ~before
     const removed = before & ~after
@@ -221,8 +239,11 @@ export class ColorPackedRectCanvas {
 
   /**
    * Apply a morphology operation to an occupancy grid.
+   * @param {Packed} occupancy - The binary occupancy grid
+   * @param {string} operation - The operation type ('dilate', 'erode', 'cross')
+   * @private
    */
-  applyMorphologyToOccupancy (occupancy, operation) {
+  _applyMorphologyToOccupancy (occupancy, operation) {
     if (operation === 'dilate') {
       occupancy.dilate()
     } else if (operation === 'erode') {
@@ -234,69 +255,29 @@ export class ColorPackedRectCanvas {
 
   /**
    * Update packed grid colors based on morphology changes.
+   * @param {Packed} packed - The packed grid to update
+   * @param {number} added - Bitmask of added cells
+   * @param {number} removed - Bitmask of removed cells
+   * @private
    */
-  updatePackedGridFromMorphology (packed, added, removed) {
-    this.colorAddedCells(packed, added)
-    const indexer = packed.indexer || new RectIndex(packed.width, packed.height)
-    const addedCoords = Array.from(indexer.bitsToCoords(added))
-
-    for (const [x, y] of addedCoords) {
-      if (packed.at(x, y) === 0) {
-        let color = 0
-        for (const [nx, ny] of [
-          [x - 1, y],
-          [x + 1, y],
-          [x, y - 1],
-          [x, y + 1]
-        ]) {
-          if (nx >= 0 && nx < packed.width && ny >= 0 && ny < packed.height) {
-            const neighborColor = packed.at(nx, ny)
-            if (neighborColor !== 0) {
-              color = neighborColor
-              break
-            }
-          }
-        }
-        if (color !== 0) {
-          packed.set(x, y, color)
-        }
-      }
-    }
-
-    this.clearRemovedCells(packed, removed)
+  _updatePackedGridFromMorphology (packed, added, removed) {
+    this._colorAddedCells(packed, added)
+    this._clearRemovedCells(packed, removed)
   }
 
   /**
-   * Color newly added cells by finding colors from neighbors.
+   * Color newly added cells by finding colors from neighbors (8-connectivity).
+   * @param {Packed} packed - The packed grid
+   * @param {number} added - Bitmask of added cells
+   * @private
    */
-  colorAddedCells (packed, added) {
+  _colorAddedCells (packed, added) {
     const indexer = packed.indexer || new RectIndex(packed.width, packed.height)
     const addedCoords = Array.from(indexer.bitsToCoords(added))
 
     for (const [x, y] of addedCoords) {
-      let color = 0
-      const neighbors = [
-        [x - 1, y],
-        [x + 1, y],
-        [x, y - 1],
-        [x, y + 1],
-        [x - 1, y - 1],
-        [x - 1, y + 1],
-        [x + 1, y - 1],
-        [x + 1, y + 1]
-      ]
-
-      for (const [nx, ny] of neighbors) {
-        if (nx >= 0 && nx < packed.width && ny >= 0 && ny < packed.height) {
-          const neighborColor = packed.at(nx, ny)
-          if (neighborColor !== 0) {
-            color = neighborColor
-            break
-          }
-        }
-      }
-
-      if (color !== 0) {
+      const color = this._findNeighborColor(packed, x, y)
+      if (color !== EMPTY_CELL_VALUE) {
         packed.set(x, y, color)
       }
     }
@@ -304,13 +285,71 @@ export class ColorPackedRectCanvas {
 
   /**
    * Clear removed cells in packed grid.
+   * @param {Packed} packed - The packed grid
+   * @param {number} removed - Bitmask of removed cells
+   * @private
    */
-  clearRemovedCells (packed, removed) {
+  _clearRemovedCells (packed, removed) {
     const indexer = packed.indexer || new RectIndex(packed.width, packed.height)
     const removedCoords = Array.from(indexer.bitsToCoords(removed))
     removedCoords.forEach(([x, y]) => {
       packed.clear(x, y)
     })
+  }
+
+  /**
+   * Find the color of a neighboring cell (8-connectivity).
+   * @param {Packed} packed - The packed grid
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @returns {number} The color value, or 0 if no colored neighbors
+   * @private
+   */
+  _findNeighborColor (packed, x, y) {
+    const neighbors = this._getNeighborOffsets()
+
+    for (const [nx, ny] of neighbors) {
+      const neighborX = x + nx
+      const neighborY = y + ny
+      if (this._isValidCoordinate(packed, neighborX, neighborY)) {
+        const neighborColor = packed.at(neighborX, neighborY)
+        if (neighborColor !== EMPTY_CELL_VALUE) {
+          return neighborColor
+        }
+      }
+    }
+
+    return EMPTY_CELL_VALUE
+  }
+
+  /**
+   * Get the offsets for neighboring cells (8-connectivity).
+   * @returns {number[][]} Array of [dx, dy] offset pairs
+   * @private
+   */
+  _getNeighborOffsets () {
+    return [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+      [-1, -1],
+      [-1, 1],
+      [1, -1],
+      [1, 1]
+    ]
+  }
+
+  /**
+   * Check if coordinates are valid for the packed grid.
+   * @param {Packed} packed - The packed grid
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @returns {boolean} True if coordinates are valid
+   * @private
+   */
+  _isValidCoordinate (packed, x, y) {
+    return x >= 0 && x < packed.width && y >= 0 && y < packed.height
   }
 
   /**
@@ -320,11 +359,11 @@ export class ColorPackedRectCanvas {
     if (!this.grid) return
 
     const packed = this.grid.packed
-    const { added, removed } = this.checkOccupancyMorphologyState(
+    const { added, removed } = this._checkOccupancyMorphologyState(
       packed,
       operation
     )
-    this.updatePackedGridFromMorphology(packed, added, removed)
+    this._updatePackedGridFromMorphology(packed, added, removed)
 
     this.grid.redraw()
     this.updateButtonStates()

@@ -7,10 +7,41 @@ import { Mask } from '../../grid/rectangle/mask.js'
 import { RectDrawColor } from './rectdrawcolor.js'
 
 /**
+ * Constants for polyomino grid management
+ */
+const GRID_DEPTH = 16 // Supports up to 16 polyomino IDs (0-15)
+const MAX_POLYOMINOES_PER_PAGE = 15 // Maximum polyominoes to display per page
+const EMPTY_CELL_VALUE = 0 // Value for empty cells
+const POLYOMINO_ID_START = 1 // Starting ID for polyominoes
+
+/**
+ * @typedef {Object} PlacedPolyomino
+ * @property {Object} poly - The polyomino object
+ * @property {number} x - X position on grid
+ * @property {number} y - Y position on grid
+ * @property {number} id - Unique ID of the polyomino
+ */
+
+/**
+ * @typedef {Object} PlacementResult
+ * @property {number} placed - Number of polyominoes placed
+ * @property {number} total - Total number of polyominoes available
+ * @property {boolean} allFitted - Whether all polyominoes fit
+ */
+
+/**
  * PolyominoGridManager - Manages polyomino placement, display, and constraints using 4-bit Mask
  * Uses RectDrawColor for rendering
  */
 export class PolyominoGridManager {
+  /**
+   * @param {string} canvasId - ID of the canvas element
+   * @param {number} [width=10] - Grid width in cells
+   * @param {number} [height=10] - Grid height in cells
+   * @param {number} [cellSize=50] - Size of each cell in pixels
+   * @param {number} [offsetX=50] - X offset for drawing
+   * @param {number} [offsetY=50] - Y offset for drawing
+   */
   constructor (
     canvasId,
     width = 10,
@@ -27,12 +58,14 @@ export class PolyominoGridManager {
     this.offsetY = offsetY
 
     // Grid state using depth=16 Mask with 4 bits per cell (supports polyomino IDs 0-15)
-    this.gridMask = new Mask(width, height, null, null, 16)
+    this.gridMask = new Mask(width, height, null, null, GRID_DEPTH)
 
     // RectDrawColor for rendering (4-bit to display polyomino colors)
     this.rectDrawColor = null
 
+    /** @type {PlacedPolyomino[]} */
     this.polyominoes = [] // Placed polyominoes
+    /** @type {Object[]} */
     this.availablePolyominoes = [] // All available polyominoes from generator
 
     // Settings
@@ -48,7 +81,7 @@ export class PolyominoGridManager {
     this.lastLastPlacedIndex = -1
 
     // Polyomino ID counter (1-based, 0 = empty)
-    this.nextPolyId = 1
+    this.nextPolyId = POLYOMINO_ID_START
 
     // Color palette for rendering polyominoes
     this.polyominoColors = [
@@ -73,6 +106,10 @@ export class PolyominoGridManager {
     this.initialize()
   }
 
+  /**
+   * Initialize the renderer
+   * @private
+   */
   initialize () {
     try {
       this.rectDrawColor = new RectDrawColor(
@@ -82,7 +119,7 @@ export class PolyominoGridManager {
         this.cellSize,
         this.offsetX,
         this.offsetY,
-        16 // depth=16 gives 4 bits per cell for 16-color rendering (polyomino IDs 1-15)
+        GRID_DEPTH // depth=16 gives 4 bits per cell for 16-color rendering (polyomino IDs 1-15)
       )
     } catch (err) {
       // Canvas not available in test environment
@@ -91,6 +128,7 @@ export class PolyominoGridManager {
 
   /**
    * Load polyominoes from generator based on current settings
+   * @returns {Object[]} Array of available polyominoes
    */
   loadPolyominoes () {
     const generator =
@@ -107,6 +145,11 @@ export class PolyominoGridManager {
   /**
    * Check if a polyomino can be placed at the given position
    * Respects 8-connectivity constraint (no polyominoes touching)
+   * @param {Object} poly - The polyomino to place
+   * @param {number} startX - Starting X position
+   * @param {number} startY - Starting Y position
+   * @param {number} [excludeId=-1] - Polyomino ID to exclude from adjacency check
+   * @returns {boolean} True if placement is valid
    */
   canPlacePolyomino (poly, startX, startY, excludeId = -1) {
     // Check bounds
@@ -121,14 +164,14 @@ export class PolyominoGridManager {
 
     const toCheck = new Set()
 
-    // First pass: check if cells are empty
+    // First pass: check if cells are empty and collect neighbors
     for (const [x, y] of poly.allXYlocations()) {
       if (poly.at(x, y)) {
         const gridX = startX + x
         const gridY = startY + y
 
         // Check if cell is empty in gridMask
-        if (this.gridMask.at(gridX, gridY) !== 0) {
+        if (this.gridMask.at(gridX, gridY) !== EMPTY_CELL_VALUE) {
           return false
         }
 
@@ -148,7 +191,7 @@ export class PolyominoGridManager {
       const y = Math.floor(idx / this.width)
       const x = idx % this.width
       const cellValue = this.gridMask.at(x, y)
-      if (cellValue !== 0 && cellValue !== excludeId) {
+      if (cellValue !== EMPTY_CELL_VALUE && cellValue !== excludeId) {
         return false
       }
     }
@@ -158,6 +201,11 @@ export class PolyominoGridManager {
 
   /**
    * Place a polyomino on the grid
+   * @param {Object} poly - The polyomino to place
+   * @param {number} startX - Starting X position
+   * @param {number} startY - Starting Y position
+   * @param {number} polyId - Unique ID for the polyomino
+   * @returns {boolean} True if placement was successful
    */
   placePolyomino (poly, startX, startY, polyId) {
     if (!this.canPlacePolyomino(poly, startX, startY, polyId)) {
@@ -191,14 +239,15 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Remove a polyomino by id
+   * Remove a polyomino by ID
+   * @param {number} polyId - ID of the polyomino to remove
    */
   removePolyomino (polyId) {
     for (const [x, y] of this.gridMask.allXYlocations()) {
       if (this.gridMask.at(x, y) === polyId) {
         this.gridMask.clear(x, y)
         if (this.rectDrawColor) {
-          this.rectDrawColor.setColorValue(x, y, 0)
+          this.rectDrawColor.setColorValue(x, y, EMPTY_CELL_VALUE)
         }
       }
     }
@@ -206,33 +255,45 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Try to fill the grid with polyominoes greedily
+   * Clear the entire grid and reset state
+   * @private
    */
-  fillGrid () {
-    // Clear grid
-    this.gridMask = new Mask(this.width, this.height, null, null, 16)
+  _clearGrid () {
+    this.gridMask = new Mask(this.width, this.height, null, null, GRID_DEPTH)
     if (this.rectDrawColor) {
       this.rectDrawColor.clear()
     }
     this.polyominoes = []
-    this.nextPolyId = 1
-    this.lastFirstPlacedIndex = 1
-    this.lastLastPlacedIndex = 1
-    const polyominoes = this.loadPolyominoes()
-    if (polyominoes.length === 0) return
+    this.nextPolyId = POLYOMINO_ID_START
+  }
 
+  /**
+   * Attempt to place polyominoes greedily from the given list
+   * @param {Object[]} polyominoes - List of polyominoes to place
+   * @param {number} [maxToPlace=MAX_POLYOMINOES_PER_PAGE] - Maximum number to place
+   * @returns {Object} Placement statistics
+   * @private
+   */
+  _placePolyominoesGreedily (
+    polyominoes,
+    maxToPlace = MAX_POLYOMINOES_PER_PAGE
+  ) {
     let placedCount = 0
+    let firstPlacedIndex = -1
+    let lastPlacedIndex = -1
 
-    // Try to place each polyomino
-    for (const poly of polyominoes) {
+    for (const [i, poly] of polyominoes.entries()) {
+      if (this.nextPolyId > maxToPlace) break
+
       let placed = false
-
       // Try all positions
       for (const [x, y] of this.gridMask.allXYlocations()) {
         if (this.canPlacePolyomino(poly, x, y, this.nextPolyId)) {
           this.placePolyomino(poly, x, y, this.nextPolyId)
           this.nextPolyId++
           placedCount++
+          if (firstPlacedIndex === -1) firstPlacedIndex = i
+          lastPlacedIndex = i
           placed = true
           break
         }
@@ -244,14 +305,34 @@ export class PolyominoGridManager {
       }
     }
 
+    return { placedCount, firstPlacedIndex, lastPlacedIndex }
+  }
+
+  /**
+   * Try to fill the grid with polyominoes greedily
+   * @returns {PlacementResult} Result of the placement operation
+   */
+  fillGrid () {
+    this._clearGrid()
+    this.lastFirstPlacedIndex = POLYOMINO_ID_START
+    this.lastLastPlacedIndex = POLYOMINO_ID_START
+    const polyominoes = this.loadPolyominoes()
+    if (polyominoes.length === 0)
+      return { placed: 0, total: 0, allFitted: true }
+
+    const { placedCount } = this._placePolyominoesGreedily(
+      polyominoes,
+      GRID_DEPTH - 1
+    ) // Leave room for empty
+
     this.lastLastPlacedIndex = this.nextPolyId - 1
     if (this.rectDrawColor) {
       this.rectDrawColor.redraw()
     }
 
     this.displayMode = 'fill'
-    this.updateInfoDisplay(placedCount, polyominoes.length)
-    this.updatePaginationButtons()
+    this._updateDisplayForFill(placedCount, polyominoes.length)
+    this._updatePaginationButtons()
 
     return {
       placed: placedCount,
@@ -262,6 +343,8 @@ export class PolyominoGridManager {
 
   /**
    * Show a single polyomino at the specified index
+   * @param {number} index - Index of the polyomino to show
+   * @returns {boolean} True if the polyomino was placed successfully
    */
   showPolyomino (index) {
     if (!this.rectDrawColor) {
@@ -281,26 +364,23 @@ export class PolyominoGridManager {
     this.currentPolyominoIndex = index
     this.displayMode = 'single'
 
-    // Clear grid
-    this.gridMask = new Mask(this.width, this.height, null, null, 16)
-    this.rectDrawColor.clear()
-    this.polyominoes = []
-    this.nextPolyId = 1
+    this._clearGrid()
 
     const poly = this.availablePolyominoes[index]
-    const placed = this.placePolyomino(poly, 0, 0, 1)
+    const placed = this.placePolyomino(poly, 0, 0, POLYOMINO_ID_START)
 
     if (this.rectDrawColor) {
       this.rectDrawColor.redraw()
     }
-    this.updatePolyominoIndexDisplay(index, this.availablePolyominoes.length)
-    this.updatePaginationButtons()
+    this._updateDisplayForSingle(index, this.availablePolyominoes.length)
+    this._updatePaginationButtons()
 
     return placed
   }
 
   /**
    * Show next polyomino - starts at 1 + previous end, wraps to beginning
+   * @returns {boolean} True if any polyominoes were placed
    */
   nextPolyomino () {
     if (this.availablePolyominoes.length === 0) {
@@ -317,11 +397,12 @@ export class PolyominoGridManager {
       nextIndex =
         (this.lastLastPlacedIndex + 1) % this.availablePolyominoes.length
     }
-    return this.fillGridWithPolyominoes(nextIndex)
+    return this._fillGridWithPolyominoesFromIndex(nextIndex)
   }
 
   /**
    * Show previous polyomino - goes back before first displayed
+   * @returns {boolean} True if any polyominoes were placed
    */
   prevPolyomino () {
     if (this.availablePolyominoes.length === 0) {
@@ -343,23 +424,22 @@ export class PolyominoGridManager {
         (newEndIndex - displayedCount + 1 + this.availablePolyominoes.length) %
         this.availablePolyominoes.length
     }
-    return this.fillGridWithPolyominoes(prevIndex)
+    return this._fillGridWithPolyominoesFromIndex(prevIndex)
   }
 
   /**
    * Fill grid with polyominoes starting from a specific index
-   * Places as many polyominoes as possible, up to 15 total
+   * Places as many polyominoes as possible, up to MAX_POLYOMINOES_PER_PAGE total
+   * @param {number} startIndex - Index to start placing from
+   * @returns {boolean} True if any polyominoes were placed
+   * @private
    */
-  fillGridWithPolyominoes (startIndex) {
+  _fillGridWithPolyominoesFromIndex (startIndex) {
     if (!this.rectDrawColor) {
       return false
     }
 
-    // Clear grid
-    this.gridMask = new Mask(this.width, this.height, null, null, 16)
-    this.rectDrawColor.clear()
-    this.polyominoes = []
-    this.nextPolyId = 1
+    this._clearGrid()
     this.currentPolyominoIndex = startIndex
 
     const polyominoes = this.availablePolyominoes
@@ -367,40 +447,14 @@ export class PolyominoGridManager {
       return false
     }
 
-    let placedCount = 0
-    let firstPlacedIndex = -1
-    let lastPlacedIndex = -1
-    const maxPolyominoes = 15 // Less than 16 (max 15)
+    // Create a rotated list starting from startIndex
+    const rotatedPolyominoes = [
+      ...polyominoes.slice(startIndex),
+      ...polyominoes.slice(0, startIndex)
+    ]
 
-    // Try to place polyominoes starting from startIndex
-    for (
-      let i = 0;
-      i < polyominoes.length && this.nextPolyId <= maxPolyominoes;
-      i++
-    ) {
-      const polyIndex = (startIndex + i) % polyominoes.length
-      const poly = polyominoes[polyIndex]
-      let placed = false
-
-      // Try all positions
-      for (let y = 0; y < this.height && !placed; y++) {
-        for (let x = 0; x < this.width && !placed; x++) {
-          if (this.canPlacePolyomino(poly, x, y, this.nextPolyId)) {
-            this.placePolyomino(poly, x, y, this.nextPolyId)
-            this.nextPolyId++
-            placedCount++
-            if (firstPlacedIndex === -1) firstPlacedIndex = polyIndex
-            lastPlacedIndex = polyIndex
-            placed = true
-          }
-        }
-      }
-
-      if (!placed && this.nextPolyId > maxPolyominoes) {
-        // Reached max polyominoes, stop trying
-        break
-      }
-    }
+    const { placedCount, firstPlacedIndex, lastPlacedIndex } =
+      this._placePolyominoesGreedily(rotatedPolyominoes)
 
     if (this.rectDrawColor) {
       this.rectDrawColor.redraw()
@@ -409,16 +463,22 @@ export class PolyominoGridManager {
     this.displayMode = 'fill'
     // Store the range for next/prev pagination
     // End index = start + count - 1 (ensures start + count = end + 1)
-    this.lastFirstPlacedIndex = firstPlacedIndex === -1 ? 0 : firstPlacedIndex
-    const endIndex =
-      firstPlacedIndex === -1 ? 0 : firstPlacedIndex + placedCount - 1
-    this.lastLastPlacedIndex = endIndex
-    this.updatePolyominoRangeDisplay(
-      firstPlacedIndex,
-      endIndex,
+    const actualFirstIndex =
+      firstPlacedIndex === -1
+        ? 0
+        : (startIndex + firstPlacedIndex) % polyominoes.length
+    this.lastFirstPlacedIndex = actualFirstIndex
+    const actualLastIndex =
+      firstPlacedIndex === -1
+        ? 0
+        : (startIndex + lastPlacedIndex) % polyominoes.length
+    this.lastLastPlacedIndex = actualLastIndex
+    this._updateDisplayForRange(
+      actualFirstIndex,
+      actualLastIndex,
       polyominoes.length
     )
-    this.updatePaginationButtons()
+    this._updatePaginationButtons()
 
     return placedCount > 0
   }
@@ -426,8 +486,12 @@ export class PolyominoGridManager {
   /**
    * Update the polyomino info display with range
    * Shows polyominoes [start+1]-[end+1] of [total]
+   * @param {number} startIndex - Starting index (0-based)
+   * @param {number} endIndex - Ending index (0-based)
+   * @param {number} total - Total number of polyominoes
+   * @private
    */
-  updatePolyominoRangeDisplay (startIndex, endIndex, total) {
+  _updateDisplayForRange (startIndex, endIndex, total) {
     try {
       const moreDiv = document.getElementById('rect-poly-more')
       if (moreDiv && moreDiv.style) {
@@ -447,9 +511,12 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Update the polyomino info display (legacy method for fillGrid)
+   * Update the polyomino info display for fill mode
+   * @param {number} placed - Number placed
+   * @param {number} total - Total available
+   * @private
    */
-  updateInfoDisplay (placed, total) {
+  _updateDisplayForFill (placed, total) {
     try {
       const moreDiv = document.getElementById('rect-poly-more')
       if (moreDiv && moreDiv.style) {
@@ -468,8 +535,11 @@ export class PolyominoGridManager {
 
   /**
    * Update display when showing a single polyomino
+   * @param {number} index - Index of the polyomino
+   * @param {number} total - Total number of polyominoes
+   * @private
    */
-  updatePolyominoIndexDisplay (index, total) {
+  _updateDisplayForSingle (index, total) {
     try {
       const moreDiv = document.getElementById('rect-poly-more')
       if (!moreDiv?.style) return
@@ -484,19 +554,22 @@ export class PolyominoGridManager {
 
   /**
    * Check if pagination is needed (i.e., not all polyominoes fit in one page)
+   * @returns {boolean} True if pagination is needed
+   * @private
    */
-  isPaginationNeeded () {
-    return this.availablePolyominoes.length > 15
+  _isPaginationNeeded () {
+    return this.availablePolyominoes.length > MAX_POLYOMINOES_PER_PAGE
   }
 
   /**
    * Update pagination button states based on whether pagination is needed
+   * @private
    */
-  updatePaginationButtons () {
+  _updatePaginationButtons () {
     try {
       const nextButton = document.getElementById('next-poly-grid')
       const prevButton = document.getElementById('prev-poly-grid')
-      const needed = this.isPaginationNeeded()
+      const needed = this._isPaginationNeeded()
 
       if (nextButton) {
         nextButton.disabled = !needed

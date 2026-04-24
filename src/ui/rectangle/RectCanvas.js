@@ -38,7 +38,7 @@ export class RectCanvas extends GridCanvas {
     if (this.currentAction === 'set') {
       mask.set(x, y, 1)
     } else if (this.currentAction === 'clear') {
-      mask.set(x, y, 0)
+      mask.clear(x, y)
     } else if (this.currentAction === 'toggle') {
       const current = mask.at(x, y)
       mask.set(x, y, current ? 0 : 1)

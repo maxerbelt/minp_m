@@ -22,6 +22,19 @@ const COVER_TYPES = {
   SUPER: 'super'
 }
 
+const PREVIEW_STYLE = {
+  FILL: '#FF9800',
+  STROKE: '#333'
+}
+
+const HOVER_VERTICAL_OFFSET = 0.3
+
+const TOOL_METHOD_SUFFIX = {
+  [TOOL_TYPES.SEGMENT]: 'segmentTo',
+  [TOOL_TYPES.RAY]: 'ray',
+  [TOOL_TYPES.FULL]: 'fullLine'
+}
+
 /**
  * Triangular grid canvas UI controller
  * Manages UI and interactions for triangular grids
@@ -34,34 +47,28 @@ export class TriCanvas extends GridCanvas {
     this.flipButtons = []
     this.flipButtonsContainer = null
 
-    // Setup cell overrides
     this._overrideGridToggleCellBehavior()
     this._overrideGridHoverPreview()
   }
 
   /**
    * Set the current line drawing tool.
-   * @param {string|null} tool - Tool type: 'segment', 'ray', 'full', or null for single cell mode.
+   * @param {string|null} tool - Tool type or null for single cell mode.
    */
   setTool (tool) {
     this.currentTool = tool
     this.lineStart = null
-    if (this.grid) {
-      this.grid.previewCells = []
-      if (typeof this.grid.redraw === 'function') {
-        this.grid.redraw()
-      }
-    }
+    this._clearPreview()
+    this._redrawGridIfAvailable()
   }
 
   /**
-   * Apply action (set/clear/toggle) to a single bit value.
-   * @param {number} idx - Index of bit.
-   * @param {number} val - Current bit value (0 or 1).
-   * @returns {number} New bit value after action.
+   * Apply the current action to a bit.
+   * @param {number} val - Current bit value.
+   * @returns {number} Resulting bit value.
    * @private
    */
-  _applyActionToBit (idx, val) {
+  _applyActionToBit (val) {
     if (this.currentAction === ACTIONS.SET) return 1
     if (this.currentAction === ACTIONS.CLEAR) return 0
     if (this.currentAction === ACTIONS.TOGGLE) return val ? 0 : 1
@@ -69,9 +76,9 @@ export class TriCanvas extends GridCanvas {
   }
 
   /**
-   * Get current bit value at index.
-   * @param {Object} mask - Mask object with bits.
-   * @param {number} idx - Index.
+   * Get the bit value stored in a mask at a given index.
+   * @param {Object} mask - Mask object containing bit state.
+   * @param {number} idx - Index to read.
    * @returns {number} Bit value (0 or 1).
    * @private
    */
@@ -83,21 +90,31 @@ export class TriCanvas extends GridCanvas {
   }
 
   /**
-   * Apply action to multiple indices and update mask.
-   * @param {Object} mask - Mask to update.
-   * @param {Array} indices - Indices to update.
+   * Set a bit in a mask, preserving mask storage semantics.
+   * @param {Object} mask - Mask object to update.
+   * @param {number} idx - Bit index to set.
+   * @param {number} value - New bit value.
+   * @private
+   */
+  _setMaskBit (mask, idx, value) {
+    mask.bits = mask.setIndex(idx, value)
+  }
+
+  /**
+   * Apply current action to a list of indices.
+   * @param {Object} mask - Mask object to update.
+   * @param {number[]} indices - Indices to modify.
    * @private
    */
   _applyActionToIndices (mask, indices) {
     for (const idx of indices) {
-      const val = this._getBitValue(mask, idx)
-      const newVal = this._applyActionToBit(idx, val)
-      mask.bits = mask.setIndex(idx, newVal)
+      const value = this._getBitValue(mask, idx)
+      this._setMaskBit(mask, idx, this._applyActionToBit(value))
     }
   }
 
   /**
-   * Override grid toggle cell to respect action value.
+   * Override grid toggle behavior so toggle respects current action.
    * @private
    */
   _overrideGridToggleCellBehavior () {
@@ -107,45 +124,71 @@ export class TriCanvas extends GridCanvas {
       if (idx == null || this.currentTool) return
       this._applyActionToIndices(this.grid.mask, [idx])
       this.grid.setBits(this.grid.mask.bits)
-      if (typeof this.grid.redraw === 'function') this.grid.redraw()
+      this._redrawGridIfAvailable()
       this.updateButtonStates()
     }
   }
 
   /**
-   * Override hover drawing to show line preview in orange.
+   * Override hover rendering to draw temporary line preview cells.
    * @private
    */
   _overrideGridHoverPreview () {
-    if (!this.grid || !this.grid._drawHover) return
-    if (this.grid._drawHover._isOverridden) return
+    if (
+      !this.grid ||
+      !this.grid._drawHover ||
+      this.grid._drawHover._isOverridden
+    )
+      return
 
-    const origDrawHover = this.grid._drawHover.bind(this.grid)
+    const originalDrawHover = this.grid._drawHover.bind(this.grid)
     this.grid._drawHover = function () {
       if (this.previewCells?.length) {
-        for (const i of this.previewCells) {
-          const [r, c] = this.indexer.location(i)
+        for (const index of this.previewCells) {
+          const [r, c] = this.indexer.location(index)
           const { x, y } = triToPixel(r, c, this.triSize)
-          const orient = c % 2 === 0 ? 'up' : 'down'
-          const yoff = orient === 'down' ? y - this.triHeight * 0.3 : y
+          const orientation = c % 2 === 0 ? 'up' : 'down'
+          const yOffset =
+            orientation === 'down'
+              ? y - this.triHeight * HOVER_VERTICAL_OFFSET
+              : y
           drawTri(
             this.ctx,
             x + this.offsetX,
-            yoff + this.offsetY,
+            yOffset + this.offsetY,
             this.triSize,
-            '#FF9800',
-            '#333',
-            orient
+            PREVIEW_STYLE.FILL,
+            PREVIEW_STYLE.STROKE,
+            orientation
           )
         }
       }
-      origDrawHover()
+      originalDrawHover()
     }
     this.grid._drawHover._isOverridden = true
   }
 
   /**
-   * Sync mask with draw and get current actions
+   * Clear the current preview state.
+   * @private
+   */
+  _clearPreview () {
+    if (this.grid) this.grid.previewCells = []
+  }
+
+  /**
+   * Redraw the underlying grid if possible.
+   * @private
+   */
+  _redrawGridIfAvailable () {
+    if (this.grid && typeof this.grid.redraw === 'function') {
+      this.grid.redraw()
+    }
+  }
+
+  /**
+   * Sync the grid mask with the active drawing bits and return actions.
+   * @returns {Object|undefined} Current action set.
    */
   syncMaskWithDraw () {
     this.grid.mask.bits = this.grid.bits
@@ -153,24 +196,25 @@ export class TriCanvas extends GridCanvas {
   }
 
   /**
-   * Get current actions
+   * Get the current action metadata from the active grid.
+   * @returns {Object|undefined}
    */
   getCurrentActions () {
     return this.grid?.mask?.actions
   }
 
   /**
-   * Get hit test result from canvas event (convert pixel to tri coords then to index)
+   * Convert a mouse event to a triangle index.
+   * @param {MouseEvent} event - Mouse event from the canvas.
+   * @returns {number|null} Triangle index or null.
    */
-  hitTest (e) {
+  hitTest (event) {
     if (!this.grid) return null
 
-    const rect = this.grid.canvas.getBoundingClientRect()
-    const px = e.clientX - rect.left
-    const py = e.clientY - rect.top
+    const { x, y } = this._getCanvasRelativePoint(event)
     const [r, c] = pixelToTri(
-      px - this.grid.offsetX,
-      py - this.grid.offsetY,
+      x - this.grid.offsetX,
+      y - this.grid.offsetY,
       this.grid.triSize
     )
 
@@ -179,7 +223,21 @@ export class TriCanvas extends GridCanvas {
   }
 
   /**
-   * Get line coordinates using tool-specific method.
+   * Get canvas-relative coordinates from a mouse event.
+   * @param {MouseEvent} event - Canvas mouse event.
+   * @returns {{x:number,y:number}}
+   * @private
+   */
+  _getCanvasRelativePoint (event) {
+    const rect = this.grid.canvas.getBoundingClientRect()
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    }
+  }
+
+  /**
+   * Get line coordinates using the active tool and cover type.
    * @param {number} sr - Start row.
    * @param {number} sc - Start column.
    * @param {number} er - End row.
@@ -188,13 +246,28 @@ export class TriCanvas extends GridCanvas {
    * @private
    */
   _getLineCoordinates (sr, sc, er, ec) {
-    const indexer = this.grid.indexer
-    const coverType = this.coverType || COVER_TYPES.NORMAL
-    let coords = []
+    if (!this.currentTool) return []
 
+    const indexer = this.grid.indexer
     const toolKey =
       this.currentTool.charAt(0).toUpperCase() + this.currentTool.slice(1)
-    let methodName = toolKey.toLowerCase()
+    const methodBase = TOOL_METHOD_SUFFIX[this.currentTool] || this.currentTool
+    const methodName = this._buildIndexedMethodName(toolKey, methodBase)
+
+    if (typeof indexer[methodName] !== 'function') return []
+    return Array.from(indexer[methodName](sr, sc, er, ec))
+  }
+
+  /**
+   * Build the indexer method name based on cover type and tool.
+   * @param {string} toolKey - Capitalized tool name.
+   * @param {string} methodBase - Base tool method name.
+   * @returns {string} Indexer method name.
+   * @private
+   */
+  _buildIndexedMethodName (toolKey, methodBase) {
+    const coverType = this.coverType || COVER_TYPES.NORMAL
+    let methodName = methodBase
 
     if (coverType === COVER_TYPES.HALF) {
       methodName = 'halfCover' + toolKey
@@ -208,17 +281,14 @@ export class TriCanvas extends GridCanvas {
       methodName = methodName.replace('full', 'fullLine')
     }
 
-    if (typeof indexer[methodName] === 'function') {
-      coords = Array.from(indexer[methodName](sr, sc, er, ec))
-    }
-    return coords
+    return methodName
   }
 
   /**
-   * Compute preview indices for line drawing.
+   * Convert coordinates to a valid index list for preview.
    * @param {number} startIdx - Start index.
    * @param {number} endIdx - End index.
-   * @returns {Array} Indices along the line.
+   * @returns {number[]} List of indices for preview.
    */
   computePreviewIndices (startIdx, endIdx) {
     if (startIdx == null || endIdx == null || !this.currentTool) return []
@@ -228,41 +298,44 @@ export class TriCanvas extends GridCanvas {
     const [er, ec] = indexer.location(endIdx)
     const coords = this._getLineCoordinates(sr, sc, er, ec)
 
-    const indices = []
-    for (const [r, c] of coords) {
-      const i = indexer.index(r, c)
-      if (i !== undefined) indices.push(i)
-    }
-    return indices
+    return coords
+      .map(([r, c]) => indexer.index(r, c))
+      .filter(index => index !== undefined)
   }
 
   /**
-   * Update line preview on canvas.
+   * Update line preview on the canvas.
+   * @param {number} start - Start index.
+   * @param {number} end - End index.
    */
   updateLinePreview (start, end) {
     if (!this.grid || !this.currentTool) return
     this.grid.previewCells = this.computePreviewIndices(start, end)
-    this.grid.redraw()
+    this._redrawGridIfAvailable()
   }
 
   /**
-   * Apply line action to all cells in line.
+   * Apply line action to the previewed indices.
+   * @param {number} start - Start index.
+   * @param {number} end - End index.
    */
   completeLine (start, end) {
     if (!this.grid) return
     const indices = this.computePreviewIndices(start, end)
     this._applyActionToIndices(this.grid.mask, indices)
     this.grid.setBits(this.grid.mask.bits)
-    if (typeof this.grid.redraw === 'function') this.grid.redraw()
+    this._redrawGridIfAvailable()
     this.updateButtonStates()
   }
 
   /**
-   * Handle canvas click.
+   * Handle a canvas click event.
+   * @param {MouseEvent} event - Click event.
    */
-  onCanvasClick (e) {
+  onCanvasClick (event) {
     if (!this.grid || !this.currentTool) return
-    const hit = this.hitTest(e)
+
+    const hit = this.hitTest(event)
     if (hit == null) return
 
     if (this.lineStart == null) {
@@ -270,27 +343,26 @@ export class TriCanvas extends GridCanvas {
     } else {
       this.completeLine(this.lineStart, hit)
       this.lineStart = null
-      this.grid.previewCells = []
-      this.grid.redraw()
+      this._clearPreview()
+      this._redrawGridIfAvailable()
       this.updateButtonStates()
     }
   }
 
   /**
-   * Update hover info with triangle coordinates and neighbor count
+   * Update hover information for the current mouse position.
+   * @param {MouseEvent} event - Mouse event.
    */
-  updateHoverInfo (e) {
+  updateHoverInfo (event) {
     if (!this.grid) return
 
     const hoverLabel = document.getElementById('tri-hover-info')
     if (!hoverLabel) return
 
-    const rect = this.grid.canvas.getBoundingClientRect()
-    const px = e.clientX - rect.left
-    const py = e.clientY - rect.top
+    const { x, y } = this._getCanvasRelativePoint(event)
     const [r, c] = pixelToTri(
-      px - this.grid.offsetX,
-      py - this.grid.offsetY,
+      x - this.grid.offsetX,
+      y - this.grid.offsetY,
       this.grid.triSize
     )
 
@@ -309,54 +381,92 @@ export class TriCanvas extends GridCanvas {
   }
 
   /**
-   * Compute transformed bits using store/indexer pattern
+   * Compute transformed bits applying the selected map to the current mask.
+   * @param {Array|Object} map - Transform map.
+   * @param {Object} [actions] - Optional action metadata.
+   * @returns {*} Transformed bits.
    */
   computeTransformedBits (map, actions) {
     if (!map) return this.grid.bits
 
     actions = actions || this.getCurrentActions()
     const mask = this.grid.mask
-    const store = actions.store || mask.store
-    const indexer = actions.indexer || mask.indexer
+    const { store, indexer } = this._getActionContext(actions, mask)
 
     if (store && indexer) {
-      let transformedBits = store.empty
-      for (const i of indexer.bitsIndices(mask.bits)) {
-        transformedBits = store.addBit(transformedBits, map[i])
-      }
-      return transformedBits
+      return this._computeBitsFromMap(store, indexer, map, mask.bits)
     }
 
     try {
       return actions.applyMap(map)
-    } catch (e) {
-      console.warn('Error applying map:', e)
+    } catch (error) {
+      console.warn('Error applying map:', error)
       return mask.bits
     }
   }
 
   /**
-   * Check if morphology operation would change mask.
-   * @param {string} op - Operation type (dilate, erode, cross).
-   * @returns {boolean} True if operation would have effect.
+   * Resolve store and indexer from action metadata.
+   * @param {Object} actions - Action metadata.
+   * @param {Object} mask - Mask object.
+   * @returns {{store:Object,indexer:Object}}
+   * @private
+   */
+  _getActionContext (actions, mask) {
+    return {
+      store: actions.store || mask.store,
+      indexer: actions.indexer || mask.indexer
+    }
+  }
+
+  /**
+   * Apply a map to each bit index and return the resulting bits.
+   * @param {Object} store - Store object.
+   * @param {Object} indexer - Indexer object.
+   * @param {Array} map - Transform map.
+   * @param {*} currentBits - Current bit state.
+   * @returns {*} Transformed bit state.
+   * @private
+   */
+  _computeBitsFromMap (store, indexer, map, currentBits) {
+    let transformedBits = store.empty
+    for (const index of indexer.bitsIndices(currentBits)) {
+      transformedBits = store.addBit(transformedBits, map[index])
+    }
+    return transformedBits
+  }
+
+  /**
+   * Check whether a morphology operation would change the mask.
+   * @param {string} op - Operation name ('dilate', 'erode', 'cross').
+   * @returns {boolean}
    * @private
    */
   _canApplyMorphology (op) {
     const mask = this.grid.mask
-    const original = mask.bits
-    const test = Object.assign(Object.create(Object.getPrototypeOf(mask)), mask)
-    test.bits = original
+    const test = this._cloneMask(mask)
+    test.bits = mask.bits
 
     if (op === 'dilate') test.dilate()
     else if (op === 'erode') test.erode()
     else if (op === 'cross') test.dilateCross()
 
-    return test.bits !== original
+    return test.bits !== mask.bits
   }
 
   /**
-   * Get morphology operation capabilities.
-   * @returns {Object} Object with canDilate, canErode, canCross flags.
+   * Clone an existing mask object for a dry-run operation.
+   * @param {Object} mask - Mask object to clone.
+   * @returns {Object} Shallow clone of the mask.
+   * @private
+   */
+  _cloneMask (mask) {
+    return Object.assign(Object.create(Object.getPrototypeOf(mask)), mask)
+  }
+
+  /**
+   * Get morphology button enable state.
+   * @returns {{canDilate:boolean,canErode:boolean,canCross:boolean}}
    * @private
    */
   _getMorphologyCapabilities () {
@@ -368,33 +478,46 @@ export class TriCanvas extends GridCanvas {
   }
 
   /**
-   * Update rotate button state.
-   * @param {Array} maps - Transform maps.
+   * Update rotate button disabled state.
+   * @param {Object} maps - Transform maps.
+   * @param {Object} actions - Action metadata.
    * @private
    */
   _updateRotateButton (maps, actions) {
     if (!this.rotateBtn) return
-    const rmap = maps?.r120 || maps?.[1]
-    this.rotateBtn.disabled =
-      !rmap || this.computeTransformedBits(rmap, actions) === this.grid.bits
+    const rotateMap = maps?.r120 || maps?.[1]
+    this.rotateBtn.disabled = this._shouldDisableTransformButton(
+      rotateMap,
+      actions
+    )
   }
 
   /**
-   * Update flip buttons state.
-   * @param {Array} maps - Transform maps.
-   * @param {Array} actions - Current actions.
+   * Update flip buttons disabled state.
+   * @param {Object} maps - Transform maps.
+   * @param {Object} actions - Action metadata.
    * @private
    */
   _updateFlipButtons (maps, actions) {
     this.flipButtons.forEach(btn => {
       const map = maps?.[btn.dataset.map]
-      btn.disabled =
-        !map || this.computeTransformedBits(map, actions) === this.grid.bits
+      btn.disabled = this._shouldDisableTransformButton(map, actions)
     })
   }
 
   /**
-   * Update morphology buttons state.
+   * Determine whether a transform button should be disabled.
+   * @param {Array|Object} map - Transform map.
+   * @param {Object} actions - Action metadata.
+   * @returns {boolean}
+   * @private
+   */
+  _shouldDisableTransformButton (map, actions) {
+    return !map || this.computeTransformedBits(map, actions) === this.grid.bits
+  }
+
+  /**
+   * Update morphology button state.
    * @private
    */
   _updateMorphologyButtons () {

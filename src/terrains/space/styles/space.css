@@ -20,6 +20,9 @@
     --launch4-cursor-image: url('../images/launch32_4.png');
 }
 
+.explosion.space {
+    background-image: var(--space-explode-image);
+}
 
 .explosion.asteroid {
     background-image: var(--asteroid-explode-image);

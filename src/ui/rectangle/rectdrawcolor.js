@@ -6,6 +6,55 @@ import { RectDraw } from './rectdraw.js'
  * Uses this.mask from parent class to store color values
  */
 export class RectDrawColor extends RectDraw {
+  // ============================================================================
+  // Constants
+  // ============================================================================
+
+  /** Supported depth values */
+  static get SUPPORTED_DEPTHS () {
+    return [2, 4, 16, 256]
+  }
+
+  /** RGB color cube step size for 256-color palette */
+  static get RGB_CUBE_STEP () {
+    return 51
+  }
+
+  /** Grayscale step size for 256-color palette */
+  static get GRAYSCALE_STEP () {
+    return 6
+  }
+
+  /** Maximum RGB component value */
+  static get MAX_RGB_VALUE () {
+    return 255
+  }
+
+  /** Hex color prefix */
+  static get HEX_PREFIX () {
+    return '#'
+  }
+
+  /** Hex color component length */
+  static get HEX_COMPONENT_LENGTH () {
+    return 2
+  }
+
+  /** Minimum color value */
+  static get MIN_COLOR_VALUE () {
+    return 0
+  }
+
+  /**
+   * Create a new RectDrawColor instance
+   * @param {string} canvasId - ID of the canvas element
+   * @param {number} [width=10] - Grid width in cells
+   * @param {number} [height=10] - Grid height in cells
+   * @param {number} [cellSize=25] - Size of each cell in pixels
+   * @param {number} [offsetX=0] - X offset for drawing
+   * @param {number} [offsetY=0] - Y offset for drawing
+   * @param {number} [depth=2] - Color depth (2, 4, 16, or 256 colors)
+   */
   constructor (
     canvasId,
     width = 10,
@@ -24,8 +73,9 @@ export class RectDrawColor extends RectDraw {
   }
 
   /**
-   * Convert depth value to bits per cell
-   * 2→1bit, 4→2bits, 16→4bits, 256→8bits
+   * Convert color depth to bits per cell
+   * @param {number} depth - Color depth (2, 4, 16, or 256)
+   * @returns {number} Bits per cell
    * @private
    */
   _depthToBitsPerCell (depth) {
@@ -40,13 +90,17 @@ export class RectDrawColor extends RectDraw {
         return 8
       default:
         throw new Error(
-          `Unsupported depth: ${depth}. Must be 2, 4, 16, or 256`
+          `Unsupported depth: ${depth}. Supported depths: ${RectDrawColor.SUPPORTED_DEPTHS.join(
+            ', '
+          )}`
         )
     }
   }
 
   /**
-   * Build color palette based on bitsPerCell
+   * Build color palette based on bits per cell
+   * @param {number} bitsPerCell - Bits per cell (1, 2, 4, or 8)
+   * @returns {string[]} Array of hex color strings
    * @private
    */
   _buildColorPalette (bitsPerCell) {
@@ -61,13 +115,14 @@ export class RectDrawColor extends RectDraw {
         return this._palette256Colors()
       default:
         throw new Error(
-          `Unsupported bitsPerCell: ${bitsPerCell}. Must be 1, 2, 4, or 8`
+          `Unsupported bitsPerCell: ${bitsPerCell}. Supported values: 1, 2, 4, 8`
         )
     }
   }
 
   /**
-   * 2-color palette (black/white)
+   * Generate 2-color palette (black/white)
+   * @returns {string[]} Array of 2 hex color strings
    * @private
    */
   _palette2Colors () {
@@ -75,7 +130,8 @@ export class RectDrawColor extends RectDraw {
   }
 
   /**
-   * 4-color palette (primary colors)
+   * Generate 4-color palette (primary colors)
+   * @returns {string[]} Array of 4 hex color strings
    * @private
    */
   _palette4Colors () {
@@ -83,7 +139,8 @@ export class RectDrawColor extends RectDraw {
   }
 
   /**
-   * 16-color palette (extended colors)
+   * Generate 16-color palette (extended colors)
+   * @returns {string[]} Array of 16 hex color strings
    * @private
    */
   _palette16Colors () {
@@ -108,37 +165,79 @@ export class RectDrawColor extends RectDraw {
   }
 
   /**
-   * 256-color palette (RGB cube + grayscale)
+   * Generate 256-color palette (RGB cube + grayscale)
+   * @returns {string[]} Array of 256 hex color strings
    * @private
    */
   _palette256Colors () {
     const palette = []
 
     // RGB color cube: 6x6x6 = 216 colors
-    for (let r = 0; r < 256; r += 51) {
-      for (let g = 0; g < 256; g += 51) {
-        for (let b = 0; b < 256; b += 51) {
-          const hex =
-            '#' +
-            r.toString(16).padStart(2, '0') +
-            g.toString(16).padStart(2, '0') +
-            b.toString(16).padStart(2, '0')
-          palette.push(hex.toUpperCase())
+    this._addRgbCubeColors(palette)
+
+    // Grayscale gradient: 40 additional colors
+    this._addGrayscaleColors(palette)
+
+    return palette.slice(0, 256)
+  }
+
+  /**
+   * Add RGB color cube colors to palette
+   * @param {string[]} palette - Palette array to modify
+   * @private
+   */
+  _addRgbCubeColors (palette) {
+    for (
+      let r = 0;
+      r <= RectDrawColor.MAX_RGB_VALUE;
+      r += RectDrawColor.RGB_CUBE_STEP
+    ) {
+      for (
+        let g = 0;
+        g <= RectDrawColor.MAX_RGB_VALUE;
+        g += RectDrawColor.RGB_CUBE_STEP
+      ) {
+        for (
+          let b = 0;
+          b <= RectDrawColor.MAX_RGB_VALUE;
+          b += RectDrawColor.RGB_CUBE_STEP
+        ) {
+          palette.push(this._rgbToHex(r, g, b))
         }
       }
     }
+  }
 
-    // Grayscale gradient: 40 additional colors
-    for (let gray = 0; gray < 256; gray += 6) {
-      const hex =
-        '#' +
-        gray.toString(16).padStart(2, '0') +
-        gray.toString(16).padStart(2, '0') +
-        gray.toString(16).padStart(2, '0')
-      palette.push(hex.toUpperCase())
+  /**
+   * Add grayscale colors to palette
+   * @param {string[]} palette - Palette array to modify
+   * @private
+   */
+  _addGrayscaleColors (palette) {
+    for (
+      let gray = 0;
+      gray <= RectDrawColor.MAX_RGB_VALUE;
+      gray += RectDrawColor.GRAYSCALE_STEP
+    ) {
+      palette.push(this._rgbToHex(gray, gray, gray))
     }
+  }
 
-    return palette.slice(0, 256)
+  /**
+   * Convert RGB values to hex color string
+   * @param {number} r - Red component (0-255)
+   * @param {number} g - Green component (0-255)
+   * @param {number} b - Blue component (0-255)
+   * @returns {string} Hex color string
+   * @private
+   */
+  _rgbToHex (r, g, b) {
+    return (
+      RectDrawColor.HEX_PREFIX +
+      r.toString(16).padStart(RectDrawColor.HEX_COMPONENT_LENGTH, '0') +
+      g.toString(16).padStart(RectDrawColor.HEX_COMPONENT_LENGTH, '0') +
+      b.toString(16).padStart(RectDrawColor.HEX_COMPONENT_LENGTH, '0')
+    )
   }
 
   /**
@@ -151,11 +250,13 @@ export class RectDrawColor extends RectDraw {
 
   /**
    * Get hex color for a specific color value
+   * @param {number} colorValue - Color value to convert
+   * @returns {string} Hex color string
    * @private
    */
   _getHexColor (colorValue) {
     const clamped = Math.max(
-      0,
+      RectDrawColor.MIN_COLOR_VALUE,
       Math.min(colorValue, this.colorPalette.length - 1)
     )
     return this.colorPalette[clamped]
@@ -176,14 +277,22 @@ export class RectDrawColor extends RectDraw {
 
   /**
    * Set cell to specific color value
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {number} colorValue - Color value to set
    */
   setColorValue (x, y, colorValue) {
-    const clamped = Math.max(0, Math.min(colorValue, this.maxColor))
+    const clamped = Math.max(
+      RectDrawColor.MIN_COLOR_VALUE,
+      Math.min(colorValue, this.maxColor)
+    )
     this.mask.set(x, y, clamped)
   }
 
   /**
    * Cycle cell to next color (wraps around)
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
    */
   cycleColor (x, y) {
     const current = this._getCellValue(x, y)
@@ -193,9 +302,13 @@ export class RectDrawColor extends RectDraw {
 
   /**
    * Set entire grid to specific color
+   * @param {number} colorValue - Color value to fill with
    */
   fillWithColor (colorValue) {
-    const clamped = Math.max(0, Math.min(colorValue, this.maxColor))
+    const clamped = Math.max(
+      RectDrawColor.MIN_COLOR_VALUE,
+      Math.min(colorValue, this.maxColor)
+    )
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         this.setColorValue(x, y, clamped)
@@ -204,7 +317,7 @@ export class RectDrawColor extends RectDraw {
   }
 
   /**
-   * Clear grid (set all to 0)
+   * Clear grid (set all cells to 0)
    */
   clear () {
     this.mask.bits = this.mask.store.empty
@@ -213,6 +326,9 @@ export class RectDrawColor extends RectDraw {
 
   /**
    * Get color info as string
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @returns {string} Color information string
    */
   getColorInfo (x, y) {
     const colorValue = this._getCellValue(x, y)
@@ -222,6 +338,7 @@ export class RectDrawColor extends RectDraw {
 
   /**
    * Export palette as array
+   * @returns {string[]} Copy of the color palette
    */
   getPalette () {
     return [...this.colorPalette]
@@ -229,6 +346,7 @@ export class RectDrawColor extends RectDraw {
 
   /**
    * Get color histogram
+   * @returns {Uint32Array} Array where index is color value and value is count
    */
   getColorHistogram () {
     const histogram = new Uint32Array(this.maxColor + 1)
