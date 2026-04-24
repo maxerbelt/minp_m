@@ -490,8 +490,8 @@ describe('DraggedShip', () => {
       draggedShip.placeCells(5, 8, shipCellGrid)
       expect(mockShip.placeVariant).toHaveBeenCalledWith(
         mockPlaceable,
-        6, // 5-1
-        4 // 8-2
+        4, // 5-1
+        6 // 8-2
       )
     })
   })
