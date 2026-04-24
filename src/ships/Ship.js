@@ -305,8 +305,10 @@ export class Ship {
    * @param {number} c - Column coordinate
    * @returns {any|null} Weapon system at position or null if none
    */
-  rackAt (r, c) {
-    const coordKey = `${r},${c}`
+
+  rackAt (x, y) {
+    if (!this.__weaponArray?.length) return null
+    const coordKey = `${x},${y}`
     return this._findWeaponAt(coordKey)
   }
 
@@ -639,7 +641,7 @@ export class Ship {
    */
   hitAt (model, r, c) {
     this.recordHit(r, c)
-    const weaponAtPosition = this.rackAt(r, c)
+    const weaponAtPosition = this.rackAt(c, r)
     let info = null
     let damaged = null
     let hits = []
@@ -686,10 +688,10 @@ export class Ship {
    * @private
    */
   _processLoadedMagazineHit (weaponSystem, model, r, c) {
+    weaponSystem.hit = true
     const damaged = 'skull'
     model.opponent?.updateUI()
     const viewModel = model.UI
-    weaponSystem.hit = true
     model.loadOut.useAmmo(weaponSystem)
     const cell = viewModel.gridCellAt(r, c)
     viewModel.useAmmoInCell(cell, damaged)
@@ -705,7 +707,7 @@ export class Ship {
         damaged
       )
     }
-    return null
+    return { damaged: damaged, info: null, hits: [], misses: [] }
   }
 
   /**

@@ -33,7 +33,9 @@ export class Steps {
 
   shouldDeactivatePreviousRack (weaponId) {
     return (
-      this.sourceRack && this.sourceRack.weaponId !== -1 && weaponId !== this.sourceRack.weaponId
+      this.sourceRack &&
+      this.sourceRack.weaponId !== -1 &&
+      weaponId !== this.sourceRack.weaponId
     )
   }
 
@@ -66,7 +68,7 @@ export class Steps {
   fire () {
     if (!bh.terrain.hasUnattachedWeapons && this.sourceShip === null) {
       console.warn(
-        'Terrain does not have unattached weapons, but a weapon was fired without a source ship'
+        `${bh.terrain.name} does not have unattached weapons, but a weapon was fired without a source ship`
       )
     }
     if (!this.source) return

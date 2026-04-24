@@ -509,11 +509,11 @@ export class Waters {
     oppo = oppo || this.opponent
     const viewModel = oppo?.UI || this.UI
     if (ship) {
-      const entries = ship.getAllWeaponEntries()
+      const entries = ship.getLoadedWeaponEntries()
       const [key, weapon] = random
         ? randomElement(entries)
         : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))
-      const [launchR, launchC] = parsePair(key)
+      const [launchC, launchR] = parsePair(key)
       this.steps.addSource(
         viewModel,
         launchR,
@@ -1104,7 +1104,6 @@ export class Waters {
 
     const result = this.fireShot(weapon, r, c, power)
 
-    this.updateUI(this.ships)
     return result
   }
 
