@@ -7,7 +7,7 @@ export function terrainSelect () {
     try {
       const t = bh.terrainTitleList
       return Array.isArray(t) ? t : []
-    } catch (_error) {
+    } catch {
       // during tests bh may not have terrainMaps.list defined; just return
       // an empty list without logging, to keep console output clean.
       return []
@@ -62,12 +62,25 @@ export function setTerrainParams (newTerrainMap) {
   const { height, width } = paramManager.getSize()
   const mapType = paramManager.getMapType()
 
-  // Build parameter object
-  let h = ''
-  let w = ''
-  let x = ''
+  // Determine final dimensions with fallback
+  const finalDimensions = getFinalDimensions(height, width, mapName)
 
-  // Fallback to current map dimensions if needed
+  // Build URL parameters
+  updateUrlParameters(url.searchParams, {
+    mode,
+    mapName: mapName || '',
+    ...finalDimensions,
+    terrain: bodyTag,
+    mapType: mapType || ''
+  })
+
+  // Update browser history
+  updateBrowserHistory(url)
+
+  bh.setTheme()
+}
+
+function getFinalDimensions (height, width, mapName) {
   let finalHeight = height
   let finalWidth = width
 
@@ -83,28 +96,26 @@ export function setTerrainParams (newTerrainMap) {
     !Number.isNaN(finalHeight) &&
     !Number.isNaN(finalWidth)
   ) {
-    h = finalHeight.toString(10)
-    w = finalWidth.toString(10)
-    x = 'x'
+    return {
+      height: finalHeight.toString(10),
+      width: finalWidth.toString(10),
+      x: 'x'
+    }
   }
 
-  // Update URL parameters
-  const urlParams = url.searchParams
-  urlParams.set('mode', mode)
-  urlParams.set('mapName', mapName || '')
-  urlParams.set('height', h)
-  urlParams.set('width', w)
-  urlParams.set('x', x)
-  urlParams.set('terrain', bodyTag)
-  urlParams.set('mapType', mapType || '')
+  return { height: '', width: '', x: '' }
+}
 
-  // Update browser history (with error handling for test environments)
+function updateUrlParameters (urlParams, params) {
+  Object.entries(params).forEach(([key, value]) => {
+    urlParams.set(key, value)
+  })
+}
+
+function updateBrowserHistory (url) {
   try {
     globalThis.history.replaceState(null, '', url.href)
   } catch (e) {
-    // In test environments, replaceState may be restricted; continue without updating history
     console.debug('Could not update history:', e)
   }
-
-  bh.setTheme()
 }

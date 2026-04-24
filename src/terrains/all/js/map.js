@@ -136,7 +136,7 @@ export class BhMap {
   surroundBase (r, c, isValid, surroundings) {
     for (let rr = r - 1; rr <= r + 1; rr++) {
       for (let cc = c - 1; cc <= c + 1; cc++) {
-        if (isValid(cc, rr)) {
+        if (isValid(rr, cc)) {
           surroundings.push([rr, cc])
         }
       }

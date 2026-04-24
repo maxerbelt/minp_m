@@ -62,7 +62,9 @@ export class CellClassManager {
       this.CELL_CLASSES.damage
     ])
   }
-
+  static clearDisplayCell (cell) {
+    this.clearCellClasses(cell, [this.CELL_CLASSES.display])
+  }
   static clearFriendCell (cell) {
     this.clearCellClasses(cell, [
       this.CELL_CLASSES.display,

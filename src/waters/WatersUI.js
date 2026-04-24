@@ -236,14 +236,17 @@ export class WatersUI {
   }
 
   /**
-   * REFACTORING: Unified cell clearing using CellClassManager
+   * Unified cell clearing using CellClassManager
    */
   clearCell (cell) {
     CellClassManager.clearCell(cell)
   }
+  clearDisplayCell (cell) {
+    CellClassManager.clearDisplayCell(cell)
+  }
 
   /**
-   * REFACTORING: Unified cell clearing using CellClassManager
+   * Unified cell clearing using CellClassManager
    */
   clearFriendCell (cell) {
     CellClassManager.clearFriendCell(cell)

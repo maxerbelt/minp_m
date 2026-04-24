@@ -1,29 +1,30 @@
 import { bh } from './bh.js'
-import { terrains } from './terrains.js'
+
+function validateDimension (value, min, max, ui) {
+  let dimension = Number.parseInt(value, 10)
+  if (Number.isNaN(dimension) || dimension < min || dimension > max) {
+    dimension = ui.min
+    ui.choose.value = dimension
+  }
+  return dimension
+}
 
 export function validateWidth () {
-  let width = Number.parseInt(bh.widthUI.choose.value, 10)
-  if (
-    Number.isNaN(width) ||
-    width < terrains.minWidth ||
-    width > terrains.maxWidth
-  ) {
-    width = bh.widthUI.min
-    bh.widthUI.choose.value = width
-  }
-  return width
+  return validateDimension(
+    bh.widthUI.choose.value,
+    bh.maps.terrain.minWidth,
+    bh.maps.terrain.maxWidth,
+    bh.widthUI
+  )
 }
+
 export function validateHeight () {
-  let height = Number.parseInt(bh.heightUI.choose.value, 10)
-  if (
-    Number.isNaN(height) ||
-    height < terrains.minHeight ||
-    height > terrains.maxHeight
-  ) {
-    height = bh.heightUI.min
-    bh.heightUI.choose.value = height
-  }
-  return height
+  return validateDimension(
+    bh.heightUI.choose.value,
+    bh.maps.terrain.minHeight,
+    bh.maps.terrain.maxHeight,
+    bh.heightUI
+  )
 }
 
 export function hasMapOfCurrentSize () {
