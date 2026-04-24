@@ -173,7 +173,7 @@ export class StatusUI {
   showSoonish (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem) return
     if (this.scoreQueue.length > 0) {
-      return this.__addToQueue(newItem, isImportant)
+      return this._addToQueue(newItem, isImportant)
     }
     this.showSoon(newItem, isImportant, duration)
   }
@@ -201,11 +201,11 @@ export class StatusUI {
    */
   showSoon (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem && !isImportant) return
-    if (!this._queueLoopActive) {
+    if (this._queueLoopActive) {
+      this._addToQueue(newItem, isImportant)
+    } else {
       this.show(newItem, isImportant)
       this._scheduleQueueProcessingAsync(duration)
-    } else {
-      this.__addToQueue(newItem, isImportant)
     }
   }
 
@@ -339,7 +339,7 @@ export class StatusUI {
   display (mode, game) {
     this.showMode(mode)
     if (game) {
-      this.__addToQueue(game, false)
+      this._addToQueue(game, false)
     }
   }
 
@@ -372,7 +372,7 @@ export class StatusUI {
     } else {
       idxUsed = this._displaySingleShotStatus()
     }
-    this.__addToQueue(weapon.stepHint(idxUsed), false)
+    this._addToQueue(weapon.stepHint(idxUsed), false)
   }
 
   /**
