@@ -1,5 +1,11 @@
 import { bh } from '../terrains/all/js/bh.js'
+import { Random } from './Random.js'
 
+/**
+ * Converts a string to title case.
+ * @param {string} str - The string to convert
+ * @returns {string} The title-cased string
+ */
 export function toTitleCase (str) {
   if (!str) {
     return ''
@@ -10,69 +16,44 @@ export function toTitleCase (str) {
   return str
 }
 
-function shuffleArray (array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1))
-    let temp = array[i]
-    array[i] = array[j]
-    array[j] = temp
-  }
-  return array
-}
-
+/**
+ * Attempts to randomly place a ship shape on the grid.
+ * @param {Object} ship - The ship to place
+ * @param {Array<Array>} shipCellGrid - The grid of ship cells
+ * @param {Object} mask - The placement mask
+ * @returns {Array|null} The placed ship cells or null if placement failed
+ */
 export function randomPlaceShape (ship, shipCellGrid, mask) {
   const letter = ship.letter
   const shape = ship.shape()
   const minSize = shape.minSize
   const map = bh.map
+
   if (!shape) throw new Error('No shape for letter ' + letter)
-  let placeables = shape.placeables()
-  const maxR = map.rows - minSize + 1
-  const maxC = map.cols - minSize + 1
 
-  //  console.log(
-  //    `map: ${map.rows}x${map.cols}, shape: ${shape.height}x${shape.width}, placeables: ${placeables.length}`
-  //  )
-  //  console.log(`mask ${mask.height}x${mask.width}:`)
+  const placeables = shape.placeables()
+  const maxRow = map.rows - minSize + 1
+  const maxCol = map.cols - minSize + 1
 
-  const locations = shuffleArray([
-    ...mask
+  const locations = Random.shuffleArray(
+    mask
       .bitsEmpty()
       .map(i => mask.indexer.location(i))
-      .filter(loc => loc[1] < maxR && loc[0] < maxC)
-  ])
-  // console.log(`mask ${mask.height}x${mask.width}:`)
-  // console.log(locations)
+      .filter(loc => loc[1] < maxRow && loc[0] < maxCol)
+  )
 
-  for (const [c0, r0] of locations) {
-    const places = shuffleArray(placeables)
-    for (const placeable of places) {
-      // compute bounds for random origin so variant fits
-      //  const maxR = map.rows - placeable.height()
-      //   const maxC = map.cols - placeable.width()
-      //   if (r0 > maxR || c0 > maxC) continue
-
-      const placement = placeable.placeAt(c0, r0)
+  for (const [col, row] of locations) {
+    const shuffledPlaceables = Random.shuffleArray([...placeables])
+    for (const placeable of shuffledPlaceables) {
+      const placement = placeable.placeAt(col, row)
       if (placement.canPlace(shipCellGrid)) {
         ship.placePlacement(placement)
         const displaced = placement.displacedArea(mask.width, mask.height)
-        // console.log(
-        //   `Trying to place ${letter} at (${r0}, ${c0}) with shape ${shape.height}x${shape.width} and displaced area ${displaced.occupancy}`
-        // )
         mask.joinWith(displaced)
         ship.addToGrid(shipCellGrid)
-        //       console.log(`Mask after placing ${letter}:
-        //         ${mask.toAsciiWith()}`)
-        const shipCell = mask.emptyMask
-        for (const [r, row] of shipCellGrid.entries()) {
-          for (const [c, cell] of row.entries()) {
-            if (cell) {
-              shipCell.set(c, r)
-            }
-          }
-        }
-        //   console.log(`Ship cell after placing ${letter}:
-        //    ${shipCell.toAsciiWith()}`)
+
+        // Update mask with ship cells
+        updateMaskWithShipCells(mask, shipCellGrid)
 
         return ship.cells
       }
@@ -81,17 +62,38 @@ export function randomPlaceShape (ship, shipCellGrid, mask) {
   return null
 }
 
+/**
+ * Updates the mask with current ship cell positions.
+ * @private
+ * @param {Object} mask - The placement mask
+ * @param {Array<Array>} shipCellGrid - The grid of ship cells
+ */
+function updateMaskWithShipCells (mask, shipCellGrid) {
+  const shipCell = mask.emptyMask
+  for (const [row, rowData] of shipCellGrid.entries()) {
+    for (const [col, cell] of rowData.entries()) {
+      if (cell) {
+        shipCell.set(col, row)
+      }
+    }
+  }
+}
+
+/**
+ * Throttles a function to limit execution frequency.
+ * @param {Function} func - The function to throttle
+ * @param {number} delay - The minimum delay between executions
+ * @returns {Function} The throttled function
+ */
 export function throttle (func, delay) {
-  let inThrottle
-  let lastFn
+  let inThrottle = false
+  let lastFunc
   let lastTime
 
-  return function () {
-    const args = arguments
-
+  return function (...args) {
     if (inThrottle) {
-      clearTimeout(lastFn)
-      lastFn = setTimeout(() => {
+      clearTimeout(lastFunc)
+      lastFunc = setTimeout(() => {
         if (Date.now() - lastTime >= delay) {
           func.apply(this, args)
           lastTime = Date.now()
@@ -101,6 +103,9 @@ export function throttle (func, delay) {
       func.apply(this, args)
       lastTime = Date.now()
       inThrottle = true
+      setTimeout(() => {
+        inThrottle = false
+      }, delay)
     }
   }
 }

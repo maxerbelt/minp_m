@@ -234,11 +234,20 @@ export class Waters {
   checkValidPlacement (placed, map = bh.map) {
     const placedShips = placed || map.example
 
-    if (placedShips?.ships == null || placedShips?.ships?.length === 0) {
-      this.autoPlace()
-      return null
+    if (Array.isArray(placed)) {
+      // placed is ships array
+      if (placed.length === 0) {
+        this.autoPlace()
+        return null
+      }
+      return { ships: placed, map: map.title }
+    } else {
+      if (placedShips?.ships == null || placedShips?.ships?.length === 0) {
+        this.autoPlace()
+        return null
+      }
+      return placedShips
     }
-    return placedShips
   }
   load (placedShips) {
     const map = bh.map
