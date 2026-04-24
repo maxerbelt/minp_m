@@ -7,27 +7,25 @@ import { spaceWeaponsCatalogue } from './spaceWeapons.js'
 spaceAndAsteroids.ships = spaceShipsCatalogue
 spaceAndAsteroids.weapons = spaceWeaponsCatalogue
 
-const allSpaceShipsAndWeapons = spaceMapList
-  .at(-1)
-  .clone('All Space Ships and Weapons')
-//allSpaceShipsAndWeapons.title = 'All Space Ships and Weapons'
-allSpaceShipsAndWeapons.shipNum = spaceShipsCatalogue.baseShapes.reduce(
-  (acc, shape) => {
-    acc[shape.letter] = 1
-    return acc
-  },
-  {}
-)
-allSpaceShipsAndWeapons.name = 'All Space Ships and Weapons Map'
-
 class SpaceAndAsteroidsMaps extends TerrainMaps {
   constructor () {
-    super(spaceAndAsteroids, spaceMapList, defaultSpaceMap, [
-      ['|', 'DestroyOne'],
-      ['+', 'Bomb']
-    ])
+    super(
+      spaceAndAsteroids,
+      spaceMapList,
+      defaultSpaceMap,
+      [
+        ['|', 'DestroyOne'],
+        ['+', 'Bomb']
+      ],
+      spaceShipsCatalogue,
+      spaceWeaponsCatalogue
+    )
+    this.allShipsAndWeaponsMap = this.createAllShipsAndWeaponsMap(
+      spaceMapList,
+      spaceShipsCatalogue,
+      spaceWeaponsCatalogue
+    )
   }
 }
 
 export const spaceAndAsteroidsMaps = new SpaceAndAsteroidsMaps()
-spaceAndAsteroidsMaps.allShipsAndWeaponsMap = allSpaceShipsAndWeapons

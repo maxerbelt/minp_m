@@ -6,7 +6,17 @@ import { oldToken } from './terrain.js'
 // gameMapTypes
 
 export class TerrainMaps {
-  constructor (terrain, list, currentMap, weaponPreference) {
+  constructor (
+    terrain,
+    list,
+    currentMap,
+    weaponPreference,
+    shipsCatalogue = null,
+    weaponsCatalogue = null
+  ) {
+    if (shipsCatalogue) terrain.ships = shipsCatalogue
+    if (weaponsCatalogue) terrain.weapons = weaponsCatalogue
+
     this.list = list
     this.current = currentMap
     this.terrain = terrain
@@ -18,13 +28,33 @@ export class TerrainMaps {
     this.shipDescription = terrain.ships.description
     this.shipTypes = terrain.ships.types
     this.shipColors = terrain.ships.colors
-    this.shipDescription = terrain.ships.description
     this.shapesByLetter = terrain.ships.shapesByLetter
     this.minWidth = terrain.minWidth
     this.maxWidth = terrain.maxWidth
     this.minHeight = terrain.minHeight
     this.maxHeight = terrain.maxHeight
     this.weaponPreference = weaponPreference
+  }
+
+  createAllShipsAndWeaponsMap (mapList, shipsCatalogue, weaponsCatalogue) {
+    const allShipsAndWeapons = mapList
+      .at(-1)
+      .clone(`All ${this.title} Ships and Weapons`)
+    allShipsAndWeapons.shipNum = shipsCatalogue.baseShapes.reduce(
+      (acc, shape) => {
+        acc[shape.letter] = 1
+        return acc
+      },
+      {}
+    )
+    allShipsAndWeapons.name = `All ${this.title} Ships and Weapons Map`
+    if (weaponsCatalogue) {
+      allShipsAndWeapons.weapons = [
+        weaponsCatalogue.defaultWeapon,
+        ...weaponsCatalogue.weapons
+      ]
+    }
+    return allShipsAndWeapons
   }
 
   get newFleetForTerrain () {
@@ -118,19 +148,24 @@ export class TerrainMaps {
     return list.find(m => m.rows === height && m.cols === width)
   }
 
-  oldoldLastMapLocalStorageKey = `${oldToken}.map-name`
-  oldLastMapLocalStorageKey = `${oldToken}.${this.key}-last-map-name`
-  lastMapLocalStorageKey () {
+  _oldOldLastMapKey () {
+    return `${oldToken}.map-name`
+  }
+  _oldLastMapKey () {
+    return `${oldToken}.${this.key}-last-map-name`
+  }
+  _lastMapKey () {
     return `${token}.${this.terrain?.tag}.${this.key}-last-map-name`
   }
 
   getLastMapTitleRaw () {
-    const title = localStorage.getItem(this.lastMapLocalStorageKey())
-
-    if (this.key !== 'SeaAndLand') {
-      return title
-    }
-    return title || this.getOldLastMapTitle() || this.getOldOldLastMapTitle()
+    const title = localStorage.getItem(this._lastMapKey())
+    if (this.key !== 'SeaAndLand') return title
+    return (
+      title ||
+      localStorage.getItem(this._oldLastMapKey()) ||
+      localStorage.getItem(this._oldOldLastMapKey())
+    )
   }
   getLastMapTitle () {
     const title = this.getLastMapTitleRaw()
@@ -141,24 +176,26 @@ export class TerrainMaps {
     return this.getMap(title) || this.list[0]
   }
 
-  getOldOldLastMapTitle () {
-    return localStorage.getItem(this.oldoldLastMapLocalStorageKey)
-  }
-  getOldLastMapTitle () {
-    return localStorage.getItem(this.oldLastMapLocalStorageKey)
-  }
   storeLastMap () {
-    localStorage.setItem(this.lastMapLocalStorageKey(), this.current.title)
+    localStorage.setItem(this._lastMapKey(), this.current.title)
   }
 
-  lastWidthStorageKey = `${token}.custom-map-width`
-  lastHeightStorageKey = `${token}.custom-map-height`
-  oldLastWidthStorageKey = `${oldToken}.custom-map-width`
-  oldLastHeightStorageKey = `${oldToken}.custom-map-height`
+  _lastWidthKey () {
+    return `${token}.custom-map-width`
+  }
+  _lastHeightKey () {
+    return `${token}.custom-map-height`
+  }
+  _oldLastWidthKey () {
+    return `${oldToken}.custom-map-width`
+  }
+  _oldLastHeightKey () {
+    return `${oldToken}.custom-map-height`
+  }
   getLastWidth (defaultWidth) {
     const width =
-      Number.parseInt(localStorage.getItem(this.lastWidthStorageKey), 10) ||
-      Number.parseInt(localStorage.getItem(this.oldLastWidthStorageKey), 10)
+      Number.parseInt(localStorage.getItem(this._lastWidthKey()), 10) ||
+      Number.parseInt(localStorage.getItem(this._oldLastWidthKey()), 10)
     if (
       Number.isNaN(width) ||
       width < this.terrain.minWidth ||
@@ -169,8 +206,8 @@ export class TerrainMaps {
   }
   getLastHeight (defaultHeight) {
     const height =
-      Number.parseInt(localStorage.getItem(this.lastHeightStorageKey), 10) ||
-      Number.parseInt(localStorage.getItem(this.oldLastHeightStorageKey), 10)
+      Number.parseInt(localStorage.getItem(this._lastHeightKey()), 10) ||
+      Number.parseInt(localStorage.getItem(this._oldLastHeightKey()), 10)
     if (
       Number.isNaN(height) ||
       height < this.terrain.minHeight ||
@@ -181,12 +218,12 @@ export class TerrainMaps {
   }
   storeLastHeight (height) {
     if (height) {
-      localStorage.setItem(this.lastHeightStorageKey, height)
+      localStorage.setItem(this._lastHeightKey(), height)
     }
   }
   storeLastWidth (width) {
     if (width) {
-      localStorage.setItem(this.lastWidthStorageKey, width)
+      localStorage.setItem(this._lastWidthKey(), width)
     }
   }
   storeLastCustomSize (width, height) {
