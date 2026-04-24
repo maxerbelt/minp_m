@@ -260,6 +260,7 @@ export class Animator {
   static async run (el, ...animationClasses) {
     Animator.play(el, ...animationClasses)
     await Animator.wait(el)
+    el.classList.remove(...animationClasses)
   }
 
   /**

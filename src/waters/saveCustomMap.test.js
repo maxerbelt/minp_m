@@ -4,9 +4,9 @@
 
 /* eslint-env jest */
 
-/* global   it, describe, expect, beforeEach, jest */
+/* global  it, describe, expect, beforeEach, jest */
 // We'll import saveCustomMap and storeShips after setting up mocks
-import { jest } from '@jest/globals'
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 let saveCustomMap, storeShips, gtag
 

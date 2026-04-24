@@ -5,6 +5,7 @@
 /* eslint-env jest */
 
 /* global   it, describe,   expect, beforeEach, jest */
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // polyfill structuredClone for Node environments that lack it
 if (globalThis.structuredClone == null) {
@@ -12,7 +13,6 @@ if (globalThis.structuredClone == null) {
 }
 
 import { LoadOut } from './LoadOut.js'
-import { jest } from '@jest/globals'
 
 describe('LoadOut', () => {
   let loadOut, mockWeapon, mockShip, mockViewModel

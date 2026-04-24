@@ -428,36 +428,34 @@
 .cell.hit.skull::after {
     content: '';
     position: absolute;
-    margin: 3px 3px 3px 3px;
+    margin: 2px 2px 2px 2px;
     inset: 0;
     /* shorthand for top/right/bottom/left: 0 */
-
+    width: 28px;
+    height: 26px;
     background-repeat: no-repeat;
     background-position: center;
 
-    background-image:
-        linear-gradient(rgba(255, 0, 0, 0.4), rgba(255, 0, 0, 0.4)),
-        url('../images/skull28.png');
-    background-size: cover;
-
+    background-image: url('../images/skull28r.png');
+    background-size: contain;
 }
 
 .cell.hit.damaged::after {
     content: '';
     position: absolute;
-    margin: 3px 3px 3px 3px;
+    margin: 2px 2px 2px 2px;
     inset: 0;
     /* shorthand for top/right/bottom/left: 0 */
-
+    width: 28px;
+    height: 26px;
     background-repeat: no-repeat;
     background-position: center;
 
-    background-image:
-        linear-gradient(rgba(255, 0, 0, 0.4), rgba(255, 0, 0, 0.4)),
-        url('../images/skullol28.png');
-    background-size: cover;
-
+    background-image: url('../images/skullol28r.png');
+    background-size: contain;
 }
+
+
 
 .cell.frd-hit.damaged::after,
 .cell.enm-sunk.damaged::after,
