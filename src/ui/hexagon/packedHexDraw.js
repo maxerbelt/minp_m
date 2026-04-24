@@ -1,5 +1,5 @@
 import { PackedHex } from '../../grid/hexagon/packedHex.js'
-import { drawHex, hexToPixel } from './hexdrawhelper.js'
+import { drawHex, hexToPixel, pixelToHex } from './hexdrawhelper.js'
 import { DrawBase } from '../drawBase.js'
 
 /**
@@ -169,11 +169,45 @@ export class PackedHexDraw extends DrawBase {
    * @private
    */
   _hitTest (px, py) {
-    const x = px - this.offsetX
-    const y = py - this.offsetY
-    const [q, r, s] = this._pixelToHex(x, y)
+    const [q, r, s] = pixelToHex(
+      px,
+      py,
+      this.hexSize,
+      this.offsetX,
+      this.offsetY
+    )
     const i = this.indexer.qrsToI.get(`${q},${r},${s}`)
     return i !== undefined ? i : null
+  }
+
+  /**
+   * Convert pixel coordinates to cube coordinates
+   * @private
+   */
+  _pixelToHex (x, y) {
+    const q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / this.hexSize
+    const r = ((2 / 3) * y) / this.hexSize
+    return this._cubeRound(q, r, -q - r)
+  }
+
+  /**
+   * Round pixel coordinates to nearest cube coordinates
+   * @private
+   */
+  _cubeRound (q, r, s) {
+    let rq = Math.round(q)
+    let rr = Math.round(r)
+    let rs = Math.round(s)
+
+    const dq = Math.abs(rq - q)
+    const dr = Math.abs(rr - r)
+    const ds = Math.abs(rs - s)
+
+    if (dq > dr && dq > ds) rq = -rr - rs
+    else if (dr > ds) rr = -rq - rs
+    else rs = -rq - rr
+
+    return [rq, rr, rs]
   }
 
   /**

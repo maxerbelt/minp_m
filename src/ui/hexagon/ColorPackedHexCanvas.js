@@ -22,6 +22,32 @@ export class ColorPackedHexCanvas extends HexCanvas {
   }
 
   /**
+   * Apply color action to a single hex cell based on current action.
+   * @param {Object} packed - Packed hex object.
+   * @param {number} q - Q coordinate.
+   * @param {number} r - R coordinate.
+   * @param {number} s - S coordinate.
+   * @param {number} currentColor - Current color value.
+   * @private
+   */
+  _applyColorActionToCell (packed, q, r, s, currentColor) {
+    if (this.currentAction === 'set') {
+      packed.set(q, r, s, this.getNextColor())
+    } else if (this.currentAction === 'clear') {
+      packed.clear(q, r, s)
+    } else if (this.currentAction === 'toggle') {
+      // Toggle cycles through colors or clears if at max color
+      if (currentColor === 0) {
+        packed.set(q, r, s, 1)
+      } else if (currentColor === 2) {
+        packed.clear(q, r, s)
+      } else {
+        packed.set(q, r, s, currentColor + 1)
+      }
+    }
+  }
+
+  /**
    * Override toggle cell to use color values instead of binary toggle
    * For packed hex grids with color support
    */
@@ -35,22 +61,7 @@ export class ColorPackedHexCanvas extends HexCanvas {
       const [q, r] = this.grid.indexer.coords[idx]
       const s = -q - r
       const currentColor = this.grid.packedHex.at(q, r, s)
-      const nextColor = this.getNextColor()
-
-      if (this.currentAction === 'set') {
-        this.grid.packedHex.set(q, r, s, nextColor)
-      } else if (this.currentAction === 'clear') {
-        this.grid.packedHex.clear(q, r, s)
-      } else if (this.currentAction === 'toggle') {
-        // Toggle cycles through colors or clears if at max color
-        if (currentColor === 0) {
-          this.grid.packedHex.set(q, r, s, 1)
-        } else if (currentColor === 2) {
-          this.grid.packedHex.clear(q, r, s)
-        } else {
-          this.grid.packedHex.set(q, r, s, currentColor + 1)
-        }
-      }
+      this._applyColorActionToCell(this.grid.packedHex, q, r, s, currentColor)
 
       this.grid.redraw()
       this.updateButtonStates()
@@ -187,21 +198,9 @@ export class ColorPackedHexCanvas extends HexCanvas {
 
     for (const i of inds) {
       const [q, r] = this.grid.indexer.coords[i]
-
-      if (this.currentAction === 'set') {
-        packed.set(q, r, this.getNextColor())
-      } else if (this.currentAction === 'clear') {
-        packed.clear(q, r)
-      } else if (this.currentAction === 'toggle') {
-        const currentColor = packed.at(q, r)
-        if (currentColor === 0) {
-          packed.set(q, r, 1)
-        } else if (currentColor === 2) {
-          packed.clear(q, r)
-        } else {
-          packed.set(q, r, currentColor + 1)
-        }
-      }
+      const s = -q - r
+      const currentColor = packed.at(q, r, s)
+      this._applyColorActionToCell(packed, q, r, s, currentColor)
     }
 
     // Redraw and update UI
@@ -353,32 +352,63 @@ export class ColorPackedHexCanvas extends HexCanvas {
   }
 
   /**
+   * Add change listener to dropdown with callback.
+   * @param {string} id - Element ID.
+   * @param {Function} callback - Callback function receiving new value.
+   * @private
+   */
+  _wireDropdown (id, callback) {
+    const dropdown = this._getElementById(id)
+    if (dropdown) {
+      dropdown.addEventListener('change', e => callback(e.target.value))
+    }
+  }
+
+  /**
+   * Add change listeners to radio buttons with callback.
+   * @param {string} selector - Radio button selector.
+   * @param {Function} callback - Callback function receiving selected value.
+   * @private
+   */
+  _wireRadioButtons (selector, callback) {
+    const radios = this._querySelectorAll(selector)
+    if (radios.length === 0) return
+    radios.forEach(radio => {
+      radio.addEventListener('change', e => {
+        if (e.target.checked) callback(e.target.value)
+      })
+    })
+  }
+
+  /**
+   * Add click listener to button with callback.
+   * @param {string} id - Button element ID.
+   * @param {Function} callback - Click handler.
+   * @private
+   */
+  _wireButton (id, callback) {
+    const btn = this._getElementById(id)
+    if (btn) {
+      btn.addEventListener('click', callback)
+    }
+  }
+
+  /**
    * Wire line color dropdown (1, 2, cycle) for hex (2-color) grids.
    */
   wireLineColorDropdown () {
-    if (typeof document === 'undefined') return
-    const dropdown = document.getElementById('hex-color')
-    if (dropdown) {
-      dropdown.addEventListener('change', e => {
-        this.currentColor = e.target.value
-        this.colorCycleIndex = 1 // reset cycle index when color changes
-      })
-    }
+    this._wireDropdown('hex-color', value => {
+      this.currentColor = value
+      this.colorCycleIndex = 1 // reset cycle index when color changes
+    })
   }
 
   /**
    * Wire cover type radio buttons for colored hex grid.
    */
   wireCoverTypeRadios () {
-    if (typeof document === 'undefined') return
-    const radios = document.querySelectorAll('input[name="cover-type-hex"]')
-    if (!radios || radios.length === 0) return
-    radios.forEach(radio => {
-      radio.addEventListener('change', e => {
-        if (e.target.checked) {
-          this.coverType = e.target.value
-        }
-      })
+    this._wireRadioButtons('input[name="cover-type-hex"]', value => {
+      this.coverType = value
     })
   }
 
@@ -386,20 +416,14 @@ export class ColorPackedHexCanvas extends HexCanvas {
    * Wire morphology buttons for colored hex grid.
    */
   wireMorphologyButtons () {
-    if (!this.grid || typeof document === 'undefined') return
-    ;['dilate-hex', 'erode-hex', 'cross-dilate-hex'].forEach(id => {
-      const btn = document.getElementById(id)
-      if (btn) {
-        btn.addEventListener('click', () => {
-          const operation =
-            id === 'dilate-hex'
-              ? 'dilate'
-              : id === 'erode-hex'
-              ? 'erode'
-              : 'cross'
-          this.applyMorphologyOperation(operation)
-        })
-      }
+    if (!this.grid) return
+    const morphologyOps = {
+      'dilate-hex': 'dilate',
+      'erode-hex': 'erode',
+      'cross-dilate-hex': 'cross'
+    }
+    Object.entries(morphologyOps).forEach(([id, operation]) => {
+      this._wireButton(id, () => this.applyMorphologyOperation(operation))
     })
   }
 
@@ -407,18 +431,14 @@ export class ColorPackedHexCanvas extends HexCanvas {
    * Wire action buttons focusing on packed grid operations.
    */
   wireActionButtons () {
-    if (!this.grid || typeof document === 'undefined') return
-
-    const clearBtn = document.getElementById('clear-hex')
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        if (this.grid) {
-          this.grid.packed.clear(0, 0)
-          this.grid.redraw()
-          this.updateButtonStates()
-        }
-      })
-    }
+    if (!this.grid) return
+    this._wireButton('clear-hex', () => {
+      if (this.grid) {
+        this.grid.packed.clear(0, 0)
+        this.grid.redraw()
+        this.updateButtonStates()
+      }
+    })
   }
 
   /**
@@ -443,41 +463,67 @@ export class ColorPackedHexCanvas extends HexCanvas {
   }
 
   /**
+   * Get element by ID safely.
+   * @param {string} id - Element ID.
+   * @returns {Element|null} Element or null if not found.
+   * @private
+   */
+  _getElementById (id) {
+    return typeof document !== 'undefined' ? document.getElementById(id) : null
+  }
+
+  /**
+   * Get elements by selector safely.
+   * @param {string} selector - CSS selector.
+   * @returns {Array<Element>} Array of elements.
+   * @private
+   */
+  _querySelectorAll (selector) {
+    if (typeof document === 'undefined') return []
+    return Array.from(document.querySelectorAll(selector))
+  }
+
+  /**
    * Override getRotateButton to get hexcolor-specific button
+   * @returns {Element|null}
    */
   getRotateButton () {
-    return document.getElementById('hexcolor-rotateBtn')
+    return this._getElementById('hexcolor-rotateBtn')
   }
 
   /**
    * Override getDilateButton to get hexcolor-specific button
+   * @returns {Element|null}
    */
   getDilateButton () {
-    return document.getElementById('hexcolor-dilateBtn')
+    return this._getElementById('hexcolor-dilateBtn')
   }
 
   /**
    * Override getErodeButton to get hexcolor-specific button
+   * @returns {Element|null}
    */
   getErodeButton () {
-    return document.getElementById('hexcolor-erodeBtn')
+    return this._getElementById('hexcolor-erodeBtn')
   }
 
   /**
    * Override getFlipButtons to get hexcolor-specific buttons
+   * @returns {Array<Element>}
    */
   getFlipButtons () {
-    return Array.from(document.querySelectorAll('.hexcolor-flipBtn'))
+    return this._querySelectorAll('.hexcolor-flipBtn')
   }
 
   /**
    * Override getGridButtons to get hexcolor-specific buttons
+   * @returns {Object} Object with empty, full, inverse element references.
    */
   getGridButtons () {
     return {
-      empty: document.getElementById('hexcolor-empty'),
-      full: document.getElementById('hexcolor-full'),
-      inverse: document.getElementById('hexcolor-inverse')
+      empty: this._getElementById('hexcolor-empty'),
+      full: this._getElementById('hexcolor-full'),
+      inverse: this._getElementById('hexcolor-inverse')
     }
   }
 
@@ -513,21 +559,17 @@ export class ColorPackedHexCanvas extends HexCanvas {
    * Override syncLineActionDropdown to use hexcolor dropdown
    */
   syncLineActionDropdown () {
-    if (typeof document === 'undefined') return
-    const dropdown = document.getElementById('hexcolor-line-action')
-    if (!dropdown) return
-    dropdown.value = this.currentAction
+    const dropdown = this._getElementById('hexcolor-line-action')
+    if (dropdown) {
+      dropdown.value = this.currentAction
+    }
   }
 
   /**
    * Override syncCoverTypeRadios to use hexcolor radios
    */
   syncCoverTypeRadios () {
-    if (typeof document === 'undefined') return
-    const radios = document.querySelectorAll(
-      'input[name="hexcolor-line-cover"]'
-    )
-    if (!radios || radios.length === 0) return
+    const radios = this._querySelectorAll('input[name="hexcolor-line-cover"]')
     for (const radio of radios) {
       radio.checked = radio.value === this.coverType
     }
@@ -535,13 +577,15 @@ export class ColorPackedHexCanvas extends HexCanvas {
 
   /**
    * Get line action dropdown for hexcolor
+   * @returns {Element|null}
    */
   getLineActionDropdown () {
-    return document.getElementById('hexcolor-line-action')
+    return this._getElementById('hexcolor-line-action')
   }
 
   /**
    * Get cover type radio selector for hexcolor
+   * @returns {string}
    */
   getCoverTypeRadioSelector () {
     return 'input[name="hexcolor-line-cover"]'
@@ -549,6 +593,7 @@ export class ColorPackedHexCanvas extends HexCanvas {
 
   /**
    * Get line tool radio selector for hexcolor
+   * @returns {string}
    */
   getLineToolRadioSelector () {
     return 'input[name="hexcolor-line-tool"]'

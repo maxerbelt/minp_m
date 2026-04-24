@@ -1,8 +1,16 @@
 import { MaskHex } from '../../grid/hexagon/maskHex.js'
-import { drawHex, hexToPixel } from './hexdrawhelper.js'
+import { drawHex, hexToPixel, pixelToHex } from './hexdrawhelper.js'
 import { DrawBase } from '../drawBase.js'
 
 export class HexDraw extends DrawBase {
+  /**
+   * Creates a HexDraw instance for rendering hexagonal grids.
+   * @param {string} canvasId - The ID of the canvas element.
+   * @param {number} radius - The radius of the hexagonal grid.
+   * @param {number} offsetX - The x offset for drawing.
+   * @param {number} offsetY - The y offset for drawing.
+   * @param {number} hexSize - The size of each hex.
+   */
   constructor (
     canvasId,
     radius = 3,
@@ -24,6 +32,7 @@ export class HexDraw extends DrawBase {
 
   /**
    * Set the bits to display on the hexagon grid
+   * @param {bigint} bits - The bits to set.
    */
   setBits (bits) {
     this.bits = bits
@@ -32,6 +41,7 @@ export class HexDraw extends DrawBase {
 
   /**
    * Set bits from array of coordinates
+   * @param {Array<Array<number>>} coords - Array of [q, r, s] coordinates.
    */
   setBitsFromCoords (coords) {
     this.mask.fromCoords(coords)
@@ -197,41 +207,14 @@ export class HexDraw extends DrawBase {
    * @private
    */
   _hitTest (px, py) {
-    const cubeCoords = this._pixelToCubeCoords(px, py)
+    const cubeCoords = pixelToHex(
+      px,
+      py,
+      this.hexSize,
+      this.offsetX,
+      this.offsetY
+    )
     return this._findHexIndex(cubeCoords)
-  }
-
-  /**
-   * Convert pixel coordinates to cube coordinates
-   * @private
-   */
-  _pixelToCubeCoords (px, py) {
-    const x = px - this.offsetX
-    const y = py - this.offsetY
-    const q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / this.hexSize
-    const r = ((2 / 3) * y) / this.hexSize
-    const s = -q - r
-    return this._roundCubeCoords(q, r, s)
-  }
-
-  /**
-   * Round pixel coordinates to nearest cube coordinates
-   * @private
-   */
-  _roundCubeCoords (q, r, s) {
-    let rq = Math.round(q)
-    let rr = Math.round(r)
-    let rs = Math.round(s)
-
-    const dq = Math.abs(rq - q)
-    const dr = Math.abs(rr - r)
-    const ds = Math.abs(rs - s)
-
-    if (dq > dr && dq > ds) rq = -rr - rs
-    else if (dr > ds) rr = -rq - rs
-    else rs = -rq - rr
-
-    return [rq, rr, rs]
   }
 
   /**
@@ -278,7 +261,7 @@ export class HexDraw extends DrawBase {
    * @private
    */
   _pixelToHex (x, y) {
-    return this._pixelToCubeCoords(x, y)
+    return pixelToHex(x, y, this.hexSize, this.offsetX, this.offsetY)
   }
 
   /**
@@ -286,6 +269,18 @@ export class HexDraw extends DrawBase {
    * @private
    */
   _cubeRound (q, r, s) {
-    return this._roundCubeCoords(q, r, s)
+    let rq = Math.round(q)
+    let rr = Math.round(r)
+    let rs = Math.round(s)
+
+    const dq = Math.abs(rq - q)
+    const dr = Math.abs(rr - r)
+    const ds = Math.abs(rs - s)
+
+    if (dq > dr && dq > ds) rq = -rr - rs
+    else if (dr > ds) rr = -rq - rs
+    else rs = -rq - rr
+
+    return [rq, rr, rs]
   }
 }

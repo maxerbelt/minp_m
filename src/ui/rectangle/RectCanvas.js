@@ -28,6 +28,24 @@ export class RectCanvas extends GridCanvas {
   }
 
   /**
+   * Apply action to a single cell based on current action setting.
+   * @param {Object} mask - Mask object with set/at methods.
+   * @param {number} x - X coordinate.
+   * @param {number} y - Y coordinate.
+   * @private
+   */
+  _applyActionToCell (mask, x, y) {
+    if (this.currentAction === 'set') {
+      mask.set(x, y, 1)
+    } else if (this.currentAction === 'clear') {
+      mask.set(x, y, 0)
+    } else if (this.currentAction === 'toggle') {
+      const current = mask.at(x, y)
+      mask.set(x, y, current ? 0 : 1)
+    }
+  }
+
+  /**
    * Setup toggle cell to respect line action value
    */
   setupToggleCellOverride () {
@@ -40,14 +58,7 @@ export class RectCanvas extends GridCanvas {
 
       if (location !== null) {
         const [x, y] = location
-        if (this.currentAction === 'set') {
-          this.grid.mask.set(x, y, 1)
-        } else if (this.currentAction === 'clear') {
-          this.grid.mask.set(x, y, 0)
-        } else if (this.currentAction === 'toggle') {
-          const current = this.grid.mask.at(x, y)
-          this.grid.mask.set(x, y, current ? 0 : 1)
-        }
+        this._applyActionToCell(this.grid.mask, x, y)
         this.grid.redraw()
       }
     }
@@ -191,7 +202,7 @@ export class RectCanvas extends GridCanvas {
     const coords = this.computePreviewCells(start, end)
     const mask = this.grid.mask
     coords.forEach(([x, y]) => {
-      applyMaskMutation(mask, x, y, this.currentAction)
+      this._applyActionToCell(mask, x, y)
     })
     // Clear preview cells after completing the line
     this.grid.previewCells = []
@@ -356,47 +367,59 @@ export class RectCanvas extends GridCanvas {
   }
 
   /**
+   * Wire button element to handler safely.
+   * @param {string} id - Button element ID.
+   * @param {Function} handler - Click handler.
+   * @private
+   */
+  _wireButton (id, handler) {
+    const btn =
+      typeof document !== 'undefined' ? document.getElementById(id) : null
+    if (btn) {
+      btn.addEventListener('click', handler)
+    }
+  }
+
+  /**
    * Wire transform buttons
    */
   wireTransformButtons () {
-    if (!this.grid || typeof document === 'undefined') return
+    if (!this.grid) return
 
-    document.getElementById('rotate-cw')?.addEventListener('click', () => {
-      this.applyTransform('r90')
-    })
-    document.getElementById('rotate-ccw')?.addEventListener('click', () => {
-      this.applyTransform('r270')
-    })
-    document.getElementById('flip-h')?.addEventListener('click', () => {
-      this.applyTransform('fx')
-    })
-    document.getElementById('flip-v')?.addEventListener('click', () => {
-      this.applyTransform('fy')
-    })
+    this._wireButton('rotate-cw', () => this.applyTransform('r90'))
+    this._wireButton('rotate-ccw', () => this.applyTransform('r270'))
+    this._wireButton('flip-h', () => this.applyTransform('fx'))
+    this._wireButton('flip-v', () => this.applyTransform('fy'))
   }
 
   /**
    * Wire morphology buttons
    */
   wireMorphologyButtons () {
-    if (!this.grid || typeof document === 'undefined') return
+    if (!this.grid) return
 
-    document.getElementById('dilate')?.addEventListener('click', () => {
-      this.applyMorphology('dilate')
-    })
-    document.getElementById('erode')?.addEventListener('click', () => {
-      this.applyMorphology('erode')
-    })
-    document.getElementById('cross-dilate')?.addEventListener('click', () => {
-      this.applyMorphology('cross')
-    })
+    this._wireButton('dilate', () => this.applyMorphology('dilate'))
+    this._wireButton('erode', () => this.applyMorphology('erode'))
+    this._wireButton('cross-dilate', () => this.applyMorphology('cross'))
+  }
+
+  /**
+   * Apply mask mutation and refresh UI.
+   * @param {Function} getMaskBits - Function returning new mask bits.
+   * @private
+   */
+  _applyMaskMutation (getMaskBits) {
+    if (!this.grid?.mask) return
+    this.grid.mask.bits = getMaskBits()
+    this.grid.redraw()
+    this.updateButtonStates()
   }
 
   /**
    * Wire mask mutation buttons
    */
   wireActionButtons () {
-    if (!this.grid || typeof document === 'undefined') return
+    if (!this.grid) return
 
     const maskMutations = {
       empty: () => this.grid.mask.emptyMask.bits,
@@ -409,14 +432,7 @@ export class RectCanvas extends GridCanvas {
     }
 
     Object.entries(maskMutations).forEach(([id, getMaskBits]) => {
-      const el = document.getElementById(id)
-      if (el && el !== this.grid.canvas) {
-        el.addEventListener('click', () => {
-          this.grid.mask.bits = getMaskBits()
-          this.grid.redraw()
-          this.updateButtonStates()
-        })
-      }
+      this._wireButton(id, () => this._applyMaskMutation(getMaskBits))
     })
   }
 

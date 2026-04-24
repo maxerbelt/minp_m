@@ -443,6 +443,48 @@ export class HexCanvas extends GridCanvas {
   }
 
   /**
+   * Update the grid bits if they have changed and refresh UI.
+   * @param {bigint} newBits - The new bits to set.
+   * @private
+   */
+  _updateBitsIfChanged (newBits) {
+    if (newBits !== this.grid.bits) {
+      this.grid.mask.bits = newBits
+      this.grid.setBits(newBits)
+      this.updateButtonStates()
+    }
+  }
+
+  /**
+   * Apply transform using store and indexer.
+   * @param {Object} mask - The mask object.
+   * @param {Array} map - The transform map.
+   * @param {Object} store - The bit store.
+   * @param {Object} indexer - The indexer.
+   * @private
+   */
+  _applyTransformWithStore (mask, map, store, indexer) {
+    let transformedBits = store.empty
+    for (const i of indexer.bitsIndices(mask.bits)) {
+      transformedBits = store.addBit(transformedBits, map[i])
+    }
+    this._updateBitsIfChanged(transformedBits)
+  }
+
+  /**
+   * Apply transform using applyMap function.
+   * @param {Array} map - The transform map.
+   * @param {Object} actions - The actions object.
+   * @private
+   */
+  _applyTransformWithApplyMap (map, actions) {
+    const newBits = actions.applyMap(map)
+    if (newBits) {
+      this._updateBitsIfChanged(newBits)
+    }
+  }
+
+  /**
    * Apply transform operation using specified map index.
    * @param {number} mapIndex - Index of transform map to apply.
    */
@@ -459,21 +501,9 @@ export class HexCanvas extends GridCanvas {
     const indexer = actions?.indexer || mask.indexer
 
     if (store && indexer) {
-      let transformedBits = store.empty
-      for (const i of indexer.bitsIndices(mask.bits)) {
-        transformedBits = store.addBit(transformedBits, map[i])
-      }
-      if (transformedBits !== this.grid.bits) {
-        mask.bits = transformedBits
-        this.grid.setBits(transformedBits)
-        this.updateButtonStates()
-      }
+      this._applyTransformWithStore(mask, map, store, indexer)
     } else {
-      const newBits = actions?.applyMap?.(map)
-      if (newBits && newBits !== this.grid.bits) {
-        this.grid.setBits(newBits)
-        this.updateButtonStates()
-      }
+      this._applyTransformWithApplyMap(map, actions)
     }
   }
 

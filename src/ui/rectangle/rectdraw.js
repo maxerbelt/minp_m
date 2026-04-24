@@ -6,6 +6,16 @@ import { DrawBase } from '../drawBase.js'
  * Color coding: set=green, unset=blue, hover=orange
  */
 export class RectDraw extends DrawBase {
+  /**
+   * Creates a RectDraw instance for rendering rectangular grids.
+   * @param {string} canvasId - The ID of the canvas element.
+   * @param {number} [width=10] - Width of the grid in cells.
+   * @param {number} [height=10] - Height of the grid in cells.
+   * @param {number} [cellSize=25] - Size of each cell in pixels.
+   * @param {number} [offsetX=0] - X offset for drawing.
+   * @param {number} [offsetY=0] - Y offset for drawing.
+   * @param {number} [depth=2] - Bit depth per cell.
+   */
   constructor (
     canvasId,
     width = 10,
@@ -25,6 +35,7 @@ export class RectDraw extends DrawBase {
 
   /**
    * Set bits from array of [x, y] coordinates
+   * @param {Array<Array<number>>} coords - Array of [x, y] coordinate pairs.
    */
   setBitsFromCoords (coords) {
     this.mask.fromCoords(coords)
@@ -56,7 +67,8 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Iterate over grid dimensions with callback
+   * Iterate over grid dimensions executing callback for each cell.
+   * @param {Function} callback - Function receiving (x, y) coordinates.
    * @private
    */
   _iterateGridCells (callback) {
@@ -68,7 +80,10 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Check if a cell at (x, y) is set
+   * Check if a cell at (x, y) is set to 1.
+   * @param {number} x - X coordinate.
+   * @param {number} y - Y coordinate.
+   * @returns {boolean} True if cell is set.
    * @private
    */
   _isCellSet (x, y) {
@@ -76,7 +91,9 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Determine color based on cell state
+   * Determine color for cell based on set/unset state.
+   * @param {boolean} isSet - Whether cell is set.
+   * @returns {string} Color string.
    * @private
    */
   _getCellColor (isSet) {
@@ -84,7 +101,11 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Draw a single cell at (x, y)
+   * Draw a single cell at (x, y) with color and stroke.
+   * @param {number} x - X coordinate.
+   * @param {number} y - Y coordinate.
+   * @param {string} [color='#4caf50'] - Fill color.
+   * @param {string} [stroke='#333'] - Stroke color.
    * @private
    */
   _drawCell (x, y, color = '#4caf50', stroke = '#333') {
@@ -100,7 +121,11 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Draw a rectangular cell at grid coordinates with color
+   * Draw a rectangular cell at grid coordinates with color and stroke.
+   * @param {number} x - X coordinate.
+   * @param {number} y - Y coordinate.
+   * @param {string} [color='#4caf50'] - Fill color.
+   * @param {string} [strokeColor='#333'] - Stroke color.
    * @private
    */
   _drawRectCell (x, y, color = '#4caf50', strokeColor = '#333') {
@@ -112,7 +137,7 @@ export class RectDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Draw the hovered cell in orange
+   * Draw hovered cell in orange highlight.
    * @private
    */
   _drawHover () {
@@ -122,7 +147,7 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Render the hover highlight at current hover location
+   * Render the hover highlight at current hover location.
    * @private
    */
   _drawHoverCell () {
@@ -135,7 +160,8 @@ export class RectDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Toggle a cell at [x, y] coordinates
+   * Toggle a cell at [x, y] coordinates.
+   * @param {Array<number>|null} location - [x, y] coordinate pair or null.
    */
   toggleCell (location) {
     if (location !== null) {
@@ -144,7 +170,9 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Toggle binary state of a cell and redraw
+   * Toggle binary state of a cell and redraw.
+   * @param {number} x - X coordinate.
+   * @param {number} y - Y coordinate.
    * @private
    */
   _toggleCellState (x, y) {
@@ -158,7 +186,10 @@ export class RectDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Hit test to find which cell is at pixel coordinates
+   * Hit test to find which cell is at pixel coordinates.
+   * @param {number} px - Pixel X coordinate.
+   * @param {number} py - Pixel Y coordinate.
+   * @returns {Array<number>|null} [x, y] coordinates or null if out of bounds.
    * @private
    */
   _hitTest (px, py) {
@@ -167,8 +198,11 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Convert pixel coordinates to grid coordinates
-   * Respects coordinateMode (clamped vs wrapped)
+   * Convert pixel coordinates to grid coordinates.
+   * Respects coordinateMode (clamped vs wrapped).
+   * @param {number} px - Pixel X coordinate.
+   * @param {number} py - Pixel Y coordinate.
+   * @returns {Array<number>} [x, y] grid coordinates.
    * @private
    */
   _pixelToGridCoords (px, py) {
@@ -185,8 +219,11 @@ export class RectDraw extends DrawBase {
   }
 
   /**
-   * Check if coordinates are within grid bounds
-   * In wrapped mode, all coordinates are valid
+   * Check if coordinates are within grid bounds.
+   * In wrapped mode, all coordinates are valid.
+   * @param {number} x - X coordinate.
+   * @param {number} y - Y coordinate.
+   * @returns {boolean} True if valid.
    * @private
    */
   _isValidCell (x, y) {
