@@ -1,22 +1,40 @@
 const MAX_LINES = 20
 import { randomElement } from '../core/utilities.js'
+
+/**
+ * Manages game status, tips, and ammo display UI.
+ */
 export class StatusUI {
+  /**
+   * Creates a StatusUI instance.
+   */
   constructor () {
     const getElement = id => document.getElementById(id)
 
+    // Status display elements
     this.mode = getElement('modeStatus')
     this.game = getElement('gameStatus')
     this.right = getElement('statusRight')
+
+    // Ammo counter elements
     this.counter = getElement('ammoCounter')
     this.total = getElement('ammoCounterTotal')
     this.left = getElement('ammoCounterLeft')
+
+    // Mode icons
     this.icon1 = getElement('modeIcon1')
     this.icon2 = getElement('modeIcon2')
+
+    // Status line elements
     this.line = getElement('statusLine')
     this.line2 = getElement('statusLine2')
     this.list = getElement('statusList')
+
+    // Chevron elements
     this.chevronBox = getElement('chevron-box')
     this.chevron = getElement('chevron')
+
+    // State tracking
     this.important = false
     this.scoreQueue = []
     this.tipsQueue = []
@@ -25,10 +43,16 @@ export class StatusUI {
     this.waiting = false
   }
 
+  /**
+   * Clears the current status display.
+   */
   clear () {
     this.display('', '')
   }
 
+  /**
+   * Clears any pending timer.
+   */
   clearTimer () {
     if (this.timer !== null) {
       clearTimeout(this.timer)
@@ -36,14 +60,28 @@ export class StatusUI {
     }
   }
 
+  /**
+   * Schedules a callback after a duration.
+   * @param {number} duration - Duration in milliseconds
+   * @param {Function} callback - Function to call after duration
+   */
   scheduleTimer (duration, callback) {
     this.clearTimer()
     this.timer = setTimeout(callback, duration)
   }
+
+  /**
+   * Gets a random tip from the queue.
+   * @returns {string|null} A random tip or null if queue is empty
+   */
   get newTip () {
     if (this.tipsQueue.length === 0) return null
     return randomElement(this.tipsQueue)
   }
+
+  /**
+   * Processes the next item in the score queue.
+   */
   nextInQueue () {
     const next = this.scoreQueue.shift()
     if (next) {
@@ -57,12 +95,20 @@ export class StatusUI {
     }
   }
 
+  /**
+   * Adds a tip to the display queue with delay.
+   * @private
+   */
   addTipToQueue () {
     this.waiting = true
-    this.scheduleTimer(1500, () => this.handleTipTimeout())
+    this.scheduleTimer(1500, () => this._handleTipTimeout())
   }
 
-  handleTipTimeout () {
+  /**
+   * Handles tip display timeout.
+   * @private
+   */
+  _handleTipTimeout () {
     this.timer = null
     const old = this.current
     this.current = null
@@ -77,25 +123,37 @@ export class StatusUI {
     }
   }
 
-  showImediately (newItem) {
+  /**
+   * Shows a new item immediately, clearing any pending timers.
+   * @param {string} newItem - The item to show
+   */
+  showImmediately (newItem) {
     if (this.current === newItem) return
     this.clearTimer()
     this.showSoon(newItem, true, 2500)
   }
 
-  showImmediately (newItem) {
-    return this.showImediately(newItem)
-  }
-
+  /**
+   * Shows an item soon if not currently displayed or queued.
+   * @param {string} newItem - The item to show
+   * @param {boolean} [isImportant=false] - Whether this is important
+   * @param {number} [duration=2500] - Duration to display in milliseconds
+   */
   showSoonish (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem) return
     if (this.scoreQueue.length > 0) {
-      return this.addToQueue(newItem, isImportant)
+      return this._addToQueue(newItem, isImportant)
     }
     this.showSoon(newItem, isImportant, duration)
   }
 
-  addToQueue (newItem, isImportant = false) {
+  /**
+   * Adds an item to the score queue.
+   * @private
+   * @param {string} newItem - The item to queue
+   * @param {boolean} [isImportant=false] - Whether this is important
+   */
+  _addToQueue (newItem, isImportant = false) {
     this.scoreQueue.push({ item: newItem, isImportant })
     if (this.waiting) {
       this.clearTimer()
@@ -104,30 +162,54 @@ export class StatusUI {
     }
   }
 
+  /**
+   * Shows an item soon with automatic queue handling.
+   * @param {string} newItem - The item to show
+   * @param {boolean} [isImportant=false] - Whether this is important
+   * @param {number} [duration=2500] - Duration to display in milliseconds
+   */
   showSoon (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem && !isImportant) return
     if (this.timer === null) {
       this.show(newItem, isImportant)
       this.waitFor(duration)
     } else {
-      this.addToQueue(newItem, isImportant)
+      this._addToQueue(newItem, isImportant)
     }
   }
 
+  /**
+   * Clears all queues and timers.
+   */
   clearQueue () {
     this.scoreQueue = []
     this.tipsQueue = []
     this.clearTimer()
     this.info('')
   }
+
+  /**
+   * Clears the mode display.
+   */
   clearMode () {
     this.mode.textContent = ''
   }
+
+  /**
+   * Shows an item in the status display.
+   * @param {string} newItem - The item to show
+   * @param {boolean} [isImportant=false] - Whether this is important
+   */
   show (newItem, isImportant) {
     this.current = newItem
-    this.infoBase(newItem)
+    this._updateStatusDisplay(newItem)
     this.important = isImportant
   }
+
+  /**
+   * Waits for a duration before processing the next queue item.
+   * @param {number} duration - Duration in milliseconds
+   */
   waitFor (duration) {
     clearTimeout(this.timer)
     this.timer = null
@@ -136,9 +218,20 @@ export class StatusUI {
       this.nextInQueue()
     }, duration)
   }
+
+  /**
+   * Adds a score update to the queue.
+   * @param {string} scoreText - The score text to display
+   */
   addScore (scoreText) {
     this.scoreQueue.push(scoreText)
   }
+
+  /**
+   * Sets the tips queue and optionally shows the first tip.
+   * @param {Array<string>} tips - Array of tips
+   * @param {string} [showFirst] - Optional specific tip to show first
+   */
   setTips (tips, showFirst) {
     this.tipsQueue = tips || []
     const firstTip = showFirst || this.newTip || tips[0]
@@ -146,119 +239,213 @@ export class StatusUI {
       this.showSoon(firstTip, false, 3000)
     }
   }
+
+  /**
+   * Adds a single tip to the tips queue.
+   * @param {string} tip - The tip to add
+   */
   addTip (tip) {
     this.tipsQueue.push(tip)
   }
+
+  /**
+   * Adds a line of text to the status list, with automatic scrolling.
+   * @param {string} text - The text to display
+   */
   prependLine (text) {
     if (!text || text === '' || text === 'Single Shot Mode') return
     const line = document.createElement('div')
     line.className = 'status small detail-line'
     line.textContent = text
 
-    // add to beginning
+    // Add to beginning
     this.list.prepend(line)
 
-    // remove excess lines from bottom
+    // Remove excess lines from bottom
     while (this.list.children.length > MAX_LINES) {
       this.list.lastChild?.remove()
     }
-    this.setListVisibility(this.list.children.length > 0)
+    this._setListVisibility(this.list.children.length > 0)
   }
 
-  setListVisibility (isVisible) {
+  /**
+   * Sets the visibility of the status list.
+   * @private
+   * @param {boolean} isVisible - Whether the list should be visible
+   */
+  _setListVisibility (isVisible) {
     this.chevron.classList.toggle('hidden', !isVisible)
     this.list.classList.toggle('hidden', !isVisible)
   }
+
+  /**
+   * Shows the mode text.
+   * @param {string} mode - The mode to display
+   */
   showMode (mode) {
     this.mode.textContent = mode
   }
+
+  /**
+   * Displays mode and game status.
+   * @param {string} mode - The mode text
+   * @param {string} game - The game status text
+   */
   display (mode, game) {
     this.showMode(mode)
     if (game) {
-      this.addToQueue(game, false)
+      this._addToQueue(game, false)
     }
   }
+
+  /**
+   * Displays ammo status for a weapon system.
+   * @param {Object} wps - The weapon system
+   * @param {Object} maps - The maps configuration
+   * @param {number} [numCoords=-1] - Number of coordinates
+   * @param {Object} [selectedWps=null] - Selected weapon system
+   */
   displayAmmoStatus (wps, maps, numCoords = -1, selectedWps = null) {
     if (
       !wps ||
       (selectedWps && wps.weapon.letter !== selectedWps.weapon.letter)
-    )
+    ) {
       return
+    }
     const weapon = wps.weapon
-    const selected = selectedWps ? 1 : 0
     gameStatus.showMode(weapon?.name || 'Single Shot')
-    this.resetAmmoIcons()
+    this._resetAmmoIcons()
+
     let idxUsed
     if (weapon.isLimited) {
-      const ammo = wps.ammoRemaining()
-      const letter = weapon.letter
-      idxUsed = this.displayLimitedAmmoStatus(
+      idxUsed = this._displayLimitedAmmoStatus(
         wps,
-        ammo,
-        weapon,
-        numCoords,
         maps,
-        letter,
-        selected
+        numCoords,
+        selectedWps
       )
     } else {
-      idxUsed = this.displaySingleShotStatus()
+      idxUsed = this._displaySingleShotStatus()
     }
-    this.addToQueue(weapon.stepHint(idxUsed), false)
+    this._addToQueue(weapon.stepHint(idxUsed), false)
   }
 
-  resetAmmoIcons () {
-    this.icon1.className = 'mode-icon tally-box'
-    this.icon2.className = 'mode-icon tally-box'
-  }
-  displayLimitedAmmoStatus (wps, ammo, weapon, numCoords, maps, letter, select) {
-    this.displayAmmoRemaining(wps, ammo)
+  /**
+   * Displays limited ammo status with step indicators.
+   * @private
+   * @param {Object} wps - The weapon system
+   * @param {Object} maps - The maps configuration
+   * @param {number} numCoords - Number of coordinates
+   * @param {Object} selectedWps - Selected weapon system
+   * @returns {number} The current step index
+   */
+  _displayLimitedAmmoStatus (wps, maps, numCoords, selectedWps) {
+    const ammo = wps.ammoRemaining()
+    const weapon = wps.weapon
+    const letter = weapon.letter
+
+    this._displayAmmoRemaining(wps, ammo)
+
     if (weapon.numStep >= 2) {
-      const idx = weapon.stepIdx(numCoords, select)
-      this.diplayWhichLaunchStep(idx)
-      this.displayAimStep(maps, letter, weapon)
-      this.displayLaunchFirstStep(maps, letter, weapon)
+      const idx = weapon.stepIdx(numCoords, selectedWps ? 1 : 0)
+      this._displayWhichLaunchStep(idx)
+      this._displayAimStep(maps, letter, weapon)
+      this._displayLaunchFirstStep(maps, letter, weapon)
       return idx
     }
+
     if (weapon.hasExtraSelectCursor) {
       this.icon1.classList.add('hidden')
-      this.displayAimStep(maps, letter, weapon)
+      this._displayAimStep(maps, letter, weapon)
       return 1
     }
+
     this.icon2.classList.add('hidden')
-    this.displayLaunchFirstStep(maps, letter, weapon)
+    this._displayLaunchFirstStep(maps, letter, weapon)
     return 0
   }
 
-  displayLaunchFirstStep (maps, letter, weapon) {
-    this.updateIconAppearance(
+  /**
+   * Displays single shot (unlimited) ammo status.
+   * @private
+   * @returns {number} Always returns 0
+   */
+  _displaySingleShotStatus () {
+    this._displayInfiniteAmmo()
+    this._displaySShotIcon()
+    return 0
+  }
+
+  /**
+   * Resets ammo icon styling.
+   * @private
+   */
+  _resetAmmoIcons () {
+    this.icon1.className = 'mode-icon tally-box'
+    this.icon2.className = 'mode-icon tally-box'
+  }
+
+  /**
+   * Displays the launch (first) step icon.
+   * @private
+   * @param {Object} maps - The maps configuration
+   * @param {string} letter - The weapon letter
+   * @param {Object} weapon - The weapon object
+   */
+  _displayLaunchFirstStep (maps, letter, weapon) {
+    this._updateIconAppearance(
       this.icon1,
       maps.shipColors[letter + '1'],
       weapon
     )
   }
 
-  displayAimStep (maps, letter, weapon) {
-    this.updateIconAppearance(
+  /**
+   * Displays the aim (second) step icon.
+   * @private
+   * @param {Object} maps - The maps configuration
+   * @param {string} letter - The weapon letter
+   * @param {Object} weapon - The weapon object
+   */
+  _displayAimStep (maps, letter, weapon) {
+    this._updateIconAppearance(
       this.icon2,
       maps.shipColors[letter + '2'],
       weapon
     )
   }
 
-  updateIconAppearance (icon, background, weapon) {
+  /**
+   * Updates icon styling and appearance.
+   * @private
+   * @param {HTMLElement} icon - The icon element
+   * @param {string} background - The background color
+   * @param {Object} weapon - The weapon object
+   */
+  _updateIconAppearance (icon, background, weapon) {
     icon.textContent = ''
     icon.style.background = background
     icon.classList.add('mode-icon', 'tally-box', weapon.classname)
   }
-  noLaunchSteps () {
+
+  /**
+   * Removes on/off state classes from icons.
+   * @private
+   */
+  _noLaunchSteps () {
     this.icon1.classList.remove('off')
     this.icon2.classList.remove('off')
     this.icon1.classList.remove('on')
     this.icon2.classList.remove('on')
   }
-  displayWhichLaunchStep (numCoords) {
-    switch (numCoords) {
+
+  /**
+   * Displays which launch step is currently active.
+   * @private
+   * @param {number} stepIndex - The step index (0 or 1)
+   */
+  _displayWhichLaunchStep (stepIndex) {
+    switch (stepIndex) {
       case 0:
         this.icon1.classList.remove('off')
         this.icon2.classList.add('off')
@@ -272,53 +459,78 @@ export class StatusUI {
         this.icon2.classList.add('on')
         break
       default:
-        this.noLaunchSteps()
+        this._noLaunchSteps()
         break
     }
   }
 
-  diplayWhichLaunchStep (numCoords) {
-    return this.displayWhichLaunchStep(numCoords)
-  }
-
-  displayAmmoRemaining (wps, ammo) {
+  /**
+   * Displays remaining ammo count.
+   * @private
+   * @param {Object} wps - The weapon system
+   * @param {number} ammo - Remaining ammo count
+   */
+  _displayAmmoRemaining (wps, ammo) {
     this.counter.classList.remove('hidden')
     const total = wps.ammoCapacity()
     this.total.textContent = total
     this.left.textContent = ammo
   }
 
-  displaySingleShotStatus () {
-    this.displayInfiniteAmmo()
-    this.displaySShotIcon()
-  }
-
-  displaySShotIcon () {
+  /**
+   * Displays single shot mode icon.
+   * @private
+   */
+  _displaySShotIcon () {
     this.icon1.style.background = 'white'
     this.icon1.classList.add('single')
     this.icon2.classList.add('hidden')
   }
 
-  displayInfiniteAmmo () {
+  /**
+   * Displays infinite ammo indicator.
+   * @private
+   */
+  _displayInfiniteAmmo () {
     this.counter.classList.remove('hidden')
     this.total.textContent = '∞'
     this.left.textContent = '∞'
   }
+
+  /**
+   * Flushes the queue, keeping only important items.
+   */
   flush () {
     this.scoreQueue = this.scoreQueue.filter(({ isImportant }) => isImportant)
     if (!this.important) {
       this.game.textContent = ''
     }
   }
+
+  /**
+   * Shows info with non-important flag.
+   * @param {string} game - The game status text
+   */
   info (game) {
-    this.infoBase(game)
+    this._updateStatusDisplay(game)
     this.important = false
   }
+
+  /**
+   * Shows info with important flag.
+   * @param {string} game - The game status text
+   */
   info2 (game) {
-    this.infoBase(game)
+    this._updateStatusDisplay(game)
     this.important = true
   }
-  infoBase (game) {
+
+  /**
+   * Updates the status display with optional history prepending.
+   * @private
+   * @param {string} game - The game status text
+   */
+  _updateStatusDisplay (game) {
     if (this.important) {
       this.prependLine(this.game.textContent)
     }

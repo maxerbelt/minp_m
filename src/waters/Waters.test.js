@@ -5,9 +5,9 @@
 /* eslint-env jest */
 
 /* global   it, describe,   expect, beforeEach, jest */
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 import { Waters } from './Waters.js'
 import { bh } from '../terrains/all/js/bh.js'
-import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // Mocks
 const mockUI = {

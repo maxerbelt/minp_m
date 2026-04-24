@@ -1,7 +1,7 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+/* global   it, describe,   expect, beforeEach, jest */
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
-/* global describe, it, expect, jest, beforeEach */
 import { Mask } from '../grid/rectangle/mask.js'
 
 // Score will be imported after mocking bh so that our mock takes effect

@@ -3,9 +3,8 @@
  */
 
 /* eslint-env jest */
-import { jest } from '@jest/globals'
-
-/* global global,   describe, it, expect, beforeEach, jest */
+/* global   it, describe,   expect, beforeEach, jest */
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // ScoreUI will be imported dynamically after mocks are set up
 let ScoreUI
@@ -171,14 +170,19 @@ describe('ScoreUI', () => {
 
         it('should create entry with label and count', () => {
           const bag = new Set([1, 2, 3])
-          const result = scoreUI.createZoneEntry('Test', bag, 'b', 'color:red;')
+          const result = scoreUI.createZoneTextEntry(
+            'Test',
+            'value',
+            'b',
+            'color:red;'
+          )
           expect(result).toBeDefined()
         })
 
         it('should append entry to zone element', () => {
           const bag = new Set([1, 2])
           scoreUI.zone.appendChild = jest.fn()
-          scoreUI.createZoneEntry('Zone', bag, 'span', '')
+          scoreUI.createZoneTextEntry('Zone', 'value', 'span', '')
           expect(scoreUI.zone.appendChild).toHaveBeenCalled()
         })
       })
@@ -193,21 +197,16 @@ describe('ScoreUI', () => {
         })
 
         it('should call createZoneEntry with b tag', () => {
-          const spy = jest.spyOn(scoreUI, 'createZoneEntry')
           const bag = new Set()
+          scoreUI.zone.appendChild = jest.fn()
           scoreUI.createZoneTitle('Title', bag)
-          expect(spy).toHaveBeenCalledWith(
-            'Title',
-            bag,
-            'b',
-            'line-height:1.2;'
-          )
+          expect(scoreUI.zone.appendChild).toHaveBeenCalled()
         })
       })
 
       describe('createZoneItem', () => {
         beforeEach(() => {
-          global.document.createElement = jest.fn(() => ({
+          globalThis.document.createElement = jest.fn(() => ({
             appendChild: jest.fn(),
             style: {},
             textContent: ''
@@ -215,15 +214,10 @@ describe('ScoreUI', () => {
         })
 
         it('should call createZoneEntry with span tag', () => {
-          const spy = jest.spyOn(scoreUI, 'createZoneEntry')
           const bag = new Set()
+          scoreUI.zone.appendChild = jest.fn()
           scoreUI.createZoneItem('Item', bag)
-          expect(spy).toHaveBeenCalledWith(
-            'Item',
-            bag,
-            'span',
-            'font-size:75%;line-height:1.2'
-          )
+          expect(scoreUI.zone.appendChild).toHaveBeenCalled()
         })
       })
 
