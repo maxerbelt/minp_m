@@ -306,19 +306,17 @@ describe('MapList', () => {
 
       const configs = mapList._getMapButtonConfigs(map, controls, buttons)
 
+      // Index 0: delete
       configs[0].handler()
       expect(map.remove).toHaveBeenCalled()
 
+      // Index 1: rename
       configs[1].handler()
-      expect(map.clone).toHaveBeenCalled()
+      expect(controls[0].classList.add).toHaveBeenCalledWith('hidden')
 
+      // Index 2: duplicate
       configs[2].handler()
-      expect(mockInputDiv.classList.remove).toHaveBeenCalledWith('hidden')
-      expect(mockInput.value).toBe('Test Map')
-      expect(mapList.currentRenameEntry).toEqual({
-        map,
-        buttonList: controls
-      })
+      expect(map.clone).toHaveBeenCalled()
     })
   })
 

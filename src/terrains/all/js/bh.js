@@ -38,7 +38,6 @@ if (!bhLocal)
       }
       const soundUrl = this.sounds?.[type]
       if (soundUrl) {
-        console.log('Playing boom sound for type', type, 'from url', soundUrl)
         this.audio.playAfterLoad(type + 'Boom', soundUrl)
       } else {
         console.warn('No boom sound for type', type)

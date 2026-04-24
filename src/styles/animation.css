@@ -425,6 +425,40 @@
     background-image: url('../images/skull28.png');
 }
 
+.cell.hit.skull::after {
+    content: '';
+    position: absolute;
+    margin: 3px 3px 3px 3px;
+    inset: 0;
+    /* shorthand for top/right/bottom/left: 0 */
+
+    background-repeat: no-repeat;
+    background-position: center;
+
+    background-image:
+        linear-gradient(rgba(255, 0, 0, 0.4), rgba(255, 0, 0, 0.4)),
+        url('../images/skull28.png');
+    background-size: cover;
+
+}
+
+.cell.hit.damaged::after {
+    content: '';
+    position: absolute;
+    margin: 3px 3px 3px 3px;
+    inset: 0;
+    /* shorthand for top/right/bottom/left: 0 */
+
+    background-repeat: no-repeat;
+    background-position: center;
+
+    background-image:
+        linear-gradient(rgba(255, 0, 0, 0.4), rgba(255, 0, 0, 0.4)),
+        url('../images/skullol28.png');
+    background-size: cover;
+
+}
+
 .cell.frd-hit.damaged::after,
 .cell.enm-sunk.damaged::after,
 .cell.frd-sunk.damaged::after {
