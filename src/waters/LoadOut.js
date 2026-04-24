@@ -469,6 +469,9 @@ export class LoadOut {
     this.setCurrentWeaponIndex(idx)
     return true
   }
+  get isSingleShot () {
+    return this.currentWeaponIndex === 0
+  }
   switchToSingleShot () {
     this.setCurrentWeaponIndex(0)
     return true
