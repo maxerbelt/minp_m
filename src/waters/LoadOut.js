@@ -70,11 +70,12 @@ export class LoadOut {
    * @param {Ship[]} ships - Array of ships with attached weapons
    * @param {ViewModel} viewModel - The view model for grid interactions
    */
-  constructor (weapons, ships, viewModel) {
+  constructor (weapons, ships, viewModel, steps) {
     this.onOutOfAllAmmo = Function.prototype
     this.onOutOfAmmo = Function.prototype
     this.onCursorChangeCallback = Function.prototype
     this.onDestroy = LoadOut.givesNoResult
+    this.steps = steps
     this.onReveal = LoadOut.givesNoResult
     this.onSound = Function.prototype
     this.currentWeaponIndex = 0
@@ -544,6 +545,7 @@ export class LoadOut {
     const info = this.firingInfoIfReady(map, row, col, weaponSystem)
     if (info) {
       const { fireCoordinates, fireWeapon, wps, weapon } = info
+      this.steps.fire()
       const launchInfo = await launch(fireCoordinates, weapon, wps)
       return fireWeapon(launchInfo?.target)
     }

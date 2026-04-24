@@ -558,7 +558,7 @@ export class Waters {
    */
   createLoadOut (map, ships) {
     ships = ships || this.weaponShips
-    return new LoadOut(map.weapons, ships, this.UI)
+    return new LoadOut(map.weapons, ships, this.UI, this.steps)
   }
   /**
    * Displays auto-selection warning for weapons.
@@ -725,7 +725,6 @@ export class Waters {
 
       rack.hintCoord = [hintR, hintC]
       this.loadOut.launch = async coords => {
-        this.steps.fire()
         return await this.launchTo(coords, hintR, hintC, rack)
       }
       this.loadOut.selectedWeapon = rack
@@ -936,7 +935,6 @@ export class Waters {
   }
   async launchWeapon (wps, coords) {
     const { r, c } = this.steps.sourceHint || { r: 0, c: 0 }
-    this.steps.fire()
     return await this.launchTo(coords, r, c, wps)
   }
 

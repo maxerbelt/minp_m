@@ -31,7 +31,7 @@ class Enemy extends Waters {
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
     this.steps.onActivate = this._handleActivate.bind(this)
     this.steps.onSelect = this._handleSelect.bind(this)
-    this.steps.onHint = this._handleHint.bind(this)
+    this.steps.onHint = this.onHint.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
   }
 
