@@ -294,7 +294,7 @@ class Enemy extends Waters {
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
     this.UI.removeHighlightAoE()
-    this.setWeaponFireHanders()
+    this.setWeaponFireHandlers()
     let hasLaunched = await this.launchSelectedWeapon(r, c)
     if (hasLaunched) return
     hasLaunched = await this.launchRandomWeapon(r, c, bh.seekingMode)

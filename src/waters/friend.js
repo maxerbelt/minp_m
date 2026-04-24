@@ -608,7 +608,7 @@ export class Friend extends Waters {
    */
   async seekStep () {
     const hits = this.getHits()
-    this.setWeaponFireHanders()
+    this.setWeaponFireHandlers()
     const result = await this.selectShot(hits)
     if (
       result &&

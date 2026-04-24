@@ -764,7 +764,8 @@ export class Waters {
   }
 
   randomAttachedWeapon (oppo) {
-    const { launchR, launchC, weaponId, hintR, hintC } = this.randomWeaponId()
+    const { launchR, launchC, weaponId, hintR, hintC } =
+      this.selectRandomWeapon()
 
     this.selectAndArmWeaponId(weaponId, oppo, launchR, launchC, hintR, hintC)
   }
@@ -826,7 +827,7 @@ export class Waters {
       parseTriple(k)
     )
     if (!random && !wkey) {
-      return this.randomWeaponId()
+      return this.selectRandomWeapon()
     }
     const [launchC, launchR, weaponId] = parseTriple(wkey)
     this.steps.addSource(
