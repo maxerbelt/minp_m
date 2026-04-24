@@ -18,7 +18,13 @@ const SHIP_TIPS = [
   'drag weapons tally-boxes back to the tray to remove a weapon'
 ]
 
+/**
+ * UI class for custom map and ship placement mode.
+ */
 export class CustomUI extends PlacementUI {
+  /**
+   * Initializes the custom UI with cached elements and initial tips.
+   */
   constructor () {
     super('custom', 'Customizing')
     this._cacheElements() // Cache DOM elements for performance
@@ -54,7 +60,7 @@ export class CustomUI extends PlacementUI {
 
   /**
    * Toggles visibility of multiple elements.
-   * @param {Object} visibilityMap - Map of element to show/hide.
+   * @param {Array<Array>} visibilityMap - Array of [element, show] pairs.
    * @private
    */
   _toggleElementVisibility (visibilityMap) {
@@ -128,7 +134,7 @@ export class CustomUI extends PlacementUI {
 
   /**
    * Cancels listeners.
-   * @param {Array} listeners - Array of cancellable listeners.
+   * @param {Array<Function>} listeners - Array of cancellable listeners.
    * @private
    */
   _cancelListeners (listeners) {
@@ -139,6 +145,7 @@ export class CustomUI extends PlacementUI {
 
   /**
    * Configures UI for adding ships.
+   * @param {Array} ships - Ships to add.
    * @private
    */
   _configureShipUI (ships) {
