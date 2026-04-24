@@ -2,16 +2,32 @@ import { bh } from '../terrains/all/js/bh.js'
 import { Waters } from './Waters.js'
 import { customUI } from './customUI.js'
 
+/**
+ * Custom game mode that extends Waters with additional ship displacement calculations.
+ * Provides metrics for evaluating fleet composition and playability.
+ *
+ * @class Custom
+ * @extends Waters
+ */
 export class Custom extends Waters {
-  constructor (customUI) {
-    super(customUI)
+  /**
+   * Creates a Custom game instance.
+   * @param {Object} ui - The custom UI instance
+   */
+  constructor (ui) {
+    super(ui)
+    /** @type {Array<Object>} Candidate ships for placement */
     this.candidateShips = []
+    /** @type {Array<Object>} Currently tracked ships */
     this.ships = []
   }
 
   /**
-   * Calculates the displaced area based on the map dimensions.
-   * @returns {number} The displaced area.
+   * Calculates the total area available for ship placement based on map dimensions.
+   * Formula: (rows + 1) × (cols + 1) + 1
+   *
+   * @returns {number} The displaced area in grid units
+   * @private
    */
   calculateDisplacedArea () {
     const map = bh.map
@@ -19,24 +35,29 @@ export class Custom extends Waters {
   }
 
   /**
-   * Gets the total number of ships.
-   * @returns {number} Ship count.
+   * Gets the total number of ships in the fleet.
+   *
+   * @returns {number} Ship count
    */
   getShipCount () {
     return this.ships.length
   }
 
   /**
-   * Gets the number of ships that have been placed (have cells).
-   * @returns {number} Placed ship count.
+   * Gets the number of ships that have been placed on the board.
+   * A placed ship has at least one cell occupied.
+   *
+   * @returns {number} Count of ships with cells assigned
    */
   getPlacedShipCount () {
     return this.ships.filter(ship => ship.cells.length > 0).length
   }
 
   /**
-   * Calculates the total displacement of all ships.
-   * @returns {number} Total displacement.
+   * Calculates the total displacement (area) of all ships in the fleet.
+   * Displacement is the sum of individual ship shape displacements.
+   *
+   * @returns {number} Total displacement in grid units
    */
   getTotalShipDisplacement () {
     return this.ships.reduce(
@@ -46,24 +67,31 @@ export class Custom extends Waters {
   }
 
   /**
-   * Checks if there are playable ships based on displacement ratio.
-   * @returns {boolean} True if ratio < 0.35.
+   * Evaluates if the current fleet composition provides playable difficulty.
+   * Playable when displacement ratio is below 35% of available area.
+   *
+   * @returns {boolean} True if fleet ratio < 0.35 (playable)
    */
   hasPlayableShips () {
     return this.getDisplacementRatio() < 0.35
   }
 
   /**
-   * Checks if there are few ships based on displacement ratio.
-   * @returns {boolean} True if ratio < 0.15.
+   * Evaluates if the current fleet is sparse (few ships).
+   * Few ships when displacement ratio is below 15% of available area.
+   *
+   * @returns {boolean} True if fleet ratio < 0.15 (sparse)
    */
   hasFewShips () {
     return this.getDisplacementRatio() < 0.15
   }
 
   /**
-   * Calculates the displacement ratio.
-   * @returns {number} Ratio of total displacement to displaced area.
+   * Calculates the fleet displacement ratio.
+   * Ratio = Total Ship Displacement / Available Area
+   * Used to determine game difficulty and balance.
+   *
+   * @returns {number} Displacement ratio (0.0 to 1.0+)
    */
   getDisplacementRatio () {
     return this.getTotalShipDisplacement() / this.calculateDisplacedArea()

@@ -18,23 +18,49 @@ import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Steps } from './steps.js'
 import { Animator } from '../core/Animator.js'
 
-function popFirst (arr, predicate, obj) {
-  // find index of first match
-  const idx = arr.findIndex(predicate)
+/**
+ * @typedef {Object} WeaponResult
+ * @property {number} hits - Number of hits
+ * @property {number} dtaps - Number of double taps
+ * @property {number} sunk - Number of ships sunk
+ * @property {number} reveals - Number of reveals
+ * @property {number} shots - Number of shots fired
+ * @property {string} info - Additional information
+ */
 
-  let found = null
-  if (idx !== -1) {
-    // remove and store the object
-    ;[found] = arr.splice(idx, 1)
-  }
-  if (found === null && obj) {
-    console.log('not found : ', JSON.stringify(obj))
-  }
+/**
+ * @typedef {Object} WeaponSelection
+ * @property {number} launchR - Launch row coordinate
+ * @property {number} launchC - Launch column coordinate
+ * @property {number} weaponId - Weapon system ID
+ * @property {number} hintR - Hint row coordinate
+ * @property {number} hintC - Hint column coordinate
+ */
 
-  return found
-}
+/**
+ * @typedef {Object} ShipPlacement
+ * @property {Array} ships - Array of ships
+ * @property {string} map - Map title
+ */
 
+/**
+ * @typedef {Object} HitResult
+ * @property {string} letter - Ship letter
+ * @property {string} info - Hit information
+ * @property {boolean} damaged - Whether ship was damaged
+ * @property {Array} list - List of hit entries
+ * @property {Array} misses - List of miss entries
+ */
+
+/**
+ * Core game logic class managing ship placement, weapon systems, and battle mechanics.
+ * Handles the main game state and interactions between ships, weapons, and UI.
+ */
 export class Waters {
+  /**
+   * Initializes the Waters game instance with UI and basic setup.
+   * @param {Object} ui - The user interface instance
+   */
   constructor (ui) {
     assembleTerrains()
     this.ships = []
@@ -50,11 +76,27 @@ export class Waters {
     this.resetShipCells()
     this.displayInfo = gameStatus.info2.bind(gameStatus)
   }
-  clipboardKey () {
+  /**
+   * Gets the clipboard key for storing placed ships.
+   * @returns {string} The storage key
+   */
+  getClipboardKey () {
     return 'geoffs-battleship.placed-ships'
   }
 
-  placedShips () {
+  /**
+   * Alias for legacy method name.
+   * @returns {string} The storage key
+   */
+  clipboardKey () {
+    return this.getClipboardKey()
+  }
+
+  /**
+   * Gets the current placed ships data.
+   * @returns {ShipPlacement} Current ship placement data
+   */
+  getPlacedShipsData () {
     return {
       ships: this.ships,
       shipCellGrid: this.shipCellGrid,
@@ -62,132 +104,265 @@ export class Waters {
     }
   }
 
-  store () {
+  /**
+   * Alias for legacy method name.
+   * @returns {ShipPlacement} Current ship placement data
+   */
+  placedShips () {
+    return this.getPlacedShipsData()
+  }
+
+  /**
+   * Stores the current ship placement to local storage.
+   */
+  storePlacedShips () {
     localStorage.setItem(
-      this.clipboardKey(),
-      JSON.stringify(this.placedShips())
+      this.getClipboardKey(),
+      JSON.stringify(this.getPlacedShipsData())
     )
   }
 
+  /**
+   * Alias for legacy method name.
+   */
+  store () {
+    this.storePlacedShips()
+  }
+
+  /**
+   * Attempts to place ships randomly on the board.
+   * @param {Array} ships - Ships to attempt placement for
+   * @param {Function} isPlacementSuccessful - Callback to check success
+   * @param {Function} [onShipPlaced] - Callback when ship is placed
+   * @param {Function} [onPlacementReset] - Callback when placement is reset
+   * @returns {boolean} True if placement was successful
+   */
   attemptToPlaceShips (
     ships,
     isPlacementSuccessful,
     onShipPlaced = Function.prototype,
     onPlacementReset = Function.prototype
   ) {
-    // Ensure shipCellGrid is initialized before attempting placements
-    this.checkShipGrid()
+    this.ensureShipGridInitialized()
     const mask = bh.map.blankMask
+
     for (const ship of ships) {
-      const placedCells = randomPlaceShape(ship, this.shipCellGrid, mask)
+      const placedCells = this.tryPlaceShip(ship, mask)
       if (!placedCells) {
-        this.resetShipCells()
-        onPlacementReset?.()
-        this.UI.placeTally(ships)
-        this.UI.displayShipInfo(ships)
-        isPlacementSuccessful = false
-        break
+        this.handlePlacementFailure(onPlacementReset)
+        return false
       }
       onShipPlaced?.(ship, placedCells)
-      this.UI.placement(placedCells, this, ship)
+      this.recordShipPlacement(placedCells, ship)
     }
-    return isPlacementSuccessful
+    return true
   }
-  checkShipGrid () {
+
+  /**
+   * Ensures the ship cell grid is properly initialized.
+   * @private
+   */
+  ensureShipGridInitialized () {
     if (!this.shipCellGrid || !Array.isArray(this.shipCellGrid)) {
       this.resetShipCells()
     }
   }
-  accumulateResult (result, acc) {
-    if (result?.hits) acc.hits += result.hits
-    if (result?.dtaps) acc.dtaps += result.dtaps
-    if (result?.sunk) acc.sunk += result.sunk
-    if (result?.reveals) acc.reveals += result.reveals
-    if (result?.shots) acc.shots += result.shots
-    if (result?.info) acc.info += result.info + ' '
-  }
-  autoPlace2 () {
-    const ships = this.initShips()
 
-    for (let attempt = 0; attempt < 100; attempt++) {
-      let isPlacementSuccessful = true
-      isPlacementSuccessful = this.attemptToPlaceShips(
-        ships,
-        isPlacementSuccessful,
-        null,
-        this.UI.clearPlaceVisuals.bind(this.UI)
-      )
-      if (isPlacementSuccessful) return true
-    }
+  /**
+   * Attempts to place a single ship randomly.
+   * @param {Object} ship - The ship to place
+   * @param {Object} mask - The placement mask
+   * @returns {Array|null} Placed cells or null if failed
+   * @private
+   */
+  tryPlaceShip (ship, mask) {
+    return randomPlaceShape(ship, this.shipCellGrid, mask)
   }
+
+  /**
+   * Handles placement failure by resetting visuals.
+   * @param {Function} onPlacementReset - Reset callback
+   * @private
+   */
+  handlePlacementFailure (onPlacementReset) {
+    this.resetShipCells()
+    onPlacementReset?.()
+    this.UI.placeTally(this.ships)
+    this.UI.displayShipInfo(this.ships)
+  }
+
+  /**
+   * Records a successful ship placement.
+   * @param {Array} placedCells - The cells where ship was placed
+   * @param {Object} ship - The placed ship
+   * @private
+   */
+  recordShipPlacement (placedCells, ship) {
+    this.UI.placement(placedCells, this, ship)
+  }
+  /**
+   * Accumulates weapon result data into an accumulator object.
+   * @param {WeaponResult} result - The result to accumulate
+   * @param {WeaponResult} accumulator - The accumulator object
+   */
+  accumulateResult (result, accumulator) {
+    if (result?.hits) accumulator.hits += result.hits
+    if (result?.dtaps) accumulator.dtaps += result.dtaps
+    if (result?.sunk) accumulator.sunk += result.sunk
+    if (result?.reveals) accumulator.reveals += result.reveals
+    if (result?.shots) accumulator.shots += result.shots
+    if (result?.info) accumulator.info += result.info + ' '
+  }
+  /**
+   * Automatically places ships using random placement with callbacks.
+   * @param {Function} [onShipPlaced] - Callback when ship is placed
+   * @param {Function} [onPlacementReset] - Callback when placement fails
+   * @returns {boolean} True if placement succeeded
+   */
+  autoPlaceWithCallbacks (onShipPlaced, onPlacementReset) {
+    const ships = this.initShips()
+    return this.performAutoPlacement(ships, onShipPlaced, onPlacementReset)
+  }
+
+  /**
+   * Automatically places ships with default callbacks.
+   * @returns {boolean} True if placement succeeded
+   */
   autoPlace () {
-    const ships = this.initShips()
-
-    for (let attempt = 0; attempt < 100; attempt++) {
-      let isPlacementSuccessful = true
-      isPlacementSuccessful = this.attemptToPlaceShips(
-        ships,
-        isPlacementSuccessful,
-        ship => {
-          placedShipsInstance.push(ship, ship.cells)
-          ship.addToGrid(this.shipCellGrid)
-        },
-        () => {
-          this.UI.clearVisuals()
-          placedShipsInstance.reset()
-        }
-      )
-      if (isPlacementSuccessful) return true
-    }
+    return this.autoPlaceWithCallbacks(
+      ship => {
+        placedShipsInstance.push(ship, ship.cells)
+        ship.addToGrid(this.shipCellGrid)
+      },
+      () => {
+        this.UI.clearVisuals()
+        placedShipsInstance.reset()
+      }
+    )
   }
 
+  /**
+   * Automatically places ships with UI clearing callback.
+   * @returns {boolean} True if placement succeeded
+   */
+  autoPlace2 () {
+    return this.autoPlaceWithCallbacks(
+      null,
+      this.UI.clearPlaceVisuals.bind(this.UI)
+    )
+  }
+
+  /**
+   * Performs the actual auto placement logic.
+   * @param {Array} ships - Ships to place
+   * @param {Function} [onShipPlaced] - Ship placement callback
+   * @param {Function} [onPlacementReset] - Placement reset callback
+   * @returns {boolean} True if successful
+   * @private
+   */
+  performAutoPlacement (ships, onShipPlaced, onPlacementReset) {
+    const maxAttempts = 100
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let placementSuccessful = true
+      placementSuccessful = this.attemptToPlaceShips(
+        ships,
+        placementSuccessful,
+        onShipPlaced,
+        onPlacementReset
+      )
+      if (placementSuccessful) return true
+    }
+    return false
+  }
+
+  /**
+   * Initializes ships for the game.
+   * @returns {Array} Initialized ships array
+   */
   initShips () {
     this.resetShipCells()
-
-    // Ensure ships are initialized from base shapes
-    return this.initShipsForEdit()
+    return this.ensureShipsInitialized()
   }
 
-  initShipsForEdit () {
+  /**
+   * Ensures ships are initialized from base shapes if needed.
+   * @returns {Array} The ships array
+   */
+  ensureShipsInitialized () {
     if (!this.ships || this.ships.length === 0) {
       this.ships = this.createCandidateShips()
     }
     return this.ships
   }
 
+  /**
+   * Loads ships for edit mode from map example or auto-places.
+   * @param {Object} [map] - The map to load from
+   */
   loadForEdit (map) {
     map = map || bh.map
+    this.ensureShipsInitialized()
 
-    this.initShipsForEdit()
-
-    if (map.example == null) {
+    if (!map.example) {
       this.autoPlace()
       return
     }
 
-    const placedShips = this.checkValidPlacement(map.example, map)
-    if (placedShips === null) {
-      return
-    }
+    const placedShips = this.validatePlacedShips(map.example, map)
+    if (!placedShips) return
 
-    const matchableShips = this.placeMatchingShips(
+    const unmatchedShips = this.placeMatchingShips(
       placedShips,
       this.placeMatchingShipForEdit.bind(this)
     )
-    if (matchableShips.length !== 0) {
-      console.log(`${matchableShips.length} ships not matched`)
+    if (unmatchedShips.length > 0) {
+      console.log(`${unmatchedShips.length} ships not matched`)
     }
   }
 
-  setWeaponFireHanders () {
+  /**
+   * Validates and returns placed ships data.
+   * @param {ShipPlacement|Array} placed - Placed ships data
+   * @param {Object} map - The map object
+   * @returns {ShipPlacement|null} Validated placed ships or null
+   */
+  validatePlacedShips (placed, map) {
+    const placedShips = placed || map.example
+
+    if (Array.isArray(placedShips)) {
+      if (placedShips.length === 0) {
+        this.autoPlace()
+        return null
+      }
+      return { ships: placedShips, map: map.title }
+    } else {
+      if (!placedShips?.ships || placedShips.ships.length === 0) {
+        this.autoPlace()
+        return null
+      }
+      return placedShips
+    }
+  }
+
+  /**
+   * Sets up weapon fire event handlers.
+   */
+  setWeaponFireHandlers () {
     this.loadOut.onDestroy = this.destroy.bind(this)
     this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)
   }
 
-  placeMatchingShips (placedShips, placer) {
+  /**
+   * Places matching ships from loaded data using a placer function.
+   * @param {ShipPlacement} placedShips - The placed ships data
+   * @param {Function} placer - Function to place individual ships
+   * @returns {Array} Array of ships that couldn't be matched
+   */
+  placeMatchingShipsFromData (placedShips, placer) {
     const matchableShips = [...this.ships]
     for (const ship of placedShips.ships) {
-      const matchingShip = popFirst(
+      const matchingShip = removeFirstMatching(
         matchableShips,
         s => s.letter === ship.letter,
         ship
@@ -198,6 +373,16 @@ export class Waters {
       }
     }
     return matchableShips
+  }
+
+  /**
+   * Alias for legacy method name.
+   * @param {ShipPlacement} placedShips - The placed ships data
+   * @param {Function} placer - Function to place individual ships
+   * @returns {Array} Array of ships that couldn't be matched
+   */
+  placeMatchingShips (placedShips, placer) {
+    return this.placeMatchingShipsFromData(placedShips, placer)
   }
 
   placeMatchingShipForEdit (matchingShip, ship) {
@@ -237,84 +422,94 @@ export class Waters {
       }
     }
   }
-  checkValidPlacement (placed, map = bh.map) {
-    const placedShips = placed || map.example
-
-    if (Array.isArray(placed)) {
-      // placed is ships array
-      if (placed.length === 0) {
-        this.autoPlace()
-        return null
-      }
-      return { ships: placed, map: map.title }
-    } else {
-      if (placedShips?.ships == null || placedShips?.ships?.length === 0) {
-        this.autoPlace()
-        return null
-      }
-      return placedShips
-    }
-  }
+  /**
+   * Loads placed ships from storage or data.
+   * @param {ShipPlacement} [placedShips] - Placed ships data to load
+   */
   load (placedShips) {
     const map = bh.map
     this.initShips()
 
-    placedShips = this.getPlacedShips(placedShips, map)
-    if (placedShips === null) {
-      return
-    }
+    placedShips = this.retrievePlacedShips(placedShips, map)
+    if (!placedShips) return
 
-    const { shipId, weaponId } = placedShips.ships.reduce(
-      (a, s) => {
-        a.shipId = Math.max(s.id, a.shipId)
-        a.weaponId = Object.values(s.weapons).reduce(
-          (aw, w) => Math.max(w.id, aw),
-          a.weaponId
-        )
-        return a
-      },
-      { shipId: 1, weaponId: 1 }
-    )
-    Ship.id = shipId + 1
-    WeaponSystem.id = weaponId + 1
-    const matchableShips = this.placeMatchingShips(
+    this.updateGlobalIds(placedShips)
+    const unmatchedShips = this.placeMatchingShips(
       placedShips,
       this.placeMatchingShip.bind(this)
     )
-    if (matchableShips.length === 0) {
+    if (unmatchedShips.length === 0) {
       this.UI.resetTrays()
     } else {
-      console.log(`${matchableShips.length} ships not matched`)
+      console.log(`${unmatchedShips.length} ships not matched`)
     }
   }
 
-  getPlacedShips (placedShips, map) {
-    placedShips =
-      placedShips || JSON.parse(localStorage.getItem(this.clipboardKey()))
+  /**
+   * Retrieves placed ships from storage or validates provided data.
+   * @param {ShipPlacement} [placedShips] - Placed ships data
+   * @param {Object} map - The map object
+   * @returns {ShipPlacement|null} Retrieved or validated placed ships
+   */
+  retrievePlacedShips (placedShips, map) {
+    const stored = localStorage.getItem(this.getClipboardKey())
+    placedShips = placedShips || (stored ? JSON.parse(stored) : null)
 
-    // Check if placedShips is null or map doesn't match before trying to access it
-    if (map.title !== placedShips?.map || '') {
+    if (map.title !== placedShips?.map) {
       placedShips = null
     }
-    placedShips = this.checkValidPlacement(placedShips, map)
-    return placedShips
+    return this.validatePlacedShips(placedShips, map)
   }
 
+  /**
+   * Updates global ID counters based on loaded ships.
+   * @param {ShipPlacement} placedShips - The placed ships data
+   */
+  updateGlobalIds (placedShips) {
+    const { maxShipId, maxWeaponId } = placedShips.ships.reduce(
+      (accumulator, ship) => {
+        accumulator.maxShipId = Math.max(ship.id, accumulator.maxShipId)
+        accumulator.maxWeaponId = Object.values(ship.weapons).reduce(
+          (weaponMax, weapon) => Math.max(weapon.id, weaponMax),
+          accumulator.maxWeaponId
+        )
+        return accumulator
+      },
+      { maxShipId: 1, maxWeaponId: 1 }
+    )
+    Ship.id = maxShipId + 1
+    WeaponSystem.id = maxWeaponId + 1
+  }
+
+  /**
+   * Resets the map state and loads new map configuration.
+   * @param {Object} map - The map to set
+   */
   resetMap (map) {
     this.boardDestroyed = false
     this.isRevealed = false
     this.setMap(map)
   }
+
+  /**
+   * Arms weapons for all ships on the map.
+   * @param {Object} [map] - The map to arm weapons for
+   */
   armWeapons (map) {
     map = map || bh.map
-    const weaponShips = this.setWeaponShips(map)
+    const weaponShips = this.determineWeaponShips(map)
 
-    this.setLoadOut(map, weaponShips)
-
+    this.configureLoadOut(map, weaponShips)
     this.setCursorChangeCallback()
   }
-  setWeaponShips (map) {
-    let weaponShips = this.ships.filter(s => s.hasWeapon)
+
+  /**
+   * Determines which ships should have weapons based on map configuration.
+   * @param {Object} map - The map object
+   * @returns {Array} Array of ships with weapons
+   */
+  determineWeaponShips (map) {
+    let weaponShips = this.ships.filter(ship => ship.hasWeapon)
     this.hasAttachedWeapons = weaponShips.length > 0
     if (bh.seekingMode && this.hasAttachedWeapons) {
       weaponShips = map.extraArmedFleetForMap
@@ -323,18 +518,26 @@ export class Waters {
     return weaponShips
   }
 
-  setLoadOut (map, weaponShips) {
-    const oppo = this.opponent
+  /**
+   * Configures the load out system for weapons.
+   * @param {Object} map - The map object
+   * @param {Array} weaponShips - Ships with weapons
+   */
+  configureLoadOut (map, weaponShips) {
+    const opponent = this.opponent
     if (bh.seekingMode && this.hasAttachedWeapons) {
-      this.loadOut = this.makeLoadOut(map, weaponShips)
-    } else if (oppo) {
-      const weaponShips = oppo.ships.filter(s => s.hasWeapon)
-      this.loadOut = this.makeLoadOut(map, weaponShips)
+      this.loadOut = this.createLoadOut(map, weaponShips)
+    } else if (opponent) {
+      const opponentWeaponShips = opponent.ships.filter(ship => ship.hasWeapon)
+      this.loadOut = this.createLoadOut(map, opponentWeaponShips)
     } else {
-      this.loadOut = this.makeLoadOut(map, weaponShips)
+      this.loadOut = this.createLoadOut(map, weaponShips)
     }
   }
 
+  /**
+   * Sets up cursor change callback if available.
+   */
   setCursorChangeCallback () {
     if (this.cursorChange) {
       if (typeof this.cursorChange === 'function') {
@@ -347,84 +550,152 @@ export class Waters {
     }
   }
 
-  makeLoadOut (map, ships) {
+  /**
+   * Creates a load out instance for the given map and ships.
+   * @param {Object} map - The map object
+   * @param {Array} ships - Ships to include in load out
+   * @returns {LoadOut} The created load out
+   */
+  createLoadOut (map, ships) {
     ships = ships || this.weaponShips
     return new LoadOut(map.weapons, ships, this.UI)
   }
-  autoSelectWarning (weaponName, currentShip) {
+  /**
+   * Displays auto-selection warning for weapons.
+   * @param {string} weaponName - Name of the weapon
+   * @param {Object} currentShip - The ship with the weapon
+   */
+  displayAutoSelectWarning (weaponName, currentShip) {
     this.displayInfo(
       `Auto-selected ${weaponName}, Click near ${
         currentShip.shape().descriptionText
       } to select a different ${weaponName}`
     )
   }
-  randomWeaponId () {
-    const oppo = this.opponent
+
+  /**
+   * Selects a random weapon system and returns its targeting information.
+   * @returns {WeaponSelection} Weapon selection data
+   */
+  selectRandomWeapon () {
     const armedShips = this.loadOut.getCurrentWeaponSystem().armedShips()
-    const randomShip = randomElement(armedShips)
-    if (randomShip) {
-      this.steps.addShip(randomShip)
-    } else {
-      return {
-        launchR: null,
-        launchC: null,
-        weaponId: null,
-        hintR: null,
-        hintC: null
-      }
+    const selectedShip = randomElement(armedShips)
+
+    if (!selectedShip) {
+      return this.createEmptyWeaponSelection()
     }
 
-    let [r, c] = [null, null]
-    if (oppo) {
-      ;[r, c] = this.randomSourceHint(randomShip, oppo)
-    }
-
-    if (oppo == null || r == null || c == null) {
-      return this.selectWeaponId(null, 0, 0, 'random', randomShip)
-    }
-
-    const cell = this.shadowSource(r, c)
-    return this.selectWeaponId(cell, r, c, 'random', randomShip)
+    this.steps.addShip(selectedShip)
+    return this.generateWeaponSelectionForShip(selectedShip)
   }
 
-  sourceHint (randomShip, oppo) {
-    if (this.steps.sourceHint)
+  /**
+   * Creates an empty weapon selection when no armed ships are available.
+   * @returns {WeaponSelection} Empty selection object
+   * @private
+   */
+  createEmptyWeaponSelection () {
+    return {
+      launchR: null,
+      launchC: null,
+      weaponId: null,
+      hintR: null,
+      hintC: null
+    }
+  }
+
+  /**
+   * Generates weapon selection data for a given ship.
+   * @param {Object} ship - The ship to generate selection for
+   * @returns {WeaponSelection} Weapon selection data
+   * @private
+   */
+  generateWeaponSelectionForShip (ship) {
+    const opponent = this.opponent
+    let hintCoords = [null, null]
+
+    if (opponent) {
+      hintCoords = this.generateSourceHint(ship, opponent)
+    }
+
+    if (opponent == null || hintCoords[0] == null || hintCoords[1] == null) {
+      return this.selectWeaponId(null, 0, 0, 'random', ship)
+    }
+
+    const cell = this.createShadowSource(hintCoords[0], hintCoords[1])
+    return this.selectWeaponId(
+      cell,
+      hintCoords[0],
+      hintCoords[1],
+      'random',
+      ship
+    )
+  }
+
+  /**
+   * Generates a source hint for weapon targeting.
+   * @param {Object} ship - The ship to generate hint for
+   * @param {Object} opponent - The opponent instance
+   * @returns {Array} [r, c] coordinates for hint
+   * @private
+   */
+  generateSourceHint (ship, opponent) {
+    if (this.steps.sourceHint) {
       return [this.steps.sourceHint.r, this.steps.sourceHint.c]
-    const opponent = oppo || this.opponent
-
-    return this.randomSourceHint(randomShip, opponent)
+    }
+    return this.generateRandomSourceHint(ship, opponent)
   }
 
-  randomSourceHint (randomShip, opponent) {
-    const surround = this.surround(randomShip, opponent)
-    if (surround.length === 0) {
+  /**
+   * Generates a random source hint around opponent ships.
+   * @param {Object} ship - The ship to generate hint for
+   * @param {Object} opponent - The opponent instance
+   * @returns {Array} [r, c] coordinates for hint
+   * @private
+   */
+  generateRandomSourceHint (ship, opponent) {
+    const surroundingCells = this.getSurroundingCells(ship, opponent)
+    if (surroundingCells.length === 0) {
       console.warn(
         'no surround cells found for random weapon hint, using 0,0 as hint'
       )
       this.steps.addHint(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
       return [null, null]
     }
-    const hintKey = randomElement(surround)
+    const hintKey = randomElement(surroundingCells)
     const [r, c] = parsePair(hintKey)
     this.steps.addHint(opponent.UI, r, c, opponent.UI.gridCellAt(r, c))
     return [r, c]
   }
 
-  surround (randomShip, opponent) {
+  /**
+   * Gets surrounding cells for a ship relative to opponent.
+   * @param {Object} ship - The ship
+   * @param {Object} opponent - The opponent instance
+   * @returns {Array} Array of surrounding cell keys
+   * @private
+   */
+  getSurroundingCells (ship, opponent) {
     if (!opponent) return []
-    const cells = randomShip.cells
-    const surround = [...opponent.UI.surroundCells(cells)]
-    return surround
+    const cells = ship.cells
+    const surrounding = [...opponent.UI.surroundCells(cells)]
+    return surrounding
   }
 
-  shadowSource (r, c, oppo) {
-    const opponent = oppo || this.opponent
+  /**
+   * Creates a shadow source at the given coordinates.
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {Object} The shadow cell
+   * @private
+   */
+  createShadowSource (r, c) {
+    const opponent = this.opponent
     if (opponent) {
-      const oppoCell = opponent.UI.gridCellAt(r, c)
-      this.steps.addShadow(opponent.UI, r, c, oppoCell)
-      return oppoCell
+      const opponentCell = opponent.UI.gridCellAt(r, c)
+      this.steps.addShadow(opponent.UI, r, c, opponentCell)
+      return opponentCell
     } else {
-      // no shadow -  this.addShadow(this.UI, r, c, this.UI.gridCellAt(r, c))
       return this.UI.gridCellAt(r, c)
     }
   }
@@ -1134,4 +1405,22 @@ export class Waters {
       this.UI.score.buildTally(ships, weaponSystems, this.UI)
     }
   }
+}
+
+/**
+ * Removes and returns the first element from the array that matches the predicate.
+ * @param {Array} array - The array to search
+ * @param {Function} predicate - Function to test each element
+ * @param {Object} [fallbackObject] - Object to log if not found
+ * @returns {Object|null} The found element or null
+ */
+function removeFirstMatching (array, predicate, fallbackObject) {
+  const idx = array.findIndex(predicate)
+  if (idx === -1) {
+    if (fallbackObject) {
+      console.log('not found : ', JSON.stringify(fallbackObject))
+    }
+    return null
+  }
+  return array.splice(idx, 1)[0]
 }
