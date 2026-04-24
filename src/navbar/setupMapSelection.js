@@ -2,6 +2,29 @@ import { bh } from '../terrains/all/js/bh.js'
 import { terrainSelect } from '../terrains/all/js/terrainUI.js'
 import { ChooseFromListUI } from './chooseUI.js'
 import { ParameterManager } from './ParameterManager.js'
+
+/**
+ * Safely retrieve a value from a function with fallback
+ * @private
+ * @param {Function} fn - Function to execute
+ * @param {*} fallback - Fallback value if function fails
+ * @returns {*} Result from function or fallback value
+ */
+function _safeCall (fn, fallback) {
+  try {
+    return fn()
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * Setup map control - initializes map selection UI and applies initial map
+ * @param {URLSearchParams} urlParams - URL search parameters
+ * @param {Function} [boardSetup=() => {}] - Callback to setup board
+ * @param {Function} [refresh=() => {}] - Callback to refresh display
+ * @returns {Object|null} Target map object if found, null otherwise
+ */
 export function setupMapControl (
   urlParams,
   boardSetup = Function.prototype,
@@ -19,28 +42,22 @@ export function setupMapControl (
 }
 
 /**
- * Setup map selector UI
+ * Setup map selector UI with change handler
  * @private
+ * @param {Function} _boardSetup - Callback to setup board (unused)
+ * @param {Function} _refresh - Callback to refresh display (unused)
+ * @param {string} mapName - Initial map name to select
+ * @param {ParameterManager} paramManager - Parameter manager instance
+ * @returns {void}
  */
 function _setMapSelector (
-  boardSetup = Function.prototype,
-  refresh = Function.prototype,
+  _boardSetup = Function.prototype,
+  _refresh = Function.prototype,
   mapName,
   paramManager
 ) {
   const maps = bh.maps
-  const mapTitles = (() => {
-    if (!maps || typeof maps.mapTitles !== 'function') {
-      return []
-    }
-    try {
-      const t = maps.mapTitles()
-      return Array.isArray(t) ? t : []
-    } catch (_error) {
-      // suppress errors during setup, fallback to empty list
-      return []
-    }
-  })()
+  const mapTitles = _getMapTitles(maps)
 
   const mapSelectUI = new ChooseFromListUI(mapTitles, 'chooseMap')
   mapSelectUI.setup(
@@ -57,8 +74,27 @@ function _setMapSelector (
 }
 
 /**
- * Extract and validate map from URL parameters
+ * Get map titles with error handling
  * @private
+ * @param {Object} maps - Maps instance
+ * @returns {string[]} Array of map titles or empty array if error
+ */
+function _getMapTitles (maps) {
+  if (!maps || typeof maps.mapTitles !== 'function') {
+    return []
+  }
+  return _safeCall(() => {
+    const t = maps.mapTitles()
+    return Array.isArray(t) ? t : []
+  }, [])
+}
+
+/**
+ * Extract and validate map from URL parameters
+ * Falls back through: map by name → map by size → last used map
+ * @private
+ * @param {ParameterManager} paramManager - Parameter manager instance
+ * @returns {Object} Object with mapName and targetMap
  */
 function _setMapFromParams (paramManager) {
   const maps = bh.maps
@@ -66,6 +102,7 @@ function _setMapFromParams (paramManager) {
   const { height, width } = paramManager.getSize()
   let targetMap = null
 
+  // Try to get map by name
   try {
     targetMap = maps.getMap(mapName)
     mapName = targetMap?.title
@@ -85,19 +122,23 @@ function _setMapFromParams (paramManager) {
 
   // Fallback to last used map
   if (!mapName) {
-    if (maps && typeof maps.getLastMapTitle === 'function') {
-      try {
-        mapName = maps.getLastMapTitle()
-      } catch (_error) {
-        // ignore failure
-        mapName = null
+    mapName = _safeCall(() => {
+      if (maps && typeof maps.getLastMapTitle === 'function') {
+        return maps.getLastMapTitle()
       }
-    }
+      return null
+    }, null)
   }
 
   return { mapName, targetMap }
 }
 
+/**
+ * Setup map selection and return placedShips state
+ * @param {Function} boardSetup - Callback to setup board
+ * @param {Function} refresh - Callback to refresh display
+ * @returns {boolean} True if placedShips parameter exists
+ */
 export function setupMapSelection (boardSetup, refresh) {
   const urlParams = new URLSearchParams(globalThis.location.search)
   const paramManager = new ParameterManager(urlParams)
