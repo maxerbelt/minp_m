@@ -102,9 +102,6 @@ class Enemy extends Waters {
       this.steps.select()
     } else {
       gameStatus.showMode('Your Turn')
-      if (!bh.terrain.hasAttachedWeapons) {
-        this.steps.select()
-      }
     }
   }
 
@@ -114,6 +111,9 @@ class Enemy extends Waters {
    */
   _hideWaiting () {
     this._updateSpinner(false, '')
+    if (this.loadOut.isSingleShot && !bh.terrain.hasAttachedWeapons) {
+      this.steps.select()
+    }
   }
 
   /**
