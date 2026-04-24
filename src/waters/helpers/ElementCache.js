@@ -1,8 +1,10 @@
 /**
- *  DOM element caching to reduce repetitive
- * document.getElementById() calls and improve initialization clarity
+ * Caches DOM elements to reduce repetitive document.getElementById() calls and improve initialization clarity.
  */
 export class ElementCache {
+  /**
+   * Initializes the cache with buttons and trays.
+   */
   constructor () {
     this.buttons = {
       newPlacement:
@@ -42,10 +44,19 @@ export class ElementCache {
     }
   }
 
+  /**
+   * Gets a button by name.
+   * @param {string} name - Button name
+   * @returns {HTMLButtonElement|null} The button element
+   */
   getButtonByName (name) {
     return this.buttons[name]
   }
 
+  /**
+   * Gets all tray elements.
+   * @returns {HTMLDivElement[]} Array of tray elements
+   */
   getAllTrays () {
     return [
       this.trays.ship,
@@ -56,6 +67,11 @@ export class ElementCache {
     ]
   }
 
+  /**
+   * Gets tray by type.
+   * @param {string} type - Type code (A, S, M, T, X, G, W)
+   * @returns {HTMLDivElement|null} The tray element
+   */
   getTrayByType (type) {
     const typeMap = {
       A: this.trays.plane,

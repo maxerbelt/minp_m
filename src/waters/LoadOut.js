@@ -1,7 +1,76 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 
+/**
+ * @typedef {Object} Weapon
+ * @property {string} letter - Weapon identifier letter
+ * @property {boolean} isLimited - Whether the weapon has limited ammo
+ * @property {number} points - Number of points required for firing
+ * @property {string[]} cursors - Cursor types for selection
+ * @property {function} aoe - Area of effect function
+ * @property {boolean} destroys - Whether the weapon destroys targets
+ * @property {boolean} isOneAndDone - Whether the weapon is single-use
+ * @property {number} unattachedCursor - Cursor value for unattached weapons
+ * @property {number} postSelectCursor - Cursor value after selection
+ */
+
+/**
+ * @typedef {Object} Ship
+ * @property {string} id - Ship identifier
+ * @property {function(): boolean} hasAmmoRemaining - Checks if ship has ammo
+ * @property {function(): Weapon} getPrimaryWeapon - Gets the primary weapon
+ * @property {function(string): Weapon} getWeaponBySystemId - Gets weapon by system ID
+ * @property {function(): Weapon[]} getAllWeapons - Gets all weapons on ship
+ * @property {function(): Weapon[]} getLoadedWeapons - Gets loaded weapons
+ * @property {function(): Weapon} getFirstLoadedWeapon - Gets first loaded weapon
+ */
+
+/**
+ * @typedef {Object} WeaponSystem
+ * @property {Weapon} weapon - The weapon object
+ * @property {number} ammo - Current ammo count
+ * @property {function(): number} ammoCapacity - Total ammo capacity
+ * @property {function(): number} hasAmmoRemaining - Remaining ammo count
+ * @property {function(): void} useAmmo - Consumes ammo
+ * @property {function(): Weapon} getUnattachedWeapon - Gets unattached weapon
+ * @property {function(): boolean} hasAmmo - Checks if has ammo
+ */
+
+/**
+ * @typedef {Object} ViewModel
+ * @property {function(number, number): HTMLElement} gridCellAt - Gets grid cell at coordinates
+ * @property {function(): number} cellSizeScreen - Gets cell size for screen
+ */
+
+/**
+ * @typedef {Object} FireResult
+ * @property {number} hits - Number of hits
+ * @property {number} shots - Number of shots fired
+ * @property {number} reveals - Number of reveals
+ * @property {string} sunk - Sunk ship info
+ * @property {number} dtap - Double tap count
+ * @property {string} info - Additional info
+ */
+
+/**
+ * @typedef {Object} CursorInfo
+ * @property {string} cursor - Current cursor type
+ * @property {WeaponSystem} weaponSystem - Current weapon system
+ * @property {number} index - Current index
+ */
+
+/**
+ * Manages weapon loadouts, ammo tracking, and firing logic for ships in the game.
+ * Handles both attached and unattached weapons, cursor management, and weapon selection.
+ */
 export class LoadOut {
+  /**
+   * Initializes the LoadOut with weapons, ships, view model, and step count.
+   * @param {Weapon[]} weapons - Array of unattached weapons
+   * @param {Ship[]} ships - Array of ships with attached weapons
+   * @param {ViewModel} viewModel - The view model for grid interactions
+   * @param {number} steps - Number of steps
+   */
   constructor (weapons, ships, viewModel, steps) {
     this.onOutOfAllAmmo = Function.prototype
     this.onOutOfAmmo = Function.prototype
@@ -27,29 +96,44 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Consolidated result object factory to eliminate duplication
-   * All result objects follow same pattern with only minor variations
+   * Creates a standard fire result object.
+   * @param {number} [shots=0] - Number of shots fired
+   * @param {number} [doubleTap=0] - Double tap count
+   * @returns {FireResult} The result object
    */
   static createResult (shots = 0, doubleTap = 0) {
     return { hits: 0, shots, reveals: 0, sunk: '', dtap: doubleTap, info: '' }
   }
 
+  /** @returns {FireResult} Double tap result */
   static get doubleTapResult () {
     return this.createResult(0, 1)
   }
 
+  /** @returns {FireResult} No result */
   static get noResult () {
     return this.createResult(0, 0)
   }
 
+  /** @returns {FireResult} Miss result */
   static get missResult () {
     return this.createResult(1, 0)
   }
+
+  /** @returns {function(): FireResult} Function returning no result */
   static get givesNoResult () {
     return () => {
       return this.noResult
     }
   }
+
+  /**
+   * Default launch animation for weapons.
+   * @param {ViewModel} viewModel - The view model
+   * @param {number[][]} coordinates - Target coordinates
+   * @param {Weapon} weapon - The weapon being fired
+   * @returns {Promise<Object>} Launch animation result
+   */
   static launchDefault (viewModel, coordinates, weapon) {
     const targetCoordinates = coordinates.at(-1)
     const targetCell = viewModel.gridCellAt(
@@ -64,22 +148,20 @@ export class LoadOut {
     )
   }
   /**
-   * REFACTORING: Split weapon loading into focused steps
-   * Improves testability and clarity
+   * Loads and organizes weapon systems from unattached weapons and ships.
    */
   loadWeapons () {
     const unattachedWeaponSystems = LoadOut.createWeaponSystems(
       this.unattachedWeapons
     )
-    this.weaponByLetter = this.buildWeaponDictionary(
-      unattachedWeaponSystems
-    )
+    this.weaponByLetter = this.buildWeaponDictionary(unattachedWeaponSystems)
     this.weaponSystems = Object.values(this.weaponByLetter)
   }
 
   /**
-   * REFACTORING: Extract dictionary building logic from loadWeapons
-   * Separates concerns: weapon system creation vs organization
+   * Builds the weapon dictionary from unattached systems and attached weapons.
+   * @param {WeaponSystem[]} unattachedSystems - Unattached weapon systems
+   * @returns {Object<string, WeaponSystem>} Weapon dictionary by letter
    */
   buildWeaponDictionary (unattachedSystems) {
     const weaponByLetter = this.createLetterMap(unattachedSystems)
@@ -87,7 +169,9 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Create letter-indexed map from unattached weapon systems
+   * Creates a map of weapon systems keyed by weapon letter.
+   * @param {WeaponSystem[]} weaponSystems - Weapon systems to map
+   * @returns {Object<string, WeaponSystem>} Letter-keyed map
    */
   createLetterMap (weaponSystems) {
     return weaponSystems.reduce((map, weaponSystem) => {
@@ -97,7 +181,9 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Merge attached weapons into the dictionary
+   * Adds attached weapons from ships to the dictionary.
+   * @param {Object<string, WeaponSystem>} weaponByLetter - Existing dictionary
+   * @returns {Object<string, WeaponSystem>} Updated dictionary
    */
   addAttachedWeapons (weaponByLetter) {
     return this.ships.reduce((map, ship) => {
@@ -111,10 +197,19 @@ export class LoadOut {
       return map
     }, weaponByLetter)
   }
+  /**
+   * Creates weapon systems from weapons.
+   * @param {Weapon[]} weapons - Weapons to convert
+   * @returns {WeaponSystem[]} Weapon systems
+   */
   static createWeaponSystems (weapons) {
     return weapons.map(weapon => new WeaponSystem(weapon))
   }
 
+  /**
+   * Gets all ships that have remaining ammo.
+   * @returns {Ship[]} Array of armed ships
+   */
   getArmedShips () {
     return this.ships.filter(ship => ship.hasAmmoRemaining())
   }
@@ -144,6 +239,10 @@ export class LoadOut {
     this.unattachedWeapons = weapons
     this.loadWeapons()
   }
+  /**
+   * Gets the current weapon system.
+   * @returns {WeaponSystem} Current weapon system
+   */
   getCurrentWeaponSystem () {
     return this.weaponSystems[this.currentWeaponIndex]
   }
@@ -180,14 +279,17 @@ export class LoadOut {
     return !this.hasCurrentAmmo()
   }
   /**
-   * REFACTORING: Simplified using helper to check ammo for any weapon system
+   * Checks if current weapon has ammo.
+   * @returns {boolean} True if has current ammo
    */
   hasCurrentAmmo () {
     return this.weaponHasAmmo(this.getCurrentWeaponSystem())
   }
 
   /**
-   * REFACTORING: Extract weapon ammo checking logic used in multiple methods
+   * Checks if a weapon system has ammo.
+   * @param {WeaponSystem} weaponSystem - Weapon system to check
+   * @returns {boolean} True if has ammo
    */
   weaponHasAmmo (weaponSystem) {
     if (!weaponSystem?.weapon.isLimited) return true
@@ -225,18 +327,18 @@ export class LoadOut {
       .filter(cursor => cursor !== '')
   }
   /**
-   * REFACTORING: Improved naming and readability
-   * Renamed wps to weaponSystem, idx to index for clarity
+   * Gets current cursor information.
+   * @returns {CursorInfo} Cursor info object
    */
   getCurrentCursorInfo () {
     const weaponSystem = this.getCurrentWeaponSystem()
     const weapon = weaponSystem.weapon
     const currentIndex = this.selectedCoordinates.length
-    
+
     if (this.isCursorSelectionComplete(currentIndex, weapon)) {
       return { cursor: '', weaponSystem, index: -1 }
     }
-    
+
     return {
       cursor: weapon.cursors[currentIndex],
       weaponSystem,
@@ -245,10 +347,15 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Extract cursor completion check
+   * Checks if cursor selection is complete.
+   * @param {number} currentIndex - Current selection index
+   * @param {Weapon} weapon - Weapon to check
+   * @returns {boolean} True if complete
    */
   isCursorSelectionComplete (currentIndex, weapon) {
-    return currentIndex >= weapon.points || currentIndex >= weapon.cursors.length
+    return (
+      currentIndex >= weapon.points || currentIndex >= weapon.cursors.length
+    )
   }
   getCurrentCursor () {
     return this.getCurrentCursorInfo().cursor
@@ -257,8 +364,7 @@ export class LoadOut {
     this.onCursorChangeCallback(oldCursor, this.getCurrentCursorInfo())
   }
   /**
-   * REFACTORING: Split weapon removal into state mutation and notification
-   * Improves clarity and reduces side effects
+   * Removes the current weapon system.
    */
   removeCurrentWeaponSystem () {
     const oldCursor = this.getCurrentCursor()
@@ -267,7 +373,8 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Extract index management from removal logic
+   * Removes weapon at specific index.
+   * @param {number} index - Index to remove
    */
   removeWeaponAtIndex (index) {
     this.weaponSystems.splice(index, 1)
@@ -277,7 +384,8 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Extract notification logic from removal
+   * Notifies of weapon removal.
+   * @param {string} oldCursor - Old cursor
    */
   notifyWeaponRemoved (oldCursor) {
     this.onOutOfAmmo()
@@ -326,7 +434,9 @@ export class LoadOut {
     this.notifyCursorChange(oldCursor)
   }
   /**
-   * REFACTORING: Improved naming and extracted validation logic
+   * Gets weapon index for a letter.
+   * @param {string} weaponLetter - Weapon letter
+   * @returns {number} Index or -1
    */
   getWeaponIndexForLetter (weaponLetter) {
     return this.weaponSystems.findIndex(weaponSystem =>
@@ -335,8 +445,10 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Extract weapon availability check
-   * Clarifies the criteria: correct letter and has ammo if limited
+   * Checks if weapon is available.
+   * @param {WeaponSystem} weaponSystem - Weapon system
+   * @param {string} weaponLetter - Weapon letter
+   * @returns {boolean} True if available
    */
   isWeaponAvailable (weaponSystem, weaponLetter) {
     const isCorrectLetter = weaponSystem.weapon.letter === weaponLetter
@@ -344,8 +456,9 @@ export class LoadOut {
     return isCorrectLetter && hasAmmo
   }
   /**
-   * REFACTORING: Improved naming (wps -> weaponSystem)
-   * Consistent return type handling
+   * Checks if weapon letter has ammo.
+   * @param {string} weaponLetter - Weapon letter
+   * @returns {boolean} True if has ammo
    */
   hasAmmoForWeaponLetter (weaponLetter) {
     const weaponSystem = this.weaponByLetter[weaponLetter]
@@ -370,8 +483,9 @@ export class LoadOut {
   }
 
   /**
-   * REFACTORING: Improved naming and clarity
-   * Explicit parameter name and clearer logic
+   * Gets next weapon index.
+   * @param {number} [currentIndex] - Current index
+   * @returns {number} Next index
    */
   getNextWeaponIndex (currentIndex = null) {
     const index = (currentIndex ?? this.currentWeaponIndex) + 1
