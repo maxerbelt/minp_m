@@ -31,17 +31,6 @@ const NAVBAR_CONTAINER_ID = 'navbar'
 const PRINT_TITLE_ELEMENT_ID = 'print-title'
 
 /**
- * Remove keyboard event listeners (cleanup utility)
- * Note: This function was originally designed for keyboard cleanup but modern
- * keyboard managers should use deactivate() methods instead
- * @deprecated Use KeyboardShortcutManager.deactivate() instead
- * @returns {void}
- */
-export function removeShortcuts () {
-  document.removeEventListener('keydown')
-}
-
-/**
  * Switch current game mode to edit mode for a specific map
  * Prepares URL parameters and navigates to the map editor
  * @param {Object} [map] - Map object with title property
