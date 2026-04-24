@@ -6,26 +6,114 @@ import { NavigationService } from './NavigationService.js'
 
 /**
  * MapProvider adapter that provides access to the global bh map/terrain
+ * Abstracts access to singleton bh object for better testability
+ *
+ * @class
  */
 class BhMapProvider {
+  /**
+   * Get current map instance
+   * @returns {Object} Current map object
+   */
   getCurrentMap () {
     return bh.map
   }
 
+  /**
+   * Get maps manager instance
+   * @returns {Object} Maps manager instance
+   */
   getMaps () {
     return bh.maps
   }
 
+  /**
+   * Get current terrain instance
+   * @returns {Object} Current terrain object
+   */
   getTerrain () {
     return bh.terrain
   }
 }
 
+/**
+ * ImportHandler - Handles map import functionality
+ * Encapsulates file input creation, parsing, and saving logic
+ *
+ * @class
+ */
+class ImportHandler {
+  /**
+   * Handle map import from JSON file
+   * @returns {void}
+   */
+  static handleImport () {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'application/json'
+
+    input.onchange = async e => {
+      const file = e.target.files[0]
+      if (!file) return
+
+      try {
+        const text = await file.text()
+        const map = new SavedCustomMap(JSON.parse(text))
+        const maps = bh.maps
+
+        if (maps.getMap(map.title) || maps.getCustomMap(map.title)) {
+          if (
+            !confirm(
+              'A map with this title already exists. Do you want to overwrite it?'
+            )
+          ) {
+            return
+          }
+        }
+
+        map.saveToLocalStorage()
+        trackClick(map, 'import map')
+        alert('Map imported successfully.')
+      } catch (err) {
+        alert('Invalid JSON: ' + err.message)
+      }
+    }
+
+    input.click()
+  }
+}
+
+// Mode configurations - extracted to reduce duplication and complexity
+const MODE_CURRENT_TABS = {
+  build: ['build', 'add'],
+  hide: ['hide'],
+  seek: ['seek'],
+  list: ['build', 'list'],
+  rules: ['build', 'rules'],
+  print: ['build', 'print']
+}
+
+const MODE_AVAILABLE_HANDLERS = {
+  build: ['hide', 'seek', 'list', 'rules', 'import'],
+  hide: ['build', 'add', 'seek', 'list', 'rules', 'import'],
+  seek: ['build', 'add', 'hide', 'list', 'rules', 'import'],
+  list: ['hide', 'seek', 'rules', 'import'],
+  rules: ['hide', 'seek', 'list', 'import'],
+  print: ['hide', 'seek', 'list', 'rules', 'import']
+}
+
 // Module-level tab and navigation management
+/** @type {TabManager|null} Tab manager instance */
 let tabManager = null
+/** @type {NavigationService|null} Navigation service instance */
 let navigationService = null
+/** @type {BhMapProvider} Map provider instance */
 const mapProvider = new BhMapProvider()
 
+/**
+ * Exported tabs object for backward compatibility
+ * @type {Object.<string, Tab|null>}
+ */
 export const tabs = {
   build: null,
   add: null,
@@ -41,6 +129,10 @@ export const tabs = {
 
 /**
  * Legacy switchTo function - maintained for backward compatibility
+ * @param {string} target - Target tab/mode to switch to
+ * @param {string} huntMode - Hunt mode identifier
+ * @param {string} [mapName] - Optional map name
+ * @returns {void}
  */
 export function switchTo (target, huntMode, mapName) {
   if (navigationService && target) {
@@ -48,29 +140,92 @@ export function switchTo (target, huntMode, mapName) {
   }
 }
 
-export function setupTabs (huntMode) {
-  // Create the tab manager with all standard game tabs
+/**
+ * Create handlers object for a given hunt mode
+ * Maps tab names to navigation handler functions
+ * @private
+ * @param {string} mode - Current hunt mode
+ * @returns {Object.<string, Function>} Map of tab names to handler functions
+ */
+function _createModeHandlers (mode) {
+  return {
+    hide: () => navigationService.switchToHide(mode),
+    seek: () => navigationService.switchToSeek(mode),
+    list: () => navigationService.switchToList(mode),
+    rules: () => navigationService.switchToRules(mode),
+    build: () => navigationService.switchToBuild(mode),
+    add: () => navigationService.switchToBuild(mode),
+    import: () => ImportHandler.handleImport()
+  }
+}
+
+/**
+ * Get mode-specific configuration with current tabs and handlers
+ * Dynamically generates handler subsets based on mode-specific needs
+ * @private
+ * @param {string} mode - Hunt mode identifier
+ * @returns {Object} Mode configuration with current tabs and handlers
+ */
+function _getModeConfig (mode) {
+  // Get all possible handlers
+  const allHandlers = _createModeHandlers(mode)
+
+  // Filter handlers to only those available for this mode
+  const handlers = {}
+  const availableHandlerNames = MODE_AVAILABLE_HANDLERS[mode] || []
+  for (const handlerName of availableHandlerNames) {
+    if (allHandlers[handlerName]) {
+      handlers[handlerName] = allHandlers[handlerName]
+    }
+  }
+
+  return {
+    current: MODE_CURRENT_TABS[mode] || [],
+    handlers
+  }
+}
+
+/**
+ * Initialize tab manager and navigation service
+ * @private
+ * @returns {void}
+ */
+function _initializeServices () {
   tabManager = createTabManager()
-
-  // Create navigation service with map provider
   navigationService = new NavigationService(null, mapProvider)
+}
 
-  // Populate the exported tabs object for backward compatibility
+/**
+ * Setup tabs and navigation for the application
+ * Initializes tab manager, navigation service, and configures UI based on mode
+ * @param {string} huntMode - Initial hunt mode ('build', 'hide', 'seek', etc.)
+ * @returns {void}
+ */
+export function setupTabs (huntMode) {
+  _initializeServices()
   _populateTabsExport()
+  _configureForHuntMode(huntMode)
+}
 
-  // Set current mode in tab manager
+/**
+ * Configure tabs for the given hunt mode
+ * @private
+ * @param {string} huntMode - Hunt mode to configure for
+ * @returns {void}
+ */
+function _configureForHuntMode (huntMode) {
   tabManager.setCurrentMode(huntMode)
-
-  // Configure all tabs based on the current mode
   _configureTabsForMode(huntMode)
 }
 
 /**
  * Populate exported tabs object with manager instances
+ * Provides backward compatibility by exposing tab instances
  * @private
+ * @returns {void}
  */
 function _populateTabsExport () {
-  for (const name of [
+  const tabNames = [
     'build',
     'add',
     'hide',
@@ -81,82 +236,22 @@ function _populateTabsExport () {
     'about',
     'source',
     'print'
-  ]) {
+  ]
+  for (const name of tabNames) {
     tabs[name] = tabManager.getTab(name)
   }
 }
 
 /**
  * Configure tab handlers and visibility based on mode
+ * Sets up event listeners and visual states for all tabs
  * @private
+ * @param {string} huntMode - Current hunt mode
+ * @returns {void}
  */
 function _configureTabsForMode (huntMode) {
-  // Define mode-specific configurations with current tabs and click handlers
-  const modeConfigs = {
-    build: {
-      current: ['build', 'add'],
-      handlers: {
-        hide: () => navigationService.switchToHide(huntMode),
-        seek: () => navigationService.switchToSeek(huntMode),
-        list: () => navigationService.switchToList(huntMode),
-        rules: () => navigationService.switchToRules(huntMode),
-        import: () => _handleImport()
-      }
-    },
-    hide: {
-      current: ['hide'],
-      handlers: {
-        build: () => navigationService.switchToBuild(huntMode),
-        add: () => navigationService.switchToBuild(huntMode),
-        seek: () => navigationService.switchToSeek(huntMode),
-        list: () => navigationService.switchToList(huntMode),
-        rules: () => navigationService.switchToRules(huntMode),
-        import: () => _handleImport()
-      }
-    },
-    seek: {
-      current: ['seek'],
-      handlers: {
-        build: () => navigationService.switchToBuild(huntMode),
-        add: () => navigationService.switchToBuild(huntMode),
-        hide: () => navigationService.switchToHide(huntMode),
-        list: () => navigationService.switchToList(huntMode),
-        rules: () => navigationService.switchToRules(huntMode),
-        import: () => _handleImport()
-      }
-    },
-    list: {
-      current: ['build', 'list'],
-      handlers: {
-        hide: () => navigationService.switchToHide(huntMode),
-        seek: () => navigationService.switchToSeek(huntMode),
-        rules: () => navigationService.switchToRules(huntMode),
-        import: () => _handleImport()
-      }
-    },
-    rules: {
-      current: ['build', 'rules'],
-      handlers: {
-        hide: () => navigationService.switchToHide(huntMode),
-        seek: () => navigationService.switchToSeek(huntMode),
-        list: () => navigationService.switchToList(huntMode),
-        import: () => _handleImport()
-      }
-    },
-    print: {
-      current: ['build', 'print'],
-      handlers: {
-        hide: () => navigationService.switchToHide(huntMode),
-        seek: () => navigationService.switchToSeek(huntMode),
-        list: () => navigationService.switchToList(huntMode),
-        rules: () => navigationService.switchToRules(huntMode),
-        import: () => _handleImport()
-      }
-    }
-  }
-
-  // Get configuration for current mode
-  const config = modeConfigs[huntMode] || { current: [], handlers: {} }
+  // Get mode-specific configuration
+  const config = _getModeConfig(huntMode)
 
   // Apply mode configuration
   tabManager.configureForMode(huntMode, config)
@@ -168,45 +263,6 @@ function _configureTabsForMode (huntMode) {
 
   // Handle import tab for non-import modes
   if (huntMode !== 'import') {
-    tabManager.addListener('import', () => _handleImport())
+    tabManager.addListener('import', () => ImportHandler.handleImport())
   }
-}
-
-/**
- * Handle map import from JSON file
- * @private
- */
-function _handleImport () {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'application/json'
-
-  input.onchange = async e => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    try {
-      const text = await file.text()
-      const map = new SavedCustomMap(JSON.parse(text))
-      const maps = bh.maps
-
-      if (maps.getMap(map.title) || maps.getCustomMap(map.title)) {
-        if (
-          !confirm(
-            'A map with this title already exists. Do you want to overwrite it?'
-          )
-        ) {
-          return
-        }
-      }
-
-      map.saveToLocalStorage()
-      trackClick(map, 'import map')
-      alert('Map imported successfully.')
-    } catch (err) {
-      alert('Invalid JSON: ' + err.message)
-    }
-  }
-
-  input.click()
 }
