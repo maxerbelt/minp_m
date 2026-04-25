@@ -2,10 +2,17 @@ import { Random } from '../core/Random.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Placeable } from './Placeable.js'
 
+/**
+ * @typedef {import('./Placeable.js').Placeable} PlaceableType
+ * @typedef {import('./CellsToBePlaced.js').CellsToBePlaced} CellsToBePlacedType
+ * @typedef {number} VariantIndex
+ * @typedef {(index: VariantIndex)=>VariantIndex} VariantTransitionFn
+ */
+
 export class Variants {
   /**
-   * @param {any} validator
-   * @param {any} zoneDetail
+   * @param {unknown} validator
+   * @param {unknown} zoneDetail
    * @param {string} symmetry
    */
   constructor (validator, zoneDetail, symmetry) {
@@ -37,8 +44,8 @@ export class Variants {
 
   /**
    * Resolve a possibly undefined variant index into an explicit number.
-   * @param {number|undefined|null} index
-   * @returns {number}
+   * @param {VariantIndex|undefined|null} index
+   * @returns {VariantIndex}
    */
   resolveIndex (index) {
     return index == null ? this.index : index
@@ -76,16 +83,28 @@ export class Variants {
   }
 
   /**
+   * @returns {any}
+   */
+  get activeBoard () {
+    return this.boardFor(this.index)
+  }
+
+  /**
    * Choose the best variant index for a given cell height.
    * @param {number} cellHeight
-   * @returns {number}
+   * @returns {VariantIndex}
    */
   indexUnder (cellHeight) {
-    const board0 = this.firstBoard.shrinkToOccupied()
-    if (board0.maxSize <= cellHeight) {
-      return board0.isWide && this.hasMultipleVariants ? 1 : 0
+    if (!this.hasMultipleVariants) {
+      return 0
     }
-    return board0.isTall && this.hasMultipleVariants ? 1 : 0
+
+    const occupiedBoard = this.firstBoard.shrinkToOccupied()
+    if (occupiedBoard.maxSize <= cellHeight) {
+      return occupiedBoard.isWide ? 1 : 0
+    }
+
+    return occupiedBoard.isTall ? 1 : 0
   }
 
   /**
