@@ -1,11 +1,21 @@
 import { FlippableVariant } from './FlippableVariant.js'
-import { Mask } from '../grid/rectangle/mask.js'
 
 export class Orbit4R extends FlippableVariant {
+  /**
+   * @param {unknown} board
+   * @param {unknown} validator
+   * @param {unknown} zoneDetail
+   * @param {unknown} variants
+   */
   constructor (board, validator, zoneDetail, variants) {
     super(validator, zoneDetail)
-    this.list = Mask.listFromCoordsSquare(variants) || Orbit4R.variantsOf(board)
+    this.list = this.constructor.createVariantList(board, variants)
   }
+
+  /**
+   * @param {unknown} board
+   * @returns {unknown[]}
+   */
   static variantsOf (board) {
     return [
       board.square.defaultVariant.shrinkToOccupied(),
@@ -14,8 +24,6 @@ export class Orbit4R extends FlippableVariant {
       board.square.r270().shrinkToOccupied()
     ]
   }
-
-  static setBehaviour = FlippableVariant.setBehaviour.bind(null, Orbit4R)
 
   static r = idx => (idx + 1) % 4
   static f = idx => (idx + 2) % 4
