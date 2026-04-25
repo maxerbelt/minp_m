@@ -6,13 +6,11 @@ import { makeKey, parsePair, addCellToFootPrint } from './terrain.js'
  */
 export class SubTerrainTrackers {
   /**
-   * @param {Array} subterrains - Array of subterrain instances to track
+   * @param {Array<SubTerrain>} subterrains - Array of subterrain instances to track
    */
   constructor (subterrains) {
     /** @type {SubTerrainTracker[]} */
-    this.list = subterrains.map(s => {
-      return new SubTerrainTracker(s)
-    })
+    this.list = subterrains.map(s => new SubTerrainTracker(s))
   }
 
   /**
@@ -20,18 +18,14 @@ export class SubTerrainTrackers {
    * @param {Object} map - The map object with rows, cols, isLand, inBounds methods
    */
   calc (map) {
-    for (const tracker of this.list) {
-      tracker.recalc(map)
-    }
+    this.list.forEach(tracker => tracker.recalc(map))
   }
 
   /**
    * Calculates footprints for all trackers.
    */
   calcFootPrints () {
-    for (const tracker of this.list) {
-      tracker.calcFootPrint()
-    }
+    this.list.forEach(tracker => tracker.calcFootPrint())
   }
 
   /**
@@ -42,10 +36,8 @@ export class SubTerrainTrackers {
    * @returns {SubTerrainTracker|null} The tracker or null if not found
    */
   _findTracker (r, c) {
-    for (const tracker of this.list) {
-      if (tracker.total.has(makeKey(r, c))) return tracker
-    }
-    return null
+    const key = makeKey(r, c)
+    return this.list.find(tracker => tracker.total.has(key)) || null
   }
 
   /**
@@ -70,12 +62,13 @@ export class SubTerrainTrackers {
   zoneDetail (r, c) {
     const tracker = this._findTracker(r, c)
     if (!tracker) throw new Error('Unknown subterrain')
+
     const key = makeKey(r, c)
-    if (tracker.margin.has(key))
+    if (tracker.margin.has(key)) {
       return [tracker.subterrain, tracker.marginalZone]
-    else if (tracker.core.has(key))
+    } else if (tracker.core.has(key)) {
       return [tracker.subterrain, tracker.coreZone]
-    else {
+    } else {
       throw new Error('Unknown zone')
     }
   }
@@ -107,7 +100,7 @@ export class SubTerrainTrackers {
       case 2:
         return this.zoneDetail(r, c)
       default:
-        throw new Error(`zoneDetail not valid: ${zoneDetail}`)
+        throw new Error(`Invalid zone detail level: ${zoneDetail}`)
     }
   }
 
@@ -119,16 +112,18 @@ export class SubTerrainTrackers {
    */
   setupZoneInfo (createZoneTitle, createZoneEntry) {
     const map = bh.map
-    let display = []
+    const display = []
+
     for (const tracker of this.list) {
       tracker.recalc(map)
-      let counts = [
+      const counts = [
         createZoneTitle(tracker.subterrain.title, tracker.total),
         createZoneEntry(tracker.marginalZone.title, tracker.margin),
         createZoneEntry(tracker.coreZone.title, tracker.core)
       ]
-      display.push({ tracker: tracker, counts: counts })
+      display.push({ tracker, counts })
     }
+
     return display
   }
 
@@ -138,32 +133,31 @@ export class SubTerrainTrackers {
    * @param {Function} displayer - Function to display the data
    */
   displayDisplacedArea (map, displayer) {
-    for (const tracker of this.list) {
+    this.list.forEach(tracker => {
       tracker.recalc(map)
       tracker.calcFootPrint()
-      const displacedArea = tracker.displacedArea
-
-      displayer(tracker.subterrain, displacedArea)
-    }
+      displayer(tracker.subterrain, tracker.displacedArea)
+    })
   }
 }
+
 /**
  * Tracks a single subterrain on a map.
  */
 export class SubTerrainTracker {
   /**
-   * @param {Object} subterrain - The subterrain to track
+   * @param {SubTerrain} subterrain - The subterrain to track
    */
   constructor (subterrain) {
     /** @type {Object} */
     this.subterrain = subterrain
     /** @type {Set<string>} */
     this.total = new Set()
-    /** @type {Object} */
+    /** @type {Zone} */
     this.marginalZone = subterrain.zones.find(z => z.isMarginal)
     /** @type {Set<string>} */
     this.margin = new Set()
-    /** @type {Object} */
+    /** @type {Zone} */
     this.coreZone = subterrain.zones.find(z => !z.isMarginal)
     /** @type {Set<string>} */
     this.core = new Set()
@@ -195,13 +189,30 @@ export class SubTerrainTracker {
    * @param {Object} map - The map object with rows, cols, isLand, inBounds methods
    */
   recalc (map) {
+    this._clearSets()
+    this._populateFromMap(map)
+    this._updateCoreSet()
+  }
+
+  /**
+   * Clears all tracking sets.
+   * @private
+   */
+  _clearSets () {
     this.total.clear()
     this.margin.clear()
     this.core.clear()
+  }
 
+  /**
+   * Populates tracking data from the map.
+   * @private
+   * @param {Object} map - The map object
+   */
+  _populateFromMap (map) {
     for (let r = 0; r < map.rows; r++) {
       for (let c = 0; c < map.cols; c++) {
-        this.set(r, c, map)
+        this._processCell(r, c, map)
       }
     }
   }
@@ -215,26 +226,82 @@ export class SubTerrainTracker {
   }
 
   /**
-   * Sets the cell data for tracking.
+   * Processes a single cell for tracking.
+   * @private
+   * @param {number} r - Row index
+   * @param {number} c - Column index
+   * @param {Object} map - The map object
+   */
+  _processCell (r, c, map) {
+    if (!this._cellBelongsToSubterrain(r, c, map)) return
+
+    const key = makeKey(r, c)
+    this.total.add(key)
+
+    if (this._isMarginalCell(r, c, map)) {
+      this.margin.add(key)
+    }
+  }
+
+  /**
+   * Checks if a cell belongs to this subterrain.
+   * @private
+   * @param {number} r - Row index
+   * @param {number} c - Column index
+   * @param {Object} map - The map object
+   * @returns {boolean} True if the cell belongs to this subterrain
+   */
+  _cellBelongsToSubterrain (r, c, map) {
+    return this.subterrain.isTheLand === map.isLand(r, c)
+  }
+
+  /**
+   * Checks if a cell is marginal (has different land type neighbors).
+   * @private
+   * @param {number} r - Row index
+   * @param {number} c - Column index
+   * @param {Object} map - The map object
+   * @returns {boolean} True if the cell is marginal
+   */
+  _isMarginalCell (r, c, map) {
+    const isLand = this.subterrain.isTheLand
+
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        if (i === 0 && j === 0) continue // Skip center cell
+
+        const neighborR = r + i
+        const neighborC = c + j
+
+        if (
+          map.inBounds(neighborR, neighborC) &&
+          isLand !== map.isLand(neighborR, neighborC)
+        ) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Updates the core set after margin calculation.
+   * @private
+   */
+  _updateCoreSet () {
+    this.core = new Set([...this.total].filter(key => !this.margin.has(key)))
+  }
+
+  /**
+   * Sets the cell data for tracking (legacy method for compatibility).
    * @param {number} r - Row index
    * @param {number} c - Column index
    * @param {Object} map - The map object
    */
   set (r, c, map) {
-    const isLand = this.subterrain.isTheLand
-    if (isLand !== map.isLand(r, c)) return
-    const key = makeKey(r, c)
-    this.total.add(key)
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        if (!(i === 0 && j === 0) && map.inBounds(r + i, c + j)) {
-          if (isLand !== map.isLand(r + i, c + j)) {
-            this.margin.add(key)
-          }
-        }
-      }
-    }
-    this.core = new Set([...this.total].filter(x => !this.margin.has(x)))
+    this._processCell(r, c, map)
+    this._updateCoreSet()
   }
 
   /**

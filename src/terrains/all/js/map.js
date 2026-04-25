@@ -548,182 +548,180 @@ const withModifyable = Base =>
     }
   }
 
+/**
+ * Represents a blank custom map that can be modified.
+ * Extends CustomMap with modification capabilities.
+ */
+export class CustomBlankMap extends withModifyable(CustomMap) {
+  /**
+   * Creates a new blank custom map.
+   * @param {number} rows - Number of rows
+   * @param {number} cols - Number of columns
+   * @param {Object} [mapTerrain] - Optional terrain configuration
+   */
+  constructor (rows, cols, mapTerrain) {
+    super(
+      makeTitle(mapTerrain || bh.terrain, cols, rows),
+      [rows, cols],
+      0,
+      new Set(),
+      mapTerrain || bh.terrain
+    )
   }
 
   /**
-   * Represents a blank custom map that can be modified.
-   * Extends CustomMap with modification capabilities.
+   * Gets the index token for this map's dimensions.
+   * @param {number} rows - Number of rows
+   * @param {number} cols - Number of columns
+   * @returns {string} The index token
    */
-  export class CustomBlankMap extends withModifyable(CustomMap) {
-    /**
-     * Creates a new blank custom map.
-     * @param {number} rows - Number of rows
-     * @param {number} cols - Number of columns
-     * @param {Object} [mapTerrain] - Optional terrain configuration
-     */
-    constructor (rows, cols, mapTerrain) {
-      super(
-        makeTitle(mapTerrain || bh.terrain, cols, rows),
-        [rows, cols],
-        0,
-        new Set(),
-        mapTerrain || bh.terrain
-      )
-    }
-
-    /**
-     * Gets the index token for this map's dimensions.
-     * @param {number} rows - Number of rows
-     * @param {number} cols - Number of columns
-     * @returns {string} The index token
-     */
-    indexToken (rows, cols) {
-      return getCopyNumKey(this.terrain, cols, rows)
-    }
-
-    /**
-     * Resizes the map and removes land outside the new bounds.
-     * @param {number} rows - New number of rows
-     * @param {number} cols - New number of columns
-     */
-    setSize (rows, cols) {
-      this.title = makeTitle(this.terrain, cols, rows)
-      this.rows = rows
-      this.cols = cols
-      for (const key of this.land) {
-        const [r, c] = key.split(',').map(n => Number.parseInt(n, 10))
-        if (!this.inBounds(r, c)) this.land.delete(key)
-      }
-    }
+  indexToken (rows, cols) {
+    return getCopyNumKey(this.terrain, cols, rows)
   }
 
   /**
-   * Represents a saved custom map loaded from localStorage.
-   * Extends CustomMap with loading and persistence capabilities.
+   * Resizes the map and removes land outside the new bounds.
+   * @param {number} rows - New number of rows
+   * @param {number} cols - New number of columns
    */
-  export class SavedCustomMap extends CustomMap {
-    /**
-     * Creates a new SavedCustomMap from saved data.
-     * @param {Object} data - The saved map data
-     */
-    constructor (data) {
-      super(
-        data.title,
-        [data.rows, data.cols],
-        data.shipNum,
-        new Set(data.land),
-        data?.terrain?.subterrains
-          ? data.terrain
-          : bh.terrainByTitle(data.terrain),
-        data.example
-      )
+  setSize (rows, cols) {
+    this.title = makeTitle(this.terrain, cols, rows)
+    this.rows = rows
+    this.cols = cols
+    for (const key of this.land) {
+      const [r, c] = key.split(',').map(n => Number.parseInt(n, 10))
+      if (!this.inBounds(r, c)) this.land.delete(key)
+    }
+  }
+}
 
-      const weapons = data.weapons.map(w =>
-        this.terrain.getNewWeapon(w.letter, w.ammo)
-      )
-      this.weapons = [standardShot].concat(weapons.filter(Boolean))
+/**
+ * Represents a saved custom map loaded from localStorage.
+ * Extends CustomMap with loading and persistence capabilities.
+ */
+export class SavedCustomMap extends CustomMap {
+  /**
+   * Creates a new SavedCustomMap from saved data.
+   * @param {Object} data - The saved map data
+   */
+  constructor (data) {
+    super(
+      data.title,
+      [data.rows, data.cols],
+      data.shipNum,
+      new Set(data.land),
+      data?.terrain?.subterrains
+        ? data.terrain
+        : bh.terrainByTitle(data.terrain),
+      data.example
+    )
+
+    const weapons = data.weapons.map(w =>
+      this.terrain.getNewWeapon(w.letter, w.ammo)
+    )
+    this.weapons = [standardShot].concat(weapons.filter(Boolean))
+  }
+
+  /**
+   * Loads map data from localStorage by title.
+   * @param {string} title - The map title
+   * @returns {Object|null} The loaded map data object, or null if not found
+   */
+  static loadObj (title) {
+    const newLocal = `${oldToken}.${title}`
+    const data = localStorage.getItem(newLocal)
+    if (!data) return null
+    const obj = JSON.parse(data)
+    return obj
+  }
+
+  /**
+   * Loads a saved custom map from localStorage.
+   * @param {string} title - The map title
+   * @returns {SavedCustomMap|null} The loaded map, or null if not found
+   */
+  static load (title) {
+    const obj = SavedCustomMap.loadObj(title)
+    if (obj) return new SavedCustomMap(obj)
+
+    console.log("Can't Load Map : ", title)
+    return null
+  }
+
+  /**
+   * Gets the localStorage key for this map.
+   * @returns {string} The localStorage key
+   */
+  localStorageKey () {
+    return `${oldToken}.${this.title}`
+  }
+
+  /**
+   * Removes this map from localStorage and terrain records.
+   */
+  remove () {
+    const key = this.localStorageKey()
+    const title = this.title
+    localStorage.removeItem(key)
+    const check = localStorage.getItem(key)
+    if (check) {
+      throw new Error('Failed to delete map with key ' + key)
     }
 
-    /**
-     * Loads map data from localStorage by title.
-     * @param {string} title - The map title
-     * @returns {Object|null} The loaded map data object, or null if not found
-     */
-    static loadObj (title) {
-      const newLocal = `${oldToken}.${title}`
-      const data = localStorage.getItem(newLocal)
-      if (!data) return null
-      const obj = JSON.parse(data)
-      return obj
+    this.terrain.deleteCustomMaps(title)
+  }
+
+  /**
+   * Renames this map and saves it with the new name.
+   * @param {string} newTitle - The new title for the map
+   */
+  rename (newTitle) {
+    this.remove()
+    this.title = newTitle
+    this.saveToLocalStorage(newTitle)
+  }
+
+  /**
+   * Creates a clone of this map with a new title.
+   * @param {string} [newTitle] - Optional new title for the clone
+   */
+  clone (newTitle) {
+    newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
+    this.title = newTitle
+    const key = this.localStorageKey()
+    this.saveToLocalStorage(newTitle, key)
+
+    const check = localStorage.getItem(key)
+    if (!check) {
+      throw new Error('Failed to copy map with key ' + key)
     }
+  }
+}
 
-    /**
-     * Loads a saved custom map from localStorage.
-     * @param {string} title - The map title
-     * @returns {SavedCustomMap|null} The loaded map, or null if not found
-     */
-    static load (title) {
-      const obj = SavedCustomMap.loadObj(title)
-      if (obj) return new SavedCustomMap(obj)
+/**
+ * Represents an edited custom map with modification capabilities.
+ * Extends SavedCustomMap with the withModifyable mixin.
+ */
+export class EditedCustomMap extends withModifyable(SavedCustomMap) {
+  /**
+   * Creates a new EditedCustomMap instance.
+   * @param {...*} args - Arguments to pass to the base constructor
+   */
+  constructor (...args) {
+    super(...args) // REQUIRED
+  }
 
-      console.log("Can't Load Map : ", title)
+  /**
+   * Loads an edited custom map from localStorage.
+   * @param {string} title - The map title
+   * @returns {EditedCustomMap|null} The loaded map, or null if not found
+   */
+  static load (title) {
+    const obj = SavedCustomMap.loadObj(title)
+    if (obj) {
+      return new EditedCustomMap(obj)
+    } else {
       return null
     }
-
-    /**
-     * Gets the localStorage key for this map.
-     * @returns {string} The localStorage key
-     */
-    localStorageKey () {
-      return `${oldToken}.${this.title}`
-    }
-
-    /**
-     * Removes this map from localStorage and terrain records.
-     */
-    remove () {
-      const key = this.localStorageKey()
-      const title = this.title
-      localStorage.removeItem(key)
-      const check = localStorage.getItem(key)
-      if (check) {
-        throw new Error('Failed to delete map with key ' + key)
-      }
-
-      this.terrain.deleteCustomMaps(title)
-    }
-
-    /**
-     * Renames this map and saves it with the new name.
-     * @param {string} newTitle - The new title for the map
-     */
-    rename (newTitle) {
-      this.remove()
-      this.title = newTitle
-      this.saveToLocalStorage(newTitle)
-    }
-
-    /**
-     * Creates a clone of this map with a new title.
-     * @param {string} [newTitle] - Optional new title for the clone
-     */
-    clone (newTitle) {
-      newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
-      this.title = newTitle
-      const key = this.localStorageKey()
-      this.saveToLocalStorage(newTitle, key)
-
-      const check = localStorage.getItem(key)
-      if (!check) {
-        throw new Error('Failed to copy map with key ' + key)
-      }
-    }
   }
-
-  /**
-   * Represents an edited custom map with modification capabilities.
-   * Extends SavedCustomMap with the withModifyable mixin.
-   */
-  export class EditedCustomMap extends withModifyable(SavedCustomMap) {
-    /**
-     * Creates a new EditedCustomMap instance.
-     * @param {...*} args - Arguments to pass to the base constructor
-     */
-    constructor (...args) {
-      super(...args) // REQUIRED
-    }
-
-    /**
-     * Loads an edited custom map from localStorage.
-     * @param {string} title - The map title
-     * @returns {EditedCustomMap|null} The loaded map, or null if not found
-     */
-    static load (title) {
-      const obj = SavedCustomMap.loadObj(title)
-      if (obj) {
-        return new EditedCustomMap(obj)
-      } else {
-        return null
-      }
-    }
-  }
+}
