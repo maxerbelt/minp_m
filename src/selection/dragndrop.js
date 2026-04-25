@@ -482,6 +482,23 @@ class DragNDrop {
     state.clickedShip = clicked
   }
 
+  /**
+   * Extracts ship information from a drag event.
+   * @param {DragEvent} event - The drag event
+   * @returns {Object} Object with shipId, shipElement, and isNotShipElement
+   */
+  getShip (event) {
+    const shipElement = event.currentTarget
+    const shipId = getShipIdFromElement(shipElement)
+    const isNotShipElement = !shipId && event.target !== shipElement
+
+    return {
+      shipId,
+      shipElement,
+      isNotShipElement
+    }
+  }
+
   // ============================================================================
   // Drop Handlers - Ships
   // ============================================================================

@@ -362,7 +362,7 @@ describe('dragndrop module', () => {
       })
     })
 
-    describe('_handleShipDragStart', () => {
+    describe('_handleWeaponDragStart', () => {
       it('should handle weapon drag start', () => {
         const element = {
           dataset: { id: '1' },
@@ -384,7 +384,12 @@ describe('dragndrop module', () => {
           removeClicked: jest.fn()
         }
 
-        dragNDrop._handleShipDragStart(mockViewmodel, mockWeapon, event)
+        dragNDrop._handleWeaponDragStart(
+          mockViewmodel,
+          mockWeapon,
+          false,
+          event
+        )
 
         expect(event.dataTransfer.setData).toHaveBeenCalledWith('weapon', 'G')
         expect(mockViewmodel.showNotice).toHaveBeenCalledWith('Gatling Gun')
