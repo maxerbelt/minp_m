@@ -5,10 +5,7 @@ export default {
   // extensionsToTreatAsEsm removed: '.js' is inferred from package.json 'type: module'
   testEnvironment: '<rootDir>/test/jest-environment.js',
   moduleNameMapper: {},
-  testMatch: [
-    '<rootDir>/src/**/*.test.js',
-    '<rootDir>/test/**/*.test.js'
-  ],
+  testMatch: ['<rootDir>/src/**/*.test.js', '<rootDir>/test/**/*.test.js'],
   transformIgnorePatterns: [
     '/node_modules/(?!(jest-.*|@jest/.*|@babel/.*|babel-jest)/)'
   ],

@@ -1,8 +1,8 @@
 /* eslint-env jest */
 
-/* global describe, it, expect, beforeEach, jest */
+/* global describe, it, expect, beforeEach */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach } from '@jest/globals'
 import { Building, SeaVessel } from '../terrains/sea/js/SeaShape.js'
 
 import { Hybrid } from './Hybrid.js'

@@ -57,8 +57,8 @@ export class SpecialVariant extends RotatableVariant {
     )
   }
   static setBehaviourTo (v3, symmetry) {
-    const VariantType = variantType(symmetry || this.symmetry)
-    VariantType.setBehaviour(v3)
+    const VariantType = variantType(symmetry.symmetry)
+    VariantType.setBehaviour(v3, symmetry)
   }
   placeables () {
     return this.shuffledPlaceables()

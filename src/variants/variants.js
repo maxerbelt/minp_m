@@ -27,6 +27,7 @@ export class Variants {
     this.canRotate = false
     this.canTransform = true
     this.validator = validator
+    this.symmetry = symmetry
     this.onChange = Function.prototype
     this.zoneDetail = zoneDetail
     this.symmetry = symmetry
