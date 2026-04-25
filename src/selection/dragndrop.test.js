@@ -217,7 +217,7 @@ describe('dragndrop module', () => {
           currentTarget: element,
           target: element
         }
-        const result = dragNDrop.getShip(event)
+        const result = dragNDrop._getShip(event)
         expect(result.shipId).toBe(5)
         expect(result.shipElement).toBe(element)
         expect(result.isNotShipElement).toBe(false)
@@ -230,7 +230,7 @@ describe('dragndrop module', () => {
           currentTarget: element,
           target: targetElement
         }
-        const result = dragNDrop.getShip(event)
+        const result = dragNDrop._getShip(event)
         expect(result.shipElement).toBe(element)
         expect(result.isNotShipElement).toBe(true)
       })
@@ -283,7 +283,7 @@ describe('dragndrop module', () => {
       })
     })
 
-    describe('dragStartHander', () => {
+    describe('_handleShipDragStart', () => {
       it('should handle drag start event', () => {
         const element = {
           dataset: { id: '1', variant: '0' },
@@ -335,7 +335,7 @@ describe('dragndrop module', () => {
           setDragShipContents: jest.fn()
         }
 
-        dragNDrop.dragStartHander(mockViewmodel, [mockShip], event)
+        dragNDrop._handleShipDragStart(mockViewmodel, [mockShip], event)
 
         expect(mockViewmodel.showNotice).toHaveBeenCalledWith('test ship')
         expect(mockViewmodel.removeClicked).toHaveBeenCalled()
@@ -356,13 +356,13 @@ describe('dragndrop module', () => {
           removeClicked: jest.fn()
         }
 
-        dragNDrop.dragStartHander(mockViewmodel, [], event)
+        dragNDrop._handleShipDragStart(mockViewmodel, [], event)
         // When target is not ship element and element has no ID, should return early
         expect(mockViewmodel.removeClicked).not.toHaveBeenCalled()
       })
     })
 
-    describe('dragStartWeaponHander', () => {
+    describe('_handleShipDragStart', () => {
       it('should handle weapon drag start', () => {
         const element = {
           dataset: { id: '1' },
@@ -384,14 +384,14 @@ describe('dragndrop module', () => {
           removeClicked: jest.fn()
         }
 
-        dragNDrop.dragStartWeaponHander(mockViewmodel, mockWeapon, false, event)
+        dragNDrop._handleShipDragStart(mockViewmodel, mockWeapon, event)
 
         expect(event.dataTransfer.setData).toHaveBeenCalledWith('weapon', 'G')
         expect(mockViewmodel.showNotice).toHaveBeenCalledWith('Gatling Gun')
       })
     })
 
-    describe('onClickTrayItem', () => {
+    describe('_setupShipClickHandler', () => {
       it('should handle click on tray item', () => {
         const element = {
           dataset: { id: '1' },
@@ -401,7 +401,7 @@ describe('dragndrop module', () => {
         const mockShip = { id: 1 }
         const mockViewmodel = { assignClicked: jest.fn() }
 
-        dragNDrop.onClickTrayItem(mockViewmodel, element, [mockShip])
+        dragNDrop._setupShipClickHandler(mockViewmodel, element, [mockShip])
 
         expect(element.addEventListener).toHaveBeenCalledWith(
           'click',
@@ -410,7 +410,7 @@ describe('dragndrop module', () => {
       })
     })
 
-    describe('onClickTrayItemWeapon', () => {
+    describe('_setupWeaponClickHandler', () => {
       it('should handle click on weapon tray item', () => {
         const element = {
           dataset: { letter: 'G' },
@@ -420,7 +420,7 @@ describe('dragndrop module', () => {
         const mockWeapon = { letter: 'G' }
         const mockViewmodel = { assignClickedWeapon: jest.fn() }
 
-        dragNDrop.onClickTrayItemWeapon(mockViewmodel, element, mockWeapon)
+        dragNDrop._setupWeaponClickHandler(mockViewmodel, element, mockWeapon)
 
         expect(element.addEventListener).toHaveBeenCalledWith(
           'click',

@@ -1,12 +1,14 @@
 /**
  * Represents a selected ship with variant management capabilities.
+ * Provides delegating methods for variant operations (rotate, flip, transform).
+ * @class SelectedShip
  */
 export class SelectedShip {
   /**
    * Creates a SelectedShip instance.
-   * @param {Object} ship - The ship object
+   * @param {Object} ship - The ship object with id, letter, shape() method
    * @param {number} variantIndex - Index of the current variant
-   * @param {Function} contentBuilder - Function to build content for the ship
+   * @param {Function} contentBuilder - Function(element, board, letter) to render ship
    */
   constructor (ship, variantIndex, contentBuilder) {
     this.ship = ship
@@ -21,7 +23,7 @@ export class SelectedShip {
   }
 
   /**
-   * Checks if the ship can be flipped.
+   * Checks if the ship can be flipped (delegates to variants).
    * @returns {boolean} True if flipping is allowed
    */
   canFlip () {
@@ -29,7 +31,7 @@ export class SelectedShip {
   }
 
   /**
-   * Checks if the ship can be rotated.
+   * Checks if the ship can be rotated (delegates to variants).
    * @returns {boolean} True if rotation is allowed
    */
   canRotate () {
@@ -37,7 +39,7 @@ export class SelectedShip {
   }
 
   /**
-   * Checks if the ship can be transformed.
+   * Checks if the ship can be transformed (delegates to variants).
    * @returns {boolean} True if transformation is allowed
    */
   canTransform () {
@@ -45,7 +47,7 @@ export class SelectedShip {
   }
 
   /**
-   * Gets the current placeable variant.
+   * Gets the current placeable variant for placement operations.
    * @returns {Object} The placeable variant
    */
   placeable () {
@@ -53,7 +55,7 @@ export class SelectedShip {
   }
 
   /**
-   * Gets the current variant.
+   * Gets the current variant object.
    * @returns {Object} The current variant
    */
   variant () {
@@ -61,15 +63,15 @@ export class SelectedShip {
   }
 
   /**
-   * Gets the board for the current variant.
-   * @returns {Object} The board
+   * Gets the board representation for the current variant.
+   * @returns {Object} The board with occupiedLocations() method
    */
   board () {
     return this.variants.boardFor()
   }
 
   /**
-   * Rotates the ship variant.
+   * Rotates the ship variant clockwise.
    * @returns {Object} The rotated variant
    */
   rotate () {
@@ -77,7 +79,7 @@ export class SelectedShip {
   }
 
   /**
-   * Rotates the ship variant left.
+   * Rotates the ship variant counter-clockwise.
    * @returns {Object} The left-rotated variant
    */
   leftRotate () {
@@ -85,7 +87,7 @@ export class SelectedShip {
   }
 
   /**
-   * Flips the ship variant.
+   * Flips the ship variant horizontally.
    * @returns {Object} The flipped variant
    */
   flip () {

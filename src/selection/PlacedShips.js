@@ -1,17 +1,36 @@
 /**
  * Manages a collection of ships that have been placed on the board.
+ * Provides undo/reset functionality and maintains the placement history.
  */
 export class PlacedShips {
+  /**
+   * Creates a new PlacedShips instance.
+   */
   constructor () {
-    /** @type {Array<Object>} */
+    /**
+     * Array of ships that have been placed on the board.
+     * @type {Array<Object>}
+     * @private
+     */
     this.ships = []
-    /** @type {HTMLButtonElement|null} */
+
+    /**
+     * Undo button element for UI control.
+     * @type {HTMLButtonElement|null}
+     * @private
+     */
     this.undoBtn = null
-    /** @type {HTMLButtonElement|null} */
+
+    /**
+     * Reset button element for UI control.
+     * @type {HTMLButtonElement|null}
+     * @private
+     */
     this.resetBtn = null
   }
 
   /**
+   * Checks if no ships have been placed on the board.
    * @returns {boolean} True when no ships have been placed
    */
   isEmpty () {
@@ -19,7 +38,8 @@ export class PlacedShips {
   }
 
   /**
-   * Removes all ships from the placed collection.
+   * Removes all ships from the placed collection and updates UI controls.
+   * @returns {void}
    */
   reset () {
     this.ships = []
@@ -27,9 +47,10 @@ export class PlacedShips {
   }
 
   /**
-   * Registers undo and reset button controls.
-   * @param {HTMLButtonElement} undoBtn
-   * @param {HTMLButtonElement} resetBtn
+   * Registers undo and reset button controls for UI state management.
+   * @param {HTMLButtonElement} undoBtn - The undo button element
+   * @param {HTMLButtonElement} resetBtn - The reset button element
+   * @returns {void}
    */
   registerUndo (undoBtn, resetBtn) {
     this.undoBtn = undoBtn
@@ -53,7 +74,9 @@ export class PlacedShips {
   }
 
   /**
-   * Updates the enabled/disabled state of registered buttons.
+   * Updates the enabled/disabled state of registered buttons based on ship count.
+   * Buttons are disabled when no ships are placed.
+   * @returns {void}
    */
   updateUndo () {
     this._setButtonState(this.undoBtn)
@@ -62,7 +85,7 @@ export class PlacedShips {
 
   /**
    * Removes a placed ship and refreshes the remaining ships on the grid.
-   * @param {Object} shipCellGrid
+   * @param {Object} shipCellGrid - The grid containing ship cell data
    * @param {Function} mark - Function called for each remaining ship after re-adding
    * @param {Function} returnShip - Function called with the removed ship
    * @returns {Object|null} The removed ship, or null if none were placed
@@ -71,17 +94,29 @@ export class PlacedShips {
     const ship = this.pop()
     if (ship) {
       returnShip(ship)
-      this._forEachShip(s => {
-        s.addToGrid(shipCellGrid)
-        mark(s)
-      })
+      this._refreshAllShipsOnGrid(shipCellGrid, mark)
     }
     return ship
   }
 
   /**
-   * Returns all placed ships.
+   * Refreshes all remaining ships on the grid after a ship removal.
+   * @param {Object} shipCellGrid - The grid containing ship cell data
+   * @param {Function} mark - Function called for each ship after re-adding to grid
+   * @returns {void}
+   * @private
+   */
+  _refreshAllShipsOnGrid (shipCellGrid, mark) {
+    this._forEachShip(ship => {
+      ship.addToGrid(shipCellGrid)
+      mark(ship)
+    })
+  }
+
+  /**
+   * Returns all placed ships to a callback function and clears the collection.
    * @param {Function} returnShip - Callback invoked with each ship
+   * @returns {void}
    */
   popAll (returnShip) {
     this._forEachShip(returnShip)
@@ -89,8 +124,8 @@ export class PlacedShips {
   }
 
   /**
-   * Adds a ship to the placed collection.
-   * @param {Object} ship
+   * Adds a ship to the placed collection at specified cell coordinates.
+   * @param {Object} ship - The ship object to place
    * @param {Array} placed - Cell coordinates where the ship was placed
    * @returns {Array} The placed ship cells
    */
@@ -101,6 +136,7 @@ export class PlacedShips {
   }
 
   /**
+   * Gets the number of ships currently placed.
    * @returns {number} The number of ships placed
    */
   numPlaced () {
@@ -108,6 +144,7 @@ export class PlacedShips {
   }
 
   /**
+   * Gets a shallow copy of the placed ships list.
    * @returns {Array<Object>} A shallow copy of the placed ships list
    */
   getAll () {
@@ -115,9 +152,10 @@ export class PlacedShips {
   }
 
   /**
-   * Iterates over every placed ship.
+   * Iterates over every placed ship and calls the provided callback.
+   * @param {Function} callback - Function to call for each ship
+   * @returns {void}
    * @private
-   * @param {Function} callback
    */
   _forEachShip (callback) {
     for (const ship of this.ships) {
@@ -127,8 +165,10 @@ export class PlacedShips {
 
   /**
    * Updates the disabled state of a button based on whether any ships are placed.
+   * Buttons are disabled when no ships are placed.
+   * @param {HTMLButtonElement|null} button - The button to update
+   * @returns {void}
    * @private
-   * @param {HTMLButtonElement|null} button
    */
   _setButtonState (button) {
     if (!button) return
@@ -136,4 +176,8 @@ export class PlacedShips {
   }
 }
 
+/**
+ * Singleton instance of PlacedShips for global access.
+ * @type {PlacedShips}
+ */
 export const placedShipsInstance = new PlacedShips()
