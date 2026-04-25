@@ -775,17 +775,31 @@ export class Waters {
     const rack = this.loadOut.getWeaponBySystemId(weaponId)
     this.selectAndArmWps(rack, oppo, launchR, launchC, hintR, hintC)
   }
+
+  /**
+   * Launches randomly selected weapon at specified location.
+   * Returns true if weapon was successfully launched (no result).
+   *
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @param {boolean} [autoSelectWarning] - Unused parameter (for API compatibility)
+   * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon and score
+   */
   async launchRandomWeapon (r, c, autoSelectWarning = true) {
-    const hasLaunched = await this.launchUnattachedWeapon(r, c)
-    if (hasLaunched) return true
-    return this.launchRandomWeaponBase(autoSelectWarning)
+    const result = (await this.launchUnattachedWeapon(r, c)) || {}
+    if (result?.score && result.score !== LoadOut.noResult) {
+      return result
+    }
+    result['hasTargettedWeapon'] =
+      this.hasTargettedRandomWeaponBase(autoSelectWarning)
+    return result
   }
 
-  launchRandomWeaponBase (autoSelectWarning = true) {
+  hasTargettedRandomWeaponBase (autoSelectWarning = true) {
     const current = this.loadOut.getCurrentWeaponSystem()
     const attached = current.hasAmmo()
     if (attached) {
-      return this.launchRandomWeaponForWps(autoSelectWarning)
+      return this.hasTargettedRandomWeaponForWps(autoSelectWarning)
     }
     return false
   }
@@ -843,7 +857,7 @@ export class Waters {
     return { launchR, launchC, weaponId, hintR, hintC }
   }
 
-  launchRandomWeaponForWps (autoSelectWarning = true) {
+  hasTargettedRandomWeaponForWps (autoSelectWarning = true) {
     this.randomAttachedWeapon(this.opponent)
     const currentWeapon = this.loadOut.selectedWeapon
 
@@ -871,21 +885,13 @@ export class Waters {
     weaponSystem = this.loadOut.selectedWeapon,
     launch = this.loadOut.launch
   ) {
-    const result = await this.loadOut.aimWeapon(
-      bh.map,
-      row,
-      col,
-      weaponSystem,
-      launch
-    )
-    this.updateResultsOfBomb(weaponSystem?.weapon, result)
+    return await this.loadOut.aimWeapon(bh.map, row, col, weaponSystem, launch)
   }
   async launchSelectedWeapon (r, c) {
     if (this.loadOut.isArmed()) {
-      await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
-      return true
+      return await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
     }
-    return false
+    return null
   }
 
   async launchUnattachedWeapon (r, c) {
@@ -894,10 +900,12 @@ export class Waters {
       const launch = async coords => {
         return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
-      await this.fireWeaponAt(r, c, unAttached, launch)
-      return true
+      const result = await this.fireWeaponAt(r, c, unAttached, launch)
+      if (result?.score && result.score !== LoadOut.noResult) {
+        return result
+      }
     }
-    return false
+    return null
   }
   async launchSingleShot (r, c, sShot) {
     this.loadOut.onDestroy = (weapon, affectedArea) => {
@@ -910,8 +918,9 @@ export class Waters {
       c
     )
     await this.launchTo(coordinates, bh.map.rows - 1, 0, wps)
-    const result = fireSingleShot()
-    this.updateResultsOfSingleShot(result)
+
+    const score = fireSingleShot()
+    return { weapon: wps.weapon, score }
   }
 
   getUnattachedWeaponSystem () {
@@ -1297,19 +1306,7 @@ export class Waters {
     }
     this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
   }
-  updateResultsOfSingleShot (result) {
-    if (!result) return
-    const { hits, dtaps, sunk, reveals, info, shots } = result
-    this.updateResultsOfTurn(
-      this.loadOut.getSingleShot(),
-      hits,
-      dtaps,
-      sunk,
-      reveals,
-      info,
-      shots
-    )
-  }
+
   updateResultsOfBomb (weapon, result) {
     if (!result) return
     const { hits, dtaps, sunk, reveals, info, shots } = result

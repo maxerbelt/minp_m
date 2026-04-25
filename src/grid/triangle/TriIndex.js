@@ -70,9 +70,14 @@ export class TriIndex extends Indexer {
     let roundedR = Math.round(r)
     let roundedS = Math.round(s)
 
-    const qDiff = Math.abs(roundedQ - q)
-    const rDiff = Math.abs(roundedR - r)
-    const sDiff = Math.abs(roundedS - s)
+    const [qDiff, rDiff, sDiff] = this._calculateCubeDifferences(
+      q,
+      r,
+      s,
+      roundedQ,
+      roundedR,
+      roundedS
+    )
 
     if (qDiff > rDiff && qDiff > sDiff) {
       roundedQ = -roundedR - roundedS
@@ -83,6 +88,25 @@ export class TriIndex extends Indexer {
     }
 
     return [roundedQ, roundedR, roundedS]
+  }
+
+  /**
+   * Calculates absolute differences between original and rounded cube coordinates.
+   * @param {number} q - Original q coordinate
+   * @param {number} r - Original r coordinate
+   * @param {number} s - Original s coordinate
+   * @param {number} roundedQ - Rounded q coordinate
+   * @param {number} roundedR - Rounded r coordinate
+   * @param {number} roundedS - Rounded s coordinate
+   * @returns {Array<number>} [qDiff, rDiff, sDiff]
+   * @private
+   */
+  _calculateCubeDifferences (q, r, s, roundedQ, roundedR, roundedS) {
+    return [
+      Math.abs(roundedQ - q),
+      Math.abs(roundedR - r),
+      Math.abs(roundedS - s)
+    ]
   }
 
   _computeCubeLineDeltas (startRow, startCol, endRow, endCol) {
@@ -216,19 +240,6 @@ export class TriIndex extends Indexer {
     )
   }
 
-  /**
-   * Gets neighbors or area from a specific connection type
-   * @param {string} connectionKey - Connection type key
-   * @param {string} methodName - Method name ('neighbors' or 'area')
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Array} Neighbor coordinates or area coordinates
-   * @private
-   */
-  _getConnectionResult (connectionKey, methodName, r, c) {
-    return this.connection[connectionKey][methodName](r, c)
-  }
-
   neighborsEdge (r, c) {
     return this._getConnectionResult('3', 'neighbors', r, c)
   }
@@ -296,28 +307,7 @@ export class TriIndex extends Indexer {
   // CONCEPT: Bresenham Line Drawing (Reusable pattern across all indexers)
   // ============================================================================
 
-  /**
-   * Detects and yields corner-crossing cells for super-cover algorithm.
-   * Delegates to cover.super implementation for consistency.
-   */
-  *yieldSuperCoverCornerCells (...args) {
-    return yield* this.cover.super.yieldSuperCoverCornerCells(...args)
-  }
-
-  /**
-   * Detects and yields corner-crossing cells for half-cover algorithm.
-   * Delegates to cover.half implementation for consistency.
-   */
-  *yieldHalfCoverCornerCells (...args) {
-    return yield* this.cover.half.yieldHalfCoverCornerCells(...args)
-  }
-
   actions (bb) {
-    if (this._actions && this._actions?.original?.bits === bb.bits) {
-      return this._actions
-    }
-    // triangles use specialized actions class
-    this._actions = new ActionsTri(this.side, bb)
-    return this._actions
+    return this._getCachedActions(bb, () => new ActionsTri(this.side, bb))
   }
 }

@@ -459,6 +459,36 @@ export class Indexer {
     return yield* this._delegateCoverGenerator('half', 'segmentFor', ...args)
   }
 
+  /**
+   * Detects and yields corner-crossing cells for super-cover algorithm.
+   * Delegates to cover.super implementation for consistency.
+   * @generator
+   * @param {...*} args - Arguments for cover.super.yieldSuperCoverCornerCells()
+   * @yields {Array<number>} [x, y] coordinates
+   */
+  *yieldSuperCoverCornerCells (...args) {
+    return yield* this._delegateCoverGenerator(
+      'super',
+      'yieldSuperCoverCornerCells',
+      ...args
+    )
+  }
+
+  /**
+   * Detects and yields corner-crossing cells for half-cover algorithm.
+   * Delegates to cover.half implementation for consistency.
+   * @generator
+   * @param {...*} args - Arguments for cover.half.yieldHalfCoverCornerCells()
+   * @yields {Array<number>} [x, y] coordinates
+   */
+  *yieldHalfCoverCornerCells (...args) {
+    return yield* this._delegateCoverGenerator(
+      'half',
+      'yieldHalfCoverCornerCells',
+      ...args
+    )
+  }
+
   // ============================================================================
   // Intercept/Boundary Detection
   // ============================================================================
@@ -561,6 +591,58 @@ export class Indexer {
    */
   coordinatesFromBitboard (bb) {
     return this.bitsToCoords(bb)
+  }
+
+  // ============================================================================
+  // Connection Handling
+  // ============================================================================
+
+  /**
+   * Gets neighbors or area from a specific connection type.
+   * @param {string|number} connectionKey - Connection type key
+   * @param {string} methodName - Method name ('neighbors' or 'area')
+   * @param {...number} coords - Coordinate arguments
+   * @returns {Array} Neighbor coordinates or area coordinates
+   * @throws {Error} If connection type or method not found
+   * @private
+   */
+  _getConnectionResult (connectionKey, methodName, ...coords) {
+    if (!this.connection || !this.connection[connectionKey]) {
+      throw new Error(`Missing connection object for type ${connectionKey}`)
+    }
+    const connection = this.connection[connectionKey]
+    if (typeof connection[methodName] !== 'function') {
+      throw new TypeError(
+        `Missing connection method ${connectionKey}.${methodName}`
+      )
+    }
+    return connection[methodName](...coords)
+  }
+
+  /**
+   * Creates or returns cached actions instance for bitboard operations.
+   * Subclasses should override to provide specific Actions implementation.
+   * @param {Object} bb - Bitboard object
+   * @returns {Object} Actions instance
+   * @abstract
+   */
+  actions (bb) {
+    throw new Error('actions method must be implemented in derived class')
+  }
+
+  /**
+   * Helper for caching actions instances based on bitboard state.
+   * @param {Object} bb - Bitboard object
+   * @param {Function} factory - Factory function to create new actions instance
+   * @returns {Object} Cached or new actions instance
+   * @private
+   */
+  _getCachedActions (bb, factory) {
+    if (this._actions && this._actions?.original?.bits === bb.bits) {
+      return this._actions
+    }
+    this._actions = factory()
+    return this._actions
   }
 
   // ============================================================================

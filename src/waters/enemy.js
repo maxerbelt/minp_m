@@ -72,7 +72,6 @@ class Enemy extends Waters {
     if (this?.opponent == null) {
       return
     }
-    this.opponent.score.finishTurn()
     if (this.opponent.boardDestroyed || this.opponent.isRevealed) return
 
     this._showWaitingForOpponent()
@@ -291,20 +290,46 @@ class Enemy extends Waters {
     return true
   }
 
-  async onClickCell (r, c) {
-    if (!this.canTakeTurn()) return
+  /**
+   * Launches  specified location.
+   *
+   *
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @returns {Promise<null|{ weapon: Object, score: Object}|{hasTargettedWeapon: boolean }>} Result with weapon and score
+   * @private
+   */
+  async setupWeapon (r, c) {
     this.UI.removeHighlightAoE()
     this.setWeaponFireHandlers()
-    let hasLaunched = await this.launchSelectedWeapon(r, c)
-    if (hasLaunched) return
-    hasLaunched = await this.launchRandomWeapon(r, c, bh.seekingMode)
-    if (hasLaunched) return
-    await this.fireWeaponAt(
+    let result = await this.launchSelectedWeapon(r, c)
+    if (result?.score && result.score !== LoadOut.noResult) {
+      return result
+    }
+
+    result = await this.launchRandomWeapon(r, c, bh.seekingMode)
+    if (result?.hasTargettedWeapon || result?.score) return result
+
+    return await this.fireWeaponAt(
       r,
       c,
       null,
       LoadOut.launchDefault.bind(this, this.UI)
     )
+  }
+
+  async onClickCell (r, c) {
+    if (!this.canTakeTurn()) return
+    let result = await this.setupWeapon(r, c)
+    if (result?.hasTargettedWeapon) {
+      return
+    }
+    if (result?.score) {
+      this.updateResultsOfBomb(result?.weapon, result?.score)
+    }
+    this.score.finishTurn()
+    this.updateUI()
+    this.steps.endTurn()
   }
 
   onClickOppoCell (hintR, hintC) {
@@ -363,10 +388,7 @@ class Enemy extends Waters {
       gameStatus._addToQueue('Has no effect - Try Again', false)
       return LoadOut.noResult
     }
-    const result = this.applyWeaponEffect(weapon, effect)
-    this.updateUI()
-    this.steps.endTurn()
-    return result
+    return this.applyWeaponEffect(weapon, effect)
   }
 
   applyWeaponEffect (weapon, effect) {

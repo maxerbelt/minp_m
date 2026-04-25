@@ -104,19 +104,6 @@ export class CubeIndex extends Indexer {
     return this._boundaryExitCondition
   }
 
-  /**
-   * Gets neighbors or area from a specific connection type
-   * @param {string|number} connectionKey - Connection type key
-   * @param {string} methodName - Method name ('neighbors' or 'area')
-   * @param {number} q - Q coordinate
-   * @param {number} r - R coordinate
-   * @returns {Array} Neighbor coordinates or area coordinates
-   * @private
-   */
-  _getConnectionResult (connectionKey, methodName, q, r) {
-    return this.connection[connectionKey][methodName](q, r)
-  }
-
   neighbors (q, r) {
     return this._getConnectionResult(6, 'neighbors', q, r)
   }
@@ -251,22 +238,6 @@ export class CubeIndex extends Indexer {
   // ============================================================================
   // Bresenham Line Drawing (Reusable pattern across all indexers)
   // ============================================================================
-
-  /**
-   * Detects and yields corner-crossing cells for super-cover algorithm.
-   * Delegates to cover.super implementation for consistency.
-   */
-  *yieldSuperCoverCornerCells (...args) {
-    return yield* this.cover.super.yieldSuperCoverCornerCells(...args)
-  }
-
-  /**
-   * Detects and yields corner-crossing cells for half-cover algorithm.
-   * Delegates to cover.half implementation for consistency.
-   */
-  *yieldHalfCoverCornerCells (...args) {
-    return yield* this.cover.half.yieldHalfCoverCornerCells(...args)
-  }
 
   /**
    * Apply offset to all bits in a bitboard container

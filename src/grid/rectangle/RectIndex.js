@@ -40,14 +40,6 @@ export class RectIndex extends Indexer {
     return this.cover.normal.stepMove(...args)
   }
 
-  *yieldSuperCoverCornerCells (...args) {
-    return yield* this.cover.super.yieldSuperCoverCornerCells(...args)
-  }
-
-  *yieldHalfCoverCornerCells (...args) {
-    return yield* this.cover.half.yieldHalfCoverCornerCells(...args)
-  }
-
   index (x, y) {
     return y * this.width + x
   }
@@ -106,19 +98,6 @@ export class RectIndex extends Indexer {
       canFlipH: actions.applyMap(maps.fx) !== template,
       canFlipV: actions.applyMap(maps.fy) !== template
     }
-  }
-
-  /**
-   * Gets neighbors or area from a specific connection type
-   * @param {string} connectionKey - Connection type key
-   * @param {string} methodName - Method name ('neighbors' or 'area')
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @returns {Array} Neighbor coordinates or area coordinates
-   * @private
-   */
-  _getConnectionResult (connectionKey, methodName, x, y) {
-    return this.connection[connectionKey][methodName](x, y)
   }
 
   neighbors (x, y) {

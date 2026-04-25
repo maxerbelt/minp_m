@@ -75,7 +75,6 @@ export class Friend extends Waters {
     if (this?.opponent == null) {
       return
     }
-    this.opponent.score.finishTurn()
     if (!this.opponent.boardDestroyed) {
       this.opponent._handleBeginTurn()
     }
@@ -253,14 +252,11 @@ export class Friend extends Waters {
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @param {boolean} [shouldWait] - Unused parameter (for API compatibility)
-   * @returns {Promise<boolean>} True if launch successful
-   * @private
+   * @returns {Promise<null|{ weapon: Object, score: Object}|{hasTargettedWeapon: boolean }>} Result with weapon and score
    */
   async launchRandomWeapon (r, c, shouldWait) {
     const wps = this.currentWeaponSystem
-    const weapon = wps.weapon
-    const score = await this.loadOut.aimWeapon(this.map, r, c, wps)
-    return score === LoadOut.noResult
+    return await this.loadOut.aimWeapon(this.map, r, c, wps)
   }
 
   /**
@@ -268,7 +264,7 @@ export class Friend extends Waters {
    * Attempts multiple bomb launches at random untried locations.
    * Returns result of first successful hit or no result after all attempts.
    *
-   * @returns {Promise<Object>} Result with weapon and score, or noResult
+   * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon and score, or noResult
    * @private
    */
   async randomBomb () {
@@ -281,14 +277,12 @@ export class Friend extends Waters {
         if (this.isCancelled()) return this.noResult
         const { r, c } = this.randomLocation(this.map)
         if (this.score.newShotKey(r, c)) {
-          const hasLaunched = await this.launchRandomWeapon(r, c, false)
-          if (!hasLaunched) {
-            const wps = this.currentWeaponSystem
-            const weapon = wps.weapon
-            const score = await this.loadOut.aimWeapon(this.map, r, c, wps)
-            return { weapon, score }
+          const result = await this.launchRandomWeapon(r, c, false)
+          if (result?.score && result.score !== LoadOut.noResult) {
+            return result
           }
-          return LoadOut.noResult
+          const wps = this.currentWeaponSystem
+          return await this.loadOut.aimWeapon(this.map, r, c, wps)
         }
       }
     }
@@ -299,22 +293,18 @@ export class Friend extends Waters {
    * Launches single destroy-type weapon across highest frequency row.
    * Uses most-attempted row for targeting line sweep.
    *
-   * @returns {Promise<Object>} Result with weapon and score
+   * @returns {Promise<null|{ weapon: Object, score: Object}|{ weapon: Object, score: Object, hasTargettedWeapon: boolean }>}  Result with weapon and score
    * @private
    */
   async randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
     const r = this.randomRowNum()
-    await this.launchRandomWeapon(r, 0, false)
+    const result = await this.launchRandomWeapon(r, 0, false)
+    if (result?.score && result.score !== LoadOut.noResult) {
+      return result
+    }
     const wps = this.currentWeaponSystem
-    const weapon = wps.weapon
-    const score = await this.loadOut.aimWeapon(
-      this.map,
-      r,
-      this.map.cols - 1,
-      wps
-    )
-    return { weapon, score }
+    return await this.loadOut.aimWeapon(this.map, r, this.map.cols - 1, wps)
   }
 
   /**
@@ -335,7 +325,7 @@ export class Friend extends Waters {
    * Attempts to find and fire at valid untried locations.
    * Stops game if unable to find valid locations after max attempts.
    *
-   * @returns {Promise<null|Object>} Null on success, noResult on failure
+   * @returns {Promise<null|{ weapon: any; score: any; }>} Null on success, noResult on failure
    * @private
    */
   async randomSeek () {
@@ -354,10 +344,10 @@ export class Friend extends Waters {
         return LoadOut.noResult
       }
       if (this.isHitValid(loc[1], loc[0])) {
-        await this.launchSingleShot(loc[1], loc[0])
-        return null
+        return await this.launchSingleShot(loc[1], loc[0])
       }
     }
+    return null
   }
 
   /**
@@ -432,10 +422,9 @@ export class Friend extends Waters {
    */
   async tryFinishCondition (mask, finishAction) {
     if (mask?.occupancy > 0) {
-      await finishAction(mask)
-      return true
+      return await finishAction(mask)
     }
-    return false
+    return null
   }
 
   /**
@@ -461,7 +450,7 @@ export class Friend extends Waters {
    * @private
    */
   async finishPartiallySunk (hits) {
-    if (!hits?.occupancy) return false
+    if (!hits?.occupancy) return null
 
     const shots = this.score.shot
     const cross = hits.clone.dilateCross()
@@ -472,12 +461,11 @@ export class Friend extends Waters {
     console.log('cross', cross.toAscii)
 
     console.log('candidates', candidates.toAscii)
-    if (
-      await this.tryFinishCondition(candidates, m =>
-        this.selectRandomCandidate(m)
-      )
-    ) {
-      return true
+    const result = await this.tryFinishCondition(candidates, m =>
+      this.selectRandomCandidate(m)
+    )
+    if (result) {
+      return result
     }
 
     const surround = hits.clone.dilate(1).take(shots)
@@ -503,7 +491,7 @@ export class Friend extends Waters {
         this.selectRandomCandidate(m)
       )
     }
-    return false
+    return null
   }
 
   /**
@@ -511,13 +499,13 @@ export class Friend extends Waters {
    * Switches to single shot weapon before firing.
    *
    * @param {Object} candidate - Bitmask with randomOccupied property
-   * @returns {Promise<void>}
+   * @returns {Promise<{ weapon: Object; score: Object; }>}
    * @private
    */
   async selectRandomCandidate (candidate) {
     this.loadOut.switchToSingleShot()
     const [c, r] = candidate.randomOccupied
-    await this.launchSingleShot(r, c, false)
+    return await this.launchSingleShot(r, c, false)
   }
 
   /**
@@ -525,7 +513,7 @@ export class Friend extends Waters {
    * Priority: Revealed cells > Partially sunk ships > Hint areas > Effect weapon > Seek.
    *
    * @param {Object} hits - Current hit locations on board
-   * @returns {Promise<Object>} Result from selected shot strategy
+   * @returns {Promise<null|{ weapon: Object; score: Object; }>} Result from selected shot strategy
    * @private
    */
   async selectShot (hits) {
@@ -536,7 +524,8 @@ export class Friend extends Waters {
     ]
 
     for (const finishMethod of finishMethods) {
-      if (await finishMethod()) return
+      const result = await finishMethod()
+      if (result) return result
     }
 
     const op = this.loadOut.switchToPreferredWeapon()
@@ -615,13 +604,11 @@ export class Friend extends Waters {
     const hits = this.getHits()
     this.setWeaponFireHandlers()
     const result = await this.selectShot(hits)
-    if (
-      result &&
-      result !== LoadOut.noResult &&
-      result.score !== LoadOut.noResult
-    ) {
+    if (result?.score && result.score !== LoadOut.noResult) {
       this.updateResultsOfBomb(result?.weapon, result.score)
     }
+    this.score.finishTurn()
+    this.updateUI()
     this.steps.endTurn()
   }
 
