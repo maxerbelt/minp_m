@@ -53,6 +53,10 @@ function onClickUndo () {
   )
 }
 
+/**
+ * Accepts the current ship placement and optionally saves the edited map.
+ * @param {boolean} editingMap - Whether map editing is enabled.
+ */
 function onClickAccept (editingMap) {
   const ships = custom.createCandidateShips()
   custom.candidateShips = ships
@@ -73,10 +77,9 @@ function onClickAccept (editingMap) {
 function onClickDefault () {
   setNewMapToCorrectSize()
   customUI.refreshAllColor()
-
-  customUI.score.displayZoneInfo()
-  customUI.updateChangeClearButton()
+  _refreshBuildControls()
 }
+
 function clearShips () {
   customUI.showNotice('ships removed')
   custom.resetShipCells()
@@ -87,6 +90,7 @@ function clearShips () {
   })
   custom.ships = []
 }
+
 function onClickClear () {
   if (customUI.placingShips) {
     clearShips()
@@ -98,18 +102,36 @@ function onClickClear () {
 
   bh.maps.clearBlank()
   customUI.refreshAllColor()
+  _refreshBuildControls()
+}
+
+/**
+ * Refreshes build mode button and score controls.
+ * @private
+ */
+function _refreshBuildControls () {
   customUI.score.displayZoneInfo()
   customUI.updateChangeClearButton()
 }
+/**
+ * Switches to seek mode while preserving build progress.
+ */
 function seekMap () {
   trackLevelEnd(bh.map, true)
   switchTo('battleseek', 'build')
 }
+
+/**
+ * Publishes the current map and returns to the main index.
+ */
 function playMap () {
   trackLevelEnd(bh.map, true)
   switchTo('index', 'build')
 }
 
+/**
+ * Saves the current map for later editing.
+ */
 function saveMap () {
   const saveMap = bh.map
   trackLevelEnd(saveMap, false)
@@ -141,13 +163,17 @@ function _setupBuildButtons () {
   return buttonManager
 }
 
+/**
+ * Moves the cursor inside build mode.
+ * @param {Event} event - The keyboard event.
+ */
 function moveCursor (event) {
   moveCursorBase(event, customUI, custom)
 }
 
 /**
- * Setup keyboard shortcuts for build mode using declarative mapping
- * Supports rotation, flipping, transformations, and cursor navigation
+ * Registers keyboard shortcuts for build mode.
+ * @returns {KeyboardShortcutManager} The keyboard manager.
  */
 function _setupBuildKeyboardShortcuts () {
   keyboardManager = new KeyboardShortcutManager()

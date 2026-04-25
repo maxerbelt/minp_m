@@ -12,8 +12,8 @@ const uiManager = new UIVisibilityManager()
 const stateManager = new GameStateManager('seek')
 
 /**
- * Initialize seek mode gameplay
- * Setup map selection and enemy board
+ * Initializes seek mode gameplay.
+ * @private
  */
 function _initializeSeekMode () {
   setupGameOptions(enemyUI.resetBoardSize.bind(enemyUI), () => newGame('seek'))

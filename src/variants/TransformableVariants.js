@@ -227,35 +227,37 @@ export class TransformableVariants extends Variants {
   }
 
   /**
+   * Performs a transformation if allowed.
+   * @param {Function} action - The transformation action.
+   * @param {boolean} canDo - Whether the transformation is allowed.
+   * @private
+   */
+  _performTransformation (action, canDo) {
+    if (!canDo) return
+    const old = this.index
+    action.call(this.currentForm)
+    this.index = this.indexFromForms()
+    if (old !== this.index) this.onChange()
+  }
+
+  /**
    * Rotates the current form.
    */
   rotate () {
-    if (!this.canRotate) return
-    const old = this.index
-    this.currentForm.rotate()
-    this.index = this.indexFromForms()
-    if (old !== this.index) this.onChange()
+    this._performTransformation(this.currentForm.rotate, this.canRotate)
   }
 
   /**
    * Flips the current form.
    */
   flip () {
-    if (!this.canFlip) return
-    const old = this.index
-    this.currentForm.flip()
-    this.index = this.indexFromForms()
-    if (old !== this.index) this.onChange()
+    this._performTransformation(this.currentForm.flip, this.canFlip)
   }
 
   /**
    * Left rotates the current form.
    */
   leftRotate () {
-    if (!this.canRotate) return
-    const old = this.index
-    this.currentForm.leftRotate()
-    this.index = this.indexFromForms()
-    if (old !== this.index) this.onChange()
+    this._performTransformation(this.currentForm.leftRotate, this.canRotate)
   }
 }

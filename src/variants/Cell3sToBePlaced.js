@@ -1,18 +1,33 @@
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 
+/**
+ * Represents 3D cells to be placed with subgroups.
+ */
 export class Cell3sToBePlaced extends CellsToBePlaced {
-  constructor (placable3, r, c) {
+  /**
+   * Creates 3D cells to be placed.
+   * @param {any} placeable3 - The placeable3 instance.
+   * @param {number} r - The row.
+   * @param {number} c - The column.
+   */
+  constructor (placeable3, r, c) {
     super(
-      placable3.board,
+      placeable3.board,
       r,
       c,
-      placable3.validator,
-      placable3.zoneDetail,
-      placable3.target
+      placeable3.validator,
+      placeable3.zoneDetail,
+      placeable3.target
     )
-    this.subGroups = placable3.subGroups.map(g => g.placeAt(r, c))
+    this.subGroups = placeable3.subGroups.map(g => g.placeAt(r, c))
   }
 
+  /**
+   * Checks if a position is in matching zone for subgroups.
+   * @param {number} r - The row.
+   * @param {number} c - The column.
+   * @returns {boolean} True if in matching zone.
+   */
   isInMatchingZone (r, c) {
     const zoneInfo = this.zoneInfo(r, c, 2)
     const result = this.subGroups.some(
@@ -20,6 +35,11 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
     )
     return result
   }
+
+  /**
+   * Checks if any cell is in wrong zone and sets notGood mask.
+   * @returns {boolean} True if wrong zone.
+   */
   isWrongZone () {
     const cells = [...this.board.occupiedLocations()]
     const result = cells.some(([c, r]) => {

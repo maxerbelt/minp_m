@@ -46,29 +46,25 @@ function onClickTest () {
  * Return to ship placement from seek mode
  * Restores UI state and cleans up game state
  */
+function _prepareReturnToPlacement () {
+  uiManager.hide('enemy-container')
+  const tallyTitle = document.getElementById('tally-title')
+  const tallyBox = document.getElementById('friend-tally-container')
+  tallyBox.prepend(tallyTitle)
+  enemy.opponent = null
+  friend.opponent = null
+}
+
 function _onClickReturnToPlacement () {
   stateManager.switchToMode('hide-placement', {
-    onBefore: () => {
-      uiManager.hide('enemy-container')
-      const tallyTitle = document.getElementById('tally-title')
-      const tallyBox = document.getElementById('friend-tally-container')
-      tallyBox.prepend(tallyTitle)
-      enemy.opponent = null
-      friend.opponent = null
-    },
+    onBefore: _prepareReturnToPlacement,
     onAfter: _initializePlacement
   })
 }
+
 function _onClickTest2 () {
   stateManager.switchToMode('hide-placement', {
-    onBefore: () => {
-      uiManager.hide('enemy-container')
-      const tallyTitle = document.getElementById('tally-title')
-      const tallyBox = document.getElementById('friend-tally-container')
-      tallyBox.prepend(tallyTitle)
-      enemy.opponent = null
-      friend.opponent = null
-    },
+    onBefore: _prepareReturnToPlacement,
     onAfter: _initializeTest
   })
 }
@@ -93,7 +89,7 @@ function _onClickSeek () {
  * Start battle hide/seek gameplay
  * Transitions UI from placement to battle mode
  */
-function __playBattleHide () {
+function _enterBattleHide () {
   stateManager.switchToMode('hide-seek', {
     onBefore: () => {
       friendUI.seekMode()
@@ -125,7 +121,7 @@ function _onClickAuto () {
 }
 function _playBattleHide () {
   if (!bh.test) {
-    __playBattleHide()
+    _enterBattleHide()
   }
 }
 
@@ -185,12 +181,12 @@ function moveCursor (event) {
 }
 
 /**
- * Setup keyboard shortcuts for hide mode using declarative mapping
- * Supports rotation, flipping, transformations, and cursor navigation
+ * Builds the shared keyboard shortcut mapping for hide mode.
+ * @returns {Object<string, Function>} Shortcut handlers.
+ * @private
  */
-function _setupHideKeyboardShortcuts () {
-  keyboardManager = new KeyboardShortcutManager()
-  const shortcutHandlers = {
+function _getHideShortcutHandlers () {
+  return {
     c: _initializePlacement,
     r: onClickRotate,
     l: onClickRotateLeft,
@@ -206,38 +202,44 @@ function _setupHideKeyboardShortcuts () {
     Tab: event => tabCursor(event, friendUI, friend),
     Enter: event => enterCursor(event, friendUI, friend)
   }
+}
 
-  keyboardManager.registerShortcuts(shortcutHandlers)
-  keyboardManager.activate()
-  stateManager.registerModeManager('hide-placement', keyboardManager)
+/**
+ * Registers a keyboard manager for the given mode.
+ * @param {KeyboardShortcutManager} manager - The manager instance.
+ * @param {string} mode - The state manager mode name.
+ * @returns {KeyboardShortcutManager} The initialized manager.
+ * @private
+ */
+function _registerHideKeyboardManager (manager, mode) {
+  const shortcutHandlers = _getHideShortcutHandlers()
+  manager.registerShortcuts(shortcutHandlers)
+  manager.activate()
+  stateManager.registerModeManager(mode, manager)
+  return manager
+}
+
+/**
+ * Setup keyboard shortcuts for hide mode.
+ * @returns {KeyboardShortcutManager} The keyboard manager.
+ */
+function _setupHideKeyboardShortcuts () {
+  keyboardManager = _registerHideKeyboardManager(
+    new KeyboardShortcutManager(),
+    'hide-placement'
+  )
   return keyboardManager
 }
 
 /**
- * Setup keyboard shortcuts for hide-seek mode
+ * Setup keyboard shortcuts for hide-seek mode.
+ * @returns {KeyboardShortcutManager} The keyboard manager.
  */
 function _setupSeekKeyboardShortcuts () {
-  seekKeyboardManager = new KeyboardShortcutManager()
-  const shortcutHandlers = {
-    c: _initializePlacement,
-    r: onClickRotate,
-    l: onClickRotateLeft,
-    f: onClickFlip,
-    x: onClickTransform,
-    t: onClickTest,
-    s: _onClickStop,
-    u: onClickUndo,
-    ArrowUp: event => moveCursor(event),
-    ArrowDown: event => moveCursor(event),
-    ArrowLeft: event => moveCursor(event),
-    ArrowRight: event => moveCursor(event),
-    Tab: event => tabCursor(event, friendUI, friend),
-    Enter: event => enterCursor(event, friendUI, friend)
-  }
-
-  seekKeyboardManager.registerShortcuts(shortcutHandlers)
-  seekKeyboardManager.activate()
-  stateManager.registerModeManager('hide-seek', seekKeyboardManager)
+  seekKeyboardManager = _registerHideKeyboardManager(
+    new KeyboardShortcutManager(),
+    'hide-seek'
+  )
   return seekKeyboardManager
 }
 
