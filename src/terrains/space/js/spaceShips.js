@@ -104,7 +104,7 @@ export const spaceShipsCatalogue = new ShipCatalogue(
     Y: 'G',
     Z: `S`,
     1: 'A',
-    2: 'A',
+    2: 'S',
     3: 'A',
     4: 'A',
     '+': 'W',

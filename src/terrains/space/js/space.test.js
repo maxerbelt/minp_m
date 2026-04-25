@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-/* global describe, it, test, expect, beforeEach, jest */
+/* global describe, it,  expect,  jest */
 import {
   deep,
   near,
@@ -12,25 +12,26 @@ import {
   spaceAndAsteroids
 } from './space.js'
 import { SubTerrain } from '../../all/js/SubTerrain.js'
+import { SubTerrainBase } from '../../all/js/SubTerrainBase.js'
 import { Terrain } from '../../all/js/terrain.js' // match import used in space.js
-import { jest } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 import { Zone } from '../../all/js/Zone.js'
 
-// Jest test suite
+// Jest it suite
 describe('space.js zones', () => {
-  test('deep zone is non-marginal', () => {
+  it('deep zone is non-marginal', () => {
     expect(deep).toBeInstanceOf(Zone)
     expect(deep.title).toBe('Deep Space')
     expect(deep.letter).toBe('D')
     expect(deep.isMarginal).toBe(false)
   })
 
-  test('near zone is marginal', () => {
+  it('near zone is marginal', () => {
     expect(near).toBeInstanceOf(Zone)
     expect(near.isMarginal).toBe(true)
   })
 
-  test('surface and core zones exist', () => {
+  it('surface and core zones exist', () => {
     expect(surface).toBeInstanceOf(Zone)
     expect(core).toBeInstanceOf(Zone)
     expect(surface.isMarginal).toBe(true)
@@ -39,7 +40,7 @@ describe('space.js zones', () => {
 })
 
 describe('space.js subterrains', () => {
-  test('space subterrain with near and deep zones', () => {
+  it('space subterrain with near and deep zones', () => {
     expect(space).toBeInstanceOf(SubTerrain)
     expect(space.title).toBe('Space')
     expect(space.letter).toBe('S')
@@ -48,29 +49,29 @@ describe('space.js subterrains', () => {
     expect(space.zones).toContain(deep)
   })
 
-  test('asteroid subterrain with surface and core zones', () => {
+  it('asteroid subterrain with surface and core zones', () => {
     expect(asteroid).toBeInstanceOf(SubTerrain)
     expect(asteroid.title).toBe('Asteroid')
     expect(asteroid.zones).toContain(surface)
     expect(asteroid.zones).toContain(core)
   })
 
-  test('all subterrain has no zones', () => {
-    expect(all).toBeInstanceOf(SubTerrain)
+  it('all subterrain has no zones', () => {
+    expect(all).toBeInstanceOf(SubTerrainBase)
     expect(all.title).toBe('Shuttle')
     expect(all.zones.length).toBe(0)
   })
 })
 
 describe('spaceAndAsteroids terrain', () => {
-  test('terrain includes space and asteroid subterrains', () => {
+  it('terrain includes space and asteroid subterrains', () => {
     expect(spaceAndAsteroids).toBeInstanceOf(Terrain)
     expect(spaceAndAsteroids.title).toBe('Space and Asteroids')
     expect(spaceAndAsteroids.subterrains).toContain(space)
     expect(spaceAndAsteroids.subterrains).toContain(asteroid)
   })
 
-  test('terrain has weapons and transform flags set', () => {
+  it('terrain has weapons and transform flags set', () => {
     expect(spaceAndAsteroids.hasUnattachedWeapons).toBe(false)
     expect(spaceAndAsteroids.hasAttachedWeapons).toBe(true)
     expect(spaceAndAsteroids.hasTransforms).toBe(true)
