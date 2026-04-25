@@ -2,8 +2,8 @@ import { Variants } from './variants.js'
 
 export class RotatableVariant extends Variants {
   /**
-   * @param {any} validator
-   * @param {any} zoneDetail
+   * @param {unknown} validator
+   * @param {unknown} zoneDetail
    * @param {string} [symmetry]
    */
   constructor (validator, zoneDetail, symmetry = undefined) {
@@ -13,9 +13,29 @@ export class RotatableVariant extends Variants {
         'base class cannot be instantiated directly. Please extend it.'
       )
     }
-    const ctor = /** @type {any} */ (this.constructor)
-    ctor.setBehaviour(this, symmetry)
-    this.canRotate = true
+    const ctor = /** @type {typeof RotatableVariant} */ (this.constructor)
+    ctor.setBehaviour(ctor, this)
+  }
+
+  /**
+   * Configure rotation behavior for a rotatable variant.
+   * @param {Function} VariantClass
+   * @param {RotatableVariant} instance
+   */
+  static setBehaviour (VariantClass, instance) {
+    instance.canRotate = true
+    instance.canTransform = true
+    instance.r1 = VariantClass.r
+    instance.f1 = VariantClass.f
+    instance.rf1 = VariantClass.rf
+  }
+
+  /**
+   * @param {VariantTransitionFn} transitionFn
+   * @returns {unknown}
+   */
+  applyTransition (transitionFn) {
+    return this.setByIndex(transitionFn(this.index))
   }
 
   /**
@@ -23,7 +43,7 @@ export class RotatableVariant extends Variants {
    * @returns {unknown}
    */
   rotate () {
-    return this.setByIndex(this.r1(this.index))
+    return this.applyTransition(this.r1)
   }
 
   /**
@@ -31,7 +51,7 @@ export class RotatableVariant extends Variants {
    * @returns {unknown}
    */
   flip () {
-    return this.setByIndex(this.f1(this.index))
+    return this.applyTransition(this.f1)
   }
 
   /**
@@ -39,6 +59,6 @@ export class RotatableVariant extends Variants {
    * @returns {unknown}
    */
   leftRotate () {
-    return this.setByIndex(this.rf1(this.index))
+    return this.applyTransition(this.rf1)
   }
 }
