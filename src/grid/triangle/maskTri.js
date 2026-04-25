@@ -2,10 +2,32 @@ import { ActionsTri } from './actionsTri.js'
 import { MaskBase } from '../MaskBase.js'
 import { TriangleShape } from './TriangleShape.js'
 
+/**
+ * MaskTri - Triangular grid mask implementation
+ *
+ * Provides bitmask operations for triangular grids with row/column coordinates.
+ * Supports morphological operations (dilate, erode), coordinate conversion,
+ * and grid transformations specific to triangular topology.
+ */
 export class MaskTri extends MaskBase {
+  /**
+   * Create a new triangular grid mask
+   * @param {number} side - The side length of the triangle grid
+   * @param {*} bits - Bit representation of the mask data (optional)
+   * @param {Object} store - Bit storage implementation (optional)
+   */
   constructor (side, bits, store) {
     super(TriangleShape(side), 1, bits, store)
     this.side = side
+  }
+
+  /**
+   * Create a new empty MaskTri instance with the same triangle side.
+   * @private
+   * @returns {MaskTri} New MaskTri instance
+   */
+  _createMaskInstance () {
+    return new MaskTri(this.side)
   }
 
   // ============================================================================
@@ -13,7 +35,8 @@ export class MaskTri extends MaskBase {
   // ============================================================================
 
   /**
-   * Create empty triangular mask of same side
+   * Create empty triangular mask of same side length
+   * @returns {MaskTri} New empty mask with same dimensions
    */
   get emptyMask () {
     return new MaskTri(this.side)
@@ -21,6 +44,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Create triangular mask with all bits set
+   * @returns {MaskTri} New mask with all cells occupied
    */
   get fullMask () {
     const mask = this.emptyMask
@@ -30,6 +54,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Create triangular mask with inverted bits
+   * @returns {MaskTri} New mask with inverted occupancy
    */
   get invertedMask () {
     const mask = this.emptyMask
@@ -42,8 +67,11 @@ export class MaskTri extends MaskBase {
   // ============================================================================
 
   /**
-   * Get index from triangle coordinates (r, c)
-   * @throws Error if coordinates invalid
+   * Get linear index from triangle row/column coordinates
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {number} Linear index for the cell
+   * @throws {Error} If coordinates are invalid for this triangle
    */
   index (r, c) {
     const i = this.indexer.index(r, c)
@@ -55,6 +83,9 @@ export class MaskTri extends MaskBase {
 
   /**
    * Get bit position from row/column coordinates
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {number} Bit position in the store
    */
   bitPos (r, c) {
     return this.index(r, c)
@@ -67,6 +98,10 @@ export class MaskTri extends MaskBase {
   /**
    * Add bit at triangle coordinates to bits value
    * @private
+   * @param {*} bb - Current bits value
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {*} Updated bits value with bit set
    */
   addBit (bb, r, c) {
     const i = this._getBitMaskAtCoords(r, c)
@@ -76,6 +111,9 @@ export class MaskTri extends MaskBase {
   /**
    * Get bit mask for triangle at row/column coordinates
    * @private
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {*} Bit mask for the coordinate
    */
   _getBitMaskAtCoords (r, c) {
     const i = this.bitPos(r, c)
@@ -85,13 +123,19 @@ export class MaskTri extends MaskBase {
   /**
    * Get bit mask for triangle at index (internal helper)
    * @private
+   * @param {number} i - Linear index
+   * @returns {*} Bit mask for the index
    */
   _getBitMaskAtIndex (i) {
     return this.store.bitMaskByPos(this.store.bitPos(i))
   }
 
   /**
-   * Set cell at triangle coordinates with optional color
+   * Set cell value at triangle coordinates
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {number} [color=1] - Value to set
+   * @returns {*} Updated bits value
    */
   set (r, c, color = 1) {
     const loc = this.for(r, c)
@@ -102,6 +146,9 @@ export class MaskTri extends MaskBase {
   /**
    * Set cell by store index (internal helper)
    * @private
+   * @param {number} i - Linear index
+   * @param {number} [color=1] - Value to set
+   * @returns {*} Updated bits value
    */
   setIndex (i, color = 1) {
     const bitPosition = this.store.bitPos(i)
@@ -116,27 +163,41 @@ export class MaskTri extends MaskBase {
   // ============================================================================
 
   /**
+   * Add all valid neighbor cells to bits using a neighbor selector.
+   * @private
+   * @param {*} bits - Current bits value
+   * @param {function(number, number): Iterable<Array<number>>} neighborSelector - Returns neighbors for a coordinate
+   * @returns {*} Updated bits value with neighbors added
+   */
+  _expandBitsWithNeighbors (bits, neighborSelector) {
+    let nextBits = bits
+    for (const [r, c] of this.indexer.bitKeys(bits)) {
+      for (const [nr, nc] of neighborSelector.call(this.indexer, r, c)) {
+        if (!this.indexer.isValid(nr, nc)) continue
+        const idx = this.indexer.index(nr, nc)
+        nextBits = this.store.addBit(nextBits, idx)
+      }
+    }
+    return nextBits
+  }
+
+  /**
    * Expand set bits by triangle connectivity radius
+   * @param {number} [radius=1] - Radius for dilation
+   * @returns {*} Dilated bits value
    */
   dilateBits (radius = 1) {
     let bits = this.bits
     for (let step = 0; step < radius; step++) {
-      let nextBits = bits
-      for (const [r, c] of this.indexer.bitKeys(bits)) {
-        const neighbors = this.indexer.neighbors(r, c)
-        for (const [nr, nc] of neighbors) {
-          if (!this.indexer.isValid(nr, nc)) continue
-          const idx = this.indexer.index(nr, nc)
-          nextBits = this.store.addBit(nextBits, idx)
-        }
-      }
-      bits = nextBits
+      bits = this._expandBitsWithNeighbors(bits, this.indexer.neighbors)
     }
     return bits
   }
 
   /**
    * Shrink set bits by triangle connectivity radius
+   * @param {number} [radius=1] - Radius for erosion
+   * @returns {*} Eroded bits value
    */
   erodeBits (radius = 1) {
     let bits = this.bits
@@ -146,11 +207,7 @@ export class MaskTri extends MaskBase {
         const neighbors = this.indexer.neighbors(r, c)
         let survives = true
         for (const [nr, nc] of neighbors) {
-          if (!this.indexer.isValid(nr, nc)) {
-            survives = false
-            break
-          }
-          if (!this.test(nr, nc)) {
+          if (!this.indexer.isValid(nr, nc) || !this.test(nr, nc)) {
             survives = false
             break
           }
@@ -166,31 +223,36 @@ export class MaskTri extends MaskBase {
 
   /**
    * Cross dilation on triangle grid expands only edge-adjacent neighbors
+   * @returns {*} Cross-dilated bits value
    */
   dilateCrossBits () {
-    let bits = this.bits
-    let nextBits = bits
-    for (const [r, c] of this.indexer.bitKeys(bits)) {
-      const neighbors = this.indexer.neighborsEdge(r, c)
-      for (const [nr, nc] of neighbors) {
-        if (!this.indexer.isValid(nr, nc)) continue
-        const idx = this.indexer.index(nr, nc)
-        nextBits = this.store.addBit(nextBits, idx)
-      }
-    }
-    return nextBits
+    return this._expandBitsWithNeighbors(this.bits, this.indexer.neighborsEdge)
   }
 
+  /**
+   * Dilate the mask by expanding set bits
+   * @param {number} [radius=1] - Expansion radius
+   * @returns {MaskTri} This instance for chaining
+   */
   dilate (radius = 1) {
     this.bits = this.dilateBits(radius)
     return this
   }
 
+  /**
+   * Erode the mask by shrinking set bits
+   * @param {number} [radius=1] - Erosion radius
+   * @returns {MaskTri} This instance for chaining
+   */
   erode (radius = 1) {
     this.bits = this.erodeBits(radius)
     return this
   }
 
+  /**
+   * Cross dilate the mask
+   * @returns {MaskTri} This instance for chaining
+   */
   dilateCross () {
     this.bits = this.dilateCrossBits()
     return this
@@ -202,6 +264,9 @@ export class MaskTri extends MaskBase {
 
   /**
    * Get cell value at triangle coordinates
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {*} Cell value at the coordinates
    */
   at (r, c) {
     return this.for(r, c).at()
@@ -209,6 +274,10 @@ export class MaskTri extends MaskBase {
 
   /**
    * Test if cell at triangle coordinates matches color
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {number} [color=1] - Color value to test for
+   * @returns {boolean} True if cell matches the color
    */
   test (r, c, color = 1) {
     return this.for(r, c).test(color)
@@ -216,6 +285,9 @@ export class MaskTri extends MaskBase {
 
   /**
    * Clear (zero out) cell at triangle coordinates
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {*} Updated bits value
    */
   clear (r, c) {
     return this.set(r, c, 0)
@@ -226,7 +298,8 @@ export class MaskTri extends MaskBase {
   // ============================================================================
 
   /**
-   * Get cached actions instance or create new one
+   * Get cached actions instance for transformations
+   * @returns {ActionsTri} Actions instance for this mask
    */
   get actions () {
     if (this._actions && this._actions?.original?.bits === this.bits) {
@@ -240,9 +313,13 @@ export class MaskTri extends MaskBase {
   // Iteration
   // ============================================================================
 
+  // ============================================================================
+  // Iteration
+  // ============================================================================
+
   /**
    * Iterate over [r, c, index] tuples for all cells
-   * Uses indexer.location to iterate without explicit row/col map
+   * @yields {Array<number>} [row, col, index] for each cell
    */
   *keys () {
     const n = this.indexer.size
@@ -254,6 +331,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Iterate over [r, c, value, index, mask] tuples for all cells
+   * @yields {Array} [row, col, value, index, mask] for each cell
    */
   *entries () {
     for (const [r, c, i] of this.keys()) {
@@ -263,6 +341,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Iterate over values of all cells
+   * @yields {*} Value of each cell
    */
   *values () {
     for (const [r, c] of this.keys()) {
@@ -272,6 +351,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Iterate over indices of set bits
+   * @yields {number} Index of each set bit
    */
   *bitsIndices () {
     yield* this.indexer.bitsIndices(this.bits)
@@ -279,6 +359,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Iterate over [r, c] coordinates of set bits
+   * @yields {Array<number>} [row, col] coordinates of set cells
    */
   *bitKeys () {
     yield* this.indexer.bitKeys(this.bits)
@@ -287,6 +368,8 @@ export class MaskTri extends MaskBase {
   /**
    * Get row/column coordinates for index
    * @private
+   * @param {number} i - Linear index
+   * @returns {Array<number>} [row, col] coordinates
    */
   _getLocationAtIndex (i) {
     return this.indexer.location(i)
@@ -296,17 +379,13 @@ export class MaskTri extends MaskBase {
   // Clone / Factory Methods
   // ============================================================================
 
-  /**
-   * Create a clone of this triangular mask with identical side, depth, and bits
-   */
-  get clone () {
-    const mask = new MaskTri(this.side, null, null)
-    mask.bits = this.cloneBits
-    return mask
-  }
+  // ============================================================================
+  // Coordinate Conversion
+  // ============================================================================
 
   /**
    * Load coordinates into this mask
+   * @param {Array<Array<number>>} coords - Array of [r, c] or [r, c, value] coordinates
    */
   fromCoords (coords) {
     this._coords.fromCoordinates(coords)
@@ -314,6 +393,7 @@ export class MaskTri extends MaskBase {
 
   /**
    * Get all occupied cells as [r, c] coordinate pairs
+   * @returns {Array<Array<number>>} Array of [row, col] coordinates
    */
   get toCoords () {
     return this._coords.bitsToCoordinates().map(a => a.slice(0, 2))

@@ -52,17 +52,34 @@ export class Store32 extends StoreBase {
     this.cpwShift = cpwShift
   }
 
+  /**
+   * Create a new zeroed Uint32Array for this store.
+   * @param {number} [numWords] - Optional word count; defaults to configured word count.
+   * @returns {Uint32Array}
+   */
   newWords (numWords) {
     numWords = numWords || this.words
     return empty(numWords)
   }
+
+  /**
+   * Create an empty bitboard matching the store layout.
+   * @returns {Uint32Array}
+   */
   emptyBitboard () {
     return this.newWords()
   }
+
   *bitsOccupied (bitboard, size = this.size) {
     return yield* bitSafeArr(size, bitboard)
   }
   // Normalize input bitboard to a Uint32Array of length `this.words`
+  /**
+   * Normalize input into a Uint32Array of the configured word length.
+   * Existing data is copied, missing words are zero-filled.
+   * @param {Uint32Array|Array<number>|null|undefined} bitboard
+   * @returns {Uint32Array}
+   */
   normalizeBitboard (bitboard) {
     let src = bitboard
     if (src?.length !== this.words) {
@@ -274,20 +291,6 @@ export class Store32 extends StoreBase {
   }
 
   // Per-cell helper: determine if cell at given index survives horizontal erosion
-  cellSurvivesHorizontalErosion (src, idx) {
-    const leftOk = this.cellHasLeftNeighbor(src, idx, this.width)
-    const rightOk = this.cellHasRightNeighbor(src, idx, this.width)
-    return leftOk && rightOk
-  }
-
-  // Per-cell helper: determine if cell at given index survives vertical erosion
-  cellSurvivesVerticalErosion (src, idx, gridWidth) {
-    const h = this.height
-    const upOk = this.cellHasTopNeighbor(src, idx, gridWidth)
-    const downOk = this.cellHasBottomNeighbor(src, idx, gridWidth, h)
-    return upOk && downOk
-  }
-
   // Per-cell horizontal expansion (left, self, right) respecting row bounds
   expandHorizontallyCellwise (src) {
     const w = this.width
@@ -580,11 +583,24 @@ export class Store32 extends StoreBase {
     return this.rightShift(bitboard?.[word], shift)
   }
 
+  /**
+   * Read a logical cell value from the bitboard.
+   * @param {Uint32Array} bitboard
+   * @param {number} i
+   * @returns {number}
+   */
   getIdx (bitboard, i) {
     const ref = this.readRef(i)
     return this.getRef(bitboard, ref.word, ref.shift)
   }
 
+  /**
+   * Write a logical cell value into the bitboard and return the modified array.
+   * @param {Uint32Array} bitboard
+   * @param {number} i
+   * @param {number} color
+   * @returns {Uint32Array}
+   */
   setIdx (bitboard, i, color) {
     this.setAtIdx(bitboard, i, color)
     return bitboard
@@ -605,8 +621,22 @@ export class Store32 extends StoreBase {
     return this.rightShift(bitboard?.[word], shift) !== 0
   }
 
-  gettingMask (shift) {
+  /**
+   * Return the mask for a cell at the given bit shift.
+   * @param {number} shift - Bit shift within a 32-bit word
+   * @returns {number}
+   */
+  getMaskAtShift (shift) {
     return this.cellMask << shift
+  }
+
+  /**
+   * Backward-compatible alias for getMaskAtShift.
+   * @param {number} shift
+   * @returns {number}
+   */
+  gettingMask (shift) {
+    return this.getMaskAtShift(shift)
   }
 
   ref (idx) {
@@ -814,10 +844,6 @@ export class Store32 extends StoreBase {
       outputBitIndex++
     }
     return accumulatedBitboard
-  }
-
-  extractCellValue (word, cellMask) {
-    return word & cellMask
   }
 
   combineArrays (a, b, out, op, mask) {
@@ -1271,10 +1297,6 @@ export class Store32 extends StoreBase {
     )
   }
 
-  rangeSize (startIndex, endIndex) {
-    return this.bitPos(endIndex - startIndex + 1)
-  }
-
   rangeMask (startIndex, endIndex) {
     const size = this.rangeSize(startIndex, endIndex)
     return (1 << size) - 1
@@ -1284,11 +1306,6 @@ export class Store32 extends StoreBase {
     const startBitPosition = this.bitPos(rowIndex + startColumn)
     const rangeForColumns = this.rangeMask(startColumn, endColumn)
     return rangeForColumns << startBitPosition
-  }
-
-  rowMaskForWidth (gridWidth) {
-    const widthInBits = this.bitPos(gridWidth)
-    return (1 << widthInBits) - 1
   }
 
   setRow (bitboard, rowIndex, gridWidth, rowMaskForWidth) {
@@ -1748,12 +1765,18 @@ export class Store32 extends StoreBase {
 
     return resultBitboard
   }
-  extractOccuppancyLayer (bitboard, gridWidth, gridHeight) {
+
+  /**
+   * Extract a 1-bit occupancy layer from the bitboard.
+   * @param {Uint32Array} bitboard
+   * @param {number} gridWidth
+   * @param {number} gridHeight
+   * @returns {Uint32Array}
+   */
+  extractOccupancyLayer (bitboard, gridWidth, gridHeight) {
     const totalCells = gridWidth * gridHeight
     const resultBitboard = this.newWords()
     const one = this.one
-    // For each cell, if it has the target color, set one bit in the result
-    // (no depth scaling - this is a 1-bit representation)
     for (let i = 0; i < totalCells; i++) {
       if (this.getIdx(bitboard, i) !== 0) {
         this.singleBitStore.setAtIdx(resultBitboard, i, one)
@@ -1762,6 +1785,14 @@ export class Store32 extends StoreBase {
 
     return resultBitboard
   }
+
+  /**
+   * Backward-compatible alias for extractOccupancyLayer.
+   */
+  extractOccuppancyLayer (bitboard, gridWidth, gridHeight) {
+    return this.extractOccupancyLayer(bitboard, gridWidth, gridHeight)
+  }
+
   resized (newWidth, newHeight) {
     return new Store32(
       this.depth,

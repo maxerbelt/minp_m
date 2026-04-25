@@ -103,6 +103,20 @@ export class StoreBase {
     return false
   }
 
+  /**
+   * True when the store represents a single-bit bitboard.
+   */
+  get isSingleBit () {
+    return this.bitsPerCell === 1
+  }
+
+  /**
+   * True when the store represents a multi-bit (colored) bitboard.
+   */
+  get isMultiBit () {
+    return this.bitsPerCell > 1
+  }
+
   rowMaskForWidth (w) {
     return this.rangeMaskForSizeRaw(this.bitPos(w))
   }
@@ -400,6 +414,23 @@ export class StoreBase {
     const isAtBottom = row === gridHeight - 1
     const hasNeighbor = this._hasNeighbor(bitboard, idx + gridWidth)
     return this._checkBoundaryOrNeighbor(isAtBottom, hasNeighbor)
+  }
+
+  cellSurvivesHorizontalErosion (bitboard, idx) {
+    const leftOk = this.cellHasLeftNeighbor(bitboard, idx, this.width)
+    const rightOk = this.cellHasRightNeighbor(bitboard, idx, this.width)
+    return leftOk && rightOk
+  }
+
+  cellSurvivesVerticalErosion (bitboard, idx, gridWidth) {
+    const upOk = this.cellHasTopNeighbor(bitboard, idx, gridWidth)
+    const downOk = this.cellHasBottomNeighbor(
+      bitboard,
+      idx,
+      gridWidth,
+      this.height
+    )
+    return upOk && downOk
   }
 
   // Abstract/Template methods - must be implemented by subclasses

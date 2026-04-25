@@ -18,16 +18,36 @@ export class StoreBig extends StoreBase {
     this.maxCellInWord = this.cellsPerWord - 1
   }
 
+  /**
+   * Return whether a raw bit is set in a BigInt bitboard.
+   * @param {bigint} bitboard
+   * @param {bigint} bitPosition
+   * @returns {boolean}
+   */
   getBitAt (bitboard, bitPosition) {
     return this.extractBit(bitboard, bitPosition) === 1n
   }
 
+  /**
+   * Extract a single bit from a BigInt bitboard.
+   * @param {bigint} bitboard
+   * @param {bigint} bitPosition
+   * @returns {bigint}
+   */
   extractBit (bitboard, bitPosition) {
     return this.extractRange(bitboard, bitPosition, 1n)
   }
+
   *bitsOccupied (bitboard, size = this.size) {
     return yield* bitsSafeBI(size, bitboard)
   }
+
+  /**
+   * Read a logical cell value from the BigInt bitboard.
+   * @param {bigint} bitboard
+   * @param {number} idx
+   * @returns {bigint}
+   */
   getIdx (bitboard, idx) {
     const bitPosition = idx * this.bitsPerCell
     return this.extractCell(bitboard, bitPosition)
@@ -36,16 +56,36 @@ export class StoreBig extends StoreBase {
     return this.getIdx(bitboard, idx) > 0n
   }
 
+  /**
+   * Extract a cell-sized value from the bitboard at a raw bit position.
+   * @param {bigint} bitboard
+   * @param {bigint} bitPosition
+   * @returns {bigint}
+   */
   extractCell (bitboard, bitPosition) {
     return this.extractRange(bitboard, bitPosition, this.cellMask)
   }
 
+  /**
+   * Set a cell value in the bitboard.
+   * @param {bigint} bitboard
+   * @param {number} idx
+   * @param {bigint|number} [value=1n]
+   * @returns {bigint}
+   */
   setIdx (bitboard, idx, value = 1n) {
     const bitPosition = BigInt(idx * this.bitsPerCell)
     const color = BigInt(value)
     return this.setCellBitsAt(bitPosition, bitboard, color)
   }
 
+  /**
+   * Replace the bits for a specific cell in a BigInt bitboard.
+   * @param {bigint} bitPosition
+   * @param {bigint} bitboard
+   * @param {bigint} value
+   * @returns {bigint}
+   */
   setCellBitsAt (bitPosition, bitboard, value) {
     const mask = this.cellMask << bitPosition
     return (bitboard & ~mask) | (this.clampToCell(value) << bitPosition)
@@ -58,12 +98,6 @@ export class StoreBig extends StoreBase {
 
   occupancy (bitboard) {
     return popcountBigInt(bitboard)
-  }
-  get isSingleBit () {
-    return this.bitsPerCell === 1
-  }
-  get isMultiBit () {
-    return this.bitsPerCell > 1
   }
   occupancy1Bit (sourceWords, gridWidth, gridHeight) {
     const cellMask = this.cellMask
@@ -172,21 +206,6 @@ export class StoreBig extends StoreBase {
   // ============================================================================
   // Edge Mask Preparation (using base class helpers)
   // ============================================================================
-  prepareSrcForLeftExpansion (bitboard, edgeMasks) {
-    return this._prepareSrcWithEdgeMask(bitboard, edgeMasks, 'notLeft')
-  }
-
-  prepareSrcForRightExpansion (bitboard, edgeMasks) {
-    return this._prepareSrcWithEdgeMask(bitboard, edgeMasks, 'notRight')
-  }
-
-  prepareSrcForUpExpansion (bitboard, edgeMasks) {
-    return this._prepareSrcWithEdgeMask(bitboard, edgeMasks, 'notTop')
-  }
-
-  prepareSrcForDownExpansion (bitboard, edgeMasks) {
-    return this._prepareSrcWithEdgeMask(bitboard, edgeMasks, 'notBottom')
-  }
   dilateCrossFast (bitboard, gridWidth, edgeMasks) {
     const notLeft = edgeMasks?.notLeft ?? this.fullBits
     const notRight = edgeMasks?.notRight ?? this.fullBits
@@ -261,22 +280,6 @@ export class StoreBig extends StoreBase {
   // ============================================================================
   // Cell Boundary Erosion (using base class neighbor checks)
   // ============================================================================
-  cellSurvivesHorizontalErosion (bitboard, idx) {
-    const leftOk = this.cellHasLeftNeighbor(bitboard, idx, this.width)
-    const rightOk = this.cellHasRightNeighbor(bitboard, idx, this.width)
-    return leftOk && rightOk
-  }
-
-  cellSurvivesVerticalErosion (bitboard, idx, gridWidth) {
-    const upOk = this.cellHasTopNeighbor(bitboard, idx, gridWidth)
-    const downOk = this.cellHasBottomNeighbor(
-      bitboard,
-      idx,
-      gridWidth,
-      this.height
-    )
-    return upOk && downOk
-  }
 
   // Per-cell vertical erosion for multi-bit stores
   erodeVerticalCellwise (bitboard, gridWidth) {
