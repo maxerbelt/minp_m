@@ -5,6 +5,12 @@ import { Diagonal } from './Diagonal.js'
 import { Invariant } from './Invariant.js'
 import { Orbit4F } from './Orbit4F.js'
 
+/**
+ * Returns the appropriate variant class based on symmetry type.
+ * @param {string} symmetry - The symmetry identifier.
+ * @returns {Function} The variant class constructor.
+ * @throws {Error} If the symmetry type is unknown.
+ */
 export function variantType (symmetry) {
   switch (symmetry) {
     case 'D':
@@ -20,8 +26,6 @@ export function variantType (symmetry) {
     case 'G':
       return Diagonal
     default:
-      throw new Error(
-        'Unknown symmetry type for ' + JSON.stringify(this, null, 2)
-      ) // The 'null, 2' adds indentation for readability);
+      throw new Error(`Unknown symmetry type: ${symmetry}`)
   }
 }

@@ -1,11 +1,15 @@
 import { Mask } from '../grid/rectangle/mask.js'
 import { RotatableVariant } from './RotatableVariant.js'
 
+/**
+ * Variant class that supports both rotation and flipping transformations.
+ */
 export class FlippableVariant extends RotatableVariant {
   /**
-   * @param {unknown} validator
-   * @param {unknown} zoneDetail
-   * @param {string} symmetry
+   * Creates a flippable variant instance.
+   * @param {Function} validator - Validation function.
+   * @param {object} zoneDetail - Zone details.
+   * @param {string} symmetry - Symmetry type.
    */
   constructor (validator, zoneDetail, symmetry) {
     super(validator, zoneDetail, symmetry)
@@ -18,10 +22,10 @@ export class FlippableVariant extends RotatableVariant {
   }
 
   /**
-   * Build the variant list from optional coordinate variants or the subclass fallback.
-   * @param {unknown} board
-   * @param {unknown} variantCoordinates
-   * @returns {unknown[]}
+   * Builds the variant list from optional coordinate variants or the subclass fallback.
+   * @param {any} board - The base board.
+   * @param {any} variantCoordinates - Optional coordinates.
+   * @returns {any[]} The list of variants.
    */
   static createVariantList (board, variantCoordinates) {
     return (
@@ -30,9 +34,9 @@ export class FlippableVariant extends RotatableVariant {
   }
 
   /**
-   * Configure rotation and flip transition functions for a flippable variant.
-   * @param {Function} VariantClass
-   * @param {FlippableVariant} instance
+   * Configures rotation and flip transition functions for a flippable variant.
+   * @param {Function} VariantClass - The variant class.
+   * @param {FlippableVariant} instance - The instance to configure.
    */
   static setBehaviour (VariantClass, instance) {
     super.setBehaviour(VariantClass, instance)

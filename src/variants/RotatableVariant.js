@@ -1,10 +1,14 @@
 import { Variants } from './variants.js'
 
+/**
+ * Variant class that supports rotation transformations.
+ */
 export class RotatableVariant extends Variants {
   /**
-   * @param {unknown} validator
-   * @param {unknown} zoneDetail
-   * @param {string} [symmetry]
+   * Creates a rotatable variant instance.
+   * @param {Function} validator - Validation function.
+   * @param {object} zoneDetail - Zone details.
+   * @param {string} [symmetry] - Symmetry type.
    */
   constructor (validator, zoneDetail, symmetry = undefined) {
     super(validator, zoneDetail, symmetry)
@@ -19,9 +23,9 @@ export class RotatableVariant extends Variants {
   }
 
   /**
-   * Configure rotation behavior for a rotatable variant.
-   * @param {Function} VariantClass
-   * @param {RotatableVariant} instance
+   * Configures rotation behavior for a rotatable variant.
+   * @param {Function} VariantClass - The variant class.
+   * @param {RotatableVariant} instance - The instance to configure.
    */
   static setBehaviour (VariantClass, instance) {
     instance.canRotate = true
@@ -32,32 +36,33 @@ export class RotatableVariant extends Variants {
   }
 
   /**
-   * @param {VariantTransitionFn} transitionFn
-   * @returns {unknown}
+   * Applies a transition function to change the active variant.
+   * @param {(index: number) => number} transitionFn - The transition function.
+   * @returns {any} The new board.
    */
   applyTransition (transitionFn) {
     return this.setByIndex(transitionFn(this.index))
   }
 
   /**
-   * Rotate the active variant and update the current index.
-   * @returns {unknown}
+   * Rotates the active variant clockwise.
+   * @returns {any} The rotated board.
    */
   rotate () {
     return this.applyTransition(this.r1)
   }
 
   /**
-   * Flip the active variant in place.
-   * @returns {unknown}
+   * Flips the active variant in place.
+   * @returns {any} The flipped board.
    */
   flip () {
     return this.applyTransition(this.f1)
   }
 
   /**
-   * Rotate in the opposite direction from `rotate()`.
-   * @returns {unknown}
+   * Rotates the active variant counter-clockwise.
+   * @returns {any} The rotated board.
    */
   leftRotate () {
     return this.applyTransition(this.rf1)

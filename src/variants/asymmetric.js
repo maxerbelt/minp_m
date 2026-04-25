@@ -1,25 +1,35 @@
 import { FlippableVariant } from './FlippableVariant.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
+/**
+ * Asymmetric variant that supports 8 orientations (4 rotations + 4 flipped rotations).
+ */
 export class Asymmetric extends FlippableVariant {
   /**
-   * @param {any} board
-   * @param {any} validator
-   * @param {any} zoneDetail
-   * @param {any} variants
+   * Creates an asymmetric variant instance.
+   * @param {any} board - The base board.
+   * @param {Function} validator - Validation function.
+   * @param {object} zoneDetail - Zone details.
+   * @param {any[]} variants - Optional variant coordinates.
    */
   constructor (board, validator, zoneDetail, variants) {
     super(validator, zoneDetail, 'D')
     this.list = Mask.listFromCoords(variants) || Asymmetric.variantsOf(board)
   }
 
+  /**
+   * Configures behavior for asymmetric variants.
+   * @param {Function} VariantClass - The variant class.
+   * @param {Asymmetric} instance - The instance to configure.
+   */
   static setBehaviour (VariantClass, instance) {
     FlippableVariant.setBehaviour(VariantClass, instance)
   }
 
   /**
-   * @param {object} board
-   * @returns {unknown[]}
+   * Generates all 8 asymmetric variants from the base board.
+   * @param {any} board - The base board.
+   * @returns {any[]} The list of variants.
    */
   static variantsOf (board) {
     const unrotated = board.square.defaultVariant
@@ -29,9 +39,9 @@ export class Asymmetric extends FlippableVariant {
   }
 
   /**
-   * Build four successive rotations of the given board.
-   * @param {object} baseBoard
-   * @returns {unknown[]}
+   * Builds four successive rotations of the given board.
+   * @param {any} baseBoard - The base board to rotate.
+   * @returns {any[]} The rotated variants.
    */
   static collectRotatedVariants (baseBoard) {
     const variants = [baseBoard.shrinkToOccupied()]

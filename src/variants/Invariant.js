@@ -1,10 +1,14 @@
 import { Variants } from './variants.js'
 
+/**
+ * Invariant variant that has no transformations.
+ */
 export class Invariant extends Variants {
   /**
-   * @param {object} board
-   * @param {unknown} validator
-   * @param {unknown} zoneDetail
+   * Creates an invariant variant instance.
+   * @param {any} board - The base board.
+   * @param {Function} validator - Validation function.
+   * @param {object} zoneDetail - Zone details.
    */
   constructor (board, validator, zoneDetail) {
     super(validator, zoneDetail, 'S')
@@ -12,18 +16,20 @@ export class Invariant extends Variants {
   }
 
   /**
-   * @param {object} board
-   * @returns {unknown[]}
+   * Returns the single invariant variant.
+   * @param {any} board - The base board.
+   * @returns {any[]} The single variant.
    */
   static variantsOf (board) {
     return [board.shrinkToOccupied()]
   }
 
   /**
-   * Configure an invariant variant so it cannot transform.
-   * @param {object} instance
+   * Configures an invariant variant so it cannot transform.
+   * @param {Function} VariantClass - The variant class.
+   * @param {Invariant} instance - The instance to configure.
    */
-  static setBehaviour (instance) {
+  static setBehaviour (VariantClass, instance) {
     instance.canFlip = false
     instance.canRotate = false
     instance.canTransform = false
@@ -33,17 +39,18 @@ export class Invariant extends Variants {
   }
 
   /**
-   * Always return the invariant coordinate set.
-   * @param {number|undefined|null} _index
-   * @returns {unknown}
+   * Always returns the invariant coordinate set.
+   * @param {number | undefined | null} _index - Ignored for invariant.
+   * @returns {any} The coordinates.
    */
   variant (_index) {
     return this.list[0].toCoords
   }
 
   /**
-   * Prevent changing the active variant for an invariant type.
-   * @param {number} _index
+   * Prevents changing the active variant for an invariant type.
+   * @param {number} _index - Ignored.
+   * @throws {Error} Always throws an error.
    */
   setByIndex (_index) {
     throw new Error('can not change this variant')

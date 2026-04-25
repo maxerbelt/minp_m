@@ -6,14 +6,18 @@ import { Placeable } from './Placeable.js'
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
  * @typedef {import('./CellsToBePlaced.js').CellsToBePlaced} CellsToBePlacedType
  * @typedef {number} VariantIndex
- * @typedef {(index: VariantIndex)=>VariantIndex} VariantTransitionFn
+ * @typedef {(index: VariantIndex) => VariantIndex} VariantTransitionFn
  */
 
+/**
+ * Base class for managing variant boards with transformation capabilities.
+ */
 export class Variants {
   /**
-   * @param {unknown} validator
-   * @param {unknown} zoneDetail
-   * @param {string} symmetry
+   * Creates a new Variants instance.
+   * @param {Function} validator - Function to validate placements.
+   * @param {object} zoneDetail - Details about the zone.
+   * @param {string} symmetry - Symmetry type identifier.
    */
   constructor (validator, zoneDetail, symmetry) {
     if (new.target === Variants) {
@@ -27,73 +31,77 @@ export class Variants {
     this.canRotate = false
     this.canTransform = true
     this.validator = validator
-    this.symmetry = symmetry
-    this.onChange = Function.prototype
     this.zoneDetail = zoneDetail
     this.symmetry = symmetry
+    this.onChange = Function.prototype
     this.r1 = Function.prototype
     this.f1 = Function.prototype
     this.rf1 = Function.prototype
   }
 
   /**
-   * @returns {number}
+   * Gets the number of available variants.
+   * @returns {number} The count of variants.
    */
   numVariants () {
     return this.list.length
   }
 
   /**
-   * Resolve a possibly undefined variant index into an explicit number.
-   * @param {VariantIndex|undefined|null} index
-   * @returns {VariantIndex}
+   * Resolves a possibly undefined variant index into an explicit number.
+   * @param {VariantIndex | undefined | null} index - The index to resolve.
+   * @returns {VariantIndex} The resolved index.
    */
   resolveIndex (index) {
     return index == null ? this.index : index
   }
 
   /**
-   * @param {number|undefined|null} [index]
-   * @returns {any}
+   * Gets the board at the specified index or the active board.
+   * @param {number | undefined | null} [index] - The variant index.
+   * @returns {any} The board at the index.
    */
   board (index) {
     return this.boardFor(index)
   }
 
   /**
-   * Return the board at the requested index, or the active board when index is omitted.
-   * @param {number|undefined|null} [index]
-   * @returns {any}
+   * Returns the board at the requested index, or the active board when index is omitted.
+   * @param {number | undefined | null} [index] - The variant index.
+   * @returns {any} The board.
    */
   boardFor (index) {
     return this.list[this.resolveIndex(index)]
   }
 
   /**
-   * @returns {any}
+   * Gets the first board in the variant list.
+   * @returns {any} The first board.
    */
   get firstBoard () {
     return this.list[0]
   }
 
   /**
-   * @returns {boolean}
+   * Checks if there are multiple variants available.
+   * @returns {boolean} True if more than one variant exists.
    */
   get hasMultipleVariants () {
     return this.list.length > 1
   }
 
   /**
-   * @returns {any}
+   * Gets the currently active board.
+   * @returns {any} The active board.
    */
   get activeBoard () {
     return this.boardFor(this.index)
   }
 
   /**
-   * Choose the best variant index for a given cell height.
-   * @param {number} cellHeight
-   * @returns {VariantIndex}
+   * Chooses the best variant index for a given cell height.
+   * @param {number} cellHeight - The height constraint.
+   * @returns {VariantIndex} The chosen index.
    */
   indexUnder (cellHeight) {
     if (!this.hasMultipleVariants) {
@@ -109,9 +117,9 @@ export class Variants {
   }
 
   /**
-   * Return the occupied board and chosen index for a placement height.
-   * @param {number} cellHeight
-   * @returns {{index: number, board: unknown}}
+   * Returns the occupied board and chosen index for a placement height.
+   * @param {number} cellHeight - The height constraint.
+   * @returns {{index: number, board: any}} The index and shrunk board.
    */
   shrunkUnder (cellHeight) {
     const index = this.indexUnder(cellHeight)
@@ -120,33 +128,34 @@ export class Variants {
   }
 
   /**
-   * Return the coordinates for a variant board.
-   * @param {number|undefined|null} index
-   * @returns {unknown}
+   * Returns the coordinates for a variant board.
+   * @param {number | undefined | null} index - The variant index.
+   * @returns {any} The coordinates.
    */
   variant (index) {
     return this.boardFor(index).toCoords
   }
 
   /**
-   * @param {number|undefined|null} index
-   * @returns {Placeable}
+   * Creates a Placeable instance for the specified variant.
+   * @param {number | undefined | null} index - The variant index.
+   * @returns {Placeable} The placeable instance.
    */
   placeable (index) {
     return new Placeable(this.boardFor(index), this.validator, this.zoneDetail)
   }
 
   /**
-   * Shuffle the available variants and return a new randomized list.
-   * @returns {unknown[]}
+   * Shuffles the available variants and returns a new randomized list.
+   * @returns {any[]} The shuffled boards.
    */
   variations () {
     return Random.shuffleArray(this.list)
   }
 
   /**
-   * Create Placeable instances for all shuffled variants.
-   * @returns {Placeable[]}
+   * Creates Placeable instances for all shuffled variants.
+   * @returns {Placeable[]} The placeable instances.
    */
   placeables () {
     return this.variations().map(
@@ -155,38 +164,41 @@ export class Variants {
   }
 
   /**
-   * Normalize all boards in the variant list.
-   * @returns {unknown[]}
+   * Normalizes all boards in the variant list.
+   * @returns {any[]} The normalized boards.
    */
   normalize () {
     return this.list.map(b => b.normalize())
   }
 
   /**
-   * @returns {any}
+   * Gets the coordinates of the first board.
+   * @returns {any} The coordinates.
    */
   get cells () {
     return this.firstBoard.toCoords
   }
 
   /**
-   * @returns {number}
+   * Gets the height of the first board.
+   * @returns {number} The height.
    */
   height () {
     return this.firstBoard.height
   }
 
   /**
-   * @returns {number}
+   * Gets the width of the first board.
+   * @returns {number} The width.
    */
   width () {
     return this.firstBoard.width
   }
 
   /**
-   * Activate the variant at the requested index and notify listeners.
-   * @param {number} index
-   * @returns {unknown}
+   * Activates the variant at the requested index and notifies listeners.
+   * @param {number} index - The index to set.
+   * @returns {any} The board at the new index.
    */
   setByIndex (index) {
     this.index = index
@@ -195,10 +207,10 @@ export class Variants {
   }
 
   /**
-   * Create a placement helper for the active board.
-   * @param {number} r
-   * @param {number} c
-   * @returns {CellsToBePlaced}
+   * Creates a placement helper for the active board at the given position.
+   * @param {number} r - Row position.
+   * @param {number} c - Column position.
+   * @returns {CellsToBePlaced} The placement helper.
    */
   placingAt (r, c) {
     return new CellsToBePlaced(this.board(), r, c, this.validator)
