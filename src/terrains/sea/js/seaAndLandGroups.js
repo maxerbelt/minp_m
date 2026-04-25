@@ -1,5 +1,20 @@
 import { ShipGroups } from '../../../ships/ShipGroups.js'
 
+/**
+ * Sea and land terrain ship groups configuration.
+ * Maps ship types to their sunk descriptions, group names, and placement rules.
+ *
+ * Ship type codes:
+ * - A: Air units (any location)
+ * - G: Ground/Land units (land terrain)
+ * - M: Hybrid units (special placement rules)
+ * - T: Transformer units (multiple forms)
+ * - X: Special units (custom rules)
+ * - S: Sea units (sea terrain)
+ * - W: Weapon units (special rules)
+ *
+ * @type {ShipGroups}
+ */
 export const seaAndLandGroups = new ShipGroups(
   {
     A: 'Shot Down',
