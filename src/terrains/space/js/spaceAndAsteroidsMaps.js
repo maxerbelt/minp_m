@@ -7,7 +7,14 @@ import { spaceWeaponsCatalogue } from './spaceWeapons.js'
 spaceAndAsteroids.ships = spaceShipsCatalogue
 spaceAndAsteroids.weapons = spaceWeaponsCatalogue
 
+/**
+ * Space and asteroids terrain maps manager.
+ * Handles map generation, ship/weapon placement, and terrain-specific rules for space combat.
+ */
 class SpaceAndAsteroidsMaps extends TerrainMaps {
+  /**
+   * Creates a new space and asteroids maps instance.
+   */
   constructor () {
     super(
       spaceAndAsteroids,
@@ -27,5 +34,4 @@ class SpaceAndAsteroidsMaps extends TerrainMaps {
     )
   }
 }
-
 export const spaceAndAsteroidsMaps = new SpaceAndAsteroidsMaps()
