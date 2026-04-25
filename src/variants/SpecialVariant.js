@@ -5,10 +5,23 @@ import { RotatableVariant } from './RotatableVariant.js'
 import { variantType } from './variantType.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
+/**
+ * Special variant class that handles multi-layer boards with subgroups.
+ */
 export class SpecialVariant extends RotatableVariant {
+  /**
+   * Creates a special variant instance.
+   * @param {string} symmetry - The symmetry type.
+   */
   constructor (symmetry) {
     super(Function.prototype, 0, symmetry)
   }
+
+  /**
+   * Builds the board list based on symmetry.
+   * @param {string} symmetry - The symmetry type.
+   * @param {any} board - The base board.
+   */
   buildBoard3 (symmetry, board) {
     if (Array.isArray(board)) {
       board = Mask.fromCoordsSquare(board)
@@ -24,10 +37,9 @@ export class SpecialVariant extends RotatableVariant {
     if (typeof VariantType.variantsOf === 'function') {
       boards = VariantType.variantsOf(unrotated)
     } else {
-      //   boards = [unrotated]
       throw new TypeError(
         `Variant '${symmetry}' does not support variantsOf method`,
-        JSON.stringify({ VariantType })
+        { VariantType }
       )
     }
     this.list = boards
@@ -36,16 +48,32 @@ export class SpecialVariant extends RotatableVariant {
     })
   }
 
+  /**
+   * Gets the board at the specified index.
+   * @param {number | undefined | null} index - The variant index.
+   * @returns {any} The board.
+   */
   boardFor (index) {
     const idx = index == null ? this.index : index
     return this.list[idx]
   }
 
+  /**
+   * Gets the special board for a subgroup.
+   * @param {number} index - The variant index.
+   * @param {number} groupIndex - The subgroup index.
+   * @returns {any} The special board.
+   */
   specialBoard (index, groupIndex) {
     const board = this.boardFor(index)
     return board.extractColorLayer(groupIndex + 1)
   }
 
+  /**
+   * Creates a placeable for the specified index.
+   * @param {number | undefined | null} index - The variant index.
+   * @returns {Placeable3} The placeable.
+   */
   placeable (index) {
     const idx = index == null ? this.index : index
     return new Placeable3(
@@ -56,33 +84,51 @@ export class SpecialVariant extends RotatableVariant {
       )
     )
   }
+
+  /**
+   * Configures behavior for special variants.
+   * @param {Function} v3 - The variant class.
+   * @param {SpecialVariant} symmetry - The instance.
+   */
   static setBehaviourTo (v3, symmetry) {
     const VariantType = variantType(symmetry.symmetry)
     VariantType.setBehaviour(v3, symmetry)
   }
+
+  /**
+   * Gets shuffled placeables.
+   * @returns {Placeable3[]} The shuffled placeables.
+   */
   placeables () {
     return this.shuffledPlaceables()
   }
 
+  /**
+   * Shuffles placeables based on variant count.
+   * @returns {Placeable3[]} The shuffled placeables.
+   */
   shuffledPlaceables () {
-    let shuffled
+    const shuffledIndices = this.getShuffledIndices()
+    return shuffledIndices.map(i => this.placeable(i))
+  }
+
+  /**
+   * Gets shuffled indices based on list length.
+   * @returns {number[]} The shuffled indices.
+   * @private
+   */
+  getShuffledIndices () {
     switch (this.list.length) {
       case 8:
-        shuffled = Random.shuffleArray([0, 1, 2, 3, 4, 5, 6, 7])
-        break
+        return Random.shuffleArray([0, 1, 2, 3, 4, 5, 6, 7])
       case 4:
-        shuffled = Random.shuffleArray([0, 1, 2, 3])
-        break
+        return Random.shuffleArray([0, 1, 2, 3])
       case 2:
-        shuffled = Random.shuffleArray([0, 1])
-        break
+        return Random.shuffleArray([0, 1])
       case 1:
-        shuffled = [0]
-        break
+        return [0]
       default:
-        throw new Error('Unknown no of variants')
+        throw new Error(`Unknown number of variants: ${this.list.length}`)
     }
-
-    return shuffled.map(i => this.placeable(i))
   }
 }

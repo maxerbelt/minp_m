@@ -1,21 +1,57 @@
+/**
+ * @typedef {[number, number]} Cell2D
+ * @typedef {[number, number, number]} Cell3D
+ */
+
+/**
+ * Gets the minimum row value from cells.
+ * @param {Cell2D[]} cells - The cells.
+ * @returns {number} The minimum row.
+ */
 function minR (cells) {
   return Math.min(...cells.map(s => s[0]))
 }
+
+/**
+ * Gets the minimum column value from cells.
+ * @param {Cell2D[]} cells - The cells.
+ * @returns {number} The minimum column.
+ */
 function minC (cells) {
   return Math.min(...cells.map(s => s[1]))
 }
 
+/**
+ * Normalizes 2D cells by translating to origin.
+ * @param {Cell2D[]} cells - The cells to normalize.
+ * @param {number} [mr] - Optional minimum row offset.
+ * @param {number} [mc] - Optional minimum column offset.
+ * @returns {Cell2D[]} The normalized cells.
+ */
 export function normalize (cells, mr, mc) {
   const r0 = mr || minR(cells)
   const c0 = mc || minC(cells)
   return cells.map(([r, c]) => [r - r0, c - c0])
 }
 
+/**
+ * Normalizes 3D cells by translating to origin.
+ * @param {Cell3D[]} cells - The cells to normalize.
+ * @returns {Cell3D[]} The normalized cells.
+ */
 export function normalize3 (cells) {
   const r0 = minR(cells)
   const c0 = minC(cells)
   return cells.map(([r, c, z]) => [r - r0, c - c0, z])
-} // variant helpers
+}
+
+/**
+ * Rotates 2D cells 90 degrees clockwise and normalizes.
+ * @param {Cell2D[]} cells - The cells to rotate.
+ * @param {number} [mr] - Optional minimum row offset.
+ * @param {number} [mc] - Optional minimum column offset.
+ * @returns {Cell2D[]} The rotated cells.
+ */
 export function rotate (cells, mr, mc) {
   return normalize(
     cells.map(([r, c]) => [c, -r]),
@@ -23,35 +59,58 @@ export function rotate (cells, mr, mc) {
     mc
   )
 }
+
+/**
+ * Checks if two arrays are ordered and equal.
+ * @param {any[]} arr1 - First array.
+ * @param {any[]} arr2 - Second array.
+ * @returns {boolean} True if equal.
+ */
 export const areArraysOrderedAndEqual = (arr1, arr2) => {
-  // Check if the arrays are the same length
   if (arr1.length !== arr2.length) {
     return false
   }
-
-  // Check if all items exist and are in the same order
   return arr1.every((element, index) => element === arr2[index])
 }
+
+/**
+ * Checks if two arrays are unordered and equal.
+ * @param {any[]} arr1 - First array.
+ * @param {any[]} arr2 - Second array.
+ * @returns {boolean} True if equal.
+ */
 const areArraysUnorderedEqual = (arr1, arr2) => {
   if (arr1.length !== arr2.length) {
     return false
   }
-
-  // Create shallow copies and sort them to avoid modifying original arrays
   const sortedArr1 = [...arr1].sort()
   const sortedArr2 = [...arr2].sort()
-
-  // Compare the sorted arrays element by element
   return sortedArr1.every((element, index) =>
     areArraysOrderedAndEqual(element, sortedArr2[index])
   )
 }
+
+/**
+ * Flips cells vertically or horizontally based on which changes them.
+ * @param {Cell2D[]} cells - The cells to flip.
+ * @param {number} [mr] - Optional minimum row offset.
+ * @param {number} [mc] - Optional minimum column offset.
+ * @returns {Cell2D[]} The flipped cells.
+ */
 export function flip (cells, mr, mc) {
   const flipped = flipV(cells, mr, mc)
   return areArraysUnorderedEqual(flipped, cells)
     ? flipH(cells, mr, mc)
     : flipped
 }
+
+/**
+ * Flips cells vertically.
+ * @param {Cell2D[]} cells - The cells to flip.
+ * @param {number} [mr] - Optional minimum row offset.
+ * @param {number} [mc] - Optional minimum column offset.
+ * @returns {Cell2D[]} The flipped cells.
+ */
 export function flipV (cells, mr, mc) {
   return normalize(
     cells.map(([r, c]) => [-r, c]),
@@ -59,6 +118,14 @@ export function flipV (cells, mr, mc) {
     mc
   )
 }
+
+/**
+ * Flips cells horizontally.
+ * @param {Cell2D[]} cells - The cells to flip.
+ * @param {number} [mr] - Optional minimum row offset.
+ * @param {number} [mc] - Optional minimum column offset.
+ * @returns {Cell2D[]} The flipped cells.
+ */
 function flipH (cells, mr, mc) {
   return normalize(
     cells.map(([r, c]) => [r, -c]),
@@ -66,12 +133,30 @@ function flipH (cells, mr, mc) {
     mc
   )
 }
+
+/**
+ * Rotates 3D cells 90 degrees clockwise and normalizes.
+ * @param {Cell3D[]} cells - The cells to rotate.
+ * @returns {Cell3D[]} The rotated cells.
+ */
 export function rotate3 (cells) {
   return normalize3(cells.map(([r, c, z]) => [c, -r, z]))
 }
+
+/**
+ * Flips 3D cells vertically and normalizes.
+ * @param {Cell3D[]} cells - The cells to flip.
+ * @returns {Cell3D[]} The flipped cells.
+ */
 export function flip3 (cells) {
   return normalize3(cells.map(([r, c, z]) => [-r, c, z]))
 }
+
+/**
+ * Reflects 3D cells over the diagonal and normalizes.
+ * @param {Cell3D[]} cells - The cells to reflect.
+ * @returns {Cell3D[]} The reflected cells.
+ */
 export function rf3 (cells) {
   return normalize3(cells.map(([r, c, z]) => [c, r, z]))
 }

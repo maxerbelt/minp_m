@@ -4,7 +4,19 @@ import { Placeable } from './Placeable.js'
 import { PlaceableW } from './PlaceableW.js'
 import { SpecialVariant } from './SpecialVariant.js'
 
+/**
+ * Variant class for weapons with special placement rules.
+ */
 export class WeaponVariant extends SpecialVariant {
+  /**
+   * Creates a weapon variant instance.
+   * @param {any} board - The base board.
+   * @param {object} weapons - The weapons object.
+   * @param {string} symmetry - The symmetry type.
+   * @param {Function} validator - Validation function.
+   * @param {object} zoneDetail - Zone details.
+   * @param {object} subterrain - Subterrain details.
+   */
   constructor (board, weapons, symmetry, validator, zoneDetail, subterrain) {
     super(symmetry)
     this.validator = validator
@@ -34,14 +46,22 @@ export class WeaponVariant extends SpecialVariant {
       this.board.addLayers([specialGroup.board])
     }
 
-    // this.terrain = seaAndLand
-
     this.subGroups = [this.standardGroup, specialGroup]
     this.buildBoard3(symmetry, board)
   }
 
+  /**
+   * Configures behavior for weapon variants.
+   * @param {Function} v3 - The variant class.
+   * @param {WeaponVariant} symmetry - The instance.
+   */
   static setBehaviour = SpecialVariant.setBehaviourTo
 
+  /**
+   * Creates a weapon placeable.
+   * @param {number | undefined | null} index - The index.
+   * @returns {PlaceableW} The placeable.
+   */
   placeable (index) {
     const idx = index || this.index
     const grandparentPrototype = Object.getPrototypeOf(SpecialVariant.prototype)
@@ -57,13 +77,27 @@ export class WeaponVariant extends SpecialVariant {
 
     return result
   }
+
+  /**
+   * Gets shuffled placeables.
+   * @returns {PlaceableW[]} The placeables.
+   */
   placeables () {
     return this.shuffledPlaceables()
   }
 }
 
+/**
+ * Mixin to add weapon variants to a base class.
+ * @param {Function} Base - The base class.
+ * @returns {Function} The extended class.
+ */
 export const Armed = Base =>
   class extends Base {
+    /**
+     * Gets the weapon variants.
+     * @returns {WeaponVariant} The variants.
+     */
     variants () {
       if (this._variants) return this._variants
       this._variants = new WeaponVariant(
