@@ -9,7 +9,7 @@ import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 export class Megabomb extends Bomb {
   constructor (ammo, name, letter) {
     super(ammo, name || 'Megabomb', letter || 'M')
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: ['Click On Square To Drop Bomb'],
       buttonHtml: '<span class="shortcut">M</span>ega Bomb',
       tip: 'drag a megabomb on to the map to increase the number of times you can drop bombs',
@@ -30,7 +30,7 @@ export class Kinetic extends Strike {
     super(ammo, name || 'Kinetic Strike', letter || 'K', true, true, 2)
     this.cursors = ['satelite', 'strike']
     this.totalCursors = 2
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: [
         'Click on square to start kinetic strike',
         'Click on square end kinetic strike'
@@ -56,7 +56,7 @@ export class Torpedo extends Fish {
     super(ammo, 'Torpedo', '+')
     this.cursors = ['torpedo', 'periscope']
     this.totalCursors = 2
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: [
         'Click on square to start torpedo',
         'Click on square aim torpedo'
@@ -90,7 +90,7 @@ export class Flack extends Weapon {
     this.isOneAndDone = false
     this.nonAttached = true
     this.animateOffsetY = 50
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: ['Click on square to initiate flack'],
       buttonHtml: '<span class="shortcut">F</span>lack',
       tag: 'flack',
@@ -230,7 +230,7 @@ export class Sweep extends Sensor {
     super(ammo, 'Radar Sweep', 'W')
     this.cursors = ['dish', 'sweep']
     this.totalCursors = 2
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: [
         'Click on square to start radar scan',
         'Click on square end radar scan'

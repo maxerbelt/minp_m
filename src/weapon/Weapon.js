@@ -36,7 +36,16 @@ export class Weapon {
     this.animateOffsetY = 0
     this.classname = this.name.toLowerCase().replaceAll(' ', '-')
   }
-
+  /**
+   * Applies a weapon configuration object to a weapon instance
+   * Centralizes duplicate configuration initialization logic across all weapon types
+   * @param {Object} config - Configuration properties to apply
+   */
+  _applyWeaponConfig (config) {
+    Object.entries(config).forEach(([key, value]) => {
+      this[key] = value
+    })
+  }
   /**
    * Create a clone of this weapon with optional ammunition override.
    * Eliminates duplicate clone() implementations in subclasses.
@@ -108,7 +117,6 @@ export class Weapon {
    * @param {any} viewModel - Primary view model
    * @param {any} [opposingViewModel] - Optional opposing player view model
    * @returns {any} Selected grid cell element
-   * @private
    */
   #getSourceCell (r, c, viewModel, opposingViewModel) {
     if (this.nonAttached) {
@@ -180,11 +188,11 @@ export class Weapon {
 
   /**
    * Get turn/phase information for this weapon.
-   * Override in subclasses for weapons with turn phases.
-   *
-   * @returns {string} Turn phase description (empty string for single-phase weapons)
+   * Maps variant ID to turn duration classes for animation pacing
+   * @param {number} _variant - Weapon variant identifier (0, 2, 3)
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
    */
-  getTurn () {
+  getTurn (_variant) {
     let turn = ''
     return turn
   }
@@ -284,14 +292,20 @@ export class Weapon {
   }
 
   /**
-   * Apply splash damage at specific map location.
-   * Must be overridden in subclasses to define splash behavior.
-   *
-   * @throws {Error} Always throws - must be implemented in derived class
-   * @returns {void}
+   * Add splash damage for fish weapons by pushing valid cells into the effect list.
+   * Used by addOrthogonal and addDiagonal during splash coordinate initialization.
+   * @param {Object|null} map - Game map for bounds checking
+   * @param {number} row - Target row coordinate
+   * @param {number} col - Target column coordinate
+   * @param {number} power - Damage power level
+   * @param {Array} newEffect - Accumulating effect array
+   * @returns {Array} Updated effect array
    */
-  addSplash () {
-    throw new Error('override in derided class')
+  addSplash (map, row, col, power, newEffect) {
+    if (map === null || map === undefined || map.inBounds(row, col)) {
+      newEffect.push([row, col, power])
+    }
+    return newEffect
   }
 
   /**
@@ -920,6 +934,20 @@ export class StandardShot extends Weapon {
   }
   ammoStatus () {
     return `Single Shot Mode`
+  }
+  /**
+   * Apply splash damage at specific map location.
+   * @param {Object|null} _map - Game map for bounds checking
+   * @param {number} _row - Target row coordinate
+   * @param {number} _col - Target column coordinate
+   * @param {number} _power - Damage power level
+   * @param {Array} _newEffect - Accumulating effect array
+   * @returns {Array} Updated effect array
+   * @throws {Error} Always throws
+   */
+
+  addSplash (_map, _row, _col, _power, _newEffect) {
+    throw new Error('Not Applicable: Standard Shot does not have splash damage')
   }
 }
 

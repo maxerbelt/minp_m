@@ -83,17 +83,7 @@ const WEAPON_CONFIGS = {
 // Shared Utility - Configuration Application
 // ============================================================================
 
-/**
- * Applies a weapon configuration object to a weapon instance
- * Centralizes duplicate configuration initialization logic across all weapon types
- * @param {Weapon} weapon - Target weapon instance
- * @param {Object} config - Configuration properties to apply
- */
-function _applyWeaponConfig (weapon, config) {
-  Object.entries(config).forEach(([key, value]) => {
-    weapon[key] = value
-  })
-}
+
 
 // ============================================================================
 // Utility Functions - Canvas Drawing Operations
@@ -171,7 +161,167 @@ export function getPieSegmentCells (
     this,
     spreadDeg
   )
-  return points.list
+  return points.list.map(([x, y, p]) => [y, x, p])
+}
+// ============================================================================
+// Shared Helper Functions - Effect Pattern Calculations
+// ============================================================================
+
+/**
+ * Adds a cell to an effect pattern if it passes bounds and terrain checks
+ * @param {Object|null} map - Game map for bounds checking (null for no check)
+ * @param {number} row - Cell row
+ * @param {number} col - Cell column
+ * @param {number} power - Damage power for the cell
+ * @param {Array} effectPattern - Pattern array to add to
+ * @param {Function} [terrainCheck] - Optional terrain validation function
+ */
+function addCellToEffect (
+  map,
+  row,
+  col,
+  power,
+  effectPattern,
+  terrainCheck = null
+) {
+  const noMapCheck = map === null || map === undefined
+  const inBounds = noMapCheck || map.inBounds(row, col)
+  const terrainOk = !terrainCheck || terrainCheck(row, col)
+  if (inBounds && terrainOk) {
+    effectPattern.push([row, col, power])
+  }
+}
+
+/**
+ * Adds orthogonal neighbor cells (4-connectivity) to an effect pattern
+ * @param {Object|null} map - Game map for bounds checking
+ * @param {number} centerRow - Center cell row
+ * @param {number} centerCol - Center cell column
+ * @param {number} power - Damage power for neighbor cells
+ * @param {Array} effectPattern - Pattern array to accumulate into
+ * @param {Function} [terrainCheck] - Optional terrain validation function
+ */
+function addOrthogonalNeighbors (
+  map,
+  centerRow,
+  centerCol,
+  power,
+  effectPattern,
+  terrainCheck = null
+) {
+  const directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1] // up, down, left, right
+  ]
+  directions.forEach(([rowOffset, colOffset]) => {
+    addCellToEffect(
+      map,
+      centerRow + rowOffset,
+      centerCol + colOffset,
+      power,
+      effectPattern,
+      terrainCheck
+    )
+  })
+}
+
+/**
+ * Creates a splash effect pattern around a center point
+ * @param {Object|null} map - Game map for bounds checking
+ * @param {Array} centerCoords - Center coordinates [row, col]
+ * @param {number} power - Damage power for splash cells
+ * @param {Function} [terrainCheck] - Optional terrain validation function
+ * @returns {Array} Splash effect pattern
+ */
+function createSplashEffect (map, centerCoords, power, terrainCheck = null) {
+  const [centerRow, centerCol] = centerCoords
+  const effectPattern = [centerCoords]
+  addOrthogonalNeighbors(
+    map,
+    centerRow,
+    centerCol,
+    power,
+    effectPattern,
+    terrainCheck
+  )
+  return effectPattern
+}
+
+/**
+ * Calculates area-of-effect along a line with optional power and terrain filtering
+ * @param {Array} coords - Two-point coordinates [startCoord, endCoord]
+ * @param {number} [power=1] - Power level for damage
+ * @param {Function} [lineFunction=getExtendedLinePoints] - Function to get line points
+ * @param {Function} [terrainFilter] - Optional terrain filter function
+ * @returns {Array} Cells along the line with damage power
+ */
+function calculateLineAreaOfEffect (
+  coords,
+  power = 1,
+  lineFunction = getExtendedLinePoints,
+  terrainFilter = null
+) {
+  const [row1, col1] = coords[0]
+  const [row2, col2] = coords[1]
+  let line = lineFunction(row1, col1, row2, col2, power)
+
+  if (terrainFilter) {
+    const stopIndex = line.findIndex(([row, col]) => terrainFilter(row, col))
+    if (stopIndex >= 0) {
+      line = line.slice(0, stopIndex)
+    }
+  }
+  return line
+}
+
+/**
+ * Normalizes coordinates between two points using line intercepts
+ * @param {Array} coords - Two-point coordinates [startCoord, endCoord]
+ * @returns {Array} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
+ */
+function normalizeLineCoordinates (coords) {
+  const [row1, col1] = coords[0]
+  const [row2, col2] = coords[1]
+  const { x0, y0, x1, y1 } = getIntercepts(row1, col1, row2, col2)
+  return [
+    [y0, x0],
+    [y1, x1]
+  ]
+}
+
+/**
+ * Handles weapon launch animation/projectile for line-based weapons
+ * @param {Object} weapon - The weapon instance
+ * @param {Array} coords - Weapon coordinates
+ * @param {number} targetRow - Target row
+ * @param {number} targetCol - Target column
+ * @param {Object} map - Game map
+ * @param {Object} viewModel - Current player view model
+ * @param {Object} opposingViewModel - Opposing player view model
+ * @param {Object} model - Game model
+ * @returns {Promise} Launch animation promise
+ */
+async function launchLineWeapon (
+  weapon,
+  coords,
+  targetRow,
+  targetCol,
+  map,
+  viewModel,
+  opposingViewModel,
+  model
+) {
+  return await weapon.launchRightTo(
+    coords,
+    targetRow,
+    targetCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    model
+  )
 }
 
 // ============================================================================
@@ -193,7 +343,7 @@ export class Bomb extends Weapon {
   constructor (ammo, name, letter) {
     super(name || 'Bomb', letter || '%', true, true, 1)
     this.ammo = ammo
-    _applyWeaponConfig(this, WEAPON_CONFIGS.BOMB)
+    this._applyWeaponConfig(WEAPON_CONFIGS.BOMB)
     this.splashCoords = this.aoe(null, [[2, 2]])
   }
 
@@ -312,7 +462,7 @@ export class Strike extends Weapon {
   constructor (ammo, name, letter) {
     super(name || 'Strike', letter || '$', true, true, 2)
     this.ammo = ammo
-    _applyWeaponConfig(this, WEAPON_CONFIGS.STRIKE)
+    this._applyWeaponConfig(WEAPON_CONFIGS.STRIKE)
     this.splashCoords = this.addOrthogonal(null, 2, 2, 0, [
       [2, 2, 2],
       [0, 0, 20],
@@ -329,6 +479,23 @@ export class Strike extends Weapon {
    */
   clone (ammo) {
     return new Strike(ammo ?? this.ammo)
+  }
+
+  /**
+   * Add splash damage for strike weapons by pushing valid cells into the effect list.
+   * Used by addOrthogonal and addDiagonal during splash coordinate initialization.
+   * @param {Object|null} map - Game map for bounds checking
+   * @param {number} row - Target row coordinate
+   * @param {number} col - Target column coordinate
+   * @param {number} power - Damage power level
+   * @param {Array} newEffect - Accumulating effect array
+   * @returns {Array} Updated effect array
+   */
+  addSplash (map, row, col, power, newEffect) {
+    if (map === null || map === undefined || map.inBounds(row, col)) {
+      newEffect.push([row, col, power])
+    }
+    return newEffect
   }
 
   /**
@@ -357,9 +524,7 @@ export class Strike extends Weapon {
    * @returns {Array} Cells along the line with damage power
    */
   aoe (map, coords, power = 1) {
-    const [row1, col1] = coords[0]
-    const [row2, col2] = coords[1]
-    return getExtendedLinePoints(row1, col1, row2, col2, power)
+    return calculateLineAreaOfEffect(coords, power, getExtendedLinePoints)
   }
 
   /**
@@ -380,53 +545,7 @@ export class Strike extends Weapon {
    * @returns {Array} Splash pattern
    */
   splash (map, coords) {
-    const [r, c] = coords
-    const newEffect = [coords]
-    this._addOrthogonalNeighbors(map, r, c, 0, newEffect)
-    return newEffect
-  }
-
-  /**
-   * Adds orthogonal neighbors (4-connectivity) to effect pattern
-   * @private
-   * @param {Object} map - Game map (or null for no bounds checking)
-   * @param {number} row - Center row
-   * @param {number} col - Center column
-   * @param {number} power - Damage power for neighbor cells
-   * @param {Array} effectPattern - Pattern array to accumulate into
-   */
-  _addOrthogonalNeighbors (map, row, col, power, effectPattern) {
-    const directions = [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1] // up, down, left, right
-    ]
-    directions.forEach(([rowOffset, colOffset]) => {
-      this._addCellToEffect(
-        map,
-        row + rowOffset,
-        col + colOffset,
-        power,
-        effectPattern
-      )
-    })
-  }
-
-  /**
-   * Adds a single cell to effect pattern if in bounds
-   * @private
-   * @param {Object} map - Game map (null means no bounds check)
-   * @param {number} row - Cell row
-   * @param {number} col - Cell column
-   * @param {number} power - Damage power
-   * @param {Array} effectPattern - Pattern to add to
-   */
-  _addCellToEffect (map, row, col, power, effectPattern) {
-    const noCheck = map === null || map === undefined
-    if (noCheck || map.inBounds(row, col)) {
-      effectPattern.push([row, col, power])
-    }
+    return createSplashEffect(map, coords, 0)
   }
 
   /**
@@ -441,7 +560,8 @@ export class Strike extends Weapon {
    * @returns {Promise} Launch animation promise
    */
   async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return await this.launchRightTo(
+    return await launchLineWeapon(
+      this,
       coords,
       rr,
       cc,
@@ -452,30 +572,6 @@ export class Strike extends Weapon {
     )
   }
 
-  redoCoords (map, base, coords) {
-    const r = coords[0][0]
-    const c = coords[0][1]
-
-    const r1 = coords[1][0]
-    const c1 = coords[1][1]
-    const { x0, y0, x1, y1 } = getIntercepts(r, c, r1, c1)
-    return [
-      [y0, x0],
-      [y1, x1]
-    ]
-  }
-
-  splash (map, coords) {
-    const [r, c] = coords
-    const newEffect = [coords]
-    this.addOrthogonal(map, r, c, 0, newEffect)
-    return newEffect
-  }
-
-  addSplash (map, r, c, power, newEffect) {
-    const noCheck = map === null || map === undefined
-    if (noCheck || map.inBounds(r, c)) newEffect.push([r, c, power])
-  }
 }
 export class Fish extends Weapon {
   /**
@@ -486,7 +582,7 @@ export class Fish extends Weapon {
   constructor (ammo, name = 'Fish', letter = '+') {
     super(name, letter, true, true, 2)
     this.ammo = ammo
-    _applyWeaponConfig(this, WEAPON_CONFIGS.FISH)
+    this._applyWeaponConfig(WEAPON_CONFIGS.FISH)
     this.splashCoords = this.addOrthogonal(null, 3, 3, 1, [
       [3, 3, 2],
       [4, 2, 0],
@@ -510,6 +606,23 @@ export class Fish extends Weapon {
   }
 
   /**
+   * Add splash damage for fish weapons by pushing valid cells into the effect list.
+   * Used by addOrthogonal and addDiagonal during splash coordinate initialization.
+   * @param {Object|null} map - Game map for bounds checking
+   * @param {number} row - Target row coordinate
+   * @param {number} col - Target column coordinate
+   * @param {number} power - Damage power level
+   * @param {Array} newEffect - Accumulating effect array
+   * @returns {Array} Updated effect array
+   */
+  addSplash (map, row, col, power, newEffect) {
+    if (map === null || map === undefined || map.inBounds(row, col)) {
+      newEffect.push([row, col, power])
+    }
+    return newEffect
+  }
+
+  /**
    * Calculates area-of-effect along the fish's water path
    * Stops at land boundaries (map.isLand check)
    * @param {Object} map - Game map for land/water checks
@@ -518,18 +631,9 @@ export class Fish extends Weapon {
    * @returns {Array} Cells along water path with damage power
    */
   aoe (map, coords, power = 1) {
-    const [row1, col1] = coords[0]
-    const [row2, col2] = coords[1]
-    const line = getLinePoints(row1, col1, row2, col2, power)
-
-    // Find first land cell (stops fish trajectory)
-    const landIndex = line.findIndex(([row, col]) => map.isLand(row, col))
-
-    // Truncate line at land boundary
-    if (landIndex >= 0) {
-      line.length = landIndex
-    }
-    return line
+    return calculateLineAreaOfEffect(coords, power, getLinePoints, (row, col) =>
+      map.isLand(row, col)
+    )
   }
 
   /**
@@ -555,72 +659,44 @@ export class Fish extends Weapon {
     return [line[0], line.at(-1)]
   }
 
-  addSplash (map, r, c, power, newEffect) {
-    const noCheck = map === null || map === undefined
-    if (noCheck || (map.inBounds(r, c) && !map.isLand(r, c)))
-      newEffect.push([r, c, power])
-  }
-
-  splash (map, coords) {
-    const [r, c] = coords
-    const newEffect = [coords]
-    this._addAdjacentWaterCells(map, r, c, 1, newEffect)
-    return newEffect
-  }
-
   /**
-   * Adds cells to effect if they're in water (not land)
-   * @private
-   * @param {Object} map - Game map for land/water checks
-   * @param {number} row - Cell row
-   * @param {number} col - Cell column
-   * @param {number} power - Damage power
-   * @param {Array} effectPattern - Pattern to add to
-   */
-  _addCellToWaterEffect (map, row, col, power, effectPattern) {
-    const noCheck = map === null || map === undefined
-    if (noCheck || (map.inBounds(row, col) && !map.isLand(row, col))) {
-      effectPattern.push([row, col, power])
-    }
-  }
-
-  /**
-   * Adds adjacent water cells (4-connectivity) to effect pattern
-   * @private
+   * Calculates splash/secondary damage pattern around a point in water
+   * Adds orthogonal water neighbors of the impact point
    * @param {Object} map - Game map
-   * @param {number} row - Center row
-   * @param {number} col - Center column
-   * @param {number} power - Damage power
-   * @param {Array} effectPattern - Pattern to accumulate into
+   * @param {Array} coords - Impact coordinate [row, col]
+   * @returns {Array} Splash pattern
    */
-  _addAdjacentWaterCells (map, row, col, power, effectPattern) {
-    const directions = [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1] // up, down, left, right
-    ]
-    directions.forEach(([rowOffset, colOffset]) => {
-      this._addCellToWaterEffect(
-        map,
-        row + rowOffset,
-        col + colOffset,
-        power,
-        effectPattern
-      )
-    })
+  splash (map, coords) {
+    return createSplashEffect(
+      map,
+      coords,
+      1,
+      (row, col) => !map.isLand(row, col)
+    )
   }
 
   /**
-   * Override addSplash for water-only splash damage (no land hits)
-   * @param {Object} map - Game map for land/water checks
-   * @param {number} row - Cell row
-   * @param {number} col - Cell column
-   * @param {number} power - Damage power
-   * @param {Array} newEffect - Effect pattern to add to
+   * Handles fish launch animation/projectile
+   * @param {Array} coords - Fish coordinates
+   * @param {number} rr - Target row
+   * @param {number} cc - Target column
+   * @param {Object} map - Game map
+   * @param {Object} viewModel - Current player view model
+   * @param {Object} opposingViewModel - Opposing player view model
+   * @param {Object} model - Game model
+   * @returns {Promise} Launch animation promise
    */
-  addSplash (map, row, col, power, newEffect) {
-    this._addCellToWaterEffect(map, row, col, power, newEffect)
+  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
+    return await launchLineWeapon(
+      this,
+      coords,
+      rr,
+      cc,
+      map,
+      viewModel,
+      opposingViewModel,
+      model
+    )
   }
 
   /**
@@ -665,7 +741,7 @@ export class Sensor extends Weapon {
   constructor (ammo, name = 'Sensor', letter = '<') {
     super(name, letter, true, false, 2)
     this.ammo = ammo
-    _applyWeaponConfig(this, WEAPON_CONFIGS.SENSOR)
+    this._applyWeaponConfig(WEAPON_CONFIGS.SENSOR)
   }
 
   /**

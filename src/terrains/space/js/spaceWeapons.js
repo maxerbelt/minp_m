@@ -30,6 +30,243 @@ function drawRayLinePoints (rowStart, colStart, rowEnd, colEnd, power) {
   return canvas.list
 }
 
+/**
+ * Creates a square explosion pattern around a center point
+ * @param {number} centerRow - Center row
+ * @param {number} centerCol - Center column
+ * @param {number} radius - Explosion radius (distance from center)
+ * @param {number} centerPower - Power at center
+ * @param {number} adjacentPower - Power for adjacent cells
+ * @param {number} distancePower - Power for cells at distance
+ * @returns {Array<[number, number, number]>} Explosion pattern
+ */
+function createSquareExplosion (
+  centerRow,
+  centerCol,
+  radius,
+  centerPower = 2,
+  adjacentPower = 1,
+  distancePower = 0
+) {
+  const pattern = [[centerRow, centerCol, centerPower]]
+
+  // Add adjacent cells (3x3 around center)
+  for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+    for (let colOffset = -1; colOffset <= 1; colOffset++) {
+      if (rowOffset !== 0 || colOffset !== 0) {
+        pattern.push([
+          centerRow + rowOffset,
+          centerCol + colOffset,
+          adjacentPower
+        ])
+      }
+    }
+  }
+
+  // Add cells at distance (forming larger square)
+  for (let offset = -1; offset <= 1; offset++) {
+    pattern.push(
+      [centerRow + offset, centerCol - radius, distancePower],
+      [centerRow + offset, centerCol + radius, distancePower],
+      [centerRow - radius, centerCol + offset, distancePower],
+      [centerRow + radius, centerCol + offset, distancePower]
+    )
+  }
+
+  // Add cardinal cells at distance + 1 if radius > 1
+  if (radius > 1) {
+    pattern.push(
+      [centerRow - (radius + 1), centerCol, distancePower],
+      [centerRow + (radius + 1), centerCol, distancePower],
+      [centerRow, centerCol - (radius + 1), distancePower],
+      [centerRow, centerCol + (radius + 1), distancePower]
+    )
+  }
+
+  return pattern
+}
+
+/**
+ * Handles launch animation for weapons with dual-board effects
+ * @param {Object} weapon - The weapon instance
+ * @param {Array} coords - Target coordinates
+ * @param {number} sourceRow - Source row
+ * @param {number} sourceCol - Source column
+ * @param {Object} map - Game map
+ * @param {Object} viewModel - Primary view model
+ * @param {Object} opposingViewModel - Opposing view model
+ * @param {Object} gameModel - Game model
+ * @param {Function} animationCallback - Custom animation callback
+ * @returns {Promise} Launch promise
+ */
+async function launchWithDualBoardAnimation (
+  weapon,
+  coords,
+  sourceRow,
+  sourceCol,
+  map,
+  viewModel,
+  opposingViewModel,
+  gameModel,
+  animationCallback
+) {
+  return await weapon.launchRightTo(
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel,
+    animationCallback
+  )
+}
+
+/**
+ * Performs portal-style dual-board animation for rail bolt
+ * @param {Object} weapon - The weapon instance
+ * @param {Array} coords - Target coordinates
+ * @param {number} sourceRow - Source row
+ * @param {number} sourceCol - Source column
+ * @param {Object} map - Game map
+ * @param {Object} viewModel - Primary view model
+ * @param {Object} opposingViewModel - Opposing view model
+ * @param {Object} gameModel - Game model
+ * @returns {Promise} Animation promise
+ */
+async function performPortalAnimation (
+  weapon,
+  coords,
+  sourceRow,
+  sourceCol,
+  map,
+  viewModel,
+  opposingViewModel,
+  gameModel
+) {
+  if (!opposingViewModel) {
+    return await weapon.launchRightTo(
+      coords,
+      sourceRow,
+      sourceCol,
+      map,
+      viewModel,
+      opposingViewModel,
+      gameModel
+    )
+  }
+
+  const [[startRow, startCol], targetCoord] = weapon.redoCoords(
+    map,
+    [sourceRow, sourceCol],
+    coords
+  )
+
+  const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
+  const targetCell1 = opposingViewModel.gridCellAt(
+    targetCoord[0],
+    targetCoord[1]
+  )
+  const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+  const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+
+  // Apply portal CSS classes
+  sourceCell1.classList.add(CSS_CLASSES.MARKER)
+  targetCell1.classList.add(CSS_CLASSES.PORTAL)
+  sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+  targetCell2.classList.add(CSS_CLASSES.MARKER)
+
+  // Perform animations
+  await Weapon.prototype.animateFlyingOnVM.call(
+    weapon,
+    sourceCell1,
+    targetCell1,
+    viewModel
+  )
+  await Weapon.prototype.animateFlyingOnVM.call(
+    weapon,
+    sourceCell2,
+    targetCell2,
+    viewModel
+  )
+
+  // Remove CSS classes
+  sourceCell1.classList.remove(CSS_CLASSES.MARKER)
+  targetCell1.classList.remove(CSS_CLASSES.PORTAL)
+  sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
+  targetCell2.classList.remove(CSS_CLASSES.MARKER)
+}
+
+/**
+ * Performs Gauss round dual-board animation with portal effect on sources
+ * Animates from source on opposing board to target on primary board
+ * Then animates from source on primary board to target on primary board
+ * @async
+ * @param {Object} weapon - Weapon instance
+ * @param {number[][]} coords - Target coordinates
+ * @param {number} sourceRow - Source row
+ * @param {number} sourceCol - Source column
+ * @param {Object} map - Game map
+ * @param {Object} viewModel - Primary view model
+ * @param {Object} opposingViewModel - Opposing view model
+ * @param {Object} gameModel - Game model
+ * @returns {Promise} Animation promise
+ */
+async function performGaussRoundAnimation (
+  weapon,
+  coords,
+  sourceRow,
+  sourceCol,
+  map,
+  viewModel,
+  opposingViewModel,
+  gameModel
+) {
+  if (!opposingViewModel) {
+    return await weapon.launchRightTo(
+      coords,
+      sourceRow,
+      sourceCol,
+      map,
+      viewModel,
+      opposingViewModel,
+      gameModel
+    )
+  }
+
+  const [[startRow, startCol], targetCoord] = weapon.redoCoords(
+    map,
+    [sourceRow, sourceCol],
+    coords
+  )
+
+  const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
+  const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+  const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+
+  // Apply portal CSS classes to sources
+  sourceCell1.classList.add(CSS_CLASSES.PORTAL)
+  sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+
+  // Perform animations
+  await Weapon.prototype.animateFlyingOnVM.call(
+    weapon,
+    sourceCell2,
+    targetCell2,
+    viewModel
+  )
+  await Weapon.prototype.animateFlyingOnVM.call(
+    weapon,
+    sourceCell1,
+    targetCell2,
+    viewModel
+  )
+
+  // Remove CSS classes
+  sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
+  sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
+}
+
 // ============================================================================
 // Missile - Area-of-Effect Explosive
 // ============================================================================
@@ -56,7 +293,7 @@ export class Missile extends Bomb {
     this.volatile = true
 
     // Weapon behavior configuration
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: ['Click On Square To Aim Missile'],
       buttonHtml: '<span class="shortcut">M</span>issile',
       tip: 'drag a missile on to the map to increase the number of times you can fire missiles',
@@ -208,7 +445,7 @@ export class RailBolt extends Strike {
     this.isOneAndDone = true
 
     // Weapon behavior configuration
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: [
         'Click on square to start rail bolt',
         'Click on square end rail bolt'
@@ -272,7 +509,8 @@ export class RailBolt extends Strike {
     opposingViewModel,
     gameModel
   ) {
-    return await this.launchRightTo(
+    return await launchWithDualBoardAnimation(
+      this,
       coords,
       sourceRow,
       sourceCol,
@@ -280,7 +518,7 @@ export class RailBolt extends Strike {
       viewModel,
       opposingViewModel,
       gameModel,
-      this._performRailBoltAnimation.bind(this)
+      performPortalAnimation.bind(null, this)
     )
   }
 
@@ -346,17 +584,6 @@ export class RailBolt extends Strike {
       targetCell1,
       viewModel
     )
-    await Weapon.prototype.animateFlyingOnVM.call(
-      this,
-      sourceCell2,
-      targetCell2,
-      viewModel
-    )
-
-    sourceCell1.classList.remove(CSS_CLASSES.MARKER)
-    targetCell1.classList.remove(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
-    targetCell2.classList.remove(CSS_CLASSES.MARKER)
   }
 
   /**
@@ -395,7 +622,7 @@ export class GuassRound extends Fish {
     this.isOneAndDone = true
 
     // Weapon behavior configuration
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: [
         'Click on square to start gauss round',
         'Click on square aim gauss round'
@@ -445,40 +672,7 @@ export class GuassRound extends Fish {
    * @returns {Array<[number, number, number]>} Damage pattern as [row, col, power] tuples
    */
   boom (centerRow, centerCol) {
-    const pattern = [[centerRow, centerCol, 2]]
-
-    // Add 3×3 adjacent cells (power 1)
-    for (let rowOffset = -1; rowOffset < 2; rowOffset++) {
-      for (let colOffset = -1; colOffset < 2; colOffset++) {
-        if (rowOffset !== 0 || colOffset !== 0) {
-          pattern.push([centerRow + rowOffset, centerCol + colOffset, 1])
-        }
-      }
-    }
-
-    // Add distance-2 orthogonal cells (power 0)
-    for (let rowOffset = -1; rowOffset < 2; rowOffset++) {
-      pattern.push(
-        [centerRow + rowOffset, centerCol - 2, 0],
-        [centerRow + rowOffset, centerCol + 2, 0]
-      )
-    }
-    for (let colOffset = -1; colOffset < 2; colOffset++) {
-      pattern.push(
-        [centerRow - 2, centerCol + colOffset, 0],
-        [centerRow + 2, centerCol + colOffset, 0]
-      )
-    }
-
-    // Add cardinal distance-3 cells (power 0)
-    pattern.push(
-      [centerRow - 3, centerCol, 0],
-      [centerRow + 3, centerCol, 0],
-      [centerRow, centerCol - 3, 0],
-      [centerRow, centerCol + 3, 0]
-    )
-
-    return pattern
+    return createSquareExplosion(centerRow, centerCol)
   }
 
   /**
@@ -540,7 +734,8 @@ export class GuassRound extends Fish {
     opposingViewModel,
     gameModel
   ) {
-    return await this.launchRightTo(
+    return await launchWithDualBoardAnimation(
+      this,
       coords,
       sourceRow,
       sourceCol,
@@ -548,75 +743,8 @@ export class GuassRound extends Fish {
       viewModel,
       opposingViewModel,
       gameModel,
-      this._performRoundAnimation.bind(this)
+      performGaussRoundAnimation
     )
-  }
-
-  /**
-   * Executes dual-board Gauss round animation with portal effect
-   * Routes to parent launchTo if no opposing view model exists
-   * Performs asymmetric animation: source on opposing board → target on primary board
-   * @private
-   * @async
-   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
-   * @param {number} sourceRow - Source row coordinate
-   * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model
-   * @returns {Promise<void>} Resolves when animations complete
-   */
-  async _performRoundAnimation (
-    coords,
-    sourceRow,
-    sourceCol,
-    map,
-    viewModel,
-    opposingViewModel,
-    gameModel
-  ) {
-    if (!opposingViewModel) {
-      return await super.launchTo(
-        coords,
-        sourceRow,
-        sourceCol,
-        map,
-        viewModel,
-        opposingViewModel,
-        gameModel
-      )
-    }
-
-    const [[startRow, startCol], targetCoord] = this.redoCoords(
-      map,
-      [sourceRow, sourceCol],
-      coords
-    )
-
-    const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
-    const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
-    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
-
-    // Perform dual-board animation with portal-style CSS classes
-    sourceCell1.classList.add(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
-
-    await Weapon.prototype.animateFlyingOnVM.call(
-      this,
-      sourceCell2,
-      targetCell2,
-      viewModel
-    )
-    await Weapon.prototype.animateFlyingOnVM.call(
-      this,
-      sourceCell1,
-      targetCell2,
-      viewModel
-    )
-
-    sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
   }
 
   /**
@@ -655,7 +783,7 @@ export class Scan extends Sensor {
     this.isOneAndDone = false
 
     // Weapon behavior configuration
-    this.setWeaponProperties({
+    this._applyWeaponConfig({
       hints: ['Click on square to start scan', 'Click on square end scan'],
       buttonHtml: 's<span class="shortcut">W</span>eep',
       tag: 'scan',

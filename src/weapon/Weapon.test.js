@@ -1,5 +1,5 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+import { describe, jest, it, expect, beforeEach } from '@jest/globals'
 
 /* global describe, jest, it, expect, beforeEach */
 
@@ -23,7 +23,7 @@ beforeEach(async () => {
   const weaponModule = await import('./Weapon.js')
   Weapon = weaponModule.Weapon
   StandardShot = weaponModule.StandardShot
- 
+
   const bhModule = await import('../terrains/all/js/bh.js')
   bh = bhModule.bh
 })
@@ -137,7 +137,9 @@ describe('Weapon', () => {
 
   it('addSplash throws error', () => {
     const weapon = new StandardShot()
-    expect(() => weapon.addSplash()).toThrow('override in derided class')
+    expect(() => weapon.addSplash()).toThrow(
+      'Not Applicable: Standard Shot does not have splash damage'
+    )
   })
 
   it('addOrthogonal calls addSplash for 4 adjacent cells', () => {
