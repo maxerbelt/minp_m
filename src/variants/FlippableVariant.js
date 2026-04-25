@@ -1,9 +1,10 @@
+import { Mask } from '../grid/rectangle/mask.js'
 import { RotatableVariant } from './RotatableVariant.js'
 
 export class FlippableVariant extends RotatableVariant {
   /**
-   * @param {any} validator
-   * @param {any} zoneDetail
+   * @param {unknown} validator
+   * @param {unknown} zoneDetail
    * @param {string} symmetry
    */
   constructor (validator, zoneDetail, symmetry) {
@@ -17,15 +18,24 @@ export class FlippableVariant extends RotatableVariant {
   }
 
   /**
+   * Build the variant list from optional coordinate variants or the subclass fallback.
+   * @param {unknown} board
+   * @param {unknown} variantCoordinates
+   * @returns {unknown[]}
+   */
+  static createVariantList (board, variantCoordinates) {
+    return (
+      Mask.listFromCoordsSquare(variantCoordinates) || this.variantsOf(board)
+    )
+  }
+
+  /**
    * Configure rotation and flip transition functions for a flippable variant.
-   * @param {any} VariantClass
-   * @param {any} instance
+   * @param {Function} VariantClass
+   * @param {FlippableVariant} instance
    */
   static setBehaviour (VariantClass, instance) {
+    super.setBehaviour(VariantClass, instance)
     instance.canFlip = true
-    instance.canRotate = true
-    instance.r1 = VariantClass.r
-    instance.f1 = VariantClass.f
-    instance.rf1 = VariantClass.rf
   }
 }
