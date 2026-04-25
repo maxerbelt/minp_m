@@ -19,10 +19,14 @@ export class RectListCanvas extends ListCanvas {
 
   /**
    * Create a rectangle list canvas from a battle map.
-   * @param {Object} map - Battle map object with cols and rows
+   * @param {Object} [map] - Battle map object with cols and rows. If not provided, uses bh.map
    * @returns {RectListCanvas} New canvas instance
    */
   static BhMapList (map) {
-    return new RectListCanvas(map.cols, map.rows, [])
+    const targetMap = map || bh.map
+    if (!targetMap) {
+      throw new Error('No map available for BhMapList')
+    }
+    return new RectListCanvas(targetMap.cols, targetMap.rows, [])
   }
 }
