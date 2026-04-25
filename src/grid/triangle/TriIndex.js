@@ -129,9 +129,12 @@ export class TriIndex extends Indexer {
   }
 
   *_cubeLineCoords (startR, startC, endR, endC) {
-    const { startQ, startCubeR, startS, deltaQ, deltaCubeR, deltaS } =
-      this._computeCubeLineDeltas(startR, startC, endR, endC)
-    const steps = this._cubeLineStepCount(deltaQ, deltaCubeR, deltaS)
+    const lineData = this._computeCubeLineDeltas(startR, startC, endR, endC)
+    const steps = this._cubeLineStepCount(
+      lineData.deltaQ,
+      lineData.deltaCubeR,
+      lineData.deltaS
+    )
 
     if (steps === 0) {
       if (this.isValid(startR, startC)) {
@@ -140,22 +143,24 @@ export class TriIndex extends Indexer {
       return
     }
 
+    yield* this._generateCubeLinePoints(lineData, steps)
+  }
+
+  /**
+   * Generates points along the cube coordinate line
+   * @param {Object} lineData - Line delta data
+   * @param {number} steps - Total steps in the line
+   * @private
+   */
+  *_generateCubeLinePoints (lineData, steps) {
     let previousR = null
     let previousC = null
 
     for (let step = 0; step <= steps; step++) {
-      const [q, cubeR, s] = this._calculateCubePositionAtStep(
-        step,
-        steps,
-        startQ,
-        startCubeR,
-        startS,
-        deltaQ,
-        deltaCubeR,
-        deltaS
-      )
-      const [currentR, currentC] = this._cubeToGrid(q, cubeR, s)
+      const point = this._calculateCubePointAtStep(lineData, step, steps)
+      if (!point) continue
 
+      const [currentR, currentC] = point
       if (this._isDuplicateGridCell(currentR, currentC, previousR, previousC)) {
         continue
       }
@@ -168,6 +173,28 @@ export class TriIndex extends Indexer {
       previousR = currentR
       previousC = currentC
     }
+  }
+
+  /**
+   * Calculates cube coordinates at a specific step and converts to grid coordinates
+   * @param {Object} lineData - Line delta data
+   * @param {number} step - Current step
+   * @param {number} steps - Total steps
+   * @returns {Array|null} [r, c] coordinates or null if invalid
+   * @private
+   */
+  _calculateCubePointAtStep (lineData, step, steps) {
+    const [q, cubeR, s] = this._calculateCubePositionAtStep(
+      step,
+      steps,
+      lineData.startQ,
+      lineData.startCubeR,
+      lineData.startS,
+      lineData.deltaQ,
+      lineData.deltaCubeR,
+      lineData.deltaS
+    )
+    return this._cubeToGrid(q, cubeR, s)
   }
 
   _extendLineEndToBoundary (startR, startC, endR, endC) {
@@ -189,44 +216,57 @@ export class TriIndex extends Indexer {
     )
   }
 
+  /**
+   * Gets neighbors or area from a specific connection type
+   * @param {string} connectionKey - Connection type key
+   * @param {string} methodName - Method name ('neighbors' or 'area')
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {Array} Neighbor coordinates or area coordinates
+   * @private
+   */
+  _getConnectionResult (connectionKey, methodName, r, c) {
+    return this.connection[connectionKey][methodName](r, c)
+  }
+
   neighborsEdge (r, c) {
-    return this.connection['3'].neighbors(r, c)
+    return this._getConnectionResult('3', 'neighbors', r, c)
   }
 
   areaEdge (r, c) {
-    return this.connection['3'].area(r, c)
+    return this._getConnectionResult('3', 'area', r, c)
   }
 
   neighborsVertex (r, c) {
-    return this.connection['3vertex'].neighbors(r, c)
+    return this._getConnectionResult('3vertex', 'neighbors', r, c)
   }
 
   areaVertex (r, c) {
-    return this.connection['3vertex'].area(r, c)
+    return this._getConnectionResult('3vertex', 'area', r, c)
   }
 
   neighborsExtended (r, c) {
-    return this.connection['6extended'].neighbors(r, c)
+    return this._getConnectionResult('6extended', 'neighbors', r, c)
   }
 
   areaExtended (r, c) {
-    return this.connection['6extended'].area(r, c)
+    return this._getConnectionResult('6extended', 'area', r, c)
   }
 
   neighbors6 (r, c) {
-    return this.connection['6'].neighbors(r, c)
+    return this._getConnectionResult('6', 'neighbors', r, c)
   }
 
   area6 (r, c) {
-    return this.connection['6'].area(r, c)
+    return this._getConnectionResult('6', 'area', r, c)
   }
 
   neighbors (r, c) {
-    return this.connection['12'].neighbors(r, c)
+    return this._getConnectionResult('12', 'neighbors', r, c)
   }
 
   area (r, c) {
-    return this.connection['12'].area(r, c)
+    return this._getConnectionResult('12', 'area', r, c)
   }
 
   *rows () {
@@ -258,74 +298,18 @@ export class TriIndex extends Indexer {
 
   /**
    * Detects and yields corner-crossing cells for super-cover algorithm.
-   * Pattern: Both axes moved = diagonal step = corner was crossed.
+   * Delegates to cover.super implementation for consistency.
    */
-  *yieldSuperCoverCornerCells (
-    moveInR,
-    moveInC,
-    previousR,
-    stepR,
-    previousC,
-    stepC,
-    step
-  ) {
-    const crossedCorner = moveInR & moveInC
-
-    if (crossedCorner) {
-      const extraCell1R = previousR + stepR
-      const extraCell1C = previousC
-
-      const extraCell2R = previousR
-      const extraCell2C = previousC + stepC
-
-      if (this.isValid(extraCell1R, extraCell1C)) {
-        yield [extraCell1R, extraCell1C, step]
-        step++
-      }
-      if (this.isValid(extraCell2R, extraCell2C)) {
-        yield [extraCell2R, extraCell2C, step]
-        step++
-      }
-    }
-    return step
+  *yieldSuperCoverCornerCells (...args) {
+    return yield* this.cover.super.yieldSuperCoverCornerCells(...args)
   }
 
   /**
    * Detects and yields corner-crossing cells for half-cover algorithm.
-   * Half-cover only emits one extra cell (with row-direction bias).
+   * Delegates to cover.half implementation for consistency.
    */
-  *yieldHalfCoverCornerCells (
-    moveInR,
-    moveInC,
-    previousR,
-    stepR,
-    previousC,
-    stepC,
-    step
-  ) {
-    const crossedCorner = moveInR & moveInC
-
-    if (crossedCorner) {
-      const extraCell1R = previousR + stepR
-      const extraCell1C = previousC
-
-      const extraCell2R = previousR
-      const extraCell2C = previousC + stepC
-
-      const rowFirst = this.isValid(extraCell1R, extraCell1C)
-      if (rowFirst) {
-        yield [extraCell1R, extraCell1C, step]
-        step++
-        return step
-      }
-
-      const colFirst = this.isValid(extraCell2R, extraCell2C)
-      if (colFirst) {
-        yield [extraCell2R, extraCell2C, step]
-        step++
-      }
-    }
-    return step
+  *yieldHalfCoverCornerCells (...args) {
+    return yield* this.cover.half.yieldHalfCoverCornerCells(...args)
   }
 
   actions (bb) {

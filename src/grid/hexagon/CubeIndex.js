@@ -234,6 +234,33 @@ export class CubeIndex extends Indexer {
     return this._actions
   }
 
+  // ============================================================================
+  // Bresenham Line Drawing (Reusable pattern across all indexers)
+  // ============================================================================
+
+  /**
+   * Detects and yields corner-crossing cells for super-cover algorithm.
+   * Delegates to cover.super implementation for consistency.
+   */
+  *yieldSuperCoverCornerCells (...args) {
+    return yield* this.cover.super.yieldSuperCoverCornerCells(...args)
+  }
+
+  /**
+   * Detects and yields corner-crossing cells for half-cover algorithm.
+   * Delegates to cover.half implementation for consistency.
+   */
+  *yieldHalfCoverCornerCells (...args) {
+    return yield* this.cover.half.yieldHalfCoverCornerCells(...args)
+  }
+
+  /**
+   * Apply offset to all bits in a bitboard container
+   * @param {Object} bbc - Bitboard container with store and bits
+   * @param {number} dq - Q-axis offset
+   * @param {number} dr - R-axis offset
+   * @returns {bigint} New bitboard with offset applied
+   */
   applyOffset (bbc, dq, dr) {
     let out = bbc.store.empty
     for (const i of this.bitsIndices(bbc.bits)) {
