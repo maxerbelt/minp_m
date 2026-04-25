@@ -239,15 +239,7 @@ export class SubMask {
    * Returns window-relative coordinates (0 to width-1, 0 to height-1)
    */
   get toCoords () {
-    const coords = []
-    for (let y = 0; y < this.windowHeight; y++) {
-      for (let x = 0; x < this.windowWidth; x++) {
-        if (this.at(x, y) !== 0 && this.at(x, y) !== null) {
-          coords.push([x, y])
-        }
-      }
-    }
-    return coords
+    return Array.from(this.occupiedLocations())
   }
 
   /**

@@ -1,6 +1,7 @@
 /* eslint-env jest */
 
-/* global beforeEach, describe, it, expect */
+/* global describe, it, expect, jest */
+import { describe, it, expect, jest } from '@jest/globals'
 import { Mask } from '../rectangle/mask.js'
 import { Packed } from '../rectangle/packed.js'
 import { SubMask } from '../SubMask.js'

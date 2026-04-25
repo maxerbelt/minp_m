@@ -167,12 +167,20 @@ export class AsciiGrid extends GridBase {
 
   /**
    * Width stride: the number of characters per row including the newline.
-   * Overrides parent's rowMax which only returns width.
+   * Overrides parent's columnStride which only returns width.
    *
    * @type {number}
    */
-  get rowMax () {
+  get columnStride () {
     return this.#rowStride
+  }
+
+  /**
+   * @deprecated Use columnStride instead. This getter is maintained for backward compatibility.
+   * @type {number}
+   */
+  get rowMax () {
+    return this.columnStride
   }
 
   /**

@@ -1,7 +1,7 @@
 /* eslint-env jest */
 
 /* global describe, it,  expect, jest */
-import { jest } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
 
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Mask } from '../grid/rectangle/mask.js'

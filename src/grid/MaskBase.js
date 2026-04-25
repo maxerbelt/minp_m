@@ -33,30 +33,45 @@ export class MaskBase extends CanvasGrid {
   get isSquare () {
     return this.width === this.height
   }
+
+  /**
+   * Get or create a lazy-loaded helper instance
+   * @private
+   * @param {string} name - Name of the helper property (without underscore)
+   * @param {Function} Constructor - Constructor function for the helper
+   * @returns {*} The helper instance
+   */
+  _getHelper (name, Constructor) {
+    const propName = `__${name}`
+    if (!this[propName]) {
+      this[propName] = new Constructor(this)
+    }
+    return this[propName]
+  }
+
   // Lazy-loaded helper instances
   get _bitOps () {
-    if (!this.__bitOps) this.__bitOps = new BitOperations(this)
-    return this.__bitOps
+    return this._getHelper('bitOps', BitOperations)
   }
+
   get _borderRegions () {
-    if (!this.__borderRegions) this.__borderRegions = new BorderRegions(this)
-    return this.__borderRegions
+    return this._getHelper('borderRegions', BorderRegions)
   }
+
   get _morphOps () {
-    if (!this.__morphOps) this.__morphOps = new MorphologicalOps(this)
-    return this.__morphOps
+    return this._getHelper('morphOps', MorphologicalOps)
   }
+
   get _validation () {
-    if (!this.__validation) this.__validation = new MaskValidation(this)
-    return this.__validation
+    return this._getHelper('validation', MaskValidation)
   }
+
   get _ascii () {
-    if (!this.__ascii) this.__ascii = new AsciiRepresentation(this)
-    return this.__ascii
+    return this._getHelper('ascii', AsciiRepresentation)
   }
+
   get _coords () {
-    if (!this.__coords) this.__coords = new CoordinateConversion(this)
-    return this.__coords
+    return this._getHelper('coords', CoordinateConversion)
   }
 
   index (...args) {
@@ -161,21 +176,36 @@ export class MaskBase extends CanvasGrid {
   // ============================================================================
 
   /**
+   * Create a new instance of this mask class
+   * @private
+   * @param {number} width - Mask width
+   * @param {number} height - Mask height
+   * @param {number} [depth] - Optional depth override
+   * @returns {*} New mask instance
+   */
+  _createMaskInstance (
+    width = this.width,
+    height = this.height,
+    depth = this.depth
+  ) {
+    const Ctor = this.constructor
+    return new Ctor(width, height, null, null, depth)
+  }
+
+  /**
    * Create empty mask of same shape and depth
    * Must be implemented or overridden in subclasses that use non-standard constructors
    * @abstract
    */
   get emptyMask () {
     // Default implementation for rectangular masks
-    const Ctor = this.constructor
-    return new Ctor(this.width, this.height, null, null, this.depth)
+    return this._createMaskInstance()
   }
 
   get square () {
     if (this.width === this.height) return this.clone
     const size = Math.max(this.width, this.height)
-    const Ctor = this.constructor
-    const mask = new Ctor(size, size, null, null, this.depth)
+    const mask = this._createMaskInstance(size, size)
     mask.bits = this.store.expandToSquare(this.bits, this.height, this.width)
     return mask
   }
@@ -197,17 +227,27 @@ export class MaskBase extends CanvasGrid {
     depth = this.depth
   ) {
     // Default implementation for rectangular masks
-    const Ctor = this.constructor
-    return new Ctor(width, height, null, null, depth)
+    return this._createMaskInstance(width, height, depth)
   }
+
+  /**
+   * Create a mask with specific bits
+   * @private
+   * @param {bigint} bits - Bits to set on the mask
+   * @returns {*} New mask instance with the specified bits
+   */
+  _createMaskWithBits (bits) {
+    const mask = this.emptyMask
+    mask.bits = bits
+    return mask
+  }
+
   /**
    * Create full (all bits set) mask of same shape
    * @template
    */
   get fullMask () {
-    const mask = this.emptyMask
-    mask.bits = this.fullBits
-    return mask
+    return this._createMaskWithBits(this.fullBits)
   }
 
   /**
@@ -215,9 +255,7 @@ export class MaskBase extends CanvasGrid {
    * @template
    */
   get invertedMask () {
-    const mask = this.emptyMask
-    mask.bits = this.invertedBits
-    return mask
+    return this._createMaskWithBits(this.invertedBits)
   }
 
   /**
@@ -229,9 +267,7 @@ export class MaskBase extends CanvasGrid {
     // and depth.  Using emptyMask previously defaulted to depth=4 which
     // broke occupancy clones used by rectcolor compute (depth=1) – see
     // updateButtonStates2 BigInt test failures.
-    const Ctor = this.constructor
-    // assume constructor signature begins with (width, height, ...)
-    const mask = new Ctor(this.width, this.height, null, null, this.depth)
+    const mask = this._createMaskInstance()
     mask.bits = this.cloneBits
     return mask
   }
