@@ -98,7 +98,7 @@ export class Placeable {
    * @returns {boolean} True if can place.
    */
   canPlace (r, c, shipCellGrid) {
-    const placing = this.placeAt(r, c)
+    const placing = this.placeAt(c, r)
     return placing.canPlace(shipCellGrid)
   }
 }

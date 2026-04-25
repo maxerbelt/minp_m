@@ -327,22 +327,30 @@ export function lazy (obj, prop, fn) {
  * @param {Array<Array<number>>} arr - Array of [x, y, z?] points
  * @returns {Object} Min/max bounds and depth info
  */
+function _coerceCoordinate (value) {
+  if (typeof value === 'bigint') {
+    return Number(value)
+  }
+  return value
+}
+
 export function minMaxXY (arr) {
   let minX = Infinity
   let minY = Infinity
-  let hasColor = false
-  let maxX = 0
-  let maxY = 0
+  let maxX = -Infinity
+  let maxY = -Infinity
   let depth = -Infinity
+  let hasColor = false
 
   if (!arr || arr.length === 0) {
     return { minX: 0, maxX: 0, minY: 0, maxY: 0, depth: 2, hasColor: false }
   }
 
   for (const element of arr) {
-    const x = element[0]
-    const y = element[1]
+    const x = _coerceCoordinate(element[0])
+    const y = _coerceCoordinate(element[1])
     const z = element.at(2)
+    const zValue = z == null ? z : _coerceCoordinate(z)
 
     if (x < minX) minX = x
     if (x > maxX) maxX = x
@@ -350,7 +358,7 @@ export function minMaxXY (arr) {
     if (y < minY) minY = y
     if (y > maxY) maxY = y
 
-    if (z && z > depth) depth = z
+    if (zValue && zValue > depth) depth = zValue
   }
   if (depth === -Infinity) {
     depth = 2

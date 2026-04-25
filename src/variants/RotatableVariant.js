@@ -29,7 +29,7 @@ export class RotatableVariant extends Variants {
    */
   static setBehaviour (VariantClass, instance) {
     instance.canRotate = true
-    instance.canTransform = true
+    instance.canTransform = false
     instance.r1 = VariantClass.r
     instance.f1 = VariantClass.f
     instance.rf1 = VariantClass.rf

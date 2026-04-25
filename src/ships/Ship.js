@@ -786,7 +786,7 @@ export class Ship {
    * @returns {void}
    */
   placeVariant (placeable, r, c) {
-    const placement = placeable.placeAt(r, c)
+    const placement = placeable.placeAt(c, r)
     this.placePlacement(placement)
   }
 

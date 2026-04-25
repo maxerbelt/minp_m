@@ -29,7 +29,7 @@ export class Variants {
     this.index = 0
     this.canFlip = false
     this.canRotate = false
-    this.canTransform = true
+    this.canTransform = false
     this.validator = validator
     this.zoneDetail = zoneDetail
     this.symmetry = symmetry

@@ -22,7 +22,8 @@ import {
   addKeyToCell,
   addKeysToCell,
   setCellCoords,
-  setCellList
+  setCellList,
+  minMaxXY
 } from './utilities.js'
 
 describe('utilities', () => {
@@ -128,6 +129,42 @@ describe('utilities', () => {
       expect(typeof r).toBe('number')
       expect(typeof c).toBe('number')
       expect(typeof id).toBe('number')
+    })
+  })
+
+  describe('minMaxXY', () => {
+    it('should handle BigInt coordinates without mixing types', () => {
+      const coords = [
+        [1n, 2n, 1n],
+        [3n, 4n, 2n]
+      ]
+      const result = minMaxXY(coords)
+
+      expect(result).toEqual({
+        minX: 1,
+        maxX: 3,
+        minY: 2,
+        maxY: 4,
+        depth: 3,
+        hasColor: true
+      })
+    })
+
+    it('should ignore empty or falsy color values', () => {
+      const coords = [
+        [1n, 2n, 0n],
+        [3n, 4n, 0n]
+      ]
+      const result = minMaxXY(coords)
+
+      expect(result).toEqual({
+        minX: 1,
+        maxX: 3,
+        minY: 2,
+        maxY: 4,
+        depth: 2,
+        hasColor: false
+      })
     })
   })
 
