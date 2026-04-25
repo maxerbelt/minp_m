@@ -40,7 +40,7 @@ export class CellWsToBePlaced extends Cell3sToBePlaced {
    */
   isWrongZone () {
     const result = this.cells.some(([r, c]) => {
-      return this.isInMatchingZone(r, c) === false
+      return this.isInMatchingZone(c, r) === false
     })
     return result
   }

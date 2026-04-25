@@ -7,19 +7,19 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
   /**
    * Creates 3D cells to be placed.
    * @param {any} placeable3 - The placeable3 instance.
-   * @param {number} r - The row.
-   * @param {number} c - The column.
+   * @param {number} row - The row.
+   * @param {number} col - The column.
    */
-  constructor (placeable3, r, c) {
+  constructor (placeable3, row, col) {
     super(
       placeable3.board,
-      r,
-      c,
+      row,
+      col,
       placeable3.validator,
       placeable3.zoneDetail,
       placeable3.target
     )
-    this.subGroups = placeable3.subGroups.map(g => g.placeAt(r, c))
+    this.subGroups = placeable3.subGroups.map(g => g.placeAt(row, col))
   }
 
   /**

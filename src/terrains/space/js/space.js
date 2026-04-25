@@ -2,6 +2,7 @@ import { Terrain } from '../../all/js/terrain.js'
 import { SubTerrain } from '../../all/js/SubTerrain.js'
 import { Zone } from '../../all/js/Zone.js'
 import { spaceWeaponSounds } from './spaceWeaponSounds.js'
+import { SubTerrainBase } from '../../all/js/SubTerrainBase.js'
 
 export const deep = new Zone('Deep Space', 'D', false)
 export const near = new Zone('Near Space', 'N', true)
@@ -25,7 +26,7 @@ export const asteroid = new SubTerrain(
   true,
   [surface, core]
 )
-export const all = new SubTerrain(
+export const all = new SubTerrainBase(
   'Shuttle',
   '#a77',
   '#955',

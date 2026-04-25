@@ -1,4 +1,4 @@
-import { SubTerrain } from './SubTerrain.js'
+import { SubTerrainBase } from './SubTerrainBase.js'
 import { bh } from './bh.js'
 
 /**
@@ -302,9 +302,17 @@ export const MIN_CUSTOM_HEIGHT = 6
 export const MAX_CUSTOM_HEIGHT = 12
 export const oldToken = 'geoffs-battleship'
 
-export const all = new SubTerrain('Air', '#a77', '#955', 'A', false, false, [])
+export const all = new SubTerrainBase(
+  'Air',
+  '#a77',
+  '#955',
+  'A',
+  false,
+  false,
+  []
+)
 
-export const mixed = new SubTerrain(
+export const mixed = new SubTerrainBase(
   'Mixed',
   '#888',
   '#666',
