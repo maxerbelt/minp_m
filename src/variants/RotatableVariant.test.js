@@ -3,7 +3,7 @@
 /* global describe, it, expect */
 
 import { RotatableVariant } from './RotatableVariant.js'
-import { jest } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 
 describe('RotatableVariant base behaviors', () => {
   it('cannot be instantiated directly', () => {
@@ -21,7 +21,7 @@ describe('RotatableVariant base behaviors', () => {
         this._set.push(i)
         this.index = i
       }
-      static setBehaviour (inst) {
+      static setBehaviour (ctor, inst) {
         // r1 increments by 1, f1 increments by 2, rf1 increments by 3
         inst.r1 = i => i + 1
         inst.f1 = i => i + 2

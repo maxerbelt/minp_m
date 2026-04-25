@@ -15,6 +15,7 @@ export class RotatableVariant extends Variants {
     }
     const ctor = /** @type {typeof RotatableVariant} */ (this.constructor)
     ctor.setBehaviour(ctor, this)
+    this.canRotate = true
   }
 
   /**

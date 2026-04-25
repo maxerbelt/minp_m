@@ -28,14 +28,15 @@ export class Blinker extends RotatableVariant {
 
   /**
    * Configure a rotatable blinker variant.
+   * @param {Function} VariantClass
    * @param {object} instance
    */
-  static setBehaviour (instance) {
+  static setBehaviour (VariantClass, instance) {
     instance.canFlip = false
     instance.canRotate = true
-    instance.r1 = Blinker.r
+    instance.r1 = VariantClass.r
     instance.f1 = Invariant.r
-    instance.rf1 = Blinker.r
+    instance.rf1 = VariantClass.r
   }
 
   static r = idx => (idx === 0 ? 1 : 0)

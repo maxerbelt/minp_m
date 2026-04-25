@@ -13,7 +13,9 @@ export class Asymmetric extends FlippableVariant {
     this.list = Mask.listFromCoords(variants) || Asymmetric.variantsOf(board)
   }
 
-  static setBehaviour = FlippableVariant.setBehaviour.bind(null, Asymmetric)
+  static setBehaviour (VariantClass, instance) {
+    FlippableVariant.setBehaviour(VariantClass, instance)
+  }
 
   /**
    * @param {object} board

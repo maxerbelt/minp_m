@@ -1,5 +1,5 @@
 /* eslint-env jest */
-import { expect, jest } from '@jest/globals'
+import { describe, jest, beforeEach, it, expect } from '@jest/globals'
 
 /* global describe, jest, beforeEach, it, expect */
 
@@ -106,7 +106,7 @@ describe('Blinker', () => {
 
   it('setBehaviour configures rotation settings', () => {
     const rotatable = {}
-    Blinker.setBehaviour(rotatable)
+    Blinker.setBehaviour(Blinker, rotatable)
 
     expect(rotatable.canFlip).toBe(false)
     expect(rotatable.canRotate).toBe(true)

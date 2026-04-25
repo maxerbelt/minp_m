@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-/* global describe,   it, expect, jest */
+/* global describe, it, expect, jest */
 
 import { Orbit4F } from './Orbit4F.js'
 import { Mask } from '../grid/rectangle/mask.js'
@@ -146,7 +146,7 @@ describe('Orbit4F', () => {
         canFlip: false
       }
 
-      Orbit4F.setBehaviour(mockInstance, 'A')
+      Orbit4F.setBehaviour(Orbit4F, mockInstance)
 
       expect(mockInstance.canRotate).toBe(true)
       expect(mockInstance.canFlip).toBe(true)
@@ -161,7 +161,7 @@ describe('Orbit4F', () => {
         canFlip: false
       }
 
-      Orbit4F.setBehaviour(mockInstance, 'A')
+      Orbit4F.setBehaviour(Orbit4F, mockInstance)
 
       // Test r1 transitions
       expect(typeof mockInstance.r1).toBe('function')

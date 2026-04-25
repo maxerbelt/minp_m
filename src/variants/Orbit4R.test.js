@@ -1,15 +1,15 @@
 /* eslint-env jest */
 
-/* global describe, it, test, expect, beforeEach, jest */
+/* global describe, it,  expect, jest */
 
 import { Orbit4R } from './Orbit4R.js'
 import { Orbit4F } from './Orbit4F.js'
 import { Mask } from '../grid/rectangle/mask.js'
-import { jest } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
 
 describe('Orbit4R', () => {
   describe('constructor', () => {
-    test('constructor initializes with board and creates variants', () => {
+    it('constructor initializes with board and creates variants', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -27,7 +27,7 @@ describe('Orbit4R', () => {
       expect(orbit.zoneDetail).toBe(0)
     })
 
-    test('constructor uses provided variants instead of generating them', () => {
+    it('constructor uses provided variants instead of generating them', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -58,7 +58,7 @@ describe('Orbit4R', () => {
       expect(orbit.list.length).toBe(4)
     })
 
-    test('constructor sets up FlippableVariant properties', () => {
+    it('constructor sets up FlippableVariant properties', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -73,7 +73,7 @@ describe('Orbit4R', () => {
       expect(orbit.canFlip).toBe(true)
     })
 
-    test('Orbit4R does not set symmetry in constructor', () => {
+    it('Orbit4R does not set symmetry in constructor', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -91,7 +91,7 @@ describe('Orbit4R', () => {
   })
 
   describe('static variantsOf', () => {
-    test('variantsOf uses Orbit4F.variantsOf internally', () => {
+    it('variantsOf uses Orbit4F.variantsOf internally', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -106,7 +106,7 @@ describe('Orbit4R', () => {
       expect(orbit4RVariants.length).toBe(orbit4FVariants.length)
     })
 
-    test('variantsOf generates 4 variants', () => {
+    it('variantsOf generates 4 variants', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -118,7 +118,7 @@ describe('Orbit4R', () => {
       expect(variants.length).toBe(4)
     })
 
-    test('variantsOf returns same structure as Orbit4F', () => {
+    it('variantsOf returns same structure as Orbit4F', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -134,13 +134,13 @@ describe('Orbit4R', () => {
   })
 
   describe('static setBehaviour', () => {
-    test('setBehaviour sets up transition functions', () => {
+    it('setBehaviour sets up transition functions', () => {
       const mockInstance = {
         canRotate: false,
         canFlip: false
       }
 
-      Orbit4R.setBehaviour(mockInstance, 'X')
+      Orbit4R.setBehaviour(Orbit4R, mockInstance)
 
       expect(mockInstance.canRotate).toBe(true)
       expect(mockInstance.canFlip).toBe(true)
@@ -149,13 +149,13 @@ describe('Orbit4R', () => {
       expect(mockInstance.rf1).toBeDefined()
     })
 
-    test('setBehaviour assigns Orbit4R transition functions', () => {
+    it('setBehaviour assigns Orbit4R transition functions', () => {
       const mockInstance = {
         canRotate: false,
         canFlip: false
       }
 
-      Orbit4R.setBehaviour(mockInstance, 'X')
+      Orbit4R.setBehaviour(Orbit4R, mockInstance)
 
       // Test that they are functions
       expect(typeof mockInstance.r1).toBe('function')
@@ -165,7 +165,7 @@ describe('Orbit4R', () => {
   })
 
   describe('static r transition - rotation', () => {
-    test('r cycles through indices sequentially', () => {
+    it('r cycles through indices sequentially', () => {
       // r(idx) = (idx + 1) % 4
       expect(Orbit4R.r(0)).toBe(1)
       expect(Orbit4R.r(1)).toBe(2)
@@ -173,7 +173,7 @@ describe('Orbit4R', () => {
       expect(Orbit4R.r(3)).toBe(0)
     })
 
-    test('r creates a cycle back to start after 4 calls', () => {
+    it('r creates a cycle back to start after 4 calls', () => {
       let current = 0
       for (let i = 0; i < 4; i++) {
         current = Orbit4R.r(current)
@@ -181,7 +181,7 @@ describe('Orbit4R', () => {
       expect(current).toBe(0)
     })
 
-    test('r handles all indices 0-3', () => {
+    it('r handles all indices 0-3', () => {
       for (let i = 0; i < 4; i++) {
         const result = Orbit4R.r(i)
         expect(result).toBeGreaterThanOrEqual(0)
@@ -189,7 +189,7 @@ describe('Orbit4R', () => {
       }
     })
 
-    test('r is different from Orbit4F.r', () => {
+    it('r is different from Orbit4F.r', () => {
       // Orbit4F.r has different logic than simple (idx + 1) % 4
       const differentValues = []
       for (let i = 0; i < 4; i++) {
@@ -202,7 +202,7 @@ describe('Orbit4R', () => {
   })
 
   describe('static f transition - flip', () => {
-    test('f shifts indices by 2', () => {
+    it('f shifts indices by 2', () => {
       // f(idx) = (idx + 2) % 4
       expect(Orbit4R.f(0)).toBe(2)
       expect(Orbit4R.f(1)).toBe(3)
@@ -210,14 +210,14 @@ describe('Orbit4R', () => {
       expect(Orbit4R.f(3)).toBe(1)
     })
 
-    test('f returns to start after 2 calls', () => {
+    it('f returns to start after 2 calls', () => {
       let current = 0
       current = Orbit4R.f(current)
       current = Orbit4R.f(current)
       expect(current).toBe(0)
     })
 
-    test('f handles all indices 0-3', () => {
+    it('f handles all indices 0-3', () => {
       for (let i = 0; i < 4; i++) {
         const result = Orbit4R.f(i)
         expect(result).toBeGreaterThanOrEqual(0)
@@ -225,7 +225,7 @@ describe('Orbit4R', () => {
       }
     })
 
-    test('f is different from Orbit4F.f', () => {
+    it('f is different from Orbit4F.f', () => {
       // Orbit4R.f(idx) = (idx + 2) % 4
       // Orbit4F.f has logic: (idx > 1 ? 0 : 2) + (idx % 2)
       // Test that they produce values for all indices
@@ -243,7 +243,7 @@ describe('Orbit4R', () => {
   })
 
   describe('static rf transition - left rotate', () => {
-    test('rf maps correctly', () => {
+    it('rf maps correctly', () => {
       // rf(idx) = (idx === 0 ? 3 : idx - 1)
       expect(Orbit4R.rf(0)).toBe(3)
       expect(Orbit4R.rf(1)).toBe(0)
@@ -251,7 +251,7 @@ describe('Orbit4R', () => {
       expect(Orbit4R.rf(3)).toBe(2)
     })
 
-    test('rf is inverse of r', () => {
+    it('rf is inverse of r', () => {
       for (let i = 0; i < 4; i++) {
         const forward = Orbit4R.r(i)
         const back = Orbit4R.rf(forward)
@@ -259,7 +259,7 @@ describe('Orbit4R', () => {
       }
     })
 
-    test('rf creates reverse cycle', () => {
+    it('rf creates reverse cycle', () => {
       let current = 0
       for (let i = 0; i < 4; i++) {
         current = Orbit4R.rf(current)
@@ -267,7 +267,7 @@ describe('Orbit4R', () => {
       expect(current).toBe(0)
     })
 
-    test('rf is different from Orbit4F.rf', () => {
+    it('rf is different from Orbit4F.rf', () => {
       const differentValues = []
       for (let i = 0; i < 4; i++) {
         if (Orbit4R.rf(i) !== Orbit4F.rf(i)) {
@@ -280,7 +280,7 @@ describe('Orbit4R', () => {
   })
 
   describe('variant method', () => {
-    test('variant returns coordinates for current index', () => {
+    it('variant returns coordinates for current index', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -294,7 +294,7 @@ describe('Orbit4R', () => {
       expect(result.length).toBeGreaterThan(0)
     })
 
-    test('variant changes with different indices', () => {
+    it('variant changes with different indices', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -314,7 +314,7 @@ describe('Orbit4R', () => {
   })
 
   describe('rotation and flip operations', () => {
-    test('rotate changes index by 1 (via r)', () => {
+    it('rotate changes index by 1 (via r)', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -330,7 +330,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(2)
     })
 
-    test('flip changes index by 2 (via f)', () => {
+    it('flip changes index by 2 (via f)', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -343,7 +343,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(2)
     })
 
-    test('leftRotate changes index backward (via rf)', () => {
+    it('leftRotate changes index backward (via rf)', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -360,7 +360,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(1)
     })
 
-    test('4 rotations return to start', () => {
+    it('4 rotations return to start', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -375,7 +375,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(initial)
     })
 
-    test('2 flips return to start', () => {
+    it('2 flips return to start', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -389,7 +389,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(initial)
     })
 
-    test('4 leftRotates return to start', () => {
+    it('4 leftRotates return to start', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -406,7 +406,7 @@ describe('Orbit4R', () => {
   })
 
   describe('composition of operations', () => {
-    test('rotate then flip then rotate sequence', () => {
+    it('rotate then flip then rotate sequence', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -422,7 +422,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(0)
     })
 
-    test('multiple operations maintain valid state', () => {
+    it('multiple operations maintain valid state', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -446,7 +446,7 @@ describe('Orbit4R', () => {
   })
 
   describe('integration', () => {
-    test('Orbit4R generates 4 valid variants from a board', () => {
+    it('Orbit4R generates 4 valid variants from a board', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -469,7 +469,7 @@ describe('Orbit4R', () => {
       })
     })
 
-    test('variant transitions follow r, f, rf patterns', () => {
+    it('variant transitions follow r, f, rf patterns', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -492,7 +492,7 @@ describe('Orbit4R', () => {
       expect(orbit.index).toBe(2)
     })
 
-    test('Orbit4R transitions differ from Orbit4F', () => {
+    it('Orbit4R transitions differ from Orbit4F', () => {
       // Create test cases that show different transition behavior
       const coords = [
         [0, 0],
@@ -518,7 +518,7 @@ describe('Orbit4R', () => {
   })
 
   describe('comment verification', () => {
-    test('Orbit4R uses same variants list as Orbit4F', () => {
+    it('Orbit4R uses same variants list as Orbit4F', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -534,13 +534,13 @@ describe('Orbit4R', () => {
       expect(orbit4R.list.length).toBe(orbit4F.list.length)
     })
 
-    test('Orbit4R has different transition functions than Orbit4F', () => {
+    it('Orbit4R has different transition functions than Orbit4F', () => {
       // This verifies the comment about different transitions
       const mockInstance4R = {}
       const mockInstance4F = {}
 
-      Orbit4R.setBehaviour(mockInstance4R, 'X')
-      Orbit4F.setBehaviour(mockInstance4F, 'A')
+      Orbit4R.setBehaviour(Orbit4R, mockInstance4R)
+      Orbit4F.setBehaviour(Orbit4F, mockInstance4F)
 
       // The behavior is set up, but transitions differ
       // Test specific index transitions
