@@ -40,7 +40,69 @@ import {
 } from './shuttles.js'
 import { shelter, mine, commandCenter } from './installations.js'
 
-const railgunSpace = new ArmedVessel(
+/**
+ * Creates an armed shape (vessel or installation) with an attached weapon.
+ * @param {Function} ShapeClass - Constructor (ArmedVessel or ArmedInstallation)
+ * @param {string} description - Name of the unit
+ * @param {string} letter - Letter identifier
+ * @param {string} symmetry - Symmetry type
+ * @param {Array<[number, number]>} cells - Shape cells
+ * @param {string|null} tip - Placement tip
+ * @param {Array<[number, number, number]>} racks - Weapon rack positions
+ * @param {Function} weaponFactory - Factory function returning weapon
+ * @returns {Object} Armed shape instance with attached weapon
+ * @private
+ */
+const createArmedShape = (
+  ShapeClass,
+  description,
+  letter,
+  symmetry,
+  cells,
+  tip,
+  racks,
+  weaponFactory
+) => {
+  const shape = new ShapeClass(description, letter, symmetry, cells, tip, racks)
+  shape.attachWeapon(weaponFactory)
+  return shape
+}
+
+/**
+ * Creates a hybrid ship configuration with specified cell placements.
+ * @param {string} description - Ship name
+ * @param {string} letter - Letter identifier
+ * @param {string} symmetry - Symmetry type
+ * @param {Array<[number, number]>} cells - Ship shape
+ * @param {Array<Object>} cellConfigs - Cell configuration objects (StandardCells/SpecialCells)
+ * @param {string} placementTip - Placement instruction
+ * @param {Object} [extras] - Optional properties (canBeOn, subterrain, notes)
+ * @returns {Hybrid} Configured hybrid ship
+ * @private
+ */
+const createHybridShip = (
+  description,
+  letter,
+  symmetry,
+  cells,
+  cellConfigs,
+  placementTip,
+  extras = {}
+) => {
+  const ship = new Hybrid(
+    description,
+    letter,
+    symmetry,
+    cells,
+    cellConfigs,
+    placementTip
+  )
+  Object.assign(ship, extras)
+  return ship
+}
+
+const railgunSpace = createArmedShape(
+  ArmedVessel,
   'Railgun',
   'R',
   'S',
@@ -57,12 +119,12 @@ const railgunSpace = new ArmedVessel(
     [1, 0, 2],
     [1, 2, 2],
     [2, 1, 1]
-  ]
+  ],
+  () => RailBolt.single
 )
-railgunSpace.attachWeapon(() => {
-  return RailBolt.single
-})
-const railgunAsteroid = new ArmedInstallation(
+
+const railgunAsteroid = createArmedShape(
+  ArmedInstallation,
   'Railgun',
   'R',
   'S',
@@ -79,14 +141,13 @@ const railgunAsteroid = new ArmedInstallation(
     [2, 0, 6],
     [0, 2, 6],
     [2, 2, 5]
-  ]
+  ],
+  () => RailBolt.single
 )
-railgunAsteroid.attachWeapon(() => {
-  return RailBolt.single
-})
+
 const railgun = new Transformer([railgunSpace, railgunAsteroid])
 
-const habitat = new Hybrid(
+const habitat = createHybridShip(
   'Habitat',
   'H',
   'H',
@@ -106,7 +167,8 @@ const habitat = new Hybrid(
   ],
   'place Habitat lowest level on an asteroid and the upper levels in space.'
 )
-const spacePort = new Hybrid(
+
+const spacePort = createHybridShip(
   'Space Port',
   'Q',
   'H',
@@ -131,7 +193,8 @@ const spacePort = new Hybrid(
   ],
   'place Space Port lower level on an asteroid and the upper levels in space.'
 )
-const observationPost = new Hybrid(
+
+const observationPost = createHybridShip(
   'Observation Post',
   'Y',
   'D',
@@ -153,13 +216,21 @@ const observationPost = new Hybrid(
       space
     )
   ],
-  'place observation Post adjacent to the surface.'
+  'place observation Post adjacent to the surface.',
+  {
+    canBeOn: Installation.canBe,
+    subterrain: space,
+    notes: [
+      'the dotted parts of the Observation Post must be placed adjacent to space.'
+    ]
+  }
 )
-observationPost.canBeOn = Installation.canBe
-observationPost.subterrain = space
-observationPost.notes = [
-  `the dotted parts of the ${observationPost.descriptionText} must be placed adjacent to space.`
-]
+
+/**
+ * Complete fleet of space units including vessels, shuttles, installations,
+ * and special hybrid/transformer configurations.
+ * @type {Array<Object>}
+ */
 export const spaceFleet = [
   attackCraft,
   frigate,
