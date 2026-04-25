@@ -11,9 +11,15 @@ export class Connect12 extends TriConnectBase {
     this.extendedConnection = new TriConnect6Extended(triIndex)
   }
 
-  neighbors (r, c) {
+  /**
+   * Merge neighbor lists from multiple connections, deduplicating by coordinates
+   * @param {Array<Array>} neighborLists - Array of neighbor coordinate lists
+   * @returns {Array<Array>} Deduplicated [r, c, bit] tuples
+   * @private
+   */
+  _deduplicateNeighbors (...neighborLists) {
     const seen = new Map()
-    const addNeighbors = neighbors => {
+    for (const neighbors of neighborLists) {
       for (const [nr, nc, bit] of neighbors) {
         const key = `${nr},${nc}`
         if (!seen.has(key)) {
@@ -21,11 +27,14 @@ export class Connect12 extends TriConnectBase {
         }
       }
     }
-
-    addNeighbors(this.edgeConnection.neighbors(r, c))
-    addNeighbors(this.vertexConnection.neighbors(r, c))
-    addNeighbors(this.extendedConnection.neighbors(r, c))
-
     return Array.from(seen.values())
+  }
+
+  neighbors (r, c) {
+    return this._deduplicateNeighbors(
+      this.edgeConnection.neighbors(r, c),
+      this.vertexConnection.neighbors(r, c),
+      this.extendedConnection.neighbors(r, c)
+    )
   }
 }

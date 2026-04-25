@@ -108,20 +108,33 @@ export class RectIndex extends Indexer {
     }
   }
 
+  /**
+   * Gets neighbors or area from a specific connection type
+   * @param {string} connectionKey - Connection type key
+   * @param {string} methodName - Method name ('neighbors' or 'area')
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @returns {Array} Neighbor coordinates or area coordinates
+   * @private
+   */
+  _getConnectionResult (connectionKey, methodName, x, y) {
+    return this.connection[connectionKey][methodName](x, y)
+  }
+
   neighbors (x, y) {
-    return this.connection[this.connectType].neighbors(x, y)
+    return this._getConnectionResult(this.connectType, 'neighbors', x, y)
   }
 
   othoNeighbors (x, y) {
-    return this.connection['4'].neighbors(x, y)
+    return this._getConnectionResult('4', 'neighbors', x, y)
   }
 
   diagNeighbors (x, y) {
-    return this.connection['4diag'].neighbors(x, y)
+    return this._getConnectionResult('4diag', 'neighbors', x, y)
   }
 
   area (x, y) {
-    return this.connection['8'].area(x, y)
+    return this._getConnectionResult('8', 'area', x, y)
   }
 
   // ============================================================================

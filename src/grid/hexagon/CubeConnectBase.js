@@ -1,7 +1,7 @@
 export class CubeConnectBase {
-  constructor (cubeIndex) {
+  constructor (cubeIndex, neighborOffsets = []) {
     this.cubeIndex = cubeIndex
-    this.neighborOffsets = []
+    this.neighborOffsets = neighborOffsets
   }
 
   static get hexNeighborOffsets () {
@@ -13,10 +13,6 @@ export class CubeConnectBase {
       [-1, 1],
       [1, -1]
     ]
-  }
-
-  setNeighborOffsets (offsets) {
-    this.neighborOffsets = offsets
   }
 
   neighbors (q, r) {

@@ -1,7 +1,7 @@
 export class ConnectBase {
-  constructor (rectIndex) {
+  constructor (rectIndex, neighborOffsets = []) {
     this.rectIndex = rectIndex
-    this.neighborOffsets = []
+    this.neighborOffsets = neighborOffsets
   }
 
   static get orthogonalNeighborOffsets () {
@@ -24,10 +24,6 @@ export class ConnectBase {
 
   static get allNeighborOffsets () {
     return [...this.orthogonalNeighborOffsets, ...this.diagonalNeighborOffsets]
-  }
-
-  setNeighborOffsets (offsets) {
-    this.neighborOffsets = offsets
   }
 
   neighbors (x, y) {

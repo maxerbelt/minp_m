@@ -104,15 +104,29 @@ export class CubeIndex extends Indexer {
     return this._boundaryExitCondition
   }
 
+  /**
+   * Gets neighbors or area from a specific connection type
+   * @param {string|number} connectionKey - Connection type key
+   * @param {string} methodName - Method name ('neighbors' or 'area')
+   * @param {number} q - Q coordinate
+   * @param {number} r - R coordinate
+   * @returns {Array} Neighbor coordinates or area coordinates
+   * @private
+   */
+  _getConnectionResult (connectionKey, methodName, q, r) {
+    return this.connection[connectionKey][methodName](q, r)
+  }
+
   neighbors (q, r) {
-    return this.connection[6].neighbors(q, r)
+    return this._getConnectionResult(6, 'neighbors', q, r)
   }
 
   area (q, r) {
-    return this.connection[6].area(q, r)
+    return this._getConnectionResult(6, 'area', q, r)
   }
+
   direction (start, end) {
-    return this.connection[6].direction(start, end)
+    return this._getConnectionResult(6, 'direction', start, end)
   }
 
   _axisStepVector (axis, sign, currentQ, currentR, targetQ, targetR) {

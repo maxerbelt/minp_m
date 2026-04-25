@@ -4,8 +4,8 @@ import { TriConnectBase } from './TriConnectBase.js'
 
 export class TriConnect6 extends TriConnectBase {
   constructor (triIndex) {
-    super(triIndex)
-    this.setParityNeighborOffsets(
+    super(
+      triIndex,
       [...Connect3.up, ...Connect3Vertex.up],
       [...Connect3.down, ...Connect3Vertex.down]
     )
