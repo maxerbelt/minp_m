@@ -1,6 +1,11 @@
 import { RotatableVariant } from './RotatableVariant.js'
 
 export class FlippableVariant extends RotatableVariant {
+  /**
+   * @param {any} validator
+   * @param {any} zoneDetail
+   * @param {string} symmetry
+   */
   constructor (validator, zoneDetail, symmetry) {
     super(validator, zoneDetail, symmetry)
     if (new.target === FlippableVariant) {
@@ -10,11 +15,17 @@ export class FlippableVariant extends RotatableVariant {
     }
     this.canFlip = true
   }
-  static setBehaviour (subType, flippable) {
-    flippable.canFlip = true
-    flippable.canRotate = true
-    flippable.r1 = subType.r
-    flippable.f1 = subType.f
-    flippable.rf1 = subType.rf
+
+  /**
+   * Configure rotation and flip transition functions for a flippable variant.
+   * @param {any} VariantClass
+   * @param {any} instance
+   */
+  static setBehaviour (VariantClass, instance) {
+    instance.canFlip = true
+    instance.canRotate = true
+    instance.r1 = VariantClass.r
+    instance.f1 = VariantClass.f
+    instance.rf1 = VariantClass.rf
   }
 }
