@@ -417,7 +417,23 @@ export class RedelmeierGenerator {
   }
 
   /**
+   * Collect all polyominoes from a generator into an array
+   * @private
+   * @param {Generator} generator - Polyomino generator
+   * @returns {Array<Mask>} Array of polyomino masks
+   */
+  collectFromGenerator (generator) {
+    const result = []
+    for (const polyomino of generator) {
+      result.push(polyomino)
+    }
+    return result
+  }
+
+  /**
    * Count unique polyominoes of a given size
+   * @param {number} cellCount - Number of cells in polyominoes
+   * @returns {number} Count of unique polyominoes
    */
   count (cellCount) {
     return this.collectAllPolyominoes(cellCount).length
@@ -425,6 +441,8 @@ export class RedelmeierGenerator {
 
   /**
    * Collect all polyominoes of a given size into an array
+   * @param {number} cellCount - Number of cells in polyominoes
+   * @returns {Array<Mask>} Array of polyomino masks
    */
   collectAll (cellCount) {
     return this.collectAllPolyominoes(cellCount)
@@ -433,17 +451,18 @@ export class RedelmeierGenerator {
   /**
    * Internal method to collect polyominoes from generator
    * @private
+   * @param {number} cellCount - Number of cells in polyominoes
+   * @returns {Array<Mask>} Array of polyomino masks
    */
   collectAllPolyominoes (cellCount) {
-    const result = []
-    for (const polyomino of this.generate(cellCount)) {
-      result.push(polyomino)
-    }
-    return result
+    return this.collectFromGenerator(this.generate(cellCount))
   }
 
   /**
    * Collect polyominoes in a size range into an array
+   * @param {number} minSize - Minimum number of cells
+   * @param {number} maxSize - Maximum number of cells
+   * @returns {Array<Mask>} Array of polyomino masks
    */
   collectAllInRange (minSize, maxSize) {
     return this.collectAllPolyominoesInRange(minSize, maxSize)
@@ -452,19 +471,22 @@ export class RedelmeierGenerator {
   /**
    * Internal method to collect polyominoes in range
    * @private
+   * @param {number} minSize - Minimum number of cells
+   * @param {number} maxSize - Maximum number of cells
+   * @returns {Array<Mask>} Array of polyomino masks
    */
   collectAllPolyominoesInRange (minSize, maxSize) {
-    const result = []
-    for (const polyomino of this.generateRange(minSize, maxSize)) {
-      result.push(polyomino)
-    }
-    return result
+    return this.collectFromGenerator(this.generateRange(minSize, maxSize))
   }
 }
 
 /**
  * Convert canonical polyomino representation to unique string hash
  * @private
+ * @param {bigint} polyominoBits - Bitboard representation
+ * @param {number} width - Polyomino width
+ * @param {number} height - Polyomino height
+ * @returns {string} Unique hash string
  */
 function canonicalToString (polyominoBits, width, height) {
   return `${polyominoBits.toString(36)}:${width}x${height}`
@@ -477,6 +499,7 @@ function canonicalToString (polyominoBits, width, height) {
 /**
  * Create a generator for orthogonal (4-connected) polyominoes
  * Cells connect via shared edges only
+ * @returns {RedelmeierGenerator} Configured generator
  */
 export function createOrthoPolyominoGenerator () {
   return new RedelmeierGenerator('4')
@@ -485,11 +508,17 @@ export function createOrthoPolyominoGenerator () {
 /**
  * Create a generator for king-connected (8-connected) polyominoes
  * Cells connect via shared edges or corners
+ * @returns {RedelmeierGenerator} Configured generator
  */
 export function createKingPolyominoGenerator () {
   return new RedelmeierGenerator('8')
 }
 
+/**
+ * Create a generator for diagonal-connected polyominoes
+ * Cells connect via shared edges or diagonal corners
+ * @returns {RedelmeierGenerator} Configured generator
+ */
 export function createDiagonalPolyominoGenerator () {
   return new RedelmeierGenerator('4diag')
 }

@@ -562,11 +562,14 @@ export class Store32 extends StoreBase {
     const nw = cols.maxX - cols.minX + 1
     const nh = rows.maxY - rows.minY + 1
 
-    const out = this.newWords()
+    let out = this.newWords()
 
     for (let y = 0; y < nh; y++) {
       for (let x = 0; x < nw; x++) {
-        out.set(x, y, this.get(cols.minX + x, rows.minY + y))
+        const sourceIdx = (rows.minY + y) * width + (cols.minX + x)
+        const targetIdx = y * nw + x
+        const value = this.getIdx(bitboard, sourceIdx)
+        out = this.setIdx(out, targetIdx, value)
       }
     }
 
@@ -1138,7 +1141,7 @@ export class Store32 extends StoreBase {
   erodeVerticalClampStep (bitboard, gridWidth, edgeMasks) {
     const src = this.normalizeBitboard(bitboard)
     // Store32 always uses per-cell erosion to correctly respect grid boundaries
-    return this.erodeVerticalCellwise(src, gridWidth, edgeMasks)
+    return this.erodeVerticalCellwise(src, gridWidth)
   }
 
   rotateRowBits (sourceBitboard, gridWidth, gridHeight, shiftAmount) {

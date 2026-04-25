@@ -1,9 +1,19 @@
 import { RectCoverBase } from './RectCoverBase.js'
-import { deltaAndDirection } from '../indexer.js'
 
+/**
+ * Normal line cover algorithm for rectangle grids.
+ * Uses standard Bresenham algorithm without corner cell handling.
+ * Returns empty generator for identical start/end points.
+ */
 export class RectNormalCover extends RectCoverBase {
+  /**
+   * Creates a normal cover algorithm instance.
+   * @param {RectIndex} rectIndex - The rectangle index instance
+   */
   constructor (rectIndex) {
     super(rectIndex)
+
+    // Create index wrapper methods
     const wrapperPairs = [
       ['rayIndices', 'ray'],
       ['segmentToIndices', 'segmentTo'],
@@ -16,104 +26,25 @@ export class RectNormalCover extends RectCoverBase {
     }
   }
 
-  *line (startX, startY, endX, endY, exitCondition, indexer, validate) {
-    indexer = this.rectIndex._ensureIndexer(indexer)
-    exitCondition = this.rectIndex._ensureExitCondition(
-      exitCondition,
-      endX,
-      endY
-    )
-    validate = this.rectIndex._ensureValidate(validate)
-    // --------------------------------------------------
-    // Delta and direction setup
-    // --------------------------------------------------
-    const { deltaX, deltaY, stepX, stepY } = deltaAndDirection(
-      endX,
-      startX,
-      endY,
-      startY
-    )
-
-    // Special case: start == end, return empty (no line segment to draw)
-    if (deltaX === 0 && deltaY === 0) {
-      return
-    }
-
-    // Bresenham error accumulator
-    let errorTerm = deltaX - deltaY
-
-    // Current traversal position
-    let currentX = startX
-    let currentY = startY
-    let step = 1
-    // --------------------------------------------------
-    // Main traversal loop
-    // --------------------------------------------------
-    while (true) {
-      const valid = validate(currentX, currentY)
-      if (valid == null) {
-        break
-      }
-      ;[currentX, currentY] = valid
-      if (step > 60) {
-        console.warn(
-          `Bresenham line exceeded 60 steps, likely infinite loop.  Current position: (${currentX}, ${currentY}), end position: (${endX}, ${endY})`
-        )
-        break
-      }
-      yield indexer(currentX, currentY, step)
-      step++
-      // Exit condition
-      if (exitCondition(currentX, currentY, step)) break
-      ;({ errorTerm, currentX, currentY } = this.step(
-        errorTerm,
-        deltaY,
-        deltaX,
-        currentX,
-        stepX,
-        currentY,
-        stepY
-      ))
-    }
+  /**
+   * Returns the step function for normal cover (no movement tracking).
+   * @returns {Function} The step function
+   * @protected
+   */
+  _getStepFunction () {
+    return this.step
   }
 
-  *ray (startX, startY, endX, endY, indexer, validate) {
-    // stop once the current position is outside validity to avoid endless
-    // traversal.  Use the same exit condition pattern as in other generators.
-    return yield* this.line(
-      startX,
-      startY,
-      endX,
-      endY,
-      this.rectIndex._createBoundaryExitCondition(),
-      indexer,
-      validate
-    )
-  }
-
-  *segmentTo (startX, startY, endX, endY, indexer, validate) {
-    return yield* this.line(startX, startY, endX, endY, null, indexer, validate)
-  }
-
-  *fullLine (startX, startY, endX, endY, indexer, validate) {
-    const { x0, y0, x1, y1 } = this.rectIndex.intercepts(
-      startX,
-      startY,
-      endX,
-      endY
-    )
-    return yield* this.segmentTo(x0, y0, x1, y1, indexer, validate)
-  }
-
-  *segmentFor (startX, startY, endX, endY, distance, indexer, validate) {
-    return yield* this.line(
-      startX,
-      startY,
-      endX,
-      endY,
-      this.rectIndex._createDistanceLimitExitCondition(distance),
-      indexer,
-      validate
-    )
+  /**
+   * Indicates that normal cover should skip identical start/end points.
+   * @param {number} startX - Start X
+   * @param {number} startY - Start Y
+   * @param {number} endX - End X
+   * @param {number} endY - End Y
+   * @returns {boolean} True if should skip identical points
+   * @protected
+   */
+  _shouldSkipIdenticalStartEnd (startX, startY, endX, endY) {
+    return startX === endX && startY === endY
   }
 }

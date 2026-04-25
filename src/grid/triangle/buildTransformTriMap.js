@@ -1,98 +1,180 @@
 const cache = new Map()
 
-export function buildTransformTriMap (N) {
-  if (N && cache.has(N)) {
-    return cache.get(N)
-  }
+/**
+ * Calculate linear index from row and column in triangular grid.
+ * Row r contains 2*r+1 cells, so index = r² + c
+ * @private
+ * @param {number} row - Row index (0-based from apex)
+ * @param {number} col - Column index within row
+ * @returns {number} Linear cell index
+ */
+function triangularIndex (row, col) {
+  return row * row + col
+}
 
-  const cellCount = N * N
+/**
+ * Recover row and column from linear index in triangular grid.
+ * @private
+ * @param {number} index - Linear cell index
+ * @returns {Array<number>} [row, col]
+ */
+function indexToRowCol (index) {
+  const row = Math.floor(Math.sqrt(index))
+  const col = index - row * row
+  return [row, col]
+}
 
-  // --- index helpers ---
-  const idx = (r, c) => r * r + c
-  const rcFromIndex = i => {
-    const r = Math.floor(Math.sqrt(i))
-    const c = i - r * r
-    return [r, c]
-  }
-
-  // --- precompute pixel coordinates for each cell (unit side length) ---
-  const h = Math.sqrt(3) / 2 // triangle height for S=1
-  const coords = []
-  for (let r = 0; r < N; r++) {
-    for (let c = 0; c <= 2 * r; c++) {
-      const x = (c - r) * 0.5
-      const y = r * h
-      coords.push({ r, c, x, y, i: idx(r, c) })
-    }
-  }
-
-  // compute centroid of all points to use as rotation/reflection center
-  let sumX = 0
-  let sumY = 0
-  for (const p of coords) {
-    sumX += p.x
-    sumY += p.y
-  }
-  const centerX = sumX / coords.length
-  const centerY = sumY / coords.length
-
-  // --- geometric transform factories ---
-  const rotate = angle => (x, y) => {
+/**
+ * Create geometric transformation function: rotation around center.
+ * @private
+ * @param {number} angleRadians - Rotation angle in radians
+ * @param {number} centerX - X coordinate of rotation center
+ * @param {number} centerY - Y coordinate of rotation center
+ * @returns {Function} Function that transforms [x, y] coordinates
+ */
+function createRotationTransform (angleRadians, centerX, centerY) {
+  const cos = Math.cos(angleRadians)
+  const sin = Math.sin(angleRadians)
+  return (x, y) => {
     const dx = x - centerX
     const dy = y - centerY
-    const rx = dx * Math.cos(angle) - dy * Math.sin(angle)
-    const ry = dx * Math.sin(angle) + dy * Math.cos(angle)
-    return [rx + centerX, ry + centerY]
+    const rotatedX = dx * cos - dy * sin
+    const rotatedY = dx * sin + dy * cos
+    return [rotatedX + centerX, rotatedY + centerY]
+  }
+}
+
+/**
+ * Create geometric transformation function: reflection across vertical axis.
+ * @private
+ * @param {number} centerX - X coordinate of reflection axis
+ * @returns {Function} Function that transforms [x, y] coordinates
+ */
+function createVerticalReflectionTransform (centerX) {
+  return (x, y) => [2 * centerX - x, y]
+}
+
+/**
+ * Compose two transformation functions.
+ * @private
+ * @param {Function} first - First transformation to apply
+ * @param {Function} second - Second transformation to apply
+ * @returns {Function} Composed transformation
+ */
+function composeTransforms (first, second) {
+  return (x, y) => {
+    const [x1, y1] = second(x, y)
+    return first(x1, y1)
+  }
+}
+
+/**
+ * Find the nearest original cell to a transformed coordinate using Euclidean distance.
+ * @private
+ * @param {number} transformedX - Transformed X coordinate
+ * @param {number} transformedY - Transformed Y coordinate
+ * @param {Array<Object>} cells - Array of cell objects with {x, y, i} properties
+ * @returns {number} Index of nearest cell
+ */
+function findNearestCell (transformedX, transformedY, cells) {
+  let closestIndex = null
+  let minDistance = Infinity
+
+  for (const cell of cells) {
+    const dx = cell.x - transformedX
+    const dy = cell.y - transformedY
+    const distanceSq = dx * dx + dy * dy
+
+    if (distanceSq < minDistance) {
+      minDistance = distanceSq
+      closestIndex = cell.i
+    }
   }
 
-  const reflectV = (x, y) => [2 * centerX - x, y]
+  return closestIndex
+}
 
-  const compose = (f, g) => (x, y) => {
-    const [x1, y1] = g(x, y)
-    return f(x1, y1)
+/**
+ * Build D3 symmetry transformation maps for triangular grids.
+ * Generates maps for: 3 rotations (120°, 240°, 360°) × 2 reflection states = 6 total.
+ * Results are cached for performance.
+ *
+ * @param {number} sideLength - Number of rows in triangle (pyramid height)
+ * @returns {Object} Result object containing:
+ *   - size: sideLength
+ *   - count: total number of cells (sideLength²)
+ *   - maps: Object with keys {id, r120, r240, f0, f1, f2} mapping old indices to new
+ */
+export function buildTransformTriMap (sideLength) {
+  if (sideLength && cache.has(sideLength)) {
+    return cache.get(sideLength)
   }
 
-  const id = (x, y) => [x, y]
-  const r120 = rotate((2 * Math.PI) / 3)
-  const r240 = rotate((4 * Math.PI) / 3)
-  const f0 = reflectV
-  const f1 = compose(f0, r120)
-  const f2 = compose(f0, r240)
+  const cellCount = sideLength * sideLength
+  const triangleHeight = Math.sqrt(3) / 2 // Height for unit side length
 
-  const transforms = { id, r120, r240, f0, f1, f2 }
+  // Generate pixel coordinates for each cell with unit side length
+  const cells = []
+  for (let row = 0; row < sideLength; row++) {
+    for (let col = 0; col <= 2 * row; col++) {
+      const x = (col - row) * 0.5
+      const y = row * triangleHeight
+      cells.push({
+        row,
+        col,
+        x,
+        y,
+        i: triangularIndex(row, col)
+      })
+    }
+  }
 
-  // --- build maps by nearest-neighbor matching ---
+  // Compute centroid of all cells as the rotation/reflection center
+  let sumX = 0
+  let sumY = 0
+  for (const cell of cells) {
+    sumX += cell.x
+    sumY += cell.y
+  }
+  const centerX = sumX / cells.length
+  const centerY = sumY / cells.length
+
+  // Define D3 transformations (3 rotations + 3 reflections)
+  const identity = (x, y) => [x, y]
+  const rotate120 = createRotationTransform((2 * Math.PI) / 3, centerX, centerY)
+  const rotate240 = createRotationTransform((4 * Math.PI) / 3, centerX, centerY)
+  const verticalReflect = createVerticalReflectionTransform(centerX)
+  const reflect120 = composeTransforms(verticalReflect, rotate120)
+  const reflect240 = composeTransforms(verticalReflect, rotate240)
+
+  const transformations = {
+    id: identity,
+    r120: rotate120,
+    r240: rotate240,
+    f0: verticalReflect,
+    f1: reflect120,
+    f2: reflect240
+  }
+
+  // Build transform maps using nearest-neighbor matching
   const maps = {}
-
-  for (const key in transforms) {
-    const t = transforms[key]
+  for (const [transformName, transform] of Object.entries(transformations)) {
     const map = new Array(cellCount)
 
-    for (const p of coords) {
-      const [x2, y2] = t(p.x, p.y)
-      // find closest original point
-      let bestIdx = null
-      let bestDist = Infinity
-      for (const q of coords) {
-        const dx = q.x - x2
-        const dy = q.y - y2
-        const d = dx * dx + dy * dy
-        if (d < bestDist) {
-          bestDist = d
-          bestIdx = q.i
-        }
-      }
-      map[p.i] = bestIdx
+    for (const cell of cells) {
+      const [transformedX, transformedY] = transform(cell.x, cell.y)
+      map[cell.i] = findNearestCell(transformedX, transformedY, cells)
     }
 
-    maps[key] = map
+    maps[transformName] = map
   }
 
-  const tmap = {
-    size: N,
+  const result = {
+    size: sideLength,
     count: cellCount,
     maps
   }
-  cache.set(N, tmap)
-  return tmap
+
+  cache.set(sideLength, result)
+  return result
 }

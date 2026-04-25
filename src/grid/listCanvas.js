@@ -10,11 +10,16 @@ import {
 import { GridBase } from './gridBase.js'
 import { coordsToGrid, coordsToOccBig } from './coordsConvert.js'
 
+/**
+ * Canvas implementation backed by a list of coordinates.
+ * Provides drawing operations and grid representations for coordinate-based data.
+ * Extends GridBase to provide shape-aware operations.
+ */
 export class ListCanvas extends GridBase {
   /**
    * Create a canvas backed by a coordinate list.
-   * @param {Object} shape - Shape configuration
-   * @param {Array<Array>} list - List of [x, y, color] coordinates
+   * @param {Object} shape - Shape configuration object
+   * @param {Array<Array<number>>} list - List of [x, y, color] coordinates
    */
   constructor (shape, list) {
     super(shape)
@@ -25,7 +30,7 @@ export class ListCanvas extends GridBase {
    * Get the value at a coordinate.
    * @param {number} x - Column index
    * @param {number} y - Row index
-   * @returns {number} Cell value (0 if not found, 1 if no color, stored color otherwise)
+   * @returns {number|undefined} Cell value (0 if not found, 1 if no color, stored color otherwise; undefined if invalid)
    */
   at (x, y) {
     if (!this.isValid(x, y)) return undefined
@@ -38,18 +43,17 @@ export class ListCanvas extends GridBase {
    * Set the value at a coordinate.
    * @param {number} x - Column index
    * @param {number} y - Row index
-   * @param {number} value - Color value (optional)
+   * @param {number} [value] - Color value (optional, defaults to 1)
    */
   set (x, y, value) {
     const isDuplicate = this.isDuplicate(x, y)
     if (isDuplicate) return
     if (value == null) {
       this.list.push([x, y])
-      this._actions = null
     } else {
       this.list.push([x, y, value])
-      this._actions = null
     }
+    this._invalidateCache()
   }
 
   /**
@@ -129,15 +133,19 @@ export class ListCanvas extends GridBase {
   }
 
   /**
-   * Delegate drawing method with optional color parameter.
+   * Call a drawing function with optional color parameter.
+   * @param {Function} drawFn - Drawing function to call
+   * @param {...*} args - Arguments for the drawing function (last may be color)
    * @private
    */
-  _delegateDraw (methodName, args, optionalColor) {
-    const drawFn = eval(methodName)
-    if (optionalColor === undefined) {
-      drawFn(...args, this)
+  _callDrawWithOptionalColor (drawFn, ...args) {
+    const lastArg = args[args.length - 1]
+    if (lastArg === undefined) {
+      // No color provided, call without color
+      drawFn(...args.slice(0, -1), this)
     } else {
-      drawFn(...args, this, optionalColor)
+      // Color provided, pass it
+      drawFn(...args.slice(0, -1), this, lastArg)
     }
   }
 
@@ -147,11 +155,10 @@ export class ListCanvas extends GridBase {
    * @param {number} y0 - Start y
    * @param {number} x1 - End x
    * @param {number} y1 - End y
-   * @param {number} color - Color value (optional)
+   * @param {number} [color] - Color value (optional)
    */
   drawSegmentTo (x0, y0, x1, y1, color) {
-    if (color === undefined) drawSegmentTo(x0, y0, x1, y1, this)
-    else drawSegmentTo(x0, y0, x1, y1, this, color)
+    this._callDrawWithOptionalColor(drawSegmentTo, x0, y0, x1, y1, color)
   }
 
   /**
@@ -160,11 +167,10 @@ export class ListCanvas extends GridBase {
    * @param {number} y0 - Start y
    * @param {number} x1 - End x
    * @param {number} y1 - End y
-   * @param {number} color - Color value (optional)
+   * @param {number} [color] - Color value (optional)
    */
   drawSegmentUpTo (x0, y0, x1, y1, color) {
-    if (color === undefined) drawSegmentUpTo(x0, y0, x1, y1, this)
-    else drawSegmentUpTo(x0, y0, x1, y1, this, color)
+    this._callDrawWithOptionalColor(drawSegmentUpTo, x0, y0, x1, y1, color)
   }
 
   /**
@@ -174,11 +180,18 @@ export class ListCanvas extends GridBase {
    * @param {number} x1 - End x
    * @param {number} y1 - End y
    * @param {number} distance - Maximum steps
-   * @param {number} color - Color value (optional)
+   * @param {number} [color] - Color value (optional)
    */
   drawSegmentFor (x0, y0, x1, y1, distance, color) {
-    if (color === undefined) drawSegmentFor(x0, y0, x1, y1, distance, this)
-    else drawSegmentFor(x0, y0, x1, y1, distance, this, color)
+    this._callDrawWithOptionalColor(
+      drawSegmentFor,
+      x0,
+      y0,
+      x1,
+      y1,
+      distance,
+      color
+    )
   }
 
   /**
@@ -199,11 +212,10 @@ export class ListCanvas extends GridBase {
    * @param {number} y0 - Start y
    * @param {number} x1 - Direction x
    * @param {number} y1 - Direction y
-   * @param {number} color - Color value (optional)
+   * @param {number} [color] - Color value (optional)
    */
   drawRay (x0, y0, x1, y1, color) {
-    if (color === undefined) drawRay(x0, y0, x1, y1, this)
-    else drawRay(x0, y0, x1, y1, this, color)
+    this._callDrawWithOptionalColor(drawRay, x0, y0, x1, y1, color)
   }
 
   /**
@@ -212,19 +224,20 @@ export class ListCanvas extends GridBase {
    * @param {number} y0 - Start y
    * @param {number} x1 - End x
    * @param {number} y1 - End y
-   * @param {number} color - Color value (optional)
+   * @param {number} [color] - Color value (optional)
    */
   drawLineInfinite (x0, y0, x1, y1, color) {
-    if (color === undefined) drawLineInfinite(x0, y0, x1, y1, this)
-    else drawLineInfinite(x0, y0, x1, y1, this, color)
+    this._callDrawWithOptionalColor(drawLineInfinite, x0, y0, x1, y1, color)
   }
 
   /**
    * Get 2D array representation of canvas.
-   * @returns {Array<Array>} Grid of coordinates
+   * @returns {Array<Array<number>>} Grid of coordinates
    */
   get grid () {
-    this._grid = coordsToGrid(this.list, this.width, this.height)
+    if (!this._grid) {
+      this._grid = coordsToGrid(this.list, this.width, this.height)
+    }
     return this._grid
   }
 
@@ -242,5 +255,14 @@ export class ListCanvas extends GridBase {
       out += '\n'
     }
     return out
+  }
+
+  /**
+   * Invalidate cached data when canvas is modified.
+   * @private
+   */
+  _invalidateCache () {
+    this._actions = null
+    this._grid = null
   }
 }
