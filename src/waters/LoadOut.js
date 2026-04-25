@@ -26,7 +26,6 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  */
 
 /**
- * @typedef {Object} WeaponSystem
  * @property {Weapon} weapon - The weapon object
  * @property {number} ammo - Current ammo count
  * @property {function(): number} ammoCapacity - Total ammo capacity
@@ -69,6 +68,7 @@ export class LoadOut {
    * @param {Weapon[]} weapons - Array of unattached weapons
    * @param {Ship[]} ships - Array of ships with attached weapons
    * @param {ViewModel} viewModel - The view model for grid interactions
+   * @param {{fire: () => void}} steps - The steps object
    */
   constructor (weapons, ships, viewModel, steps) {
     this.onOutOfAllAmmo = Function.prototype
@@ -230,7 +230,7 @@ export class LoadOut {
   }
   ammoRemaining () {
     return this.getLimitedWeaponSystems().reduce(
-      (acc, wps) => acc + wps.hasAmmoRemaining(),
+      (acc, wps) => acc + wps.ammoRemaining(),
       0
     )
   }

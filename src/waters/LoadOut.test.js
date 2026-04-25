@@ -15,7 +15,7 @@ if (globalThis.structuredClone == null) {
 import { LoadOut } from './LoadOut.js'
 
 describe('LoadOut', () => {
-  let loadOut, mockWeapon, mockShip, mockViewModel
+  let loadOut, mockWeapon, mockShip, mockViewModel, mockSteps
 
   beforeEach(() => {
     mockWeapon = {
@@ -40,11 +40,14 @@ describe('LoadOut', () => {
       getWeaponBySystemId: id => (id === 1 ? { id: 1 } : undefined),
       id: 1
     }
+    mockSteps = {
+      fire: jest.fn()
+    }
     mockViewModel = {
       gridCellAt: jest.fn(() => ({ id: 1 })),
       cellSizeScreen: jest.fn(() => 10)
     }
-    loadOut = new LoadOut([mockWeapon], [mockShip], mockViewModel)
+    loadOut = new LoadOut([mockWeapon], [mockShip], mockViewModel, mockSteps)
     loadOut.onDestroy = jest.fn()
     loadOut.onReveal = jest.fn()
     loadOut.onCursorChangeCallback = jest.fn()
