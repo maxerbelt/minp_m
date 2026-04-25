@@ -173,15 +173,11 @@ describe('Transformer', () => {
 
     it('should set attachedWeapons to all forms', () => {
       const newWeapons = ['newWeapon1', 'newWeapon2']
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
       const original1 = mockForm1.attachedWeapons
       const original2 = mockForm2.attachedWeapons
       transformer.attachedWeapons = newWeapons
-      // current implementation does not set attachedWeapons; it warns instead
-      expect(warnSpy).toHaveBeenCalled()
-      expect(mockForm1.attachedWeapons).toBe(original1)
-      expect(mockForm2.attachedWeapons).toBe(original2)
-      warnSpy.mockRestore()
+      expect(mockForm1.attachedWeapons).toBe(newWeapons)
+      expect(mockForm2.attachedWeapons).toBe(newWeapons)
     })
 
     it('should not set if newAttachedWeapons is null', () => {

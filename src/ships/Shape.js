@@ -23,12 +23,13 @@ export class Shape {
   }
 
   /**
-   * @param {string} letter - Ship letter identifier
-   * @param {string} symmetry - Symmetry type (e.g., 'D', 'A', 'S', 'H', 'L', 'G')
-   * @param {Array<[number, number]>} cells - Cell coordinates defining ship shape
-   * @param {string} tallyGroup - Grouping for tally calculations
-   * @param {any} tip - Tip/styling information
-   * @param {Set<string>|Array<string>|Array<[number, number]>|null} [racks] - Weapon rack coordinates
+   * Creates a ship shape with specified properties and variant generation
+   * @param {string} letter - Ship letter identifier (e.g., 'A', 'B', 'C')
+   * @param {string} symmetry - Symmetry type for variant generation ('D', 'A', 'S', 'H', 'L', 'G')
+   * @param {Array<[number, number]>} cells - Array of [row, col] coordinates defining ship shape
+   * @param {string} tallyGroup - Grouping identifier for tally calculations
+   * @param {any} tip - UI tip/styling information for ship placement
+   * @param {Set<string>|Array<string>|Array<[number, number]>|null} [racks] - Weapon rack positions
    */
   constructor (letter, symmetry, cells, tallyGroup, tip, racks) {
     this.letter = letter

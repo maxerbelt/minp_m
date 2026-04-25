@@ -466,7 +466,12 @@ export class Friend extends Waters {
     const shots = this.score.shot
     const cross = hits.clone.dilateCross()
     const candidates = cross.take(shots)
+    console.log('shot', shots.occupancy, shots.toAscii)
 
+    console.log('hits', hits.toAscii)
+    console.log('cross', cross.toAscii)
+
+    console.log('candidates', candidates.toAscii)
     if (
       await this.tryFinishCondition(candidates, m =>
         this.selectRandomCandidate(m)
