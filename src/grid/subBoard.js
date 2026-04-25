@@ -42,7 +42,6 @@ export class SubBoard extends SubMask {
 
   /**
    * Override SubMask's _removeOffset to convert window-relative to world-relative
-   * @protected
    * @param {number} winX - Window-relative X coordinate
    * @param {number} winY - Window-relative Y coordinate
    * @returns {Array<number>} [worldX, worldY] coordinates
