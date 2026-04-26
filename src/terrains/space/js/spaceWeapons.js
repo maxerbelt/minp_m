@@ -643,6 +643,21 @@ export class GuassRound extends Fish {
   }
 
   /**
+   * Determines turn phase for missile variant
+   * Maps variant ID to turn duration classes for animation pacing
+   * @param {number} variant - Weapon variant identifier (0, 2, 3)
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
+   */
+  getTurn (variant) {
+    const turnMap = {
+      0: 'turn4',
+      2: 'turn2',
+      3: 'turn3'
+    }
+    return turnMap[variant] || ''
+  }
+
+  /**
    * Creates a clone of this Gauss round with optional new ammo count
    * Implements weapon cloning protocol
    * @param {number} [ammo] - Ammo count for cloned instance

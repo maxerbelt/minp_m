@@ -135,12 +135,16 @@ export class WatersUI {
   }
 
   /**
-   * REFACTORING: Consolidated display logic using ShipCellDisplayer
+   * Consolidated display logic using ShipCellDisplayer
    */
   visibleShipCell (ship, r, c, cell) {
     const maps = bh.maps
     const weapon = ship?.rackAt(c, r)
-
+    //   console.trace(
+    //    `Displaying ${
+    //      ship?.letter || '-'
+    //   } cell at ${r}, ${c} with weapon ${weapon}`
+    //  )
     if (weapon) {
       ShipCellDisplayer.displayArmedCell(cell, ship, weapon, maps)
     } else {

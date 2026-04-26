@@ -447,12 +447,19 @@ export class CustomMap extends BhMap {
    * @returns {Object} Plain object representation of the map
    */
   jsonObj () {
-    const data = { ...this }
-    delete data.terrain
-    delete data.land
-    data.land = [...this.land]
-    data.terrain = this.terrain.title
-    return data
+    return {
+      title: this.title,
+      name: this.name,
+      rows: this.rows,
+      cols: this.cols,
+      shipNum: this.shipNum,
+      landArea: this.landArea,
+      land: [...this.land],
+      terrain: this.terrain.title,
+      isPreGenerated: this.isPreGenerated,
+      example: this.example,
+      weapons: this.weapons
+    }
   }
 
   /**
@@ -461,7 +468,11 @@ export class CustomMap extends BhMap {
    */
   jsonString () {
     const data = this.jsonObj()
-    return JSON.stringify(data, null, 2)
+    return JSON.stringify(
+      data,
+      (key, value) => (typeof value === 'bigint' ? undefined : value),
+      2
+    )
   }
 
   /**

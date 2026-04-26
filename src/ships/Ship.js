@@ -97,8 +97,8 @@ export class Ship {
     if (numNew === 0) {
       return
     }
-    const weaponIDs = weapons.map(w => w.id)
-    console.trace('Setting weaponsById:', weaponIDs, weapons)
+    // const weaponIDs = weapons.map(w => w.id)
+    // console.trace('Setting weaponsById:', weaponIDs, weapons)
     const { weaponsById, weaponArray } = this._importWeapons(weapons)
     if (!weaponsById?.size) return {}
     this._weaponsById = weaponsById
@@ -933,9 +933,28 @@ export class Ship {
       sunk: this.sunk,
       variant: this.variant,
       cells: this.cells,
-      weapons: this.weapons,
+      weapons: this._serializeWeapons(),
       hitPositions: this.hits.toCoords
     }
+  }
+
+  /**
+   * Serialize weapons object for JSON, filtering out non-serializable properties
+   * @returns {Object} Serialized weapons object
+   * @private
+   */
+  _serializeWeapons () {
+    const serialized = {}
+    const weapons = this.weapons
+    for (const [key, weapon] of Object.entries(weapons)) {
+      // Only serialize basic properties to avoid BigInt and complex objects
+      serialized[key] = {
+        id: weapon.id,
+        letter: weapon.letter,
+        ammo: weapon.ammo
+      }
+    }
+    return serialized
   }
 
   /**
@@ -944,7 +963,14 @@ export class Ship {
    */
   addToGrid (shipCellGrid) {
     for (const [c, r] of this.board.occupiedLocations()) {
-      shipCellGrid[r][c] = { id: this.id, letter: this.letter }
+      if (
+        r >= 0 &&
+        r < shipCellGrid.length &&
+        c >= 0 &&
+        c < shipCellGrid[r].length
+      ) {
+        shipCellGrid[r][c] = { id: this.id, letter: this.letter }
+      }
     }
   }
 

@@ -116,9 +116,17 @@ export class Waters {
    * Stores the current ship placement to local storage.
    */
   storePlacedShips () {
+    // Custom replacer to handle BigInt serialization
+    const replacer = (key, value) => {
+      if (typeof value === 'bigint') {
+        return value.toString()
+      }
+      return value
+    }
+
     localStorage.setItem(
       this.getClipboardKey(),
-      JSON.stringify(this.getPlacedShipsData())
+      JSON.stringify(this.getPlacedShipsData(), replacer)
     )
   }
 
@@ -302,6 +310,7 @@ export class Waters {
    */
   loadForEdit (map) {
     map = map || bh.map
+    this.resetShipCells()
     this.ensureShipsInitialized()
 
     if (!map.example) {

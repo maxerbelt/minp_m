@@ -81,6 +81,28 @@ export class NavigationService {
   }
 
   /**
+   * Switch to mode by target page name
+   * @param {string} target - Target page ('index', 'battleseek', 'battlebuild', 'maplist', 'rules')
+   * @param {boolean} huntMode - Whether in hunt mode
+   * @param {string} [mapName] - Optional specific map name
+   * @returns {void}
+   */
+  switchToMode (target, huntMode, mapName) {
+    const modeMap = {
+      index: NavigationService.MODES.HIDE,
+      battleaseek: NavigationService.MODES.SEEK,
+      battlebuild: NavigationService.MODES.BUILD,
+      maplist: NavigationService.MODES.LIST,
+      rules: NavigationService.MODES.RULES
+    }
+
+    const modeConfig = modeMap[target]
+    if (modeConfig) {
+      this._switchToMode(modeConfig, huntMode, mapName)
+    }
+  }
+
+  /**
    * Handle importing a map from JSON file
    * Prompts user to select JSON file, validates format, and saves map
    * @param {Function} SavedCustomMapClass - Constructor for custom map class

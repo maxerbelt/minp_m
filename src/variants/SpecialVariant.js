@@ -92,6 +92,10 @@ export class SpecialVariant extends RotatableVariant {
    */
   static setBehaviourTo (v3, symmetry) {
     const VariantType = variantType(symmetry.symmetry)
+    // Set static transition functions on the variant class
+    v3.r = VariantType.r
+    v3.f = VariantType.f
+    v3.rf = VariantType.rf
     VariantType.setBehaviour(v3, symmetry)
   }
 

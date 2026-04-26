@@ -168,7 +168,7 @@ export class CoordinateConversion {
     const bitIndex = this.coordinateToBitIndex(...coord)
     const providedValue = coord.at(2)
     const normalizedValue =
-      providedValue === undefined
+      providedValue === undefined || providedValue === null
         ? defaultValue
         : this.store.storeType(providedValue)
 
