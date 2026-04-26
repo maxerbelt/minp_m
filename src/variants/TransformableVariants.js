@@ -34,7 +34,7 @@ export class TransformableVariants extends Variants {
   /**
    * Calculates the form and variant index for a given global index.
    * @param {number} index - The global index.
-   * @returns {{formIndex: number, variantIndex: number}} The position.
+   * @returns {{formIndex: number, variantIndex: number, fullIndex: number}} The position.
    */
   positionInForms (index) {
     const idx = (index || this.index) % this.totalVariants
@@ -42,7 +42,7 @@ export class TransformableVariants extends Variants {
     for (let i = 0; i < this.forms.length; i++) {
       const formVariants = this.forms[i].numVariants()
       if (idx < count + formVariants) {
-        return { formIndex: i, variantIndex: idx - count }
+        return { formIndex: i, variantIndex: idx - count, fullIndex: idx }
       }
       count += formVariants
     }
@@ -118,8 +118,8 @@ export class TransformableVariants extends Variants {
    * @returns {any} The placeable.
    */
   placeable (index) {
-    const { formIndex, variantIndex } = this.positionInForms(index)
-    return this.forms[formIndex].variants().placeable(variantIndex)
+    const { formIndex, variantIndex, fullIndex } = this.positionInForms(index)
+    return this.forms[formIndex].variants().placeable(variantIndex, fullIndex)
   }
 
   /**

@@ -7,7 +7,7 @@ import {
   checkMorphology as checkMorphologyCommon,
   getCanvasState,
   setCanvasState
-} from './canvasCommon.js'
+} from './ui/canvasCommon.js'
 
 // Create ColorPackedHexDraw instance with canvas ID and parameters
 const grid = new ColorPackedHexDraw('hexcolor-c', 6, 300, 300, 25, 2)

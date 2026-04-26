@@ -62,7 +62,7 @@ export class WeaponVariant extends SpecialVariant {
    * @param {number | undefined | null} index - The index.
    * @returns {PlaceableW} The placeable.
    */
-  placeable (index) {
+  placeable (index, fullIndex) {
     const idx = index || this.index
     const grandparentPrototype = Object.getPrototypeOf(SpecialVariant.prototype)
     const result = new PlaceableW(
@@ -72,7 +72,8 @@ export class WeaponVariant extends SpecialVariant {
           new Placeable(this.specialBoard(idx, i), g.validator, g.zoneDetail)
       ),
       idx,
-      this.weapons
+      this.weapons,
+      fullIndex
     )
 
     return result

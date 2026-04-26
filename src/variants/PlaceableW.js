@@ -11,10 +11,12 @@ export class PlaceableW extends Placeable3 {
    * @param {Placeable[]} subGroups - The subgroups.
    * @param {number} variantIndex - The variant index.
    * @param {any} weapons - The weapons.
+   * @param {number} fullIndex - The full index.
    */
-  constructor (full, subGroups, variantIndex, weapons) {
+  constructor (full, subGroups, variantIndex, weapons, fullIndex) {
     super(full, subGroups)
     this.variantIndex = variantIndex
+    this.fullIndex = fullIndex || variantIndex
     this.weapons = weapons
   }
 
@@ -25,6 +27,6 @@ export class PlaceableW extends Placeable3 {
    * @returns {CellWsToBePlaced} The cells to be placed.
    */
   placeAt (r, c) {
-    return new CellWsToBePlaced(this, r, c, this.weapons, this.variantIndex)
+    return new CellWsToBePlaced(this, r, c, this.weapons, this.fullIndex)
   }
 }

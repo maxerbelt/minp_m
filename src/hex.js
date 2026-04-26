@@ -7,7 +7,7 @@ import {
   checkMorphology as checkMorphologyCommon,
   getCanvasState,
   setCanvasState
-} from './canvasCommon.js'
+} from './ui/canvasCommon.js'
 
 // Create HexDraw instance with canvas ID, radius, and drawing parameters
 const hexDraw = new HexDraw('c', 6, 300, 300, 25)

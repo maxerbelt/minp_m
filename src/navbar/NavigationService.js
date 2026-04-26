@@ -190,6 +190,7 @@ export class NavigationService {
     if (!mapName && map) {
       params.append('height', map.rows || '')
       params.append('width', map.cols || '')
+      params.append('terrain', map.terrain.bodyTag || '')
     }
 
     // Add map name

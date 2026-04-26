@@ -488,7 +488,7 @@ export class RailBolt extends Strike {
     const r0 = Math.abs(r + c)
     const c0 = Math.abs(c - r)
     if (r0 === c0) return 'turn4'
-    return c0 > r0 ? 'turn2' : ''
+    return c0 < r0 ? 'turn2' : ''
   }
   /**
    * Gets the audio file for rail bolt flight sound
@@ -779,7 +779,7 @@ export class GuassRound extends Fish {
       viewModel,
       opposingViewModel,
       gameModel,
-      performGaussRoundAnimation
+      performGaussRoundAnimation.bind(null, this)
     )
   }
 
