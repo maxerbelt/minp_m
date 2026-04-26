@@ -404,9 +404,9 @@ export class Missile extends Bomb {
    */
   getTurn (variant, _r, _c) {
     const turnMap = {
-      0: 'turn4',
-      2: 'turn2',
-      3: 'turn3'
+      0: 'turn3',
+      1: 'turn4',
+      3: 'turn2'
     }
     return turnMap[variant] || ''
   }

@@ -152,7 +152,7 @@ export class CustomUI extends PlacementUI {
     this.showFleetTitle()
     this.placingShips = true
     this.updateChangeClearButton()
-    this.showShipTrays()
+    this.trayManager.showShipTrays()
     this._toggleElementVisibility([
       [document.getElementById('height-container'), false],
       [document.getElementById('width-container'), false],

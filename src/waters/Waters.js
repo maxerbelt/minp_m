@@ -448,7 +448,7 @@ export class Waters {
       this.placeMatchingShip.bind(this)
     )
     if (unmatchedShips.length === 0) {
-      this.UI.resetTrays()
+      this.UI.trayManager.resetTrays()
     } else {
       console.log(`${unmatchedShips.length} ships not matched`)
     }

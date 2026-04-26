@@ -23,7 +23,11 @@ const mockUI = {
   cellMiss: jest.fn(),
   cellSunkAt: jest.fn(),
   gridCellAt: jest.fn(),
-  resetTrays: jest.fn(),
+  trayManager: {
+    resetTrays: jest.fn(),
+    showShipTrays: jest.fn(),
+    hideShipTrays: jest.fn()
+  },
   getTrayItem: jest.fn(),
   removeDragShip: jest.fn(),
   cellSizeScreen: jest.fn(),
@@ -36,8 +40,7 @@ const mockUI = {
   showStatus: jest.fn(),
   showTips: jest.fn(),
   hideTips: jest.fn(),
-  showShipTrays: jest.fn(),
-  hideShipTrays: jest.fn(),
+
   showTransformBtns: jest.fn(),
   hideTransformBtns: jest.fn(),
   showTestBtns: jest.fn(),

@@ -19,7 +19,7 @@ export class PlacementUI extends WatersUI {
     this.placingShips = true
     this.readyingShips = false
 
-    // REFACTORING: Use ElementCache to eliminate repetitive
+    //  Use ElementCache to eliminate repetitive
     // document.getElementById() calls
     this.elements = new ElementCache()
     this.trayManager = new TrayManager(this.elements)
@@ -190,8 +190,7 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * REFACTORING: Removed four nearly-identical moveToNextTrayItem* methods
-   * Replaced with unified DirectionMovement.moveInDirection()
+   *  using unified DirectionMovement.moveInDirection()
    */
   moveNextTrayItem (arrowKey, trays, itemIndex, trayIndex) {
     const direction = DirectionMovement.fromArrowKey(arrowKey)
@@ -205,27 +204,6 @@ export class PlacementUI extends WatersUI {
 
   getTrays () {
     return this.trayManager.elementCache.getAllTrays()
-  }
-
-  // REFACTORING: These now delegate to TrayManager
-  resetTrays () {
-    this.trayManager.resetTrays()
-  }
-
-  clearTrays () {
-    this.trayManager.clearTrays()
-  }
-
-  setTrays () {
-    this.trayManager.setTrays()
-  }
-
-  showShipTrays () {
-    this.trayManager.showShipTrays()
-  }
-
-  hideShipTrays () {
-    this.trayManager.hideShipTrays()
   }
 
   showBrushTrays () {
@@ -781,13 +759,13 @@ export class PlacementUI extends WatersUI {
 
   reset (ships) {
     this.board.innerHTML = ''
-    this.clearTrays()
+    this.trayManager.clearTrays()
     this.displayShipInfo(ships)
   }
 
   resetAdd (model) {
     this.board.innerHTML = ''
-    this.clearTrays()
+    this.trayManager.clearTrays()
     model.armWeapons()
     this.displayAddInfo(model)
   }

@@ -37,8 +37,11 @@ const mockUI = {
   showStatus: jest.fn(),
   showTips: jest.fn(),
   hideTips: jest.fn(),
-  showShipTrays: jest.fn(),
-  hideShipTrays: jest.fn(),
+  trayManager: {
+    showShipTrays: jest.fn(),
+    hideShipTrays: jest.fn()
+  },
+
   showTransformBtns: jest.fn(),
   hideTransformBtns: jest.fn(),
   standardPanels: jest.fn(),
