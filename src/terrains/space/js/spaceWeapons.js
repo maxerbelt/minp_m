@@ -398,9 +398,11 @@ export class Missile extends Bomb {
    * Determines turn phase for missile variant
    * Maps variant ID to turn duration classes for animation pacing
    * @param {number} variant - Weapon variant identifier (0, 2, 3)
+   * @param {number} _r - Row coordinate for turn calculation
+   * @param {number} _c - Column coordinate for turn calculation
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
    */
-  getTurn (variant) {
+  getTurn (variant, _r, _c) {
     const turnMap = {
       0: 'turn4',
       2: 'turn2',
@@ -468,7 +470,26 @@ export class RailBolt extends Strike {
       [0, 4, 1]
     ]
   }
-
+  /**
+   * Determines turn phase for missile variant
+   * Maps variant ID to turn duration classes for animation pacing
+   * @param {number} variant - Weapon variant identifier (0, 2, 3)
+   * @param {number} r - Row coordinate for turn calculation
+   * @param {number} c - Column coordinate for turn calculation
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
+   */
+  getTurn (variant, r, c) {
+    if (variant === 0) {
+      const r0 = Math.abs(r)
+      const c0 = Math.abs(c)
+      if (r0 === c0) return ''
+      return c0 < r0 ? 'turn3' : 'turn4'
+    }
+    const r0 = Math.abs(r + c)
+    const c0 = Math.abs(c - r)
+    if (r0 === c0) return 'turn4'
+    return c0 > r0 ? 'turn2' : ''
+  }
   /**
    * Gets the audio file for rail bolt flight sound
    * @returns {URL} URL to rail bolt flight sound asset
@@ -617,6 +638,8 @@ export class GuassRound extends Fish {
     this.cursors = ['rlaunch', 'round']
     this.launchCursor = 'rlaunch'
     this.isOneAndDone = true
+    this.postSelectCursor = 1
+    this.totalCursors = 2
 
     // Weapon behavior configuration
     this._applyWeaponConfig({
@@ -647,9 +670,11 @@ export class GuassRound extends Fish {
    * Determines turn phase for missile variant
    * Maps variant ID to turn duration classes for animation pacing
    * @param {number} variant - Weapon variant identifier (0, 2, 3)
+   * @param {number} r - Row coordinate for turn calculation
+   * @param {number} c - Column coordinate for turn calculation
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
    */
-  getTurn (variant) {
+  getTurn (variant, r, c) {
     const turnMap = {
       1: 'turn2',
       3: 'turn2'

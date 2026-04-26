@@ -45,11 +45,14 @@ export class CellClassManager {
       damaged: 'damaged',
       skull: 'skull'
     },
-    placement: {
-      empty: 'empty',
+
+    orientation: {
       turn2: 'turn2',
       turn3: 'turn3',
-      turn4: 'turn4',
+      turn4: 'turn4'
+    },
+    placement: {
+      empty: 'empty',
       launch: 'launch'
     },
     edge: {

@@ -159,16 +159,6 @@ export class WatersUI {
     ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
   }
 
-  displaySurroundShipCell (ship, cell) {
-    const [r, c] = coordsFromCell(cell)
-    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
-  }
-
-  displayArmedShipCell (ship, cell, w) {
-    const maps = bh.maps
-    ShipCellDisplayer.displayArmedCell(cell, ship, w, maps)
-  }
-
   displaySunkCell (cell, letter) {
     this.setShipCellColors(cell, letter)
     cell.classList.add('enm-sunk')
@@ -189,13 +179,6 @@ export class WatersUI {
     cell.style.background = maps.shipColors[letter] || 'rgba(255,255,255,0.2)'
   }
 
-  /**
-   * REFACTORING: Consolidated display logic using ShipCellDisplayer
-   */
-  displayAsRevealed (cell, ship) {
-    ShipCellDisplayer.displayAsRevealed(cell, ship, bh.maps)
-  }
-
   resetShips (ships) {
     for (const ship of ships) {
       ship.reset()
@@ -210,9 +193,10 @@ export class WatersUI {
   }
 
   revealShip (ship) {
+    const map = bh.maps
     for (const [c, r] of ship.cells) {
       const cell = this.gridCellAt(r, c)
-      this.displayAsRevealed(cell, ship)
+      ShipCellDisplayer.displayAsRevealed(cell, ship, map)
     }
   }
 
@@ -547,7 +531,7 @@ export class WatersUI {
     const cell = document.createElement('div')
     cell.className = 'cell row-label'
     cell.dataset.r = r
-    cell.textContent = max - r
+    cell.textContent = `${max - r}`
     this.board.appendChild(cell)
   }
 

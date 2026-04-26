@@ -194,7 +194,9 @@ export class Ship {
   }
 
   getTurn (r, c) {
-    return this.getPrimaryWeapon()?.getTurn(this.variant) || ''
+    const r0 = r - this.hits.offsetY - (this.hits.windowHeight - 1) / 2
+    const c0 = c - this.hits.offsetX - (this.hits.windowWidth - 1) / 2
+    return this.getPrimaryWeapon()?.getTurn(this.variant, r0, c0) || ''
   }
   reset () {
     this.resetHits()

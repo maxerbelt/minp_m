@@ -187,12 +187,14 @@ export class Weapon {
   }
 
   /**
-   * Get turn/phase information for this weapon.
+   * Determines turn phase for missile variant
    * Maps variant ID to turn duration classes for animation pacing
    * @param {number} _variant - Weapon variant identifier (0, 2, 3)
+   * @param {number} _r - Row coordinate for turn calculation
+   * @param {number} _c - Column coordinate for turn calculation
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
    */
-  getTurn (_variant) {
+  getTurn (_variant, _r, _c) {
     let turn = ''
     return turn
   }

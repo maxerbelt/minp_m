@@ -1,35 +1,34 @@
 /* eslint-env jest */
 
-/* global describe,   test, expect  */
+/* global describe, it, expect  */
 
 import {
   corvette,
   lifter,
   missileBoat,
-  gunBoat,
   miningShip,
   runabout,
   scoutShip
 } from './shuttles'
 import { Shuttle, ArmedShuttle } from './spaceShapes'
-import { jest } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 
-// Jest test suite
+// Jest it suite
 describe('shuttles exports basic', () => {
-  test('corvette is Shuttle and has correct description/letter', () => {
+  it('corvette is Shuttle and has correct description/letter', () => {
     expect(corvette).toBeInstanceOf(Shuttle)
     expect(corvette.description()).toBe('Corvette')
     expect(corvette.letter).toBe('V')
   })
 
-  test('lifter is Shuttle with cells length >= 3', () => {
+  it('lifter is Shuttle with cells length >= 3', () => {
     expect(lifter).toBeInstanceOf(Shuttle)
     expect(Array.isArray(lifter.cells)).toBe(true)
     expect(lifter.cells.length).toBeGreaterThanOrEqual(3)
     expect(lifter.description()).toBe('Lifter')
   })
 
-  test('missileBoat is ArmedShuttle and has an attached weapon factory', () => {
+  it('missileBoat is ArmedShuttle and has an attached weapon factory', () => {
     expect(missileBoat).toBeInstanceOf(ArmedShuttle)
     expect(typeof missileBoat.attachWeapon).toBe('function')
 
@@ -41,8 +40,7 @@ describe('shuttles exports basic', () => {
     expect(missileBoat.description()).toBe('Missile Boat')
   })
 
-  test('other shuttles exported', () => {
-    expect(gunBoat).toBeInstanceOf(Shuttle)
+  it('other shuttles exported', () => {
     expect(miningShip).toBeInstanceOf(Shuttle)
     expect(runabout).toBeInstanceOf(Shuttle)
     expect(scoutShip).toBeInstanceOf(Shuttle)

@@ -1,4 +1,5 @@
-import { SpaceVessel, DeepSpaceVessel } from './spaceShapes.js'
+import { SpaceVessel, DeepSpaceVessel, ArmedVessel } from './spaceShapes.js'
+import { GuassRound } from './spaceWeapons.js'
 
 /**
  * Cell configurations for space vessels.
@@ -10,6 +11,11 @@ const VESSEL_CELLS = {
     [0, 0],
     [2, 0],
     [1, 1]
+  ],
+  GUN_BOAT: [
+    [0, 0],
+    [0, 1],
+    [1, 0]
   ],
   ATTACK_CRAFT_CARRIER: [
     [1, 0],
@@ -126,6 +132,14 @@ const VESSEL_CELLS = {
 }
 
 /**
+ * Weapon rack configurations for armed shuttles.
+ * @type {Object<string, Array<[number, number]>>}
+ */
+const VESSEL_RACKS = {
+  GUN_BOAT: [[0, 0]]
+}
+
+/**
  * Attack Craft - Fast, maneuverable fighter vulnerable to missiles.
  * @type {SpaceVessel}
  */
@@ -140,6 +154,22 @@ attackCraft.notes = [
   `The ${attackCraft.descriptionText} is vulnerable against missiles.`,
   `The squares of the ${attackCraft.descriptionText} adjacent to the missiles detonation will also be destroyed.`
 ]
+
+/**
+ * Gun Boat - Armed shuttle with light gauss weapons.
+ * @type {ArmedVessel}
+ */
+export const gunBoat = new ArmedVessel(
+  'Gun Boat',
+  'G',
+  'D',
+  VESSEL_CELLS.GUN_BOAT,
+  VESSEL_RACKS.GUN_BOAT
+)
+
+gunBoat.attachWeapon(() => {
+  return GuassRound.single
+})
 
 /**
  * Attack Craft Carrier - Launches attack craft.

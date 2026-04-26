@@ -3,6 +3,7 @@ import { Hybrid } from '../../../ships/Hybrid.js'
 import { StandardCells, SpecialCells } from '../../../ships/SubShape.js'
 import {
   attackCraft,
+  gunBoat,
   frigate,
   destroyer,
   cruiser,
@@ -32,7 +33,6 @@ import {
   scoutShip,
   corvette,
   missileBoat,
-  gunBoat,
   miningShip,
   runabout,
   lifter
@@ -339,6 +339,7 @@ const observationPost = SpaceFleetFactory.createHybridShip(
  */
 export const spaceFleet = [
   attackCraft,
+  gunBoat,
   frigate,
   destroyer,
   cruiser,
@@ -358,7 +359,6 @@ export const spaceFleet = [
   scoutShip,
   corvette,
   missileBoat,
-  gunBoat,
   miningShip,
   runabout,
   lifter,
