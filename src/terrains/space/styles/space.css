@@ -9,6 +9,7 @@
     --white-round-image: url('../images/whiteround26.png');
     --black-round-image: url('../images/blackround26.png');
     --flying-missile-image: url('../images/flyingmissile40.png');
+    --flying-gauss-image: url('../images/flyinground40.png');
     --flying-bolt-image: url('../images/flyingbolt40.png');
     --flying-round-image: url('../images/flyinground40.png');
     --asteroid-explode-image: url('../images/asteroid-explosion.png');
@@ -103,8 +104,9 @@
 
 }
 
-.flying-weapon.rail-bolt {
-    background-image: var(--flying-bolt-image);
+
+.flying-weapon.gauss-round {
+    background-image: var(--flying-gauss-image);
 
 }
 
@@ -137,6 +139,22 @@
 }
 
 #modeIcon2.rail-bolt.off::before {
+    background-image: url('../images/boxboltol56.png');
+}
+
+#modeIcon1.gauss-round::before {
+    background-image: url('../images/boxrail56.png');
+}
+
+#modeIcon2.gauss-round::before {
+    background-image: url('../images/boxbolt40.png');
+}
+
+#modeIcon1.gauss-round.off::before {
+    background-image: url('../images/boxrailol56.png');
+}
+
+#modeIcon2.gauss-round.off::before {
     background-image: url('../images/boxboltol56.png');
 }
 

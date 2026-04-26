@@ -611,11 +611,7 @@ export class GuassRound extends Fish {
    * @param {number} ammo - Number of Gauss rounds available
    */
   constructor (ammo) {
-    super(ammo)
-
-    // Weapon identity
-    this.name = 'Gauss Round'
-    this.letter = '^'
+    super(ammo, 'Gauss Round', '^')
 
     // Cursor configuration for targeting sequence
     this.cursors = ['rlaunch', 'round']

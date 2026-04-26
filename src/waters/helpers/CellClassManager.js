@@ -64,6 +64,10 @@ export class CellClassManager {
     },
     hint: {
       hint: 'hint'
+    },
+    animation: {
+      MARKER: 'marker',
+      PORTAL: 'portal'
     }
   }
 
@@ -135,7 +139,6 @@ export class CellClassManager {
 
   /**
    * Clears dataset attributes from a cell except for 'r' and 'c'.
-   * @private
    * @param {HTMLElement} cell - The cell element to clear dataset from.
    */
   static #clearCellDataset (cell) {

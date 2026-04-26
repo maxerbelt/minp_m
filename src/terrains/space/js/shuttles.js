@@ -1,5 +1,5 @@
 import { Shuttle, ArmedShuttle } from './spaceShapes.js'
-import { Missile } from './spaceWeapons.js'
+import { GuassRound, Missile } from './spaceWeapons.js'
 
 /**
  * Cell configurations for space shuttles.
@@ -56,7 +56,8 @@ const SHUTTLE_RACKS = {
   MISSILE_BOAT: [
     [1, 0],
     [1, 2]
-  ]
+  ],
+  GUN_BOAT: [[0, 0]]
 }
 
 /**
@@ -93,9 +94,18 @@ missileBoat.attachWeapon(() => {
 
 /**
  * Gun Boat - Armed shuttle with light gauss weapons.
- * @type {Shuttle}
+ * @type {ArmedShuttle}
  */
-export const gunBoat = new Shuttle('Gun Boat', 'G', 'D', SHUTTLE_CELLS.GUN_BOAT)
+export const gunBoat = new ArmedShuttle(
+  'Gun Boat',
+  'G',
+  'D',
+  SHUTTLE_CELLS.GUN_BOAT,
+  SHUTTLE_RACKS.GUN_BOAT
+)
+gunBoat.attachWeapon(() => {
+  return GuassRound.single
+})
 
 /**
  * Mining Ship - Resource extraction vessel.
