@@ -164,6 +164,7 @@ export const gunBoat = new ArmedVessel(
   'G',
   'D',
   VESSEL_CELLS.GUN_BOAT,
+  null, // tip - use default
   VESSEL_RACKS.GUN_BOAT
 )
 

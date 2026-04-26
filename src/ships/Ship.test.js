@@ -241,9 +241,18 @@ describe('Ship - getTurn', () => {
         id: 1
       }
     }
+    // Mock the hits object to have proper properties
+    s.hits = {
+      offsetY: 0,
+      offsetX: 0,
+      windowHeight: 1,
+      windowWidth: 1
+    }
     s.variant = 2
-    void s.getTurn()
-    expect(mockWeapon.getTurn).toHaveBeenCalledWith(2)
+    void s.getTurn(5, 5)
+    // r0 = 5 - 0 - (1 - 1) / 2 = 5 - 0 = 5
+    // c0 = 5 - 0 - (1 - 1) / 2 = 5 - 0 = 5
+    expect(mockWeapon.getTurn).toHaveBeenCalledWith(2, 5, 5)
   })
 })
 
