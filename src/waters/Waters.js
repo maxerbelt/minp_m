@@ -406,7 +406,7 @@ export class Waters {
 
     matchingShip.addToGrid(this.shipCellGrid)
     this.UI.placement(ship.cells, this, matchingShip)
-    const dragship = this.UI.getTrayItem(ship.id)
+    const dragship = this.UI.trayManager.getTrayItem(ship.id)
     if (dragship) {
       this.UI.removeDragShip(dragship)
     } else {

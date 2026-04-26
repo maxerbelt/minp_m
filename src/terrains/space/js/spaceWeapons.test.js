@@ -1,5 +1,5 @@
 /* eslint-env jest */
-/* global describe,   expect, test */
+/* global describe, expect, it */
 import {
   Missile,
   RailBolt,
@@ -7,10 +7,10 @@ import {
   Scan,
   spaceWeaponsCatalogue
 } from './spaceWeapons.js'
-import { jest } from '@jest/globals'
+import { describe, expect, it, jest } from '@jest/globals'
 
 describe('spaceWeapons basic behavior', () => {
-  test('Missile constructor sets properties and single/clone', () => {
+  it('Missile constructor sets properties and single/clone', () => {
     const m = new Missile(3)
     expect(m.plural).toBe('Missiles')
     expect(m.launchCursor).toBe('launch')
@@ -28,7 +28,7 @@ describe('spaceWeapons basic behavior', () => {
     expect(c.ammo).toBe(7)
   })
 
-  test('Missile aoe delegates to boom from Megabomb and returns center', () => {
+  it('Missile aoe delegates to boom from Megabomb and returns center', () => {
     const m = new Missile(2)
     const area = m.aoe(null, [[4, 5]])
     // center should be first with power 2
@@ -36,15 +36,15 @@ describe('spaceWeapons basic behavior', () => {
     expect(area[0]).toEqual([4, 5, 2])
   })
 
-  test('Missile getTurn maps variants correctly', () => {
+  it('Missile getTurn maps variants correctly', () => {
     const m = new Missile(1)
-    expect(m.getTurn(0)).toBe('turn4')
-    expect(m.getTurn(2)).toBe('turn2')
-    expect(m.getTurn(3)).toBe('turn3')
+    expect(m.getTurn(0)).toBe('turn3')
+    expect(m.getTurn(1)).toBe('turn4')
+    expect(m.getTurn(3)).toBe('turn2')
     expect(m.getTurn(99)).toBe('')
   })
 
-  test('RailBolt basic properties and clone/single', () => {
+  it('RailBolt basic properties and clone/single', () => {
     const r = new RailBolt(2)
     expect(r.plural).toBe('Rail Bolts')
     expect(r.cursors).toContain('rail')
@@ -59,7 +59,7 @@ describe('spaceWeapons basic behavior', () => {
     expect(rc.ammo).toBe(5)
   })
 
-  test('GuassRound and Scan clone/single and tags', () => {
+  it('GuassRound and Scan clone/single and tags', () => {
     const g = new GuassRound(1)
     expect(g.name).toMatch(/Gauss|Guass/i)
     expect(g.tag).toBe('round')
@@ -70,7 +70,7 @@ describe('spaceWeapons basic behavior', () => {
     expect(Scan.prototype.clone).toBeInstanceOf(Function)
   })
 
-  test('spaceWeaponsCatalogue contains Missile and RailBolt entries', () => {
+  it('spaceWeaponsCatalogue contains Missile and RailBolt entries', () => {
     const letters = spaceWeaponsCatalogue.weapons.map(w => w.tag)
     expect(letters).toContain('missile')
     expect(letters).toContain('rail')

@@ -424,7 +424,7 @@ function _createSelection (viewModel, ships, shipId) {
   const shipElement =
     shipId === null
       ? viewModel.getFirstTrayItem()
-      : viewModel.getTrayItem(shipId)
+      : viewModel.trayManager.getTrayItem(shipId)
 
   if (shipElement === null) return
   const id = shipId === null ? Number.parseInt(shipElement.dataset.id) : shipId

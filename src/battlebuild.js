@@ -210,7 +210,7 @@ function _setupBuildKeyboardShortcuts () {
 function _initializePlacement () {
   customUI.resetAdd(custom)
   customUI.buildBoard((_r, _c) => {})
-  customUI.showBrushTrays()
+  customUI.trayManager.showBrushTrays()
   customUI.makeBrushable()
   customUI.buildBrushTray(bh.terrain)
   customUI.brushMode()

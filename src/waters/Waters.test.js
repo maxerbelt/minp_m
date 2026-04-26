@@ -26,9 +26,9 @@ const mockUI = {
   trayManager: {
     resetTrays: jest.fn(),
     showShipTrays: jest.fn(),
-    hideShipTrays: jest.fn()
+    hideShipTrays: jest.fn(),
+    getTrayItem: jest.fn()
   },
-  getTrayItem: jest.fn(),
   removeDragShip: jest.fn(),
   cellSizeScreen: jest.fn(),
   surroundCells: jest.fn(),

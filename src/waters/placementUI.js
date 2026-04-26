@@ -202,26 +202,6 @@ export class PlacementUI extends WatersUI {
     )
   }
 
-  getTrays () {
-    return this.trayManager.elementCache.getAllTrays()
-  }
-
-  showBrushTrays () {
-    this.trayManager.showBrushTrays()
-  }
-
-  forEachTrayItem (action) {
-    this.trayManager.forEachTrayItem(action)
-  }
-
-  getTrayItemInfo (shipId, adaptInfo) {
-    return this.trayManager.getTrayItemInfo(shipId, adaptInfo)
-  }
-
-  getTrayItem (shipId) {
-    return this.trayManager.getTrayItem(shipId)
-  }
-
   moveAssignByCursor (arrowKey, clickedShip) {
     let shipnode = clickedShip.source
     const shipId = Number.parseInt(shipnode.dataset.id)
@@ -232,7 +212,7 @@ export class PlacementUI extends WatersUI {
       return this.moveNextTrayItem(arrowKey, trays, itemIndex, trayIndex)
     }
 
-    return this.getTrayItemInfo(shipId, adaptInfo)
+    return this.trayManager.getTrayItemInfo(shipId, adaptInfo)
   }
 
   assignByCursor (arrowkey, ships) {
