@@ -14,226 +14,279 @@
     <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
   </head>
   <body class="hidden-hex">
-    <div class="hex" id="hex-game">
-      <canvas id="c" width="600" height="600"></canvas>
-    </div>
-    <div
-      id="hex-symmetry"
-      style="margin-top: 4px; text-align: center; font-weight: bold"
-    >
-      Symmetry:
-    </div>
-    <div
-      id="hex-symmetry-details"
-      style="margin-top: 2px; text-align: center; font-size: smaller"
-    ></div>
-    <div
-      id="hex-hover-info"
-      style="
-        margin-top: 4px;
-        font-size: 12px;
-        color: #666;
-        height: 20px;
-        text-align: center;
-      "
-    >
-      Hover info:
-    </div>
-
-    <div id="controls" style="text-align: center; margin-top: 10px">
-      <button id="rotateBtn">Rotate 60°</button>
-      <button id="dilateBtn">Dilate</button>
-      <button id="erodeBtn">Erode</button>
-
-      <span id="flipButtons">
-        <button class="flipBtn" data-map="1">Flip 0°</button>
-        <button class="flipBtn" data-map="3">Flip 60°</button>
-        <button class="flipBtn" data-map="5">Flip 120°</button>
-        <button class="flipBtn" data-map="7">Flip 180°</button>
-        <button class="flipBtn" data-map="9">Flip 240°</button>
-        <button class="flipBtn" data-map="11">Flip 300°</button>
-      </span>
-      <span id="gridButtons">
-        <button id="empty">Empty</button>
-        <button id="full">Full</button>
-        <button id="inverse">Inverse</button>
-      </span>
-      <span id="lineTools" style="margin-left: 10px">
-        <div class="line-tool-group">
-          <label
-            ><input type="radio" name="hex-line-tool" value="single" checked />
-            Single</label
-          >
-          <label
-            ><input type="radio" name="hex-line-tool" value="segment" />
-            Segment</label
-          >
-          <label
-            ><input type="radio" name="hex-line-tool" value="ray" /> Ray</label
-          >
-          <label
-            ><input type="radio" name="hex-line-tool" value="full" />
-            Line</label
-          >
-          <select id="hex-line-action">
-            <option value="set">Set</option>
-            <option value="clear">Clear</option>
-            <option value="toggle">Toggle</option>
-          </select>
-        </div>
-        <div class="line-cover-group">
-          <label
-            ><input type="radio" name="hex-line-cover" value="normal" checked />
-            Normal</label
-          >
-          <label
-            ><input type="radio" name="hex-line-cover" value="superCover" />
-            SuperCover</label
-          >
-          <label
-            ><input type="radio" name="hex-line-cover" value="halfCover" />
-            HalfCover</label
-          >
-        </div>
-      </span>
-    </div>
-
-    <div class="hexcolor" id="hexcolor-game">
-      <canvas id="hexcolor-c" width="600" height="600"></canvas>
-    </div>
-    <div
-      id="hexcolor-symmetry"
-      style="margin-top: 4px; text-align: center; font-weight: bold"
-    >
-      Symmetry:
-    </div>
-    <div
-      id="hexcolor-symmetry-details"
-      style="margin-top: 2px; text-align: center; font-size: smaller"
-    ></div>
-    <div
-      id="hexcolor-hover-info"
-      style="
-        margin-top: 4px;
-        font-size: 12px;
-        color: #666;
-        height: 20px;
-        text-align: center;
-      "
-    >
-      Hover info:
-    </div>
-
-    <div id="hexcolor-controls" style="text-align: center; margin-top: 10px">
-      <button id="hexcolor-rotateBtn">Rotate 60°</button>
-      <button id="hexcolor-dilateBtn">Dilate</button>
-      <button id="hexcolor-erodeBtn">Erode</button>
-
-      <span id="hexcolor-flipButtons">
-        <button class="hexcolor-flipBtn" data-map="1">Flip 0°</button>
-        <button class="hexcolor-flipBtn" data-map="3">Flip 60°</button>
-        <button class="hexcolor-flipBtn" data-map="5">Flip 120°</button>
-        <button class="hexcolor-flipBtn" data-map="7">Flip 180°</button>
-        <button class="hexcolor-flipBtn" data-map="9">Flip 240°</button>
-        <button class="hexcolor-flipBtn" data-map="11">Flip 300°</button>
-      </span>
-      <span id="hexcolor-gridButtons">
-        <button id="hexcolor-empty">Empty</button>
-        <button id="hexcolor-full">Full</button>
-        <button id="hexcolor-inverse">Inverse</button>
-      </span>
-      <span id="hexcolor-lineTools" style="margin-left: 10px">
-        <div class="line-tool-group">
-          <label
-            ><input
-              type="radio"
-              name="hexcolor-line-tool"
-              value="single"
-              checked
-            />
-            Single</label
-          >
-          <label
-            ><input type="radio" name="hexcolor-line-tool" value="segment" />
-            Segment</label
-          >
-          <label
-            ><input type="radio" name="hexcolor-line-tool" value="ray" />
-            Ray</label
-          >
-          <label
-            ><input type="radio" name="hexcolor-line-tool" value="full" />
-            Line</label
-          >
-          <select id="hexcolor-line-action">
-            <option value="set">Set</option>
-            <option value="clear">Clear</option>
-            <option value="toggle">Toggle</option>
-          </select>
-        </div>
-        <div class="line-cover-group">
-          <label
-            ><input
-              type="radio"
-              name="hexcolor-line-cover"
-              value="normal"
-              checked
-            />
-            Normal</label
-          >
-          <label
-            ><input
-              type="radio"
-              name="hexcolor-line-cover"
-              value="superCover"
-            />
-            SuperCover</label
-          >
-          <label
-            ><input type="radio" name="hexcolor-line-cover" value="halfCover" />
-            HalfCover</label
-          >
-        </div>
-      </span>
-    </div>
-
     <style>
-      /* styling for line tool radio buttons */
-      .line-tool-group {
-        display: inline-block;
-        margin-left: 10px;
+      .hex-page {
+        display: grid;
+        gap: 20px;
+        padding: 16px;
       }
-      .line-tool-group label {
-        margin-right: 8px;
+      .board-panel,
+      .status-panel,
+      .controls-panel,
+      .hexcolor-panel {
+        display: grid;
+        gap: 12px;
+      }
+      .controls-panel {
+        text-align: center;
+      }
+      .button-row,
+      .line-tools,
+      .cover-type-group {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+      }
+      .line-tool-group {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .line-tool-group label,
+      .cover-type-group label {
         cursor: pointer;
       }
-      .line-tool-group select {
+      .line-tool-group select,
+      .cover-type-group select {
         margin-left: 8px;
         padding: 4px 8px;
         cursor: pointer;
       }
-      /* styling for line cover type radio buttons */
-      .line-cover-group {
-        display: inline-block;
-        margin-left: 10px;
-      }
-      .line-cover-group label {
-        margin-right: 8px;
-        cursor: pointer;
-      }
-      /* grey out disabled buttons */
       #controls button:disabled,
       #hexcolor-controls button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
-      /* highlight active line tool */
-      #lineTools .active,
-      #hexcolor-lineTools .active {
-        background-color: #ff9800;
-        color: #fff;
+      .screen-reader-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
     </style>
+
+    <main class="hex-page">
+      <header>
+        <h1>Hex</h1>
+      </header>
+
+      <section class="board-panel" aria-label="Hex board">
+        <div class="hex" id="hex-game">
+          <canvas id="c" width="600" height="600"></canvas>
+        </div>
+      </section>
+
+      <section class="status-panel" aria-label="Hex status">
+        <div id="hex-symmetry" style="font-weight: bold">Symmetry:</div>
+        <div id="hex-symmetry-details" style="font-size: smaller"></div>
+        <div
+          id="hex-hover-info"
+          style="font-size: 12px; color: #666; height: 20px"
+        >
+          Hover info:
+        </div>
+      </section>
+
+      <section id="controls" class="controls-panel" aria-label="Hex controls">
+        <div class="button-row">
+          <button id="rotateBtn" type="button">Rotate 60°</button>
+          <button id="dilateBtn" type="button">Dilate</button>
+          <button id="erodeBtn" type="button">Erode</button>
+        </div>
+
+        <div
+          id="hexcolor-flipButtons"
+          class="button-row"
+          aria-label="Hex flip buttons"
+        ></div>
+
+        <div id="gridButtons" class="button-row" aria-label="Hex grid actions">
+          <button id="empty" type="button">Empty</button>
+          <button id="full" type="button">Full</button>
+          <button id="inverse" type="button">Inverse</button>
+        </div>
+
+        <div id="lineTools" class="line-tools" aria-label="Hex line tools">
+          <div class="line-tool-group">
+            <label
+              ><input
+                type="radio"
+                name="hex-line-tool"
+                value="single"
+                checked
+              />
+              Single</label
+            >
+            <label
+              ><input type="radio" name="hex-line-tool" value="segment" />
+              Segment</label
+            >
+            <label
+              ><input type="radio" name="hex-line-tool" value="ray" />
+              Ray</label
+            >
+            <label
+              ><input type="radio" name="hex-line-tool" value="full" />
+              Line</label
+            >
+            <label for="hex-line-action">Action</label>
+            <select id="hex-line-action">
+              <option value="set">Set</option>
+              <option value="clear">Clear</option>
+              <option value="toggle">Toggle</option>
+            </select>
+          </div>
+          <div class="cover-type-group" aria-label="Hex coverage type">
+            <label
+              ><input
+                type="radio"
+                name="hex-line-cover"
+                value="normal"
+                checked
+              />
+              Normal</label
+            >
+            <label
+              ><input type="radio" name="hex-line-cover" value="superCover" />
+              SuperCover</label
+            >
+            <label
+              ><input type="radio" name="hex-line-cover" value="halfCover" />
+              HalfCover</label
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="hexcolor-panel" aria-label="HexColor board">
+        <div class="hexcolor" id="hexcolor-game">
+          <canvas id="hexcolor-c" width="600" height="600"></canvas>
+        </div>
+        <div id="hexcolor-symmetry" style="font-weight: bold">Symmetry:</div>
+        <div id="hexcolor-symmetry-details" style="font-size: smaller"></div>
+        <div
+          id="hexcolor-hover-info"
+          style="font-size: 12px; color: #666; height: 20px"
+        >
+          Hover info:
+        </div>
+
+        <div
+          id="hexcolor-controls"
+          class="controls-panel"
+          aria-label="HexColor controls"
+        >
+          <div class="button-row">
+            <button id="hexcolor-rotateBtn" type="button">Rotate 60°</button>
+            <button id="hexcolor-dilateBtn" type="button">Dilate</button>
+            <button id="hexcolor-erodeBtn" type="button">Erode</button>
+          </div>
+
+          <div
+            id="hexcolor-flipButtons"
+            class="button-row"
+            aria-label="HexColor flips"
+          ></div>
+
+          <div
+            id="hexcolor-gridButtons"
+            class="button-row"
+            aria-label="HexColor grid actions"
+          >
+            <button id="hexcolor-empty" type="button">Empty</button>
+            <button id="hexcolor-full" type="button">Full</button>
+            <button id="hexcolor-inverse" type="button">Inverse</button>
+          </div>
+
+          <div
+            id="hexcolor-lineTools"
+            class="line-tools"
+            aria-label="HexColor line tools"
+          >
+            <div class="line-tool-group">
+              <label
+                ><input
+                  type="radio"
+                  name="hexcolor-line-tool"
+                  value="single"
+                  checked
+                />
+                Single</label
+              >
+              <label
+                ><input
+                  type="radio"
+                  name="hexcolor-line-tool"
+                  value="segment"
+                />
+                Segment</label
+              >
+              <label
+                ><input type="radio" name="hexcolor-line-tool" value="ray" />
+                Ray</label
+              >
+              <label
+                ><input type="radio" name="hexcolor-line-tool" value="full" />
+                Line</label
+              >
+              <label for="hexcolor-line-action">Action</label>
+              <select id="hexcolor-line-action">
+                <option value="set">Set</option>
+                <option value="clear">Clear</option>
+                <option value="toggle">Toggle</option>
+              </select>
+            </div>
+            <div class="cover-type-group" aria-label="HexColor coverage type">
+              <label
+                ><input
+                  type="radio"
+                  name="hexcolor-line-cover"
+                  value="normal"
+                  checked
+                />
+                Normal</label
+              >
+              <label
+                ><input
+                  type="radio"
+                  name="hexcolor-line-cover"
+                  value="superCover"
+                />
+                SuperCover</label
+              >
+              <label
+                ><input
+                  type="radio"
+                  name="hexcolor-line-cover"
+                  value="halfCover"
+                />
+                HalfCover</label
+              >
+            </div>
+          </div>
+
+          <div
+            class="button-row"
+            style="margin-left: 10px"
+            aria-label="HexColor color selection"
+          >
+            <label for="hex-color">Color:</label>
+            <select id="hex-color">
+              <option value="1">Color 1</option>
+              <option value="2">Color 2</option>
+              <option value="cycle">Cycle</option>
+            </select>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <script type="module" src="./hex.js"></script>
     <script type="module" src="./hexcolor.js"></script>

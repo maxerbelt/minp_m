@@ -2,31 +2,18 @@
 <html lang="en">
   <head>
     <link rel="preload" href="./terrains/sea/styles/sea-boot.css" as="style" />
-    <link
-      rel="preload"
-      href="./terrains/space/styles/space-boot.css"
-      as="style"
-    />
+    <link rel="preload" href="./terrains/space/styles/space-boot.css" as="style" />
     <script src="./terrains/all/js/terrain-bootstrap.js"></script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title
-      id="page-title"
-      data-template="Geoff's [terrain] [mapType] Maps List"
-    >
+    <title id="page-title" data-template="Geoff's [terrain] [mapType] Maps List">
       Geoff's Hidden Battle Custom Maps List
     </title>
     <meta
       name="description"
       content="Play a challenging version of Battleship with no-touch placement rules and special ships."
     />
-
-    <link
-      id="favicon"
-      rel="icon"
-      type="image/png"
-      href="./terrains/sea/images/favicons/favicon-48x48.png"
-    />
+    <link id="favicon" rel="icon" type="image/png" href="./terrains/sea/images/favicons/favicon-48x48.png" />
     <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
     <link rel="stylesheet" href="./styles/animation.css" />
     <link rel="stylesheet" href="./styles/tab.css" />
@@ -39,19 +26,19 @@
   </head>
   <body class="hidden-battle">
     <div class="battleship" id="battleship-game">
-      <div id="navbar"></div>
-      <div class="title-wrap">
-        <h2 id="list-title" class="centered-title screen-only">
-          Custom Waters List
-        </h2>
-      </div>
-      <div id="list-container"></div>
-      <div class="input-section hidden" id="inputDiv">
-        <label for="inputField">New Name:</label>
-        <input type="text" id="inputField" name="inputField" />
-        <button type="button" id="okBtn">OK</button>
-        <button type="button" id="cancelBtn">Cancel</button>
-      </div>
+      <div id="navbar" role="navigation" aria-label="Main navigation"></div>
+      <main>
+        <header class="title-wrap">
+          <h2 id="list-title" class="centered-title screen-only">Custom Waters List</h2>
+        </header>
+        <section id="list-container"></section>
+        <section class="input-section hidden" id="inputDiv" aria-labelledby="inputField">
+          <label for="inputField">New Name:</label>
+          <input type="text" id="inputField" name="inputField" />
+          <button type="button" id="okBtn">OK</button>
+          <button type="button" id="cancelBtn">Cancel</button>
+        </section>
+      </main>
     </div>
     <script type="module" src="./navbar/navbar.js"></script>
     <script type="module" src="./terrains/all/js/gameMaps.js"></script>

@@ -151,16 +151,17 @@ export class WatersUI {
       ShipCellDisplayer.displayLetterCell(cell, ship, maps)
     }
 
-    ShipCellDisplayer.displaySurroundAttributes(cell, ship)
+    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
   }
 
   surroundShipCellAt (ship, r, c) {
     const cell = this.gridCellAt(r, c)
-    ShipCellDisplayer.displaySurroundAttributes(cell, ship)
+    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
   }
 
   displaySurroundShipCell (ship, cell) {
-    ShipCellDisplayer.displaySurroundAttributes(cell, ship)
+    const [r, c] = coordsFromCell(cell)
+    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
   }
 
   displayArmedShipCell (ship, cell, w) {

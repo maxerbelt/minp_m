@@ -615,6 +615,7 @@ export class GuassRound extends Fish {
 
     // Cursor configuration for targeting sequence
     this.cursors = ['rlaunch', 'round']
+    this.launchCursor = 'rlaunch'
     this.isOneAndDone = true
 
     // Weapon behavior configuration
@@ -650,9 +651,8 @@ export class GuassRound extends Fish {
    */
   getTurn (variant) {
     const turnMap = {
-      0: 'turn4',
-      2: 'turn2',
-      3: 'turn3'
+      1: 'turn2',
+      3: 'turn2'
     }
     return turnMap[variant] || ''
   }

@@ -2,28 +2,18 @@
 <html lang="en">
   <head>
     <link rel="preload" href="./terrains/sea/styles/sea-boot.css" as="style" />
-    <link
-      rel="preload"
-      href="./terrains/space/styles/space-boot.css"
-      as="style"
-    />
+    <link rel="preload" href="./terrains/space/styles/space-boot.css" as="style" />
     <script src="./terrains/all/js/terrain-bootstrap.js"></script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title id="page-title" data-template="Geoff's [terrain] Seek {mapName}">
       Geoff's Hidden Battles Seek Game
     </title>
-
     <meta
       name="description"
       content="Play a challenging version of Battleship with no-touch placement rules and special ships."
     />
-    <link
-      id="favicon"
-      rel="icon"
-      type="image/png"
-      href="./terrains/sea/images/favicons/favicon-48x48.png"
-    />
+    <link id="favicon" rel="icon" type="image/png" href="./terrains/sea/images/favicons/favicon-48x48.png" />
     <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
     <link rel="stylesheet" href="./styles/animation.css" />
     <link rel="stylesheet" href="./styles/tab.css" />
@@ -36,27 +26,23 @@
   </head>
   <body class="hidden-battle">
     <div class="battleship" id="battleship-game">
-      <div id="navbar"></div>
-      <div class="game-container" id="battleship-game-container">
-        <div class="player-container">
-          <div class="title-wrap">
+      <div id="navbar" role="navigation" aria-label="Main navigation"></div>
+      <main class="game-container" id="battleship-game-container">
+        <section class="player-container" aria-labelledby="enemy-title">
+          <header class="title-wrap">
             <h2 id="enemy-title" class="centered-title">Enemy Waters</h2>
-          </div>
+          </header>
           <div class="player-body">
-            <div class="player-main">
+            <section class="player-main">
               <div class="board-wrap">
                 <div class="board" id="enemy-board"></div>
               </div>
-            </div>
-            <div class="footer" id="friend-footer">
+            </section>
+            <aside class="footer" id="friend-footer">
               <div class="info-wrap" id="statusLine-wrap">
                 <details class="chevron-box">
                   <summary>
-                    <div
-                      class="status medium"
-                      id="statusLine"
-                      aria-live="polite"
-                    >
+                    <div class="status medium" id="statusLine" aria-live="polite">
                       <div id="gameStatus" class="game-status"></div>
                       <div id="statusRight" class="status right">
                         <div id="modeStatus" class="mode-status"></div>
@@ -73,8 +59,8 @@
                   <div class="status-list-content hidden" id="statusList"></div>
                 </details>
               </div>
-            </div>
-            <div class="panel-container">
+            </aside>
+            <aside class="panel-container" aria-label="Game controls">
               <div class="board-wrap">
                 <div class="panel">
                   <div class="panel-controls" id="seek-controls">
@@ -85,8 +71,7 @@
                       <span class="shortcut" aria-hidden="true">R</span>estart
                     </button>
                     <button class="seek-control" id="weaponBtn" type="button">
-                      <span class="shortcut" aria-hidden="true">S</span>ingle
-                      Shot
+                      <span class="shortcut" aria-hidden="true">S</span>ingle Shot
                     </button>
                   </div>
                   <div class="tally-box-container">
@@ -95,45 +80,40 @@
                   </div>
                   <div class="info-container">
                     <div class="info hidden" id="enemy-turns-label">
-                      Turns: <span id="enemy-turns">0 </span>
+                      Turns: <span id="enemy-turns">0</span>
                     </div>
                     <div class="info" id="enemy-shots-label">
-                      Shots: <span class="no-wrap" id="enemy-shots">0 </span>
+                      Shots: <span class="no-wrap" id="enemy-shots">0</span>
                     </div>
                     <div class="info" id="enemy-hits-label">
-                      Hits: <span class="no-wrap" id="enemy-hits">0 </span>
+                      Hits: <span class="no-wrap" id="enemy-hits">0</span>
                     </div>
                     <div class="info hidden" id="enemy-misses-label">
-                      Misses: <span id="enemy-misses">0 </span>
+                      Misses: <span id="enemy-misses">0</span>
                     </div>
                     <div class="info hidden" id="enemy-dtaps-label">
-                      D. Taps: <span class="no-wrap" id="enemy-dtaps">0 </span>
+                      D. Taps: <span class="no-wrap" id="enemy-dtaps">0</span>
                     </div>
                     <div class="info hidden" id="enemy-reveals-label">
-                      Reveals: <span id="enemy-reveals">0 </span>
+                      Reveals: <span id="enemy-reveals">0</span>
                     </div>
                     <div class="info hidden" id="enemy-hints-label">
-                      Hints: <span id="enemy-hints">0 </span>
+                      Hints: <span id="enemy-hints">0</span>
                     </div>
                     <div class="info" id="enemy-sunk-label">
                       Sunk: <span class="no-wrap" id="enemy-sunk">0 / 8</span>
                     </div>
-                    <div
-                      class="info"
-                      id="enemy-placed-label"
-                      style="display: none"
-                    >
-                      Placed: <span class="no-wrap" id="enemy-placed">0 </span>
+                    <div class="info" id="enemy-placed-label" style="display: none">
+                      Placed: <span class="no-wrap" id="enemy-placed">0</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </aside>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
-
     <script type="module" src="./navbar/navbar.js"></script>
     <script type="module" src="./terrains/all/js/gameMaps.js"></script>
     <script type="module" src="./navbar/enemySetup.js"></script>

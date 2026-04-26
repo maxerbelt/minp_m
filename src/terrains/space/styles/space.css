@@ -1,5 +1,8 @@
 :root {
     --rail-cursor-image: url('../images/rail32.png');
+    --rail2-cursor-image: url('../images/rail32_2.png');
+    --rail3-cursor-image: url('../images/rail32_3.png');
+    --rail4-cursor-image: url('../images/rail32_4.png');
     --bolt-cursor-image: url('../images/bolt32.png');
     --bolt-grey-cursor-image: url('../images/boltol32.png');
     --missile-cursor-image: url('../images/missile32.png');
@@ -17,6 +20,8 @@
     --plasma-explode-image: url('../images/plasma-explosion.png');
     --launch-cursor-image: url('../images/launch32.png');
     --launch2-cursor-image: url('../images/launch32_2.png');
+    --rlaunch-cursor-image: url('../images/rlaunch32.png');
+    --rlaunch2-cursor-image: url('../images/rlaunch32_2.png');
     --launch3-cursor-image: url('../images/launch32_3.png');
     --launch4-cursor-image: url('../images/launch32_4.png');
 }
@@ -59,13 +64,7 @@
     cursor: var(--missile-grey-cursor-image) 6 6, pointer;
 }
 
-.cell.launch.turn3 {
-    cursor: var(--launch3-cursor-image) 16 24, pointer;
-}
 
-.cell.launch.turn4 {
-    cursor: var(--launch4-cursor-image) 24 16, pointer;
-}
 
 .flying-weapon.cursor.missile {
     background-image: var(--missile-cursor-image);
@@ -99,11 +98,46 @@
     cursor: var(--launch2-cursor-image) 6 16, pointer;
 }
 
+.cell.launch.turn3 {
+    cursor: var(--launch3-cursor-image) 16 24, pointer;
+}
+
+.cell.launch.turn4 {
+    cursor: var(--launch4-cursor-image) 24 16, pointer;
+}
+
+
+.cell.rail,
+.board.rail {
+    cursor: var(--rail-cursor-image) 26 26, pointer;
+}
+
+.cell.rail.turn2 {
+    cursor: var(--rail2-cursor-image) 6 26, pointer;
+}
+
+.cell.rail.turn3 {
+    cursor: var(--rail3-cursor-image) 16 24, pointer;
+}
+
+.cell.rail.turn4 {
+    cursor: var(--rail4-cursor-image) 24 16, pointer;
+}
+
+.cell.rlaunch,
+.board.rlaunch {
+    cursor: var(--rlaunch-cursor-image) 24 24, pointer;
+}
+
+.cell.rlaunch.turn2 {
+    cursor: var(--rlaunch2-cursor-image) 6 24, pointer;
+}
+
+
 .flying-weapon.missile {
     background-image: var(--flying-missile-image);
 
 }
-
 
 .flying-weapon.gauss-round {
     background-image: var(--flying-gauss-image);

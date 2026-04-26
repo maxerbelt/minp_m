@@ -3,97 +3,123 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Rect</title>
+    <title id="page-title" data-template="Rect">Rect</title>
     <link
       id="favicon"
       rel="icon"
       type="image/png"
       href="./terrains/cavern/images/favicons/favicon-48x48.png"
     />
-    <link rel="stylesheet" href="./styles/default.css" />
+    <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
   </head>
   <body>
     <style>
-      /* styling for line tool radio buttons */
-      .line-tool-group {
-        display: inline-block;
-        margin-left: 10px;
+      .rect-page {
+        display: grid;
+        gap: 20px;
+        padding: 16px;
       }
-      .line-tool-group label {
-        margin-right: 8px;
+      .control-panel,
+      .secondary-control-panel {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .line-tool-group,
+      .cover-type-group,
+      .control-group {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .line-tool-group label,
+      .cover-type-group label,
+      .control-group label {
+        margin: 0;
         cursor: pointer;
       }
-      .line-tool-group select {
+      .line-tool-group select,
+      .control-group select {
         margin-left: 8px;
         padding: 4px 8px;
         cursor: pointer;
       }
-      /* drag and drop feedback */
-      canvas {
-        transition: opacity 0.2s ease;
-      }
-      #rect-poly {
-        cursor: grab;
+      .canvas-board {
         display: block;
         width: 600px;
         height: 600px;
+      }
+      #rect-poly {
+        cursor: grab;
       }
       #rect-poly:active {
         cursor: grabbing;
       }
-      #rect-c {
-        transition: background-color 0.2s ease;
-        display: block;
-        width: 600px;
-        height: 600px;
+      .layout-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      .panel-column {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .screen-reader-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
     </style>
-    <div class="rect" id="rect-game">
-      <div style="margin-bottom: 10px">
-        <button id="rotate-cw">Rotate CW</button>
-        <button id="rotate-ccw">Rotate CCW</button>
-        <button id="flip-h">Flip H</button>
-        <button id="flip-v">Flip V</button>
-        <button id="dilate">Dilate</button>
-        <button id="erode">Erode</button>
-        <button id="cross-dilate">Cross Dilate</button>
-        <button id="empty">Empty</button>
-        <button id="full">Full</button>
-        <button id="inverse">Inverse</button>
-        <button id="outer-border">Outer Border</button>
-        <button id="outer-area">Outer Area</button>
-        <button id="inner-border">Inner Border</button>
-        <button id="inner-area">Inner Area</button>
-        <fieldset
-          style="
-            display: inline-block;
-            margin-left: 15px;
-            border: 1px solid #ccc;
-            padding: 5px;
-            border-radius: 4px;
-          "
-        >
-          <legend
-            style="
-              font-size: 11px;
-              font-weight: bold;
-              padding: 0 5px;
-              margin-left: -5px;
-            "
+
+    <main class="rect-page" id="rect-app">
+      <header>
+        <h1>Rect</h1>
+      </header>
+
+      <section class="control-panel" aria-label="Rect operations">
+        <div class="button-group">
+          <button id="rotate-cw" type="button">Rotate CW</button>
+          <button id="rotate-ccw" type="button">Rotate CCW</button>
+          <button id="flip-h" type="button">Flip H</button>
+          <button id="flip-v" type="button">Flip V</button>
+          <button id="dilate" type="button">Dilate</button>
+          <button id="erode" type="button">Erode</button>
+          <button id="cross-dilate" type="button">Cross Dilate</button>
+          <button id="empty" type="button">Empty</button>
+          <button id="full" type="button">Full</button>
+          <button id="inverse" type="button">Inverse</button>
+          <button id="outer-border" type="button">Outer Border</button>
+          <button id="outer-area" type="button">Outer Area</button>
+          <button id="inner-border" type="button">Inner Border</button>
+          <button id="inner-area" type="button">Inner Area</button>
+        </div>
+
+        <fieldset class="control-group">
+          <legend>Coordinate Mode</legend>
+          <label
+            ><input type="radio" name="coord-mode" value="clamped" checked />
+            Clamped</label
           >
-            Coordinate Mode:
-          </legend>
-          <label style="margin-right: 8px">
-            <input type="radio" name="coord-mode" value="clamped" checked />
-            Clamped
-          </label>
-          <label>
-            <input type="radio" name="coord-mode" value="wrapped" />
-            Wrapped
-          </label>
+          <label
+            ><input type="radio" name="coord-mode" value="wrapped" />
+            Wrapped</label
+          >
         </fieldset>
-        <!-- line tools -->
-        <div class="line-tool-group">
+
+        <div class="line-tool-group" aria-label="Rect line tools">
           <label
             ><input type="radio" name="line-tool" value="single" checked />
             Single</label
@@ -106,225 +132,184 @@
           <label
             ><input type="radio" name="line-tool" value="full" /> Line</label
           >
+          <label for="line-action">Action</label>
           <select id="line-action">
             <option value="set">Set</option>
             <option value="clear">Clear</option>
             <option value="toggle">Toggle</option>
           </select>
-          <fieldset
-            style="
-              display: inline-block;
-              margin-left: 15px;
-              border: 1px solid #ccc;
-              padding: 5px;
-              border-radius: 4px;
-            "
-          >
-            <legend
-              style="
-                font-size: 11px;
-                font-weight: bold;
-                padding: 0 5px;
-                margin-left: -5px;
-              "
+          <fieldset class="cover-type-group">
+            <legend>Cover Type</legend>
+            <label
+              ><input type="radio" name="cover-type" value="normal" checked />
+              Normal</label
             >
-              Cover Type:
-            </legend>
-            <label style="margin-right: 8px">
-              <input type="radio" name="cover-type" value="normal" checked />
-              Normal
-            </label>
-            <label style="margin-right: 8px">
-              <input type="radio" name="cover-type" value="half" />
-              Half
-            </label>
-            <label>
-              <input type="radio" name="cover-type" value="super" />
-              Super
-            </label>
+            <label
+              ><input type="radio" name="cover-type" value="half" /> Half</label
+            >
+            <label
+              ><input type="radio" name="cover-type" value="super" />
+              Super</label
+            >
           </fieldset>
         </div>
-      </div>
-      <div style="display: flex; flex-direction: row; gap: 20px">
-        <div style="display: flex; flex-direction: column; gap: 2px">
+      </section>
+
+      <section class="layout-row" aria-label="Rect board and polyomino tools">
+        <div class="panel-column">
           <canvas
             id="rect-c"
+            class="canvas-board"
             width="600"
             height="600"
-            style="display: block"
           ></canvas>
-          <div id="rect-symmetry" style="margin-top: 4px; font-weight: bold">
-            Symmetry:
-          </div>
+          <div id="rect-symmetry" style="font-weight: bold">Symmetry:</div>
           <div
             id="rect-hover-info"
-            style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+            style="font-size: 12px; color: #666; height: 20px"
           >
             Hover info:
           </div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 2px">
-          <div style="margin-bottom: 10px">
-            <label style="margin-right: 15px">
-              Polyomino Connectivity:
-              <select
-                id="poly-connectivity"
-                style="margin-left: 8px; padding: 4px 8px"
-              >
-                <option value="4" selected>4</option>
-              </select>
-            </label>
-            <label style="margin-right: 15px">
-              Polyomino Size:
-              <select id="poly-size" style="margin-left: 8px; padding: 4px 8px">
-                <option value="3">3 cells</option>
-                <option value="4" selected>4 cells</option>
-                <option value="5">5 cells</option>
-                <option value="6">6 cells</option>
-                <option value="7">7 cells</option>
-              </select>
-            </label>
-            <button id="fill-poly-grid">Fill Grid</button>
-            <button id="prev-poly-grid" style="margin-left: 10px">
-              ← Previous
-            </button>
-            <button id="next-poly-grid">Next →</button>
+
+        <aside class="panel-column" aria-label="Polyomino controls">
+          <div class="control-panel">
+            <label for="poly-connectivity">Polyomino Connectivity</label>
+            <select id="poly-connectivity">
+              <option value="4" selected>4</option>
+            </select>
+            <label for="poly-size">Polyomino Size</label>
+            <select id="poly-size">
+              <option value="3">3 cells</option>
+              <option value="4" selected>4 cells</option>
+              <option value="5">5 cells</option>
+              <option value="6">6 cells</option>
+              <option value="7">7 cells</option>
+            </select>
+            <button id="fill-poly-grid" type="button">Fill Grid</button>
+            <button id="prev-poly-grid" type="button">← Previous</button>
+            <button id="next-poly-grid" type="button">Next →</button>
           </div>
+
           <canvas
             id="rect-poly"
+            class="canvas-board"
             width="600"
             height="600"
             draggable="true"
-            style="display: block"
           ></canvas>
           <div
             id="rect-poly-more"
-            style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+            style="font-size: 12px; color: #666; height: 20px"
           >
             Showing x of X polyominos
           </div>
           <div
             id="rect-poly-hover-info"
-            style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
+            style="font-size: 12px; color: #666; height: 20px"
           >
             Hover info:
           </div>
-          <div id="hover-symmetry" style="margin-top: 4px; font-weight: bold">
-            Symmetry:
+          <div id="hover-symmetry" style="font-weight: bold">Symmetry:</div>
+        </aside>
+      </section>
+
+      <section
+        class="secondary-control-panel"
+        aria-label="RectColor operations"
+      >
+        <div class="button-group">
+          <button id="rotate-cw2" type="button">Rotate CW</button>
+          <button id="rotate-ccw2" type="button">Rotate CCW</button>
+          <button id="flip-h2" type="button">Flip H</button>
+          <button id="flip-v2" type="button">Flip V</button>
+          <button id="dilate2" type="button">Dilate</button>
+          <button id="erode2" type="button">Erode</button>
+          <button id="cross-dilate2" type="button">Cross Dilate</button>
+          <button id="empty2" type="button">Empty</button>
+          <button id="full2" type="button">Full</button>
+          <button id="inverse2" type="button">Inverse</button>
+          <button id="outer-border2" type="button">Outer Border</button>
+          <button id="outer-area2" type="button">Outer Area</button>
+          <button id="inner-border2" type="button">Inner Border</button>
+          <button id="inner-area2" type="button">Inner Area</button>
+        </div>
+
+        <fieldset class="control-group">
+          <legend>Coordinate Mode</legend>
+          <label
+            ><input type="radio" name="coord-mode2" value="clamped" checked />
+            Clamped</label
+          >
+          <label
+            ><input type="radio" name="coord-mode2" value="wrapped" />
+            Wrapped</label
+          >
+        </fieldset>
+
+        <div class="line-tool-group" aria-label="RectColor line tools">
+          <label
+            ><input type="radio" name="line-tool2" value="single" checked />
+            Single</label
+          >
+          <label
+            ><input type="radio" name="line-tool2" value="segment" />
+            Segment</label
+          >
+          <label
+            ><input type="radio" name="line-tool2" value="ray" /> Ray</label
+          >
+          <label
+            ><input type="radio" name="line-tool2" value="full" /> Line</label
+          >
+          <label for="line-color">Color</label>
+          <select id="line-color">
+            <option value="1">Color 1</option>
+            <option value="2">Color 2</option>
+            <option value="3">Color 3</option>
+            <option value="4">Color 4</option>
+            <option value="cycle">Cycle</option>
+          </select>
+          <fieldset class="cover-type-group">
+            <legend>Cover Type</legend>
+            <label
+              ><input type="radio" name="cover-type2" value="normal" checked />
+              Normal</label
+            >
+            <label
+              ><input type="radio" name="cover-type2" value="half" />
+              Half</label
+            >
+            <label
+              ><input type="radio" name="cover-type2" value="super" />
+              Super</label
+            >
+          </fieldset>
+        </div>
+      </section>
+
+      <section aria-labelledby="rectcolor-title" class="layout-row">
+        <header class="screen-reader-only">
+          <h2 id="rectcolor-title">RectColor board</h2>
+        </header>
+        <div class="panel-column">
+          <canvas
+            id="rectcolor-c"
+            class="canvas-board"
+            width="600"
+            height="600"
+          ></canvas>
+          <div id="rectcolor-symmetry" style="font-weight: bold">Symmetry:</div>
+          <div
+            id="rectcolor-hover-info"
+            style="font-size: 12px; color: #666; height: 20px"
+          >
+            Hover info:
           </div>
         </div>
-      </div>
-    </div>
-    <div style="margin-bottom: 10px">
-      <button id="rotate-cw2">Rotate CW</button>
-      <button id="rotate-ccw2">Rotate CCW</button>
-      <button id="flip-h2">Flip H</button>
-      <button id="flip-v2">Flip V</button>
-      <button id="dilate2">Dilate</button>
-      <button id="erode2">Erode</button>
-      <button id="cross-dilate2">Cross Dilate</button>
-      <button id="empty2">Empty</button>
-      <button id="full2">Full</button>
-      <button id="inverse2">Inverse</button>
-      <button id="outer-border2">Outer Border</button>
-      <button id="outer-area2">Outer Area</button>
-      <button id="inner-border2">Inner Border</button>
-      <button id="inner-area2">Inner Area</button>
-      <fieldset
-        style="
-          display: inline-block;
-          margin-left: 15px;
-          border: 1px solid #ccc;
-          padding: 5px;
-          border-radius: 4px;
-        "
-      >
-        <legend
-          style="
-            font-size: 11px;
-            font-weight: bold;
-            padding: 0 5px;
-            margin-left: -5px;
-          "
-        >
-          Coordinate Mode:
-        </legend>
-        <label style="margin-right: 8px">
-          <input type="radio" name="coord-mode2" value="clamped" checked />
-          Clamped
-        </label>
-        <label>
-          <input type="radio" name="coord-mode2" value="wrapped" />
-          Wrapped
-        </label>
-      </fieldset>
-      <!-- line tools for rectcolor -->
-      <div class="line-tool-group">
-        <label
-          ><input type="radio" name="line-tool2" value="single" checked />
-          Single</label
-        >
-        <label
-          ><input type="radio" name="line-tool2" value="segment" />
-          Segment</label
-        >
-        <label><input type="radio" name="line-tool2" value="ray" /> Ray</label>
-        <label
-          ><input type="radio" name="line-tool2" value="full" /> Line</label
-        >
-        <select id="line-color">
-          <option value="1">Color 1</option>
-          <option value="2">Color 2</option>
-          <option value="3">Color 3</option>
-          <option value="4">Color 4</option>
-          <option value="cycle">Cycle</option>
-        </select>
-        <fieldset
-          style="
-            display: inline-block;
-            margin-left: 15px;
-            border: 1px solid #ccc;
-            padding: 5px;
-            border-radius: 4px;
-          "
-        >
-          <legend
-            style="
-              font-size: 11px;
-              font-weight: bold;
-              padding: 0 5px;
-              margin-left: -5px;
-            "
-          >
-            Cover Type:
-          </legend>
-          <label style="margin-right: 8px">
-            <input type="radio" name="cover-type2" value="normal" checked />
-            Normal
-          </label>
-          <label style="margin-right: 8px">
-            <input type="radio" name="cover-type2" value="half" />
-            Half
-          </label>
-          <label>
-            <input type="radio" name="cover-type2" value="super" />
-            Super
-          </label>
-        </fieldset>
-      </div>
-    </div>
-    <div class="rectcolor" id="rectcolor-game">
-      <canvas id="rectcolor-c" width="600" height="600"></canvas>
-      <div id="rectcolor-symmetry" style="margin-top: 4px; font-weight: bold">
-        Symmetry:
-      </div>
-      <div
-        id="rectcolor-hover-info"
-        style="margin-top: 4px; font-size: 12px; color: #666; height: 20px"
-      >
-        Hover info:
-      </div>
-    </div>
+      </section>
+    </main>
+
     <script type="module" src="./rect.js"></script>
     <script type="module" src="./rectcolor.js"></script>
   </body>

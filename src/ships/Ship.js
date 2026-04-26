@@ -193,7 +193,7 @@ export class Ship {
     )
   }
 
-  getTurn () {
+  getTurn (r, c) {
     return this.getPrimaryWeapon()?.getTurn(this.variant) || ''
   }
   reset () {

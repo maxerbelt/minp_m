@@ -93,8 +93,10 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLDivElement} cell - DOM element to update
    * @param {Object} ship - Ship object with weapons and turn info
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
    */
-  static #setSurroundAttributes (cell, ship) {
+  static #setSurroundAttributes (cell, ship, r, c) {
     const letter = this.#getShipLetter(ship)
     cell.dataset.sletter = letter
 
@@ -102,7 +104,7 @@ export class ShipCellDisplayer {
     cell.dataset.wletters = primaryWeapon.letter
     cell.dataset.variant = ship.variant
 
-    const turn = ship.getTurn()
+    const turn = ship.getTurn(r, c)
     if (turn && turn !== '') {
       cell.classList.add(turn)
     }
@@ -147,9 +149,9 @@ export class ShipCellDisplayer {
    * @param {HTMLDivElement} cell - DOM element to update
    * @param {Object} ship - Ship object with weapons and turn status
    */
-  static displaySurroundAttributes (cell, ship) {
+  static displaySurroundAttributes (cell, ship, r, c) {
     if (!this.#hasWeapons(ship)) return
-    this.#setSurroundAttributes(cell, ship)
+    this.#setSurroundAttributes(cell, ship, r, c)
   }
 
   /**
