@@ -143,19 +143,19 @@
 }
 
 #modeIcon1.gauss-round::before {
-    background-image: url('../images/boxrail56.png');
+    background-image: url('../images/boxrlaunch56.png');
 }
 
 #modeIcon2.gauss-round::before {
-    background-image: url('../images/boxbolt40.png');
+    background-image: url('../images/boxround56.png');
 }
 
 #modeIcon1.gauss-round.off::before {
-    background-image: url('../images/boxrailol56.png');
+    background-image: url('../images/boxrlaunchol56.png');
 }
 
 #modeIcon2.gauss-round.off::before {
-    background-image: url('../images/boxboltol56.png');
+    background-image: url('../images/boxroundol56.png');
 }
 
 .battleship.print-preview div.tally-row.weapon.missile div.tally-box::before {
@@ -183,6 +183,15 @@
 .battleship:not(.print-preview) .tally-row.weapon.rail-bolt div.tally-box.used::before {
     background-image: url('../images/boxboltol28.png');
 }
+
+.battleship:not(.print-preview) .tally-row.weapon.gauss-round div.tally-box:not(.hit):not(.damaged)::before {
+    background-image: url('../images/boxround56.png');
+}
+
+.battleship:not(.print-preview) .tally-row.weapon.gauss-round div.tally-box.used::before {
+    background-image: url('../images/boxroundol56.png');
+}
+
 
 
 .cell.weapon.contrast.bolt.active::before,

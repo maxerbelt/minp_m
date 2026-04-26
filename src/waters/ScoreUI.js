@@ -1,10 +1,17 @@
-import { bh } from '../terrains/all/js/bh.js'
-import { all, mixed } from '../terrains/all/js/terrain.js'
-import { dragNDrop } from '../selection/dragndrop.js'
 import { Ship } from '../ships/Ship.js'
+import { ZoneInfoManager } from './helpers/ZoneInfoManager.js'
+import { TallyBuilder } from './helpers/TallyBuilder.js'
+import { WeaponTallyBuilder } from './helpers/WeaponTallyBuilder.js'
+import { DisplacementCalculator } from './helpers/DisplacementCalculator.js'
 
 /**
  * Manages the display of score information and ship tally UI.
+ * Orchestrates zone information display, counter updates, and tally box rendering.
+ * Delegates specific concerns to specialized helper classes:
+ * - ZoneInfoManager: Zone display and updates
+ * - TallyBuilder: Ship tally construction
+ * - WeaponTallyBuilder: Weapon ammo display
+ * - DisplacementCalculator: Displacement calculations
  */
 export class ScoreUI {
   /**
@@ -104,7 +111,7 @@ export class ScoreUI {
    * @returns {HTMLElement} The count span element
    */
   createZoneTitle (labelTxt, bagOrText) {
-    return this._createZoneEntry(labelTxt, bagOrText, 'b', 'line-height:1.2;')
+    return ZoneInfoManager.createZoneTitle(this.zone, labelTxt, bagOrText)
   }
 
   /**
@@ -114,12 +121,7 @@ export class ScoreUI {
    * @returns {HTMLElement} The count span element
    */
   createZoneItem (labelTxt, bagOrText) {
-    return this._createZoneEntry(
-      labelTxt,
-      bagOrText,
-      'span',
-      'font-size:75%;line-height:1.2'
-    )
+    return ZoneInfoManager.createZoneItem(this.zone, labelTxt, bagOrText)
   }
 
   /**
@@ -131,7 +133,13 @@ export class ScoreUI {
    * @returns {HTMLElement} The count span element
    */
   createZoneTextEntry (labelTxt, text, stress, style) {
-    return this._createZoneEntry(labelTxt, text, stress, style)
+    return ZoneInfoManager.createZoneTextEntry(
+      this.zone,
+      labelTxt,
+      text,
+      stress,
+      style
+    )
   }
 
   /**
@@ -145,15 +153,15 @@ export class ScoreUI {
    * @returns {HTMLElement} The count span element
    */
   createAddZoneEntry (labelTxt, displacedArea, ships, stress, style, extra = 0) {
-    const shipDisplacement =
-      ships.reduce(
-        (accumulator, ship) => accumulator + ship.shape().displacement,
-        0
-      ) + extra
-    const tightness = this.displacementDescription(
-      shipDisplacement / displacedArea
+    return ZoneInfoManager.createAddZoneEntry(
+      this.zone,
+      labelTxt,
+      displacedArea,
+      ships,
+      stress,
+      style,
+      extra
     )
-    return this._createZoneEntry(labelTxt, tightness, stress, style)
   }
 
   /**
@@ -162,43 +170,14 @@ export class ScoreUI {
    * @returns {string} Descriptive text for the ratio
    */
   displacementDescription (ratio) {
-    const thresholds = [
-      { limit: 0.02, desc: 'empty' },
-      { limit: 0.15, desc: 'lonely' },
-      { limit: 0.22, desc: 'very scattered' },
-      { limit: 0.27, desc: 'scattered' },
-      { limit: 0.31, desc: 'very sparse ' },
-      { limit: 0.38, desc: 'sparse' },
-      { limit: 0.45, desc: 'very loose' },
-      { limit: 0.49, desc: 'loose' },
-      { limit: 0.53, desc: 'medium' },
-      { limit: 0.58, desc: 'close' },
-      { limit: 0.63, desc: 'very close' },
-      { limit: 0.68, desc: 'tight' },
-      { limit: 0.72, desc: 'very tight' },
-      { limit: 0.76, desc: 'crowded' },
-      { limit: 0.8, desc: 'very crowded' },
-      { limit: 0.81, desc: 'compact' },
-      { limit: 0.83, desc: 'very compact' }
-    ]
-    for (const { limit, desc } of thresholds) {
-      if (ratio < limit) return desc
-    }
-    return 'very squeezy'
+    return DisplacementCalculator.describeDisplacementRatio(ratio)
   }
 
   /**
    * Displays zone information by updating tracked entries.
    */
   displayZoneInfo () {
-    const map = bh.map
-    for (const entry of this.zoneSync) {
-      entry.tracker.recalc(map)
-      const { total, margin, core } = entry.tracker.sizes
-      entry.counts[0].textContent = total.toString()
-      entry.counts[1].textContent = margin.toString()
-      entry.counts[2].textContent = core.toString()
-    }
+    ZoneInfoManager.displayZoneInfo(this.zoneSync)
   }
 
   /**
@@ -206,14 +185,7 @@ export class ScoreUI {
    * @returns {boolean} True if zones have non-zero sizes
    */
   hasZoneInfo () {
-    const map = bh.map
-    const nonDefaultZones = this.zoneSync.slice(1)
-    return (
-      nonDefaultZones.reduce((accumulator, entry) => {
-        entry.tracker.recalc(map)
-        return accumulator + entry.tracker.totalSize
-      }, 0) > 0
-    )
+    return ZoneInfoManager.hasZoneInfo(this.zoneSync)
   }
 
   /**
@@ -221,79 +193,15 @@ export class ScoreUI {
    * @param {Object} model - The game model with ships and loadOut
    */
   displayAddZoneInfo (model) {
-    const map = bh.map
-    this.zone.innerHTML = ''
-    const displacedArea = model.calculateDisplacedArea()
-
-    this.createAddZoneEntry(
-      'Map',
-      displacedArea,
-      model.ships,
-      'b',
-      'line-height:1.2;'
-    )
-    const mixedShapes = model.ships
-      .map(s => s.shape())
-      .filter(s => s.subterrain === mixed)
-    const airShapes = model.ships
-      .map(s => s.shape())
-      .filter(s => s.subterrain === all)
-    const airAmount =
-      airShapes.reduce(
-        (accumulator, shape) => accumulator + shape.displacement,
-        0
-      ) / 4
-    map.subterrainTrackers.displayDisplacedArea(
-      map,
-      (subterrain, displacedArea) => {
-        this._displayDisplacementEntry(
-          mixedShapes,
-          subterrain,
-          displacedArea,
-          model,
-          airAmount
-        )
-      }
-    )
-  }
-
-  /**
-   * Displays displacement information for a specific subterrain.
-   * @private
-   * @param {Array<Object>} mixedShapes - Shapes with mixed terrain
-   * @param {Object} subterrain - The subterrain object
-   * @param {number} displacedArea - Displaced area for this terrain
-   * @param {Object} model - The game model
-   * @param {number} airAmount - Air displacement amount
-   */
-  _displayDisplacementEntry (
-    mixedShapes,
-    subterrain,
-    displacedArea,
-    model,
-    airAmount
-  ) {
-    const mixedAmount = mixedShapes.reduce(
-      (accumulator, shape) => accumulator + shape.displacementFor(subterrain),
-      0
-    )
-
-    this.createAddZoneEntry(
-      subterrain.title,
-      displacedArea,
-      model.ships.filter(s => s.shape().subterrain === subterrain),
-      'span',
-      'line-height:1.2;',
-      airAmount + mixedAmount
-    )
+    ZoneInfoManager.displayAddZoneInfo(this.zone, model)
   }
 
   /**
    * Sets up zone information display structure.
    */
   setupZoneInfo () {
-    this.zone.innerHTML = ''
-    this.zoneSync = bh.map.subterrainTrackers.setupZoneInfo(
+    this.zoneSync = ZoneInfoManager.setupZoneInfo(
+      this.zone,
       this.createZoneTitle.bind(this),
       this.createZoneItem.bind(this)
     )
@@ -308,28 +216,17 @@ export class ScoreUI {
 
   /**
    * Creates a tally box element for a ship.
+   * Delegates to TallyBuilder for implementation.
    * @param {Object} ship - The ship object
    * @returns {HTMLElement} The tally box element
    */
   buildShipBox (ship) {
-    const box = document.createElement('div')
-    const letter = ship.letter
-    const maps = bh.maps
-    box.className = 'tally-box'
-    if (ship.sunk) {
-      box.textContent = 'X'
-      box.style.background = '#ff8080'
-      box.style.color = '#400'
-    } else {
-      box.textContent = letter
-      box.style.background = maps.shipColors[letter] || '#333'
-      box.style.color = maps.shipLetterColors[letter] || '#fff'
-    }
-    return box
+    return TallyBuilder.createShipBox(ship)
   }
 
   /**
    * Builds a tally row for ships of a given letter.
+   * Delegates to TallyBuilder for implementation.
    * @param {Array<Object>} ships - All ships
    * @param {string} letter - Ship letter to filter
    * @param {HTMLElement} rowList - Container for the row
@@ -337,313 +234,75 @@ export class ScoreUI {
    * @param {string} [tallyGroup] - Tally group identifier
    */
   buildTallyRow (ships, letter, rowList, boxer, tallyGroup) {
-    boxer = boxer || this.buildShipBox.bind(this)
-    const row = this._createTallyRowElement(tallyGroup)
-    const matching = ships.filter(s => s.letter === letter)
-
-    matching.forEach(s => {
-      const box = boxer(s)
-      row.appendChild(box)
-    })
-
-    rowList.appendChild(row)
+    TallyBuilder.buildTallyRow(
+      ships,
+      letter,
+      rowList,
+      boxer || this.buildShipBox.bind(this),
+      tallyGroup
+    )
   }
 
   /**
    * Builds a tally row for bomb/weapon ammo display.
+   * Delegates to WeaponTallyBuilder for implementation.
    * @param {HTMLElement} rowList - Container for the row
    * @param {Object} viewModel - The view model
    * @param {Object} weaponSystem - The weapon system object
    */
   buildBombRow (rowList, viewModel, weaponSystem) {
-    if (!weaponSystem.weapon.isLimited) return
-    const row = document.createElement('div')
-    const maps = bh.maps
-    const weapon = weaponSystem.weapon
-    row.className = 'tally-row weapon ' + weapon.classname
-
-    const leaves = weaponSystem.getLeafWeapons().sort((a, b) => a.ammo - b.ammo)
-
-    for (const leaf of leaves) {
-      this._buildWeaponSubRow(leaf, viewModel, weapon, maps, row)
-    }
-
-    rowList.appendChild(row)
+    WeaponTallyBuilder.buildBombRow(rowList, viewModel, weaponSystem)
   }
 
   /**
    * Displays ships organized by tally group (sea, land, air, special).
+   * Delegates to TallyBuilder for implementation.
    * @param {Array<Object>} ships - All ships to display
    * @param {Function} [boxer] - Custom function to create ship boxes
    */
   buildShipTally (ships, boxer) {
-    this._buildAltTally(ships, [], boxer)
+    TallyBuilder.buildTally(
+      this.tallyBox,
+      ships,
+      [],
+      boxer || this.buildShipBox.bind(this)
+    )
   }
 
   /**
    * Builds tally display from game model with weapons.
+   * Delegates to TallyBuilder for implementation.
    * @param {Object} model - The game model
    * @param {Object} viewModel - The view model
    */
   buildTallyFromModel (model, viewModel) {
-    this._buildAltTally(
-      model.ships,
-      model.loadOut.weaponSystems,
-      null,
+    TallyBuilder.displayTallyFromModel(this.tallyBox, model, viewModel)
+  }
+
+  /**
+   * Builds tally display with weapons.
+   * Delegates to TallyBuilder for implementation.
+   * @param {Array<Object>} ships - All ships
+   * @param {Array<Object>} weaponSystems - All weapon systems
+   * @param {Object} viewModel - The view model
+   */
+  buildTally (ships, weaponSystems, viewModel) {
+    TallyBuilder.buildTally(
+      this.tallyBox,
+      ships,
+      weaponSystems || [],
+      this.buildShipBox.bind(this),
       viewModel,
       true
     )
   }
 
   /**
-   * Builds tally display with weapons.
-   * @param {Array<Object>} ships - All ships
-   * @param {Array<Object>} weaponSystems - All weapon systems
-   * @param {Object} viewModel - The view model
-   */
-  buildTally (ships, weaponSystems, viewModel) {
-    this._buildAltTally(ships, weaponSystems, null, viewModel, true)
-  }
-
-  /**
    * Adds ships to the tally display.
+   * Delegates to TallyBuilder for implementation.
    * @param {Array<Object>} ships - Ships to add
    */
   addShipTally (ships) {
-    this._buildAltTally(ships, [], null, false)
-  }
-
-  /**
-   * Creates the internal zone entry element.
-   * @private
-   * @param {string} labelTxt - Label text
-   * @param {Object|string} bagOrText - Bag with size or string
-   * @param {string} stress - HTML tag for emphasis
-   * @param {string} style - CSS style string
-   * @returns {HTMLElement} The count span element
-   */
-  _createZoneEntry (labelTxt, bagOrText, stress, style) {
-    const entry = document.createElement('div')
-    entry.style = style
-    const label = document.createElement(stress)
-    label.textContent = labelTxt + ' : '
-    entry.appendChild(label)
-    const count = document.createElement('span')
-    count.textContent =
-      bagOrText && typeof bagOrText.size === 'number'
-        ? bagOrText.size.toString()
-        : String(bagOrText)
-    entry.appendChild(count)
-    this.zone.appendChild(entry)
-    return count
-  }
-
-  /**
-   * Creates a tally row element with optional group styling.
-   * @private
-   * @param {string} [tallyGroup] - Group identifier (S/G/A/X)
-   * @returns {HTMLElement} The tally row element
-   */
-  _createTallyRowElement (tallyGroup) {
-    const row = document.createElement('div')
-    row.className = 'tally-row'
-    switch (tallyGroup) {
-      case 'S':
-        row.classList.add('sea')
-        break
-      case 'G':
-        row.classList.add('land')
-        break
-      case 'A':
-        row.classList.add('air')
-        break
-      case 'X':
-        row.classList.add('special')
-        break
-    }
-    return row
-  }
-
-  /**
-   * Builds weapon sub-row with ammo boxes.
-   * @private
-   * @param {Object} weaponSystem - The weapon system
-   * @param {Object} viewModel - The view model
-   * @param {Object} weapon - The weapon object
-   * @param {Object} maps - The maps configuration
-   * @param {HTMLElement} row - Container row element
-   */
-  _buildWeaponSubRow (weaponSystem, viewModel, weapon, maps, row) {
-    const ammoCapacity = weaponSystem.ammoCapacity()
-    const ammoUsed = weaponSystem.ammoUsed()
-    const ammoUnattached = weaponSystem.ammoUnattached()
-
-    for (let i = 0; i < ammoCapacity; i++) {
-      this._buildWeaponBox({
-        ammoUnattached,
-        viewModel,
-        weapon,
-        index: i,
-        ammoUsed,
-        maps,
-        weaponSystem,
-        row
-      })
-    }
-  }
-
-  /**
-   * Creates a single weapon ammo box.
-   * @private
-   * @param {Object} options - Configuration object
-   * @param {number} options.ammoUnattached - Count of unattached ammo
-   * @param {Object} options.viewModel - The view model
-   * @param {Object} options.weapon - The weapon object
-   * @param {number} options.index - Box index
-   * @param {number} options.ammoUsed - Ammo used count
-   * @param {Object} options.maps - Maps configuration
-   * @param {Object} options.weaponSystem - The weapon system
-   * @param {HTMLElement} options.row - Parent row element
-   */
-  _buildWeaponBox ({
-    ammoUnattached,
-    viewModel,
-    weapon,
-    index,
-    ammoUsed,
-    maps,
-    weaponSystem,
-    row
-  }) {
-    const hit = weaponSystem.hit
-    const damaged = weaponSystem.damaged
-    const wid = weaponSystem.id
-    const letter = weapon.letter
-    const box = document.createElement('div')
-
-    if (bh.terrain.hasUnattachedWeapons && ammoUnattached > index) {
-      dragNDrop.makeDraggable(viewModel, box, null, weapon, true)
-    }
-
-    box.dataset.wid = wid
-    box.classList?.add('tally-box')
-    box.style.fontSize = '105%'
-
-    if (index < ammoUsed) {
-      box.style.background = maps.shipColors[letter]
-      box.style.opacity = 0.45
-      box.textContent = ''
-      box.style.color = '#fff'
-      if (!hit && !damaged) {
-        box.classList?.add('used')
-      }
-    } else {
-      box.textContent = ''
-      box.style.background = maps.shipColors[letter]
-      box.style.color = maps.shipLetterColors[letter]
-    }
-
-    if (hit) {
-      box.classList?.add('hit')
-    }
-    if (damaged) {
-      box.classList?.add('damaged')
-    }
-
-    row.appendChild(box)
-  }
-
-  /**
-   * Builds the complete tally display organized by terrain groups.
-   * @private
-   * @param {Array<Object>} ships - All ships
-   * @param {Array<Object>} weaponSystems - All weapon systems
-   * @param {Function} [boxer] - Custom function to create ship boxes
-   * @param {Object} [viewModel] - The view model
-   * @param {boolean} [withWeapons] - Include weapon systems in display
-   */
-  _buildAltTally (ships, weaponSystems, boxer, viewModel, withWeapons) {
-    const shipLetters = tallyGroup => {
-      return [
-        ...new Set(
-          ships.filter(s => s.isInTallyGroup(tallyGroup)).map(s => s.letter)
-        )
-      ].sort((a, b) => a.localeCompare(b))
-    }
-
-    this.resetTallyBox()
-
-    const tallyTitle = document.getElementById('tally-title')
-    if (tallyTitle) {
-      tallyTitle.classList.toggle('hidden', ships.length === 0)
-    }
-
-    const surfaceContainer = document.createElement('div')
-    surfaceContainer.classList.add('tally-group-container')
-
-    const seaColumn = document.createElement('div')
-    seaColumn.className = 'tally-col'
-    const landColumn = document.createElement('div')
-    landColumn.className = 'tally-col'
-
-    const sea = shipLetters('S')
-    const land = shipLetters('G')
-    const air = shipLetters('A')
-    const special = shipLetters('X')
-
-    const count = { s: 0, g: 0 }
-
-    // Add sea ships
-    for (const letter of sea) {
-      this.buildTallyRow(ships, letter, seaColumn, boxer, 'S')
-      count.s++
-    }
-
-    // Add land ships
-    for (const letter of land) {
-      this.buildTallyRow(ships, letter, landColumn, boxer, 'G')
-      count.g++
-    }
-
-    // Add air ships
-    const airTrack = this._getTallyTrack(count, seaColumn, landColumn)
-    for (const letter of air) {
-      this.buildTallyRow(ships, letter, airTrack.col, boxer, 'A')
-      airTrack.inc()
-    }
-
-    // Add special ships
-    const specialTrack = this._getTallyTrack(count, seaColumn, landColumn)
-    for (const letter of special) {
-      this.buildTallyRow(ships, letter, specialTrack.col, boxer, 'X')
-      specialTrack.inc()
-    }
-
-    // Add weapons if requested
-    if (withWeapons && viewModel) {
-      const weaponTrack = this._getTallyTrack(count, seaColumn, landColumn)
-      for (const wps of weaponSystems) {
-        this.buildBombRow(weaponTrack.col, viewModel, wps)
-      }
-    }
-
-    surfaceContainer.appendChild(seaColumn)
-    surfaceContainer.appendChild(landColumn)
-    this.tallyBox.appendChild(surfaceContainer)
-  }
-
-  /**
-   * Gets the tally track with lower item count.
-   * @private
-   * @param {Object} count - Count tracker with s and g properties
-   * @param {HTMLElement} seaColumn - Sea column element
-   * @param {HTMLElement} landColumn - Land column element
-   * @returns {Object} Track object with col and inc function
-   */
-  _getTallyTrack (count, seaColumn, landColumn) {
-    if (count.s < count.g) {
-      return { col: seaColumn, inc: () => count.s++ }
-    }
-    return { col: landColumn, inc: () => count.g++ }
+    TallyBuilder.addShipTally(this.tallyBox, ships)
   }
 }
