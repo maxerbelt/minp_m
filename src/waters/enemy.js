@@ -320,6 +320,7 @@ class Enemy extends Waters {
 
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
+
     let result = await this.setupWeapon(r, c)
     if (result?.hasTargettedWeapon) {
       return
@@ -334,6 +335,7 @@ class Enemy extends Waters {
 
   onClickOppoCell (hintR, hintC) {
     if (!this.opponent) return
+    this.UI.deactivateTempHints()
     this.UI.removeHighlightAoE()
     if (this.loadOut.isNotArming()) return
     this.loadOut.clearSelectedCoordinates()

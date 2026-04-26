@@ -822,12 +822,11 @@ export class Waters {
         ? randomElement(entries)
         : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))
       const [launchC, launchR] = parsePair(key)
-      this.steps.addSource(
-        viewModel,
-        launchR,
-        launchC,
-        cell || viewModel.gridCellAt(launchR, launchC)
-      )
+      cell = cell || viewModel.gridCellAt(launchR, launchC)
+      this.steps.addSource(viewModel, launchR, launchC, cell)
+      if (weapon.givesHint) {
+        cell.classList.add('temp-hint')
+      }
       return { launchR, launchC, weaponId: weapon.id, hintR, hintC }
     }
     if (cell === null) {

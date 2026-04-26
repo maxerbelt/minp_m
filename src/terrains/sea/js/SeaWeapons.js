@@ -86,6 +86,7 @@ export class Kinetic extends Strike {
   constructor (ammo, name, letter) {
     super(ammo, name || 'Kinetic Strike', letter || 'K', true, true, 2)
     this.cursors = ['satelite', 'strike']
+    this.postSelectCursor = 1
     this.totalCursors = 2
     this._applyWeaponConfig({
       hints: [
@@ -131,6 +132,7 @@ export class Torpedo extends Fish {
   constructor (ammo) {
     super(ammo, 'Torpedo', '+')
     this.cursors = ['torpedo', 'periscope']
+    this.postSelectCursor = 1
     this.totalCursors = 2
     this._applyWeaponConfig({
       hints: [

@@ -52,8 +52,8 @@ export class CellClassManager {
       turn4: 'turn4'
     },
     placement: {
-      empty: 'empty',
-      launch: 'launch'
+      empty: 'empty'
+      //    launch: 'launch'
     },
     edge: {
       land: 'land',

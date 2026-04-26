@@ -340,7 +340,8 @@ export class WatersUI {
     )
       return
     cell.classList.add('hint')
-    cell.classList.remove('wake')
+    cell.classList.remove('wake', 'temp-hint')
+    this.deactivateTempHints()
     cell.textContent = ''
   }
 
@@ -639,8 +640,27 @@ export class WatersUI {
       deactivateWeapon(cell)
     }
   }
+  deactivateTempHints () {
+    for (const cell of this.board.children) {
+      deactivateWeapon(cell)
+    }
+  }
 }
 
 function deactivateWeapon (cell) {
-  cell.classList.remove('active', 'contrast', ...bh.terrain.weapons.tags)
+  if (cell.classList.contains('contrast')) {
+    cell.classList.remove(
+      'active',
+      'contrast',
+      'turn2',
+      'turn3',
+      'turn4',
+      ...bh.terrain.weapons.tags
+    )
+  } else {
+    cell.classList.remove('active')
+  }
+}
+function deactivateTempHint (cell) {
+  cell.classList.remove('temp-hint')
 }

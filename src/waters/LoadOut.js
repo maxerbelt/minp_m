@@ -83,6 +83,8 @@ export class LoadOut {
     const hasAttachedWeapons = ships.length > 0
     this.hasAttachedWeapons = hasAttachedWeapons
     this.isRackSelectable = !bh.seekingMode && hasAttachedWeapons
+    const hasUnattachedWeapons = weapons.length > 0
+    this.hasUnattachedWeapons = hasUnattachedWeapons
     this.selectedWeapon = null
     this.hintCoordinates = []
     this.selectedCoordinates = []
@@ -493,6 +495,7 @@ export class LoadOut {
     const index = (currentIndex ?? this.currentWeaponIndex) + 1
     return index >= this.weaponSystems.length ? 0 : index
   }
+
   clearSelectedCoordinates () {
     const oldCursor = this.getCurrentCursor()
     this.selectedCoordinates = []
@@ -545,6 +548,7 @@ export class LoadOut {
     const info = this.firingInfoIfReady(map, row, col, weaponSystem)
     if (info) {
       const { fireCoordinates, fireWeapon, wps, weapon } = info
+
       this.steps.fire()
       const launchInfo = await launch(fireCoordinates, weapon, wps)
       const score = fireWeapon(launchInfo?.target)
@@ -565,10 +569,15 @@ export class LoadOut {
     const weapon = wps.weapon
     const requiredPoints = weapon.points
     this.addSelectedCoordinates(row, col)
+
+    if (this.hasUnattachedWeapons) {
+      this.selectedWeapon = wps
+    }
     if (this.selectedCoordinates.length === requiredPoints) {
       const { fireCoordinates, fireWeapon } = this.firingInfo(wps, map)
       return { fireCoordinates, fireWeapon, wps, weapon }
     }
+
     return null
   }
 
