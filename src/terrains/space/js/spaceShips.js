@@ -169,6 +169,8 @@ const SHIP_BACKGROUNDS = {
   '|1': '#5a2b2f', // #5a2b2f   // #3f5a2a. // #243a5e
   '|2': '#cc3333',
   '^': '#cc3388',
+  '^1': '#33abcc',
+  '^2': '#cc3388',
   '*': '#3333cc',
   '@': '#66ffcc', // Seafoam Green
   '%': '#9966ff',
