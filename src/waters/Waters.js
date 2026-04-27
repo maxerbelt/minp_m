@@ -708,22 +708,15 @@ export class Waters {
     }
   }
 
-  selectAndArmWps (rack, oppo, launchR, launchC, hintR, hintC) {
+  selectAndArmWps (rack, oppo, launchR, launchC, hintR, hintC, cell) {
     const weapon = rack?.weapon
     const letter = weapon?.letter
     if (weapon.givesHint) {
-      rack?.cell.classList.add('temp-hint')
+      this.opponent.UI.deactivateTempHints()
+      cell.classList.add('temp-hint')
     }
-    this.addSource(oppo, launchR, launchC, rack)
-    this.steps.addRack(
-      rack,
-      weapon,
-      letter,
-      weapon?.id,
-      launchR,
-      launchC,
-      rack?.cell
-    )
+    this.addSource(oppo, launchR, launchC, rack, cell)
+    this.steps.addRack(rack, weapon, letter, weapon?.id, launchR, launchC, cell)
     if (letter) {
       this.loadOut.switchToWeapon(letter)
       if (weapon.postSelectCursor === 0) {
@@ -742,10 +735,10 @@ export class Waters {
     }
   }
 
-  addSource (oppo, launchR, launchC, rack) {
+  addSource (oppo, launchR, launchC, rack, cell) {
     if (this.steps.source === null) {
       const viewModel = oppo?.UI || this.UI
-      this.steps.addSource(viewModel, launchR, launchC, rack?.cell)
+      this.steps.addSource(viewModel, launchR, launchC, cell)
       console.warn(
         'no source found when selecting and arming weapon, adding source with launch coords'
       )
@@ -769,22 +762,38 @@ export class Waters {
       oppo
     )
 
-    this.selectAndArmWeaponId(weaponId, oppo, launchR, launchC, hintR, hintC)
+    this.selectAndArmWeaponId(
+      weaponId,
+      oppo,
+      launchR,
+      launchC,
+      hintR,
+      hintC,
+      cell
+    )
   }
 
   randomAttachedWeapon (oppo) {
     const { launchR, launchC, weaponId, hintR, hintC } =
       this.selectRandomWeapon()
-
-    this.selectAndArmWeaponId(weaponId, oppo, launchR, launchC, hintR, hintC)
+    const cell = this.opponent.UI.gridCellAt(hintR, hintC)
+    this.selectAndArmWeaponId(
+      weaponId,
+      oppo,
+      launchR,
+      launchC,
+      hintR,
+      hintC,
+      cell
+    )
   }
 
-  selectAndArmWeaponId (weaponId, oppo, launchR, launchC, hintR, hintC) {
+  selectAndArmWeaponId (weaponId, oppo, launchR, launchC, hintR, hintC, cell) {
     if (weaponId < 1) {
       return
     }
     const rack = this.loadOut.getWeaponBySystemId(weaponId)
-    this.selectAndArmWps(rack, oppo, launchR, launchC, hintR, hintC)
+    this.selectAndArmWps(rack, oppo, launchR, launchC, hintR, hintC, cell)
   }
 
   /**
@@ -843,7 +852,7 @@ export class Waters {
       const [, , weaponId] = parseTriple(k)
       return loaded.has(weaponId)
     })
-    const wkey = findClosestCoord(filteredKeyIds, hintR, hintC, k =>
+    const wkey = findClosestCoord(filteredKeyIds, hintC, hintR, k =>
       parseTriple(k)
     )
     if (!random && !wkey) {

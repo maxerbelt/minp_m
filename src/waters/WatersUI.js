@@ -642,7 +642,7 @@ export class WatersUI {
   }
   deactivateTempHints () {
     for (const cell of this.board.children) {
-      deactivateWeapon(cell)
+      deactivateTempHint(cell)
     }
   }
 }

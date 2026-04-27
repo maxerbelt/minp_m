@@ -241,8 +241,12 @@ async function performGaussRoundAnimation (
   )
 
   const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
-  const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
-  const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+  const targetCell1 = opposingViewModel.gridCellAt(
+    targetCoord[1],
+    targetCoord[0]
+  )
+  const sourceCell2 = viewModel.gridCellAt(startCol, startRow)
+  const targetCell2 = viewModel.gridCellAt(targetCoord[1], targetCoord[0])
 
   // Apply portal CSS classes to sources
   sourceCell1.classList.add(CSS_CLASSES.PORTAL)
@@ -258,7 +262,7 @@ async function performGaussRoundAnimation (
   await Weapon.prototype.animateFlyingOnVM.call(
     weapon,
     sourceCell1,
-    targetCell2,
+    targetCell1,
     viewModel
   )
 
@@ -719,11 +723,24 @@ export class GuassRound extends Fish {
    * @param {number} [power=1] - Power level for trajectory cells
    * @returns {Array<[number, number, number]>} Cells along trajectory with power levels
    */
+  /**
+   * Calculates area-of-effect along the fish's water path
+   * Stops at land boundaries (map.isLand check)
+   * @param {Object} map - Game map for land/water checks
+   * @param {Array} coords - Two-point coordinates [startCoord, endCoord]
+   * @param {number} [power=1] - Power level for damage
+   * @returns {Array} Cells along water path with damage power
+   */
   aoe (map, coords, power = 1) {
-    const startRow = coords[0][0]
-    const startCol = coords[0][1]
-    const endRow = coords[1][0]
-    const endCol = coords[1][1]
+    return this.aoeRaw(map, coords, power, 1)
+  }
+
+  /*
+  aoe (map, coords, power = 1) {
+    const startRow = coords[0][1]
+    const startCol = coords[0][0]
+    const endRow = coords[1][1]
+    const endCol = coords[1][0]
 
     const trajectoryLine = drawRayLinePoints(
       startRow,
@@ -732,8 +749,8 @@ export class GuassRound extends Fish {
       endCol,
       power
     )
-    const landCollisionIndex = trajectoryLine.findIndex(([row, col]) =>
-      map.isLand(row, col)
+    const landCollisionIndex = trajectoryLine.findIndex(([x, y]) =>
+      map.isLand(y, x)
     )
 
     // Track crash location if trajectory hits land
@@ -747,7 +764,7 @@ export class GuassRound extends Fish {
 
     return trajectoryLine
   }
-
+*/
   /**
    * Initiates Gauss round launch with coordinate transformation
    * Routes to launchRightTo for coordinate processing before dual-animation launch

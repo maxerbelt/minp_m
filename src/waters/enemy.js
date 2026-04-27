@@ -335,7 +335,7 @@ class Enemy extends Waters {
 
   onClickOppoCell (hintR, hintC) {
     if (!this.opponent) return
-    this.UI.deactivateTempHints()
+    this.opponent.UI.deactivateTempHints()
     this.UI.removeHighlightAoE()
     if (this.loadOut.isNotArming()) return
     this.loadOut.clearSelectedCoordinates()

@@ -83,8 +83,6 @@ const WEAPON_CONFIGS = {
 // Shared Utility - Configuration Application
 // ============================================================================
 
-
-
 // ============================================================================
 // Utility Functions - Canvas Drawing Operations
 // ============================================================================
@@ -261,7 +259,8 @@ function calculateLineAreaOfEffect (
   coords,
   power = 1,
   lineFunction = getExtendedLinePoints,
-  terrainFilter = null
+  terrainFilter = null,
+  penetration = 0
 ) {
   const [row1, col1] = coords[0]
   const [row2, col2] = coords[1]
@@ -270,7 +269,7 @@ function calculateLineAreaOfEffect (
   if (terrainFilter) {
     const stopIndex = line.findIndex(([row, col]) => terrainFilter(row, col))
     if (stopIndex >= 0) {
-      line = line.slice(0, stopIndex)
+      line = line.slice(0, stopIndex + penetration)
     }
   }
   return line
@@ -571,7 +570,6 @@ export class Strike extends Weapon {
       model
     )
   }
-
 }
 export class Fish extends Weapon {
   /**
@@ -621,7 +619,17 @@ export class Fish extends Weapon {
     }
     return newEffect
   }
-
+  aoeRaw (map, coords, power = 1, penetration = 0) {
+    return calculateLineAreaOfEffect(
+      coords,
+      power,
+      getLinePoints,
+      (row, col) => {
+        return map.isLand(row, col)
+      },
+      penetration
+    )
+  }
   /**
    * Calculates area-of-effect along the fish's water path
    * Stops at land boundaries (map.isLand check)
@@ -631,9 +639,7 @@ export class Fish extends Weapon {
    * @returns {Array} Cells along water path with damage power
    */
   aoe (map, coords, power = 1) {
-    return calculateLineAreaOfEffect(coords, power, getLinePoints, (row, col) =>
-      map.isLand(row, col)
-    )
+    return this.aoeRaw(map, coords, power, 0)
   }
 
   /**
