@@ -711,7 +711,9 @@ export class Waters {
   selectAndArmWps (rack, oppo, launchR, launchC, hintR, hintC) {
     const weapon = rack?.weapon
     const letter = weapon?.letter
-
+    if (weapon.givesHint) {
+      rack?.cell.classList.add('temp-hint')
+    }
     this.addSource(oppo, launchR, launchC, rack)
     this.steps.addRack(
       rack,
@@ -824,9 +826,7 @@ export class Waters {
       const [launchC, launchR] = parsePair(key)
       cell = cell || viewModel.gridCellAt(launchR, launchC)
       this.steps.addSource(viewModel, launchR, launchC, cell)
-      if (weapon.givesHint) {
-        cell.classList.add('temp-hint')
-      }
+
       return { launchR, launchC, weaponId: weapon.id, hintR, hintC }
     }
     if (cell === null) {
