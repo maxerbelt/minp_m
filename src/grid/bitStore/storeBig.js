@@ -1,4 +1,5 @@
 import { StoreBase } from './storeBase.js'
+import { BigStoreMorphology } from './BigStoreMorphology.js'
 import { popcountBigInt } from '../placeTools.js'
 import { bitsSafeBI } from '../bitHelpers.js'
 import { errorMsg } from '../../core/errorMsg.js'
@@ -227,54 +228,51 @@ export class StoreBig extends StoreBase {
   }
 
   // Per-cell horizontal expansion for multi-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @returns {bigint}
+   */
   expandHorizontallyCellwise (bitboard) {
-    const w = this.width
-    let out = bitboard
-
-    for (const [idx, val] of this.all.idxFilled(bitboard)) {
-      out = this.setIdx(out, idx, val)
-      const col = idx % w
-      if (col > 0) out = this.setIdx(out, idx - 1, val)
-      if (col < w - 1) out = this.setIdx(out, idx + 1, val)
-    }
-    return out
+    return BigStoreMorphology.expandAdjacentCellsHorizontally(this, bitboard)
   }
 
   // Per-cell vertical propagation for multi-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @param {number} gridWidth
+   * @returns {bigint}
+   */
   propagateVerticalCellwise (bitboard, gridWidth) {
-    let out = bitboard
-    const h = this.height
-    const w = gridWidth
-    for (const [idx, v] of this.all.idxFilled(bitboard)) {
-      out = this.setIdx(out, idx, v)
-      const row = Math.floor(idx / w)
-      if (row > 0) out = this.setIdx(out, idx - w, v)
-      if (row < h - 1) out = this.setIdx(out, idx + w, v)
-    }
-    return out
+    return BigStoreMorphology.propagateAdjacentCellsVertically(
+      this,
+      bitboard,
+      gridWidth
+    )
   }
 
   // Shift-based vertical propagation for 1-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @returns {bigint}
+   */
   propagateVerticalShift (bitboard, gridWidth, edgeMasks) {
-    const srcForUp = this.prepareSrcForUpExpansion(bitboard, edgeMasks)
-    const srcForDown = this.prepareSrcForDownExpansion(bitboard, edgeMasks)
-
-    const upShifted = this.shiftBits(srcForUp, -gridWidth)
-    const downShifted = this.shiftBits(srcForDown, gridWidth)
-
-    return this.combineMasked(bitboard, upShifted, downShifted)
+    return BigStoreMorphology.propagateVerticalShift(
+      this,
+      bitboard,
+      gridWidth,
+      edgeMasks
+    )
   }
 
   // Per-cell horizontal erosion for multi-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @returns {bigint}
+   */
   erodeHorizontalCellwise (bitboard) {
-    let out = bitboard
-
-    for (const [idx] of this.all.idxFilled(bitboard)) {
-      if (!this.cellSurvivesHorizontalErosion(bitboard, idx)) {
-        out = this.setIdx(out, idx, 0n)
-      }
-    }
-    return out
+    return BigStoreMorphology.erodeHorizontalCells(this, bitboard)
   }
 
   // ============================================================================
@@ -282,104 +280,99 @@ export class StoreBig extends StoreBase {
   // ============================================================================
 
   // Per-cell vertical erosion for multi-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @param {number} gridWidth
+   * @returns {bigint}
+   */
   erodeVerticalCellwise (bitboard, gridWidth) {
-    const size = gridWidth * this.height
-    let out = bitboard
-
-    for (let idx = 0; idx < size; idx++) {
-      const v = this.getIdx(bitboard, idx)
-      if (v === 0n) continue
-      if (!this.cellSurvivesVerticalErosion(bitboard, idx, gridWidth)) {
-        out = this.setIdx(out, idx, 0n)
-      }
-    }
-    return out
+    return BigStoreMorphology.erodeVerticalCells(this, bitboard, gridWidth)
   }
 
   // Shift-based horizontal erosion for 1-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @param {Object} edgeMasks
+   * @returns {bigint}
+   */
   erodeHorizontalShift (bitboard, edgeMasks) {
-    if (!edgeMasks) return bitboard
-
-    const bitShift = this.bitsPerCell
-    const { leftConstraint, rightConstraint } =
-      this.computeHorizontalErodeConstraints(bitboard, edgeMasks, bitShift)
-
-    return bitboard & leftConstraint & rightConstraint
+    return BigStoreMorphology.erodeHorizontalShift(this, bitboard, edgeMasks)
   }
 
   // ============================================================================
   // Horizontal Erosion - Constraint Computation
   // ============================================================================
-  _computeInvertedEdgeMaskBigInt (maskValue) {
-    if (typeof maskValue === 'bigint') return maskValue
-    return BigInt(maskValue || 0n)
-  }
-
-  _computeInvertedEdgeMask (edgeMasks, maskKey) {
-    const fullMask = this.fullBits
-    const maskValue = this._computeInvertedEdgeMaskBigInt(edgeMasks?.[maskKey])
-    return ~maskValue & fullMask
-  }
-
+  /**
+   * @param {Object} edgeMasks
+   * @returns {bigint}
+   */
   computeInvertedLeftMask (edgeMasks) {
-    return this._computeInvertedEdgeMask(edgeMasks, 'notLeft')
+    return BigStoreMorphology.computeInvertedEdgeMask(
+      this,
+      edgeMasks,
+      'notLeft'
+    )
   }
 
+  /**
+   * @param {Object} edgeMasks
+   * @returns {bigint}
+   */
   computeInvertedRightMask (edgeMasks) {
-    return this._computeInvertedEdgeMask(edgeMasks, 'notRight')
+    return BigStoreMorphology.computeInvertedEdgeMask(
+      this,
+      edgeMasks,
+      'notRight'
+    )
   }
 
-  _computeHorizontalConstraintFromShift (bitboard, bitShift, invertedMask) {
-    const shiftedNeighbor = this.shiftBits(bitboard, bitShift)
-    return shiftedNeighbor | invertedMask
-  }
-
+  /**
+   * @param {bigint} bitboard
+   * @param {Object} edgeMasks
+   * @param {number} bitShift
+   * @returns {{leftConstraint: bigint, rightConstraint: bigint}}
+   */
   computeHorizontalErodeConstraints (bitboard, edgeMasks, bitShift) {
-    const invNotLeft = this.computeInvertedLeftMask(edgeMasks)
-    const invNotRight = this.computeInvertedRightMask(edgeMasks)
-
-    const leftConstraint = this._computeHorizontalConstraintFromShift(
+    return BigStoreMorphology.computeHorizontalErodeConstraints(
+      this,
       bitboard,
-      bitShift,
-      invNotLeft
+      edgeMasks,
+      bitShift
     )
-    const rightConstraint = this._computeHorizontalConstraintFromShift(
-      bitboard,
-      -bitShift,
-      invNotRight
-    )
-    return { leftConstraint, rightConstraint }
   }
 
   // Shift-based vertical erosion for 1-bit stores
+  /**
+   * @param {bigint} bitboard
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @returns {bigint}
+   */
   erodeVerticalShift (bitboard, gridWidth, edgeMasks) {
-    const { upConstraint, downConstraint } =
-      this.computeVerticalErodeConstraints(bitboard, gridWidth, edgeMasks)
-    return bitboard & upConstraint & downConstraint
+    return BigStoreMorphology.erodeVerticalShift(
+      this,
+      bitboard,
+      gridWidth,
+      edgeMasks
+    )
   }
 
   // ============================================================================
   // Vertical Erosion - Constraint Computation
   // ============================================================================
+  /**
+   * @param {bigint} bitboard
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @returns {{upConstraint: bigint, downConstraint: bigint}}
+   */
   computeVerticalErodeConstraints (bitboard, gridWidth, edgeMasks) {
-    const upShifted = this.shiftBits(bitboard, -gridWidth)
-    const downShifted = this.shiftBits(bitboard, gridWidth)
-
-    if (!edgeMasks) {
-      return { upConstraint: upShifted, downConstraint: downShifted }
-    }
-
-    const fullMask = this.fullBits
-    const notTopBig = this._computeInvertedEdgeMaskBigInt(edgeMasks.notTop)
-    const notBottomBig = this._computeInvertedEdgeMaskBigInt(
-      edgeMasks.notBottom
+    return BigStoreMorphology.computeVerticalErodeConstraints(
+      this,
+      bitboard,
+      gridWidth,
+      edgeMasks
     )
-    const invNotTop = ~notTopBig & fullMask
-    const invNotBottom = ~notBottomBig & fullMask
-
-    const upConstraint = downShifted | invNotTop
-    const downConstraint = upShifted | invNotBottom
-    return { upConstraint, downConstraint }
   }
 
   erodeVerticalClampStep (bitboard, gridWidth, edgeMasks) {

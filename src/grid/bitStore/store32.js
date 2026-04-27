@@ -1,4 +1,5 @@
 import { StoreBase } from './storeBase.js'
+import { Store32Morphology } from './Store32Morphology.js'
 import { areArraysOrderedAndEqual } from '../../variants/normalize.js'
 import { BitMath } from '../bitMath.js'
 import { bitSafeArr } from '../bitHelpers.js'
@@ -292,168 +293,138 @@ export class Store32 extends StoreBase {
 
   // Per-cell helper: determine if cell at given index survives horizontal erosion
   // Per-cell horizontal expansion (left, self, right) respecting row bounds
+  /**
+   * @param {Uint32Array} src
+   * @returns {Uint32Array}
+   */
   expandHorizontallyCellwise (src) {
-    const w = this.width
-    const out = src.slice()
-    return this._expandCellsWithCallback(src, out, (idx, val, output) => {
-      const col = idx % w
-      if (col > 0) this.setAtIdx(output, idx - 1, val)
-      if (col < w - 1) this.setAtIdx(output, idx + 1, val)
-    })
+    return Store32Morphology.expandAdjacentCellsHorizontally(this, src)
   }
 
   // Per-cell vertical propagation for multi-bit stores
+  /**
+   * @param {Uint32Array} src
+   * @param {number} gridWidth
+   * @returns {Uint32Array}
+   */
   propagateVerticalCellwise (src, gridWidth) {
-    const h = this.height
-    const out = src.slice()
-    return this._expandCellsWithCallback(src, out, (idx, val, output) => {
-      const row = Math.floor(idx / gridWidth)
-      if (row > 0) this.setAtIdx(output, idx - gridWidth, val)
-      if (row < h - 1) this.setAtIdx(output, idx + gridWidth, val)
-    })
+    return Store32Morphology.propagateAdjacentCellsVertically(
+      this,
+      src,
+      gridWidth
+    )
   }
 
   // Shift-based vertical propagation for 1-bit stores (uses edge masks)
+  /**
+   * @param {Uint32Array} src
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @returns {Uint32Array}
+   */
   propagateVerticalShift (src, gridWidth, edgeMasks) {
-    const bitsPerCell = this.bitsPerCell
-    const bitShift = gridWidth * bitsPerCell
-    let srcForUp = src
-    let srcForDown = src
-    if (edgeMasks?.notTop) srcForUp = this.bitAnd(src, edgeMasks.notTop)
-    if (edgeMasks?.notBottom) srcForDown = this.bitAnd(src, edgeMasks.notBottom)
-
-    const upShifted = this.shiftBits(srcForUp, -bitShift)
-    const downShifted = this.shiftBits(srcForDown, bitShift)
-
-    const result = this.createEmptyBitboard(src)
-    const fullMask = this.fullBits
-    for (let i = 0; i < result.length; i++) {
-      result[i] = (src[i] | upShifted[i] | downShifted[i]) & fullMask[i]
-    }
-    return result
+    return Store32Morphology.propagateVerticalShift(
+      this,
+      src,
+      gridWidth,
+      edgeMasks
+    )
   }
 
   // Per-cell horizontal erosion for multi-bit stores
+  /**
+   * @param {Uint32Array} src
+   * @returns {Uint32Array}
+   */
   erodeHorizontalCellwise (src) {
-    const out = src.slice()
-    return this._erodeCellsWithCallback(src, out, (source, idx) =>
-      this.cellSurvivesHorizontalErosion(source, idx)
-    )
+    return Store32Morphology.erodeHorizontalCells(this, src)
   }
 
   // ============================================================================
   // Horizontal Erosion - Constraint Computation
   // ============================================================================
-  _computeInvertedEdgeMask (edgeMasks, maskKey) {
-    return this._createInvertedMask(edgeMasks, maskKey)
-  }
-
+  /**
+   * @param {Object} edgeMasks
+   * @returns {Uint32Array}
+   */
   computeInvertedLeftMask (edgeMasks) {
-    return this._computeInvertedEdgeMask(edgeMasks, 'notLeft')
+    return Store32Morphology.computeInvertedEdgeMask(this, edgeMasks, 'notLeft')
   }
 
+  /**
+   * @param {Object} edgeMasks
+   * @returns {Uint32Array}
+   */
   computeInvertedRightMask (edgeMasks) {
-    return this._computeInvertedEdgeMask(edgeMasks, 'notRight')
+    return Store32Morphology.computeInvertedEdgeMask(
+      this,
+      edgeMasks,
+      'notRight'
+    )
   }
 
-  _computeHorizontalConstraintFromShift (
-    src,
-    edgeMasks,
-    bitShift,
-    invertedMask
-  ) {
-    const shiftedNeighbor = this.shiftBits(src, bitShift)
-    return this.bitOr(shiftedNeighbor, invertedMask)
-  }
-
+  /**
+   * @param {Uint32Array} src
+   * @param {Object} edgeMasks
+   * @param {number} bitShift
+   * @returns {{leftConstraint: Uint32Array, rightConstraint: Uint32Array}}
+   */
   computeHorizontalErodeConstraints (src, edgeMasks, bitShift) {
-    const invNotLeft = this.computeInvertedLeftMask(edgeMasks)
-    const invNotRight = this.computeInvertedRightMask(edgeMasks)
-
-    const leftConstraint = this._computeHorizontalConstraintFromShift(
+    return Store32Morphology.computeHorizontalErodeConstraints(
+      this,
       src,
       edgeMasks,
-      bitShift,
-      invNotLeft
+      bitShift
     )
-    const rightConstraint = this._computeHorizontalConstraintFromShift(
-      src,
-      edgeMasks,
-      -bitShift,
-      invNotRight
-    )
-    return { leftConstraint, rightConstraint }
   }
 
+  /**
+   * @param {Uint32Array} src
+   * @param {Object} edgeMasks
+   * @returns {Uint32Array}
+   */
   erodeHorizontalShift (src, edgeMasks) {
-    if (!edgeMasks) return src
-
-    const bitShift = this.bitsPerCell
-    const { leftConstraint, rightConstraint } =
-      this.computeHorizontalErodeConstraints(src, edgeMasks, bitShift)
-
-    return this.bitAnd(this.bitAnd(src, leftConstraint), rightConstraint)
+    return Store32Morphology.erodeHorizontalShift(this, src, edgeMasks)
   }
 
   // ============================================================================
   // Vertical Erosion - Constraint Computation
   // ============================================================================
-  _prepareSrcForVerticalConstraint (src, edgeMasks, maskKey) {
-    if (edgeMasks?.[maskKey]) return this.bitAnd(src, edgeMasks[maskKey])
-    return src
-  }
-
-  _computeVerticalConstraintFromShift (src, edgeMasks, maskKey, bitShift) {
-    const preparedSrc = this._prepareSrcForVerticalConstraint(
-      src,
-      edgeMasks,
-      maskKey
-    )
-    return this.shiftBits(preparedSrc, bitShift)
-  }
-
+  /**
+   * @param {Uint32Array} src
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @param {number} bitShift
+   * @returns {{upShifted: Uint32Array, downShifted: Uint32Array}}
+   */
   computeVerticalErodeConstraints (src, gridWidth, edgeMasks, bitShift) {
-    const upShifted = this._computeVerticalConstraintFromShift(
-      src,
-      edgeMasks,
-      'notTop',
-      -bitShift
-    )
-    const downShifted = this._computeVerticalConstraintFromShift(
-      src,
-      edgeMasks,
-      'notBottom',
-      bitShift
-    )
-    return { upShifted, downShifted }
-  }
-
-  erodeVerticalShift (src, gridWidth, edgeMasks) {
-    const bitShift = this._calculateVerticalBitShift(gridWidth)
-    const { upShifted, downShifted } = this.computeVerticalErodeConstraints(
+    return Store32Morphology.computeVerticalErodeConstraints(
+      this,
       src,
       gridWidth,
       edgeMasks,
       bitShift
     )
+  }
 
-    const result = this.createEmptyBitboard(src)
-    const fullMask = this.fullBits
-    for (let i = 0; i < result.length; i++) {
-      result[i] =
-        (this.bitAnd(this.bitAnd(src, upShifted), downShifted)[i] &
-          fullMask[i]) >>>
-        0
-    }
-    return result
+  /**
+   * @param {Uint32Array} src
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @returns {Uint32Array}
+   */
+  erodeVerticalShift (src, gridWidth, edgeMasks) {
+    return Store32Morphology.erodeVerticalShift(this, src, gridWidth, edgeMasks)
   }
 
   // Per-cell vertical erosion for multi-bit stores
+  /**
+   * @param {Uint32Array} src
+   * @param {number} gridWidth
+   * @returns {Uint32Array}
+   */
   erodeVerticalCellwise (src, gridWidth) {
-    const out = src.slice()
-    return this._erodeCellsWithCallback(src, out, (source, idx) =>
-      this.cellSurvivesVerticalErosion(source, idx, gridWidth)
-    )
+    return Store32Morphology.erodeVerticalCells(this, src, gridWidth)
   }
 
   // Packed stores operate on Uint32Array bitboards; the base class
