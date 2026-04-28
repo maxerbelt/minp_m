@@ -13,30 +13,53 @@ const MAX_PLACEMENT_RETRIES = 10
 const ATTEMPTS_PER_RETRY = 25
 const ENEMY_TURN_DELAY = 50
 
+/**
+ * Represents the enemy player in the Waters game, handling AI behavior, ship placement, and weapon management.
+ * Extends the Waters class to provide enemy-specific logic.
+ */
 class Enemy extends Waters {
+  /**
+   * @param {Object} enemyUI - The UI instance for the enemy.
+   */
   constructor (enemyUI) {
     super(enemyUI)
     this.preamble0 = 'Enemy'
     this.preamble = 'The enemy was '
     this.preamble1 = 'The enemy '
     this.isRevealed = false
+
+    /** @type {number|null} Timeout ID for enemy actions. */
     this.timeoutId = null
+
+    /** @type {Function|null} Handler for weapon selection. */
     this.weaponSelectHandler = null
+
+    /** @type {Function|null} Handler for reveal action. */
     this.revealHandler = null
+
+    /** @type {boolean} Indicates this is an enemy waters instance. */
     this.enemyWaters = true
 
+    this._initializeSteps()
+  }
+
+  /**
+   * Initializes the steps event handlers.
+   * @private
+   */
+  _initializeSteps () {
     this.steps.player = Player.enemy
     this.steps.onEndTurn = this._handleEndTurn.bind(this)
     this.steps.onBeginTurn = this._handleBeginTurn.bind(this)
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
     this.steps.onActivate = this._handleActivate.bind(this)
     this.steps.onSelect = this._handleSelect.bind(this)
-    this.steps.onHint = this.onHint.bind(this)
+    this.steps.onHint = this._handleHint.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
   }
 
   /**
-   * Handles selection event.
+   * Handles the selection event by updating the board classes.
    * @private
    */
   _handleSelect () {
@@ -45,20 +68,19 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles activation event.
+   * Handles the activation event for a weapon rack.
    * @private
+   * @param {*} rack - The weapon rack.
+   * @param {*} weapon - The weapon object.
+   * @param {string} _wletter - Weapon letter (unused).
+   * @param {number} _weaponId - Weapon ID (unused).
+   * @param {number} r - Row coordinate.
+   * @param {number} c - Column coordinate.
+   * @param {HTMLElement} _cell - Cell element (unused).
+   * @param {number} shadowR - Shadow row.
+   * @param {number} shadowC - Shadow column.
    */
-  _handleActivate (
-    rack,
-    weapon,
-    _wletter,
-    _weaponId,
-    r,
-    c,
-    _cell,
-    shadowR,
-    shadowC
-  ) {
+  _handleActivate (rack, weapon, _wletter, _weaponId, r, c, _cell, shadowR, shadowC) {
     this.opponent?.UI?.cellWeaponActive?.(r, c)
     if (weapon.postSelectCursor > 0) {
       this.UI.cellWeaponActive(shadowR, shadowC, '', weapon.tag)
@@ -67,22 +89,23 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles change weapon event.
+   * Handles the change weapon event.
    * @private
+   * @param {string} wletter - The weapon letter to switch to.
    */
   _handleChangeWeapon (wletter) {
     this.loadOut.switchToWeapon(wletter)
   }
 
   /**
-   * Handles end turn event.
+   * Handles the end turn event, transitioning to the opponent's turn.
    * @private
+   * @returns {Promise<void>}
    */
   async _handleEndTurn () {
-    if (this?.opponent == null) {
+    if (!this.opponent || this.opponent.boardDestroyed || this.opponent.isRevealed) {
       return
     }
-    if (this.opponent.boardDestroyed || this.opponent.isRevealed) return
 
     this._showWaitingForOpponent()
     await Delay.wait(ENEMY_TURN_DELAY)
@@ -91,7 +114,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Shows waiting state for opponent.
+   * Displays the waiting state for the opponent's turn.
    * @private
    */
   _showWaitingForOpponent () {
@@ -102,7 +125,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles begin turn event.
+   * Handles the begin turn event.
    * @private
    */
   _handleBeginTurn () {
@@ -115,7 +138,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Hides waiting state.
+   * Hides the waiting state.
    * @private
    */
   _hideWaiting () {
@@ -126,10 +149,10 @@ class Enemy extends Waters {
   }
 
   /**
-   * Updates spinner display.
-   * @param {boolean} show - Whether to show spinner.
-   * @param {string} mode - Mode text.
+   * Updates the spinner display.
    * @private
+   * @param {boolean} show - Whether to show the spinner.
+   * @param {string} mode - The mode text to display.
    */
   _updateSpinner (show, mode) {
     const spinner = document.getElementById('spinner')
@@ -142,13 +165,18 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles hint event.
+   * Handles the hint event. Currently a placeholder.
    * @private
    */
   _handleHint () {
-    // Placeholder if needed
+    // Placeholder for hint handling if needed
   }
 
+  /**
+   * Handles cursor changes on the board.
+   * @param {string} oldCursor - The previous cursor class.
+   * @param {Object} newCursorInfo - Information about the new cursor.
+   */
   cursorChange (oldCursor, newCursorInfo) {
     const newCursor = newCursorInfo?.cursor
     if (newCursor === oldCursor) return
@@ -157,45 +185,62 @@ class Enemy extends Waters {
     this.updateMode(newCursorInfo.wps, newCursorInfo)
   }
 
+  /**
+   * Checks if the enemy has ammo available.
+   * @returns {boolean} True if ammo is available.
+   */
   hasAmmo () {
     return !this.hasNoAmmo()
   }
 
+  /**
+   * Checks if the enemy has no ammo.
+   * @returns {boolean} True if no ammo is available.
+   */
   hasNoAmmo () {
     return this.loadOut.isOutOfAmmo()
   }
 
+  /**
+   * Switches the weapon mode if possible.
+   */
   switchMode () {
     if (this.isGameOver() || this.hasNoAmmo()) return
     this.loadOut.switchWeapon()
     this.updateUI()
   }
 
+  /**
+   * Checks if the game is over for the enemy.
+   * @returns {boolean} True if the game is over.
+   */
   isGameOver () {
     return this.boardDestroyed || this.isRevealed
   }
 
   /**
-   * Attempts to place ships randomly.
-   * @param {Array} ships - Ships to place.
-   * @returns {boolean} True if successful.
+   * Attempts to place ships randomly on the board.
    * @private
+   * @param {Array} ships - The ships to place.
+   * @returns {boolean} True if placement was successful.
    */
   _attemptShipPlacement (ships) {
     this.resetShipCells()
     const mask = bh.map.blankMask
     const shuffledShips = Random.shuffleArray([...ships])
     for (const ship of shuffledShips) {
-      if (!randomPlaceShape(ship, this.shipCellGrid, mask)) return false
+      if (!randomPlaceShape(ship, this.shipCellGrid, mask)) {
+        return false
+      }
     }
     return true
   }
 
   /**
-   * Handles ship placement with retries.
-   * @param {Array} ships - Ships to place.
-   * @param {number} attempt - Current attempt number.
+   * Handles ship placement with retry logic.
    * @private
+   * @param {Array} ships - The ships to place.
+   * @param {number} attempt - The current attempt number.
    */
   _handlePlacement (ships, attempt) {
     this.UI.disableBtns()
@@ -210,10 +255,10 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles placement failure with retries.
-   * @param {Array} ships - Ships to place.
-   * @param {number} attempt - Current attempt number.
+   * Handles placement failure and retries if possible.
    * @private
+   * @param {Array} ships - The ships to place.
+   * @param {number} attempt - The current attempt number.
    */
   async _handlePlacementFailure (ships, attempt) {
     const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
@@ -236,8 +281,9 @@ class Enemy extends Waters {
   }
 
   /**
-   * Places all ships.
-   * @param {Array} ships - Ships to place.
+   * Places all ships on the board asynchronously.
+   * @param {Array} [ships=this.ships] - The ships to place.
+   * @returns {Promise<void>}
    */
   async placeAll (ships = this.ships) {
     this.UI.enableBtns()
@@ -246,7 +292,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Reveals all ships.
+   * Reveals all ships on the board.
    */
   revealAll () {
     this.UI.clearClasses()
@@ -258,7 +304,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Updates UI components.
+   * Updates all UI components.
    */
   updateUI () {
     this._updateStats()
@@ -268,7 +314,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Updates stats display.
+   * Updates the stats display.
    * @private
    */
   _updateStats () {
@@ -276,7 +322,7 @@ class Enemy extends Waters {
   }
 
   /**
-   * Updates button states.
+   * Updates the state of buttons based on game status.
    * @private
    */
   _updateButtons () {
@@ -285,6 +331,10 @@ class Enemy extends Waters {
     this.UI.revealBtn.disabled = this.isGameOver()
   }
 
+  /**
+   * Checks if the enemy can take a turn.
+   * @returns {boolean} True if a turn can be taken.
+   */
   canTakeTurn () {
     if (this.isGameOver() || this.loadOut.checkNoAmmo()) {
       return false
@@ -301,24 +351,35 @@ class Enemy extends Waters {
   }
 
   /**
-   * Launches  specified location.
-   *
-   *
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
-   * @returns {Promise<null|{ weapon: Object, score: Object}|{hasTargettedWeapon: boolean }>} Result with weapon and score
+   * Prepares and launches a weapon at the specified location.
    * @private
+   * @param {number} r - Target row.
+   * @param {number} c - Target column.
+   * @returns {Promise<Object|null>} The result of the weapon launch.
    */
-  async setupWeapon (r, c) {
+  async _prepareWeaponLaunch (r, c) {
     this.UI.removeHighlightAoE()
     this.setWeaponFireHandlers()
+    return await this._launchWeaponSequence(r, c)
+  }
+
+  /**
+   * Launches the weapon sequence, trying different launch methods.
+   * @private
+   * @param {number} r - Target row.
+   * @param {number} c - Target column.
+   * @returns {Promise<Object|null>} The result of the launch.
+   */
+  async _launchWeaponSequence (r, c) {
     let result = await this.launchSelectedWeapon(r, c)
     if (result?.score && result.score !== LoadOut.noResult) {
       return result
     }
 
     result = await this.launchRandomWeapon(r, c, bh.seekingMode)
-    if (result?.hasTargettedWeapon || result?.score) return result
+    if (result?.hasTargettedWeapon || result?.score) {
+      return result
+    }
 
     return await this.fireWeaponAt(
       r,
@@ -328,21 +389,43 @@ class Enemy extends Waters {
     )
   }
 
+  /**
+   * Sets up and launches a weapon at the specified location.
+   * @param {number} r - Target row coordinate.
+   * @param {number} c - Target column coordinate.
+   * @returns {Promise<null|{ weapon: Object, score: Object }|{ hasTargettedWeapon: boolean }>} Result with weapon and score.
+   * @private
+   */
+  async setupWeapon (r, c) {
+    return await this._prepareWeaponLaunch(r, c)
+  }
+
+  /**
+   * Handles cell click for enemy turn.
+   * @param {number} r - Row coordinate.
+   * @param {number} c - Column coordinate.
+   * @returns {Promise<void>}
+   */
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
 
-    let result = await this.setupWeapon(r, c)
+    const result = await this.setupWeapon(r, c)
     if (result?.hasTargettedWeapon) {
       return
     }
     if (result?.score) {
-      this.updateResultsOfBomb(result?.weapon, result?.score)
+      this.updateResultsOfBomb(result.weapon, result.score)
     }
     this.score.finishTurn()
     this.updateUI()
     this.steps.endTurn()
   }
 
+  /**
+   * Handles click on opponent's cell for hint placement.
+   * @param {number} hintR - Hint row.
+   * @param {number} hintC - Hint column.
+   */
   onClickOppoCell (hintR, hintC) {
     if (!this.opponent) return
     this.opponent.UI.deactivateTempHints()
@@ -355,26 +438,58 @@ class Enemy extends Waters {
     this.selectAttachedWeapon(cell, hintR, hintC, this.opponent)
   }
 
+  /**
+   * Destroys one target with the given weapon and effect.
+   * @param {*} weapon - The weapon used.
+   * @param {Array} effect - The effect coordinates.
+   * @param {Array} [target] - Optional target coordinates.
+   * @returns {*} The result of the destruction.
+   */
   destroyOne (weapon, effect, target) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
-    if (this.isNoHitCandidates(hitCandidates)) {
-      if (weapon.crashLoc) {
-        const splashEffect = this.getCrashSplash(
-          weapon,
-          weapon.crashLoc,
-          effect
-        )
-        return this.destroy(weapon, splashEffect)
-      }
-      return this.destroy(weapon, effect)
+    if (this._hasNoHitCandidates(hitCandidates)) {
+      return this._handleNoHits(weapon, effect)
     }
-    const resolvedTarget = this.resolveTarget(target, hitCandidates)
-    if (
-      weapon.crashOverSplash &&
-      weapon.crashLoc &&
-      resolvedTarget[0] === weapon.crashLoc[0] &&
-      resolvedTarget[1] === weapon.crashLoc[1]
-    ) {
+    return this._handleHits(weapon, effect, target, hitCandidates)
+  }
+
+  /**
+   * Checks if there are no hit candidates.
+   * @private
+   * @param {Array} hitCandidates - The hit candidates.
+   * @returns {boolean} True if no candidates.
+   */
+  _hasNoHitCandidates (hitCandidates) {
+    return hitCandidates.length < 1
+  }
+
+  /**
+   * Handles the case when there are no hit candidates.
+   * @private
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect.
+   * @returns {*} The destruction result.
+   */
+  _handleNoHits (weapon, effect) {
+    if (weapon.crashLoc) {
+      const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc, effect)
+      return this.destroy(weapon, splashEffect)
+    }
+    return this.destroy(weapon, effect)
+  }
+
+  /**
+   * Handles the case when there are hit candidates.
+   * @private
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect.
+   * @param {Array} target - The target.
+   * @param {Array} hitCandidates - The hit candidates.
+   * @returns {*} The destruction result.
+   */
+  _handleHits (weapon, effect, target, hitCandidates) {
+    const resolvedTarget = this._resolveTarget(target, hitCandidates)
+    if (this._shouldUseCrashSplash(weapon, resolvedTarget)) {
       const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc, effect)
       return this.destroy(weapon, splashEffect)
     }
@@ -382,22 +497,44 @@ class Enemy extends Waters {
     return this.destroy(weapon, splashEffect)
   }
 
-  isNoHitCandidates (hitCandidates) {
-    return hitCandidates.length < 1
-  }
-
-  resolveTarget (target, hitCandidates) {
+  /**
+   * Resolves the target from hit candidates.
+   * @private
+   * @param {Array} target - The provided target.
+   * @param {Array} hitCandidates - The candidates.
+   * @returns {Array} The resolved target.
+   */
+  _resolveTarget (target, hitCandidates) {
     if (!target || target.length < 2) {
       return Random.element(hitCandidates)
     }
     return target
   }
 
+  /**
+   * Checks if crash splash should be used.
+   * @private
+   * @param {*} weapon - The weapon.
+   * @param {Array} resolvedTarget - The resolved target.
+   * @returns {boolean} True if crash splash.
+   */
+  _shouldUseCrashSplash (weapon, resolvedTarget) {
+    return (
+      weapon.crashOverSplash &&
+      weapon.crashLoc &&
+      resolvedTarget[0] === weapon.crashLoc[0] &&
+      resolvedTarget[1] === weapon.crashLoc[1]
+    )
+  }
+
+  /**
+   * Destroys targets with the given weapon and effect.
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect coordinates.
+   * @returns {*} The result of the application.
+   */
   destroy (weapon, effect) {
-    if (
-      effect.length === 1 &&
-      !this.score.newShotKey(effect[0][0], effect[0][1])
-    ) {
+    if (this._isInvalidShot(effect)) {
       gameStatus._addToQueue('Already Shot Here - Try Again', false)
       return LoadOut.noResult
     }
@@ -408,6 +545,25 @@ class Enemy extends Waters {
     return this.applyWeaponEffect(weapon, effect)
   }
 
+  /**
+   * Checks if the shot is invalid (already shot).
+   * @private
+   * @param {Array} effect - The effect.
+   * @returns {boolean} True if invalid.
+   */
+  _isInvalidShot (effect) {
+    return (
+      effect.length === 1 &&
+      !this.score.newShotKey(effect[0][0], effect[0][1])
+    )
+  }
+
+  /**
+   * Applies the weapon effect to the area of effect.
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect coordinates.
+   * @returns {*} The results.
+   */
   applyWeaponEffect (weapon, effect) {
     const results = this.applyToAoE(effect, weapon)
     this.updateMode()
@@ -415,20 +571,32 @@ class Enemy extends Waters {
     return results
   }
 
+  /**
+   * Deactivates the weapon at the specified locations.
+   * @param {number} ro - Opponent row.
+   * @param {number} co - Opponent column.
+   * @param {number} shadowR - Shadow row.
+   * @param {number} shadowC - Shadow column.
+   */
   deactivateWeapon (ro, co, shadowR, shadowC) {
-    if (ro === undefined || co === undefined) return
-    this.opponent?.UI?.cellWeaponDeactivate?.(ro, co, true)
-    if (shadowR === undefined || shadowC === undefined) return
-    this.UI.cellWeaponDeactivate(shadowR, shadowC)
-
-    this.opponent?.UI?.cellHintDeactivate?.(shadowR, shadowC)
+    if (ro !== undefined && co !== undefined) {
+      this.opponent?.UI?.cellWeaponDeactivate?.(ro, co, true)
+    }
+    if (shadowR !== undefined && shadowC !== undefined) {
+      this.UI.cellWeaponDeactivate(shadowR, shadowC)
+      this.opponent?.UI?.cellHintDeactivate?.(shadowR, shadowC)
+    }
   }
 
+  /**
+   * Updates the weapon status display.
+   * @param {*} rack - The weapon rack.
+   * @param {Object} cursorInfo - Cursor information.
+   */
   updateWeaponStatus (rack, cursorInfo) {
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
     const cursorIdx = cursorInfo?.idx || this.loadOut.getCursorIndex()
-    const newCursor =
-      cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
+    const newCursor = cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
     this.updateCursor(newCursor)
     gameStatus.displayAmmoStatus(
       wps,
@@ -438,6 +606,10 @@ class Enemy extends Waters {
     )
   }
 
+  /**
+   * Updates the cursor on the board.
+   * @param {string} newCursor - The new cursor class.
+   */
   updateCursor (newCursor) {
     const oldCursor = this._oldCursor || ''
     if (newCursor !== oldCursor) {
@@ -448,25 +620,41 @@ class Enemy extends Waters {
     }
   }
 
+  /**
+   * Updates the weapon mode.
+   */
   updateWeaponMode () {
     this.updateMode(this.loadOut.getCurrentWeaponSystem())
   }
 
+  /**
+   * Handles click on single shot button.
+   */
   onClickSingleShotButton () {
     this.loadOut.switchToSingleShot()
     this.updateWeaponMode()
   }
 
+  /**
+   * Handles click on weapon buttons.
+   * @param {string} letter - The weapon letter.
+   */
   onClickWeaponButtons (letter) {
     this.loadOut.switchToWeapon(letter)
     this.updateWeaponMode()
   }
 
+  /**
+   * Handles click on weapon mode button.
+   */
   onClickWeaponMode () {
     this.switchMode()
     this.updateWeaponMode()
   }
 
+  /**
+   * Handles click on reveal button.
+   */
   onClickReveal () {
     if (!this.isRevealed) {
       this.revealAll()
@@ -474,6 +662,9 @@ class Enemy extends Waters {
     }
   }
 
+  /**
+   * Wires up the button event handlers.
+   */
   wireupButtons () {
     if (this.weaponSelectHandler == null) {
       this.weaponSelectHandler = this.onClickSingleShotButton.bind(this)
@@ -485,6 +676,9 @@ class Enemy extends Waters {
     this.UI.revealBtn.addEventListener('click', this.revealHandler)
   }
 
+  /**
+   * Resets the model to initial state.
+   */
   resetModel () {
     this.score.reset()
     this.resetMap()
@@ -499,11 +693,18 @@ class Enemy extends Waters {
     this.updateUI()
   }
 
+  /**
+   * Builds the board UI.
+   */
   buildBoard () {
     this.UI.buildBoard(this.onClickCell, this)
     this.UI.board.classList.toggle('destroyed', this.boardDestroyed)
   }
 
+  /**
+   * Resets the UI and places ships.
+   * @param {Array} ships - The ships to place.
+   */
   resetUI (ships) {
     this.UI.reset()
     this.buildBoard()
