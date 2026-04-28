@@ -713,13 +713,23 @@ export class Waters {
       cell.classList.add('temp-hint')
     }
     this.addSource(oppo, launchR, launchC, rack, cell)
-    this.steps.addRack(rack, weapon, letter, weapon?.id, launchR, launchC, cell)
+    const { shadowR, shadowC } = this.steps.addRack(
+      rack,
+      weapon,
+      letter,
+      weapon?.id,
+      launchR,
+      launchC,
+      cell,
+      hintR,
+      hintC
+    )
     if (letter) {
       this.loadOut.switchToWeapon(letter)
       if (weapon.postSelectCursor === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
-        this.loadOut.addSelectedCoordinates(launchR, launchC)
+        this.loadOut.addSelectedCoordinates(shadowR, shadowC)
       }
 
       rack.launchCoord = [launchR, launchC]

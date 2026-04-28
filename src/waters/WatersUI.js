@@ -349,7 +349,7 @@ export class WatersUI {
     /* only needs implementation if enemy */
   }
 
-  removeShadowWeapon () {
+  removeShadowWeapon (_cell) {
     /* only needs implementation if enemy */
   }
 
@@ -370,6 +370,10 @@ export class WatersUI {
     const cell = this.gridCellAt(r, c)
     this.removeShadowWeapon(cell)
     deactivateWeapon(cell)
+  }
+  cellHintDeactivate (r, c) {
+    const cell = this.gridCellAt(r, c)
+    deactivateTempHint(cell)
   }
 
   cellMiss (r, c, damage) {

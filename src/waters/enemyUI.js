@@ -194,7 +194,7 @@ class EnemyUI extends WatersUI {
    * @param {HTMLElement} cell - The cell element.
    */
   removeShadowWeapon (cell) {
-    cell.classList.remove('weapon')
+    cell.classList.remove('weapon', 'contrast')
   }
 
   /**

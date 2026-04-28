@@ -48,10 +48,20 @@ class Enemy extends Waters {
    * Handles activation event.
    * @private
    */
-  _handleActivate (rack, weapon, _wletter, _weaponId, r, c, _cell) {
+  _handleActivate (
+    rack,
+    weapon,
+    _wletter,
+    _weaponId,
+    r,
+    c,
+    _cell,
+    shadowR,
+    shadowC
+  ) {
     this.opponent?.UI?.cellWeaponActive?.(r, c)
     if (weapon.postSelectCursor > 0) {
-      this.UI.cellWeaponActive(r, c, '', weapon.tag)
+      this.UI.cellWeaponActive(shadowR, shadowC, '', weapon.tag)
     }
     this.updateMode(rack)
   }
@@ -400,10 +410,13 @@ class Enemy extends Waters {
     return results
   }
 
-  deactivateWeapon (ro, co) {
+  deactivateWeapon (ro, co, shadowR, shadowC) {
     if (ro === undefined || co === undefined) return
     this.opponent?.UI?.cellWeaponDeactivate?.(ro, co, true)
-    this.UI.cellWeaponDeactivate(ro, co)
+    if (shadowR === undefined || shadowC === undefined) return
+    this.UI.cellWeaponDeactivate(shadowR, shadowC)
+
+    this.opponent?.UI?.cellHintDeactivate?.(shadowR, shadowC)
   }
 
   updateWeaponStatus (rack, cursorInfo) {

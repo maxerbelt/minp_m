@@ -242,11 +242,11 @@ async function performGaussRoundAnimation (
 
   const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
   const targetCell1 = opposingViewModel.gridCellAt(
-    targetCoord[1],
-    targetCoord[0]
+    targetCoord[0],
+    targetCoord[1]
   )
-  const sourceCell2 = viewModel.gridCellAt(startCol, startRow)
-  const targetCell2 = viewModel.gridCellAt(targetCoord[1], targetCoord[0])
+  const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+  const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
 
   // Apply portal CSS classes to sources
   sourceCell1.classList.add(CSS_CLASSES.PORTAL)
@@ -257,12 +257,6 @@ async function performGaussRoundAnimation (
     weapon,
     sourceCell2,
     targetCell2,
-    viewModel
-  )
-  await Weapon.prototype.animateFlyingOnVM.call(
-    weapon,
-    sourceCell1,
-    targetCell1,
     viewModel
   )
 
@@ -644,6 +638,11 @@ export class GuassRound extends Fish {
     this.isOneAndDone = true
     this.postSelectCursor = 1
     this.totalCursors = 2
+
+    // Display and scoring configuration
+    this.plural = 'Gauss Rounds'
+    this.givesHint = true
+    this.hasShadowAtHint = true
 
     // Weapon behavior configuration
     this._applyWeaponConfig({

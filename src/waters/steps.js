@@ -46,10 +46,19 @@ export class Steps {
       weaponId !== this.sourceRack?.weaponId
     )
   }
-
+  deactivateOnNewRack (weaponId) {
+    if (weaponId !== this.sourceRack.weaponId) {
+      this.deactivateCurrentSourceRack()
+    }
+  }
   deactivateCurrentSourceRack () {
     if (this.sourceRack && this.sourceRack.weaponId !== -1) {
-      this.onDeactivate(this.sourceRack.r, this.sourceRack.c)
+      this.onDeactivate(
+        this.sourceRack.r,
+        this.sourceRack.c,
+        this.sourceRack.shadowR,
+        this.sourceRack.shadowC
+      )
     }
   }
 
@@ -72,26 +81,51 @@ export class Steps {
       )
     }
     if (!this.source) return
+    this.deactivateCurrentSourceRack()
     this.source.board.cellUseAmmo(this.source.r, this.source.c)
     if (this.sourceRack?.weapon?.givesHint) {
       this.sourceHint.board.cellHintReveal(this.sourceHint.r, this.sourceHint.c)
       this.onHint(this.sourceHint.r, this.sourceHint.c)
     }
   }
-  addRack (rack, weapon, wletter, weaponId, r, c, cell) {
+  addRack (rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC) {
     weaponId = weaponId || rack.id
     if (bh.terrain.hasAttachedWeapons && this.shouldChangeWeapon(wletter)) {
       this.onChangeWeapon(wletter)
     }
-    if (this.shouldDeactivatePreviousRack(weaponId)) {
-      this.onDeactivate(this.sourceRack.r, this.sourceRack.c)
+    const [shadowR, shadowC] = weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
+    this.activate(weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC)
+    this.sourceRack = {
+      rack,
+      weapon,
+      wletter,
+      weaponId,
+      r,
+      c,
+      cell,
+      shadowR,
+      shadowC
     }
-    if (this.shouldActivateNewRack(weapon, weaponId)) {
-      this.onActivate(rack, weapon, wletter, weaponId, r, c, cell)
-    }
-    this.sourceRack = { rack, weapon, wletter, weaponId, r, c, cell }
     this.select()
+    return { shadowR, shadowC }
   }
+  activate (weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC) {
+    this.shouldDeactivatePreviousRack(weaponId)
+    if (this.shouldActivateNewRack(weapon, weaponId)) {
+      this.onActivate(
+        rack,
+        weapon,
+        wletter,
+        weaponId,
+        r,
+        c,
+        cell,
+        shadowR,
+        shadowC
+      )
+    }
+  }
+
   clearSource () {
     this.deactivateCurrentSourceRack()
     this.resetSourceState()
