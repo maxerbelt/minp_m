@@ -1,4 +1,5 @@
 import { addKeyToCell, coordsFromCell } from '../../core/utilities.js'
+import { CellClassManager } from './CellClassManager.js'
 
 /**
  * Manages the display of ship cells with various visual states
@@ -105,6 +106,9 @@ export class ShipCellDisplayer {
     cell.dataset.variant = ship.variant
 
     const turn = ship.getTurn(r, c)
+    CellClassManager.clearCellClasses(cell, [
+      CellClassManager.CELL_CLASSES.orientation
+    ])
     if (turn && turn !== '') {
       cell.classList.add(turn)
     }

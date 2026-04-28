@@ -2,6 +2,7 @@ import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/WeaponCatelo
 import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
+import { CellClassManager } from '../../../waters/helpers/CellClassManager.js'
 
 // ============================================================================
 // Helper Constants & Utility Functions
@@ -195,74 +196,6 @@ async function performPortalAnimation (
   targetCell1.classList.remove(CSS_CLASSES.PORTAL)
   sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
   targetCell2.classList.remove(CSS_CLASSES.MARKER)
-}
-
-/**
- * Performs Gauss round dual-board animation with portal effect on sources
- * Animates from source on opposing board to target on primary board
- * Then animates from source on primary board to target on primary board
- * @async
- * @param {Object} weapon - Weapon instance
- * @param {number[][]} coords - Target coordinates
- * @param {number} sourceRow - Source row
- * @param {number} sourceCol - Source column
- * @param {Object} map - Game map
- * @param {Object} viewModel - Primary view model
- * @param {Object} opposingViewModel - Opposing view model
- * @param {Object} gameModel - Game model
- * @returns {Promise} Animation promise
- */
-async function performGaussRoundAnimation (
-  weapon,
-  coords,
-  sourceRow,
-  sourceCol,
-  map,
-  viewModel,
-  opposingViewModel,
-  gameModel
-) {
-  if (!opposingViewModel) {
-    return await weapon.launchRightTo(
-      coords,
-      sourceRow,
-      sourceCol,
-      map,
-      viewModel,
-      opposingViewModel,
-      gameModel
-    )
-  }
-
-  const [[startRow, startCol], targetCoord] = weapon.redoCoords(
-    map,
-    [sourceRow, sourceCol],
-    coords
-  )
-
-  const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
-  const targetCell1 = opposingViewModel.gridCellAt(
-    targetCoord[0],
-    targetCoord[1]
-  )
-  const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
-  const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
-
-  // Apply portal CSS classes to sources
-  sourceCell1.classList.add(CSS_CLASSES.PORTAL)
-  sourceCell2.classList.add(CSS_CLASSES.PORTAL)
-
-  // Perform animations
-  await Weapon.prototype.animateFlyingOnVM.call(
-    weapon,
-    sourceCell2,
-    targetCell2,
-    viewModel
-  )
-
-  // Remove CSS classes
-  sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
-  sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
 }
 
 // ============================================================================
@@ -668,7 +601,95 @@ export class GuassRound extends Fish {
     // Tracks crash location when round hits land
     this.crashLoc = null
   }
+  /**
+   * Performs Gauss round dual-board animation with portal effect on sources
+   * Animates from source on opposing board to target on primary board
+   * Then animates from source on primary board to target on primary board
+   * @async
+   * @param {Object} weapon - Weapon instance
+   * @param {number[][]} coords - Target coordinates
+   * @param {number} sourceRow - Source row
+   * @param {number} sourceCol - Source column
+   * @param {Object} map - Game map
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} opposingViewModel - Opposing view model
+   * @param {Object} gameModel - Game model
+   * @returns {Promise} Animation promise
+   */
+  async performGaussRoundAnimation (
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel
+  ) {
+    if (!opposingViewModel) {
+      return await weapon.launchRightTo(
+        coords,
+        sourceRow,
+        sourceCol,
+        map,
+        viewModel,
+        opposingViewModel,
+        gameModel,
+        this.processCoords.bind(this)
+      )
+    }
+    const [[startRow, startCol], targetCoord, hasCandidates] =
+      this.processCoords(map, [sourceRow, sourceCol], coords, gameModel)
+    //const [[startRow, startCol], targetCoord] = weapon.redoCoords(
+    //  map,
+    //  [sourceRow, sourceCol],
+    // coords
+    //)
 
+    const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
+    const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+
+    const oldClassName1 = sourceCell1.className
+    const oldClassName2 = sourceCell2.className
+
+    CellClassManager.clearFriendCell(sourceCell1)
+    CellClassManager.clearFriendCell(sourceCell2)
+    // Apply portal CSS classes to sources
+    sourceCell1.classList.add(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+
+    // Perform animations
+    await this.animateFlyingOnVM(sourceCell2, targetCell2, viewModel)
+
+    sourceCell1.className = oldClassName1
+    sourceCell2.className = oldClassName2
+
+    // Remove CSS classes
+    sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
+    return hasCandidates ? { target: targetCoord } : {}
+  }
+
+  /**
+   * Process launch coordinates through game model targeting logic.
+   * Allows model to transform target location based on game state.
+   *
+   * @param {any} map - Game map object
+   * @param {number[]} base - Base/source coordinates [row, col]
+   * @param {number[]} coords - Target coordinates [row, col]
+   * @param {any} model - Game model for target lookup
+   * @returns {number[][]} Processed coordinate pair with candidate flag
+   */
+  processCoords (map, [rr, cc], coords, model) {
+    const effect = this.aoe(map, coords)
+    const t = model.getTarget(effect, this)
+    const list = this.redoCoords(map, [rr, cc], coords)
+    if (t) {
+      const source = list[0]
+      return [source, t, true]
+    }
+    return list
+  }
   /**
    * Determines turn phase for missile variant
    * Maps variant ID to turn duration classes for animation pacing
@@ -795,7 +816,7 @@ export class GuassRound extends Fish {
       viewModel,
       opposingViewModel,
       gameModel,
-      performGaussRoundAnimation.bind(null, this)
+      this.performGaussRoundAnimation.bind(this)
     )
   }
 

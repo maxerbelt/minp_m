@@ -1,5 +1,7 @@
 import { bh } from '../terrains/all/js/bh.js'
 
+const NOOP = () => {}
+
 export const Player = Object.freeze({
   friend: 'FRIEND',
   enemy: 'ENEMY'
@@ -10,7 +12,32 @@ export const WeaponMode = Object.freeze({
   targetAim: 'AIM',
   othersTurn: 'OTHERS'
 })
+
+/**
+ * @typedef {Object} BoardContext
+ * @property {Object} board
+ * @property {number} r
+ * @property {number} c
+ * @property {HTMLElement} cell
+ */
+
+/**
+ * @typedef {Object} SourceRack
+ * @property {*} rack
+ * @property {*} weapon
+ * @property {string} wletter
+ * @property {number} weaponId
+ * @property {number} r
+ * @property {number} c
+ * @property {HTMLElement} cell
+ * @property {number} shadowR
+ * @property {number} shadowC
+ */
+
 export class Steps {
+  /**
+   * @param {string} player
+   */
   constructor (player) {
     this.player = player
     this.wletter = null
@@ -21,45 +48,131 @@ export class Steps {
     this.sourceShadow = null
     this.target = null
     this.mode = WeaponMode.othersTurn
-    this.onChangeWeapon = Function.prototype
-    this.onActivate = Function.prototype
-    this.onDeactivate = Function.prototype
-    this.onHint = Function.prototype
+
+    this.onChangeWeapon = NOOP
+    this.onActivate = NOOP
+    this.onDeactivate = NOOP
+    this.onHint = NOOP
+    this.onEndTurn = NOOP
+    this.onBeginTurn = NOOP
+    this.onAim = NOOP
+    this.onSelect = NOOP
   }
 
-  shouldChangeWeapon (wletter) {
+  /**
+   * @private
+   * @returns {boolean}
+   */
+  _hasActiveRack () {
+    return this.sourceRack && this.sourceRack.weaponId !== -1
+  }
+
+  /**
+   * @private
+   * @param {number} weaponId
+   * @returns {boolean}
+   */
+  _isNewRackId (weaponId) {
+    return weaponId !== this.sourceRack?.weaponId
+  }
+
+  /**
+   * @private
+   * @param {number|undefined} weaponId
+   * @param {*} rack
+   * @returns {number}
+   */
+  _resolveWeaponId (weaponId, rack) {
+    return weaponId || rack.id
+  }
+
+  /**
+   * @private
+   * @param {*} weapon
+   * @param {number} r
+   * @param {number} c
+   * @param {number} hintR
+   * @param {number} hintC
+   * @returns {[number, number]}
+   */
+  _resolveShadowCoords (weapon, r, c, hintR, hintC) {
+    return weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
+  }
+
+  /**
+   * @private
+   * @param {string} wletter
+   * @returns {boolean}
+   */
+  _isWeaponChangeRequired (wletter) {
     return wletter !== this.sourceRack?.wletter
   }
 
-  shouldDeactivatePreviousRack (weaponId) {
-    return (
-      this.sourceRack &&
-      this.sourceRack.weaponId !== -1 &&
-      weaponId !== this.sourceRack.weaponId
-    )
+  /**
+   * @private
+   * @param {string} key
+   * @param {Object} board
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   */
+  _setBoardContext (key, board, r, c, cell) {
+    this[key] = { board, r, c, cell }
   }
 
+  /**
+   * @param {string} wletter
+   * @returns {boolean}
+   */
+  shouldChangeWeapon (wletter) {
+    return this._isWeaponChangeRequired(wletter)
+  }
+
+  /**
+   * @param {number} weaponId
+   * @returns {boolean}
+   */
+  shouldDeactivatePreviousRack (weaponId) {
+    return this._hasActiveRack() && this._isNewRackId(weaponId)
+  }
+
+  /**
+   * @param {*} weapon
+   * @param {number} weaponId
+   * @returns {boolean}
+   */
   shouldActivateNewRack (weapon, weaponId) {
     return (
       weapon !== undefined &&
       weaponId !== -1 &&
-      weaponId !== this.sourceRack?.weaponId
+      this._isNewRackId(weaponId)
     )
   }
+
+  /**
+   * @param {number} weaponId
+   */
   deactivateOnNewRack (weaponId) {
-    if (weaponId !== this.sourceRack?.weaponId) {
-      this.deactivateCurrentSourceRack()
+    if (this._isNewRackId(weaponId)) {
+      this._deactivateCurrentSourceRack()
     }
   }
+
+  /**
+   * @private
+   */
+  _deactivateCurrentSourceRack () {
+    if (!this._hasActiveRack()) return
+    this.onDeactivate(
+      this.sourceRack.r,
+      this.sourceRack.c,
+      this.sourceRack.shadowR,
+      this.sourceRack.shadowC
+    )
+  }
+
   deactivateCurrentSourceRack () {
-    if (this.sourceRack && this.sourceRack.weaponId !== -1) {
-      this.onDeactivate(
-        this.sourceRack.r,
-        this.sourceRack.c,
-        this.sourceRack.shadowR,
-        this.sourceRack.shadowC
-      )
-    }
+    this._deactivateCurrentSourceRack()
   }
 
   resetSourceState () {
@@ -69,46 +182,121 @@ export class Steps {
     this.sourceShadow = null
     this.sourceRack = null
   }
+
   select () {
     this.mode = WeaponMode.targetAim
     this.onSelect(this)
   }
 
+  /**
+   * Fires the selected weapon if a source is available.
+   */
   fire () {
+    this._warnIfNoSourceShipForUnattachedWeapon()
+    if (!this.source) return
+
+    this._deactivateCurrentSourceRack()
+    this.source.board.cellUseAmmo(this.source.r, this.source.c)
+    this._revealHintIfRequired()
+  }
+
+  /**
+   * @private
+   */
+  _warnIfNoSourceShipForUnattachedWeapon () {
     if (!bh.terrain.hasUnattachedWeapons && this.sourceShip === null) {
       console.warn(
         `${bh.terrain.name} does not have unattached weapons, but a weapon was fired without a source ship`
       )
     }
-    if (!this.source) return
-    this.deactivateCurrentSourceRack()
-    this.source.board.cellUseAmmo(this.source.r, this.source.c)
-    if (this.sourceRack?.weapon?.givesHint) {
-      this.sourceHint.board.cellHintReveal(this.sourceHint.r, this.sourceHint.c)
-      this.onHint(this.sourceHint.r, this.sourceHint.c)
-    }
   }
+
+  /**
+   * @private
+   */
+  _revealHintIfRequired () {
+    if (!this.sourceRack?.weapon?.givesHint || !this.sourceHint) return
+
+    this.sourceHint.board.cellHintReveal(
+      this.sourceHint.r,
+      this.sourceHint.c
+    )
+    this.onHint(this.sourceHint.r, this.sourceHint.c)
+  }
+
+  /**
+   * @param {*} rack
+   * @param {*} weapon
+   * @param {string} wletter
+   * @param {number} weaponId
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   * @param {number} hintR
+   * @param {number} hintC
+   * @returns {{shadowR:number,shadowC:number}}
+   */
   addRack (rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC) {
-    weaponId = weaponId || rack.id
-    if (bh.terrain.hasAttachedWeapons && this.shouldChangeWeapon(wletter)) {
-      this.onChangeWeapon(wletter)
-    }
-    const [shadowR, shadowC] = weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
-    this.activate(weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC)
+    const resolvedWeaponId = this._resolveWeaponId(weaponId, rack)
+    this._maybeNotifyAttachedWeaponChange(wletter)
+
+    const [shadowR, shadowC] = this._resolveShadowCoords(
+      weapon,
+      r,
+      c,
+      hintR,
+      hintC
+    )
+
+    this.activate(
+      resolvedWeaponId,
+      weapon,
+      rack,
+      wletter,
+      r,
+      c,
+      cell,
+      shadowR,
+      shadowC
+    )
+
     this.sourceRack = {
       rack,
       weapon,
       wletter,
-      weaponId,
+      weaponId: resolvedWeaponId,
       r,
       c,
       cell,
       shadowR,
       shadowC
     }
+
     this.select()
     return { shadowR, shadowC }
   }
+
+  /**
+   * @private
+   * @param {string} wletter
+   */
+  _maybeNotifyAttachedWeaponChange (wletter) {
+    if (bh.terrain.hasAttachedWeapons && this.shouldChangeWeapon(wletter)) {
+      this.onChangeWeapon(wletter)
+    }
+  }
+
+  /**
+   * @param {number} weaponId
+   * @param {*} weapon
+   * @param {*} rack
+   * @param {string} wletter
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   * @param {number} shadowR
+   * @param {number} shadowC
+   */
   activate (weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC) {
     this.deactivateOnNewRack(weaponId)
     if (this.shouldActivateNewRack(weapon, weaponId)) {
@@ -127,48 +315,66 @@ export class Steps {
   }
 
   clearSource () {
-    this.deactivateCurrentSourceRack()
+    this._deactivateCurrentSourceRack()
     this.resetSourceState()
   }
 
+  /**
+   * @param {*} ship
+   */
   addShip (ship) {
     this.sourceShip = ship
-    if (bh.terrain.hasAttachedWeapons) {
-      const letter = ship.getPrimaryWeapon().letter
-      if (letter !== this.sourceRack?.wletter) {
-        this.onChangeWeapon(letter)
-      }
-      this.wletter = letter
-    } else {
+    if (!bh.terrain.hasAttachedWeapons) {
       console.warn(
         'Terrain does not have attached weapons, but a ship was added to steps'
       )
+      return
     }
+
+    const letter = ship.getPrimaryWeapon().letter
+    if (letter !== this.sourceRack?.wletter) {
+      this.onChangeWeapon(letter)
+    }
+    this.wletter = letter
   }
 
+  /**
+   * @param {Object} board
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   */
   addHint (board, r, c, cell) {
-    this.sourceHint = { board, r, c, cell }
-  }
-  addShadow (board, r, c, cell) {
-    this.sourceShadow = { board, r, c, cell }
+    this._setBoardContext('sourceHint', board, r, c, cell)
   }
 
+  /**
+   * @param {Object} board
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   */
+  addShadow (board, r, c, cell) {
+    this._setBoardContext('sourceShadow', board, r, c, cell)
+  }
+
+  /**
+   * @param {Object} board
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   */
   addSource (board, r, c, cell) {
-    this.source = { board, r, c, cell }
+    this._setBoardContext('source', board, r, c, cell)
   }
 
   endTurn () {
-    //  this.source = null
     this.mode = WeaponMode.othersTurn
     this.onEndTurn(this)
   }
+
   beginTurn () {
-    //  this.source = null
     this.mode = WeaponMode.sourceSelect
     this.onBeginTurn(this)
   }
-  onEndTurn = Function.prototype
-  onBeginTurn = Function.prototype
-  onAim = Function.prototype
-  onSelect = Function.prototype
 }

@@ -858,8 +858,8 @@ export class Waters {
     const hasMultiClick =
       hintR === this.lastClick?.r && hintC === this.lastClick?.c
     if (
-      hasMultiClick ||
-      (this.previousSources && this.previousSources.size >= keyIds.length)
+      hasMultiClick &&
+      (!this.previousSources || this.previousSources.size < keyIds.length)
     ) {
       keyIds = keyIds.filter(k => !this.previousSources.has(k))
     } else {
