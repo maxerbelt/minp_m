@@ -1,7 +1,7 @@
 /* eslint-env jest */
 
 /* global describe, it, expect, beforeEach */
-import { jest } from '@jest/globals'
+import { describe, it, expect, beforeEach } from '@jest/globals'
 import {
   randomElement,
   dedupCSV,
