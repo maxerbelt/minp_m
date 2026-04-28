@@ -849,11 +849,23 @@ export class Waters {
       this.steps.addSource(this.UI, 0, 0, cell || this.UI.gridCellAt(0, 0))
       return { launchR: 0, launchC: 0, weaponId: -1, hintR, hintC }
     }
-    const keyIds = keyListFromCell(cell, 'keyIds')
-    if (!keyIds) {
+    const keys = keyListFromCell(cell, 'keyIds')
+    if (!keys) {
       this.steps.addSource(this.UI, 0, 0, cell || this.UI.gridCellAt(0, 0))
       return { launchR: 0, launchC: 0, weaponId: -1, hintR, hintC }
     }
+    let keyIds = [...keys]
+    const hasMultiClick =
+      hintR === this.lastClick?.r && hintC === this.lastClick?.c
+    if (
+      hasMultiClick ||
+      (this.previousSources && this.previousSources.size >= keyIds.length)
+    ) {
+      keyIds = keyIds.filter(k => !this.previousSources.has(k))
+    } else {
+      this.previousSources = new Set()
+    }
+    this.lastClick = { r: hintR, c: hintC }
     const loaded = new Set(this.loadOut.getLoadedWeapons().map(w => w.id))
     const filteredKeyIds = keyIds.filter(k => {
       const [, , weaponId] = parseTriple(k)
@@ -865,6 +877,7 @@ export class Waters {
     if (!random && !wkey) {
       return this.selectRandomWeapon()
     }
+    this.previousSources.add(wkey)
     const [launchC, launchR, weaponId] = parseTriple(wkey)
     this.steps.addSource(
       viewModel,

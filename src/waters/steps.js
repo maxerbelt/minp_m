@@ -47,7 +47,7 @@ export class Steps {
     )
   }
   deactivateOnNewRack (weaponId) {
-    if (weaponId !== this.sourceRack.weaponId) {
+    if (weaponId !== this.sourceRack?.weaponId) {
       this.deactivateCurrentSourceRack()
     }
   }
@@ -110,7 +110,7 @@ export class Steps {
     return { shadowR, shadowC }
   }
   activate (weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC) {
-    this.shouldDeactivatePreviousRack(weaponId)
+    this.deactivateOnNewRack(weaponId)
     if (this.shouldActivateNewRack(weapon, weaponId)) {
       this.onActivate(
         rack,
