@@ -576,6 +576,8 @@ export class GuassRound extends Fish {
     this.plural = 'Gauss Rounds'
     this.givesHint = true
     this.hasShadowAtHint = true
+    this.crashOverSplash = false
+    this.canCrash = true
 
     // Weapon behavior configuration
     this._applyWeaponConfig({
@@ -752,7 +754,11 @@ export class GuassRound extends Fish {
    * @returns {Array} Cells along water path with damage power
    */
   aoe (map, coords, power = 1) {
-    return this.aoeRaw(map, coords, power, 1)
+    const effect = this.aoeRaw(map, coords, power, 1)
+    //     this.crashLoc =
+    //  landCollisionIndex >= 0 ? trajectoryLine[landCollisionIndex] : null
+
+    return effect
   }
 
   /*

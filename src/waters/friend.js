@@ -217,7 +217,7 @@ export class Friend extends Waters {
     if (target === null || target === undefined || target?.length < 2) {
       target = Random.element(candidates)
     }
-    const newEffect = this.getStrikeSplash(weapon, target)
+    const newEffect = this.getStrikeSplash(weapon, target, effect)
     return this.destroy(weapon, newEffect)
   }
 

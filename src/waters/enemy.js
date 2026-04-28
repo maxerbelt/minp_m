@@ -359,21 +359,26 @@ class Enemy extends Waters {
     const hitCandidates = this.getHitCandidates(effect, weapon)
     if (this.isNoHitCandidates(hitCandidates)) {
       if (weapon.crashLoc) {
-        const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc)
+        const splashEffect = this.getCrashSplash(
+          weapon,
+          weapon.crashLoc,
+          effect
+        )
         return this.destroy(weapon, splashEffect)
       }
       return this.destroy(weapon, effect)
     }
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
     if (
+      weapon.crashOverSplash &&
       weapon.crashLoc &&
       resolvedTarget[0] === weapon.crashLoc[0] &&
       resolvedTarget[1] === weapon.crashLoc[1]
     ) {
-      const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc)
+      const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc, effect)
       return this.destroy(weapon, splashEffect)
     }
-    const splashEffect = this.getStrikeSplash(weapon, resolvedTarget)
+    const splashEffect = this.getStrikeSplash(weapon, resolvedTarget, effect)
     return this.destroy(weapon, splashEffect)
   }
 
