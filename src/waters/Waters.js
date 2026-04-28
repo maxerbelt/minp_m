@@ -416,10 +416,7 @@ export class Waters {
 
   applyExtraInfoToMatchingShip (matchingShip, ship) {
     matchingShip.variant = ship.variant
-    const values = Object.values(matchingShip.weapons)
-    if (values.length > 0) {
-      this.applyWeaponsToMatchingShip(ship, values, matchingShip)
-    }
+    matchingShip.weapons = ship.weapons
   }
 
   applyWeaponsToMatchingShip (ship, values, matchingShip) {

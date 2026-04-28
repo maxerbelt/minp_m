@@ -125,7 +125,7 @@ export class Ship {
     return this.numWeapons > 0
   }
   get numWeapons () {
-    return this._weaponArray.length
+    return this._weaponArray?.length || this.weaponsById?.size || 0
   }
 
   get cells () {
