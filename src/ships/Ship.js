@@ -993,15 +993,6 @@ export class Ship {
         o.minSize === 0 ? m : Math.max(m, o.minSize),
       0
     )
-    console.log(
-      `maxMin Size: ${mm} :`,
-      arr
-        .map(
-          (/** @type {{ letter: any; width: any; height: any; }} */ o) =>
-            `${o.letter}: ${o.width},${o.height}`
-        )
-        .join('; ')
-    )
     return mm
   }
   /**
