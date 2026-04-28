@@ -154,12 +154,21 @@ export class SubBoard extends SubMask {
       }
     }
   }
+
   toMask (newWidth, newHeight) {
     const newMask = this.mask.emptyMaskOfSize(newWidth, newHeight)
     this.copyToMask(newMask)
     return newMask
   }
 
+  toMaskMatching (otherMask) {
+    const newMask = otherMask.emptyMaskOfSize(
+      this.windowWidth,
+      this.windowHeight
+    )
+    this.copyToMask(newMask)
+    return newMask
+  }
   /**
    * Load window contents from a list of world-relative [x, y, value] coordinates
    * @param {Array<Array>} coords - List of world-relative [x, y, value] tuples

@@ -461,6 +461,7 @@ export class Strike extends Weapon {
   constructor (ammo, name, letter) {
     super(name || 'Strike', letter || '$', true, true, 2)
     this.ammo = ammo
+    this.hasWake = true
     this._applyWeaponConfig(WEAPON_CONFIGS.STRIKE)
     this.splashCoords = this.addOrthogonal(null, 2, 2, 0, [
       [2, 2, 2],
@@ -580,6 +581,7 @@ export class Fish extends Weapon {
   constructor (ammo, name = 'Fish', letter = '+') {
     super(name, letter, true, true, 2)
     this.ammo = ammo
+    this.hasWake = true
     this._applyWeaponConfig(WEAPON_CONFIGS.FISH)
     this.splashCoords = this.addOrthogonal(null, 3, 3, 1, [
       [3, 3, 2],

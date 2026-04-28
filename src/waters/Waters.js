@@ -1035,7 +1035,7 @@ export class Waters {
     for (const [r, c, power] of effect) {
       if (map.inBounds(r, c) && this.score.newShotKey(r, c) !== null) {
         const cell = this.UI.gridCellAt(r, c)
-        this.addWake(cell, r, c)
+        this.addWake(cell, r, c, weapon)
         const shipCell = this.shipCellAt(r, c)
         if (shipCell !== null) {
           const shape = maps.shapesByLetter[shipCell.letter]
@@ -1049,7 +1049,9 @@ export class Waters {
     }
     return candidates
   }
-  addWake (cell, r, c) {
+
+  addWake (cell, r, c, weapon) {
+    if (!weapon.hasWake) return
     if (
       !cell.classList.contains('frd-hit') &&
       !cell.classList.contains('miss') &&

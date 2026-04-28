@@ -639,7 +639,14 @@ export class Weapon {
       viewModel
     )
   }
-  async animateExplodeRaw (target, cellSize, type, power, shake = 'shake') {
+  async animateExplodeRaw (
+    target,
+    cellSize,
+    type,
+    power,
+    shake = 'shake',
+    viewModel = null
+  ) {
     return await this.animateExplode(
       target,
       null,
@@ -647,7 +654,9 @@ export class Weapon {
       cellSize,
       type,
       power,
-      shake
+      shake,
+      null,
+      viewModel
     )
   }
 

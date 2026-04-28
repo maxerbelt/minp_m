@@ -485,7 +485,20 @@ export class SubMask {
       }
     }
   }
+  toMask (newWidth, newHeight) {
+    const newMask = this.mask.emptyMaskOfSize(newWidth, newHeight)
+    this.copyToMask(newMask)
+    return newMask
+  }
 
+  toMaskMatching (otherMask) {
+    const newMask = otherMask.emptyMaskOfSize(
+      this.windowWidth,
+      this.windowHeight
+    )
+    this.copyToMask(newMask)
+    return newMask
+  }
   // ============================================================================
   // Bit Access: Direct bit property delegation
   // ============================================================================

@@ -578,6 +578,7 @@ export class GuassRound extends Fish {
     this.hasShadowAtHint = true
     this.crashOverSplash = false
     this.canCrash = true
+    this.hasWake = false
 
     // Weapon behavior configuration
     this._applyWeaponConfig({

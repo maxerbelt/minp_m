@@ -362,6 +362,9 @@ export class MaskBase extends CanvasGrid {
     return this._bitOps.createIntersectionMask(bits)
   }
   overlap (bb) {
+    if (typeof bb.toMaskMatching === 'function') {
+      bb = bb.toMaskMatching(this)
+    }
     this._validation.assertCompatibleWith(bb)
     return this.overlapFromBits(bb.bits)
   }
@@ -369,6 +372,9 @@ export class MaskBase extends CanvasGrid {
     return this._bitOps.createDifferenceMask(bits)
   }
   take (bb) {
+    if (typeof bb.toMaskMatching === 'function') {
+      bb = bb.toMaskMatching(this)
+    }
     this._validation.assertCompatibleWith(bb)
     return this.takeFromBits(bb.bits)
   }
@@ -388,6 +394,9 @@ export class MaskBase extends CanvasGrid {
     return result
   }
   join (bb) {
+    if (typeof bb.toMaskMatching === 'function') {
+      bb = bb.toMaskMatching(this)
+    }
     this._validation.assertCompatibleWith(bb)
     return this.joinFromBits(bb.bits)
   }
