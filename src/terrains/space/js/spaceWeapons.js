@@ -787,7 +787,8 @@ export class GuassRound extends Fish {
   splash (_map, resolvedTarget, effect, options) {
     const last = (effect?.length || 1) - 1
     const { fullLine } = options
-    let bracket = [[...resolvedTarget, 2]]
+    resolvedTarget[2] = 2
+    let bracket = [resolvedTarget]
     if (fullLine) {
       const idx = fullLine.find(
         ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
