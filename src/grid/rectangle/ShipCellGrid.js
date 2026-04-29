@@ -325,25 +325,15 @@ export class ShipCellGrid extends GridBase {
    * @returns {ShipCell[]}
    */
   getArmedCells () {
-    const cells = []
-    for (const rowCells of this._grid) {
-      for (const cell of rowCells) {
-        if (cell?.dataset?.ammo > 0) {
-          cells.push(cell)
-        }
-      }
-    }
-    return cells
+    return this._filterCells(cell => cell?.dataset?.ammo > 0)
   }
 
   /**
    * Returns armed cells filtered by weapon letter.
-   * @param {string} weaponLetter
-   * @returns {ShipCell[]}
+   * @param {string} weaponLetter - Weapon letter to filter by
+   * @returns {ShipCell[]} Array of cells with matching weapon
    */
   getArmedCellsByWeapon (weaponLetter) {
-    const cells = []
-    for (const rowCells of this._grid) {
     return this._filterCells(
       cell => cell?.dataset?.ammo > 0 && cell?.dataset?.wletter === weaponLetter
     )
