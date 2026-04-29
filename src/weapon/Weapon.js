@@ -292,8 +292,8 @@ export class Weapon {
     return this.aoe(map, coords)
   }
   aoePlus (map, coords) {
-    const aoe = this.aoe(map, coords)
-    return { aoe, options: {} }
+    const affectedArea = this.aoe(map, coords)
+    return { affectedArea, options: {} }
   }
 
   /**
