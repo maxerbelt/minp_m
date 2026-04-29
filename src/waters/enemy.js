@@ -434,111 +434,13 @@ class Enemy extends Waters {
   }
 
   /**
-   * Destroys one target with the given weapon and effect.
-   * @param {*} weapon - The weapon used.
-   * @param {Array} effect - The effect coordinates.
-   * @param {Array} [target] - Optional target coordinates.
-   * @returns {*} The result of the destruction.
-   */
-  destroyOne (weapon, effect, target, options) {
-    const hitCandidates = this.getHitCandidates(effect, weapon)
-    if (this._hasNoHitCandidates(hitCandidates)) {
-      return this._handleNoHits(weapon, effect)
-    }
-    return this._handleHits(weapon, effect, target, hitCandidates)
-  }
-
-  /**
-   * Checks if there are no hit candidates.
-   * @private
-   * @param {Array} hitCandidates - The hit candidates.
-   * @returns {boolean} True if no candidates.
-   */
-  _hasNoHitCandidates (hitCandidates) {
-    return hitCandidates.length < 1
-  }
-
-  /**
-   * Handles the case when there are no hit candidates.
-   * @private
-   * @param {*} weapon - The weapon.
-   * @param {Array} effect - The effect.
-   * @returns {*} The destruction result.
-   */
-  _handleNoHits (weapon, effect, options) {
-    if (weapon.crashLoc) {
-      const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc, effect)
-      return this.destroy(weapon, splashEffect, options)
-    }
-    return this.destroy(weapon, effect, options)
-  }
-
-  /**
-   * Handles the case when there are hit candidates.
-   * @private
-   * @param {*} weapon - The weapon.
-   * @param {Array} effect - The effect.
-   * @param {Array} target - The target.
-   * @param {Array} hitCandidates - The hit candidates.
-   * @returns {*} The destruction result.
-   */
-  _handleHits (weapon, effect, target, hitCandidates, options) {
-    const resolvedTarget = this._resolveTarget(target, hitCandidates)
-    if (this._shouldUseCrashSplash(weapon, resolvedTarget)) {
-      const splashEffect = this.getCrashSplash(
-        weapon,
-        weapon.crashLoc,
-        effect,
-        options
-      )
-      return this.destroy(weapon, splashEffect, options)
-    }
-    const splashEffect = this.getStrikeSplash(
-      weapon,
-      resolvedTarget,
-      effect,
-      options
-    )
-    return this.destroy(weapon, splashEffect, options)
-  }
-
-  /**
-   * Resolves the target from hit candidates.
-   * @private
-   * @param {Array} target - The provided target.
-   * @param {Array} hitCandidates - The candidates.
-   * @returns {Array} The resolved target.
-   */
-  _resolveTarget (target, hitCandidates) {
-    if (!target || target.length < 2) {
-      return Random.element(hitCandidates)
-    }
-    return target
-  }
-
-  /**
-   * Checks if crash splash should be used.
-   * @private
-   * @param {*} weapon - The weapon.
-   * @param {Array} resolvedTarget - The resolved target.
-   * @returns {boolean} True if crash splash.
-   */
-  _shouldUseCrashSplash (weapon, resolvedTarget) {
-    return (
-      weapon.crashOverSplash &&
-      weapon.crashLoc &&
-      resolvedTarget[0] === weapon.crashLoc[0] &&
-      resolvedTarget[1] === weapon.crashLoc[1]
-    )
-  }
-
-  /**
    * Destroys targets with the given weapon and effect.
    * @param {*} weapon - The weapon.
    * @param {Array} effect - The effect coordinates.
+   * @param {Object} options - Additional options.
    * @returns {*} The result of the application.
    */
-  destroy (weapon, effect) {
+  destroy (weapon, effect, options) {
     if (this._isInvalidShot(effect)) {
       gameStatus._addToQueue('Already Shot Here - Try Again', false)
       return LoadOut.noResult
@@ -547,7 +449,7 @@ class Enemy extends Waters {
       gameStatus._addToQueue('Has no effect - Try Again', false)
       return LoadOut.noResult
     }
-    return this.applyWeaponEffect(weapon, effect)
+    return this.applyWeaponEffect(weapon, effect, options)
   }
 
   /**
@@ -560,19 +462,6 @@ class Enemy extends Waters {
     return (
       effect.length === 1 && !this.score.newShotKey(effect[0][0], effect[0][1])
     )
-  }
-
-  /**
-   * Applies the weapon effect to the area of effect.
-   * @param {*} weapon - The weapon.
-   * @param {Array} effect - The effect coordinates.
-   * @returns {*} The results.
-   */
-  applyWeaponEffect (weapon, effect) {
-    const results = this.applyToAoE(effect, weapon)
-    this.updateMode()
-    this.flash()
-    return results
   }
 
   /**

@@ -191,34 +191,7 @@ export class Friend extends Waters {
    * @private
    */
   destroy (weapon, effect, options) {
-    this.updateUI()
-    const acc = this.applyToAoE(effect, weapon, options)
-    if (acc.hits > 0) this.flash('long')
-    this.score.dtaps += acc.dtap
-    return acc
-  }
-
-  /**
-   * Applies single-target weapon effect with splash damage.
-   * Selects target from hit candidates or uses provided target.
-   * Falls back to full effect area if no valid targets found.
-   *
-   * @param {Object} weapon - The weapon being used
-   * @param {Array<Array<number>>} effect - [row, col, power] cells affected
-   * @param {Array<number>} [target] - Optional [row, col] target override
-   * @returns {Object} Result with targeted splash damage
-   * @private
-   */
-  destroyOne (weapon, effect, target, options) {
-    const candidates = this.getHitCandidates(effect, weapon)
-    if (candidates.length < 1) {
-      return this.destroy(weapon, effect, options)
-    }
-    if (target === null || target === undefined || target?.length < 2) {
-      target = Random.element(candidates)
-    }
-    const newEffect = this.getStrikeSplash(weapon, target, effect, options)
-    return this.destroy(weapon, newEffect, options)
+    return this.applyWeaponEffect(weapon, effect, options)
   }
 
   // ============ Random Actions ============

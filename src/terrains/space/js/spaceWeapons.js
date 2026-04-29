@@ -1,7 +1,13 @@
 import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/WeaponCatelogue.js'
 import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 import { Weapon } from '../../../weapon/Weapon.js'
-import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
+import {
+  addNeighbors,
+  Bomb,
+  Fish,
+  Sensor,
+  Strike
+} from '../../../weapon/Bomb.js'
 import { CellClassManager } from '../../../waters/helpers/CellClassManager.js'
 
 // ============================================================================
@@ -761,7 +767,67 @@ export class GuassRound extends Fish {
 
     return effect
   }
+  aoePlus (map, coords) {
+    const aoe = this.aoe(map, coords)
+    const crashLoc = aoe.length > 0 ? aoe[aoe.length - 1] : null
+    const fullLine = this.aoeFull(coords)
+    return { aoe, options: { crashLoc, fullLine } }
+  }
 
+  /**
+   * Calculates splash/secondary damage pattern around a point
+   * @param {Object} map - Game map
+   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Object} _options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  splash (_map, coords, options) {
+    const { fullLine } = options
+    let bracket = []
+    if (fullLine) {
+      const idx = fullLine.find(([r, c]) => r === coords[0] && c === coords[1])
+      if (idx !== undefined) {
+        const prev = fullLine[idx - 1]
+        const next = fullLine[idx + 1]
+        if (prev) bracket.push([...prev, 1])
+        if (next) bracket.push([...next, 1])
+      }
+    }
+    return bracket
+  }
+
+  /**
+   * Calculates crash splash damage pattern around a terminal point when no hits are registered
+   * @param {Object} map - Game map
+   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Object} _options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  crashSplash (map, coords, _options) {
+    let pattern = []
+    if (
+      this.crashLoc &&
+      coords[0] === this.crashLoc[0] &&
+      coords[1] === this.crashLoc[1]
+    ) {
+      const [r, c] = this.crashLoc
+      addNeighbors(map, r, c, pattern, [
+        [-1, 0, 1],
+        [1, 0, 1],
+        [0, -1, 1],
+        [0, 1, 1],
+        [-1, -1, 0],
+        [-1, 1, 0],
+        [1, -1, 0],
+        [1, 1, 0],
+        [-2, 0, 0],
+        [2, 0, 0],
+        [0, -2, 0],
+        [0, 2, 0]
+      ])
+    }
+    return pattern
+  }
   /*
   aoe (map, coords, power = 1) {
     const startRow = coords[0][1]

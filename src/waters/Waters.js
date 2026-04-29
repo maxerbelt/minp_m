@@ -17,6 +17,7 @@ import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Steps } from './steps.js'
 import { Animator } from '../core/Animator.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
+import { Random } from '../core/Random.js'
 
 /**
  * @typedef {Object} WeaponResult
@@ -1032,6 +1033,106 @@ export class Waters {
       this.score.wakeReveal(r, c)
     }
   }
+  /**
+   * Checks if there are no hit candidates.
+   * @param {Array} hitCandidates - The hit candidates.
+   * @returns {boolean} True if no candidates.
+   */
+  hasNoHitCandidates (hitCandidates) {
+    return hitCandidates.length < 1
+  }
+
+  /**
+   * Handles the case when there are no hit candidates.
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect.
+   * @param {Object} options - Additional options.
+   * @returns {*} The destruction result.
+   */
+  handleNoHits (weapon, effect, options) {
+    if (options?.crashLoc) {
+      const splashEffect = this.getCrashSplash(
+        weapon,
+        options.crashLoc,
+        effect,
+        options
+      )
+      return this.destroy(weapon, splashEffect, options)
+    }
+    return this.destroy(weapon, effect, options)
+  }
+
+  /**
+   * Handles the case when there are hit candidates.
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect.
+   * @param {Array} target - The target.
+   * @param {Array} hitCandidates - The hit candidates.
+   * @returns {*} The destruction result.
+   */
+  handleHits (weapon, effect, target, hitCandidates, options) {
+    const resolvedTarget = this.resolveTarget(target, hitCandidates)
+    if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
+      const splashEffect = this.getCrashSplash(
+        weapon,
+        options.crashLoc,
+        effect,
+        options
+      )
+      return this.destroy(weapon, splashEffect, options)
+    }
+    const splashEffect = this.getStrikeSplash(
+      weapon,
+      resolvedTarget,
+      effect,
+      options
+    )
+    return this.destroy(weapon, splashEffect, options)
+  }
+
+  /**
+   * Resolves the target from hit candidates.
+   * @param {Array} target - The provided target.
+   * @param {Array} hitCandidates - The candidates.
+   * @returns {Array} The resolved target.
+   */
+  resolveTarget (target, hitCandidates) {
+    if (!target || target.length < 2) {
+      return Random.element(hitCandidates)
+    }
+    return target
+  }
+  /**
+   * Destroys one target with the given weapon and effect.
+   * @param {*} weapon - The weapon used.
+   * @param {Array} effect - The effect coordinates.
+   * @param {Array} [target] - Optional target coordinates.
+   * @param {Object} [options] - Additional options for destruction.
+   * @returns {*} The result of the destruction.
+   */
+  destroyOne (weapon, effect, target = null, options = {}) {
+    const hitCandidates = this.getHitCandidates(effect, weapon)
+    if (this.hasNoHitCandidates(hitCandidates)) {
+      return this.handleNoHits(weapon, effect, options)
+    }
+    return this.handleHits(weapon, effect, target, hitCandidates, options)
+  }
+
+  /**
+   * Checks if crash splash should be used.
+   * @private
+   * @param {*} weapon - The weapon.
+   * @param {Array} resolvedTarget - The resolved target.
+   * @returns {boolean} True if crash splash.
+   */
+  shouldUseCrashSplash (weapon, resolvedTarget, options) {
+    return (
+      weapon.crashOverSplash &&
+      options?.crashLoc &&
+      resolvedTarget[0] === options?.crashLoc[0] &&
+      resolvedTarget[1] === options?.crashLoc[1]
+    )
+  }
 
   getStrikeSplash (weapon, candidate, effect, options) {
     const cellSize = this.UI.cellSizeScreen()
@@ -1375,14 +1476,29 @@ export class Waters {
       power > 0 ? this.score.createShotKey(r, c) : this.score.newShotKey(r, c)
     return key === null
   }
-  applyToAoE (effect, weapon) {
+  applyToAoE (effect, weapon, options) {
     let acc = LoadOut.noResult
     for (const [r, c, power] of effect) {
-      acc = this.applyToPosition(r, c, weapon, power, acc)
+      acc = this.applyToPosition(r, c, weapon, power, acc, options)
     }
     return acc
   }
-  applyToPosition (r, c, weapon, power, acc) {
+  /**
+   * Applies the weapon effect to the area of effect.
+   * @param {*} weapon - The weapon.
+   * @param {Array} effect - The effect coordinates.
+   * @param {Object} options - Additional options.
+   * @returns {*} The results.
+   */
+  applyWeaponEffect (weapon, effect, options) {
+    const results = this.applyToAoE(effect, weapon, options)
+    this.flash(results.hits > 0 ? 'long' : undefined)
+
+    this.score.dtaps += results.dtap
+    this.updateMode()
+    return results
+  }
+  applyToPosition (r, c, weapon, power, acc, options) {
     if (bh.inBounds(r, c)) {
       const result = this.processShot(weapon, r, c, power)
       this.accumulateResult(result, acc)

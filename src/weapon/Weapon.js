@@ -137,9 +137,8 @@ export class Weapon {
    *
    * @param {number} [power] - Explosion power value
    * @returns {number} Modifier value (1 if no power, 0.5 + power/2 otherwise)
-   * @private
    */
-  #calculateSplashModifier (power) {
+  calculateSplashModifier (power) {
     if (power == null) return 1
     return 0.5 + power / 2
   }
@@ -292,7 +291,32 @@ export class Weapon {
   splashAoe (map, coords) {
     return this.aoe(map, coords)
   }
+  aoePlus (map, coords) {
+    const aoe = this.aoe(map, coords)
+    return { aoe, options: {} }
+  }
 
+  /**
+   * Calculates splash/secondary damage pattern around a point
+   * @param {Object} map - Game map
+   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Object} _options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  splash (_map, _coords, _options) {
+    return []
+  }
+
+  /**
+   * Calculates crash splash damage pattern around a terminal point when no hits are registered
+   * @param {Object} map - Game map
+   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Object} _options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  crashSplash (_map, _coords, _options) {
+    return []
+  }
   /**
    * Add splash damage for fish weapons by pushing valid cells into the effect list.
    * Used by addOrthogonal and addDiagonal during splash coordinate initialization.

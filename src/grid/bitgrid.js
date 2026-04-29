@@ -5,6 +5,10 @@
  * and optimized iteration for occupied cells.
  *
  * @class BitGrid
+ * @property {Object} store - Bit store implementation with index/get/has operations
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {boolean} fast - Enable fast path optimization via store.bitsOccupied()
  */
 export class BitGrid {
   /**
@@ -91,8 +95,7 @@ export class BitGrid {
    * @yields {[number, number]} [x, y] coordinate tuples
    */
   *locations (bitboard) {
-    const cellIndices =
-      bitboard == null ? this.indices() : this.#occupiedIndices(bitboard)
+    const cellIndices = this.#getIndices(bitboard, bitboard != null)
     for (const index of cellIndices) {
       const { x, y } = this.indexToLocation(index)
       yield [x, y]
@@ -110,9 +113,7 @@ export class BitGrid {
    */
   *locationsWithValues (bitboard, occupiedOnly = false) {
     const useValueProvider = this.#shouldUseFastPath(bitboard)
-    const cellIndices = occupiedOnly
-      ? this.#occupiedIndices(bitboard)
-      : this.indices()
+    const cellIndices = this.#getIndices(bitboard, occupiedOnly)
 
     for (const index of cellIndices) {
       const { x, y } = this.indexToLocation(index)
@@ -143,6 +144,18 @@ export class BitGrid {
         }
       }
     }
+  }
+
+  /**
+   * Internal: Get an iterator for cell indices based on whether occupied only.
+   *
+   * @param {bigint} bitboard - Bitboard to check
+   * @param {boolean} occupiedOnly - If true, only occupied cells
+   * @returns {Generator<number>} Iterator over indices
+   * @private
+   */
+  *#getIndices (bitboard, occupiedOnly) {
+    yield* occupiedOnly ? this.#occupiedIndices(bitboard) : this.indices()
   }
 
   /**
@@ -260,18 +273,18 @@ export class BitGrid {
    * @yields {[number, bigint]} [index, value] pairs where value !== 0n
    */
   *occupiedIndexAndValues (bitboard) {
-    if (this.useFast) {
+    if (this.isFastPathEnabled) {
       yield* this.#occupiedIndexAndValuesFast(bitboard)
       return
     }
     yield* this.occupiedIndexAndValuesSlow(bitboard)
   }
-  get useFast () {
+  get isFastPathEnabled () {
     return this.fast && this.store.bitsOccupied
   }
 
   *occupiedIndices (bitboard) {
-    if (this.useFast) {
+    if (this.isFastPathEnabled) {
       yield* this.occupiedIndicesFast(bitboard)
       return
     }
@@ -402,18 +415,6 @@ export class BitGrid {
     }
     return extremeValue
   }
-  /**
-   * Executes a callback for each row index.
-   *
-   * @param {Function} callback - Function(rowIndex) called for each row
-   * @returns {void}
-   */
-  forEachRow (callback) {
-    for (let row = 0; row < this.height; row++) {
-      callback(row)
-    }
-  }
-
   /**
    * Generator yielding all cell indices in order (0 to area-1).
    *

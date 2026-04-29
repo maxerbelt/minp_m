@@ -174,7 +174,7 @@ export function getPieSegmentCells (
  * @param {Array} effectPattern - Pattern array to add to
  * @param {Function} [terrainCheck] - Optional terrain validation function
  */
-function addCellToEffect (
+export function addCellToEffect (
   map,
   row,
   col,
@@ -199,7 +199,33 @@ function addCellToEffect (
  * @param {Array} effectPattern - Pattern array to accumulate into
  * @param {Function} [terrainCheck] - Optional terrain validation function
  */
-function addOrthogonalNeighbors (
+export function addOrthogonalNeighbors (
+  map,
+  centerRow,
+  centerCol,
+  power,
+  effectPattern,
+  terrainCheck = null,
+  radius = 1
+) {
+  const directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1] // up, down, left, right
+  ]
+  directions.forEach(([rowOffset, colOffset]) => {
+    addCellToEffect(
+      map,
+      centerRow + radius * rowOffset,
+      centerCol + radius * colOffset,
+      power,
+      effectPattern,
+      terrainCheck
+    )
+  })
+}
+export function addDiagonalNeighbors (
   map,
   centerRow,
   centerCol,
@@ -208,10 +234,10 @@ function addOrthogonalNeighbors (
   terrainCheck = null
 ) {
   const directions = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1] // up, down, left, right
+    [-1, -1],
+    [-1, 1],
+    [1, -1],
+    [1, 1] // diagonal directions
   ]
   directions.forEach(([rowOffset, colOffset]) => {
     addCellToEffect(
@@ -224,7 +250,25 @@ function addOrthogonalNeighbors (
     )
   })
 }
-
+export function addNeighbors (
+  map,
+  centerRow,
+  centerCol,
+  effectPattern,
+  directions,
+  terrainCheck = null
+) {
+  directions.forEach(([rowOffset, colOffset, power]) => {
+    addCellToEffect(
+      map,
+      centerRow + rowOffset,
+      centerCol + colOffset,
+      power,
+      effectPattern,
+      terrainCheck
+    )
+  })
+}
 /**
  * Creates a splash effect pattern around a center point
  * @param {Object|null} map - Game map for bounds checking
@@ -233,7 +277,12 @@ function addOrthogonalNeighbors (
  * @param {Function} [terrainCheck] - Optional terrain validation function
  * @returns {Array} Splash effect pattern
  */
-function createSplashEffect (map, centerCoords, power, terrainCheck = null) {
+export function createSplashEffect (
+  map,
+  centerCoords,
+  power,
+  terrainCheck = null
+) {
   const [centerRow, centerCol] = centerCoords
   const effectPattern = [centerCoords]
   addOrthogonalNeighbors(
@@ -544,7 +593,7 @@ export class Strike extends Weapon {
    * @param {Array} coords - Impact coordinate [row, col]
    * @returns {Array} Splash pattern
    */
-  splash (map, coords) {
+  splash (map, coords, _options) {
     return createSplashEffect(map, coords, 0)
   }
 
@@ -621,6 +670,9 @@ export class Fish extends Weapon {
     }
     return newEffect
   }
+  aoeFull (coords, power = 1) {
+    return calculateLineAreaOfEffect(coords, power, getLinePoints, null)
+  }
   aoeRaw (map, coords, power = 1, penetration = 0) {
     return calculateLineAreaOfEffect(
       coords,
@@ -672,9 +724,10 @@ export class Fish extends Weapon {
    * Adds orthogonal water neighbors of the impact point
    * @param {Object} map - Game map
    * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
-  splash (map, coords) {
+  splash (map, coords, _options) {
     return createSplashEffect(
       map,
       coords,
