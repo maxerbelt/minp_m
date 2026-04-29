@@ -360,7 +360,15 @@ export class ShipCellGrid extends GridBase {
           this._maskedGrid.height
         )
         this._maskedGrid.join(displacedCells)
+
+        console.log(`displacedArea   ${displacedCells.toAscii}`)
+        this._maskedGrid.join(displacedCells)
+
         ship.addToGrid(this)
+
+        console.log(
+          `Placed ship ${ship.letter} at \n${this._maskedGrid.toAscii}\ngrid\n${this.toAscii}`
+        )
         return ship.cells
       }
     }
