@@ -3,8 +3,8 @@ import { Random } from './Random.js'
 
 /**
  * Converts a string to title case.
- * @param {string} str - The string to convert
- * @returns {string} The title-cased string
+ * @param {string} str - The input string to convert
+ * @returns {string} The title-cased string, or empty string if input is falsy
  */
 export function toTitleCase (str) {
   if (!str) {
@@ -17,95 +17,125 @@ export function toTitleCase (str) {
 }
 
 /**
- * Attempts to randomly place a ship shape on the grid.
- * @param {Object} ship - The ship to place
- * @param {Array<Array>} shipCellGrid - The grid of ship cells
- * @param {Object} mask - The placement mask
- * @returns {Array|null} The placed ship cells or null if placement failed
+ * Calculates valid placement locations for a ship within grid bounds.
+ * Filters empty cells and ensures coordinates are within the shape's minimum size constraints.
+ *
+ * @param {Object} mask - The placement mask containing empty cells
+ * @param {number} maxRow - Maximum valid row index (exclusive)
+ * @param {number} maxCol - Maximum valid column index (exclusive)
+ * @returns {Array<[number, number]>} Shuffled array of valid [col, row] coordinates
  */
-export function randomPlaceShape (ship, shipCellGrid, mask) {
-  const letter = ship.letter
-  const shape = ship.shape()
-  const minSize = shape.minSize
-  const map = bh.map
+function getValidPlacementLocations (mask, maxRow, maxCol) {
+  const emptyCellIndices = mask.bitsEmpty()
+  const candidateLocations = emptyCellIndices
+    .map(cellIndex => mask.indexer.location(cellIndex))
+    .filter(([col, row]) => row < maxRow && col < maxCol)
 
-  if (!shape) throw new Error('No shape for letter ' + letter)
+  return Random.shuffleArray(candidateLocations)
+}
 
-  const placeables = shape.placeables()
-  const maxRow = map.rows - minSize + 1
-  const maxCol = map.cols - minSize + 1
+/**
+ * Attempts to place a ship at a specific location using all available placeables.
+ * Tries each placeable orientation and returns cells if placement succeeds.
+ *
+ * @param {Object} ship - The ship object with placement and grid methods
+ * @param {Array<Object>} placeables - Array of placeable orientation objects
+ * @param {number} col - Column coordinate for placement attempt
+ * @param {number} row - Row coordinate for placement attempt
+ * @param {Array<Array>} shipCellGrid - The grid tracking ship cell positions
+ * @param {Object} mask - The placement mask to update on successful placement
+ * @returns {Array|null} Array of placed ship cells, or null if no placeable succeeds
+ */
+function attemptPlacementAtLocation (
+  ship,
+  placeables,
+  col,
+  row,
+  shipCellGrid,
+  mask
+) {
+  const shuffledPlaceables = Random.shuffleArray([...placeables])
 
-  const locations = Random.shuffleArray(
-    mask
-      .bitsEmpty()
-      .map(i => mask.indexer.location(i))
-      .filter(loc => loc[1] < maxRow && loc[0] < maxCol)
-  )
+  for (const placeable of shuffledPlaceables) {
+    const placement = placeable.placeAt(col, row)
 
-  for (const [col, row] of locations) {
-    const shuffledPlaceables = Random.shuffleArray([...placeables])
-    for (const placeable of shuffledPlaceables) {
-      const placement = placeable.placeAt(col, row)
-      if (placement.canPlace(shipCellGrid)) {
-        ship.placePlacement(placement)
-        const displaced = placement.displacedArea(mask.width, mask.height)
-        mask.joinWith(displaced)
-        ship.addToGrid(shipCellGrid)
+    if (placement.canPlace(shipCellGrid)) {
+      // Place the ship and update affected areas
+      ship.placePlacement(placement)
+      const displacedCells = placement.displacedArea(mask.width, mask.height)
+      mask.joinWith(displacedCells)
+      ship.addToGrid(shipCellGrid)
 
-        // Update mask with ship cells
-        updateMaskWithShipCells(mask, shipCellGrid)
+      // Synchronize mask with new ship cell positions
+      updateMaskWithShipCells(mask, shipCellGrid)
 
-        return ship.cells
-      }
+      return ship.cells
     }
   }
+
   return null
 }
 
 /**
- * Updates the mask with current ship cell positions.
- * @private
- * @param {Object} mask - The placement mask
- * @param {Array<Array>} shipCellGrid - The grid of ship cells
+ * Randomly places a ship shape on the grid with all orientation variations.
+ * Attempts placement at shuffled empty locations until a valid orientation is found.
+ *
+ * @param {Object} ship - The ship to place; must have letter, shape(), placePlacement(), addToGrid(), cells properties
+ * @param {Array<Array>} shipCellGrid - 2D grid tracking occupancy of placed ship cells
+ * @param {Object} mask - The placement mask; manages empty cells and boundary constraints
+ * @returns {Array|null} Array of successfully placed ship cells, or null if placement impossible
+ * @throws {Error} If ship has no valid shape
  */
-function updateMaskWithShipCells (mask, shipCellGrid) {
-  const shipCell = mask.emptyMask
-  for (const [row, rowData] of shipCellGrid.entries()) {
-    for (const [col, cell] of rowData.entries()) {
-      if (cell) {
-        shipCell.set(col, row)
-      }
+export function randomPlaceShape (ship, shipCellGrid, mask) {
+  const shipShape = ship.shape()
+
+  if (!shipShape) {
+    throw new Error(`No shape available for ship: ${ship.letter}`)
+  }
+
+  const shapeMinSize = shipShape.minSize
+  const gridMap = bh.map
+  const maxRow = gridMap.rows - shapeMinSize + 1
+  const maxCol = gridMap.cols - shapeMinSize + 1
+
+  const validLocations = getValidPlacementLocations(mask, maxRow, maxCol)
+  const placeables = shipShape.placeables()
+
+  for (const [col, row] of validLocations) {
+    const placedCells = attemptPlacementAtLocation(
+      ship,
+      placeables,
+      col,
+      row,
+      shipCellGrid,
+      mask
+    )
+
+    if (placedCells) {
+      return placedCells
     }
   }
+
+  return null
 }
 
 /**
- * Throttles a function to limit execution frequency.
- * @param {Function} func - The function to throttle
- * @param {number} delay - The minimum delay between executions
- * @returns {Function} The throttled function
+ * Synchronizes the placement mask with current ship cell positions in the grid.
+ * Marks all occupied cells in the mask's empty cell tracker.
+ *
+ * @private
+ * @param {Object} mask - The placement mask to update
+ * @param {Array<Array>} shipCellGrid - 2D grid of ship cells (sparse matrix with cell objects)
+ * @returns {void}
  */
-export function throttle (func, delay) {
-  let inThrottle = false
-  let lastFunc
-  let lastTime
+function updateMaskWithShipCells (mask, shipCellGrid) {
+  const emptyCellMask = mask.emptyMask
 
-  return function (...args) {
-    if (inThrottle) {
-      clearTimeout(lastFunc)
-      lastFunc = setTimeout(() => {
-        if (Date.now() - lastTime >= delay) {
-          func.apply(this, args)
-          lastTime = Date.now()
-        }
-      }, Math.max(delay - (Date.now() - lastTime), 0))
-    } else {
-      func.apply(this, args)
-      lastTime = Date.now()
-      inThrottle = true
-      setTimeout(() => {
-        inThrottle = false
-      }, delay)
-    }
-  }
+  shipCellGrid.forEach((rowCells, rowIndex) => {
+    rowCells.forEach((cell, colIndex) => {
+      if (cell) {
+        emptyCellMask.set(colIndex, rowIndex)
+      }
+    })
+  })
 }

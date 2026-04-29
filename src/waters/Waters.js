@@ -1062,17 +1062,17 @@ export class Waters {
     }
   }
 
-  getStrikeSplash (weapon, candidate, effect) {
+  getStrikeSplash (weapon, candidate, effect, options) {
     const cellSize = this.UI.cellSizeScreen()
     const target = this.UI.gridCellAt(candidate[0], candidate[1])
     weapon.animateSplashExplode(target, cellSize)
-    return weapon.splash(bh.map, candidate, effect)
+    return weapon.splash(bh.map, candidate, effect, options)
   }
-  getCrashSplash (weapon, candidate, effect) {
+  getCrashSplash (weapon, candidate, effect, options) {
     const cellSize = this.UI.cellSizeScreen()
     const target = this.UI.gridCellAt(candidate[0], candidate[1])
     weapon.animateSplashExplode(target, cellSize)
-    return weapon?.crashSplash(bh.map, candidate, effect)
+    return weapon?.crashSplash(bh.map, candidate, effect, options)
   }
   shipsSunk () {
     return this.ships.filter(s => s.sunk)

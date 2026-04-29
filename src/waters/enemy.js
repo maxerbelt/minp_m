@@ -80,7 +80,17 @@ class Enemy extends Waters {
    * @param {number} shadowR - Shadow row.
    * @param {number} shadowC - Shadow column.
    */
-  _handleActivate (rack, weapon, _wletter, _weaponId, r, c, _cell, shadowR, shadowC) {
+  _handleActivate (
+    rack,
+    weapon,
+    _wletter,
+    _weaponId,
+    r,
+    c,
+    _cell,
+    shadowR,
+    shadowC
+  ) {
     this.opponent?.UI?.cellWeaponActive?.(r, c)
     if (weapon.postSelectCursor > 0) {
       this.UI.cellWeaponActive(shadowR, shadowC, '', weapon.tag)
@@ -103,7 +113,11 @@ class Enemy extends Waters {
    * @returns {Promise<void>}
    */
   async _handleEndTurn () {
-    if (!this.opponent || this.opponent.boardDestroyed || this.opponent.isRevealed) {
+    if (
+      !this.opponent ||
+      this.opponent.boardDestroyed ||
+      this.opponent.isRevealed
+    ) {
       return
     }
 
@@ -445,7 +459,7 @@ class Enemy extends Waters {
    * @param {Array} [target] - Optional target coordinates.
    * @returns {*} The result of the destruction.
    */
-  destroyOne (weapon, effect, target) {
+  destroyOne (weapon, effect, target, options) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
     if (this._hasNoHitCandidates(hitCandidates)) {
       return this._handleNoHits(weapon, effect)
@@ -470,12 +484,12 @@ class Enemy extends Waters {
    * @param {Array} effect - The effect.
    * @returns {*} The destruction result.
    */
-  _handleNoHits (weapon, effect) {
+  _handleNoHits (weapon, effect, options) {
     if (weapon.crashLoc) {
       const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc, effect)
-      return this.destroy(weapon, splashEffect)
+      return this.destroy(weapon, splashEffect, options)
     }
-    return this.destroy(weapon, effect)
+    return this.destroy(weapon, effect, options)
   }
 
   /**
@@ -487,14 +501,24 @@ class Enemy extends Waters {
    * @param {Array} hitCandidates - The hit candidates.
    * @returns {*} The destruction result.
    */
-  _handleHits (weapon, effect, target, hitCandidates) {
+  _handleHits (weapon, effect, target, hitCandidates, options) {
     const resolvedTarget = this._resolveTarget(target, hitCandidates)
     if (this._shouldUseCrashSplash(weapon, resolvedTarget)) {
-      const splashEffect = this.getCrashSplash(weapon, weapon.crashLoc, effect)
-      return this.destroy(weapon, splashEffect)
+      const splashEffect = this.getCrashSplash(
+        weapon,
+        weapon.crashLoc,
+        effect,
+        options
+      )
+      return this.destroy(weapon, splashEffect, options)
     }
-    const splashEffect = this.getStrikeSplash(weapon, resolvedTarget, effect)
-    return this.destroy(weapon, splashEffect)
+    const splashEffect = this.getStrikeSplash(
+      weapon,
+      resolvedTarget,
+      effect,
+      options
+    )
+    return this.destroy(weapon, splashEffect, options)
   }
 
   /**
@@ -553,8 +577,7 @@ class Enemy extends Waters {
    */
   _isInvalidShot (effect) {
     return (
-      effect.length === 1 &&
-      !this.score.newShotKey(effect[0][0], effect[0][1])
+      effect.length === 1 && !this.score.newShotKey(effect[0][0], effect[0][1])
     )
   }
 
@@ -596,7 +619,8 @@ class Enemy extends Waters {
   updateWeaponStatus (rack, cursorInfo) {
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
     const cursorIdx = cursorInfo?.idx || this.loadOut.getCursorIndex()
-    const newCursor = cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
+    const newCursor =
+      cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
     this.updateCursor(newCursor)
     gameStatus.displayAmmoStatus(
       wps,

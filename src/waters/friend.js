@@ -190,9 +190,9 @@ export class Friend extends Waters {
    * @returns {Object} Accumulated result with hits, dtap counts
    * @private
    */
-  destroy (weapon, effect) {
+  destroy (weapon, effect, options) {
     this.updateUI()
-    const acc = this.applyToAoE(effect, weapon)
+    const acc = this.applyToAoE(effect, weapon, options)
     if (acc.hits > 0) this.flash('long')
     this.score.dtaps += acc.dtap
     return acc
@@ -209,16 +209,16 @@ export class Friend extends Waters {
    * @returns {Object} Result with targeted splash damage
    * @private
    */
-  destroyOne (weapon, effect, target) {
+  destroyOne (weapon, effect, target, options) {
     const candidates = this.getHitCandidates(effect, weapon)
     if (candidates.length < 1) {
-      return this.destroy(weapon, effect)
+      return this.destroy(weapon, effect, options)
     }
     if (target === null || target === undefined || target?.length < 2) {
       target = Random.element(candidates)
     }
-    const newEffect = this.getStrikeSplash(weapon, target, effect)
-    return this.destroy(weapon, newEffect)
+    const newEffect = this.getStrikeSplash(weapon, target, effect, options)
+    return this.destroy(weapon, newEffect, options)
   }
 
   // ============ Random Actions ============

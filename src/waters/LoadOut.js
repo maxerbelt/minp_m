@@ -604,23 +604,23 @@ export class LoadOut {
     return { weapon, affectedLoc, sShot }
   }
 
-  fireWeapon (map, coordinates, weaponSystem, target) {
+  fireWeapon (map, coordinates, weaponSystem, target, options) {
     const { weapon, affectedArea } = this.fireWeaponInfo(
       coordinates,
       weaponSystem,
       map
     )
 
-    return this.fireAoE(weapon, affectedArea, target)
+    return this.fireAoE(weapon, affectedArea, target, options)
   }
-  fireAoE (weapon, affectedArea, target) {
+  fireAoE (weapon, affectedArea, target, options) {
     if (weapon.destroys) {
       if (weapon.isOneAndDone) {
-        return this.onDestroyOneOfMany(weapon, affectedArea, target)
+        return this.onDestroyOneOfMany(weapon, affectedArea, target, options)
       }
-      return this.onDestroy(weapon, affectedArea)
+      return this.onDestroy(weapon, affectedArea, options)
     }
-    return this.onReveal(weapon, affectedArea)
+    return this.onReveal(weapon, affectedArea, options)
   }
   fireWeaponInfo (coordinates, weaponSystem, map) {
     const c = coordinates || this.coord
