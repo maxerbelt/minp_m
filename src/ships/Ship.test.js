@@ -98,8 +98,8 @@ describe('Ship basic behaviors', () => {
       Array.from({ length: 3 }, () => new Array(3).fill(null))
     )
     s.addToGrid(grid)
-    expect(grid.at(1, 1)).toEqual({ id: 3, letter: 'C' })
-    expect(grid.at(1, 2)).toEqual({ id: 3, letter: 'C' })
+    expect(grid.cellAt(1, 1)).toEqual({ id: 3, letter: 'C' })
+    expect(grid.cellAt(1, 2)).toEqual({ id: 3, letter: 'C' })
 
     s.removeFromPlacement()
     expect(s.cells.length).toBe(0)
@@ -271,10 +271,10 @@ describe('Ship - placement and grid operations', () => {
       Array.from({ length: 3 }, () => new Array(3).fill(null))
     )
     s.addToGrid(grid)
-    expect(grid.at(0, 0)).toEqual({ id: 7, letter: 'G' })
-    expect(grid.at(0, 1)).toEqual({ id: 7, letter: 'G' })
-    expect(grid.at(1, 0)).toEqual({ id: 7, letter: 'G' })
-    expect(grid.at(1, 1)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.cellAt(0, 0)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.cellAt(0, 1)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.cellAt(1, 0)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.cellAt(1, 1)).toEqual({ id: 7, letter: 'G' })
   })
 
   it('place resets hits and sunk state', () => {

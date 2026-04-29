@@ -959,7 +959,7 @@ export class Ship {
    */
   addToGrid (shipCellGrid) {
     for (const [x, y] of this.board.occupiedLocations()) {
-      shipCellGrid.set(x, y, { id: this.id, letter: this.letter })
+      shipCellGrid.setCell(x, y, { id: this.id, letter: this.letter })
     }
   }
 
