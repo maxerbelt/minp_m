@@ -341,6 +341,9 @@ export class MaskBase extends CanvasGrid {
     return this._bitOps.createUnionMask(bits)
   }
   joinWith (bb) {
+    if (typeof bb.toMaskMatching === 'function') {
+      bb = bb.toMaskMatching(this)
+    }
     if (bb instanceof MaskBase) {
       this._validation.assertCompatibleWith(bb)
       this.joinWithBits(bb.bits)
