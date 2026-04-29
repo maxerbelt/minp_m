@@ -151,11 +151,11 @@ export class Waters {
   ) {
     return this.shipCellGrid.attemptToPlaceShips(
       ships,
-      this.handlePlacementFailure.bind(this, onPlacementReset),
       (ship, placedCells) => {
         onShipPlaced?.(ship, placedCells)
         this.recordShipPlacement(placedCells, ship)
-      }
+      },
+      this.handlePlacementFailure.bind(this, onPlacementReset)
     )
   }
 
