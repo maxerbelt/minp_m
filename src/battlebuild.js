@@ -43,7 +43,7 @@ function onClickUndo () {
   customUI.clearVisuals()
   custom.score.reset()
   placedShipsInstance.popAndRefresh(
-    custom.shipCellGrid,
+    custom.shipCellGrid.grid,
     ship => {
       customUI.markPlaced(ship.cells, ship)
     },

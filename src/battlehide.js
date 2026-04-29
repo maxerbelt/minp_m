@@ -133,7 +133,7 @@ function onClickUndo () {
   friendUI.clearVisuals()
   friend.score.reset()
   const ship = placedShipsInstance.popAndRefresh(
-    friend.shipCellGrid,
+    friend.shipCellGrid.grid,
     ship => {
       friendUI.markPlaced(ship.cells, ship)
     },

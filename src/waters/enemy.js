@@ -243,7 +243,7 @@ class Enemy extends Waters {
     const mask = bh.map.blankMask
     const shuffledShips = Random.shuffleArray([...ships])
     for (const ship of shuffledShips) {
-      if (!randomPlaceShape(ship, this.shipCellGrid, mask)) {
+      if (!randomPlaceShape(ship, this.shipCellGrid.grid, mask)) {
         return false
       }
     }

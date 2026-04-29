@@ -7,6 +7,7 @@
 /* global   it, describe,   expect, beforeEach, jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 import { Waters } from './Waters.js'
+import { ShipCellGrid } from '../grid/ShipCellGrid.js'
 import { bh } from '../terrains/all/js/bh.js'
 
 // Mocks
@@ -82,10 +83,10 @@ describe('Waters', () => {
         sunk: true
       }
     ]
-    waters.shipCellGrid = [
+    waters.shipCellGrid = new ShipCellGrid([
       [{ id: 1 }, { id: 2 }],
       [{ id: 3 }, { id: 4 }]
-    ]
+    ])
   })
 
   it('clipboardKey returns correct string', () => {

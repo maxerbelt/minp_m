@@ -304,7 +304,7 @@ function _processModifierKeyTransformations (event) {
  */
 function _updateHighlightIfNeeded (transformed, viewModel, model) {
   if (transformed && state.selection?.isNotShown?.()) {
-    dragNDrop.highlight(viewModel, model.shipCellGrid)
+    dragNDrop.highlight(viewModel, model.shipCellGrid.grid)
   }
 }
 
@@ -778,7 +778,7 @@ class DragNDrop {
       if (state.lastEntered[0] === r && state.lastEntered[1] === c) return
 
       state.lastEntered = [r, c]
-      context.highlight(viewModel, model.shipCellGrid, r, c)
+      context.highlight(viewModel, model.shipCellGrid.grid, r, c)
     })
   }
 

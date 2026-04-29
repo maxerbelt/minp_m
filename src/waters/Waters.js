@@ -17,6 +17,7 @@ import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Steps } from './steps.js'
 import { Animator } from '../core/Animator.js'
+import { ShipCellGrid } from '../grid/ShipCellGrid.js'
 
 /**
  * @typedef {Object} WeaponResult
@@ -67,7 +68,7 @@ export class Waters {
     this.score = new Score()
     this.opponent = null
     this.UI = ui
-    this.shipCellGrid = []
+    this.shipCellGrid = new ShipCellGrid()
     this.boardDestroyed = false
     this.preamble1 = 'You '
     this.preamble0 = 'Your'
@@ -99,7 +100,7 @@ export class Waters {
   getPlacedShipsData () {
     return {
       ships: this.ships,
-      shipCellGrid: this.shipCellGrid,
+      shipCellGrid: this.shipCellGrid.grid,
       map: bh.map.title
     }
   }
@@ -171,9 +172,7 @@ export class Waters {
    * @private
    */
   ensureShipGridInitialized () {
-    if (!this.shipCellGrid || !Array.isArray(this.shipCellGrid)) {
-      this.resetShipCells()
-    }
+    this.shipCellGrid.ensureInitialized()
   }
 
   /**
@@ -184,7 +183,7 @@ export class Waters {
    * @private
    */
   tryPlaceShip (ship, mask) {
-    return randomPlaceShape(ship, this.shipCellGrid, mask)
+    return randomPlaceShape(ship, this.shipCellGrid.grid, mask)
   }
 
   /**
@@ -1100,7 +1099,7 @@ export class Waters {
     return ships
   }
   resetShipCells () {
-    this.shipCellGrid = bh.map.blankGrid
+    this.shipCellGrid.reset()
   }
   armedCells () {
     return this.cellList().filter(c => c.dataset.ammo > 0)
@@ -1144,7 +1143,7 @@ export class Waters {
     }
   }
   shipCellAt (r, c) {
-    return this.shipCellGrid[r]?.[c]
+    return this.shipCellGrid.getCellAt(r, c)
   }
   markSunk (ship) {
     this.UI.displaySurround(
