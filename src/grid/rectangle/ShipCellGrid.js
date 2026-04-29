@@ -118,7 +118,7 @@ export class ShipCellGrid extends GridBase {
    * @returns {number|undefined}
    */
   atRC (row, col) {
-    return this.cellAtRC(row, col)?.id
+    return this.cellAtRC(row, col)?.id || 0
   }
 
   /**
@@ -359,10 +359,9 @@ export class ShipCellGrid extends GridBase {
           this._maskedGrid.width,
           this._maskedGrid.height
         )
-        this._maskedGrid.join(displacedCells)
+        this._maskedGrid.joinWith(displacedCells)
 
         console.log(`displacedArea   ${displacedCells.toAscii}`)
-        this._maskedGrid.join(displacedCells)
 
         ship.addToGrid(this)
 
