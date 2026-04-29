@@ -1115,7 +1115,7 @@ export class Waters {
     }
   }
   shipCellAt (r, c) {
-    return this.shipCellGrid.cellAt(r, c)
+    return this.shipCellGrid.cellAtRC(r, c)
   }
   markSunk (ship) {
     this.UI.displaySurround(
