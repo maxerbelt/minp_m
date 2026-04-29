@@ -283,7 +283,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid[2][1] = 'SHIP'
+      grid.set(2, 1, 'SHIP')
       expect(placing.noTouch(2, 2, grid)).toBe(false)
     })
 
@@ -454,7 +454,7 @@ describe('CellsToBePlaced', () => {
       })
 
       const grid = makeGrid(5, 5, null)
-      grid.set(2, 4 'SHIP') // second cell
+      grid.set(2, 4, 'SHIP') // second cell
       expect(placing.isOverlapping(grid)).toBe(true)
     })
   })
