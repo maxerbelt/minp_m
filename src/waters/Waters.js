@@ -1057,6 +1057,8 @@ export class Waters {
         effect,
         options
       )
+      console.log('Crash Splash Effect:', splashEffect)
+      options.isSplash = true
       return this.destroy(weapon, splashEffect, options)
     }
     return this.destroy(weapon, effect, options)
@@ -1079,6 +1081,8 @@ export class Waters {
         effect,
         options
       )
+      console.log('Crash Splash Effect:', splashEffect)
+      options.isSplash = true
       return this.destroy(weapon, splashEffect, options)
     }
     const splashEffect = this.getStrikeSplash(
@@ -1087,6 +1091,7 @@ export class Waters {
       effect,
       options
     )
+    console.log('Strike Splash Effect:', splashEffect)
     return this.destroy(weapon, splashEffect, options)
   }
 

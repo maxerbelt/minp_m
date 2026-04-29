@@ -441,13 +441,15 @@ class Enemy extends Waters {
    * @returns {*} The result of the application.
    */
   destroy (weapon, effect, options) {
-    if (this._isInvalidShot(effect)) {
-      gameStatus._addToQueue('Already Shot Here - Try Again', false)
-      return LoadOut.noResult
-    }
-    if (effect.length === 0) {
-      gameStatus._addToQueue('Has no effect - Try Again', false)
-      return LoadOut.noResult
+    if (!options?.isSplash) {
+      if (this._isInvalidShot(effect)) {
+        gameStatus._addToQueue('Already Shot Here - Try Again', false)
+        return LoadOut.noResult
+      }
+      if (effect.length === 0) {
+        gameStatus._addToQueue('Has no effect - Try Again', false)
+        return LoadOut.noResult
+      }
     }
     return this.applyWeaponEffect(weapon, effect, options)
   }
