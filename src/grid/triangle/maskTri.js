@@ -62,6 +62,18 @@ export class MaskTri extends MaskBase {
     return mask
   }
 
+  /**
+   * Create a clone of this triangular mask with the same side and stored bits
+   * @returns {MaskTri} Cloned mask instance
+   */
+  get clone () {
+    const cloned = new MaskTri(this.side, null, null)
+    cloned.depth = this.depth
+    cloned.store = this.store
+    cloned.bits = this.store.clone(this.bits)
+    return cloned
+  }
+
   // ============================================================================
   // Row/Column Coordinate Handling
   // ============================================================================
