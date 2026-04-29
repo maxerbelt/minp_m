@@ -585,6 +585,7 @@ export class GuassRound extends Fish {
     this.crashOverSplash = false
     this.canCrash = true
     this.hasWake = false
+    this.splashType = undefined
 
     // Weapon behavior configuration
     this._applyWeaponConfig({
@@ -615,7 +616,7 @@ export class GuassRound extends Fish {
    * Animates from source on opposing board to target on primary board
    * Then animates from source on primary board to target on primary board
    * @async
-   * @param {Object} weapon - Weapon instance
+   
    * @param {number[][]} coords - Target coordinates
    * @param {number} sourceRow - Source row
    * @param {number} sourceCol - Source column
@@ -635,7 +636,7 @@ export class GuassRound extends Fish {
     gameModel
   ) {
     if (!opposingViewModel) {
-      return await weapon.launchRightTo(
+      return await this.launchRightTo(
         coords,
         sourceRow,
         sourceCol,
