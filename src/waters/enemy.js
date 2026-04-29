@@ -240,7 +240,7 @@ class Enemy extends Waters {
   _handlePlacement (ships, attempt) {
     this.UI.disableBtns()
     for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS; i++) {
-      if (this.shipCellGrid.attemptShipPlacement(ships)) {
+      if (this.shipCellGrid.attemptToPlaceShips(ships)) {
         gameStatus.setTips(['Click On Square To Fire'])
         this.UI.enableBtns()
         return

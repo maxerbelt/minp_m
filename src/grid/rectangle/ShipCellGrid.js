@@ -386,22 +386,6 @@ export class ShipCellGrid extends GridBase {
   }
 
   /**
-   * Randomly places all ships on the board.
-   * @param {Array} ships
-   * @returns {boolean}
-   */
-  attemptShipPlacement (ships) {
-    this.reset()
-    const shuffledShips = Random.shuffleArray([...ships])
-    for (const ship of shuffledShips) {
-      if (!this.#randomPlaceShape(ship)) {
-        return false
-      }
-    }
-    return true
-  }
-
-  /**
    * Randomly places ships on the board with callbacks.
    * @param {Array} ships
    * @param {Function} [onShipPlaced]
@@ -409,8 +393,9 @@ export class ShipCellGrid extends GridBase {
    * @returns {boolean}
    */
   attemptToPlaceShips (ships, onShipPlaced = NOOP, onPlacementReset = NOOP) {
-    this.ensureInitialized()
-    for (const ship of ships) {
+    this.reset()
+    const shuffledShips = Random.shuffleArray([...ships])
+    for (const ship of shuffledShips) {
       const placedCells = this.#randomPlaceShape(ship)
       if (!placedCells) {
         onPlacementReset?.()
