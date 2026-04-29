@@ -769,7 +769,7 @@ export class GuassRound extends Fish {
     return effect
   }
   aoePlus (map, coords) {
-    const affectedArea = this.aoe(map, coords)
+    const affectedArea = this.aoe(map, coords, 2)
     const crashLoc =
       affectedArea.length > 0 ? affectedArea[affectedArea.length - 1] : null
     const fullLine = this.aoeFull(coords)
@@ -819,9 +819,18 @@ export class GuassRound extends Fish {
             break
         }
 
-        if (prev) bracket.push([...prev, 0])
-        if (next) bracket.push([...next, 1])
-        if (next2) bracket.push([...next2, 0])
+        if (prev) {
+          prev[2] = 0
+          bracket.push(prev)
+        }
+        if (next) {
+          next[2] = 1
+          bracket.push(next)
+        }
+        if (next2) {
+          next2[2] = 0
+          bracket.push(next2)
+        }
       }
     }
     return bracket
