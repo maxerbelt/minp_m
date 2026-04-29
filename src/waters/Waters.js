@@ -11,13 +11,12 @@ import { placedShipsInstance } from '../selection/PlacedShips.js'
 import { Score } from './Score.js'
 import { gameStatus } from './StatusUI.js'
 import { assembleTerrains } from '../terrains/all/js/gameMaps.js'
-import { randomPlaceShape } from '../core/utils.js'
 import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Steps } from './steps.js'
 import { Animator } from '../core/Animator.js'
-import { ShipCellGrid } from '../grid/ShipCellGrid.js'
+import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 /**
  * @typedef {Object} WeaponResult
@@ -141,49 +140,23 @@ export class Waters {
   /**
    * Attempts to place ships randomly on the board.
    * @param {Array} ships - Ships to attempt placement for
-   * @param {Function} isPlacementSuccessful - Callback to check success
    * @param {Function} [onShipPlaced] - Callback when ship is placed
    * @param {Function} [onPlacementReset] - Callback when placement is reset
    * @returns {boolean} True if placement was successful
    */
   attemptToPlaceShips (
     ships,
-    isPlacementSuccessful,
     onShipPlaced = Function.prototype,
     onPlacementReset = Function.prototype
   ) {
-    this.ensureShipGridInitialized()
-    const mask = bh.map.blankMask
-
-    for (const ship of ships) {
-      const placedCells = this.tryPlaceShip(ship, mask)
-      if (!placedCells) {
-        this.handlePlacementFailure(onPlacementReset)
-        return false
+    return this.shipCellGrid.attemptToPlaceShips(
+      ships,
+      this.handlePlacementFailure.bind(this, onPlacementReset),
+      (ship, placedCells) => {
+        onShipPlaced?.(ship, placedCells)
+        this.recordShipPlacement(placedCells, ship)
       }
-      onShipPlaced?.(ship, placedCells)
-      this.recordShipPlacement(placedCells, ship)
-    }
-    return true
-  }
-
-  /**
-   * Ensures the ship cell grid is properly initialized.
-   * @private
-   */
-  ensureShipGridInitialized () {
-    this.shipCellGrid.ensureInitialized()
-  }
-
-  /**
-   * Attempts to place a single ship randomly.
-   * @param {Object} ship - The ship to place
-   * @param {Object} mask - The placement mask
-   * @returns {Array|null} Placed cells or null if failed
-   * @private
-   */
-  tryPlaceShip (ship, mask) {
-    return randomPlaceShape(ship, this.shipCellGrid.grid, mask)
+    )
   }
 
   /**
@@ -274,7 +247,6 @@ export class Waters {
       let placementSuccessful = true
       placementSuccessful = this.attemptToPlaceShips(
         ships,
-        placementSuccessful,
         onShipPlaced,
         onPlacementReset
       )

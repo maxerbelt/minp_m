@@ -7,7 +7,7 @@
 /* global   it, describe,   expect, beforeEach, jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 import { Waters } from './Waters.js'
-import { ShipCellGrid } from '../grid/ShipCellGrid.js'
+import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 import { bh } from '../terrains/all/js/bh.js'
 
 // Mocks
@@ -168,7 +168,7 @@ describe('Waters', () => {
         placeVariant: jest.fn()
       }
     ]
-    const result = waters.attemptToPlaceShips(ships, true, jest.fn(), jest.fn())
+    const result = waters.attemptToPlaceShips(ships, jest.fn(), jest.fn())
     expect(result).toBe(true)
   })
 
@@ -207,7 +207,7 @@ describe('Waters', () => {
     ]
     let result
     try {
-      result = waters.attemptToPlaceShips(ships, true, jest.fn(), jest.fn())
+      result = waters.attemptToPlaceShips(ships, jest.fn(), jest.fn())
     } catch (e) {
       expect(e.message).toMatch('No shape for letter A')
       result = false

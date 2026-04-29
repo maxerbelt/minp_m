@@ -778,7 +778,7 @@ class DragNDrop {
       if (state.lastEntered[0] === r && state.lastEntered[1] === c) return
 
       state.lastEntered = [r, c]
-      context.highlight(viewModel, model.shipCellGrid.grid, r, c)
+      context.highlight(viewModel, model.shipCellGrid, r, c)
     })
   }
 

@@ -835,17 +835,13 @@ export class Ship {
    * Check if cell grid location is clear of adjacent ships (no touching)
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {Array<Array<any>>} shipCellGrid - Grid tracking occupied cells by ships
+   * @param {unknown} shipCellGrid - Grid tracking occupied cells by ships
    * @returns {boolean} True if no adjacent ships detected (8-way neighborhood clear)
    */
   noTouchCheck (r, c, shipCellGrid) {
     const map = bh.map
-    // Check 8-connected neighborhood (all adjacent cells)
-    for (let nr = r - 1; nr <= r + 1; nr++)
-      for (let nc = c - 1; nc <= c + 1; nc++) {
-        if (map.inBounds(nr, nc) && shipCellGrid[nr][nc]) return false
-      }
-    return true
+
+    return shipCellGrid.noTouch(r, c, map.inBounds.bind(map))
   }
 
   /**
@@ -870,10 +866,10 @@ export class Ship {
   canPlace (variant, r0, c0, shipCellGrid) {
     const placing = this.placeCells(variant, r0, c0)
     const validations = [
-      () => this._validatePlacementBounds(placing),
-      () => this._validatePlacementZone(placing),
-      () => this._validatePlacementOverlap(placing, shipCellGrid),
-      () => this._validatePlacementTouching(placing, shipCellGrid)
+      () => this.#validatePlacementBounds(placing),
+      () => this.#validatePlacementZone(placing),
+      () => this.#validatePlacementOverlap(placing, shipCellGrid),
+      () => this.#validatePlacementTouching(placing, shipCellGrid)
     ]
 
     return validations.every(validate => validate())
@@ -883,9 +879,8 @@ export class Ship {
    * Internal: Validate placement is within map bounds
    * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
    * @returns {boolean} True if all cells are in bounds
-   * @private
    */
-  _validatePlacementBounds (cells) {
+  #validatePlacementBounds (cells) {
     const map = bh.map
     return !cells.some(([r, c]) => !map.inBounds(r, c))
   }
@@ -894,9 +889,8 @@ export class Ship {
    * Internal: Validate placement is in correct zone (land/sea based on ship type)
    * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
    * @returns {boolean} True if all cells are in correct zone
-   * @private
    */
-  _validatePlacementZone (cells) {
+  #validatePlacementZone (cells) {
     return !this.isAllRightZone(cells)
   }
 
@@ -905,11 +899,12 @@ export class Ship {
    * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
    * @param {Array<Array<any>>} shipCellGrid - Grid tracking occupied cells
    * @returns {boolean} True if no overlapping ships detected
-   * @private
    */
-  _validatePlacementOverlap (cells, shipCellGrid) {
+  #validatePlacementOverlap (cells, shipCellGrid) {
     const map = bh.map
-    return !cells.some(([r, c]) => map.inBounds(r, c) && shipCellGrid[r][c])
+    return !cells.some(
+      ([r, c]) => map.inBounds(r, c) && shipCellGrid.hasRC(r, c)
+    )
   }
 
   /**
@@ -917,9 +912,8 @@ export class Ship {
    * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
    * @param {Array<Array<any>>} shipCellGrid - Grid tracking occupied cells
    * @returns {boolean} True if no adjacent ships detected
-   * @private
    */
-  _validatePlacementTouching (cells, shipCellGrid) {
+  #validatePlacementTouching (cells, shipCellGrid) {
     return !cells.some(([r, c]) => !this.noTouchCheck(r, c, shipCellGrid))
   }
 
@@ -961,18 +955,11 @@ export class Ship {
 
   /**
    * Add ship to grid at its current position
-   * @param {any[][]} shipCellGrid
+   * @param {unknown} shipCellGrid
    */
   addToGrid (shipCellGrid) {
-    for (const [c, r] of this.board.occupiedLocations()) {
-      if (
-        r >= 0 &&
-        r < shipCellGrid.length &&
-        c >= 0 &&
-        c < shipCellGrid[r].length
-      ) {
-        shipCellGrid[r][c] = { id: this.id, letter: this.letter }
-      }
+    for (const [x, y] of this.board.occupiedLocations()) {
+      shipCellGrid.set(x, y, { id: this.id, letter: this.letter })
     }
   }
 

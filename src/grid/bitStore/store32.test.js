@@ -727,11 +727,11 @@ describe('Store32', () => {
     })
   })
 
-  describe('occupancyLayer', () => {
+  describe('occupancyLayerOfSize', () => {
     it('should return empty bitboard for empty input', () => {
       const store1 = new Store32(2, 100, 2, 4, 4)
       const bitboard = store1.newWords()
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // Empty bitboard should return empty occupancy
       for (let i = 0; i < result.length; i++) {
@@ -746,7 +746,7 @@ describe('Store32', () => {
       store1.setIdx(bitboard, 5, 2)
       store1.setIdx(bitboard, 10, 3)
 
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // 3 occupied cells = 3 bits set (1-bit output)
       expect(store1.occupancy(result)).toBe(3)
@@ -760,7 +760,7 @@ describe('Store32', () => {
       store1.setIdx(bitboard, 5, 2) // Same color as cell 2
 
       // 3 occupied cells = 3 bits set (1-bit output)
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
       expect(store1.occupancy(result)).toBe(3)
     })
 
@@ -769,7 +769,7 @@ describe('Store32', () => {
       const bitboard = store1.newWords()
       store1.setIdx(bitboard, 7, 1)
 
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // 1 occupied cell = 1 bit set (1-bit output)
       expect(store1.occupancy(result)).toBe(1)
@@ -782,7 +782,7 @@ describe('Store32', () => {
         store1.setIdx(bitboard, i, (i % 3) + 1)
       }
 
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // 15 occupied cells (1-15, not 0) = 15 bits set (1-bit output)
       expect(store1.singleBitStore.occupancy(result)).toBe(15)

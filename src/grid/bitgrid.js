@@ -132,14 +132,15 @@ export class BitGrid {
    * @param {bigint} bitboard - Bitboard to iterate
    * @generator
    * @yields {number} Index of each occupied cell
-   * @private
    */
   *#occupiedIndices (bitboard) {
     if (this.fast && this.store.bitsOccupied) {
       yield* this.store.bitsOccupied(bitboard, this.area)
     } else {
-      for (const [index, value] of this.idxFilled(bitboard)) {
-        yield index
+      for (const [index, value] of this.indexAndValues(bitboard)) {
+        if (value !== 0n) {
+          yield index
+        }
       }
     }
   }
@@ -243,7 +244,7 @@ export class BitGrid {
    * @generator
    * @yields {[number, bigint]} [index, value] pairs for each cell
    */
-  *idxCells (bitboard) {
+  *indexAndValues (bitboard) {
     for (const index of this.indices()) {
       yield [index, this.store.getIdx(bitboard, index)]
     }
@@ -252,18 +253,39 @@ export class BitGrid {
   /**
    * Generator yielding [index, value] pairs for only non-zero cells.
    * Automatically chooses fast path via store.bitsOccupied if enabled.
-   * Use idxBits() if only indices are needed for better performance.
+   * Use occupiedIndicesFast() if only indices are needed for better performance.
    *
    * @param {bigint} bitboard - Bitboard to iterate
    * @generator
    * @yields {[number, bigint]} [index, value] pairs where value !== 0n
    */
-  *idxFilled (bitboard) {
-    if (this.fast && this.store.bitsOccupied) {
-      yield* this.#idxFilledFast(bitboard)
+  *occupiedIndexAndValues (bitboard) {
+    if (this.useFast) {
+      yield* this.#occupiedIndexAndValuesFast(bitboard)
       return
     }
-    for (const [index, value] of this.idxCells(bitboard)) {
+    yield* this.occupiedIndexAndValuesSlow(bitboard)
+  }
+  get useFast () {
+    return this.fast && this.store.bitsOccupied
+  }
+
+  *occupiedIndices (bitboard) {
+    if (this.useFast) {
+      yield* this.occupiedIndicesFast(bitboard)
+      return
+    }
+    yield* this.occupiedIndicesSlow(bitboard)
+  }
+  *occupiedIndicesSlow (bitboard) {
+    for (const [index, value] of this.indexAndValues(bitboard)) {
+      if (value !== 0n) {
+        yield index
+      }
+    }
+  }
+  *occupiedIndexAndValuesSlow (bitboard) {
+    for (const [index, value] of this.indexAndValues(bitboard)) {
       if (value !== 0n) {
         yield [index, value]
       }
@@ -279,8 +301,8 @@ export class BitGrid {
    * @yields {[number, bigint]} [index, value] pairs via bitsOccupied fast path
    * @private
    */
-  *#idxFilledFast (bitboard) {
-    for (const index of this.store.bitsOccupied(bitboard, this.area)) {
+  *#occupiedIndexAndValuesFast (bitboard) {
+    for (const index of this.occupiedIndicesFast(bitboard)) {
       yield [index, this.store.getIdx(bitboard, index)]
     }
   }
@@ -288,13 +310,13 @@ export class BitGrid {
   /**
    * Generator yielding indices of occupied (non-zero) cells.
    * Delegates to store.bitsOccupied for optimized bit enumeration.
-   * Faster than idxFilled when values are not needed.
+   * Faster than occupiedIndexAndValues when values are not needed.
    *
    * @param {bigint} bitboard - Bitboard to iterate
    * @generator
    * @yields {number} Index of each occupied cell
    */
-  *idxBits (bitboard) {
+  *occupiedIndicesFast (bitboard) {
     yield* this.store.bitsOccupied(bitboard, this.area)
   }
 
@@ -307,8 +329,8 @@ export class BitGrid {
    * @generator
    * @yields {[number, bigint]} [index, value] pairs where value === searchValue
    */
-  *idxFilledWith (bitboard, searchValue) {
-    for (const [index, value] of this.idxCells(bitboard)) {
+  *indicesMatching (bitboard, searchValue) {
+    for (const [index, value] of this.indexAndValues(bitboard)) {
       if (value === searchValue) {
         yield [index, value]
       }

@@ -30,7 +30,53 @@ export class AsciiRepresentation {
     'c',
     'd',
     'e',
-    'f'
+    'f',
+    'g',
+    'h',
+    'i',
+    'j',
+    'k',
+    'l',
+    'm',
+    'n',
+    'o',
+    'p',
+    'q',
+    'r',
+    's',
+    't',
+    'u',
+    'v',
+    'w',
+    'x',
+    'y',
+    'z',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z'
   ]
 
   /**
@@ -80,7 +126,6 @@ export class AsciiRepresentation {
    * Renders grid using indexer (for complex non-rectangular shapes).
    * Used for hex, triangle, or other non-rectangular grid types.
    *
-   * @private
    * @param {Array<string>} symbols - Symbol array for value mapping
    * @returns {string} ASCII representation with custom padding for shape
    */
@@ -94,7 +139,6 @@ export class AsciiRepresentation {
    * Renders each row of the grid using its indexer.
    * Iterates through rows provided by indexer.rows() and renders each.
    *
-   * @private
    * @param {Array<string>} symbols - Symbol array for value mapping
    * @param {Array<string>} lines - Accumulator array for output lines
    * @returns {void}
@@ -110,7 +154,6 @@ export class AsciiRepresentation {
    * Renders a single row using indexer padding and cell positioning.
    * Adds row padding, accumulates cell symbols, and appends to output.
    *
-   * @private
    * @param {number} rowIndex - Row index from indexer
    * @param {Array<string>} symbols - Symbol array for value mapping
    * @param {Array<string>} lines - Accumulator array for output lines
@@ -127,7 +170,6 @@ export class AsciiRepresentation {
    * Accumulates ASCII characters for all cells in a row.
    * Appends cell character for each location in the row.
    *
-   * @private
    * @param {string} row - Row string to append to
    * @param {Array<Array<number>>} cellLocations - [x, y] coordinates for cells
    * @param {Array<string>} symbols - Symbol array for value mapping
@@ -143,8 +185,6 @@ export class AsciiRepresentation {
   /**
    * Appends a single cell character to row string.
    * Includes indexer cell padding and value-to-symbol mapping.
-   *
-   * @private
    * @param {string} row - Row string to append to
    * @param {Array<number>} location - [x, y] coordinate for cell
    * @param {Array<string>} symbols - Symbol array for value mapping
@@ -161,8 +201,7 @@ export class AsciiRepresentation {
    * Renders generic rectangular grid without indexer.
    * Iterates row-by-row, column-by-column to build output.
    * Simple and efficient for standard rectangular grids.
-   *
-   * @private
+   
    * @param {Array<string>} symbols - Symbol array for value mapping
    * @returns {string} ASCII art with one character per cell, rows separated by newlines
    */

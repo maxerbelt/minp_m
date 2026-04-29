@@ -1869,7 +1869,7 @@ export class Store32 extends StoreBase {
    * @param {number} gridHeight - Grid height
    * @returns {Uint32Array} 1-bit bitboard showing which cells have non-zero colors
    */
-  occupancyLayer (bitboard, gridWidth, gridHeight) {
+  occupancyLayerOfSize (bitboard, gridWidth, gridHeight) {
     const resultBitboard = this.newWords()
 
     // Create a 1-bit bitboard with one bit per occupied cell

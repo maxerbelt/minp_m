@@ -438,14 +438,29 @@ export class Mask extends RectMaskBase {
   // Edge Masks & Boundary Detection
   // ============================================================================
   expandBorderBits (borderSize, fillValue = 0) {
+    return this.expandBorderUsingBits(this.bits, borderSize, fillValue)
+  }
+  expandBorderUsingBits (bb, borderSize, fillValue = 0) {
     return this.store.expandToWidthWithXYOffset(
       this.width,
       this.height,
-      this.bits,
+      bb,
       this.width + 2 * borderSize,
       borderSize,
       borderSize,
       fillValue
+    )
+  }
+  flattenExpandMask (borderSize = 1) {
+    const flatBits = this.store.occupancyLayer(this.bits)
+    const expBits = this.expandBorderUsingBits(flatBits, borderSize, 0)
+
+    return new Mask(
+      this.width + 2 * borderSize,
+      this.height + 2 * borderSize,
+      expBits,
+      null,
+      2
     )
   }
 

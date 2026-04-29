@@ -1,5 +1,4 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { randomPlaceShape } from '../core/utils.js'
 import { Random } from '../core/Random.js'
 import { gameStatus } from './StatusUI.js'
 import { enemyUI } from './enemyUI.js'
@@ -233,24 +232,6 @@ class Enemy extends Waters {
   }
 
   /**
-   * Attempts to place ships randomly on the board.
-   * @private
-   * @param {Array} ships - The ships to place.
-   * @returns {boolean} True if placement was successful.
-   */
-  _attemptShipPlacement (ships) {
-    this.resetShipCells()
-    const mask = bh.map.blankMask
-    const shuffledShips = Random.shuffleArray([...ships])
-    for (const ship of shuffledShips) {
-      if (!randomPlaceShape(ship, this.shipCellGrid.grid, mask)) {
-        return false
-      }
-    }
-    return true
-  }
-
-  /**
    * Handles ship placement with retry logic.
    * @private
    * @param {Array} ships - The ships to place.
@@ -259,7 +240,7 @@ class Enemy extends Waters {
   _handlePlacement (ships, attempt) {
     this.UI.disableBtns()
     for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS; i++) {
-      if (this._attemptShipPlacement(ships)) {
+      if (this.shipCellGrid.attemptShipPlacement(ships)) {
         gameStatus.setTips(['Click On Square To Fire'])
         this.UI.enableBtns()
         return

@@ -209,8 +209,28 @@ export class SubBoard extends SubMask {
   ) {
     return new SubBoard(offsetX, offsetY, width, height, null, temp)
   }
+  occupancyLayer () {
+    const ocuppied = this.mask.occupancyLayer()
+    return new SubBoard(
+      this.offsetX,
+      this.offsetY,
+      this.windowWidth,
+      this.windowHeight,
+      ocuppied
+    )
+  }
   dilateExpand (borderSize = 1, fillValue = 0) {
     const dilated = this.mask.dilateExpand(borderSize, fillValue)
+    return new SubBoard(
+      this.offsetX - borderSize,
+      this.offsetY - borderSize,
+      this.windowWidth + 2 * borderSize,
+      this.windowHeight + 2 * borderSize,
+      dilated
+    )
+  }
+  flatDilateExpand (borderSize = 1) {
+    const dilated = this.mask.flatDilateExpand(borderSize)
     return new SubBoard(
       this.offsetX - borderSize,
       this.offsetY - borderSize,

@@ -1,5 +1,6 @@
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach */
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { StoreBig } from './storeBig.js'
 import { Mask } from '../rectangle/mask.js'
 
@@ -395,10 +396,10 @@ describe('StoreBig color operations', () => {
       }
     })
   })
-  describe('occupancyLayer', () => {
+  describe('occupancyLayerOfSize', () => {
     it('should return empty bitboard for empty input', () => {
       const store1 = new StoreBig(2, 100, 2, 4, 4)
-      const result = store1.occupancyLayer(0n, 4, 4)
+      const result = store1.occupancyLayerOfSize(0n, 4, 4)
       expect(result).toBe(0n)
     })
 
@@ -409,7 +410,7 @@ describe('StoreBig color operations', () => {
       bitboard = store1.setIdx(bitboard, 5, 2n)
       bitboard = store1.setIdx(bitboard, 10, 3n)
 
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // 3 occupied cells = 3 bits set (1-bit output)
       expect(store1.occupancy(result)).toBe(3)
@@ -423,7 +424,7 @@ describe('StoreBig color operations', () => {
       bitboard = store1.setIdx(bitboard, 5, 2n) // Same color as cell 2
 
       // 3 occupied cells = 3 bits set (1-bit output)
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
       expect(store1.occupancy(result)).toBe(3)
     })
 
@@ -432,7 +433,7 @@ describe('StoreBig color operations', () => {
       let bitboard = 0n
       bitboard = store1.setIdx(bitboard, 7, 1n)
 
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // 1 occupied cell = 1 bit set (1-bit output)
       expect(store1.occupancy(result)).toBe(1)
@@ -445,7 +446,7 @@ describe('StoreBig color operations', () => {
         bitboard = store1.setIdx(bitboard, i, BigInt((i % 3) + 1))
       }
 
-      const result = store1.occupancyLayer(bitboard, 4, 4)
+      const result = store1.occupancyLayerOfSize(bitboard, 4, 4)
 
       // 15 occupied cells (1-15, not 0) = 15 bits set (1-bit output)
       expect(store1.occupancy(result)).toBe(15)

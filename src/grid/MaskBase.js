@@ -36,12 +36,11 @@ export class MaskBase extends CanvasGrid {
 
   /**
    * Get or create a lazy-loaded helper instance
-   * @private
    * @param {string} name - Name of the helper property (without underscore)
    * @param {Function} Constructor - Constructor function for the helper
    * @returns {*} The helper instance
    */
-  _getHelper (name, Constructor) {
+  #getHelper (name, Constructor) {
     const propName = `__${name}`
     if (!this[propName]) {
       this[propName] = new Constructor(this)
@@ -51,27 +50,27 @@ export class MaskBase extends CanvasGrid {
 
   // Lazy-loaded helper instances
   get _bitOps () {
-    return this._getHelper('bitOps', BitOperations)
+    return this.#getHelper('bitOps', BitOperations)
   }
 
   get _borderRegions () {
-    return this._getHelper('borderRegions', BorderRegions)
+    return this.#getHelper('borderRegions', BorderRegions)
   }
 
   get _morphOps () {
-    return this._getHelper('morphOps', MorphologicalOps)
+    return this.#getHelper('morphOps', MorphologicalOps)
   }
 
   get _validation () {
-    return this._getHelper('validation', MaskValidation)
+    return this.#getHelper('validation', MaskValidation)
   }
 
   get _ascii () {
-    return this._getHelper('ascii', AsciiRepresentation)
+    return this.#getHelper('ascii', AsciiRepresentation)
   }
 
   get _coords () {
-    return this._getHelper('coords', CoordinateConversion)
+    return this.#getHelper('coords', CoordinateConversion)
   }
 
   index (...args) {
@@ -177,13 +176,12 @@ export class MaskBase extends CanvasGrid {
 
   /**
    * Create a new instance of this mask class
-   * @private
    * @param {number} width - Mask width
    * @param {number} height - Mask height
    * @param {number} [depth] - Optional depth override
    * @returns {*} New mask instance
    */
-  _createMaskInstance (
+  #createMaskInstance (
     width = this.width,
     height = this.height,
     depth = this.depth
@@ -199,13 +197,13 @@ export class MaskBase extends CanvasGrid {
    */
   get emptyMask () {
     // Default implementation for rectangular masks
-    return this._createMaskInstance()
+    return this.#createMaskInstance()
   }
 
   get square () {
     if (this.width === this.height) return this.clone
     const size = Math.max(this.width, this.height)
-    const mask = this._createMaskInstance(size, size)
+    const mask = this.#createMaskInstance(size, size)
     mask.bits = this.store.expandToSquare(this.bits, this.height, this.width)
     return mask
   }
@@ -227,7 +225,7 @@ export class MaskBase extends CanvasGrid {
     depth = this.depth
   ) {
     // Default implementation for rectangular masks
-    return this._createMaskInstance(width, height, depth)
+    return this.#createMaskInstance(width, height, depth)
   }
 
   /**
@@ -267,7 +265,7 @@ export class MaskBase extends CanvasGrid {
     // and depth.  Using emptyMask previously defaulted to depth=4 which
     // broke occupancy clones used by rectcolor compute (depth=1) – see
     // updateButtonStates2 BigInt test failures.
-    const mask = this._createMaskInstance()
+    const mask = this.#createMaskInstance()
     mask.bits = this.cloneBits
     return mask
   }
@@ -487,7 +485,12 @@ export class MaskBase extends CanvasGrid {
       this._createSingleBitMaskFromBits(bits)
     )
   }
-
+  occupancyLayerBits () {
+    return this.store.occupancyLayer(this.bits)
+  }
+  occupancyLayer () {
+    return this._createSingleBitMaskFromBits(this.occupancyLayerBits())
+  }
   // ============================================================================
   // Width/Dimension Expansion
   // ============================================================================
@@ -571,6 +574,11 @@ export class MaskBase extends CanvasGrid {
   }
   dilateExpand (borderSize = 1, fillValue = 0) {
     const newMask = this.expandBorderMask(borderSize, fillValue) || this
+    const dilated = newMask.dilate()
+    return dilated
+  }
+  flatDilateExpand (borderSize = 1) {
+    const newMask = this.flattenExpandMask(borderSize) || this
     const dilated = newMask.dilate()
     return dilated
   }

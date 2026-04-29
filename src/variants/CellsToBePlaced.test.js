@@ -6,10 +6,11 @@ import { describe, it, expect, jest } from '@jest/globals'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { placingTarget } from './makeCell3.js'
+import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 function makeGrid (rows, cols, fill = null) {
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => fill)
+  return new ShipCellGrid(
+    Array.from({ length: rows }, () => Array.from({ length: cols }, () => fill))
   )
 }
 
@@ -260,7 +261,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid[1][2] = 'SHIP'
+      grid.set(1, 2, 'SHIP')
       expect(placing.noTouch(2, 2, grid)).toBe(false)
     })
 
@@ -271,7 +272,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid[3][2] = 'SHIP'
+      grid.set(3, 2, 'SHIP')
       expect(placing.noTouch(2, 2, grid)).toBe(false)
     })
 
@@ -293,7 +294,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid[2][3] = 'SHIP'
+      grid.set(2, 3, 'SHIP')
       expect(placing.noTouch(2, 2, grid)).toBe(false)
     })
 
@@ -304,7 +305,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid[1][1] = 'SHIP' // diagonal up-left
+      grid.set(1, 1, 'SHIP') // diagonal up-left
       expect(placing.noTouch(2, 2, grid)).toBe(false)
     })
 
@@ -328,7 +329,7 @@ describe('CellsToBePlaced', () => {
 
       for (const [r, c] of neighbors) {
         const grid = makeGrid(5, 5, null)
-        grid[r][c] = 'SHIP'
+        grid.set(r, c, 'SHIP')
         expect(placing.noTouch(2, 2, grid)).toBe(false)
       }
     })
@@ -437,7 +438,7 @@ describe('CellsToBePlaced', () => {
       })
 
       const grid = makeGrid(5, 5, null)
-      grid[2][2] = 'EXISTING_SHIP'
+      grid.set(2, 2, 'EXISTING_SHIP')
       expect(placing.isOverlapping(grid)).toBe(true)
     })
 
@@ -453,7 +454,7 @@ describe('CellsToBePlaced', () => {
       })
 
       const grid = makeGrid(5, 5, null)
-      grid[4][2] = 'SHIP' // second cell
+      grid.set(2, 4 'SHIP') // second cell
       expect(placing.isOverlapping(grid)).toBe(true)
     })
   })
@@ -476,7 +477,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid[1][2] = 'SHIP' // neighbor of cell at (2,2)
+      grid.set(1, 2, 'SHIP') // neighbor of cell at (2,2)
       expect(placing.isTouching(grid)).toBe(true)
     })
 
@@ -490,7 +491,7 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 0, target)
 
       const grid = makeGrid(6, 6, null)
-      grid[5][2] = 'SHIP' // neighbor of second cell at (2,4)
+      grid.set(2, 5, 'SHIP') // neighbor of second cell at (2,4)
       expect(placing.isTouching(grid)).toBe(true)
     })
   })
@@ -532,7 +533,9 @@ describe('CellsToBePlaced', () => {
         target
       )
 
-      const grid = makeGrid(5, 5, null)
+      const grid = new ShipCellGrid(
+        Array.from({ length: 5 }, () => new Array(5).fill(null))
+      )
       expect(placing.canPlace(grid)).toBe(false)
     })
 
@@ -553,7 +556,7 @@ describe('CellsToBePlaced', () => {
       )
 
       const grid = makeGrid(5, 5, null)
-      grid[2][2] = 'SHIP'
+      grid.set(2, 2, 'SHIP')
       expect(placing.canPlace(grid)).toBe(false)
     })
 
@@ -574,7 +577,7 @@ describe('CellsToBePlaced', () => {
       )
 
       const grid = makeGrid(5, 5, null)
-      grid[1][2] = 'SHIP' // neighbor occupied
+      grid.set(1, 2, 'SHIP') // neighbor occupied
       expect(placing.canPlace(grid)).toBe(false)
     })
 
@@ -638,7 +641,7 @@ describe('CellsToBePlaced', () => {
       const grid = makeGrid(10, 10, null)
       expect(placing.canPlace(grid)).toBe(true)
 
-      grid[7][5] = 'SHIP' // occupy one cell
+      grid.set(5, 7, 'SHIP') // occupy one cell
       expect(placing.canPlace(grid)).toBe(false)
     })
   })
@@ -664,17 +667,17 @@ describe('CellsToBePlaced', () => {
 
       // Invalid due to occupied cell
       const occupiedGrid = makeGrid(10, 10, null)
-      occupiedGrid[3][4] = 'SHIP'
+      occupiedGrid.set(3, 4, 'SHIP')
       expect(placing.canPlace(occupiedGrid)).toBe(false)
 
       // Invalid due to neighboring ship
       const neighborGrid = makeGrid(10, 10, null)
-      neighborGrid[2][3] = 'SHIP' // diagonal
+      neighborGrid.set(2, 3, 'SHIP') // diagonal
       expect(placing.canPlace(neighborGrid)).toBe(false)
 
       // Valid when far enough from other ship
       const validGrid = makeGrid(10, 10, null)
-      validGrid[0][0] = 'SHIP'
+      validGrid.set(0, 0, 'SHIP')
       expect(placing.canPlace(validGrid)).toBe(true)
     })
 

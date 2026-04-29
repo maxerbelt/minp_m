@@ -551,7 +551,7 @@ export class StoreBig extends StoreBase {
     const newStore = this.storeWith(newBitsPerCell)
     let output = 0n
 
-    for (const [i, cellValue] of this.all.idxCells(bitboard)) {
+    for (const [i, cellValue] of this.all.indexAndValues(bitboard)) {
       output = newStore.setIdx(output, i, cellValue)
     }
 
@@ -571,13 +571,53 @@ export class StoreBig extends StoreBase {
     let output = 0n
     const newStore = this.storeWith(newBitsPerCell)
 
-    for (const [i, value] of this.all.idxCells(bitboard)) {
+    for (const [i, value] of this.all.indexAndValues(bitboard)) {
       const cellValue = value & newCellMask
       output = newStore.setIdx(output, i, cellValue)
     }
     return output
   }
+  /**
+   * Create a 1-bit bitboard representing occupancy of non-zero colors.
+   * Each cell with a non-zero color value becomes a 1-bit, others become 0-bits.
+   * @param {bigint} bitboard - Multi-color bitboard
+   * @returns {bigint} 1-bit bitboard showing which cells have non-zero colors
+   */
+  occupancyLayer (bitboard) {
+    const oldBitsPerCell = this.bitsPerCell
+    const newBitsPerCell = 1
 
+    if (oldBitsPerCell === newBitsPerCell) return bitboard
+
+    let output = 0n
+    const newStore = this.singleBitStore
+
+    for (const i of this.all.occupiedIndices(bitboard)) {
+      output = newStore.setIdx(output, i, 1n)
+    }
+    return output
+  }
+
+  /**
+   * Create a 1-bit bitboard representing occupancy of non-zero colors.
+   * Each cell with a non-zero color value becomes a 1-bit, others become 0-bits.
+   * @param {bigint} bitboard - Multi-color bitboard
+   * @param {number} gridWidth - Grid width
+   * @param {number} gridHeight - Grid height
+   * @returns {bigint} 1-bit bitboard showing which cells have non-zero colors
+   */
+  occupancyLayerOfSize (bitboard, gridWidth, gridHeight) {
+    let resultBitboard = 0n
+    const singleBitStore = this.singleBitStore
+    // Create a 1-bit bitboard with one bit per occupied cell
+    // Each occupied cell maps to exactly 1 bit in the output
+    for (const i of this.grid(gridWidth, gridHeight).occupiedIndices(
+      bitboard
+    )) {
+      resultBitboard = singleBitStore.setIdx(resultBitboard, i)
+    }
+    return resultBitboard
+  }
   //(bitboard >> BigInt(bitPosition)) & rangeMask
   findRowBounds (bitboard, gridHeight, gridWidth) {
     gridHeight = gridHeight || this.height || Number.POSITIVE_INFINITY
@@ -927,9 +967,10 @@ export class StoreBig extends StoreBase {
 
     // For each cell with non-zero color, set a marker in the appropriate color bitboard
     // Use this store (which preserves bitsPerCell) to ensure consistent cell layout
-    for (const [i, color] of this.grid(gridWidth, gridHeight).idxFilled(
-      bitboard
-    )) {
+    for (const [i, color] of this.grid(
+      gridWidth,
+      gridHeight
+    ).occupiedIndexAndValues(bitboard)) {
       const layerIdx = Number(color) - 1
       // Set value 1 at this cell position in the color layer
       colorLayers[layerIdx] = this.singleBitStore.setIdx(
@@ -954,7 +995,7 @@ export class StoreBig extends StoreBase {
     const layerColor = BigInt(color)
     let resultBitboard = 0n
     const singleBitStore = this.singleBitStore
-    for (const [i] of this.grid(gridWidth, gridHeight).idxFilledWith(
+    for (const [i] of this.grid(gridWidth, gridHeight).indicesMatching(
       bitboard,
       layerColor
     )) {
@@ -1005,7 +1046,7 @@ export class StoreBig extends StoreBase {
       // For each cell in the color layer, set the color in the result bitboard
       for (const [i] of singleBitStore
         .grid(gridWidth, gridHeight)
-        .idxFilled(colorLayer)) {
+        .occupiedIndexAndValues(colorLayer)) {
         resultBitboard = this.setIdx(resultBitboard, i, color)
       }
     }
@@ -1032,29 +1073,11 @@ export class StoreBig extends StoreBase {
       // For each cell in the color layer, set the color in the result bitboard
       for (const [i] of singleBitStore
         .grid(gridWidth, gridHeight)
-        .idxFilled(colorLayer)) {
+        .occupiedIndexAndValues(colorLayer)) {
         resultBitboard = this.setIdx(resultBitboard, i, color)
       }
     }
 
-    return resultBitboard
-  }
-  /**
-   * Create a 1-bit bitboard representing occupancy of non-zero colors.
-   * Each cell with a non-zero color value becomes a 1-bit, others become 0-bits.
-   * @param {bigint} bitboard - Multi-color bitboard
-   * @param {number} gridWidth - Grid width
-   * @param {number} gridHeight - Grid height
-   * @returns {bigint} 1-bit bitboard showing which cells have non-zero colors
-   */
-  occupancyLayer (bitboard, gridWidth, gridHeight) {
-    let resultBitboard = 0n
-    const singleBitStore = this.singleBitStore
-    // Create a 1-bit bitboard with one bit per occupied cell
-    // Each occupied cell maps to exactly 1 bit in the output
-    for (const [i] of this.grid(gridWidth, gridHeight).idxFilled(bitboard)) {
-      resultBitboard = singleBitStore.setIdx(resultBitboard, i)
-    }
     return resultBitboard
   }
 }

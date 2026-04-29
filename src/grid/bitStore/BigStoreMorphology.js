@@ -24,7 +24,7 @@ export class BigStoreMorphology {
     const width = store.width
     let result = bitboard
 
-    for (const [idx, value] of store.all.idxFilled(bitboard)) {
+    for (const [idx, value] of store.all.occupiedIndexAndValues(bitboard)) {
       result = store.setIdx(result, idx, value)
       const column = idx % width
       if (column > 0) result = store.setIdx(result, idx - 1, value)
@@ -45,7 +45,7 @@ export class BigStoreMorphology {
     let result = bitboard
     const width = gridWidth
 
-    for (const [idx, value] of store.all.idxFilled(bitboard)) {
+    for (const [idx, value] of store.all.occupiedIndexAndValues(bitboard)) {
       result = store.setIdx(result, idx, value)
       const row = Math.floor(idx / width)
       if (row > 0) result = store.setIdx(result, idx - width, value)
@@ -81,7 +81,7 @@ export class BigStoreMorphology {
   static erodeHorizontalCells (store, bitboard) {
     let result = bitboard
 
-    for (const [idx] of store.all.idxFilled(bitboard)) {
+    for (const [idx] of store.all.occupiedIndexAndValues(bitboard)) {
       if (!store.cellSurvivesHorizontalErosion(bitboard, idx)) {
         result = store.setIdx(result, idx, 0n)
       }

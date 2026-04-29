@@ -2,12 +2,17 @@
 import { SeaVessel } from '../terrains/sea/js/SeaShape.js'
 import { Ship } from '../ships/Ship.js'
 import { Orbit4F } from '../variants/Orbit4F.js'
+
+import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
+
 /* global describe, expect, it, beforeEach, jest */
 
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 
 // DraggedShip will be imported after mocks are configured
-const shipCellGrid = Array.from({ length: 10 }, () => new Array(10).fill(null))
+const shipCellGrid = new ShipCellGrid(
+  Array.from({ length: 10 }, () => new Array(10).fill(null))
+)
 
 // Mock the dependencies
 jest.unstable_mockModule('./Ghost.js', () => ({

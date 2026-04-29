@@ -6,6 +6,7 @@ import { describe, it, expect, jest } from '@jest/globals'
 import { Ship } from './Ship.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { Shape } from './Shape.js'
+import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 describe('Ship basic behaviors', () => {
   it('constructor sets defaults', () => {
@@ -93,12 +94,12 @@ describe('Ship basic behaviors', () => {
     expect(s.sunk).toBe(false)
     expect(s.board.toAscii).toBe('1\n1')
 
-    const grid = Array.from({ length: 4 }, () =>
-      Array.from({ length: 4 }, () => null)
+    const grid = new ShipCellGrid(
+      Array.from({ length: 3 }, () => new Array(3).fill(null))
     )
     s.addToGrid(grid)
-    expect(grid[1][1]).toEqual({ id: 3, letter: 'C' })
-    expect(grid[2][1]).toEqual({ id: 3, letter: 'C' })
+    expect(grid.at(1, 1)).toEqual({ id: 3, letter: 'C' })
+    expect(grid.at(1, 2)).toEqual({ id: 3, letter: 'C' })
 
     s.removeFromPlacement()
     expect(s.cells.length).toBe(0)
@@ -266,14 +267,14 @@ describe('Ship - placement and grid operations', () => {
       [1, 1]
     ]
     s.placeAtCells(cells)
-    const grid = Array.from({ length: 3 }, () =>
-      Array.from({ length: 3 }, () => null)
+    const grid = new ShipCellGrid(
+      Array.from({ length: 3 }, () => new Array(3).fill(null))
     )
     s.addToGrid(grid)
-    expect(grid[0][0]).toEqual({ id: 7, letter: 'G' })
-    expect(grid[0][1]).toEqual({ id: 7, letter: 'G' })
-    expect(grid[1][0]).toEqual({ id: 7, letter: 'G' })
-    expect(grid[1][1]).toEqual({ id: 7, letter: 'G' })
+    expect(grid.at(0, 0)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.at(0, 1)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.at(1, 0)).toEqual({ id: 7, letter: 'G' })
+    expect(grid.at(1, 1)).toEqual({ id: 7, letter: 'G' })
   })
 
   it('place resets hits and sunk state', () => {

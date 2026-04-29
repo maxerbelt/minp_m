@@ -37,7 +37,7 @@ export class CellsToBePlaced {
    * @returns {any} The mask.
    */
   displacedArea (width, height) {
-    return this.board.dilateExpand(1, 0).toMask(width, height)
+    return this.board.flatDilateExpand(1, 0).toMask(width, height)
   }
 
   /**
@@ -79,13 +79,12 @@ export class CellsToBePlaced {
    * @param {any} shipCellGrid - The ship cell grid.
    * @returns {boolean} True if no touch.
    */
-  noTouch (r, c, shipCellGrid) {
-    for (let nr = r - 1; nr <= r + 1; nr++)
-      for (let nc = c - 1; nc <= c + 1; nc++) {
-        if (this.target.boundsChecker(nr, nc) && shipCellGrid[nr][nc] !== null)
-          return false
-      }
-    return true
+  noTouch (x, y, shipCellGrid) {
+    return shipCellGrid.noTouch(
+      x,
+      y,
+      this.target.boundsChecker.bind(this.target)
+    )
   }
 
   /**
@@ -120,8 +119,8 @@ export class CellsToBePlaced {
    * @returns {boolean} True if overlapping.
    */
   isOverlapping (shipCellGrid) {
-    for (const [c, r] of this.board.occupiedLocations()) {
-      if (shipCellGrid[r][c] !== null) {
+    for (const [x, y] of this.board.occupiedLocations()) {
+      if (shipCellGrid.has(x, y)) {
         return true
       }
     }
@@ -134,8 +133,8 @@ export class CellsToBePlaced {
    * @returns {boolean} True if touching.
    */
   isTouching (shipCellGrid) {
-    for (const [c, r] of this.board.occupiedLocations()) {
-      if (this.noTouch(r, c, shipCellGrid) === false) {
+    for (const [x, y] of this.board.occupiedLocations()) {
+      if (this.noTouch(x, y, shipCellGrid) === false) {
         return true
       }
     }

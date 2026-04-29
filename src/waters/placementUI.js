@@ -771,7 +771,7 @@ function moveGridCursor (event, shipCellGrid, viewModel) {
     if (cursor.y < 0) cursor.y = map.cols - 1
     if (cursor.y >= map.cols) cursor.y = 0
 
-    dragNDrop.highlight(viewModel, shipCellGrid.grid, cursor.x, cursor.y)
+    dragNDrop.highlight(viewModel, shipCellGrid, cursor.x, cursor.y)
   }
 }
 
