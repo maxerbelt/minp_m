@@ -111,7 +111,7 @@ if (!bhLocal)
     },
     set map (newMap) {
       if (newMap && this.terrainMaps?.current?.setToMap) {
-        this.terrainMaps.current.setToMap()
+        this.terrainMaps.current.setToMap(newMap)
       }
     },
     inBounds (r, c) {
