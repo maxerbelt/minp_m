@@ -768,29 +768,59 @@ export class GuassRound extends Fish {
     return effect
   }
   aoePlus (map, coords) {
-    const aoe = this.aoe(map, coords)
-    const crashLoc = aoe.length > 0 ? aoe[aoe.length - 1] : null
+    const affectedArea = this.aoe(map, coords)
+    const crashLoc =
+      affectedArea.length > 0 ? affectedArea[affectedArea.length - 1] : null
     const fullLine = this.aoeFull(coords)
-    return { aoe, options: { crashLoc, fullLine } }
+    return { affectedArea, options: { crashLoc, fullLine } }
   }
 
   /**
    * Calculates splash/secondary damage pattern around a point
-   * @param {Object} map - Game map
-   * @param {Array} coords - Impact coordinate [row, col]
-   * @param {Object} _options - Additional options
+   * @param {Object} _map - Game map
+   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} effect - Damage effect coordinates
+   * @param {Object} options - Additional options
    * @returns {Array} Splash pattern
    */
-  splash (_map, coords, options) {
+  splash (_map, resolvedTarget, effect, options) {
+    const last = (effect?.length || 1) - 1
     const { fullLine } = options
-    let bracket = []
+    let bracket = [[...resolvedTarget, 2]]
     if (fullLine) {
-      const idx = fullLine.find(([r, c]) => r === coords[0] && c === coords[1])
+      const idx = fullLine.find(
+        ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
+      )
       if (idx !== undefined) {
-        const prev = fullLine[idx - 1]
-        const next = fullLine[idx + 1]
-        if (prev) bracket.push([...prev, 1])
+        let next2 = fullLine[idx - 2]
+        let prev = fullLine[idx - 1]
+        let next = fullLine[idx + 1]
+        switch (idx) {
+          case 0:
+            next2 = fullLine[idx + 3]
+            prev = fullLine[idx + 2]
+            next = fullLine[idx + 1]
+            break
+          case 1:
+            next2 = fullLine[idx + 2]
+            prev = fullLine[idx - 1]
+            next = fullLine[idx + 1]
+            break
+          case last:
+            next2 = fullLine[idx + 1]
+            prev = fullLine[idx - 2]
+            next = fullLine[idx - 1]
+            break
+          default:
+            next2 = fullLine[idx + 2]
+            prev = fullLine[idx - 1]
+            next = fullLine[idx + 1]
+            break
+        }
+
+        if (prev) bracket.push([...prev, 0])
         if (next) bracket.push([...next, 1])
+        if (next2) bracket.push([...next2, 0])
       }
     }
     return bracket
@@ -798,17 +828,19 @@ export class GuassRound extends Fish {
 
   /**
    * Calculates crash splash damage pattern around a terminal point when no hits are registered
+ 
    * @param {Object} map - Game map
-   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} _effect - Damage effect coordinates
    * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
-  crashSplash (map, coords, _options) {
+  crashSplash (map, resolvedTarget, _effect, _options) {
     let pattern = []
     if (
       this.crashLoc &&
-      coords[0] === this.crashLoc[0] &&
-      coords[1] === this.crashLoc[1]
+      resolvedTarget[0] === this.crashLoc[0] &&
+      resolvedTarget[1] === this.crashLoc[1]
     ) {
       const [r, c] = this.crashLoc
       addNeighbors(map, r, c, pattern, [
@@ -825,6 +857,8 @@ export class GuassRound extends Fish {
         [0, -2, 0],
         [0, 2, 0]
       ])
+    } else {
+      console.log('Crash splash not triggered:', resolvedTarget, this.crashLoc)
     }
     return pattern
   }

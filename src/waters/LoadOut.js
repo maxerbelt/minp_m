@@ -593,25 +593,28 @@ export class LoadOut {
     this.clearSelectedCoordinates()
   }
   fireSingleShot (coordinates, sShot) {
-    const { weapon, affectedLoc } = this.fireSingleShotInfo(sShot, coordinates)
-    return this.onDestroy(weapon, [affectedLoc])
+    const { weapon, affectedLoc, wps } = this.fireSingleShotInfo(
+      sShot,
+      coordinates
+    )
+    return this.onDestroy(weapon, [affectedLoc], { isSingleShot: true, wps })
   }
   fireSingleShotInfo (sShot, coordinates) {
     sShot = sShot || this.getSingleShotWps()
-    const c = coordinates || this.coord
+    const c = coordinates || this.selectedCoordinates
     const weapon = sShot.weapon
     const affectedLoc = [...c, 4]
-    return { weapon, affectedLoc, sShot }
+    return { weapon, affectedLoc, wps: sShot }
   }
 
-  fireWeapon (map, coordinates, weaponSystem, target, options) {
-    const { weapon, affectedArea } = this.fireWeaponInfo(
-      coordinates,
-      weaponSystem,
-      map
-    )
+  fireWeapon (map, coordinates, weaponSystem, target) {
+    const {
+      weapon,
+      affectedArea,
+      options: weaponOptions
+    } = this.fireWeaponInfo(coordinates, weaponSystem, map)
 
-    return this.fireAoE(weapon, affectedArea, target, options)
+    return this.fireAoE(weapon, affectedArea, target, weaponOptions)
   }
   fireAoE (weapon, affectedArea, target, options) {
     if (weapon.destroys) {
@@ -623,16 +626,16 @@ export class LoadOut {
     return this.onReveal(weapon, affectedArea, options)
   }
   fireWeaponInfo (coordinates, weaponSystem, map) {
-    const c = coordinates || this.coord
+    const c = coordinates || this.selectedCoordinates
     const wps = weaponSystem || this.getCurrentWeaponSystem()
     const weapon = wps.weapon
-    const affectedArea = weapon.aoe(map, c)
-    return { weapon, affectedArea }
+    const { affectedArea, options } = weapon.aoePlus(map, c)
+    return { weapon, affectedArea, options }
   }
 
-  onDestroyOneOfMany (weapon, affectedArea, target) {
+  onDestroyOneOfMany (weapon, affectedArea, _target, options) {
     // Implement the logic for destroying a single target
     // This method can be expanded for more granular control
-    return this.onDestroy(weapon, affectedArea, target)
+    return this.onDestroy(weapon, affectedArea, options)
   }
 }

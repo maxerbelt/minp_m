@@ -1139,11 +1139,11 @@ export class Waters {
     )
   }
 
-  getStrikeSplash (weapon, candidate, effect, options) {
+  getStrikeSplash (weapon, resolvedTarget, effect, options) {
     const cellSize = this.UI.cellSizeScreen()
-    const target = this.UI.gridCellAt(candidate[0], candidate[1])
+    const target = this.UI.gridCellAt(resolvedTarget[0], resolvedTarget[1])
     weapon.animateSplashExplode(target, cellSize)
-    return weapon.splash(bh.map, candidate, effect, options)
+    return weapon.splash(bh.map, resolvedTarget, effect, options)
   }
   getCrashSplash (weapon, candidate, effect, options) {
     const cellSize = this.UI.cellSizeScreen()

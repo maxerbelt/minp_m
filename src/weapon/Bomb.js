@@ -588,13 +588,14 @@ export class Strike extends Weapon {
 
   /**
    * Calculates splash/secondary damage pattern around a point
-   * Adds orthogonal neighbors of the impact point
    * @param {Object} map - Game map
-   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} _effect - Damage effect coordinates
+   * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
-  splash (map, coords, _options) {
-    return createSplashEffect(map, coords, 0)
+  splash (map, resolvedTarget, _effect, _options) {
+    return createSplashEffect(map, resolvedTarget, 0)
   }
 
   /**
@@ -720,17 +721,17 @@ export class Fish extends Weapon {
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point in water
-   * Adds orthogonal water neighbors of the impact point
+   * Calculates splash/secondary damage pattern around a point
    * @param {Object} map - Game map
-   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} _effect - Damage effect coordinates
    * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
-  splash (map, coords, _options) {
+  splash (map, resolvedTarget, _effect, _options) {
     return createSplashEffect(
       map,
-      coords,
+      resolvedTarget,
       1,
       (row, col) => !map.isLand(row, col)
     )

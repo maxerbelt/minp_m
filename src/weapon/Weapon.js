@@ -298,12 +298,13 @@ export class Weapon {
 
   /**
    * Calculates splash/secondary damage pattern around a point
-   * @param {Object} map - Game map
-   * @param {Array} coords - Impact coordinate [row, col]
+   * @param {Object} _map - Game map
+   * @param {Array} _resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} _effect - Damage effect coordinates
    * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
-  splash (_map, _coords, _options) {
+  splash (_map, _resolvedTarget, _effect, _options) {
     return []
   }
 
