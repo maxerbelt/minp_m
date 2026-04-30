@@ -836,14 +836,14 @@ export class GuassRound extends Fish {
     const { fullLine } = options
     resolvedTarget[2] = 2
     let bracket = [resolvedTarget]
+    let next2
+    let prev
+    let next
     if (fullLine) {
-      const idx = fullLine.find(
+      const idx = fullLine.findIndex(
         ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
       )
       if (idx !== undefined) {
-        let next2 = fullLine[idx - 2]
-        let prev = fullLine[idx - 1]
-        let next = fullLine[idx + 1]
         switch (idx) {
           case 0:
             next2 = fullLine[idx + 3]
