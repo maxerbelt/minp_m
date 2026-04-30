@@ -89,14 +89,14 @@ const SHIP_NAMES = {
  * Maps ship letter identifiers to their symmetry classifications.
  * @type {Object<string, string>}
  */
-const SHIP_SYMMETRIES = {
+const SHIP_TALLYGROUPS = {
   A: 'S',
   B: 'S',
   C: 'S',
   D: 'S',
   E: 'S',
   F: 'S',
-  G: 'A',
+  G: 'S',
   H: 'X',
   I: 'S',
   J: 'G',
@@ -188,7 +188,7 @@ export const spaceShipsCatalogue = new ShipCatalogue(
   spaceGroups,
   SHIP_COLORS,
   SHIP_NAMES,
-  SHIP_SYMMETRIES,
+  SHIP_TALLYGROUPS,
   SHIP_BACKGROUNDS
 )
 
