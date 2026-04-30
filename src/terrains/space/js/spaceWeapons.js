@@ -10,6 +10,19 @@ import {
 } from '../../../weapon/Bomb.js'
 import { CellClassManager } from '../../../waters/helpers/CellClassManager.js'
 
+/**
+ * @typedef {[number, number]} Coord
+ * @typedef {[number, number, number]} AoeCell
+ * @typedef {AoeCell[]} AoePattern
+ * @typedef {Object} ViewModel
+ * @typedef {Object} GameModel
+ * @typedef {Object} DualBoardCells
+ * @property {HTMLElement} sourceCell1
+ * @property {HTMLElement} targetCell1
+ * @property {HTMLElement} sourceCell2
+ * @property {HTMLElement} targetCell2
+ */
+
 // ============================================================================
 // Helper Constants & Utility Functions
 // ============================================================================
@@ -130,6 +143,61 @@ async function launchWithDualBoardAnimation (
 }
 
 /**
+ * Builds source and target cell references for portal-style animation.
+ * @param {Object} weapon - The weapon instance used for coordinate normalization.
+ * @param {number[][]} coords - Target coordinates.
+ * @param {number} sourceRow - Source row coordinate.
+ * @param {number} sourceCol - Source column coordinate.
+ * @param {Object} map - Game map object for coordinate normalization.
+ * @param {ViewModel} viewModel - Primary view model.
+ * @param {ViewModel} opposingViewModel - Opposing view model.
+ * @returns {DualBoardCells} Portal animation cell references.
+ */
+function resolvePortalCells (
+  weapon,
+  coords,
+  sourceRow,
+  sourceCol,
+  map,
+  viewModel,
+  opposingViewModel
+) {
+  const [[startRow, startCol], targetCoord] = weapon.redoCoords(
+    map,
+    [sourceRow, sourceCol],
+    coords
+  )
+  return {
+    sourceCell1: opposingViewModel.gridCellAt(startRow, startCol),
+    targetCell1: opposingViewModel.gridCellAt(targetCoord[0], targetCoord[1]),
+    sourceCell2: viewModel.gridCellAt(startRow, startCol),
+    targetCell2: viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+  }
+}
+
+/**
+ * Adds portal CSS classes to cells for dual-board animation.
+ * @param {DualBoardCells} cells - Source and target cell references.
+ */
+function addPortalClasses (cells) {
+  cells.sourceCell1.classList.add(CSS_CLASSES.MARKER)
+  cells.targetCell1.classList.add(CSS_CLASSES.PORTAL)
+  cells.sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+  cells.targetCell2.classList.add(CSS_CLASSES.MARKER)
+}
+
+/**
+ * Removes portal CSS classes from cells after animation.
+ * @param {DualBoardCells} cells - Source and target cell references.
+ */
+function removePortalClasses (cells) {
+  cells.sourceCell1.classList.remove(CSS_CLASSES.MARKER)
+  cells.targetCell1.classList.remove(CSS_CLASSES.PORTAL)
+  cells.sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
+  cells.targetCell2.classList.remove(CSS_CLASSES.MARKER)
+}
+
+/**
  * Performs portal-style dual-board animation for rail bolt
  * @param {Object} weapon - The weapon instance
  * @param {Array} coords - Target coordinates
@@ -163,45 +231,33 @@ async function performPortalAnimation (
     )
   }
 
-  const [[startRow, startCol], targetCoord] = weapon.redoCoords(
+  const cells = resolvePortalCells(
+    weapon,
+    coords,
+    sourceRow,
+    sourceCol,
     map,
-    [sourceRow, sourceCol],
-    coords
+    viewModel,
+    opposingViewModel
   )
+  addPortalClasses(cells)
 
-  const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
-  const targetCell1 = opposingViewModel.gridCellAt(
-    targetCoord[0],
-    targetCoord[1]
-  )
-  const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
-  const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
-
-  // Apply portal CSS classes
-  sourceCell1.classList.add(CSS_CLASSES.MARKER)
-  targetCell1.classList.add(CSS_CLASSES.PORTAL)
-  sourceCell2.classList.add(CSS_CLASSES.PORTAL)
-  targetCell2.classList.add(CSS_CLASSES.MARKER)
-
-  // Perform animations
-  await Weapon.prototype.animateFlyingOnVM.call(
-    weapon,
-    sourceCell1,
-    targetCell1,
-    viewModel
-  )
-  await Weapon.prototype.animateFlyingOnVM.call(
-    weapon,
-    sourceCell2,
-    targetCell2,
-    viewModel
-  )
-
-  // Remove CSS classes
-  sourceCell1.classList.remove(CSS_CLASSES.MARKER)
-  targetCell1.classList.remove(CSS_CLASSES.PORTAL)
-  sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
-  targetCell2.classList.remove(CSS_CLASSES.MARKER)
+  try {
+    await Weapon.prototype.animateFlyingOnVM.call(
+      weapon,
+      cells.sourceCell1,
+      cells.targetCell1,
+      viewModel
+    )
+    await Weapon.prototype.animateFlyingOnVM.call(
+      weapon,
+      cells.sourceCell2,
+      cells.targetCell2,
+      viewModel
+    )
+  } finally {
+    removePortalClasses(cells)
+  }
 }
 
 // ============================================================================
@@ -516,30 +572,22 @@ export class RailBolt extends Strike {
       )
     }
 
-    const [[startRow, startCol], targetCoord] = this.redoCoords(
+    const cells = resolvePortalCells(
+      this,
+      coords,
+      sourceRow,
+      sourceCol,
       map,
-      [sourceRow, sourceCol],
-      coords
+      viewModel,
+      opposingViewModel
     )
 
-    const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
-    const targetCell1 = opposingViewModel.gridCellAt(
-      targetCoord[0],
-      targetCoord[1]
-    )
-    const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
-    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
-
-    // Perform dual-board animation with portal-style CSS classes
-    sourceCell1.classList.add(CSS_CLASSES.MARKER)
-    targetCell1.classList.add(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
-    targetCell2.classList.add(CSS_CLASSES.MARKER)
+    addPortalClasses(cells)
 
     await Weapon.prototype.animateFlyingOnVM.call(
       this,
-      sourceCell1,
-      targetCell1,
+      cells.sourceCell1,
+      cells.targetCell1,
       viewModel
     )
   }
