@@ -417,9 +417,9 @@ export class Bomb extends Weapon {
 
   /**
    * Calculates area-of-effect damage pattern for bomb at given coordinates
-   * @param {Object} _map - Game map (unused for bomb)
-   * @param {Array} coords - Target coordinates [row, col, ...]
-   * @returns {Array} Array of affected cells with damage power
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
   aoe (_map, coords) {
     const [row, col] = coords[0]
@@ -567,20 +567,19 @@ export class Strike extends Weapon {
 
   /**
    * Calculates standard area-of-effect along the strike line
-   * @param {Object} map - Game map
-   * @param {Array} coords - Two-point coordinates [startCoord, endCoord]
-   * @param {number} [power=1] - Power level for damage
-   * @returns {Array} Cells along the line with damage power
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
-  aoe (map, coords, power = 1) {
-    return calculateLineAreaOfEffect(coords, power, getExtendedLinePoints)
+  aoe (map, coords) {
+    return calculateLineAreaOfEffect(coords, 2, getExtendedLinePoints)
   }
 
   /**
    * Calculates area-of-effect for splash damage at higher power
-   * @param {Object} map - Game map
-   * @param {Array} coords - Target coordinates
-   * @returns {Array} Splash cells with power 20
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
   splashAoe (map, coords) {
     return this.aoe(map, coords, 20)
@@ -688,20 +687,19 @@ export class Fish extends Weapon {
   /**
    * Calculates area-of-effect along the fish's water path
    * Stops at land boundaries (map.isLand check)
-   * @param {Object} map - Game map for land/water checks
-   * @param {Array} coords - Two-point coordinates [startCoord, endCoord]
-   * @param {number} [power=1] - Power level for damage
-   * @returns {Array} Cells along water path with damage power
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
-  aoe (map, coords, power = 1) {
-    return this.aoeRaw(map, coords, power, 0)
+  aoe (map, coords) {
+    return this.aoeRaw(map, coords, 2, 0)
   }
 
   /**
    * Calculates area-of-effect for splash damage at higher power
-   * @param {Object} map - Game map
-   * @param {Array} coords - Target coordinates
-   * @returns {Array} Splash cells with power 20
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
   splashAoe (map, coords) {
     return this.aoe(map, coords, 20)
@@ -818,9 +816,9 @@ export class Sensor extends Weapon {
   /**
    * Calculates area-of-effect as a pie segment from center to target
    * Swept area represents sensor scan coverage
-   * @param {Object} _map - Game map (unused for sensor scanning)
-   * @param {Array} coords - Two-point coordinates [centerCoord, targetCoord]
-   * @returns {Array} Cells within the pie segment
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
   aoe (_map, coords) {
     const [centerRow, centerCol] = coords[0]

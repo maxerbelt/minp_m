@@ -872,36 +872,7 @@ export class GuassRound extends Fish {
     }
     return pattern
   }
-  /*
-  aoe (map, coords, power = 1) {
-    const startRow = coords[0][1]
-    const startCol = coords[0][0]
-    const endRow = coords[1][1]
-    const endCol = coords[1][0]
 
-    const trajectoryLine = drawRayLinePoints(
-      startRow,
-      startCol,
-      endRow,
-      endCol,
-      power
-    )
-    const landCollisionIndex = trajectoryLine.findIndex(([x, y]) =>
-      map.isLand(y, x)
-    )
-
-    // Track crash location if trajectory hits land
-    this.crashLoc =
-      landCollisionIndex >= 0 ? trajectoryLine[landCollisionIndex] : null
-
-    // Truncate trajectory at land boundary (inclusive)
-    if (landCollisionIndex >= 0) {
-      trajectoryLine.length = landCollisionIndex + 1
-    }
-
-    return trajectoryLine
-  }
-*/
   /**
    * Initiates Gauss round launch with coordinate transformation
    * Routes to launchRightTo for coordinate processing before dual-animation launch
