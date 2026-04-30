@@ -335,6 +335,136 @@ export class Waters {
   }
 
   /**
+   * Returns the active view model for the current opponent or local UI.
+   * @param {Object} [oppo] - Optional opponent instance
+   * @returns {Object} UI view model
+   * @private
+   */
+  getViewModel (oppo) {
+    return oppo?.UI || this.UI
+  }
+
+  /**
+   * Creates a normalized weapon selection payload.
+   * @param {number} launchR - Launch row coordinate
+   * @param {number} launchC - Launch column coordinate
+   * @param {number} weaponId - Weapon system ID
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  createWeaponSelection (launchR, launchC, weaponId, hintR, hintC) {
+    return { launchR, launchC, weaponId, hintR, hintC }
+  }
+
+  /**
+   * Adds a source marker for the current weapon selection.
+   * @param {Object} viewModel - UI view model instance
+   * @param {number} launchR - Launch row coordinate
+   * @param {number} launchC - Launch column coordinate
+   * @param {HTMLElement|null} cell - Candidate cell element
+   * @private
+   */
+  addSelectionSource (viewModel, launchR, launchC, cell) {
+    this.steps.addSource(
+      viewModel,
+      launchR,
+      launchC,
+      cell || viewModel.gridCellAt(launchR, launchC)
+    )
+  }
+
+  /**
+   * Checks whether repeated clicks should filter out previously selected source keys.
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {Array} keyIds - Cell key collection
+   * @returns {boolean} True when repeated selection filtering applies
+   * @private
+   */
+  shouldFilterPreviousSourceKeys (hintR, hintC, keyIds) {
+    return (
+      hintR === this.lastClick?.r &&
+      hintC === this.lastClick?.c &&
+      (!this.previousSources || this.previousSources.size < keyIds.length)
+    )
+  }
+
+  /**
+   * Selects a loaded weapon system by cell key values.
+   * @param {HTMLElement} cell - Cell element used for selection
+   * @param {Array<string>} keyIds - Candidate key identifiers
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {boolean} random - Whether to select randomly
+   * @param {Object} viewModel - UI view model
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  selectWeaponFromCell (cell, keyIds, hintR, hintC, random, viewModel) {
+    let availableKeys = [...keyIds]
+    if (this.shouldFilterPreviousSourceKeys(hintR, hintC, keyIds)) {
+      availableKeys = availableKeys.filter(k => !this.previousSources.has(k))
+    } else {
+      this.previousSources = new Set()
+    }
+    this.lastClick = { r: hintR, c: hintC }
+
+    const loadedWeaponIds = new Set(
+      this.loadOut.getLoadedWeapons().map(w => w.id)
+    )
+    const filteredKeyIds = availableKeys.filter(key => {
+      const [, , weaponId] = parseTriple(key)
+      return loadedWeaponIds.has(weaponId)
+    })
+
+    const selectedKey = findClosestCoord(filteredKeyIds, hintC, hintR, k =>
+      parseTriple(k)
+    )
+    if (!random && !selectedKey) {
+      return this.selectRandomWeapon()
+    }
+
+    this.previousSources.add(selectedKey)
+    const [launchC, launchR, weaponId] = parseTriple(selectedKey)
+    this.addSelectionSource(viewModel, launchR, launchC, cell)
+
+    const ship = this.loadOut.getShipByWeaponId(weaponId)
+    if (ship) {
+      this.steps.addShip(ship)
+      const [sourceR, sourceC] = this.generateSourceHint(ship)
+      this.createShadowSource(sourceR, sourceC)
+    }
+
+    return this.createWeaponSelection(launchR, launchC, weaponId, hintR, hintC)
+  }
+
+  /**
+   * Selects a loaded weapon system from a ship's available entries.
+   * @param {Object} ship - Ship instance with loaded weapons
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {boolean} random - Whether to select randomly
+   * @param {Object} viewModel - UI view model
+   * @param {HTMLElement|null} cell - Candidate cell element
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {
+    const entries = ship.getLoadedWeaponEntries()
+    const [key, weapon] = random
+      ? randomElement(entries)
+      : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))
+
+    const [launchC, launchR] = parsePair(key)
+    const selectedCell = cell || viewModel.gridCellAt(launchR, launchC)
+    this.steps.addSource(viewModel, launchR, launchC, selectedCell)
+
+    return this.createWeaponSelection(launchR, launchC, weapon.id, hintR, hintC)
+  }
+
+  /**
    * Places matching ships from loaded data using a placer function.
    * @param {ShipPlacement} placedShips - The placed ships data
    * @param {Function} placer - Function to place individual ships
@@ -805,65 +935,38 @@ export class Waters {
 
   selectWeaponId (cell, hintR, hintC, random, ship, oppo) {
     oppo = oppo || this.opponent
-    const viewModel = oppo?.UI || this.UI
-    if (ship) {
-      const entries = ship.getLoadedWeaponEntries()
-      const [key, weapon] = random
-        ? randomElement(entries)
-        : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))
-      const [launchC, launchR] = parsePair(key)
-      cell = cell || viewModel.gridCellAt(launchR, launchC)
-      this.steps.addSource(viewModel, launchR, launchC, cell)
+    const viewModel = this.getViewModel(oppo)
 
-      return { launchR, launchC, weaponId: weapon.id, hintR, hintC }
+    if (ship) {
+      return this.selectWeaponFromShip(
+        ship,
+        hintR,
+        hintC,
+        random,
+        viewModel,
+        cell
+      )
     }
+
     if (cell === null) {
-      this.steps.addSource(this.UI, 0, 0, cell || this.UI.gridCellAt(0, 0))
-      return { launchR: 0, launchC: 0, weaponId: -1, hintR, hintC }
+      this.addSelectionSource(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
+      return this.createWeaponSelection(0, 0, -1, hintR, hintC)
     }
+
     const keys = keyListFromCell(cell, 'keyIds')
     if (!keys) {
-      this.steps.addSource(this.UI, 0, 0, cell || this.UI.gridCellAt(0, 0))
-      return { launchR: 0, launchC: 0, weaponId: -1, hintR, hintC }
+      this.addSelectionSource(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
+      return this.createWeaponSelection(0, 0, -1, hintR, hintC)
     }
-    let keyIds = [...keys]
-    const hasMultiClick =
-      hintR === this.lastClick?.r && hintC === this.lastClick?.c
-    if (
-      hasMultiClick &&
-      (!this.previousSources || this.previousSources.size < keyIds.length)
-    ) {
-      keyIds = keyIds.filter(k => !this.previousSources.has(k))
-    } else {
-      this.previousSources = new Set()
-    }
-    this.lastClick = { r: hintR, c: hintC }
-    const loaded = new Set(this.loadOut.getLoadedWeapons().map(w => w.id))
-    const filteredKeyIds = keyIds.filter(k => {
-      const [, , weaponId] = parseTriple(k)
-      return loaded.has(weaponId)
-    })
-    const wkey = findClosestCoord(filteredKeyIds, hintC, hintR, k =>
-      parseTriple(k)
+
+    return this.selectWeaponFromCell(
+      cell,
+      keys,
+      hintR,
+      hintC,
+      random,
+      viewModel
     )
-    if (!random && !wkey) {
-      return this.selectRandomWeapon()
-    }
-    this.previousSources.add(wkey)
-    const [launchC, launchR, weaponId] = parseTriple(wkey)
-    this.steps.addSource(
-      viewModel,
-      launchR,
-      launchC,
-      cell || viewModel.gridCellAt(launchR, launchC)
-    )
-    ship = this.loadOut.getShipByWeaponId(weaponId)
-    if (ship) {
-      this.steps.addShip(ship)
-      const [r, c] = this.generateSourceHint(ship)
-      this.createShadowSource(r, c)
-    }
-    return { launchR, launchC, weaponId, hintR, hintC }
   }
 
   hasTargettedRandomWeaponForWps (autoSelectWarning = true) {
@@ -1401,26 +1504,37 @@ export class Waters {
     return reveals.toString() + ' revealed'
   }
   displayMisses (weapon, reveals = 0, messageInfo = '') {
-    const preamble1 = this.opponent ? this.opponent.preamble1 : this.preamble1
     if (reveals > 0) {
       this.displayInfo(messageInfo + this.revealDescription(reveals))
       return
     }
-    // if (weapon.letter === '-') return // don't display miss for single shot
-    let missMessage
-    if (this.opponent) {
-      if (weapon.letter === '-') {
-        missMessage = `${preamble1}missed`
-      } else {
-        missMessage = `${preamble1}${weapon.name} missed ${this.preamble0} ships`
-      }
+
+    const missMessage = this.buildMissMessage(weapon)
+    if (missMessage) {
       this.displayInfo(messageInfo + missMessage)
-      return
     }
+  }
+
+  /**
+   * Builds the message displayed when a shot misses.
+   * @param {*} weapon - The weapon that missed
+   * @returns {string|null} Resulting miss message, or null for no display
+   * @private
+   */
+  buildMissMessage (weapon) {
+    if (this.opponent) {
+      const preamble1 = this.opponent.preamble1
+      if (weapon.letter === '-') {
+        return `${preamble1}missed`
+      }
+      return `${preamble1}${weapon.name} missed ${this.preamble0} ships`
+    }
+
     if (weapon.letter === '-') {
-      return // don't display miss for single shot
+      return null
     }
-    this.displayInfo(messageInfo + `The ${weapon.name} missed everything!`)
+
+    return `The ${weapon.name} missed everything!`
   }
 
   updateResultsOfBomb (weapon, result) {
