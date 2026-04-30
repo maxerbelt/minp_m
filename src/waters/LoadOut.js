@@ -633,9 +633,9 @@ export class LoadOut {
     return { weapon, affectedArea, options }
   }
 
-  onDestroyOneOfMany (weapon, affectedArea, _target, options) {
+  onDestroyOneOfMany (weapon, affectedArea, target, options) {
     // Implement the logic for destroying a single target
     // This method can be expanded for more granular control
-    return this.onDestroy(weapon, affectedArea, options)
+    return this.onDestroy(weapon, affectedArea, target || options)
   }
 }

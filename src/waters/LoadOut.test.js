@@ -24,6 +24,7 @@ describe('LoadOut', () => {
       postSelectCursor: 2,
       isLimited: true,
       aoe: jest.fn(() => ['affected']), // Remove unused args warning
+      aoePlus: jest.fn(() => ({ affectedArea: ['affected'], options: {} })),
       destroys: true,
       isOneAndDone: false,
       cursors: ['X', 'Y'],
