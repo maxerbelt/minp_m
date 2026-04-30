@@ -73,15 +73,39 @@ export class ElementCache {
    * @returns {HTMLDivElement|null} The tray element
    */
   getTrayByType (type) {
-    const typeMap = {
-      A: this.trays.plane,
-      S: this.trays.ship,
-      M: this.trays.special,
-      T: this.trays.special,
-      X: this.trays.special,
-      G: this.trays.building,
-      W: this.trays.weapon
+    const typeToTrayKey = {
+      A: 'plane',
+      S: 'ship',
+      M: 'special',
+      T: 'special',
+      X: 'special',
+      G: 'building',
+      W: 'weapon'
     }
-    return typeMap[type]
+
+    const trayKey = typeToTrayKey[type]
+    if (!trayKey) return null
+
+    let tray = this.trays[trayKey]
+    if (!tray) {
+      const trayIdMap = {
+        ship: 'shipTray',
+        plane: 'planeTray',
+        special: 'specialTray',
+        building: 'buildingTray',
+        weapon: 'weaponTray'
+      }
+      const trayId = trayIdMap[trayKey]
+      if (trayId) {
+        tray = /** @type {HTMLDivElement|null} */ (
+          document.getElementById(trayId)
+        )
+        if (tray) {
+          this.trays[trayKey] = tray
+        }
+      }
+    }
+
+    return tray
   }
 }
