@@ -88,18 +88,18 @@ const MODE_CURRENT_TABS = {
   build: ['build', 'add'],
   hide: ['hide'],
   seek: ['seek'],
-  list: ['build', 'list'],
-  rules: ['build', 'rules'],
-  print: ['build', 'print']
+  list: ['list'],
+  rules: ['rules'],
+  print: ['print']
 }
 
 const MODE_AVAILABLE_HANDLERS = {
   build: ['hide', 'seek', 'list', 'rules', 'import'],
   hide: ['build', 'add', 'seek', 'list', 'rules', 'import'],
   seek: ['build', 'add', 'hide', 'list', 'rules', 'import'],
-  list: ['hide', 'seek', 'rules', 'import'],
-  rules: ['hide', 'seek', 'list', 'import'],
-  print: ['hide', 'seek', 'list', 'rules', 'import']
+  list: ['build', 'hide', 'seek', 'rules', 'import'],
+  rules: ['build', 'hide', 'seek', 'list', 'import'],
+  print: ['build', 'hide', 'seek', 'list', 'rules', 'import']
 }
 
 // Module-level tab and navigation management
