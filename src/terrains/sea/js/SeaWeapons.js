@@ -6,6 +6,12 @@ import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
 import { Delay } from '../../../core/Delay.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
+/**
+ * @typedef {[number, number]} Coord
+ * @typedef {[number, number, number]} AoeCell
+ * @typedef {AoeCell[]} AoePattern
+ */
+
 // ============================================================================
 // Configuration Constants
 // ============================================================================
@@ -27,6 +33,60 @@ const SOUND_FILES = {
  */
 const SOUND_BASE_URL = import.meta.url
 
+const SEA_WEAPON_CONFIGS = {
+  MEGABOMB: {
+    hints: ['Click On Square To Drop Bomb'],
+    buttonHtml: '<span class="shortcut">M</span>ega Bomb',
+    tip: 'drag a megabomb on to the map to increase the number of times you can drop bombs',
+    tag: 'mega'
+  },
+  KINETIC: {
+    hints: [
+      'Click on square to start kinetic strike',
+      'Click on square end kinetic strike'
+    ],
+    buttonHtml: '<span class="shortcut">K</span>inetic Strike',
+    tip: 'drag a kinetic on to the map to increase the number of times you can strike',
+    splashType: 'air',
+    tag: 'kinetic',
+    splashPower: 0
+  },
+  TORPEDO: {
+    hints: ['Click on square to start torpedo', 'Click on square aim torpedo'],
+    buttonHtml: '<span class="shortcut">T</span>orpedo',
+    tip: 'drag a torpedo on to the map to increase the number of times you can strike',
+    splashType: 'sea',
+    tag: 'torpedo',
+    splashPower: 1
+  },
+  FLACK: {
+    hints: ['Click on square to initiate flack'],
+    buttonHtml: '<span class="shortcut">F</span>lack',
+    tag: 'flack',
+    animateOnTarget: true,
+    explodeOnTarget: true,
+    hasFlash: true
+  },
+  SWEEP: {
+    hints: [
+      'Click on square to start radar scan',
+      'Click on square end radar scan'
+    ],
+    buttonHtml: 's<span class="shortcut">W</span>eep',
+    tag: 'sweep',
+    hasFlash: false
+  }
+}
+
+/**
+ * Resolves a sea weapon flight sound URL.
+ * @param {string} soundFile - Name of the sound file.
+ * @returns {URL} Sound URL for the weapon.
+ */
+function seaFlightSound (soundFile) {
+  return Weapon.getFlightSoundUrl(soundFile, SOUND_BASE_URL)
+}
+
 // ============================================================================
 // Weapon Classes
 // ============================================================================
@@ -45,12 +105,7 @@ export class Megabomb extends Bomb {
    */
   constructor (ammo, name, letter) {
     super(ammo, name || 'Megabomb', letter || 'M')
-    this._applyWeaponConfig({
-      hints: ['Click On Square To Drop Bomb'],
-      buttonHtml: '<span class="shortcut">M</span>ega Bomb',
-      tip: 'drag a megabomb on to the map to increase the number of times you can drop bombs',
-      tag: 'mega'
-    })
+    this._applyWeaponConfig(SEA_WEAPON_CONFIGS.MEGABOMB)
   }
 
   /**
@@ -58,7 +113,7 @@ export class Megabomb extends Bomb {
    * @returns {URL} URL to megabomb flight sound asset
    */
   get flightSound () {
-    return Weapon.getFlightSoundUrl(SOUND_FILES.MEGABOMB, SOUND_BASE_URL)
+    return seaFlightSound(SOUND_FILES.MEGABOMB)
   }
 
   /**
@@ -88,17 +143,7 @@ export class Kinetic extends Strike {
     this.cursors = ['satelite', 'strike']
     this.postSelectCursor = 1
     this.totalCursors = 2
-    this._applyWeaponConfig({
-      hints: [
-        'Click on square to start kinetic strike',
-        'Click on square end kinetic strike'
-      ],
-      buttonHtml: '<span class="shortcut">K</span>inetic Strike',
-      tip: 'drag a kinetic on to the map to increase the number of times you can strike',
-      splashType: 'air',
-      tag: 'kinetic',
-      splashPower: 0
-    })
+    this._applyWeaponConfig(SEA_WEAPON_CONFIGS.KINETIC)
   }
 
   /**
@@ -106,7 +151,7 @@ export class Kinetic extends Strike {
    * @returns {URL} URL to kinetic strike flight sound asset
    */
   get flightSound () {
-    return Weapon.getFlightSoundUrl(SOUND_FILES.KINETIC, SOUND_BASE_URL)
+    return seaFlightSound(SOUND_FILES.KINETIC)
   }
 
   /**
@@ -134,17 +179,7 @@ export class Torpedo extends Fish {
     this.cursors = ['torpedo', 'periscope']
     this.postSelectCursor = 1
     this.totalCursors = 2
-    this._applyWeaponConfig({
-      hints: [
-        'Click on square to start torpedo',
-        'Click on square aim torpedo'
-      ],
-      buttonHtml: '<span class="shortcut">T</span>orpedo',
-      tip: 'drag a torpedo on to the map to increase the number of times you can strike',
-      splashType: 'sea',
-      tag: 'torpedo',
-      splashPower: 1
-    })
+    this._applyWeaponConfig(SEA_WEAPON_CONFIGS.TORPEDO)
   }
 
   /**
@@ -152,7 +187,7 @@ export class Torpedo extends Fish {
    * @returns {URL} URL to torpedo flight sound asset
    */
   get flightSound () {
-    return Weapon.getFlightSoundUrl(SOUND_FILES.TORPEDO, SOUND_BASE_URL)
+    return seaFlightSound(SOUND_FILES.TORPEDO)
   }
 
   /**
@@ -186,14 +221,7 @@ export class Flack extends Weapon {
     this.isOneAndDone = false
     this.nonAttached = true
     this.animateOffsetY = 50
-    this._applyWeaponConfig({
-      hints: ['Click on square to initiate flack'],
-      buttonHtml: '<span class="shortcut">F</span>lack',
-      tag: 'flack',
-      animateOnTarget: true,
-      explodeOnTarget: true,
-      hasFlash: true
-    })
+    this._applyWeaponConfig(SEA_WEAPON_CONFIGS.FLACK)
     this.splashCoords = [
       [0, 0, 1],
       [1, 1, 2],
@@ -222,7 +250,7 @@ export class Flack extends Weapon {
    * @returns {URL} URL to flack flight sound asset
    */
   get flightSound () {
-    return Weapon.getFlightSoundUrl(SOUND_FILES.FLACK, SOUND_BASE_URL)
+    return seaFlightSound(SOUND_FILES.FLACK)
   }
 
   /**
