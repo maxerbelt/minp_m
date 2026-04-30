@@ -22,7 +22,8 @@ class SpaceAndAsteroidsMaps extends TerrainMaps {
       defaultSpaceMap,
       [
         ['|', 'DestroyOne'],
-        ['+', 'Bomb']
+        ['+', 'Bomb'],
+        ['^', 'DestroyOne']
       ],
       spaceShipsCatalogue,
       spaceWeaponsCatalogue
