@@ -13,6 +13,20 @@ const ATTEMPTS_PER_RETRY = 25
 const ENEMY_TURN_DELAY = 50
 
 /**
+ * @typedef {Object} WeaponLaunchResult
+ * @property {boolean} [hasTargettedWeapon]
+ * @property {Object} [weapon]
+ * @property {Object} [score]
+ */
+
+/**
+ * @typedef {Object} CursorInfo
+ * @property {Object} [wps]
+ * @property {number} [idx]
+ * @property {string} [cursor]
+ */
+
+/**
  * Represents the enemy player in the Waters game, handling AI behavior, ship placement, and weapon management.
  * Extends the Waters class to provide enemy-specific logic.
  */
@@ -62,8 +76,23 @@ class Enemy extends Waters {
    * @private
    */
   _handleSelect () {
-    this.UI.board.classList.add('targetting')
-    this.UI.board.classList.remove('not-step')
+    this._setBoardTargetingState(true)
+  }
+
+  /**
+   * Sets the board targeting state.
+   * @param {boolean} isTargeting - Whether the board is in targeting mode.
+   * @private
+   */
+  _setBoardTargetingState (isTargeting) {
+    const boardClasses = this.UI.board.classList
+    if (isTargeting) {
+      boardClasses.add('targetting')
+      boardClasses.remove('not-step')
+    } else {
+      boardClasses.remove('targetting')
+      boardClasses.add('not-step')
+    }
   }
 
   /**
@@ -120,20 +149,19 @@ class Enemy extends Waters {
       return
     }
 
-    this._showWaitingForOpponent()
+    this._transitionToOpponentTurn()
     await Delay.wait(ENEMY_TURN_DELAY)
     this.opponent.testContinue = true
     await this.opponent.seekStep()
   }
 
   /**
-   * Displays the waiting state for the opponent's turn.
+   * Transitions the UI to the opponent's turn.
    * @private
    */
-  _showWaitingForOpponent () {
+  _transitionToOpponentTurn () {
     this._updateSpinner(true, "Enemy's Turn")
-    this.UI.board.classList.remove('targetting')
-    this.UI.board.classList.add('not-step')
+    this._setBoardTargetingState(false)
     this.steps.clearSource()
   }
 
@@ -256,16 +284,19 @@ class Enemy extends Waters {
    * @param {number} attempt - The current attempt number.
    */
   async _handlePlacementFailure (ships, attempt) {
-    const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
     gameStatus._addToQueue(
-      `Having difficulty placing all ships (${totalAttempts} attempts)`,
+      `Having difficulty placing all ships (${
+        (attempt + 1) * ATTEMPTS_PER_RETRY
+      } attempts)`,
       true
     )
+
     if (attempt < MAX_PLACEMENT_RETRIES) {
       await Delay.yield()
-      this._handlePlacement(ships, attempt + 1)
+      this._tryPlacementRetry(ships, attempt + 1)
       return
     }
+
     this.UI.enableBtns()
     gameStatus._addToQueue(
       'Failed to place all ships after many attempts',
@@ -273,6 +304,16 @@ class Enemy extends Waters {
     )
     this.boardDestroyed = true
     throw new Error('Failed to place all ships after many attempts')
+  }
+
+  /**
+   * Attempts placement again after a retry delay.
+   * @private
+   * @param {Array} ships - The ships to place.
+   * @param {number} attempt - Retry attempt index.
+   */
+  _tryPlacementRetry (ships, attempt) {
+    this._handlePlacement(ships, attempt)
   }
 
   /**
@@ -359,11 +400,11 @@ class Enemy extends Waters {
   }
 
   /**
-   * Launches the weapon sequence, trying different launch methods.
+   * Launches the weapon sequence, trying selected, random, and default launch flows.
    * @private
    * @param {number} r - Target row.
    * @param {number} c - Target column.
-   * @returns {Promise<Object|null>} The result of the launch.
+   * @returns {Promise<WeaponLaunchResult|null>} The result of the launch.
    */
   async _launchWeaponSequence (r, c) {
     let result = await this.launchSelectedWeapon(r, c)
@@ -405,12 +446,40 @@ class Enemy extends Waters {
     if (!this.canTakeTurn()) return
 
     const result = await this.setupWeapon(r, c)
-    if (result?.hasTargettedWeapon) {
+    if (this._shouldContinueAfterLaunch(result)) {
       return
     }
+
+    this._processLaunchResult(result)
+    this._finalizeTurn()
+  }
+
+  /**
+   * Determines whether the launch result requires continuing the turn.
+   * @private
+   * @param {WeaponLaunchResult|null} result - The weapon launch result.
+   * @returns {boolean} True if the turn should continue.
+   */
+  _shouldContinueAfterLaunch (result) {
+    return !!result?.hasTargettedWeapon
+  }
+
+  /**
+   * Processes the launch result and updates scoring if applicable.
+   * @private
+   * @param {WeaponLaunchResult|null} result - The weapon launch result.
+   */
+  _processLaunchResult (result) {
     if (result?.score) {
       this.updateResultsOfBomb(result.weapon, result.score)
     }
+  }
+
+  /**
+   * Finalizes the turn after a weapon launch.
+   * @private
+   */
+  _finalizeTurn () {
     this.score.finishTurn()
     this.updateUI()
     this.steps.endTurn()
@@ -423,9 +492,20 @@ class Enemy extends Waters {
    */
   onClickOppoCell (hintR, hintC) {
     if (!this.opponent) return
+    this._prepareOpponentHintSelection(hintR, hintC)
+  }
+
+  /**
+   * Prepares opponent hint selection before arming the attached weapon.
+   * @private
+   * @param {number} hintR - Hint row coordinate.
+   * @param {number} hintC - Hint column coordinate.
+   */
+  _prepareOpponentHintSelection (hintR, hintC) {
     this.opponent.UI.deactivateTempHints()
     this.UI.removeHighlightAoE()
     if (this.loadOut.isNotArming()) return
+
     this.loadOut.clearSelectedCoordinates()
     const cell = this.opponent.UI.gridCellAt(hintR, hintC)
     this.steps.addHint(this.opponent.UI, hintR, hintC, cell)
@@ -474,9 +554,29 @@ class Enemy extends Waters {
    * @param {number} shadowC - Shadow column.
    */
   deactivateWeapon (ro, co, shadowR, shadowC) {
+    this._deactivateOpponentWeapon(ro, co)
+    this._deactivateOwnShadow(shadowR, shadowC)
+  }
+
+  /**
+   * Deactivates the opponent's weapon cell.
+   * @private
+   * @param {number} ro - Opponent row coordinate.
+   * @param {number} co - Opponent column coordinate.
+   */
+  _deactivateOpponentWeapon (ro, co) {
     if (ro !== undefined && co !== undefined) {
       this.opponent?.UI?.cellWeaponDeactivate?.(ro, co, true)
     }
+  }
+
+  /**
+   * Deactivates the local shadow cell and opponent hint.
+   * @private
+   * @param {number} shadowR - Shadow row coordinate.
+   * @param {number} shadowC - Shadow column coordinate.
+   */
+  _deactivateOwnShadow (shadowR, shadowC) {
     if (shadowR !== undefined && shadowC !== undefined) {
       this.UI.cellWeaponDeactivate(shadowR, shadowC)
       this.opponent?.UI?.cellHintDeactivate?.(shadowR, shadowC)
