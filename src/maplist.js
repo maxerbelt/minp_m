@@ -585,7 +585,7 @@ export { MapList, saveAsJson, printGameSheet, saveToFile }
 if (
   typeof window !== 'undefined' &&
   typeof document !== 'undefined' &&
-  !(typeof process !== 'undefined' && !process?.env?.JEST_WORKER_ID)
+  !(typeof process !== 'undefined') // && !process?.env?.JEST_WORKER_ID)
 ) {
   const mapList = new MapList()
   await fetchNavBar('list', 'List of Hidden Battle Maps')
