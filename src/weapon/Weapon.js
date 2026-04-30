@@ -281,16 +281,36 @@ export class Weapon {
     return `${this.name} (${this.letter})`
   }
   /**
+   * Get area-of-effect pattern
+   *
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   */
+  aoe (_map, coords) {
+    return [[coords[0][0], coords[0][1], 4]]
+  }
+
+  /**
    * Get area-of-effect pattern for splash damage.
    * Delegates to aoe() for standard implementations.
    *
-   * @param {any} map - Game map
-   * @param {number[]} coords - Target coordinates
-   * @returns {any} AOE pattern or damage locations
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
   splashAoe (map, coords) {
     return this.aoe(map, coords)
   }
+
+  /**
+   * Get area-of-effect plus options for splash damage.
+   * Delegates to aoe() for standard implementations.
+   *
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Target coordinates
+   * @returns {Object} AOE pattern or damage locations
+   */
   aoePlus (map, coords) {
     const affectedArea = this.aoe(map, coords)
     return { affectedArea, options: {} }
@@ -300,7 +320,7 @@ export class Weapon {
    * Calculates splash/secondary damage pattern around a point
    * @param {Object} _map - Game map
    * @param {Array} _resolvedTarget - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates
+   * @param {Array} _effect - Damage effect coordinates and power
    * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
@@ -395,7 +415,7 @@ export class Weapon {
    *
    * @param {any} map - Game map object
    * @param {number[]} base - Base coordinates [row, col]
-   * @param {number[]} coords - Target coordinates [row, col]
+   * @param {number[][]} coords - Target coordinates [row, col]
    * @returns {number[][]} Transformed [base, coords[0]] pair
    */
   redoCoords (_map, base, coords) {
@@ -486,7 +506,7 @@ export class Weapon {
    *
    * @param {any} map - Game map object
    * @param {number[]} base - Base/source coordinates [row, col]
-   * @param {number[]} coords - Target coordinates [row, col]
+   * @param {number[][]} coords - Target coordinates [row, col]
    * @param {any} model - Game model for target lookup
    * @returns {number[][]} Processed coordinate pair with candidate flag
    */
@@ -964,10 +984,17 @@ export class StandardShot extends Weapon {
     const url = new URL('../terrains/all/sounds/shot.mp3', import.meta.url)
     return url
   }
-
+  /**
+   * Get area-of-effect pattern
+   *
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {any} AOE pattern or damage locations
+   */
   aoe (_map, coords) {
     return [[coords[0][0], coords[0][1], 4]]
   }
+
   ammoStatus () {
     return `Single Shot Mode`
   }

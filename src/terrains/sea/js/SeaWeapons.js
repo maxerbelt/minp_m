@@ -352,8 +352,8 @@ export class Flack extends Weapon {
    * Calculates area-of-effect for flack burst pattern
    * Creates randomized cluster pattern with high-power center bursts
    * @param {Object} map - Game map for bounds checking
-   * @param {Array} coords - Target coordinates [[row, col]]
-   * @returns {Array} Array of [row, col, power] tuples for effect area
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
   aoe (map, coords) {
     const r = coords[0][0]

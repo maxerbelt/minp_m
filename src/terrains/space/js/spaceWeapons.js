@@ -756,20 +756,19 @@ export class GuassRound extends Fish {
   /**
    * Calculates area-of-effect along the fish's water path
    * Stops at land boundaries (map.isLand check)
-   * @param {Object} map - Game map for land/water checks
-   * @param {Array} coords - Two-point coordinates [startCoord, endCoord]
-   * @param {number} [power=1] - Power level for damage
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
    * @returns {Array} Cells along water path with damage power
    */
-  aoe (map, coords, power = 1) {
-    const effect = this.aoeRaw(map, coords, power, 1)
+  aoe (map, coords) {
+    const effect = this.aoeRaw(map, coords, 2, 1)
     //     this.crashLoc =
     //  landCollisionIndex >= 0 ? trajectoryLine[landCollisionIndex] : null
 
     return effect
   }
   aoePlus (map, coords) {
-    const affectedArea = this.aoe(map, coords, 2)
+    const affectedArea = this.aoe(map, coords)
     const crashLoc =
       affectedArea.length > 0 ? affectedArea[affectedArea.length - 1] : null
     const fullLine = this.aoeFull(coords)
