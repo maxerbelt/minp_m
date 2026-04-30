@@ -8,6 +8,17 @@ import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
 
 /**
+ * @typedef {[number, number]} GridCoordinate
+ */
+
+/**
+ * @typedef {Object} WeaponLaunchResult
+ * @property {boolean} [hasTargettedWeapon]
+ * @property {Object} [weapon]
+ * @property {Object} [score]
+ */
+
+/**
  * Configuration constants for AI seeking behavior.
  * @typedef {Object} SeekConstants
  * @property {number} IMPACT_MIN - Minimum impact level for bomb search
@@ -131,13 +142,13 @@ export class Friend extends Waters {
   }
 
   /**
-   * Gets a random untried location from the map.
-   * Returns null if all locations have been tried.
+   * Gets a random untried coordinate from the map mask.
+   * Returns null when no untried coordinates remain.
    *
-   * @returns {Array<number>|null} Random [col, row] coordinate or null
+   * @returns {GridCoordinate|null} Random [col, row] coordinate or null
    * @private
    */
-  randomLoc () {
+  getRandomUntriedCoordinate () {
     this.syncUntried()
     const locs = this.untried.toCoords
     return locs.length === 0 ? null : Random.element(locs)
@@ -225,7 +236,7 @@ export class Friend extends Waters {
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @param {boolean} [shouldWait] - Unused parameter (for API compatibility)
-   * @returns {Promise<null|{ weapon: Object, score: Object}|{hasTargettedWeapon: boolean }>} Result with weapon and score
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
    */
   async launchRandomWeapon (r, c, shouldWait) {
     const wps = this.currentWeaponSystem
@@ -233,11 +244,29 @@ export class Friend extends Waters {
   }
 
   /**
+   * Attempts weapon launch and falls back to a secondary aim coordinate.
+   * @param {number} r - Initial target row coordinate.
+   * @param {number} c - Initial target column coordinate.
+   * @param {number} [fallbackR=r] - Fallback row coordinate.
+   * @param {number} [fallbackC=c] - Fallback column coordinate.
+   * @returns {Promise<WeaponLaunchResult>} Launch result.
+   * @private
+   */
+  async _attemptLaunchWithFallback (r, c, fallbackR = r, fallbackC = c) {
+    const result = await this.launchRandomWeapon(r, c, false)
+    if (result?.score && result.score !== LoadOut.noResult) {
+      return result
+    }
+    const wps = this.currentWeaponSystem
+    return await this.loadOut.aimWeapon(this.map, fallbackR, fallbackC, wps)
+  }
+
+  /**
    * Searches for bomb targets with decreasing impact requirement.
    * Attempts multiple bomb launches at random untried locations.
    * Returns result of first successful hit or no result after all attempts.
    *
-   * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon and score, or noResult
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score, or noResult
    * @private
    */
   async randomBomb () {
@@ -250,12 +279,7 @@ export class Friend extends Waters {
         if (this.isCancelled()) return this.noResult
         const { r, c } = this.randomLocation(this.map)
         if (this.score.newShotKey(r, c)) {
-          const result = await this.launchRandomWeapon(r, c, false)
-          if (result?.score && result.score !== LoadOut.noResult) {
-            return result
-          }
-          const wps = this.currentWeaponSystem
-          return await this.loadOut.aimWeapon(this.map, r, c, wps)
+          return await this._attemptLaunchWithFallback(r, c)
         }
       }
     }
@@ -272,12 +296,7 @@ export class Friend extends Waters {
   async randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
     const r = this.randomRowNum()
-    const result = await this.launchRandomWeapon(r, 0, false)
-    if (result?.score && result.score !== LoadOut.noResult) {
-      return result
-    }
-    const wps = this.currentWeaponSystem
-    return await this.loadOut.aimWeapon(this.map, r, this.map.cols - 1, wps)
+    return await this._attemptLaunchWithFallback(r, 0, r, this.map.cols - 1)
   }
 
   /**
@@ -308,7 +327,7 @@ export class Friend extends Waters {
       attempt++
     ) {
       if (this.isCancelled()) return this.noResult
-      const loc = this.randomLoc()
+      const loc = this.getRandomUntriedCoordinate()
 
       if (!loc) {
         this.UI.showNotice('something went wrong!')
@@ -396,6 +415,20 @@ export class Friend extends Waters {
   async tryFinishCondition (mask, finishAction) {
     if (mask?.occupancy > 0) {
       return await finishAction(mask)
+    }
+    return null
+  }
+
+  /**
+   * Executes prioritized finish strategies until one returns a result.
+   * @param {Array<Function>} strategies - Array of asynchronous strategy functions.
+   * @returns {Promise<WeaponLaunchResult|null>} Strategy result or null
+   * @private
+   */
+  async _executeFinishStrategies (strategies) {
+    for (const strategy of strategies) {
+      const result = await strategy()
+      if (result) return result
     }
     return null
   }
@@ -496,18 +529,16 @@ export class Friend extends Waters {
       () => this.finishHints()
     ]
 
-    for (const finishMethod of finishMethods) {
-      const result = await finishMethod()
-      if (result) return result
-    }
+    const strategyResult = await this._executeFinishStrategies(finishMethods)
+    if (strategyResult) return strategyResult
 
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
       return await this.randomEffect(op)
-    } else {
-      this.loadOut.switchToSingleShot()
-      return await this.randomSeek()
     }
+
+    this.loadOut.switchToSingleShot()
+    return await this.randomSeek()
   }
 
   // ============ Board Management ============
