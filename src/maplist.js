@@ -585,8 +585,15 @@ export { MapList, saveAsJson, printGameSheet, saveToFile }
 if (
   typeof window !== 'undefined' &&
   typeof document !== 'undefined' &&
-  !process.env.JEST_WORKER_ID
+  !(typeof process !== 'undefined' && !process?.env?.JEST_WORKER_ID)
 ) {
   const mapList = new MapList()
-  fetchNavBar('list', 'List of Hidden Battle Maps')
+  await fetchNavBar('list', 'List of Hidden Battle Maps')
+
+  document.getElementById('second-tab-bar').classList.remove('hidden')
+  document.getElementById('choose-include').classList.remove('hidden')
+
+  const includes = setupMapListOptions(mapList.makeList.bind(mapList))
+
+  mapList.makeList(includes)
 }
