@@ -522,11 +522,12 @@ function printGameSheet (map) {
   trackClick(map, 'download pdf')
   const location = `../docs/gamesheets/${map.terrain.tag}/${map.name}.pdf`
 
-  if (typeof process !== 'undefined' && process.env.JEST_WORKER_ID) {
+  if (typeof process !== 'undefined') {
+    //} && process.env.JEST_WORKER_ID) {
     return location
   }
 
-  window.location.href = location
+  globalThis.location.href = location
   return location
 }
 

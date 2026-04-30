@@ -19,7 +19,8 @@ export class NavigationService {
     HIDE: { page: 'index', trackLabel: 'switch to hide' },
     BUILD: { page: 'battlebuild', trackLabel: 'switch to build' },
     LIST: { page: 'maplist', trackLabel: 'switch to list' },
-    RULES: { page: 'rules', trackLabel: 'switch to rules' }
+    RULES: { page: 'rules', trackLabel: 'switch to rules' },
+    PRINT: { page: 'print', trackLabel: 'switch to print' }
   }
 
   /**
@@ -93,7 +94,8 @@ export class NavigationService {
       battleaseek: NavigationService.MODES.SEEK,
       battlebuild: NavigationService.MODES.BUILD,
       maplist: NavigationService.MODES.LIST,
-      rules: NavigationService.MODES.RULES
+      rules: NavigationService.MODES.RULES,
+      print: NavigationService.MODES.PRINT
     }
 
     const modeConfig = modeMap[target]
