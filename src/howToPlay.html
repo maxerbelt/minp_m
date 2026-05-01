@@ -433,15 +433,43 @@
           ><span class="hidden" id="splashed-round"></span
           ><span class="hidden" id="unsplashed-round"></span>.
         </p>
-        <div class="splash-group">
+        <div
+          class="splash-group"
+          style="display: flex; flex-direction: column; align-items: start"
+        >
           <div id="splash-title-round" class="hidden"></div>
-          <div id="splash-map-round" class="hidden"></div>
-          <div id="splash-legend-round" class="hidden"></div>
+          <div
+            id="splash-mapframe-round"
+            style="
+              display: flex;
+              flex-direction: row;
+              align-items: start;
+              gap: 10px;
+              justify-content: space-between;
+            "
+          >
+            <div id="splash-map-round" class="hidden"></div>
+            <div id="splash-legend-round" class="hidden"></div>
+          </div>
         </div>
-        <div class="splash-group">
+        <div
+          class="splash-group"
+          style="display: flex; flex-direction: column; align-items: start"
+        >
           <div id="crash-title-round" class="hidden"></div>
-          <div id="crash-map-round" class="hidden"></div>
-          <div id="crash-legend-round" class="hidden"></div>
+          <div
+            id="crash-mapframe-round"
+            style="
+              display: flex;
+              flex-direction: row;
+              align-items: start;
+              justify-content: space-between;
+              gap: 10px;
+            "
+          >
+            <div id="crash-map-round" class="hidden"></div>
+            <div id="crash-legend-round" class="hidden"></div>
+          </div>
         </div>
       </li>
       <li id="power-info-round" class="hidden" data-list-text="◦"></li>
