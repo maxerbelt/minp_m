@@ -6,6 +6,7 @@ import { enemy } from '../waters/enemy.js'
 // Constants for splash damage states
 const SPLASH_WEAPON_PATH = 20
 const SPLASH_WEAPON_PLUS = 30
+const SPLASH_WEAPON_PLUS2 = 31
 const SPLASH_HARDENED_DESTROYED = 2
 const SPLASH_HARDENED_REVEALED = 12
 const SPLASH_NORMAL_DESTROYED = 1
@@ -108,6 +109,8 @@ function createHardenedSplashConfig (hasPower, translate, legend) {
 function createNormalWithHardenedConfig (hasPower, translate, legend) {
   const [hasVulnerable] = hasPower
 
+  translate[SPLASH_WEAPON_PLUS2] = SPLASH_WEAPON_PLUS2
+  legend[SPLASH_WEAPON_PLUS2] = 'Weapon Path, Normal Destroyed'
   legend[SPLASH_NORMAL_DESTROYED] = 'Normal Destroyed, Hardened Revealed'
 
   translate[SPLASH_NORMAL_REVEALED] = SPLASH_NORMAL_REVEALED
@@ -139,6 +142,7 @@ function createVulnerableOnlyWithHardenedConfig (hasPower, translate, legend) {
     legend[SPLASH_NORMAL_DESTROYED] = 'Vulnerable Destroyed, Hardened Revealed'
     translate[SPLASH_WEAPON_PLUS] = SPLASH_WEAPON_PLUS
     legend[SPLASH_WEAPON_PLUS] = 'Weapon Path, Vulnerable Destroyed'
+    translate[SPLASH_WEAPON_PLUS2] = SPLASH_WEAPON_PLUS
   } else {
     noVulnerable(translate)
   }
@@ -173,6 +177,8 @@ function createNonHardenedSplashConfig (hasPower, translate, legend) {
 function createNormalOnlyConfig (hasPower, translate, legend) {
   const [hasVulnerable] = hasPower
 
+  translate[SPLASH_WEAPON_PLUS2] = SPLASH_WEAPON_PLUS2
+  legend[SPLASH_WEAPON_PLUS2] = 'Weapon Path, Normal Destroyed'
   translate[SPLASH_HARDENED_DESTROYED] = SPLASH_NORMAL_DESTROYED
   translate[SPLASH_HARDENED_REVEALED] = SPLASH_NORMAL_REVEALED
   translate[SPLASH_NORMAL_DESTROYED] = SPLASH_NORMAL_DESTROYED
@@ -211,6 +217,7 @@ function createNoNormalConfig (hasPower, translate, legend) {
     translate[SPLASH_NORMAL_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
     legend[SPLASH_NORMAL_DESTROYED] = 'Vulnerable Destroyed, Hardened Revealed'
     translate[SPLASH_WEAPON_PLUS] = SPLASH_WEAPON_PLUS
+    translate[SPLASH_WEAPON_PLUS2] = SPLASH_WEAPON_PLUS
     legend[SPLASH_WEAPON_PLUS] = 'Weapon Path, Vulnerable Destroyed'
     translate[SPLASH_VULNERABLE_REVEALED] = SPLASH_VULNERABLE_REVEALED
     legend[SPLASH_VULNERABLE_REVEALED] = 'Vulnerable Revealed'

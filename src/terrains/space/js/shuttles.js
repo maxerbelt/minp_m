@@ -70,6 +70,11 @@ export const corvette = new Shuttle(
  * @type {Shuttle}
  */
 export const lifter = new Shuttle('Lifter', 'L', 'L', SHUTTLE_CELLS.LIFTER)
+lifter.vulnerable = ['+']
+lifter.notes = [
+  `The ${lifter.descriptionText} is vulnerable against missiles.`,
+  `The squares of the ${lifter.descriptionText} adjacent to the missiles detonation will also be destroyed.`
+]
 
 /**
  * Missile Boat - Armed shuttle with missile weapons.
@@ -96,6 +101,11 @@ export const miningShip = new Shuttle(
   'L',
   SHUTTLE_CELLS.MINING_SHIP
 )
+miningShip.hardened = ['^']
+miningShip.notes = [
+  `The ${miningShip.descriptionText} is hardened against gauss rounds.`,
+  `Only the center square of the gauss round area of effect will destroy the ${miningShip.descriptionText} a penetrating round will only reveal the ${miningShip.descriptionText} `
+]
 
 /**
  * Runabout - Small utility craft.

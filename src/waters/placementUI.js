@@ -436,7 +436,7 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * REFACTORING: Simplified using UIElementBuilder to reduce duplication
+   * Simplified using UIElementBuilder to reduce duplication
    */
   addtrayitem (shape, count, tray) {
     const container = UIElementBuilder.createDragContainer({
@@ -493,7 +493,7 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * REFACTORING: Simplified using UIElementBuilder
+   * Simplified using UIElementBuilder
    */
   buildTrayItem (ships, ship, tray, cellHeight) {
     const container = UIElementBuilder.createDragContainer({
@@ -506,7 +506,7 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * REFACTORING: Simplified using UIElementBuilder
+   *  Simplified using UIElementBuilder
    */
   buildTrayItemWeapon (weapon, tray) {
     const container = UIElementBuilder.createDragContainer({

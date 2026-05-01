@@ -149,7 +149,7 @@ export const attackCraft = new SpaceVessel(
   'H',
   VESSEL_CELLS.ATTACK_CRAFT
 )
-attackCraft.vulnerable = ['+']
+attackCraft.vulnerable = ['+', '|', '^']
 attackCraft.notes = [
   `The ${attackCraft.descriptionText} is vulnerable against missiles.`,
   `The squares of the ${attackCraft.descriptionText} adjacent to the missiles detonation will also be destroyed.`
@@ -303,7 +303,11 @@ export const cargoHauler = new SpaceVessel(
   'D',
   VESSEL_CELLS.CARGO_HAULER
 )
-
+cargoHauler.vulnerable = ['|', '^']
+cargoHauler.notes = [
+  `The ${cargoHauler.descriptionText} is vulnerable against missiles.`,
+  `The squares of the ${cargoHauler.descriptionText} adjacent to the missiles detonation will also be destroyed.`
+]
 /**
  * Merchanter - Armed with ion cannon.
  * @type {SpaceVessel}

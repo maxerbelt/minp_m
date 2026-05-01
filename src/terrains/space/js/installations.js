@@ -58,5 +58,5 @@ export const commandCenter = new CoreInstallation(
 commandCenter.hardened = ['+']
 commandCenter.notes = [
   `The ${commandCenter.descriptionText} is hardened against missiles.`,
-  `Only the center square of the missile will destroy the ${commandCenter.descriptionText} the surrounding squares will only reveal the ${commandCenter.descriptionText} `
+  `Only the center square of the missile area of effect will destroy the ${commandCenter.descriptionText} the surrounding squares will only reveal the ${commandCenter.descriptionText} `
 ]

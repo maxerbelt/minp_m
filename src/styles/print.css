@@ -123,6 +123,21 @@
         border: 0 none;
     }
 
+
+    .cell.path-vunerable {
+        background: #c6f683 !important;
+        opacity: 0.5;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cell.path-normal {
+        background: #f5c46c !important;
+        opacity: 0.5;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
     .cell.destroy-vunerable {
         background: #c6f683 !important;
         -webkit-print-color-adjust: exact;

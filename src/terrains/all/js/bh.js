@@ -192,7 +192,9 @@ if (!bhLocal)
         10: 'reveal-vunerable',
         11: 'reveal-normal',
         12: 'reveal-hardened',
-        20: 'weapon-path'
+        20: 'weapon-path',
+        30: 'path-vunerable',
+        31: 'path-normal'
       }
     },
     typeDescriptions: {
