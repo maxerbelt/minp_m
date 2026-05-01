@@ -1056,5 +1056,6 @@ export class Scan extends Sensor {
  */
 export const spaceWeaponsCatalogue = new WeaponCatalogue([
   new Missile(1),
-  new RailBolt(1)
+  new RailBolt(1),
+  new GuassRound(1)
 ])
