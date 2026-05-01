@@ -502,8 +502,16 @@ function showWeaponInfo (friend, weapon, ships, index) {
     return [coord[0], coord[1], translatedValue]
   })
 
-  friend.UI.buildWeaponsSplashPrint(translatedCoords, weapon)
-  friend.UI.buildSplashLegend(translatedCoords, weapon, legend)
+  friend.UI.buildWeaponsSplashPrint(translatedCoords, weapon, 'splash')
+  friend.UI.buildSplashLegend(translatedCoords, weapon, legend, 'splash')
+  const crashCoords = weapon.crashCoords?.map(coord => {
+    const translatedValue = translate[coord[2]] ?? coord[2] ?? 0
+    return [coord[0], coord[1], translatedValue]
+  })
+  if (crashCoords) {
+    friend.UI.buildWeaponsSplashPrint(crashCoords, weapon, 'crash')
+    friend.UI.buildSplashLegend(crashCoords, weapon, legend, 'crash')
+  }
   showSplashInfo(weapon, vulnerable, normal, hardened, immune)
   showPowerGroups(hardened, vulnerable, immune, weapon, normal)
 }

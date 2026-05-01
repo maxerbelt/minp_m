@@ -37,7 +37,7 @@ function displayFleetInformation (friend) {
   showShipInfo(friend)
   showShipInfo(enemy)
   showWeapons(friend)
-  showWeapons(enemy)
+  // showWeapons(enemy)
 }
 
 // Initialize on module load

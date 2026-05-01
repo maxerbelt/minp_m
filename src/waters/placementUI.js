@@ -404,8 +404,8 @@ export class PlacementUI extends WatersUI {
     }
   }
 
-  buildSplashLegend (cells, weapon, legend) {
-    const tray = document.getElementById('splash-legend-' + weapon.tag)
+  buildSplashLegend (cells, weapon, legend, splashType = 'splash') {
+    const tray = document.getElementById(`${splashType}-legend-${weapon.tag}`)
     if (!tray) return
     tray.classList.remove('hidden')
     let powerList = {}
@@ -449,8 +449,8 @@ export class PlacementUI extends WatersUI {
     UIElementBuilder.appendTrayItem(tray, container, dragShip, labelText)
   }
 
-  buildWeaponsSplashPrint (cells, weapon) {
-    const tray = document.getElementById('splash-map-' + weapon.tag)
+  buildWeaponsSplashPrint (cells, weapon, splashType = 'splash') {
+    const tray = document.getElementById(`${splashType}-map-${weapon.tag}`)
     if (!tray) return
     tray.classList.remove('hidden')
 
