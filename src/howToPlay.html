@@ -333,9 +333,24 @@
           The bomb hits that square
           <b>plus all eight adjacent squares </b>(the surrounding 3x3 area).
         </p>
-        <div class="splash-group">
-          <div id="splash-map-missile" class="hidden"></div>
-          <div id="splash-legend-missile" class="hidden"></div>
+        <div
+          class="splash-group"
+          style="display: flex; flex-direction: column; align-items: stretch"
+        >
+          <div id="splash-title-missile" class="hidden"></div>
+          <div
+            id="splash-mapframe-missile"
+            style="
+              display: flex;
+              flex-direction: row;
+              align-items: start;
+              gap: 10px;
+              justify-content: space-between;
+            "
+          >
+            <div id="splash-map-missile" class="hidden"></div>
+            <div id="splash-legend-missile" class="hidden"></div>
+          </div>
         </div>
       </li>
       <li id="power-info-missile" class="hidden" data-list-text="◦"></li>
@@ -376,9 +391,24 @@
           ><span class="hidden" id="splashed-rail"></span
           ><span class="hidden" id="unsplashed-rail"></span>.
         </p>
-        <div class="splash-group">
-          <div id="splash-map-rail" class="hidden"></div>
-          <div id="splash-legend-rail" class="hidden"></div>
+        <div
+          class="splash-group"
+          style="display: flex; flex-direction: column; align-items: stretch"
+        >
+          <div id="splash-title-rail" class="hidden"></div>
+          <div
+            id="splash-mapframe-rail"
+            style="
+              display: flex;
+              flex-direction: row;
+              align-items: start;
+              gap: 10px;
+              justify-content: space-between;
+            "
+          >
+            <div id="splash-map-rail" class="hidden"></div>
+            <div id="splash-legend-rail" class="hidden"></div>
+          </div>
         </div>
       </li>
       <li id="power-info-rail" class="hidden" data-list-text="◦"></li>
@@ -435,7 +465,7 @@
         </p>
         <div
           class="splash-group"
-          style="display: flex; flex-direction: column; align-items: start"
+          style="display: flex; flex-direction: column; align-items: stretch"
         >
           <div id="splash-title-round" class="hidden"></div>
           <div
@@ -454,7 +484,7 @@
         </div>
         <div
           class="splash-group"
-          style="display: flex; flex-direction: column; align-items: start"
+          style="display: flex; flex-direction: column; align-items: stretch"
         >
           <div id="crash-title-round" class="hidden"></div>
           <div
