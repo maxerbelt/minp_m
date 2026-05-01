@@ -91,7 +91,7 @@ export class NavigationService {
   switchToMode (target, huntMode, mapName) {
     const modeMap = {
       index: NavigationService.MODES.HIDE,
-      battleaseek: NavigationService.MODES.SEEK,
+      battleseek: NavigationService.MODES.SEEK,
       battlebuild: NavigationService.MODES.BUILD,
       maplist: NavigationService.MODES.LIST,
       rules: NavigationService.MODES.RULES,
@@ -188,14 +188,17 @@ export class NavigationService {
     const params = new URLSearchParams()
     const map = this.mapProvider.getCurrentMap()
 
-    // Add map dimensions if no specific map name provided
-    if (!mapName && map) {
-      params.append('height', map.rows || '')
-      params.append('width', map.cols || '')
-      params.append('terrain', map.terrain.bodyTag || '')
+    if (map) {
+      if (map.rows || map.cols) {
+        params.append('height', map.rows || '')
+        params.append('width', map.cols || '')
+      }
+      const terrainTag = map.terrain?.bodyTag || map.terrain?.tag
+      if (terrainTag) {
+        params.append('terrain', terrainTag)
+      }
     }
 
-    // Add map name
     const finalMapName = mapName || map?.title
     if (finalMapName) {
       params.append('mapName', finalMapName)
