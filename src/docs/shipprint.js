@@ -47,6 +47,11 @@ function showNotesPrintOut (friend, ships) {
  * @param {Object<string, Ship[]>} shipsInfo - Ships info by letter
  */
 function buildTrayItems (friend, type, shipsInfo) {
+  // Only build tray items if the method is available (PlacementUI only)
+  if (typeof friend.UI.buildTrayItemPrint !== 'function') {
+    return
+  }
+
   for (const letter in shipsInfo) {
     const shipInfo = shipsInfo[letter]
     const tray = friend.UI.getTrayOfType(type)

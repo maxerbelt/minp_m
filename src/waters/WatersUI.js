@@ -924,6 +924,94 @@ export class WatersUI {
       return counts[letter]
     })
   }
+
+  /**
+   * Maps ship type to display unit type (M/T -> X, others unchanged)
+   * @param {Object} ship - Ship object with type() method
+   * @returns {string} Unit type identifier
+   */
+  getUnitType (ship) {
+    const type = ship.type()
+    if (type === 'M' || type === 'T') return 'X'
+    return type
+  }
+
+  /**
+   * Adds a ship to a unit group, incrementing its count
+   * @param {Object} group - Group object keyed by ship letter
+   * @param {Object} ship - Ship object with letter and shape() method
+   */
+  addToGroup (group, ship) {
+    const key = ship.letter
+    let value = group[key] || { shape: ship.shape(), count: 0 }
+    value.count++
+    group[key] = value
+  }
+
+  /**
+   * Groups ships by unit type (A, S, X, G, W, etc.)
+   * Each group contains ships organized by their letter with shape and count
+   * @param {Array} ships - Array of ship objects
+   * @returns {Object} Ships grouped by type, each containing {letter: {shape, count}}
+   */
+  splitUnits (ships) {
+    return ships.reduce((acc, ship) => {
+      const key = this.getUnitType(ship)
+      const group = acc[key] || {}
+      this.addToGroup(group, ship)
+      acc[key] = group
+      return acc
+    }, {})
+  }
+
+  /**
+   * Gets the tray DOM element for a specific ship type
+   * @param {string} type - Ship type (A, S, X, G, W)
+   * @returns {HTMLDivElement} The tray element
+   * @throws {Error} If tray not found for type
+   */
+  getTrayOfType (type) {
+    const trayMap = {
+      A: 'planeTray',
+      S: 'shipTray',
+      X: 'specialTray',
+      G: 'buildingTray',
+      W: 'weaponTray'
+    }
+    const trayId = trayMap[type]
+    if (!trayId) {
+      throw new Error('Unknown type for ' + type)
+    }
+    const tray = document.getElementById(trayId)
+    if (!tray) {
+      throw new Error('Tray not found for type ' + type)
+    }
+    return tray
+  }
+
+  /**
+   * Gets the notes DOM element for a specific ship type
+   * @param {string} type - Ship type (A, S, X, G, W)
+   * @returns {HTMLDivElement|null} The notes element, or null if not found
+   */
+  getNotesOfType (type) {
+    switch (type) {
+      case 'A':
+        return document.getElementById('planeNotes')
+      case 'S':
+        return document.getElementById('shipNotes')
+      case 'M':
+      case 'T':
+      case 'X':
+        return document.getElementById('specialNotes')
+      case 'G':
+        return document.getElementById('buildingNotes')
+      case 'W':
+        return document.getElementById('weaponNotes')
+      default:
+        throw new Error('Unknown type for ' + type)
+    }
+  }
 }
 
 function deactivateWeapon (cell) {
