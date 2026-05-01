@@ -44,6 +44,11 @@ export const shelter = new Installation(
  * @type {Installation}
  */
 export const mine = new Installation('Mine', 'N', 'D', INSTALLATION_CELLS.MINE)
+mine.hardened = ['|']
+mine.notes = [
+  `The ${mine.descriptionText} is hardened against missiles.`,
+  `Only the center square of the missile area of effect will destroy the ${mine.descriptionText} the surrounding squares will only reveal the ${mine.descriptionText} `
+]
 
 /**
  * Command Center - Core installation hardened against missiles.

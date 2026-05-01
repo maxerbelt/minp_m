@@ -9,7 +9,7 @@ import {
   Strike
 } from '../../../weapon/Bomb.js'
 import { CellClassManager } from '../../../waters/helpers/CellClassManager.js'
-
+import { coordToKey, makeKey } from '../../../core/utilities.js'
 /**
  * @typedef {[number, number]} Coord
  * @typedef {[number, number, number]} AoeCell
@@ -462,6 +462,26 @@ export class RailBolt extends Strike {
       [0, 3, 0],
       [0, 4, 1]
     ]
+    this.splashCoords = addNeighborList(
+      null,
+      0,
+      0,
+      [[2, 2, 2]],
+      [
+        [0, 0, 20],
+        [1, 1, 20],
+        [1, 2, 0],
+        [2, 1, 0],
+        [2, 3, 0],
+        [3, 2, 0],
+        [3, 4, 0],
+        [2, 2, 2],
+        [3, 3, 31],
+        [4, 3, 0],
+        [4, 4, 30],
+        [5, 5, 20]
+      ]
+    )
   }
   /**
    * Determines turn phase for missile variant
@@ -499,6 +519,59 @@ export class RailBolt extends Strike {
    */
   clone (ammo) {
     return this.createClone(RailBolt, ammo)
+  }
+
+  aoePlus (map, coords) {
+    const affectedArea = this.aoe(map, coords)
+    const fullLine = affectedArea
+    return { affectedArea, options: { fullLine } }
+  }
+
+  /**
+   * Calculates splash/secondary damage pattern around a point
+   * @param {Object} _map - Game map
+   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} effect - Damage effect coordinates
+   * @param {Object} options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  splash (_map, resolvedTarget, effect, options) {
+    const last = (effect?.length || 1) - 1
+    const { fullLine } = options
+    resolvedTarget[2] = 2
+    let bracket = {}
+    addCoord(bracket, resolvedTarget)
+    addOffset(bracket, resolvedTarget, [1, 0], 0)
+    addOffset(bracket, resolvedTarget, [-1, 0], 0)
+    addOffset(bracket, resolvedTarget, [0, 1], 0)
+    addOffset(bracket, resolvedTarget, [0, -1], 0)
+    let next
+    if (fullLine) {
+      const idx = fullLine.findIndex(
+        ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
+      )
+      if (idx !== undefined) {
+        switch (idx) {
+          case last:
+            next = fullLine[idx - 1]
+            break
+          default:
+            next = fullLine[idx + 1]
+            break
+        }
+
+        if (next) {
+          next[2] = 1
+
+          addOffset(bracket, next, [0, 0], 1)
+          addOffset(bracket, next, [1, 0], 0)
+          addOffset(bracket, next, [-1, 0], 0)
+          addOffset(bracket, next, [0, 1], 0)
+          addOffset(bracket, next, [0, -1], 0)
+        }
+      }
+    }
+    return bracket
   }
 
   /**
@@ -661,7 +734,6 @@ export class GuassRound extends Fish {
       0,
       [[3, 3, 2]],
       [
-        //    [3, 3, 2],
         [0, 0, 20],
         [1, 1, 20],
         [2, 2, 30],
@@ -1059,3 +1131,18 @@ export const spaceWeaponsCatalogue = new WeaponCatalogue([
   new RailBolt(1),
   new GuassRound(1)
 ])
+function addCoord (bracket, coord) {
+  bracket[coordToKey(...coord)] = coord
+}
+function addOffset (bracket, coord, offset, power) {
+  const newCoord = [coord[0] + offset[0], coord[1] + offset[1], power]
+  const newKey = coordToKey(...newCoord)
+  const oldValue = bracket[newKey]
+  if (oldValue) {
+    if (oldValue[2] < power) {
+      bracket[coordToKey(...newCoord)] = newCoord
+    }
+  } else {
+    bracket[coordToKey(...newCoord)] = newCoord
+  }
+}

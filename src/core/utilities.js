@@ -108,7 +108,10 @@ export function dedupCSV (str, delimiter) {
 export function makeKey (row, col) {
   return `${row},${col}`
 }
-
+export function coordToKey (...coord) {
+  const [row, col] = coord
+  return `${row},${col}`
+}
 /**
  * Parses a key string into row and column coordinates.
  * @param {string} key - Key string
