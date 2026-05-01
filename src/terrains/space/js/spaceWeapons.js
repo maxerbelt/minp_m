@@ -2,7 +2,7 @@ import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/WeaponCatelo
 import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import {
-  addNeighbors,
+  addNeighborList,
   Bomb,
   Fish,
   Sensor,
@@ -655,10 +655,10 @@ export class GuassRound extends Fish {
       [0, 3, 0],
       [2, 3, 0]
     ]
-    this.splashCoords = this.addNeighbours(
+    this.splashCoords = addNeighborList(
       null,
-      3,
-      3,
+      0,
+      0,
       [[3, 3, 2]],
       [
         //    [3, 3, 2],
@@ -670,10 +670,10 @@ export class GuassRound extends Fish {
       ]
     )
 
-    this.crashCoords = this.addNeighbours(
+    this.crashCoords = addNeighborList(
       null,
-      3,
-      3,
+      30,
+      0,
       [],
       [
         [0, 0, 20],
@@ -936,7 +936,7 @@ export class GuassRound extends Fish {
       resolvedTarget[1] === this.crashLoc[1]
     ) {
       const [r, c] = this.crashLoc
-      addNeighbors(map, r, c, pattern, [
+      addNeighborList(map, r, c, pattern, [
         [-1, 0, 1],
         [1, 0, 1],
         [0, -1, 1],

@@ -321,7 +321,7 @@ export function addDiagonalNeighbors (
  * @param {TerrainCheck|null} [terrainCheck] - Optional terrain validation function
  * @returns {AoePattern} Updated effect pattern
  */
-export function addNeighbors (
+export function addNeighborList (
   map,
   centerRow,
   centerCol,
