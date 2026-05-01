@@ -200,6 +200,10 @@
     content: '|';
 }
 
+.battleship.print-preview div.tally-row.weapon.gauss-round div.tally-box::before {
+    content: '^';
+}
+
 
 .battleship:not(.print-preview) .tally-row.weapon.missile div.tally-box:not(.hit):not(.damaged)::before {
     background-image: url('../images/boxmissile28.png');

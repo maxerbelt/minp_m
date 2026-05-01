@@ -1,5 +1,5 @@
 import { SpaceVessel, DeepSpaceVessel, ArmedVessel } from './spaceShapes.js'
-import { GuassRound } from './spaceWeapons.js'
+import { GaussRound } from './spaceWeapons.js'
 
 /**
  * Cell configurations for space vessels.
@@ -169,7 +169,7 @@ export const gunBoat = new ArmedVessel(
 )
 
 gunBoat.attachWeapon(() => {
-  return GuassRound.single
+  return GaussRound.single
 })
 
 /**

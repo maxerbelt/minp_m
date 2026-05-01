@@ -9,7 +9,7 @@ import {
   Strike
 } from '../../../weapon/Bomb.js'
 import { CellClassManager } from '../../../waters/helpers/CellClassManager.js'
-import { coordToKey, makeKey } from '../../../core/utilities.js'
+import { coordToKey } from '../../../core/utilities.js'
 /**
  * @typedef {[number, number]} Coord
  * @typedef {[number, number, number]} AoeCell
@@ -676,15 +676,15 @@ export class RailBolt extends Strike {
 }
 
 // ============================================================================
-// GuassRound - Projectile with Land Detection
+// GaussRound - Projectile with Land Detection
 // ============================================================================
 
 /**
- * GuassRound - A projectile weapon that stops at terrain boundaries
+ * GaussRound - A projectile weapon that stops at terrain boundaries
  * Extends Fish with land-detection trajectory and dual-animation launch
  * @extends Fish
  */
-export class GuassRound extends Fish {
+export class GaussRound extends Fish {
   /**
    * Initializes Gauss round with configuration
    * @param {number} ammo - Number of Gauss rounds available
@@ -877,10 +877,10 @@ export class GuassRound extends Fish {
    * Creates a clone of this Gauss round with optional new ammo count
    * Implements weapon cloning protocol
    * @param {number} [ammo] - Ammo count for cloned instance
-   * @returns {GuassRound} New Gauss round instance
+   * @returns {GaussRound} New Gauss round instance
    */
   clone (ammo) {
-    return this.createClone(GuassRound, ammo)
+    return this.createClone(GaussRound, ammo)
   }
 
   /**
@@ -1068,10 +1068,10 @@ export class GuassRound extends Fish {
   /**
    * Creates a single-Gauss-round instance for quick access
    * @static
-   * @returns {GuassRound} GuassRound instance with 1 ammo
+   * @returns {GaussRound} GaussRound instance with 1 ammo
    */
   static get single () {
-    return new GuassRound(1)
+    return new GaussRound(1)
   }
 }
 
@@ -1131,7 +1131,7 @@ export class Scan extends Sensor {
 export const spaceWeaponsCatalogue = new WeaponCatalogue([
   new Missile(1),
   new RailBolt(1),
-  new GuassRound(1)
+  new GaussRound(1)
 ])
 function addCoord (bracket, coord) {
   bracket[coordToKey(...coord)] = coord

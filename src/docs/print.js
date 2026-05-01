@@ -35,9 +35,9 @@ async function loadNavigation () {
  * Displays ship and weapon information for both fleets
  */
 function displayFleetInformation (friend) {
-  showShipInfo(friend)
-  showShipInfo(enemy)
-  showWeapons(friend)
+  // showShipInfo(friend)
+  // showShipInfo(enemy)
+  // showWeapons(friend)
   // showWeapons(enemy)
 }
 

@@ -3,7 +3,7 @@
 import {
   Missile,
   RailBolt,
-  GuassRound,
+  GaussRound,
   Scan,
   spaceWeaponsCatalogue
 } from './spaceWeapons.js'
@@ -59,11 +59,11 @@ describe('spaceWeapons basic behavior', () => {
     expect(rc.ammo).toBe(5)
   })
 
-  it('GuassRound and Scan clone/single and tags', () => {
-    const g = new GuassRound(1)
+  it('GaussRound and Scan clone/single and tags', () => {
+    const g = new GaussRound(1)
     expect(g.name).toMatch(/Gauss|Guass/i)
     expect(g.tag).toBe('round')
-    expect(GuassRound.single).toBeInstanceOf(GuassRound)
+    expect(GaussRound.single).toBeInstanceOf(GaussRound)
 
     const s = new Scan(2)
     expect(s.tag).toBe('scan')

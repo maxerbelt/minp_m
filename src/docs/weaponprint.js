@@ -508,7 +508,7 @@ function showWeaponInfo (friend, weapon, ships, index) {
     const translatedValue = translate[coord[2]] ?? coord[2] ?? 0
     return [coord[0], coord[1], translatedValue]
   })
-  if (crashCoords) {
+  if (crashCoords && crashCoords.length > 0) {
     friend.UI.buildWeaponsSplashPrint(crashCoords, weapon, 'crash')
     friend.UI.buildSplashLegend(crashCoords, weapon, legend, 'crash')
   }
