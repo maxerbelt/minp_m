@@ -5,6 +5,7 @@ import { enemy } from '../waters/enemy.js'
 
 // Constants for splash damage states
 const SPLASH_WEAPON_PATH = 20
+const SPLASH_WEAPON_PLUS = 30
 const SPLASH_HARDENED_DESTROYED = 2
 const SPLASH_HARDENED_REVEALED = 12
 const SPLASH_NORMAL_DESTROYED = 1
@@ -57,7 +58,7 @@ const SPLASH_NO_EFFECT = -1
  * @returns {SplashConfig} [translation, legend] tuple
  */
 function createSplashConfig (hasPower) {
-  const [hasVulnerable, hasNormal, hasHardened] = hasPower
+  const [, , hasHardened] = hasPower
   const translate = {}
   const legend = {}
 
@@ -80,17 +81,15 @@ function createSplashConfig (hasPower) {
  * @returns {SplashConfig}
  */
 function createHardenedSplashConfig (hasPower, translate, legend) {
-  const [hasVulnerable, hasNormal] = hasPower
+  const [, hasNormal] = hasPower
 
   translate[SPLASH_HARDENED_DESTROYED] = SPLASH_HARDENED_DESTROYED
-  translate[SPLASH_HARDENED_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_HARDENED_DESTROYED
   legend[SPLASH_HARDENED_DESTROYED] = 'Hardened Destroyed'
 
   translate[SPLASH_HARDENED_REVEALED] = SPLASH_HARDENED_REVEALED
   legend[SPLASH_HARDENED_REVEALED] = 'Hardened Revealed'
 
   translate[SPLASH_NORMAL_DESTROYED] = SPLASH_NORMAL_DESTROYED
-  translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_NORMAL_DESTROYED
 
   if (hasNormal) {
     return createNormalWithHardenedConfig(hasPower, translate, legend)
@@ -115,11 +114,11 @@ function createNormalWithHardenedConfig (hasPower, translate, legend) {
   legend[SPLASH_NORMAL_REVEALED] = 'Normal Revealed'
 
   if (hasVulnerable) {
-    addVulnerableConfig(translate, legend, ', Hardened Revealed')
+    addVulnerableConfig(translate, legend)
   } else {
     translate[SPLASH_NORMAL_DESTROYED] = SPLASH_HARDENED_REVEALED
-    translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_HARDENED_REVEALED
     legend[SPLASH_HARDENED_REVEALED] = 'Hardened Revealed'
+    noVulnerable(translate)
   }
 
   return [translate, legend]
@@ -137,11 +136,11 @@ function createVulnerableOnlyWithHardenedConfig (hasPower, translate, legend) {
 
   if (hasVulnerable) {
     translate[SPLASH_VULNERABLE_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
-    translate[SPLASH_VULNERABLE_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
-    legend[SPLASH_VULNERABLE_DESTROYED] = 'Vulnerable Destroyed, Hardened Revealed'
+    legend[SPLASH_NORMAL_DESTROYED] = 'Vulnerable Destroyed, Hardened Revealed'
+    translate[SPLASH_WEAPON_PLUS] = SPLASH_WEAPON_PLUS
+    legend[SPLASH_WEAPON_PLUS] = 'Weapon Path, Vulnerable Destroyed'
   } else {
-    translate[SPLASH_NORMAL_DESTROYED] = SPLASH_NO_EFFECT
-    translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_NO_EFFECT
+    noVulnerable(translate)
   }
 
   return [translate, legend]
@@ -155,12 +154,12 @@ function createVulnerableOnlyWithHardenedConfig (hasPower, translate, legend) {
  * @returns {SplashConfig}
  */
 function createNonHardenedSplashConfig (hasPower, translate, legend) {
-  const [hasVulnerable, hasNormal] = hasPower
+  const [, hasNormal] = hasPower
 
   if (hasNormal) {
     return createNormalOnlyConfig(hasPower, translate, legend)
   } else {
-    return createVulnerableOnlyConfig(hasPower, translate, legend)
+    return createNoNormalConfig(hasPower, translate, legend)
   }
 }
 
@@ -175,24 +174,25 @@ function createNormalOnlyConfig (hasPower, translate, legend) {
   const [hasVulnerable] = hasPower
 
   translate[SPLASH_HARDENED_DESTROYED] = SPLASH_NORMAL_DESTROYED
-  translate[SPLASH_HARDENED_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_NORMAL_DESTROYED
   translate[SPLASH_HARDENED_REVEALED] = SPLASH_NORMAL_REVEALED
   translate[SPLASH_NORMAL_DESTROYED] = SPLASH_NORMAL_DESTROYED
-  translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_NORMAL_DESTROYED
 
   legend[SPLASH_NORMAL_DESTROYED] = 'Normal Destroyed'
   translate[SPLASH_NORMAL_REVEALED] = SPLASH_NORMAL_REVEALED
   legend[SPLASH_NORMAL_REVEALED] = 'Normal Revealed'
 
   if (hasVulnerable) {
-    addVulnerableConfig(translate, legend, '')
+    addVulnerableConfig(translate, legend)
   } else {
-    translate[SPLASH_NORMAL_DESTROYED] = SPLASH_NO_EFFECT
-    translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_NO_EFFECT
-    translate[SPLASH_NORMAL_REVEALED] = SPLASH_NO_EFFECT
+    noVulnerable(translate)
   }
 
   return [translate, legend]
+}
+
+function noVulnerable (translate) {
+  translate[SPLASH_VULNERABLE_DESTROYED] = SPLASH_NO_EFFECT
+  translate[SPLASH_VULNERABLE_REVEALED] = SPLASH_NO_EFFECT
 }
 
 /**
@@ -202,16 +202,21 @@ function createNormalOnlyConfig (hasPower, translate, legend) {
  * @param {SplashLegend} legend
  * @returns {SplashConfig}
  */
-function createVulnerableOnlyConfig (hasPower, translate, legend) {
+function createNoNormalConfig (hasPower, translate, legend) {
   const [hasVulnerable] = hasPower
 
   if (hasVulnerable) {
+    translate[SPLASH_VULNERABLE_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
+    legend[SPLASH_VULNERABLE_DESTROYED] = 'Vulnerable Destroyed' // + suffix
     translate[SPLASH_NORMAL_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
-    translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
-    legend[SPLASH_VULNERABLE_DESTROYED] = 'Vulnerable Destroyed, Hardened Revealed'
+    legend[SPLASH_NORMAL_DESTROYED] = 'Vulnerable Destroyed, Hardened Revealed'
+    translate[SPLASH_WEAPON_PLUS] = SPLASH_WEAPON_PLUS
+    legend[SPLASH_WEAPON_PLUS] = 'Weapon Path, Vulnerable Destroyed'
+    translate[SPLASH_VULNERABLE_REVEALED] = SPLASH_VULNERABLE_REVEALED
+    legend[SPLASH_VULNERABLE_REVEALED] = 'Vulnerable Revealed'
   } else {
+    noVulnerable(translate)
     translate[SPLASH_NORMAL_DESTROYED] = SPLASH_NO_EFFECT
-    translate[SPLASH_NORMAL_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_NO_EFFECT
   }
 
   return [translate, legend]
@@ -221,13 +226,12 @@ function createVulnerableOnlyConfig (hasPower, translate, legend) {
  * Adds vulnerable ship configuration to translation and legend
  * @param {SplashTranslation} translate
  * @param {SplashLegend} legend
- * @param {string} suffix - Additional text for legend
  */
-function addVulnerableConfig (translate, legend, suffix) {
+function addVulnerableConfig (translate, legend) {
   translate[SPLASH_VULNERABLE_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
-  translate[SPLASH_VULNERABLE_DESTROYED + SPLASH_NORMAL_DESTROYED] = SPLASH_VULNERABLE_DESTROYED
-  legend[SPLASH_VULNERABLE_DESTROYED] = 'Vulnerable Destroyed' + suffix
-
+  legend[SPLASH_VULNERABLE_DESTROYED] = 'Vulnerable Destroyed' // + suffix
+  translate[SPLASH_WEAPON_PLUS] = SPLASH_WEAPON_PLUS
+  legend[SPLASH_WEAPON_PLUS] = 'Weapon Path, Vulnerable Destroyed'
   translate[SPLASH_VULNERABLE_REVEALED] = SPLASH_VULNERABLE_REVEALED
   legend[SPLASH_VULNERABLE_REVEALED] = 'Vulnerable Revealed'
 }
@@ -264,7 +268,8 @@ function showSplashInfo (weapon, vulnerable, normal, hardened, immune) {
  */
 function showAffectedUnits (weapon, powerGroups, affectedShips) {
   const powerGroupNames = ['vulnerable', 'normal', 'hardened', 'immune']
-  const unaffectedGroups = weapon.splashPower < 3 ? powerGroups.slice(weapon.splashPower + 1) : []
+  const unaffectedGroups =
+    weapon.splashPower < 3 ? powerGroups.slice(weapon.splashPower + 1) : []
   const unaffectedShips = unaffectedGroups.flat()
 
   const affectedEl = document.getElementById('splashed-' + weapon.tag)
@@ -272,9 +277,15 @@ function showAffectedUnits (weapon, powerGroups, affectedShips) {
 
   if (unaffectedShips.length === 0 && unaffectedEl) {
     showAllAffected(unaffectedEl)
-  } else if (affectedEl && (!unaffectedEl || affectedShips.length < unaffectedShips.length)) {
+  } else if (
+    affectedEl &&
+    (!unaffectedEl || affectedShips.length < unaffectedShips.length)
+  ) {
     showAffectedList(affectedEl, weapon, powerGroupNames, affectedShips)
-  } else if (unaffectedEl && (!affectedEl || unaffectedShips.length < affectedShips.length)) {
+  } else if (
+    unaffectedEl &&
+    (!affectedEl || unaffectedShips.length < affectedShips.length)
+  ) {
     showUnaffectedList(unaffectedEl, weapon, powerGroupNames, unaffectedShips)
   }
 }
@@ -301,7 +312,9 @@ function showAffectedList (element, weapon, powerGroupNames, ships) {
   )
 
   element.classList.remove('hidden')
-  element.textContent = ` ${names} units are effected such as ${ships.join(', ')}`
+  element.textContent = ` ${names} units are effected such as ${ships.join(
+    ', '
+  )}`
 }
 
 /**
@@ -317,7 +330,9 @@ function showUnaffectedList (element, weapon, powerGroupNames, ships) {
   )
 
   element.classList.remove('hidden')
-  element.textContent = ` ${names} units are not effected such as ${ships.join(', ')}`
+  element.textContent = ` ${names} units are not effected such as ${ships.join(
+    ', '
+  )}`
 }
 
 /**
@@ -327,12 +342,20 @@ function showUnaffectedList (element, weapon, powerGroupNames, ships) {
  * @returns {PowerGroups}
  */
 function getPowerGroups (weapon, fleet = enemy.ships) {
-  const uniqueShips = [...new Map(fleet.map(ship => [ship.letter, ship])).values()]
+  const uniqueShips = [
+    ...new Map(fleet.map(ship => [ship.letter, ship])).values()
+  ]
 
   const immune = getShipsWithPower(weapon, uniqueShips, 'immune')
   const vulnerable = getShipsWithPower(weapon, uniqueShips, 'vulnerable')
   const hardened = getShipsWithPower(weapon, uniqueShips, 'hardened')
-  const normal = getNormalShips(weapon, uniqueShips, immune, vulnerable, hardened)
+  const normal = getNormalShips(
+    weapon,
+    uniqueShips,
+    immune,
+    vulnerable,
+    hardened
+  )
 
   return { vulnerable, normal, hardened, immune }
 }
@@ -381,7 +404,8 @@ function getNormalShips (weapon, ships, immune, vulnerable, hardened) {
  * @param {string[]} normal
  */
 function showPowerGroups (hardened, vulnerable, immune, weapon, normal) {
-  if (hardened.length === 0 && vulnerable.length === 0 && immune.length === 0) return
+  if (hardened.length === 0 && vulnerable.length === 0 && immune.length === 0)
+    return
 
   const powerEl = document.getElementById('power-info-' + weapon.tag)
   if (!powerEl) return
@@ -390,11 +414,23 @@ function showPowerGroups (hardened, vulnerable, immune, weapon, normal) {
   powerEl.innerHTML = ''
 
   addPowerGroupHtml(powerEl, immune, `Immune to ${weapon.name}`, immune)
-  addPowerGroupHtml(powerEl, hardened, `Hardened against ${weapon.name}`, hardened)
-  addPowerGroupHtml(powerEl, vulnerable, `Vulnerable to ${weapon.name}`, vulnerable)
+  addPowerGroupHtml(
+    powerEl,
+    hardened,
+    `Hardened against ${weapon.name}`,
+    hardened
+  )
+  addPowerGroupHtml(
+    powerEl,
+    vulnerable,
+    `Vulnerable to ${weapon.name}`,
+    vulnerable
+  )
 
   if (normal.length > 0 && normal.length < 7) {
-    powerEl.innerHTML += `<p>◦ ${weapon.name} has normal effect on: ${normal.join(', ')}</p>`
+    powerEl.innerHTML += `<p>◦ ${
+      weapon.name
+    } has normal effect on: ${normal.join(', ')}</p>`
   }
 }
 
@@ -447,11 +483,15 @@ function showWeaponInfo (friend, weapon, ships, index) {
 
   const powerGroups = getPowerGroups(weapon, ships)
   const { vulnerable, normal, hardened, immune } = powerGroups
-  const hasPower = [vulnerable.length > 0, normal.length > 0, hardened.length > 0]
+  const hasPower = [
+    vulnerable.length > 0,
+    normal.length > 0,
+    hardened.length > 0
+  ]
 
   const [translate, legend] = createSplashConfig(hasPower)
   const translatedCoords = weapon.splashCoords.map(coord => {
-    const translatedValue = translate[coord[2]] || coord[2]
+    const translatedValue = translate[coord[2]] ?? coord[2] ?? 0
     return [coord[0], coord[1], translatedValue]
   })
 
@@ -465,12 +505,9 @@ function showWeaponInfo (friend, weapon, ships, index) {
  * Customizes unit descriptions for print view
  */
 function customizeUnitDescriptions () {
-  Terrain.customizeUnitDescriptions(
-    '-unit-header',
-    (letter, _description) => {
-      return bh.terrain.ships.unitDescriptions[letter] + ' Units'
-    }
-  )
+  Terrain.customizeUnitDescriptions('-unit-header', (letter, _description) => {
+    return bh.terrain.ships.unitDescriptions[letter] + ' Units'
+  })
 
   Terrain.customizeUnitDescriptions('-unit-info', (letter, _description) => {
     return bh.terrain.ships.unitInfo[letter]
