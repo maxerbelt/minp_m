@@ -448,7 +448,6 @@ export class PlacementUI extends WatersUI {
     const labelText = shape.descriptionText + (count === 1 ? '' : ` x ${count}`)
     UIElementBuilder.appendTrayItem(tray, container, dragShip, labelText)
   }
-
   buildWeaponsSplashPrint (cells, weapon, splashType = 'splash') {
     const tray = document.getElementById(`${splashType}-map-${weapon.tag}`)
     if (!tray) return

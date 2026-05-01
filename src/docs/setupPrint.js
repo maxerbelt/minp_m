@@ -63,8 +63,7 @@ export async function setupPrint () {
   friendFleet = makeFriend()
   const printMap = setupPrintOptions(
     resetBoardSize.bind(null, friendFleet, enemy),
-    refreshDisplay.bind(null, friendFleet, enemy),
-    'print'
+    refreshDisplay.bind(null, friendFleet, enemy)
   )
   await loadRulesContent()
   refreshDisplay(friendFleet, enemy)
