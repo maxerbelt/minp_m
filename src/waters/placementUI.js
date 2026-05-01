@@ -449,6 +449,16 @@ export class PlacementUI extends WatersUI {
     UIElementBuilder.appendTrayItem(tray, container, dragShip, labelText)
   }
   buildWeaponsSplashPrint (cells, weapon, splashType = 'splash') {
+    const description = {
+      splash: 'Splash Damage on striking unit',
+      crash: 'Splash Damage on missing all units and crashing into terrain'
+    }[splashType]
+
+    const title = document.getElementById(`${splashType}-title-${weapon.tag}`)
+    if (title) {
+      title.classList.remove('hidden')
+      title.innerHTML = `<h3>${weapon.getDescription()} ${description}</h3>`
+    }
     const tray = document.getElementById(`${splashType}-map-${weapon.tag}`)
     if (!tray) return
     tray.classList.remove('hidden')

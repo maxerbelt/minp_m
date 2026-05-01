@@ -20,6 +20,7 @@ export async function initializePrintPage () {
   if (printMap) {
     displayFleetInformation(friendFleet)
   }
+  globalThis.print()
 }
 
 /**
