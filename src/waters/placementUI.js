@@ -457,7 +457,7 @@ export class PlacementUI extends WatersUI {
     const title = document.getElementById(`${splashType}-title-${weapon.tag}`)
     if (title) {
       title.classList.remove('hidden')
-      title.innerHTML = `<h5>${weapon.name} ${description}</h5><br>`
+      title.innerHTML = `<h5>${weapon.name} ${description}</h5>`
     }
     const tray = document.getElementById(`${splashType}-map-${weapon.tag}`)
     if (!tray) return
