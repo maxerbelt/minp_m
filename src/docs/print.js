@@ -2,7 +2,6 @@ import { fetchNavBar } from '../navbar/navbar.js'
 import { setupPrint } from './setupPrint.js'
 import { showShipInfo } from './shipprint.js'
 import { showWeapons } from './weaponprint.js'
-import { makeFriend } from '../navbar/headerUtils.js'
 import { enemy } from '../waters/enemy.js'
 
 /**
@@ -17,9 +16,9 @@ import { enemy } from '../waters/enemy.js'
  */
 export async function initializePrintPage () {
   await loadNavigation()
-  const printMap = setupPrint()
+  const { printMap, friendFleet } = await setupPrint()
   if (printMap) {
-    displayFleetInformation()
+    displayFleetInformation(friendFleet)
   }
 }
 
@@ -34,8 +33,7 @@ async function loadNavigation () {
 /**
  * Displays ship and weapon information for both fleets
  */
-function displayFleetInformation () {
-  const friend = makeFriend()
+function displayFleetInformation (friend) {
   showShipInfo(friend)
   showShipInfo(enemy)
   showWeapons(friend)

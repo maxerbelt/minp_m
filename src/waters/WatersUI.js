@@ -1,4 +1,5 @@
 import { bh } from '../terrains/all/js/bh.js'
+import { Terrain } from '../terrains/all/js/terrain.js'
 import { ScoreUI } from './ScoreUI.js'
 import {
   coordsFromCell,
@@ -905,6 +906,23 @@ export class WatersUI {
 
   deactivateTempHints () {
     this._forEachBoardCell(cell => deactivateTempHint(cell))
+  }
+
+  /**
+   * Shows/hides unit type containers based on which units exist in the fleet
+   * @param {Array} ships - Array of ship objects
+   */
+  hideEmptyUnits (ships) {
+    const counts = ships.reduce((acc, ship) => {
+      const type = ship.type()
+      const unitType = type === 'M' || type === 'T' ? 'X' : type
+      acc[unitType] = (acc[unitType] || 0) + 1
+      return acc
+    }, {})
+
+    Terrain.showsUnits('-container', letter => {
+      return counts[letter]
+    })
   }
 }
 

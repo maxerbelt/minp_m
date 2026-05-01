@@ -1,5 +1,6 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { enemy } from '../waters/enemy.js'
+import { fetchComponent } from '../network/network.js'
 import { setupPrintOptions } from '../navbar/setupOptions.js'
 import { showRules, makeFriend } from '../navbar/headerUtils.js'
 
@@ -40,23 +41,32 @@ function refreshDisplay (friend, enemy) {
   enemy.UI.buildBoardPrint()
   friend.UI.showMapTitle()
   enemy.UI.showMapTitle()
-  friend.UI.score.buildTally(friend.ships, friend.loadOut.weaponSystems, friend.UI)
+  friend.UI.score.buildTally(
+    friend.ships,
+    friend.loadOut.weaponSystems,
+    friend.UI
+  )
   enemy.UI.score.buildTally(enemy.ships, enemy.loadOut.weaponSystems, enemy.UI)
   document.title = "Geoff's Hidden Battle - " + bh.map.title
   showRules(friend)
 }
 
+async function loadRulesContent () {
+  await fetchComponent('rules', './howToPlay.html')
+}
+
 /**
  * Sets up print functionality with map selection and display callbacks
- * @returns {boolean} Whether print setup was successful
+ * @returns {Promise<boolean>} Whether print setup was successful
  */
-export function setupPrint () {
+export async function setupPrint () {
   friendFleet = makeFriend()
   const printMap = setupPrintOptions(
     resetBoardSize.bind(null, friendFleet, enemy),
     refreshDisplay.bind(null, friendFleet, enemy),
     'print'
   )
+  await loadRulesContent()
   refreshDisplay(friendFleet, enemy)
-  return printMap
+  return { printMap, friendFleet }
 }

@@ -601,6 +601,8 @@ export class PlacementUI extends WatersUI {
         return document.getElementById('specialNotes')
       case 'G':
         return document.getElementById('buildingNotes')
+      case 'W':
+        return document.getElementById('weaponNotes')
       default:
         throw new Error('Unknown type for ' + type)
     }
