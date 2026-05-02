@@ -571,7 +571,7 @@ export class RailBolt extends Strike {
         }
       }
     }
-    return bracket
+    return Object.values(bracket)
   }
 
   /**
