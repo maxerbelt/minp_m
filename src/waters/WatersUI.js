@@ -439,7 +439,7 @@ export class WatersUI {
    * @param {string} [_letter]
    */
   displayAsSunk (cell, _letter) {
-    this.clearCell(cell)
+    this.clearDisplayCell(cell)
     cell.classList.add('frd-sunk')
     this.cellHitBase(cell)
     cell.classList.remove('frd-hit')

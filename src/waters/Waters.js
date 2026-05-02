@@ -1160,6 +1160,7 @@ export class Waters {
         effect,
         options
       )
+      this.destroy(weapon, effect, options)
       console.log('Crash Splash Effect:', splashEffect)
       options.isSplash = true
       return this.destroy(weapon, splashEffect, options)

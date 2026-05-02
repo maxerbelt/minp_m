@@ -867,7 +867,7 @@ export class Weapon {
   ) {
     const explode = doesExplode && this.explodeOnTarget
     if (!explode) {
-      animator.delayInner(500)
+      animator.delayInner(5)
     }
 
     await animator.run()
