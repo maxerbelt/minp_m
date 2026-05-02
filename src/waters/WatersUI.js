@@ -658,7 +658,7 @@ export class WatersUI {
   cellSet (cells) {
     const result = new Set()
     for (const [r, c] of cells) {
-      result.add(makeKey(r, c))
+      result.add(makeKey(c, r))
     }
     return result
   }
@@ -667,8 +667,11 @@ export class WatersUI {
    * @param {Iterable<[number, number]>} cells
    * @returns {Set<string>}
    */
+
   hollowCells (cells) {
-    return this.surroundCells(cells).difference(this.cellSet(cells))
+    const surround = this.surroundCells(cells)
+    const original = this.cellSet(cells)
+    return surround.difference(original)
   }
 
   /**
