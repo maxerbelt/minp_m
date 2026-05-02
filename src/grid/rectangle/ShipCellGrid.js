@@ -187,12 +187,12 @@ export class ShipCellGrid extends GridBase {
   }
 
   setCellRC (row, col, cell) {
-  /**
-   * Sets a ship cell at the given row/column coordinates.
-   * @param {number} row - Row coordinate
-   * @param {number} col - Column coordinate
-   * @param {ShipCell} cell - Ship cell object to place
-   */
+    /**
+     * Sets a ship cell at the given row/column coordinates.
+     * @param {number} row - Row coordinate
+     * @param {number} col - Column coordinate
+     * @param {ShipCell} cell - Ship cell object to place
+     */
     if (this.isValidRC(row, col)) {
       this._grid[row][col] = cell
     }
@@ -200,22 +200,22 @@ export class ShipCellGrid extends GridBase {
 
   setCell (x, y, cell) {
     this.setCellRC(y, x, cell)
-  /**
-   * Sets a ship cell at the given x/y coordinates.
-   * Delegates to RC-based setter after coordinate conversion.
-   * @param {number} x - Column coordinate
-   * @param {number} y - Row coordinate
-   * @param {ShipCell} cell - Ship cell object to place
-   */
+    /**
+     * Sets a ship cell at the given x/y coordinates.
+     * Delegates to RC-based setter after coordinate conversion.
+     * @param {number} x - Column coordinate
+     * @param {number} y - Row coordinate
+     * @param {ShipCell} cell - Ship cell object to place
+     */
   }
 
   setRC (row, col, id) {
-  /**
-   * Sets a ship ID at the given row/column, creating a cell if needed.
-   * @param {number} row - Row coordinate
-   * @param {number} col - Column coordinate
-   * @param {number} id - Ship ID to set
-   */
+    /**
+     * Sets a ship ID at the given row/column, creating a cell if needed.
+     * @param {number} row - Row coordinate
+     * @param {number} col - Column coordinate
+     * @param {number} id - Ship ID to set
+     */
     if (this.isValidRC(row, col)) {
       if (this._grid[row][col]?.id != null) {
         this._grid[row][col].id = id
@@ -227,13 +227,13 @@ export class ShipCellGrid extends GridBase {
 
   set (x, y, id) {
     this.setRC(y, x, id)
-  /**
-   * Sets a ship ID at the given x/y coordinates.
-   * Delegates to RC-based setter after coordinate conversion.
-   * @param {number} x - Column coordinate
-   * @param {number} y - Row coordinate
-   * @param {number} id - Ship ID to set
-   */
+    /**
+     * Sets a ship ID at the given x/y coordinates.
+     * Delegates to RC-based setter after coordinate conversion.
+     * @param {number} x - Column coordinate
+     * @param {number} y - Row coordinate
+     * @param {number} id - Ship ID to set
+     */
   }
 
   /**
@@ -438,7 +438,7 @@ export class ShipCellGrid extends GridBase {
       .map(cellIndex => this._maskedGrid.indexer.location(cellIndex))
       .filter(([col, row]) => row < maxRow && col < maxCol)
 
-    return Random.shuffleArray(candidateLocations)
+    return Random.shuffleArray([...candidateLocations])
   }
 
   /**
@@ -457,7 +457,8 @@ export class ShipCellGrid extends GridBase {
 
     for (const placeable of shuffledPlaceables) {
       const placement = placeable.placeAt(col, row)
-      if (!placement.canPlace(this)) {
+      const conflict = placement.board.overlap(this.maskedGrid)
+      if (conflict.occupancy > 0 || !placement.canPlace(this)) {
         continue
       }
 

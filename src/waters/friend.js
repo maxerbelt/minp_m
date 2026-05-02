@@ -58,6 +58,7 @@ export class Friend extends Waters {
     this.untried = null
     this.steps.player = Player.friend
     this.steps.onEndTurn = this.onEndTurn.bind(this)
+    this.steps.onHint = this._handleHint.bind(this)
   }
 
   /**
@@ -169,13 +170,12 @@ export class Friend extends Waters {
       console.warn('no more locations to choose from')
       return ['0', 0]
     }
-
     const tally = locs.reduce((acc, [, y]) => {
       acc[y] = 1 + (acc[y] || 0)
       return acc
     }, {})
-
-    const ordered = Object.entries(tally).sort((a, b) => b[1] - a[1])
+    const unordered = Random.shuffleArray([...Object.entries(tally)])
+    const ordered = unordered.toSorted((a, b) => b[1] - a[1])
 
     return ordered[0]
   }
@@ -441,6 +441,7 @@ export class Friend extends Waters {
    * @private
    */
   async finishRevealed () {
+    if (this.score.reveal.occupancy === 0) return null
     this.score.reveal = this.score.reveal.take(this.score.shot)
     return await this.tryFinishCondition(this.score.reveal, mask =>
       this.selectRandomCandidate(mask)
@@ -576,8 +577,15 @@ export class Friend extends Waters {
   getHits () {
     const blankMask = this.map.blankMask
     return this.shipsUnsunk().reduce((acc, ship) => {
-      const shipHits = ship.hits.toMask(blankMask.width, blankMask.height)
-      return acc.join(shipHits)
+      if (!ship.hits?.occupancy) {
+        return acc
+      }
+      console.log('unsunk ship', ship.hits, ship.hits.toAscii)
+
+      console.log('existing hits', acc, acc.toAscii)
+      const result = acc.join(ship.hits)
+      console.log('combined hits', result, result.toAscii)
+      return result
     }, blankMask)
   }
 

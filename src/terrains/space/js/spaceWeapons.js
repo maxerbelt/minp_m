@@ -997,36 +997,30 @@ export class GaussRound extends Fish {
    * Calculates crash splash damage pattern around a terminal point when no hits are registered
  
    * @param {Object} map - Game map
-   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} target - Impact coordinate [row, col]
    * @param {Array} _effect - Damage effect coordinates
    * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
    */
-  crashSplash (map, resolvedTarget, _effect, _options) {
+  crashSplash (map, target, _effect, _options) {
     let pattern = []
-    if (
-      this.crashLoc &&
-      resolvedTarget[0] === this.crashLoc[0] &&
-      resolvedTarget[1] === this.crashLoc[1]
-    ) {
-      const [r, c] = this.crashLoc
-      addNeighborList(map, r, c, pattern, [
-        [-1, 0, 1],
-        [1, 0, 1],
-        [0, -1, 1],
-        [0, 1, 1],
-        [-1, -1, 0],
-        [-1, 1, 0],
-        [1, -1, 0],
-        [1, 1, 0],
-        [-2, 0, 0],
-        [2, 0, 0],
-        [0, -2, 0],
-        [0, 2, 0]
-      ])
-    } else {
-      console.log('Crash splash not triggered:', resolvedTarget, this.crashLoc)
-    }
+
+    const [r, c] = target
+    addNeighborList(map, r, c, pattern, [
+      [-1, 0, 1],
+      [1, 0, 1],
+      [0, -1, 1],
+      [0, 1, 1],
+      [-1, -1, 0],
+      [-1, 1, 0],
+      [1, -1, 0],
+      [1, 1, 0],
+      [-2, 0, 0],
+      [2, 0, 0],
+      [0, -2, 0],
+      [0, 2, 0]
+    ])
+
     return pattern
   }
 

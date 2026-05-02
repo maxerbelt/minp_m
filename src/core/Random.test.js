@@ -1,7 +1,7 @@
 /* eslint-env jest */
 
-/* global describe, it, expect, beforeEach, afterEach */
-import { jest } from '@jest/globals'
+/* global describe, it, expect,  afterEach */
+import { describe, it, expect, afterEach, jest } from '@jest/globals'
 import { Random } from './Random.js'
 
 describe('Random', () => {
@@ -62,7 +62,8 @@ describe('Random', () => {
     it('shuffles the array in place and returns the same object', () => {
       const source = [1, 2, 3, 4, 5]
       const array = [...source]
-      jest.spyOn(Math, 'random')
+      jest
+        .spyOn(Math, 'random')
         .mockReturnValueOnce(0)
         .mockReturnValueOnce(0.5)
         .mockReturnValueOnce(0)

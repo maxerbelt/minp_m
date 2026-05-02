@@ -132,26 +132,37 @@ export class SubBoard extends SubMask {
   }
 
   copyFromMask (largeMask) {
+    const depth = this.mask.cellMask
     for (let localY = 0; localY < this.windowHeight; localY++) {
       for (let localX = 0; localX < this.windowWidth; localX++) {
         const [worldX, worldY] = this._localToWorld(localX, localY)
         const value = largeMask.at(worldX, worldY)
         if (value > 0) {
-          this.mask.set(localX, localY, value)
+          const newValue = value > depth ? depth : value
+          this.mask.set(localX, localY, newValue)
         }
       }
     }
   }
+  overlap (largeMask) {
+    let overlap = this.emptyMask
+    overlap.copyFromMask(largeMask)
 
+    overlap.mask.overlapWithBits(this.mask.bits)
+    return overlap
+  }
+  overlapWith (largeMask) {
+    let overlap = this.emptyMask
+    overlap.copyFromMask(largeMask)
+
+    this.mask.overlapWithBits(overlap.mask.bits)
+    return
+  }
   copyToMask (largeMask) {
-    for (let localY = 0; localY < this.windowHeight; localY++) {
-      for (let localX = 0; localX < this.windowWidth; localX++) {
-        const value = this.mask.at(localX, localY)
-        if (value > 0) {
-          const [worldX, worldY] = this._localToWorld(localX, localY)
-          largeMask.set(worldX, worldY, value)
-        }
-      }
+    const depth = largeMask.cellMask
+    for (const [worldX, worldY, value] of this.occupiedLocationsAndValues()) {
+      const newValue = value > depth ? depth : value
+      largeMask.set(worldX, worldY, newValue)
     }
   }
 
@@ -163,8 +174,9 @@ export class SubBoard extends SubMask {
 
   toMaskMatching (otherMask) {
     const newMask = otherMask.emptyMaskOfSize(
-      this.windowWidth,
-      this.windowHeight
+      otherMask.width,
+      otherMask.height,
+      otherMask.depth
     )
     this.copyToMask(newMask)
     return newMask
@@ -205,9 +217,10 @@ export class SubBoard extends SubMask {
     width = temp.width,
     height = temp.height,
     offsetX = 0,
-    offsetY = 0
+    offsetY = 0,
+    depth = temp.depth
   ) {
-    return new SubBoard(offsetX, offsetY, width, height, null, temp)
+    return new SubBoard(offsetX, offsetY, width, height, null, temp, depth)
   }
   occupancyLayer () {
     const ocuppied = this.mask.occupancyLayer()
@@ -248,7 +261,8 @@ export class SubBoard extends SubMask {
       this.windowWidth,
       this.windowHeight,
       this.offsetX,
-      this.offsetY
+      this.offsetY,
+      this.mask.depth
     )
   }
   emptyMaskOfSize (w, h) {
@@ -257,7 +271,8 @@ export class SubBoard extends SubMask {
       w,
       h,
       this.offsetX,
-      this.offsetY
+      this.offsetY,
+      this.mask.depth
     )
   }
   extractColorLayer (color) {

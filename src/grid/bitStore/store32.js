@@ -1476,7 +1476,7 @@ export class Store32 extends StoreBase {
       return this.shrinkToBitsPerCell(bitboard, newBitsPerCell)
     }
 
-    const oldCellMask = (1 << oldBitsPerCell) - 1
+    const oldCellMask = this.cellMask
     const output = this.newWords()
     const totalCells = (this.width || 0) * (this.height || 0)
 
@@ -1508,7 +1508,7 @@ export class Store32 extends StoreBase {
       return this.expandToBitsPerCell(bitboard, newBitsPerCell)
     }
 
-    const oldCellMask = (1 << oldBitsPerCell) - 1
+    const oldCellMask = this.cellMask
     const newCellMask = (1 << newBitsPerCell) - 1
     const output = this.newWords()
     const totalCells = (this.width || 0) * (this.height || 0)

@@ -37,7 +37,6 @@ export class WeaponTallyBuilder {
    * Creates a single weapon ammo box with state visualization.
    * Shows ammo availability, damage, hit status, and interactive state.
    *
-   * @private
    * @param {Object} options - Configuration object
    * @param {number} options.ammoUnattached - Count of unattached ammo
    * @param {Object} options.viewModel - View model for interactions
@@ -70,6 +69,7 @@ export class WeaponTallyBuilder {
     }
 
     box.dataset.wid = wid
+    box.dataset.index = index.toString()
     box.classList?.add(this.#CSS_CLASSES.TALLY_BOX)
     box.style.fontSize = this.#DEFAULT_STYLES.FONT_SIZE
 
@@ -152,7 +152,17 @@ export class WeaponTallyBuilder {
     } ${weapon.classname}`
 
     // Sort leaf weapons by ammo for consistent display
-    const leaves = weaponSystem.getLeafWeapons().sort((a, b) => a.ammo - b.ammo)
+    const leaves = weaponSystem
+      .getLeafWeapons()
+      .sort(
+        (a, b) =>
+          (b.hit ? 40 : 0) -
+          (a.damage ? 20 : 0) +
+          (b.damage ? 20 : 0) -
+          (a.hit ? 40 : 0) +
+          a.ammo -
+          b.ammo
+      )
 
     // Build ammo boxes for each weapon leaf
     for (const leaf of leaves) {

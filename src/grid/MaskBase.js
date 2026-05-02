@@ -349,6 +349,18 @@ export class MaskBase extends CanvasGrid {
       this.joinWithBits(bb.bits)
     }
   }
+  overlapWithBits (bits) {
+    this.bits = this._bitOps.and(bits)
+  }
+  overlapWith (bb) {
+    if (typeof bb.toMaskMatching === 'function') {
+      bb = bb.toMaskMatching(this)
+    }
+    if (bb instanceof MaskBase) {
+      this._validation.assertCompatibleWith(bb)
+      this.overlapWithBits(bb.bits)
+    }
+  }
   joinWithBits (bits) {
     this.bits = this._bitOps.or(bits)
   }

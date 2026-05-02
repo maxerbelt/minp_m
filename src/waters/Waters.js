@@ -1096,7 +1096,7 @@ export class Waters {
       ship.reset()
     }
   }
-  onHint (r, c) {
+  _handleHint (r, c) {
     this.opponent?.score?.hintReveal?.(r, c)
   }
   getTarget (effect, weapon) {
@@ -1160,10 +1160,12 @@ export class Waters {
         effect,
         options
       )
-      this.destroy(weapon, effect, options)
+      let result = this.destroy(weapon, effect, options)
       console.log('Crash Splash Effect:', splashEffect)
       options.isSplash = true
-      return this.destroy(weapon, splashEffect, options)
+      const splashResult = this.destroy(weapon, splashEffect, options)
+      this.accumulateResult(splashResult, result)
+      return result
     }
     return this.destroy(weapon, effect, options)
   }
@@ -1195,7 +1197,12 @@ export class Waters {
       effect,
       options
     )
-    console.log('Strike Splash Effect:', splashEffect)
+    console.log('Strike Splash Effect:', {
+      splashEffect,
+      target,
+      resolvedTarget,
+      options
+    })
     return this.destroy(weapon, splashEffect, options)
   }
 

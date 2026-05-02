@@ -559,6 +559,7 @@ class DragNDrop {
   handleDropWeaponEvent (model, viewModel, event) {
     if (event) event.preventDefault()
     this._handleWeaponDrop(model, viewModel)
+    this._refreshAfterAddition(model, viewModel)
   }
 
   /**
