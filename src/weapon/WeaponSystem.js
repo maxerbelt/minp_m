@@ -92,6 +92,22 @@ export class WeaponSystem {
   }
 
   /**
+   * Calculates splash/secondary damage pattern around a point
+   * Delegates to the weapon's splash method
+   * @param {Object} map - Game map
+   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array} effect - Damage effect coordinates and power
+   * @param {Object} options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  splash (map, resolvedTarget, effect, options) {
+    const result = this.weapon
+      ? this.weapon.splash(map, resolvedTarget, effect, options)
+      : []
+    return Array.isArray(result) ? result : []
+  }
+
+  /**
    * Finds weapon system by ID via depth-first search
    * @param {number} systemId - Target weapon system ID
    * @returns {WeaponSystem|null} Matching system or null
