@@ -1152,22 +1152,22 @@ export class Waters {
    * @param {Object} options - Additional options.
    * @returns {*} The destruction result.
    */
-  handleNoHits (weapon, effect, options) {
+  async handleNoHits (weapon, effect, options) {
     if (options?.crashLoc) {
-      const splashEffect = this.getCrashSplash(
+      const splashEffect = await this.getCrashSplash(
         weapon,
         options.crashLoc,
         effect,
         options
       )
-      let result = this.destroy(weapon, effect, options)
+      let result = await this.destroy(weapon, effect, options)
       console.log('Crash Splash Effect:', splashEffect)
       options.isSplash = true
-      const splashResult = this.destroy(weapon, splashEffect, options)
+      const splashResult = await this.destroy(weapon, splashEffect, options)
       this.accumulateResult(splashResult, result)
       return result
     }
-    return this.destroy(weapon, effect, options)
+    return await this.destroy(weapon, effect, options)
   }
 
   /**
@@ -1178,31 +1178,26 @@ export class Waters {
    * @param {Array} hitCandidates - The hit candidates.
    * @returns {*} The destruction result.
    */
-  handleHits (weapon, effect, target, hitCandidates, options) {
+  async handleHits (weapon, effect, target, hitCandidates, options) {
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
     if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
-      const splashEffect = this.getCrashSplash(
+      const splashEffect = await this.getCrashSplash(
         weapon,
         options.crashLoc,
         effect,
         options
       )
-      console.log('Crash Splash Effect:', splashEffect)
+
       options.isSplash = true
-      return this.destroy(weapon, splashEffect, options)
+      return await this.destroy(weapon, splashEffect, options)
     }
-    const splashEffect = this.getStrikeSplash(
+    const splashEffect = await this.getStrikeSplash(
       weapon,
       resolvedTarget,
       effect,
       options
     )
-    console.log('Strike Splash Effect:', {
-      splashEffect,
-      target,
-      resolvedTarget,
-      options
-    })
+
     return this.destroy(weapon, splashEffect, options)
   }
 
@@ -1226,12 +1221,12 @@ export class Waters {
    * @param {Object} [options] - Additional options for destruction.
    * @returns {*} The result of the destruction.
    */
-  destroyOne (weapon, effect, target = null, options = {}) {
+  async adestroyOne (weapon, effect, target = null, options = {}) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
     if (this.hasNoHitCandidates(hitCandidates)) {
       return this.handleNoHits(weapon, effect, options)
     }
-    return this.handleHits(weapon, effect, target, hitCandidates, options)
+    return await this.handleHits(weapon, effect, target, hitCandidates, options)
   }
 
   /**
@@ -1250,16 +1245,16 @@ export class Waters {
     )
   }
 
-  getStrikeSplash (weapon, resolvedTarget, effect, options) {
+  async getStrikeSplash (weapon, resolvedTarget, effect, options) {
     const cellSize = this.UI.cellSizeScreen()
     const target = this.UI.gridCellAt(resolvedTarget[0], resolvedTarget[1])
-    weapon.animateSplashExplode(target, cellSize)
+    await weapon.animateSplashExplode(target, cellSize)
     return weapon.splash(bh.map, resolvedTarget, effect, options)
   }
-  getCrashSplash (weapon, candidate, effect, options) {
+  async getCrashSplash (weapon, candidate, effect, options) {
     const cellSize = this.UI.cellSizeScreen()
     const target = this.UI.gridCellAt(candidate[0], candidate[1])
-    weapon.animateSplashExplode(target, cellSize)
+    await weapon.animateSplashExplode(target, cellSize)
     return weapon?.crashSplash(bh.map, candidate, effect, options)
   }
   shipsSunk () {

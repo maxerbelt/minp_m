@@ -168,8 +168,10 @@ export class Animator {
     this.running = true
     this._startAnimation(...animationClasses)
     await this._waitForAnimation()
-    await this._handleInnerDelay()
-    this._cleanupElements()
+    // await this._handleInnerDelay()
+    // this.innerEl?.remove()
+    await Delay.wait(5)
+    this.el.remove()
     this.running = false
   }
 
@@ -209,7 +211,7 @@ export class Animator {
   _cleanupElements () {
     this.innerEl?.remove()
     // Small delay before removing main element
-    setTimeout(() => this.el.remove(), 10)
+    setTimeout(() => this.el.remove(), 5)
   }
 
   /**
