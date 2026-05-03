@@ -203,7 +203,7 @@ export class Steps {
     this.onSelect(this)
   }
 
-  aim () {
+  targetting () {
     this.mode = WeaponMode.targetAim
     this.onAim(this)
   }
