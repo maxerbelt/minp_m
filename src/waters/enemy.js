@@ -61,13 +61,11 @@ class Enemy extends Waters {
    * @private
    */
   _initializeSteps () {
-    this.steps.player = Player.enemy
-    this.steps.onEndTurn = this._handleEndTurn.bind(this)
+    super.initializeSteps(Player.enemy)
     this.steps.onBeginTurn = this._handleBeginTurn.bind(this)
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
     this.steps.onActivate = this._handleActivate.bind(this)
     this.steps.onSelect = this._handleSelect.bind(this)
-    this.steps.onHint = this._handleHint.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
   }
 
@@ -620,7 +618,8 @@ class Enemy extends Waters {
    */
   onClickSingleShotButton () {
     this.loadOut.switchToSingleShot()
-    this.updateWeaponMode()
+    this.steps.select()
+    //  this.updateWeaponMode()
   }
 
   /**
@@ -629,7 +628,7 @@ class Enemy extends Waters {
    */
   onClickWeaponButtons (letter) {
     this.loadOut.switchToWeapon(letter)
-    this.updateWeaponMode()
+    //  this.updateWeaponMode()
   }
 
   /**

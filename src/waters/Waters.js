@@ -62,7 +62,7 @@ export class Waters {
    * Initializes the Waters game instance with UI and basic setup.
    * @param {Object} ui - The user interface instance
    */
-  constructor (ui) {
+  constructor (ui, playerType = null) {
     assembleTerrains()
     this.ships = []
     this.score = new Score()
@@ -73,7 +73,10 @@ export class Waters {
     this.preamble1 = 'You '
     this.preamble0 = 'Your'
     this.preamble = 'You were '
-    this.steps = new Steps()
+    if (playerType) {
+      this.steps = new Steps(playerType)
+      this.initializeSteps(playerType)
+    }
     this.resetShipCells()
     this.displayInfo = gameStatus.info2.bind(gameStatus)
   }
@@ -647,15 +650,7 @@ export class Waters {
    * Sets up cursor change callback if available.
    */
   setCursorChangeCallback () {
-    if (this.cursorChange) {
-      if (typeof this.cursorChange === 'function') {
-        this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
-      } else {
-        console.warn(
-          'cursorChange property is not a function, ignoring cursor change callback assignment'
-        )
-      }
-    }
+    this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
   }
 
   /**
@@ -1096,7 +1091,7 @@ export class Waters {
       ship.reset()
     }
   }
-  _handleHint (r, c) {
+  handleHint (r, c) {
     this.opponent?.score?.hintReveal?.(r, c)
   }
   getTarget (effect, weapon) {
@@ -1200,7 +1195,28 @@ export class Waters {
 
     return this.destroy(weapon, splashEffect, options)
   }
+  /**
+   * Initializes the steps event handlers.
+   */
+  initializeSteps () {
+    this.steps.onEndTurn = this._handleEndTurn.bind(this)
+    this.steps.onHint = this.handleHint.bind(this)
+  }
 
+  /**
+   * Handles end of turn event.
+   * Finishes opponent turn and triggers opponent begin turn if game not over.
+   *
+   * @private
+   */
+  _handleEndTurn () {
+    if (this?.opponent == null) {
+      return
+    }
+    if (!this.opponent.boardDestroyed) {
+      this.opponent._handleBeginTurn()
+    }
+  }
   /**
    * Resolves the target from hit candidates.
    * @param {Array} target - The provided target.
@@ -1458,15 +1474,6 @@ export class Waters {
     return false
   }
 
-  /**
-   * Updates the weapon status display.
-   * @param {*} _rack - The weapon rack.
-   * @param {Object} _cursorInfo - Cursor information.
-   */
-  updateWeaponStatus (_rack, _cursorInfo) {
-    /* only needs implementation if enemy */
-  }
-
   updateMode (wps1, cursorInfo) {
     if (this.isEnded) {
       return
@@ -1679,7 +1686,14 @@ export class Waters {
   _hideWaiting () {
     /* only needs implementation if enemy */
   }
-
+  /**
+   * Updates the weapon status display.
+   * @param {*} _rack - The weapon rack.
+   * @param {Object} _cursorInfo - Cursor information.
+   */
+  updateWeaponStatus (_rack, _cursorInfo) {
+    /* only needs implementation if enemy */
+  }
   /**
    * Deactivates the weapon at the specified locations.
    * @param {number} _ro - Opponent row.
@@ -1690,6 +1704,13 @@ export class Waters {
   deactivateWeapon (_ro, _co, _shadowR, _shadowC) {
     /* only needs implementation if enemy */
   }
+
+  /**
+   * Handles cursor changes on the board.
+   * @param {string} _oldCursoroldCursor - The previous cursor class.
+   * @param {Object} _newCursorInfo - Information about the new cursor.
+   */
+  cursorChange (_oldCursor, _newCursorInfo) {}
 }
 
 /**

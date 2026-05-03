@@ -56,9 +56,6 @@ export class Friend extends Waters {
     this.friendlyWaters = true
     /** @type {Object} Untried location mask for seeking */
     this.untried = null
-    this.steps.player = Player.friend
-    this.steps.onEndTurn = this.onEndTurn.bind(this)
-    this.steps.onHint = this._handleHint.bind(this)
   }
 
   /**
@@ -75,21 +72,6 @@ export class Friend extends Waters {
    */
   get noResult () {
     return { weapon: this.loadOut.getSingleShot(), score: LoadOut.noResult }
-  }
-
-  /**
-   * Handles end of turn event.
-   * Finishes opponent turn and triggers opponent begin turn if game not over.
-   *
-   * @private
-   */
-  onEndTurn () {
-    if (this?.opponent == null) {
-      return
-    }
-    if (!this.opponent.boardDestroyed) {
-      this.opponent._handleBeginTurn()
-    }
   }
 
   /**
@@ -203,7 +185,6 @@ export class Friend extends Waters {
    * @param {number} cc - Source column coordinate
    * @param {Object} currentWeapon - Weapon system rack with weapon property
    * @returns {Promise<Object>} Result of weapon launch
-   * @private
    */
   async launchTo (coords, rr, cc, currentWeapon) {
     return await currentWeapon.weapon.cursorLaunchTo(
