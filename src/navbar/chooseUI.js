@@ -1,4 +1,4 @@
-export class ChooseUI {
+class ChooseUI {
   constructor (targetId) {
     if (new.target === ChooseUI) {
       throw new Error(

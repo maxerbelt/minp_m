@@ -21,7 +21,7 @@ const SHIP_TIPS = [
 /**
  * UI class for custom map and ship placement mode.
  */
-export class CustomUI extends PlacementUI {
+class CustomUI extends PlacementUI {
   /**
    * Initializes the custom UI with cached elements and initial tips.
    */

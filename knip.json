@@ -1,0 +1,18 @@
+{
+  "entry": [
+    "src/battlebuild.js",
+    "src/battlehide.js",
+    "src/battleseek.js",
+    "src/hex.js",
+    "src/hexcolor.js",
+    "src/maplist.js",
+    "src/rect.js",
+    "src/rectcolor.js",
+    "src/tri.js",
+    "src/docs/print.js",
+    "src/docs/rules.js"
+  ],
+  "project": [
+    "src/**/*.js"
+  ]
+}

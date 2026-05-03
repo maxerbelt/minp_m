@@ -81,7 +81,7 @@ class Tab {
  *
  * @class
  */
-export class TabManager {
+class TabManager {
   /**
    * @typedef {Object} TabConfig
    * @property {string[]} [current=[]] - Tab names to mark as current

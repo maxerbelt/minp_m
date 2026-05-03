@@ -9,7 +9,7 @@ import { customUI } from './customUI.js'
  * @class Custom
  * @extends Waters
  */
-export class Custom extends Waters {
+class Custom extends Waters {
   /**
    * Creates a Custom game instance.
    * @param {Object} ui - The custom UI instance

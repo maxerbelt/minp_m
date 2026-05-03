@@ -6,7 +6,7 @@ import { Delay } from '../core/Delay.js'
  * Manages game status, tips, and ammo display UI.
  * Uses async/await patterns with Delay for timer management.
  */
-export class StatusUI {
+class StatusUI {
   /**
    * Creates a StatusUI instance.
    */

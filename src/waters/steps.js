@@ -34,11 +34,23 @@ export const WeaponMode = Object.freeze({
  * @property {number} shadowC
  */
 
+/**
+ * Tracks weapon selection, aiming, and activation steps for a player.
+ */
 export class Steps {
   /**
    * @param {string} player
    */
   constructor (player) {
+    this._initializeState(player)
+    this._initializeCallbacks()
+  }
+
+  /**
+   * @private
+   * @param {string} player
+   */
+  _initializeState (player) {
     this.player = player
     this.wletter = null
     this.sourceRack = null
@@ -48,7 +60,12 @@ export class Steps {
     this.sourceShadow = null
     this.target = null
     this.mode = WeaponMode.othersTurn
+  }
 
+  /**
+   * @private
+   */
+  _initializeCallbacks () {
     this.onChangeWeapon = NOOP
     this.onActivate = NOOP
     this.onDeactivate = NOOP
@@ -143,9 +160,7 @@ export class Steps {
    */
   shouldActivateNewRack (weapon, weaponId) {
     return (
-      weapon !== undefined &&
-      weaponId !== -1 &&
-      this._isNewRackId(weaponId)
+      weapon !== undefined && weaponId !== -1 && this._isNewRackId(weaponId)
     )
   }
 
@@ -196,8 +211,15 @@ export class Steps {
     if (!this.source) return
 
     this._deactivateCurrentSourceRack()
-    this.source.board.cellUseAmmo(this.source.r, this.source.c)
+    this._useSourceAmmo()
     this._revealHintIfRequired()
+  }
+
+  /**
+   * @private
+   */
+  _useSourceAmmo () {
+    this.source.board.cellUseAmmo(this.source.r, this.source.c)
   }
 
   /**
@@ -217,10 +239,7 @@ export class Steps {
   _revealHintIfRequired () {
     if (!this.sourceRack?.weapon?.givesHint || !this.sourceHint) return
 
-    this.sourceHint.board.cellHintReveal(
-      this.sourceHint.r,
-      this.sourceHint.c
-    )
+    this.sourceHint.board.cellHintReveal(this.sourceHint.r, this.sourceHint.c)
     this.onHint(this.sourceHint.r, this.sourceHint.c)
   }
 
@@ -260,20 +279,57 @@ export class Steps {
       shadowC
     )
 
-    this.sourceRack = {
+    this.sourceRack = this._buildSourceRack(
       rack,
       weapon,
       wletter,
-      weaponId: resolvedWeaponId,
+      resolvedWeaponId,
+      r,
+      c,
+      cell,
+      shadowR,
+      shadowC
+    )
+
+    this.select()
+    return { shadowR, shadowC }
+  }
+
+  /**
+   * @private
+   * @param {*} rack
+   * @param {*} weapon
+   * @param {string} wletter
+   * @param {number} weaponId
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   * @param {number} shadowR
+   * @param {number} shadowC
+   * @returns {SourceRack}
+   */
+  _buildSourceRack (
+    rack,
+    weapon,
+    wletter,
+    weaponId,
+    r,
+    c,
+    cell,
+    shadowR,
+    shadowC
+  ) {
+    return {
+      rack,
+      weapon,
+      wletter,
+      weaponId,
       r,
       c,
       cell,
       shadowR,
       shadowC
     }
-
-    this.select()
-    return { shadowR, shadowC }
   }
 
   /**
@@ -324,18 +380,33 @@ export class Steps {
    */
   addShip (ship) {
     this.sourceShip = ship
-    if (!bh.terrain.hasAttachedWeapons) {
-      console.warn(
-        'Terrain does not have attached weapons, but a ship was added to steps'
-      )
+    if (!this._isAttachedWeaponTerrain()) {
+      this._warnAttachedWeaponWithoutShip()
       return
     }
 
     const letter = ship.getPrimaryWeapon().letter
-    if (letter !== this.sourceRack?.wletter) {
+    if (this._isWeaponChangeRequired(letter)) {
       this.onChangeWeapon(letter)
     }
     this.wletter = letter
+  }
+
+  /**
+   * @private
+   * @returns {boolean}
+   */
+  _isAttachedWeaponTerrain () {
+    return bh.terrain.hasAttachedWeapons
+  }
+
+  /**
+   * @private
+   */
+  _warnAttachedWeaponWithoutShip () {
+    console.warn(
+      'Terrain does not have attached weapons, but a ship was added to steps'
+    )
   }
 
   /**

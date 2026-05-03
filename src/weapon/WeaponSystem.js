@@ -268,7 +268,7 @@ export class WeaponSystem {
  * Manages ammo consumption across subsystems
  * @extends WeaponSystem
  */
-export class CombinedWeaponSystem extends WeaponSystem {
+class CombinedWeaponSystem extends WeaponSystem {
   /**
    * Initializes combined system with subsystem collection
    * @param {Array<WeaponSystem>} weaponSubsystems - Array of weapon systems to combine
