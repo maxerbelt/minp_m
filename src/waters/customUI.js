@@ -3,15 +3,19 @@ import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
 
 // Constants for UI strings to reduce duplication
+/** @returns {string} */
 const LAND_STRING = () =>
   bh.terrain?.landSubterrain?.title?.toLowerCase() || 'land'
+/** @returns {string} */
 const SEA_STRING = () =>
   bh.terrain?.defaultSubterrain?.title?.toLowerCase() || 'sea'
+/** @type {string[]} */
 const BRUSH_TIPS = [
   'Use shapes create land and sea',
   `drag blocks across map to create or destroy ${LAND_STRING()}`,
   `press accept button when the ${SEA_STRING()} and ${LAND_STRING()} is to your liking`
 ]
+/** @type {string[]} */
 const SHIP_TIPS = [
   'drag ships to the map grid to add them to your map',
   'drag weapons on to the map to increase the ammunition available',
@@ -32,35 +36,66 @@ class CustomUI extends PlacementUI {
   }
 
   /**
+   * Returns a typed button by ID.
+   * @param {string} id
+   * @returns {HTMLButtonElement}
+   * @private
+   */
+  _queryButton (id) {
+    return /** @type {HTMLButtonElement} */ (document.getElementById(id))
+  }
+
+  /**
+   * Returns a generic element by ID.
+   * @param {string} id
+   * @returns {HTMLElement|null}
+   * @private
+   */
+  _queryElement (id) {
+    return document.getElementById(id)
+  }
+
+  /**
    * Caches frequently accessed DOM elements.
    * @private
    */
   _cacheElements () {
-    this.reuseBtn = document.getElementById('reuseBtn')
-    this.resetBtn = document.getElementById('resetBtn')
-    this.acceptBtn = document.getElementById('acceptBtn')
-    this.stopBtn = document.getElementById('stopBtn')
-    this.undoBtn = document.getElementById('undoBtn')
-    this.publishBtn = document.getElementById('publishBtn')
-    this.saveBtn = document.getElementById('saveBtn')
+    this.reuseBtn = this._queryButton('reuseBtn')
+    this.resetBtn = this._queryButton('resetBtn')
+    this.acceptBtn = this._queryButton('acceptBtn')
+    this.stopBtn = this._queryButton('stopBtn')
+    this.undoBtn = this._queryButton('undoBtn')
+    this.publishBtn = this._queryButton('publishBtn')
+    this.saveBtn = this._queryButton('saveBtn')
+    this.heightContainer = this._queryElement('height-container')
+    this.widthContainer = this._queryElement('width-container')
+    this.tallyTitle = this._queryElement('tally-title')
   }
 
   /**
    * Updates the reset/clear button based on placement state.
    */
   updateChangeClearButton () {
-    if (this.placingShips) {
-      this.newPlacementBtn.disabled = false
-      this.newPlacementBtn.innerHTML = `<span class="shortcut">C</span>hange ${bh.terrain.mapHeading}`
-    } else {
-      this.newPlacementBtn.innerHTML = `<span class="shortcut">C</span>lear ${bh.terrain.mapHeading}`
-      this.newPlacementBtn.disabled = !this.score.hasZoneInfo()
-    }
+    const newPlacementBtn = /** @type {HTMLButtonElement} */ (
+      this.newPlacementBtn
+    )
+    newPlacementBtn.innerHTML = this._changeClearLabel()
+    newPlacementBtn.disabled = !this.placingShips && !this.score.hasZoneInfo()
+  }
+
+  /**
+   * Builds the current label for the change/clear button.
+   * @returns {string}
+   * @private
+   */
+  _changeClearLabel () {
+    const action = this.placingShips ? 'hange' : 'lear'
+    return `<span class="shortcut">C</span>${action} ${bh.terrain.mapHeading}`
   }
 
   /**
    * Toggles visibility of multiple elements.
-   * @param {Array<Array>} visibilityMap - Array of [element, show] pairs.
+   * @param {Array<[HTMLElement|null, boolean]>} visibilityMap - Array of [element, show] pairs.
    * @private
    */
   _toggleElementVisibility (visibilityMap) {
@@ -70,17 +105,14 @@ class CustomUI extends PlacementUI {
   }
 
   /**
-   * Configures UI for brush mode.
+   * Configures brush mode element visibility.
    * @private
    */
-  _configureBrushUI () {
-    this.showMapTitle()
-    this.placingShips = false
-    this.updateChangeClearButton()
+  _setBrushModeVisibility () {
     this._toggleElementVisibility([
-      [document.getElementById('height-container'), true],
-      [document.getElementById('width-container'), true],
-      [document.getElementById('tally-title'), false],
+      [this.heightContainer, true],
+      [this.widthContainer, true],
+      [this.tallyTitle, false],
       [this.reuseBtn, true],
       [this.resetBtn, false],
       [this.acceptBtn, true],
@@ -91,6 +123,38 @@ class CustomUI extends PlacementUI {
       [this.stopBtn, false],
       [this.undoBtn, false]
     ])
+  }
+
+  /**
+   * Configures ship placement mode element visibility.
+   * @private
+   */
+  _setShipModeVisibility () {
+    this._toggleElementVisibility([
+      [this.heightContainer, false],
+      [this.widthContainer, false],
+      [this.tallyTitle, false],
+      [this.reuseBtn, false],
+      [this.resetBtn, true],
+      [this.acceptBtn, false],
+      [this.publishBtn, true],
+      [this.saveBtn, true],
+      [this.testBtn, false],
+      [this.seekBtn, false],
+      [this.stopBtn, false],
+      [this.undoBtn, false]
+    ])
+  }
+
+  /**
+   * Configures UI for brush mode.
+   * @private
+   */
+  _configureBrushUI () {
+    this.showMapTitle()
+    this.placingShips = false
+    this.updateChangeClearButton()
+    this._setBrushModeVisibility()
 
     this.hideTransformBtns()
     this.score.placed.textContent = 'None Yet'
@@ -153,24 +217,15 @@ class CustomUI extends PlacementUI {
     this.placingShips = true
     this.updateChangeClearButton()
     this.trayManager.showShipTrays()
-    this._toggleElementVisibility([
-      [document.getElementById('height-container'), false],
-      [document.getElementById('width-container'), false],
-      [this.reuseBtn, false],
-      [this.resetBtn, true],
-      [this.acceptBtn, false],
-      [this.testBtn, false],
-      [this.seekBtn, false],
-      [this.stopBtn, false],
-      [this.undoBtn, false]
-    ])
-    this.newPlacementBtn.disabled = false
+    this._setShipModeVisibility()
     this.score.placedLabel.classList.remove('hidden')
     this.score.weaponsLabel.classList.remove('hidden')
     this.showTransformBtns()
     this.autoBtn.classList.add('hidden')
-    this.publishBtn.classList.remove('hidden')
-    this.saveBtn.classList.remove('hidden')
+    const newPlacementBtn = /** @type {HTMLButtonElement} */ (
+      this.newPlacementBtn
+    )
+    newPlacementBtn.disabled = false
     this.buildTrays(ships)
     this.buildWeaponTray()
     this.showStatus()

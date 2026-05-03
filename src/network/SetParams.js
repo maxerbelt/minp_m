@@ -27,7 +27,7 @@ function getCurrentBodyTag (context = '') {
  * @param {Array<[string, string]>} tokens - Key-value pairs for title replacement
  * @param {URL} url - New URL to push to history
  */
-export function updateState (tokens, url) {
+function updateState (tokens, url) {
   const pageTitle = document.getElementById('page-title')
   let template = pageTitle?.dataset?.template
   if (template) {

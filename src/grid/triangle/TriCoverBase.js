@@ -1,4 +1,4 @@
-export function triBresenhamStep (
+function triBresenhamStep (
   errorTerm,
   deltaY,
   deltaX,
@@ -16,8 +16,7 @@ export function triBresenhamStep (
   errorTerm += moveInY * deltaX
   return { errorTerm, currentX, currentY }
 }
-
-export function triBresenhamStepMove (
+function triBresenhamStepMove (
   errorTerm,
   deltaY,
   deltaX,

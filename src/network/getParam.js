@@ -48,7 +48,7 @@ export function isEditMode (urlParams) {
  * @param {URLSearchParams} urlParams - URL search parameters
  * @returns {string|undefined} Edit map value
  */
-export function getParamEditMap (urlParams) {
+function getParamEditMap (urlParams) {
   return getFirstParam(urlParams, 'edit')
 }
 
