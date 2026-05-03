@@ -75,7 +75,7 @@ export class Waters {
     this.preamble = 'You were '
     if (playerType) {
       this.steps = new Steps(playerType)
-      this.initializeSteps(playerType)
+      this.initializeSteps()
     }
     this.resetShipCells()
     this.displayInfo = gameStatus.info2.bind(gameStatus)
