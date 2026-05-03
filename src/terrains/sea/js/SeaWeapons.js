@@ -142,6 +142,7 @@ export class Kinetic extends Strike {
     super(ammo, name || 'Kinetic Strike', letter || 'K', true, true, 2)
     this.cursors = ['satelite', 'strike']
     this.postSelectCursor = 1
+    this.postSelectShadow = true
     this.totalCursors = 2
     this._applyWeaponConfig(SEA_WEAPON_CONFIGS.KINETIC)
   }
@@ -178,6 +179,7 @@ export class Torpedo extends Fish {
     super(ammo, 'Torpedo', '+')
     this.cursors = ['torpedo', 'periscope']
     this.postSelectCursor = 1
+    this.postSelectShadow = true
     this.totalCursors = 2
     this._applyWeaponConfig(SEA_WEAPON_CONFIGS.TORPEDO)
   }

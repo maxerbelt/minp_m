@@ -279,7 +279,8 @@ export class Missile extends Bomb {
 
     // Cursor configuration for targeting sequence
     this.unattachedCursor = 0
-    this.postSelectCursor = 0
+    this.postSelectCursor = 1
+    this.postSelectShadow = false
     this.launchCursor = 'launch'
     this.totalCursors = 2
     this.cursors = ['missile']
@@ -433,6 +434,7 @@ export class RailBolt extends Strike {
     // Cursor configuration for targeting sequence
     this.launchCursor = 'rail'
     this.postSelectCursor = 1
+    this.postSelectShadow = true
     this.totalCursors = 2
     this.splashType = undefined
     this.cursors = ['rail', 'bolt']
@@ -696,6 +698,7 @@ export class GaussRound extends Fish {
     this.launchCursor = 'rlaunch'
     this.isOneAndDone = true
     this.postSelectCursor = 1
+    this.postSelectShadow = true
     this.totalCursors = 2
 
     // Display and scoring configuration

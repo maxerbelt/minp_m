@@ -52,13 +52,7 @@ export class Steps {
    */
   _initializeState (player) {
     this.player = player
-    this.wletter = null
-    this.sourceRack = null
-    this.source = null
-    this.sourceShip = null
-    this.sourceHint = null
-    this.sourceShadow = null
-    this.target = null
+    this._resetSourceFields()
     this.mode = WeaponMode.othersTurn
   }
 
@@ -78,10 +72,23 @@ export class Steps {
 
   /**
    * @private
+   */
+  _resetSourceFields () {
+    this.wletter = null
+    this.sourceRack = null
+    this.source = null
+    this.sourceShip = null
+    this.sourceHint = null
+    this.sourceShadow = null
+    this.target = null
+  }
+
+  /**
+   * @private
    * @returns {boolean}
    */
   _hasActiveRack () {
-    return this.sourceRack && this.sourceRack.weaponId !== -1
+    return Boolean(this.sourceRack && this.sourceRack.weaponId !== -1)
   }
 
   /**
@@ -100,7 +107,7 @@ export class Steps {
    * @returns {number}
    */
   _resolveWeaponId (weaponId, rack) {
-    return weaponId || rack.id
+    return weaponId !== undefined ? weaponId : rack.id
   }
 
   /**
@@ -134,7 +141,29 @@ export class Steps {
    * @param {HTMLElement} cell
    */
   _setBoardContext (key, board, r, c, cell) {
-    this[key] = { board, r, c, cell }
+    this[key] = this._buildBoardContext(board, r, c, cell)
+  }
+
+  /**
+   * @private
+   * @param {Object} board
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   * @returns {BoardContext}
+   */
+  _buildBoardContext (board, r, c, cell) {
+    return { board, r, c, cell }
+  }
+
+  /**
+   * @private
+   * @param {string} mode
+   * @param {Function} callback
+   */
+  _setMode (mode, callback) {
+    this.mode = mode
+    callback(this)
   }
 
   /**
@@ -178,12 +207,8 @@ export class Steps {
    */
   _deactivateCurrentSourceRack () {
     if (!this._hasActiveRack()) return
-    this.onDeactivate(
-      this.sourceRack.r,
-      this.sourceRack.c,
-      this.sourceRack.shadowR,
-      this.sourceRack.shadowC
-    )
+    const { r, c, shadowR, shadowC } = this.sourceRack
+    this.onDeactivate(r, c, shadowR, shadowC)
   }
 
   deactivateCurrentSourceRack () {
@@ -191,21 +216,15 @@ export class Steps {
   }
 
   resetSourceState () {
-    this.source = null
-    this.sourceShip = null
-    this.sourceHint = null
-    this.sourceShadow = null
-    this.sourceRack = null
+    this._resetSourceFields()
   }
 
   select () {
-    this.mode = WeaponMode.sourceSelect
-    this.onSelect(this)
+    this._setMode(WeaponMode.sourceSelect, () => this.onSelect(this))
   }
 
   targetting () {
-    this.mode = WeaponMode.targetAim
-    this.onAim(this)
+    this._setMode(WeaponMode.targetAim, () => this.onAim(this))
   }
 
   /**
@@ -445,12 +464,10 @@ export class Steps {
   }
 
   endTurn () {
-    this.mode = WeaponMode.othersTurn
-    this.onEndTurn(this)
+    this._setMode(WeaponMode.othersTurn, () => this.onEndTurn(this))
   }
 
   beginTurn () {
-    this.mode = WeaponMode.sourceSelect
-    this.onBeginTurn(this)
+    this._setMode(WeaponMode.sourceSelect, () => this.onBeginTurn(this))
   }
 }

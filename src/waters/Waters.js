@@ -870,10 +870,7 @@ export class Waters {
   selectAndArmWps (rack, oppo, launchR, launchC, hintR, hintC, cell) {
     const weapon = rack?.weapon
     const letter = weapon?.letter
-    if (weapon.givesHint) {
-      this.opponent.UI.deactivateTempHints()
-      cell.classList.add('temp-hint')
-    }
+    this.giveTempHint(weapon, cell)
     this.addSource(oppo, launchR, launchC, rack, cell)
     const { shadowR, shadowC } = this.steps.addRack(
       rack,
@@ -901,6 +898,13 @@ export class Waters {
         return await this.launchTo(coords, hintR, hintC, rack)
       }
       this.loadOut.selectedWeapon = rack
+    }
+  }
+
+  giveTempHint (weapon, cell) {
+    if (weapon.givesHint) {
+      this.opponent.UI.deactivateTempHints()
+      cell.classList.add('temp-hint')
     }
   }
 

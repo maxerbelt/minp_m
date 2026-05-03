@@ -132,7 +132,7 @@ class Enemy extends Waters {
     shadowC
   ) {
     this.opponent?.UI?.cellWeaponActive?.(r, c)
-    if (weapon.postSelectCursor > 0) {
+    if (weapon.postSelectShadow) {
       this.UI.cellWeaponActive(shadowR, shadowC, '', weapon.tag)
     }
     this.updateMode(rack)
