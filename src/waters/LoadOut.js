@@ -11,7 +11,8 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @property {boolean} destroys - Whether the weapon destroys targets
  * @property {boolean} isOneAndDone - Whether the weapon is single-use
  * @property {number} unattachedCursor - Cursor value for unattached weapons
- * @property {number} postSelectCursor - Cursor value after selection
+ * @property {number} postSelectCursor - Cursor value after selection *
+ * @property {number} postSelectCoords - Number of coordinates after post-selection
  */
 
 /**
@@ -440,7 +441,7 @@ export class LoadOut {
    */
   _handleUnattachedCursorSelection (oldCursor, unattachedWeaponSystem) {
     if (this._shouldAdvanceUnattachedCursor(unattachedWeaponSystem)) {
-      this.addSelectedCoordinates(-1, -1)
+      this.addSelectedCoordinates(-1, -1, unattachedWeaponSystem?.weapon)
       return
     }
     this.notifyCursorChange(oldCursor)
@@ -626,10 +627,17 @@ export class LoadOut {
     this._handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
   }
 
-  addSelectedCoordinates (row, col) {
+  addSelectedCoordinates (row, col, weapon = this.getCurrentWeapon()) {
     const oldCursor = this.getCurrentCursor()
     this.selectedCoordinates.push([row, col])
     this.notifyCursorChange(oldCursor)
+    if (
+      this.selectedCoordinates.length === 1 &&
+      weapon &&
+      (weapon.postSelectCursor || weapon.postSelectCoords)
+    ) {
+      this.steps?.targetting()
+    }
   }
   switchToNextWeaponSystem () {
     this.moveToNextWeaponIndex()
@@ -699,7 +707,7 @@ export class LoadOut {
 
   firingInfoIfReady (map, row, col, weaponSystem) {
     const wps = weaponSystem || this.getCurrentWeaponSystem()
-    this.addSelectedCoordinates(row, col)
+    this.addSelectedCoordinates(row, col, wps?.weapon)
 
     if (this.hasUnattachedWeapons) {
       this.selectedWeapon = wps
@@ -709,7 +717,6 @@ export class LoadOut {
       return this._createFiringInfo(wps, map)
     }
 
-    this.steps.targetting?.()
     return null
   }
 

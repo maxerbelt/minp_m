@@ -279,7 +279,8 @@ export class Missile extends Bomb {
 
     // Cursor configuration for targeting sequence
     this.unattachedCursor = 0
-    this.postSelectCursor = 1
+    this.postSelectCursor = 0
+    this.postSelectCoords = 1
     this.postSelectShadow = false
     this.launchCursor = 'launch'
     this.totalCursors = 2
@@ -347,7 +348,7 @@ export class Missile extends Bomb {
    */
   aoe (_map, coords) {
     if (coords.length < 1) return []
-    const [row, col] = coords[0]
+    const [row, col] = coords.at(-1)
     return this.boom(row, col)
   }
 

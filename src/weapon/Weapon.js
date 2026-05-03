@@ -26,6 +26,7 @@ export class Weapon {
     this.volatile = false
     this.unattachedCursor = 0
     this.postSelectCursor = 0
+    this.postSelectCoords = 0
     this.explodeOnTarget = false
     this.explodeOnSplash = false
     this.explodeOnHit = false

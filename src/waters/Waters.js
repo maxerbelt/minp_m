@@ -888,7 +888,7 @@ export class Waters {
       if (weapon.postSelectCursor === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
-        this.loadOut.addSelectedCoordinates(shadowR, shadowC)
+        this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
 
       rack.launchCoord = [launchR, launchC]
