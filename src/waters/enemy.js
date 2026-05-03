@@ -14,16 +14,16 @@ const ENEMY_TURN_DELAY = 50
 
 /**
  * @typedef {Object} WeaponLaunchResult
- * @property {boolean} [hasTargettedWeapon]
- * @property {Object} [weapon]
- * @property {Object} [score]
+ * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used.
+ * @property {Object} [weapon] - The weapon object used.
+ * @property {Object} [score] - The score result from the launch.
  */
 
 /**
  * @typedef {Object} CursorInfo
- * @property {Object} [wps]
- * @property {number} [idx]
- * @property {string} [cursor]
+ * @property {Object} [wps] - Weapon system information.
+ * @property {number} [idx] - Cursor index.
+ * @property {string} [cursor] - Cursor class name.
  */
 
 /**
@@ -52,6 +52,12 @@ class Enemy extends Waters {
 
     /** @type {boolean} Indicates this is an enemy waters instance. */
     this.enemyWaters = true
+
+    /** @type {string|null} Previous cursor class for board. */
+    this._oldCursor = null
+
+    /** @type {string|null} Previous weapon letter. */
+    this._oldWeaponLetter = null
 
     this._initializeSteps()
   }
@@ -203,7 +209,7 @@ class Enemy extends Waters {
   /**
    * Handles cursor changes on the board.
    * @param {string} oldCursor - The previous cursor class.
-   * @param {Object} newCursorInfo - Information about the new cursor.
+   * @param {CursorInfo} newCursorInfo - Information about the new cursor.
    */
   cursorChange (oldCursor, newCursorInfo) {
     const newCursor = newCursorInfo?.cursor
@@ -247,21 +253,19 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles ship placement with retry logic.
+   * Attempts to place ships with retry logic.
    * @private
    * @param {Array} ships - The ships to place.
    * @param {number} attempt - The current attempt number.
+   * @returns {boolean} True if placement succeeded.
    */
-  _handlePlacement (ships, attempt) {
-    this.UI.disableBtns()
+  _attemptShipPlacement (ships, attempt) {
     for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS; i++) {
       if (this.shipCellGrid.attemptToPlaceShips(ships)) {
-        gameStatus.setTips(['Click On Square To Fire'])
-        this.UI.enableBtns()
-        return
+        return true
       }
     }
-    this._handlePlacementFailure(ships, attempt)
+    return false
   }
 
   /**
@@ -271,17 +275,15 @@ class Enemy extends Waters {
    * @param {number} attempt - The current attempt number.
    */
   async _handlePlacementFailure (ships, attempt) {
+    const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
     gameStatus.addToQueue(
-      `Having difficulty placing all ships (${
-        (attempt + 1) * ATTEMPTS_PER_RETRY
-      } attempts)`,
+      `Having difficulty placing all ships (${totalAttempts} attempts)`,
       true
     )
 
     if (attempt < MAX_PLACEMENT_RETRIES) {
       await Delay.yield()
-      this._tryPlacementRetry(ships, attempt + 1)
-      return
+      return this._attemptShipPlacementWithRetry(ships, attempt + 1)
     }
 
     this.UI.enableBtns()
@@ -291,13 +293,14 @@ class Enemy extends Waters {
   }
 
   /**
-   * Attempts placement again after a retry delay.
+   * Attempts placement with retry.
    * @private
    * @param {Array} ships - The ships to place.
    * @param {number} attempt - Retry attempt index.
+   * @returns {boolean} True if succeeded.
    */
-  _tryPlacementRetry (ships, attempt) {
-    this._handlePlacement(ships, attempt)
+  _attemptShipPlacementWithRetry (ships, attempt) {
+    return this._attemptShipPlacement(ships, attempt)
   }
 
   /**
@@ -308,7 +311,12 @@ class Enemy extends Waters {
   async placeAll (ships = this.ships) {
     this.UI.enableBtns()
     await Delay.yield()
-    this._handlePlacement(ships, 0)
+    if (this._attemptShipPlacement(ships, 0)) {
+      gameStatus.setTips(['Click On Square To Fire'])
+      this.UI.enableBtns()
+    } else {
+      await this._handlePlacementFailure(ships, 0)
+    }
   }
 
   /**
@@ -375,7 +383,7 @@ class Enemy extends Waters {
    * @private
    * @param {number} r - Target row.
    * @param {number} c - Target column.
-   * @returns {Promise<Object|null>} The result of the weapon launch.
+   * @returns {Promise<WeaponLaunchResult|null>} The result of the weapon launch.
    */
   async _prepareWeaponLaunch (r, c) {
     this.UI.removeHighlightAoE()
@@ -413,8 +421,7 @@ class Enemy extends Waters {
    * Sets up and launches a weapon at the specified location.
    * @param {number} r - Target row coordinate.
    * @param {number} c - Target column coordinate.
-   * @returns {Promise<null|{ weapon: Object, score: Object }|{ hasTargettedWeapon: boolean }>} Result with weapon and score.
-   * @private
+   * @returns {Promise<WeaponLaunchResult|null>} Result with weapon and score.
    */
   async setupWeapon (r, c) {
     return await this._prepareWeaponLaunch(r, c)
@@ -430,40 +437,14 @@ class Enemy extends Waters {
     if (!this.canTakeTurn()) return
 
     const result = await this.setupWeapon(r, c)
-    if (this._shouldContinueAfterLaunch(result)) {
+    if (result?.hasTargettedWeapon) {
       return
     }
 
-    this._processLaunchResult(result)
-    this._finalizeTurn()
-  }
-
-  /**
-   * Determines whether the launch result requires continuing the turn.
-   * @private
-   * @param {WeaponLaunchResult|null} result - The weapon launch result.
-   * @returns {boolean} True if the turn should continue.
-   */
-  _shouldContinueAfterLaunch (result) {
-    return !!result?.hasTargettedWeapon
-  }
-
-  /**
-   * Processes the launch result and updates scoring if applicable.
-   * @private
-   * @param {WeaponLaunchResult|null} result - The weapon launch result.
-   */
-  _processLaunchResult (result) {
     if (result?.score) {
       this.updateResultsOfBomb(result.weapon, result.score)
     }
-  }
 
-  /**
-   * Finalizes the turn after a weapon launch.
-   * @private
-   */
-  _finalizeTurn () {
     this.score.finishTurn()
     this.updateUI()
     this.steps.endTurn()
@@ -570,7 +551,7 @@ class Enemy extends Waters {
   /**
    * Updates the weapon status display.
    * @param {*} rack - The weapon rack.
-   * @param {Object} cursorInfo - Cursor information.
+   * @param {CursorInfo} cursorInfo - Cursor information.
    */
   updateWeaponStatus (rack, cursorInfo) {
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
