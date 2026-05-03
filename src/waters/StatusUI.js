@@ -173,18 +173,17 @@ export class StatusUI {
   showSoonish (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem) return
     if (this.scoreQueue.length > 0) {
-      return this._addToQueue(newItem, isImportant)
+      return this.addToQueue(newItem, isImportant)
     }
     this.showSoon(newItem, isImportant, duration)
   }
 
   /**
    * Adds an item to the score queue.
-   * @private
    * @param {string} newItem - The item to queue
    * @param {boolean} [isImportant=false] - Whether this is important
    */
-  _addToQueue (newItem, isImportant = false) {
+  addToQueue (newItem, isImportant = false) {
     this.scoreQueue.push({ item: newItem, isImportant })
     if (this.waiting) {
       this._cancelQueueLoop()
@@ -202,7 +201,7 @@ export class StatusUI {
   showSoon (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem && !isImportant) return
     if (this._queueLoopActive) {
-      this._addToQueue(newItem, isImportant)
+      this.addToQueue(newItem, isImportant)
     } else {
       this.show(newItem, isImportant)
       this._scheduleQueueProcessingAsync(duration)
@@ -339,7 +338,7 @@ export class StatusUI {
   display (mode, game) {
     this.showMode(mode)
     if (game) {
-      this._addToQueue(game, false)
+      this.addToQueue(game, false)
     }
   }
 
@@ -372,7 +371,7 @@ export class StatusUI {
     } else {
       idxUsed = this._displaySingleShotStatus()
     }
-    this._addToQueue(weapon.stepHint(idxUsed), false)
+    this.addToQueue(weapon.stepHint(idxUsed), false)
   }
 
   /**

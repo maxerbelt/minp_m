@@ -271,7 +271,7 @@ class Enemy extends Waters {
    * @param {number} attempt - The current attempt number.
    */
   async _handlePlacementFailure (ships, attempt) {
-    gameStatus._addToQueue(
+    gameStatus.addToQueue(
       `Having difficulty placing all ships (${
         (attempt + 1) * ATTEMPTS_PER_RETRY
       } attempts)`,
@@ -285,10 +285,7 @@ class Enemy extends Waters {
     }
 
     this.UI.enableBtns()
-    gameStatus._addToQueue(
-      'Failed to place all ships after many attempts',
-      true
-    )
+    gameStatus.addToQueue('Failed to place all ships after many attempts', true)
     this.boardDestroyed = true
     throw new Error('Failed to place all ships after many attempts')
   }
@@ -363,11 +360,11 @@ class Enemy extends Waters {
       return false
     }
     if (this.timeoutId) {
-      gameStatus._addToQueue('Wait For Enemy To Finish Their Turn', false)
+      gameStatus.addToQueue('Wait For Enemy To Finish Their Turn', false)
       return false
     }
     if (this.opponent?.boardDestroyed) {
-      gameStatus._addToQueue('Game Over - No More Shots Allowed', true)
+      gameStatus.addToQueue('Game Over - No More Shots Allowed', true)
       return false
     }
     return true
@@ -510,11 +507,11 @@ class Enemy extends Waters {
   destroy (weapon, effect, options) {
     if (!options?.isSplash) {
       if (this._isInvalidShot(effect)) {
-        gameStatus._addToQueue('Already Shot Here - Try Again', false)
+        gameStatus.addToQueue('Already Shot Here - Try Again', false)
         return LoadOut.noResult
       }
       if (effect.length === 0) {
-        gameStatus._addToQueue('Has no effect - Try Again', false)
+        gameStatus.addToQueue('Has no effect - Try Again', false)
         return LoadOut.noResult
       }
     }
@@ -660,11 +657,11 @@ class Enemy extends Waters {
     this.UI.playMode()
     this._oldCursor = null
     this._oldWeaponLetter = null
-    this.loadOut.OutOfAllAmmo = () => {
+    this.loadOut.onOutOfAllAmmo = () => {
       this.UI.weaponBtn.disabled = true
       this.UI.weaponBtn.textContent = 'single shot'
     }
-    this.loadOut.OutOfAmmo = this.updateMode.bind(this)
+    this.loadOut.onOutOfAmmo = this.updateMode.bind(this)
     this.updateUI()
   }
 

@@ -964,14 +964,6 @@ export class Ship {
   }
 
   /**
-   * Get shape definition for this ship
-   */
-  shape () {
-    if (this._shape) return this._shape
-
-    this._shape = bh.shapesByLetter(this.letter)
-  }
-  /**
    * @param {any[]} arr
    */
   static maxMinSizeIn (arr) {
@@ -1018,7 +1010,7 @@ export class Ship {
 
   /**
    * Get shape definition for this ship
-   * @returns {Shape} Shape object defining this ship's form and properties
+   * @returns {unknown} Shape object defining this ship's form and properties
    */
   shape () {
     if (this._shape) return this._shape

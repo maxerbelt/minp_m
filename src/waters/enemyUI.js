@@ -78,7 +78,7 @@ class EnemyUI extends WatersUI {
    */
   displayFleetSunk () {
     gameStatus.showMode('Fleet Destroyed')
-    gameStatus._addToQueue('All Units Destroyed - Well Done!', true)
+    gameStatus.addToQueue('All Units Destroyed - Well Done!', true)
     this.board.classList.add('destroyed')
     trackLevelEnd(bh.map, true)
   }
@@ -132,7 +132,7 @@ class EnemyUI extends WatersUI {
     this.revealShips(ships)
     this.revealMode()
     gameStatus.showMode('Enemy Fleet Revealed')
-    gameStatus._addToQueue('You Gave Up')
+    gameStatus.addToQueue('You Gave Up')
     this.board.classList.add('destroyed')
   }
 
@@ -164,7 +164,7 @@ class EnemyUI extends WatersUI {
     this.board.innerHTML = ''
     this.board.classList.remove('destroyed')
     gameStatus.showMode('Single Shot')
-    gameStatus._addToQueue('Click On Square To Fire', false)
+    gameStatus.addToQueue('Click On Square To Fire', false)
   }
 
   /**

@@ -11,6 +11,8 @@
  * @property {CellClassGroup} placement
  * @property {CellClassGroup} edge
  * @property {CellClassGroup} hint
+ * @property {CellClassGroup} orientation
+ *
  */
 
 /**
@@ -45,7 +47,6 @@ export class CellClassManager {
       damaged: 'damaged',
       skull: 'skull'
     },
-
     orientation: {
       turn2: 'turn2',
       turn3: 'turn3',
@@ -134,6 +135,9 @@ export class CellClassManager {
       this.CELL_CLASSES.weapon,
       this.CELL_CLASSES.damage,
       this.CELL_CLASSES.placement,
+      this.CELL_CLASSES.display,
+      this.CELL_CLASSES.orientation,
+      this.CELL_CLASSES.weapon,
       {} // Placeholder: will be populated from bh.terrain.weapons.tags
     ])
 

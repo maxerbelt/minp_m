@@ -892,7 +892,7 @@ export class WatersUI {
   }
 
   showNotice (notice) {
-    gameStatus._addToQueue(notice, false)
+    gameStatus.addToQueue(notice, false)
   }
 
   showTips () {
