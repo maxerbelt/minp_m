@@ -852,7 +852,7 @@ export class Waters {
         'no source found when selecting and arming weapon, adding source with launch coords'
       )
     }
-    if (!bh.terrain.hasUnattachedWeapons && this.sourceShip === null) {
+    if (!bh.terrain.hasUnattachedWeapons && !this.steps.sourceShip) {
       console.warn(
         'Terrain does not have unattached weapons, but a weapon is without a source ship'
       )
@@ -1321,7 +1321,7 @@ export class Waters {
     this.displayInfo('All ' + this.preamble0 + ' Ships Destroyed!')
     this.UI.displayFleetSunk()
     this.boardDestroyed = true
-    this._hideWaiting?.()
+    this._hideWaiting()
     this.opponent?._hideWaiting()
   }
   checkFleetSunk () {
@@ -1456,6 +1456,15 @@ export class Waters {
       return true
     }
     return false
+  }
+
+  /**
+   * Updates the weapon status display.
+   * @param {*} _rack - The weapon rack.
+   * @param {Object} _cursorInfo - Cursor information.
+   */
+  updateWeaponStatus (_rack, _cursorInfo) {
+    /* only needs implementation if enemy */
   }
 
   updateMode (wps1, cursorInfo) {
@@ -1665,6 +1674,21 @@ export class Waters {
       this.UI.score.display(ships, ...this.score.counts())
       this.UI.score.buildTally(ships, weaponSystems, this.UI)
     }
+  }
+
+  _hideWaiting () {
+    /* only needs implementation if enemy */
+  }
+
+  /**
+   * Deactivates the weapon at the specified locations.
+   * @param {number} _ro - Opponent row.
+   * @param {number} _co - Opponent column.
+   * @param {number} _shadowR - Shadow row.
+   * @param {number} _shadowC - Shadow column.
+   */
+  deactivateWeapon (_ro, _co, _shadowR, _shadowC) {
+    /* only needs implementation if enemy */
   }
 }
 

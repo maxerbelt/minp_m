@@ -298,7 +298,6 @@ export class Missile extends Bomb {
 
     // Display and scoring configuration
     this.plural = 'Missiles'
-    this.points = 1
     this.givesHint = true
 
     // Pre-compute splash damage pattern

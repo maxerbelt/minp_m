@@ -656,26 +656,6 @@ export class Friend extends Waters {
     }
   }
 
-  // ============ UI & Mode ============
-
-  updateWeaponStatus () {
-    /* only needs implementation if enemy */
-  }
-
-  updateMode (wps) {
-    if (this.isRevealed || this.boardDestroyed) {
-      return
-    }
-  }
-
-  _hideWaiting () {
-    /* only needs implementation if enemy */
-  }
-
-  deactivateWeapon () {
-    /* only needs implementation if enemy */
-  }
-
   resetModel () {
     this.score.reset()
     this.resetMap()
@@ -696,4 +676,6 @@ export class Friend extends Waters {
     this.UI.buildTrays(ships, this.shipCellGrid)
     this.updateUI(ships)
   }
+
+  updateMode (_wps1, _cursorInfo) {}
 }
