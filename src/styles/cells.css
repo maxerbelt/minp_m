@@ -666,7 +666,7 @@
 }
 
 .cell.empty {
-    background: transparent
+    background: transparent !important;
 }
 
 .cell.target::after {
