@@ -192,19 +192,6 @@ export class Friend extends Waters {
 
   // ============ Destruction & Effects ============
 
-  /**
-   * Applies weapon effect to area of effect and updates display.
-   * Flashes long animation if hits registered. Accumulates double tap count.
-   *
-   * @param {Object} weapon - The weapon being used
-   * @param {Array<Array<number>>} effect - [row, col, power] cells affected
-   * @returns {Object} Accumulated result with hits, dtap counts
-   * @private
-   */
-  destroy (weapon, effect, options) {
-    return this.applyWeaponEffect(weapon, effect, options)
-  }
-
   // ============ Random Actions ============
 
   /**
@@ -235,12 +222,14 @@ export class Friend extends Waters {
    *
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @param {boolean} [shouldWait] - Unused parameter (for API compatibility)
    * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
    */
-  async launchRandomWeapon (r, c, shouldWait) {
+  async launchCurrentWeapon (r, c) {
     const wps = this.currentWeaponSystem
-    return await this.loadOut.aimWeapon(this.map, r, c, wps)
+    const launch = async coords => {
+      return await this.launchTo(coords, bh.map.rows - 1, 0, wps)
+    }
+    return await this.loadOut.aimWeapon(this.map, r, c, wps, launch)
   }
 
   /**
@@ -253,12 +242,21 @@ export class Friend extends Waters {
    * @private
    */
   async _attemptLaunchWithFallback (r, c, fallbackR = r, fallbackC = c) {
-    const result = await this.launchRandomWeapon(r, c, false)
+    const result = await this.launchCurrentWeapon(r, c)
     if (result?.score && result.score !== LoadOut.noResult) {
       return result
     }
     const wps = this.currentWeaponSystem
-    return await this.loadOut.aimWeapon(this.map, fallbackR, fallbackC, wps)
+    const launch = async coords => {
+      return await this.launchTo(coords, bh.map.rows - 1, 0, wps)
+    }
+    return await this.loadOut.aimWeapon(
+      this.map,
+      fallbackR,
+      fallbackC,
+      wps,
+      launch
+    )
   }
 
   /**
@@ -409,7 +407,7 @@ export class Friend extends Waters {
    *
    * @param {Object} mask - Bitmask with occupancy property
    * @param {Function} finishAction - Callback(mask) to execute if occupied
-   * @returns {Promise<boolean>} True if action was executed
+   * @returns {Promise<null|{ weapon: Object; score: Object; }>}
    * @private
    */
   async tryFinishCondition (mask, finishAction) {
@@ -437,7 +435,7 @@ export class Friend extends Waters {
    * Attempts to fire at revealed but not yet attacked cells.
    * Prioritizes previously revealed locations for follow-up shots.
    *
-   * @returns {Promise<boolean>} True if action executed
+   * @returns {Promise<null|{ weapon: Object; score: Object; }>}
    * @private
    */
   async finishRevealed () {
@@ -453,7 +451,7 @@ export class Friend extends Waters {
    * First tries orthogonal cross pattern, then dilates to surrounding cells.
    *
    * @param {Object} hits - Hit locations mask
-   * @returns {Promise<boolean>} True if action executed
+   * @returns {Promise<null|{ weapon: Object; score: Object; }>} Result from finish strategy or null
    * @private
    */
   async finishPartiallySunk (hits) {
@@ -485,7 +483,7 @@ export class Friend extends Waters {
    * Attempts to fire at hint-revealed locations.
    * Expands hint area and looks for untried cells within expansion.
    *
-   * @returns {Promise<boolean>} True if action executed
+   * @returns {Promise<null|{ weapon: Object; score: Object; }>} Result from finish strategy or null
    * @private
    */
   async finishHints () {

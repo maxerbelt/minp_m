@@ -1178,10 +1178,10 @@ export class Waters {
    * @param {Array} hitCandidates - The hit candidates.
    * @returns {*} The destruction result.
    */
-  async handleHits (weapon, effect, target, hitCandidates, options) {
+  handleHits (weapon, effect, target, hitCandidates, options) {
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
     if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
-      const splashEffect = await this.getCrashSplash(
+      const splashEffect = this.getCrashSplash(
         weapon,
         options.crashLoc,
         effect,
@@ -1189,9 +1189,9 @@ export class Waters {
       )
 
       options.isSplash = true
-      return await this.destroy(weapon, splashEffect, options)
+      return this.destroy(weapon, splashEffect, options)
     }
-    const splashEffect = await this.getStrikeSplash(
+    const splashEffect = this.getStrikeSplash(
       weapon,
       resolvedTarget,
       effect,
@@ -1221,12 +1221,12 @@ export class Waters {
    * @param {Object} [options] - Additional options for destruction.
    * @returns {*} The result of the destruction.
    */
-  async adestroyOne (weapon, effect, target = null, options = {}) {
+  destroyOne (weapon, effect, target = null, options = {}) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
     if (this.hasNoHitCandidates(hitCandidates)) {
       return this.handleNoHits(weapon, effect, options)
     }
-    return await this.handleHits(weapon, effect, target, hitCandidates, options)
+    return this.handleHits(weapon, effect, target, hitCandidates, options)
   }
 
   /**
@@ -1245,17 +1245,20 @@ export class Waters {
     )
   }
 
-  async getStrikeSplash (weapon, resolvedTarget, effect, options) {
-    const cellSize = this.UI.cellSizeScreen()
-    const target = this.UI.gridCellAt(resolvedTarget[0], resolvedTarget[1])
-    await weapon.animateSplashExplode(target, cellSize)
-    return weapon.splash(bh.map, resolvedTarget, effect, options)
+  getStrikeSplash (weapon, targetCoords, effect, options) {
+    this.animateStrikeSplash(targetCoords, weapon)
+    return weapon.splash(bh.map, targetCoords, effect, options)
   }
-  async getCrashSplash (weapon, candidate, effect, options) {
+
+  async animateStrikeSplash (targetCoords, weapon) {
     const cellSize = this.UI.cellSizeScreen()
-    const target = this.UI.gridCellAt(candidate[0], candidate[1])
-    await weapon.animateSplashExplode(target, cellSize)
-    return weapon?.crashSplash(bh.map, candidate, effect, options)
+    const targetCell = this.UI.gridCellAt(targetCoords[0], targetCoords[1])
+    await weapon.animateSplashExplode(targetCell, cellSize)
+  }
+
+  getCrashSplash (weapon, targetCoords, effect, options) {
+    this.animateStrikeSplash(targetCoords, weapon)
+    return weapon?.crashSplash(bh.map, targetCoords, effect, options)
   }
   shipsSunk () {
     return this.ships.filter(s => s.sunk)
@@ -1605,6 +1608,20 @@ export class Waters {
     }
     return acc
   }
+
+  /**
+   * Applies weapon effect to area of effect and updates display.
+   * Flashes long animation if hits registered. Accumulates double tap count.
+   *
+   * @param {Object} weapon - The weapon being used
+   * @param {Array<Array<number>>} effect - [row, col, power] cells affected
+   * @returns {Object} Accumulated result with hits, dtap counts
+   * @private
+   */
+  destroy (weapon, effect, options) {
+    return this.applyWeaponEffect(weapon, effect, options)
+  }
+
   /**
    * Applies the weapon effect to the area of effect.
    * @param {*} weapon - The weapon.

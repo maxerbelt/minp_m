@@ -206,14 +206,6 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles the hint event. Currently a placeholder.
-   * @private
-   */
-  _handleHint () {
-    // Placeholder for hint handling if needed
-  }
-
-  /**
    * Handles cursor changes on the board.
    * @param {string} oldCursor - The previous cursor class.
    * @param {Object} newCursorInfo - Information about the new cursor.
