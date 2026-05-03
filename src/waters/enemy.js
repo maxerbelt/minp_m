@@ -79,7 +79,7 @@ class Enemy extends Waters {
    * @private
    */
   _handleSelect () {
-    this._setBoardTargetingState(true)
+    this._setBoardTargetingState(false)
   }
 
   /**
