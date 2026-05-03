@@ -18,7 +18,7 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 export const gameHost = {
   containerWidth: 574
 }
-export const startCharCode = 65
+const startCharCode = 65
 
 const DEFAULT_CELL_CLEAN_CLASSES = [
   'semi',

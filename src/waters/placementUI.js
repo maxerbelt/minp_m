@@ -98,6 +98,43 @@ export class PlacementUI extends WatersUI {
     }
   }
 
+  /**
+   * Iterates every board cell and calls the provided callback.
+   * @param {(cell: HTMLElement) => void} callback
+   */
+  _forEachBoardCell (callback) {
+    for (const cell of this.board.children) {
+      callback(/** @type {HTMLElement} */ (cell))
+    }
+  }
+
+  /**
+   * Applies a consistent grid style for draggable previews.
+   * @param {HTMLElement} element
+   * @param {number} rows
+   * @param {number} cols
+   * @param {string} [boxSize]
+   */
+  _setGridDisplayStyle (element, rows, cols, boxSize = this.cellSizeString()) {
+    element.setAttribute(
+      'style',
+      `display:grid;place-items: center;--boxSize:${boxSize};grid-template-rows:repeat(${rows}, var(--boxSize));grid-template-columns:repeat(${cols}, var(--boxSize));gap:0px;`
+    )
+  }
+
+  /**
+   * Enables or disables rotation and flip controls.
+   * @param {boolean} disabled
+   */
+  _setPlacementControlsDisabled (disabled) {
+    const rotateBtn = /** @type {HTMLButtonElement} */ (this.rotateBtn)
+    const rotateLeftBtn = /** @type {HTMLButtonElement} */ (this.rotateLeftBtn)
+    const flipBtn = /** @type {HTMLButtonElement} */ (this.flipBtn)
+    rotateBtn.disabled = disabled
+    rotateLeftBtn.disabled = disabled
+    flipBtn.disabled = disabled
+  }
+
   markPlaced (cells, ship) {
     this.displaySurround(
       cells,
@@ -111,26 +148,26 @@ export class PlacementUI extends WatersUI {
   }
 
   makeDroppable (model) {
-    for (const cell of this.board.children) {
+    this._forEachBoardCell(cell => {
       this.clearCellContent(cell)
       dragNDrop.drop(cell, model, this)
       dragNDrop.dragEnter(cell, model, this)
-    }
+    })
   }
 
   makeAddDroppable (model) {
     dragNDrop.addWeaponDrop(model, this)
-    for (const cell of this.board.children) {
+    this._forEachBoardCell(cell => {
       this.clearCellContent(cell)
       dragNDrop.addDrop(cell, model, this)
       dragNDrop.dragEnter(cell, model, this)
-    }
+    })
   }
 
   makeBrushable () {
-    for (const cell of this.board.children) {
+    this._forEachBoardCell(cell => {
       dragNDrop.dragBrushEnter(cell, this)
-    }
+    })
   }
 
   removeDragShip (dragShip) {
@@ -146,9 +183,9 @@ export class PlacementUI extends WatersUI {
   }
 
   removeHighlight () {
-    for (const el of this.board.children) {
+    this._forEachBoardCell(el => {
       el.classList.remove('good', 'notgood', 'bad', 'worse')
-    }
+    })
   }
 
   removeClicked () {
@@ -157,8 +194,7 @@ export class PlacementUI extends WatersUI {
       element.classList.remove('clicked')
     })
 
-    this.rotateBtn.disabled = true
-    this.flipBtn.disabled = true
+    this._setPlacementControlsDisabled(true)
   }
 
   lastItem (tray) {
@@ -229,9 +265,7 @@ export class PlacementUI extends WatersUI {
   }
 
   disableRotateFlip () {
-    this.rotateBtn.disabled = true
-    this.rotateLeftBtn.disabled = true
-    this.flipBtn.disabled = true
+    this._setPlacementControlsDisabled(true)
   }
 
   assignClicked (ship, clicked) {
@@ -247,10 +281,11 @@ export class PlacementUI extends WatersUI {
     )
     dragNDrop.setClickedShip(clickedShip)
     clicked.classList.add('clicked')
-    this.rotateBtn.disabled = !clickedShip.canRotate()
-    this.flipBtn.disabled = !clickedShip.canFlip()
-    this.rotateLeftBtn.disabled = !clickedShip.canRotate()
-    this.transformBtn.disabled = !clickedShip.canTransform()
+    this._setPlacementControlsDisabled(!clickedShip.canRotate())
+    const flipBtn = /** @type {HTMLButtonElement} */ (this.flipBtn)
+    const transformBtn = /** @type {HTMLButtonElement} */ (this.transformBtn)
+    flipBtn.disabled = !clickedShip.canFlip()
+    transformBtn.disabled = !clickedShip.canTransform()
   }
 
   assignClickedWeapon (weapon, clicked) {
@@ -258,53 +293,46 @@ export class PlacementUI extends WatersUI {
     this.showNotice(weapon.tip)
     dragNDrop.setClickedShip(null)
     clicked.classList.add('clicked')
-    this.rotateBtn.disabled = true
-    this.flipBtn.disabled = true
-    this.rotateLeftBtn.disabled = true
+    this._setPlacementControlsDisabled(true)
   }
 
   setDragShipContents (dragShip, board, letter) {
     const maxR = board.height
     const maxC = board.width
+    this._setGridDisplayStyle(dragShip, maxR, maxC)
 
-    dragShip.setAttribute(
-      'style',
-      `display:grid;place-items: center;--boxSize:${this.cellSizeString()};grid-template-rows:repeat(${maxR}, var(--boxSize));grid-template-columns:repeat(${maxC}, var(--boxSize));gap:0px;`
-    )
     for (const [c, r] of board.allXYlocations()) {
       const color = board.at(c, r)
       this.createDragShipCell(dragShip, letter, r, c, color)
     }
   }
 
-  setSplashContents (dragShip, cells) {
-    const maxR = Math.max(...cells.map(s => s[0])) + 1
-    const maxC = Math.max(...cells.map(s => s[1])) + 1
+  _getCellExtent (cells) {
     const minR = Math.min(...cells.map(s => s[0]))
     const minC = Math.min(...cells.map(s => s[1]))
+    const maxR = Math.max(...cells.map(s => s[0])) + 1
+    const maxC = Math.max(...cells.map(s => s[1])) + 1
+    return {
+      minR,
+      minC,
+      rows: maxR - minR,
+      cols: maxC - minC
+    }
+  }
 
-    dragShip.setAttribute(
-      'style',
-      `display:grid;place-items: center;--boxSize:${this.cellSizeString()};grid-template-rows:repeat(${
-        maxR - minR
-      }, var(--boxSize));grid-template-columns:repeat(${
-        maxC - minC
-      }, var(--boxSize));gap:0px;`
-    )
-    for (let r = minR; r < maxR; r++) {
-      for (let c = minC; c < maxC; c++) {
+  setSplashContents (dragShip, cells) {
+    const { minR, minC, rows, cols } = this._getCellExtent(cells)
+    this._setGridDisplayStyle(dragShip, rows, cols)
+
+    for (let r = minR; r < minR + rows; r++) {
+      for (let c = minC; c < minC + cols; c++) {
         this.createSplashCell(dragShip, cells, r, c)
       }
     }
   }
 
   setBrushContents (brush, size, subterrain) {
-    brush.setAttribute(
-      'style',
-      `display:grid;place-items: center;--boxSize:${
-        this.cellSize().toString() + 'px'
-      };grid-template-rows:repeat(${size}, var(--boxSize));grid-template-columns:repeat(${size}, var(--boxSize));gap:0px;`
-    )
+    this._setGridDisplayStyle(brush, size, size)
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         this.appendBrushCell(brush, r, c, subterrain.lightColor, subterrain.tag)
@@ -333,7 +361,7 @@ export class PlacementUI extends WatersUI {
   createSplashCell (dragShip, cells, r, c) {
     const cell = cells.find(cell => cell[0] === r && cell[1] === c)
     if (cell && cell[2] >= 0) {
-      this.appendSplashCell(dragShip, cell[2])
+      this.appendSplashCell(dragShip, r, c, cell[2])
     } else {
       this.appendEmptyCell(dragShip, r, c)
     }
@@ -346,40 +374,61 @@ export class PlacementUI extends WatersUI {
     return cell
   }
 
-  appendEmptyCell (dragItem, r, c) {
+  /**
+   * @param {HTMLElement} dragItem
+   * @param {number} r
+   * @param {number} c
+   * @param {{bg?: string, fg?: string, letter?: string, isSpecial?: boolean, classes?: string[]}} [options]
+   */
+  _appendGridCell (
+    dragItem,
+    r,
+    c,
+    { bg, fg, letter, isSpecial = false, classes = [] } = {}
+  ) {
     const cell = this.makeCell(r, c)
-    cell.classList.add('empty')
-    dragItem.appendChild(cell)
-  }
-
-  appendBrushCell (dragItem, r, c, bg, tag) {
-    const cell = this.makeCell(r, c)
-    const checker = (r + c) % 2 === 0
-    cell.classList.add(checker ? 'light' : 'dark')
-    if (tag) {
-      cell.classList.add(tag)
-    } else {
-      cell.style.background = bg || 'rgba(255, 209, 102, 0.3)'
-    }
-    dragItem.appendChild(cell)
-  }
-
-  appendCell (dragItem, r0, c0, bg, fg, letter, isSpecial) {
-    const cell = this.makeCell()
     cell.style.background = bg || 'rgba(255, 209, 102, 0.3)'
     if (letter) cell.style.color = fg || '#ffd166'
     if (isSpecial) {
       cell.classList.add('special')
-    } else {
+    } else if (letter) {
       cell.textContent = letter
     }
+    classes.forEach(className => {
+      if (className) cell.classList.add(className)
+    })
     dragItem.appendChild(cell)
   }
 
-  appendSplashCell (dragItem, power) {
-    const cell = this.makeCell()
-    cell.classList.add(bh.splashTags[power])
-    dragItem.appendChild(cell)
+  appendEmptyCell (dragItem, r, c) {
+    this._appendGridCell(dragItem, r, c, {
+      classes: ['empty']
+    })
+  }
+
+  appendBrushCell (dragItem, r, c, bg, tag) {
+    const checker = (r + c) % 2 === 0
+    const classes = [checker ? 'light' : 'dark']
+    if (tag) classes.push(tag)
+    this._appendGridCell(dragItem, r, c, {
+      bg: tag ? undefined : bg,
+      classes
+    })
+  }
+
+  appendCell (dragItem, r0, c0, bg, fg, letter, isSpecial) {
+    this._appendGridCell(dragItem, r0, c0, {
+      bg,
+      fg,
+      letter,
+      isSpecial
+    })
+  }
+
+  appendSplashCell (dragItem, r, c, power) {
+    this._appendGridCell(dragItem, r, c, {
+      classes: [bh.splashTags[power]]
+    })
   }
 
   displayAsPlaced (cell, ship, r, c) {

@@ -28,36 +28,10 @@ function minC (cells) {
  * @param {number} [mc] - Optional minimum column offset.
  * @returns {Cell2D[]} The normalized cells.
  */
-export function normalize (cells, mr, mc) {
+function normalize (cells, mr, mc) {
   const r0 = mr || minR(cells)
   const c0 = mc || minC(cells)
   return cells.map(([r, c]) => [r - r0, c - c0])
-}
-
-/**
- * Normalizes 3D cells by translating to origin.
- * @param {Cell3D[]} cells - The cells to normalize.
- * @returns {Cell3D[]} The normalized cells.
- */
-export function normalize3 (cells) {
-  const r0 = minR(cells)
-  const c0 = minC(cells)
-  return cells.map(([r, c, z]) => [r - r0, c - c0, z])
-}
-
-/**
- * Rotates 2D cells 90 degrees clockwise and normalizes.
- * @param {Cell2D[]} cells - The cells to rotate.
- * @param {number} [mr] - Optional minimum row offset.
- * @param {number} [mc] - Optional minimum column offset.
- * @returns {Cell2D[]} The rotated cells.
- */
-export function rotate (cells, mr, mc) {
-  return normalize(
-    cells.map(([r, c]) => [c, -r]),
-    mr,
-    mc
-  )
 }
 
 /**
@@ -111,7 +85,7 @@ export function flip (cells, mr, mc) {
  * @param {number} [mc] - Optional minimum column offset.
  * @returns {Cell2D[]} The flipped cells.
  */
-export function flipV (cells, mr, mc) {
+function flipV (cells, mr, mc) {
   return normalize(
     cells.map(([r, c]) => [-r, c]),
     mr,
@@ -132,31 +106,4 @@ function flipH (cells, mr, mc) {
     mr,
     mc
   )
-}
-
-/**
- * Rotates 3D cells 90 degrees clockwise and normalizes.
- * @param {Cell3D[]} cells - The cells to rotate.
- * @returns {Cell3D[]} The rotated cells.
- */
-export function rotate3 (cells) {
-  return normalize3(cells.map(([r, c, z]) => [c, -r, z]))
-}
-
-/**
- * Flips 3D cells vertically and normalizes.
- * @param {Cell3D[]} cells - The cells to flip.
- * @returns {Cell3D[]} The flipped cells.
- */
-export function flip3 (cells) {
-  return normalize3(cells.map(([r, c, z]) => [-r, c, z]))
-}
-
-/**
- * Reflects 3D cells over the diagonal and normalizes.
- * @param {Cell3D[]} cells - The cells to reflect.
- * @returns {Cell3D[]} The reflected cells.
- */
-export function rf3 (cells) {
-  return normalize3(cells.map(([r, c, z]) => [c, r, z]))
 }
