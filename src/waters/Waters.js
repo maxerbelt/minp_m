@@ -1199,7 +1199,7 @@ export class Waters {
    * Initializes the steps event handlers.
    */
   initializeSteps () {
-    this.steps.onEndTurn = this._handleEndTurn.bind(this)
+    this.steps.onEndTurn = this.handleEndTurn.bind(this)
     this.steps.onHint = this.handleHint.bind(this)
   }
 
@@ -1207,14 +1207,13 @@ export class Waters {
    * Handles end of turn event.
    * Finishes opponent turn and triggers opponent begin turn if game not over.
    *
-   * @private
    */
-  _handleEndTurn () {
+  handleEndTurn () {
     if (this?.opponent == null) {
       return
     }
     if (!this.opponent.boardDestroyed) {
-      this.opponent._handleBeginTurn()
+      this.opponent?._handleBeginTurn?.()
     }
   }
   /**

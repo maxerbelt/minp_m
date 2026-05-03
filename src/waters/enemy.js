@@ -35,7 +35,7 @@ class Enemy extends Waters {
    * @param {Object} enemyUI - The UI instance for the enemy.
    */
   constructor (enemyUI) {
-    super(enemyUI)
+    super(enemyUI, Player.enemy)
     this.preamble0 = 'Enemy'
     this.preamble = 'The enemy was '
     this.preamble1 = 'The enemy '
@@ -134,10 +134,9 @@ class Enemy extends Waters {
 
   /**
    * Handles the end turn event, transitioning to the opponent's turn.
-   * @private
    * @returns {Promise<void>}
    */
-  async _handleEndTurn () {
+  async handleEndTurn () {
     if (
       !this.opponent ||
       this.opponent.boardDestroyed ||
@@ -164,7 +163,6 @@ class Enemy extends Waters {
 
   /**
    * Handles the begin turn event.
-   * @private
    */
   _handleBeginTurn () {
     this._hideWaiting()
