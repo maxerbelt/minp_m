@@ -71,6 +71,7 @@ class Enemy extends Waters {
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
     this.steps.onActivate = this._handleActivate.bind(this)
     this.steps.onSelect = this._handleSelect.bind(this)
+    this.steps.onAim = this._handleAim.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
   }
 
@@ -80,6 +81,14 @@ class Enemy extends Waters {
    */
   _handleSelect () {
     this._setBoardTargetingState(false)
+  }
+
+  /**
+   * Handles the aiming event by updating the board classes.
+   * @private
+   */
+  _handleAim () {
+    this._setBoardTargetingState(true)
   }
 
   /**
@@ -593,7 +602,7 @@ class Enemy extends Waters {
    */
   onClickSingleShotButton () {
     this.loadOut.switchToSingleShot()
-    this.steps.select()
+    //  this.steps.select()
   }
 
   /**

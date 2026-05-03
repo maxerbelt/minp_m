@@ -709,6 +709,7 @@ export class LoadOut {
       return this._createFiringInfo(wps, map)
     }
 
+    this.steps.aim()
     return null
   }
 

@@ -199,8 +199,13 @@ export class Steps {
   }
 
   select () {
-    this.mode = WeaponMode.targetAim
+    this.mode = WeaponMode.sourceSelect
     this.onSelect(this)
+  }
+
+  aim () {
+    this.mode = WeaponMode.targetAim
+    this.onAim(this)
   }
 
   /**
