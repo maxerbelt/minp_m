@@ -395,6 +395,57 @@ export class Waters {
   }
 
   /**
+   * Filters weapon keys to only include loaded weapons.
+   * @param {Array<string>} keyIds - Candidate key identifiers
+   * @returns {Array<string>} Filtered keys for loaded weapons
+   * @private
+   */
+  filterLoadedWeaponKeys (keyIds) {
+    const loadedWeaponIds = new Set(
+      this.loadOut.getLoadedWeapons().map(w => w.id)
+    )
+    return keyIds.filter(key => {
+      const [, , weaponId] = parseTriple(key)
+      return loadedWeaponIds.has(weaponId)
+    })
+  }
+
+  /**
+   * Finds the closest weapon key to the hint coordinates.
+   * @param {Array<string>} filteredKeys - Filtered weapon keys
+   * @param {number} hintC - Hint column coordinate
+   * @param {number} hintR - Hint row coordinate
+   * @returns {string|null} The closest key or null
+   * @private
+   */
+  findClosestWeaponKey (filteredKeys, hintC, hintR) {
+    return findClosestCoord(filteredKeys, hintC, hintR, k => parseTriple(k))
+  }
+
+  /**
+   * Processes the selected weapon key and adds necessary UI elements.
+   * @param {string} selectedKey - The selected weapon key
+   * @param {Object} viewModel - UI view model
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  processSelectedWeaponKey (selectedKey, viewModel, hintR, hintC) {
+    const [launchC, launchR, weaponId] = parseTriple(selectedKey)
+    this.addSelectionSource(viewModel, launchR, launchC, null)
+
+    const ship = this.loadOut.getShipByWeaponId(weaponId)
+    if (ship) {
+      this.steps.addShip(ship)
+      const [sourceR, sourceC] = this.generateSourceHint(ship)
+      this.createShadowSource(sourceR, sourceC)
+    }
+
+    return this.createWeaponSelection(launchR, launchC, weaponId, hintR, hintC)
+  }
+
+  /**
    * Selects a loaded weapon system by cell key values.
    * @param {HTMLElement} cell - Cell element used for selection
    * @param {Array<string>} keyIds - Candidate key identifiers
@@ -414,33 +465,18 @@ export class Waters {
     }
     this.lastClick = { r: hintR, c: hintC }
 
-    const loadedWeaponIds = new Set(
-      this.loadOut.getLoadedWeapons().map(w => w.id)
-    )
-    const filteredKeyIds = availableKeys.filter(key => {
-      const [, , weaponId] = parseTriple(key)
-      return loadedWeaponIds.has(weaponId)
-    })
+    const filteredKeys = this.filterLoadedWeaponKeys(availableKeys)
+    const selectedKey =
+      random || !filteredKeys.length
+        ? randomElement(filteredKeys)
+        : this.findClosestWeaponKey(filteredKeys, hintC, hintR)
 
-    const selectedKey = findClosestCoord(filteredKeyIds, hintC, hintR, k =>
-      parseTriple(k)
-    )
-    if (!random && !selectedKey) {
+    if (!selectedKey) {
       return this.selectRandomWeapon()
     }
 
     this.previousSources.add(selectedKey)
-    const [launchC, launchR, weaponId] = parseTriple(selectedKey)
-    this.addSelectionSource(viewModel, launchR, launchC, cell)
-
-    const ship = this.loadOut.getShipByWeaponId(weaponId)
-    if (ship) {
-      this.steps.addShip(ship)
-      const [sourceR, sourceC] = this.generateSourceHint(ship)
-      this.createShadowSource(sourceR, sourceC)
-    }
-
-    return this.createWeaponSelection(launchR, launchC, weaponId, hintR, hintC)
+    return this.processSelectedWeaponKey(selectedKey, viewModel, hintR, hintC)
   }
 
   /**
@@ -708,23 +744,23 @@ export class Waters {
   }
 
   /**
-   * Generates weapon selection data for a given ship.
+   * Determines if hint coordinates are valid for weapon selection.
+   * @param {Array} hintCoords - [r, c] coordinates
+   * @returns {boolean} True if coordinates are valid
+   * @private
+   */
+  areHintCoordsValid (hintCoords) {
+    return hintCoords[0] != null && hintCoords[1] != null
+  }
+
+  /**
+   * Generates weapon selection for a ship with valid hint coordinates.
    * @param {Object} ship - The ship to generate selection for
+   * @param {Array} hintCoords - Valid hint coordinates [r, c]
    * @returns {WeaponSelection} Weapon selection data
    * @private
    */
-  generateWeaponSelectionForShip (ship) {
-    const opponent = this.opponent
-    let hintCoords = [null, null]
-
-    if (opponent) {
-      hintCoords = this.generateSourceHint(ship, opponent)
-    }
-
-    if (opponent == null || hintCoords[0] == null || hintCoords[1] == null) {
-      return this.selectWeaponId(null, 0, 0, 'random', ship)
-    }
-
+  generateWeaponSelectionWithHint (ship, hintCoords) {
     const cell = this.createShadowSource(hintCoords[0], hintCoords[1])
     return this.selectWeaponId(
       cell,
@@ -733,6 +769,35 @@ export class Waters {
       'random',
       ship
     )
+  }
+
+  /**
+   * Generates weapon selection for a ship with default coordinates.
+   * @param {Object} ship - The ship to generate selection for
+   * @returns {WeaponSelection} Weapon selection data
+   * @private
+   */
+  generateWeaponSelectionWithDefaults (ship) {
+    return this.selectWeaponId(null, 0, 0, 'random', ship)
+  }
+
+  /**
+   * Generates weapon selection data for a given ship.
+   * @param {Object} ship - The ship to generate selection for
+   * @returns {WeaponSelection} Weapon selection data
+   * @private
+   */
+  generateWeaponSelectionForShip (ship) {
+    const opponent = this.opponent
+    const hintCoords = opponent
+      ? this.generateSourceHint(ship, opponent)
+      : [null, null]
+
+    if (!opponent || !this.areHintCoordsValid(hintCoords)) {
+      return this.generateWeaponSelectionWithDefaults(ship)
+    }
+
+    return this.generateWeaponSelectionWithHint(ship, hintCoords)
   }
 
   /**
@@ -928,12 +993,100 @@ export class Waters {
     return false
   }
 
+  /**
+   * Creates a default weapon selection when no valid selection is possible.
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Default weapon selection
+   * @private
+   */
+  createDefaultWeaponSelection (hintR, hintC) {
+    this.addSelectionSource(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
+    return this.createWeaponSelection(0, 0, -1, hintR, hintC)
+  }
+
+  /**
+   * Handles weapon selection when a specific ship is provided.
+   * @param {Object} ship - The ship to select weapon for
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {boolean|string} random - Whether to select randomly
+   * @param {Object} viewModel - UI view model
+   * @param {HTMLElement|null} cell - Cell element
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  handleShipBasedWeaponSelection (ship, hintR, hintC, random, viewModel, cell) {
+    return this.selectWeaponFromShip(
+      ship,
+      hintR,
+      hintC,
+      random,
+      viewModel,
+      cell
+    )
+  }
+
+  /**
+   * Handles weapon selection when no cell is provided.
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  handleNullCellWeaponSelection (hintR, hintC) {
+    return this.createDefaultWeaponSelection(hintR, hintC)
+  }
+
+  /**
+   * Handles weapon selection when cell has no valid keys.
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  handleNoKeysWeaponSelection (hintR, hintC) {
+    return this.createDefaultWeaponSelection(hintR, hintC)
+  }
+
+  /**
+   * Handles weapon selection from cell keys.
+   * @param {HTMLElement} cell - Cell element
+   * @param {Array<string>} keys - Weapon keys
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {boolean|string} random - Whether to select randomly
+   * @param {Object} viewModel - UI view model
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  handleCellBasedWeaponSelection (cell, keys, hintR, hintC, random, viewModel) {
+    return this.selectWeaponFromCell(
+      cell,
+      keys,
+      hintR,
+      hintC,
+      random,
+      viewModel
+    )
+  }
+
+  /**
+   * Selects a weapon system by ID with various selection strategies.
+   * @param {HTMLElement|null} cell - Cell element for selection
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {boolean|string} random - Whether to select randomly
+   * @param {Object} [ship] - Specific ship to select from
+   * @param {Object} [oppo] - Opponent instance
+   * @returns {WeaponSelection} Weapon selection payload
+   */
   selectWeaponId (cell, hintR, hintC, random, ship, oppo) {
     oppo = oppo || this.opponent
     const viewModel = this.getViewModel(oppo)
 
     if (ship) {
-      return this.selectWeaponFromShip(
+      return this.handleShipBasedWeaponSelection(
         ship,
         hintR,
         hintC,
@@ -944,17 +1097,15 @@ export class Waters {
     }
 
     if (cell === null) {
-      this.addSelectionSource(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
-      return this.createWeaponSelection(0, 0, -1, hintR, hintC)
+      return this.handleNullCellWeaponSelection(hintR, hintC)
     }
 
     const keys = keyListFromCell(cell, 'keyIds')
     if (!keys) {
-      this.addSelectionSource(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
-      return this.createWeaponSelection(0, 0, -1, hintR, hintC)
+      return this.handleNoKeysWeaponSelection(hintR, hintC)
     }
 
-    return this.selectWeaponFromCell(
+    return this.handleCellBasedWeaponSelection(
       cell,
       keys,
       hintR,
@@ -1563,39 +1714,86 @@ export class Waters {
     const { hits, dtaps, sunk, reveals, info, shots } = result
     this.updateResultsOfTurn(weapon, hits, dtaps, sunk, reveals, info, shots)
   }
-  updateResultsOfTurn (weapon, hits, dtaps, sunks, reveals = 0, info = '') {
-    const messageInfo = info ? info + ' ' : ''
-    if (this.boardDestroyed) {
-      return
-    }
-    if (hits === 0) {
-      this.displayMisses(weapon, reveals, messageInfo)
-      return
-    }
-    if (sunks.length === 0) {
-      let message = this.hitDescription(hits)
-      if (reveals > 0) {
-        message += ` and ${this.revealDescription(reveals)}`
-      }
-      this.displayInfo(messageInfo + message)
-      return
-    }
-    if (sunks.length === 1) {
-      this.displayInfo(
-        messageInfo +
-          this.hitDescription(hits) +
-          ' and ' +
-          this.sunkLetterDescription(sunks)
-      )
-      return
-    }
+  /**
+   * Builds and displays message for a complete miss.
+   * @param {Object} weapon - The weapon used
+   * @param {number} reveals - Number of reveals
+   * @param {string} messageInfo - Additional message info
+   * @private
+   */
+  displayMissResult (weapon, reveals, messageInfo) {
+    this.displayMisses(weapon, reveals, messageInfo)
+  }
 
+  /**
+   * Builds and displays message for hits with no ships sunk.
+   * @param {number} hits - Number of hits
+   * @param {number} reveals - Number of reveals
+   * @param {string} messageInfo - Additional message info
+   * @private
+   */
+  displayHitResult (hits, reveals, messageInfo) {
+    let message = this.hitDescription(hits)
+    if (reveals > 0) {
+      message += ` and ${this.revealDescription(reveals)}`
+    }
+    this.displayInfo(messageInfo + message)
+  }
+
+  /**
+   * Builds and displays message for hits with one ship sunk.
+   * @param {number} hits - Number of hits
+   * @param {Array} sunks - Array of sunk ship letters
+   * @param {string} messageInfo - Additional message info
+   * @private
+   */
+  displaySingleSunkResult (hits, sunks, messageInfo) {
+    this.displayInfo(
+      messageInfo +
+        this.hitDescription(hits) +
+        ' and ' +
+        this.sunkLetterDescription(sunks[0])
+    )
+  }
+
+  /**
+   * Builds and displays message for hits with multiple ships sunk.
+   * @param {number} hits - Number of hits
+   * @param {Array} sunks - Array of sunk ship letters
+   * @param {string} messageInfo - Additional message info
+   * @private
+   */
+  displayMultipleSunkResult (hits, sunks, messageInfo) {
     let message = this.hitDescription(hits) + ','
     for (let sunk of sunks) {
       message += ' and ' + this.sunkLetterDescription(sunk)
     }
     message += ' Destroyed'
     this.displayInfo(messageInfo + message)
+  }
+
+  updateResultsOfTurn (weapon, hits, dtaps, sunks, reveals = 0, info = '') {
+    const messageInfo = info ? info + ' ' : ''
+    if (this.boardDestroyed) {
+      return
+    }
+
+    if (hits === 0) {
+      this.displayMissResult(weapon, reveals, messageInfo)
+      return
+    }
+
+    if (sunks.length === 0) {
+      this.displayHitResult(hits, reveals, messageInfo)
+      return
+    }
+
+    if (sunks.length === 1) {
+      this.displaySingleSunkResult(hits, sunks, messageInfo)
+      return
+    }
+
+    this.displayMultipleSunkResult(hits, sunks, messageInfo)
   }
 
   flash (long) {

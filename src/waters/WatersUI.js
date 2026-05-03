@@ -107,6 +107,58 @@ export class WatersUI {
   }
 
   /**
+   * @private
+   * @param {HTMLElement} cell
+   * @param {string[]} classNames
+   */
+  _addClassesToCell (cell, classNames) {
+    if (classNames.length) {
+      cell.classList.add(...classNames)
+    }
+  }
+
+  /**
+   * @private
+   * @param {HTMLElement} cell
+   * @param {string[]} classNames
+   * @returns {boolean}
+   */
+  _cellContainsAny (cell, classNames) {
+    return classNames.some(className => cell.classList.contains(className))
+  }
+
+  /**
+   * @private
+   * @param {HTMLElement} cell
+   */
+  _clearCellTextAndStyle (cell) {
+    this._clearCellText(cell)
+    this._resetCellStyle(cell)
+  }
+
+  /**
+   * @private
+   * @returns {string[]}
+   */
+  _hitCleanupClasses () {
+    return [...DEFAULT_CELL_CLEAN_CLASSES, ...this._weaponTags()]
+  }
+
+  /**
+   * @private
+   * @param {number} rows
+   * @param {number} cols
+   * @param {function(number, number): void} callback
+   */
+  _buildGrid (rows, cols, callback) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        callback(r, c)
+      }
+    }
+  }
+
+  /**
    * Set the board title text.
    * @param {string} name
    */
@@ -115,10 +167,18 @@ export class WatersUI {
     titleEl.textContent = this.territoryTitle + ' ' + name
   }
 
+  /**
+   * Set the board title text to the current map heading.
+   * @returns {void}
+   */
   showMapTitle () {
     this.showTitle(bh.mapHeading)
   }
 
+  /**
+   * Set the board title text to the current fleet heading.
+   * @returns {void}
+   */
   showFleetTitle () {
     this.showTitle(bh.fleetHeading)
   }
@@ -390,8 +450,7 @@ export class WatersUI {
     if (details === 'content') {
       this._clearCellText(cell)
     } else if (details === 'all') {
-      this._clearCellText(cell)
-      this._resetCellStyle(cell)
+      this._clearCellTextAndStyle(cell)
     }
     clear(cell)
   }
@@ -400,8 +459,7 @@ export class WatersUI {
    * @param {HTMLElement} cell
    */
   clearPlaceCellVisuals (cell) {
-    this._clearCellText(cell)
-    this._resetCellStyle(cell)
+    this._clearCellTextAndStyle(cell)
     this.clearPlaceCell(cell)
   }
 
@@ -453,8 +511,7 @@ export class WatersUI {
    * @param {HTMLElement} cell
    */
   resetHitCellState (cell) {
-    this._removeClassesFromCell(cell, DEFAULT_CELL_CLEAN_CLASSES)
-    this._removeClassesFromCell(cell, this._weaponTags())
+    this._removeClassesFromCell(cell, this._hitCleanupClasses())
     this._removeClassesFromCell(cell, this._cursorTags())
   }
 
@@ -489,17 +546,7 @@ export class WatersUI {
   cellHit (r, c, damage) {
     const cell = this.gridCellAt(r, c)
 
-    this._removeClassesFromCell(cell, [
-      'semi',
-      'semi-miss',
-      'wake',
-      'empty',
-      'weapon',
-      'active',
-      'portal',
-      'marker',
-      ...this._weaponTags()
-    ])
+    this._removeClassesFromCell(cell, this._hitCleanupClasses())
     cell.classList.add('hit')
     if (damage) {
       cell.classList.add(damage)
@@ -514,11 +561,7 @@ export class WatersUI {
   cellSemiReveal (r, c) {
     const cell = this.gridCellAt(r, c)
 
-    if (
-      cell.classList.contains('placed') ||
-      cell.classList.contains('miss') ||
-      cell.classList.contains('hit')
-    ) {
+    if (this._cellContainsAny(cell, ['placed', 'miss', 'hit'])) {
       return LoadOut.noResult
     }
     cell.classList.add('semi')
@@ -534,12 +577,7 @@ export class WatersUI {
   cellHintReveal (r, c) {
     const cell = this.gridCellAt(r, c)
 
-    if (
-      cell.classList.contains('placed') ||
-      cell.classList.contains('miss') ||
-      cell.classList.contains('hit') ||
-      cell.classList.contains('semi')
-    ) {
+    if (this._cellContainsAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
       return
     }
     cell.classList.add('hint')
@@ -846,15 +884,13 @@ export class WatersUI {
   buildBoard (onClickCell, thisRef, map) {
     map = map || bh.map
     this.board.innerHTML = ''
-    for (let r = 0; r < map.rows; r++) {
-      for (let c = 0; c < map.cols; c++) {
-        if (onClickCell) {
-          this.buildCell(r, c, onClickCell.bind(thisRef, r, c), map)
-        } else {
-          this.buildCell(r, c, null, map)
-        }
+    this._buildGrid(map.rows, map.cols, (r, c) => {
+      if (onClickCell) {
+        this.buildCell(r, c, onClickCell.bind(thisRef, r, c), map)
+      } else {
+        this.buildCell(r, c, null, map)
       }
-    }
+    })
   }
 
   removeHighlightAoE () {

@@ -8,14 +8,28 @@ import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
 
 /**
- * @typedef {[number, number]} GridCoordinate
+ * @typedef {[number, number]} GridCoordinate - [column, row] coordinate pair
  */
 
 /**
  * @typedef {Object} WeaponLaunchResult
- * @property {boolean} [hasTargettedWeapon]
- * @property {Object} [weapon]
- * @property {Object} [score]
+ * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used
+ * @property {Object} [weapon] - The weapon object used
+ * @property {Object} [score] - The score result from the launch
+ */
+
+/**
+ * @typedef {Object} Location
+ * @property {number} r - Row coordinate
+ * @property {number} c - Column coordinate
+ */
+
+/**
+ * @typedef {Object} WeaponSystem - Weapon system rack with weapon property
+ */
+
+/**
+ * @typedef {Object} Bitmask - Bitmask object with occupancy and other properties
  */
 
 /**
@@ -54,7 +68,7 @@ export class Friend extends Waters {
     this.testContinue = true
     /** @type {boolean} Marks this as friendly player */
     this.friendlyWaters = true
-    /** @type {Object} Untried location mask for seeking */
+    /** @type {Bitmask|null} Untried location mask for seeking */
     this.untried = null
   }
 
@@ -68,7 +82,7 @@ export class Friend extends Waters {
 
   /**
    * Gets the empty result tuple for no-op weapon fire.
-   * @returns {Object} Empty result object with single shot weapon
+   * @returns {WeaponLaunchResult} Empty result object with single shot weapon
    */
   get noResult () {
     return { weapon: this.loadOut.getSingleShot(), score: LoadOut.noResult }
@@ -88,8 +102,8 @@ export class Friend extends Waters {
    * Selects a random hit coordinate from candidates.
    * Returns null if empty, first element if only one, random element otherwise.
    *
-   * @param {Array<Array<number>>} hitCoordinates - Candidate [row, col] coordinates
-   * @returns {Array<number>|null} Random [row, col] or null if empty
+   * @param {Array<GridCoordinate>} hitCoordinates - Candidate [row, col] coordinates
+   * @returns {GridCoordinate|null} Random [row, col] or null if empty
    * @private
    */
   getRandomHitCoordinate (hitCoordinates) {
@@ -105,7 +119,7 @@ export class Friend extends Waters {
    * Excludes edge cells to avoid placing weapons near board perimeter.
    *
    * @param {Object} map - Map with rows and cols properties
-   * @returns {Object} Location object with r (row) and c (col)
+   * @returns {Location} Location object with r (row) and c (col)
    * @private
    */
   randomLocation (map) {
@@ -145,7 +159,7 @@ export class Friend extends Waters {
    * @returns {Array} [rowNumber, frequency] or ['0', 0] if empty
    * @private
    */
-  randomLine () {
+  getMostFrequentRow () {
     this.syncUntried()
     const locs = this.untried.toCoords
     if (locs.length === 0) {
@@ -167,14 +181,24 @@ export class Friend extends Waters {
    * @returns {number} Row number (0 if no lines remain)
    * @private
    */
-  randomRowNum () {
-    const r = this.randomLine()
+  getMostFrequentRowNumber () {
+    const r = this.getMostFrequentRow()
     return Number.parseInt(r?.[0] || '0')
   }
 
-  // ============ Destruction & Effects ============
+  // ============ Weapon Launching ============
 
-  // ============ Random Actions ============
+  /**
+   * Creates a launch function for weapon aiming.
+   * @param {WeaponSystem} weaponSystem - The weapon system to use
+   * @returns {Function} Launch function for aiming
+   * @private
+   */
+  createLaunchFunction (weaponSystem) {
+    return async coords => {
+      return await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
+    }
+  }
 
   /**
    * Launches weapon from source coordinates to target coordinates.
@@ -183,7 +207,7 @@ export class Friend extends Waters {
    * @param {Object} coords - Target cell object
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
-   * @param {Object} currentWeapon - Weapon system rack with weapon property
+   * @param {WeaponSystem} currentWeapon - Weapon system rack with weapon property
    * @returns {Promise<Object>} Result of weapon launch
    */
   async launchTo (coords, rr, cc, currentWeapon) {
@@ -207,9 +231,7 @@ export class Friend extends Waters {
    */
   async launchCurrentWeapon (r, c) {
     const wps = this.currentWeaponSystem
-    const launch = async coords => {
-      return await this.launchTo(coords, bh.map.rows - 1, 0, wps)
-    }
+    const launch = this.createLaunchFunction(wps)
     return await this.loadOut.aimWeapon(this.map, r, c, wps, launch)
   }
 
@@ -228,9 +250,7 @@ export class Friend extends Waters {
       return result
     }
     const wps = this.currentWeaponSystem
-    const launch = async coords => {
-      return await this.launchTo(coords, bh.map.rows - 1, 0, wps)
-    }
+    const launch = this.createLaunchFunction(wps)
     return await this.loadOut.aimWeapon(
       this.map,
       fallbackR,
@@ -239,6 +259,8 @@ export class Friend extends Waters {
       launch
     )
   }
+
+  // ============ Random Actions ============
 
   /**
    * Searches for bomb targets with decreasing impact requirement.
@@ -254,27 +276,39 @@ export class Friend extends Waters {
       impact > SEEK_CONSTANTS.IMPACT_MIN;
       impact--
     ) {
-      for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
-        if (this.isCancelled()) return this.noResult
-        const { r, c } = this.randomLocation(this.map)
-        if (this.score.newShotKey(r, c)) {
-          return await this._attemptLaunchWithFallback(r, c)
-        }
-      }
+      const result = await this._attemptBombAtImpactLevel(impact)
+      if (result) return result
     }
     return LoadOut.noResult
+  }
+
+  /**
+   * Attempts bomb launches at a specific impact level.
+   * @param {number} impact - Impact level to try
+   * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null otherwise
+   * @private
+   */
+  async _attemptBombAtImpactLevel (impact) {
+    for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
+      if (this.isCancelled()) return this.noResult
+      const { r, c } = this.randomLocation(this.map)
+      if (this.score.newShotKey(r, c)) {
+        return await this._attemptLaunchWithFallback(r, c)
+      }
+    }
+    return null
   }
 
   /**
    * Launches single destroy-type weapon across highest frequency row.
    * Uses most-attempted row for targeting line sweep.
    *
-   * @returns {Promise<null|{ weapon: Object, score: Object}|{ weapon: Object, score: Object, hasTargettedWeapon: boolean }>}  Result with weapon and score
+   * @returns {Promise<WeaponLaunchResult|null>} Result with weapon and score
    * @private
    */
   async randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
-    const r = this.randomRowNum()
+    const r = this.getMostFrequentRowNumber()
     return await this._attemptLaunchWithFallback(r, 0, r, this.map.cols - 1)
   }
 
@@ -296,7 +330,7 @@ export class Friend extends Waters {
    * Attempts to find and fire at valid untried locations.
    * Stops game if unable to find valid locations after max attempts.
    *
-   * @returns {Promise<null|{ weapon: any; score: any; }>} Null on success, noResult on failure
+   * @returns {Promise<WeaponLaunchResult|null>} Null on success, noResult on failure
    * @private
    */
   async randomSeek () {
@@ -309,9 +343,7 @@ export class Friend extends Waters {
       const loc = this.getRandomUntriedCoordinate()
 
       if (!loc) {
-        this.UI.showNotice('something went wrong!')
-        this.boardDestroyed = true
-        this.testContinue = false
+        this._handleSeekFailure()
         return LoadOut.noResult
       }
       if (this.isHitValid(loc[1], loc[0])) {
@@ -322,11 +354,21 @@ export class Friend extends Waters {
   }
 
   /**
+   * Handles failure to find valid seek locations.
+   * @private
+   */
+  _handleSeekFailure () {
+    this.UI.showNotice('something went wrong!')
+    this.boardDestroyed = true
+    this.testContinue = false
+  }
+
+  /**
    * Performs area scan with two random locations.
    * Reveals hidden areas without destroying.
    * Sets up reveal handler before launching scan weapon.
    *
-   * @returns {Promise<Object>} Result with scan weapon and score
+   * @returns {Promise<WeaponLaunchResult>} Result with scan weapon and score
    * @private
    */
   async randomScan () {
@@ -346,7 +388,7 @@ export class Friend extends Waters {
    * Callback for loadOut onReveal handler.
    *
    * @param {Object} weapon - The scan weapon
-   * @param {Array<Array<number>>} effect - [row, col, power] cells to reveal
+   * @param {Array<GridCoordinate>} effect - [row, col, power] cells to reveal
    * @private
    */
   scan (weapon, effect) {
@@ -366,7 +408,7 @@ export class Friend extends Waters {
    * Routes effect types to specialized targeting strategies.
    *
    * @param {string} effect - Effect type: 'DestroyOne' | 'Bomb' | 'Scan' | 'Seek'
-   * @returns {Promise<Object>} Result from effect handler or noResult
+   * @returns {Promise<WeaponLaunchResult>} Result from effect handler or noResult
    * @private
    */
   async randomEffect (effect) {
@@ -386,9 +428,9 @@ export class Friend extends Waters {
    * Attempts to execute finish action if mask has occupied cells.
    * Generic helper for attempting location-based finish strategies.
    *
-   * @param {Object} mask - Bitmask with occupancy property
+   * @param {Bitmask} mask - Bitmask with occupancy property
    * @param {Function} finishAction - Callback(mask) to execute if occupied
-   * @returns {Promise<null|{ weapon: Object; score: Object; }>}
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish action or null
    * @private
    */
   async tryFinishCondition (mask, finishAction) {
@@ -416,7 +458,7 @@ export class Friend extends Waters {
    * Attempts to fire at revealed but not yet attacked cells.
    * Prioritizes previously revealed locations for follow-up shots.
    *
-   * @returns {Promise<null|{ weapon: Object; score: Object; }>}
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
    */
   async finishRevealed () {
@@ -431,29 +473,43 @@ export class Friend extends Waters {
    * Attempts to finish partially damaged ship.
    * First tries orthogonal cross pattern, then dilates to surrounding cells.
    *
-   * @param {Object} hits - Hit locations mask
-   * @returns {Promise<null|{ weapon: Object; score: Object; }>} Result from finish strategy or null
+   * @param {Bitmask} hits - Hit locations mask
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
    */
   async finishPartiallySunk (hits) {
     if (!hits?.occupancy) return null
 
+    const result = await this._tryCrossPattern(hits)
+    if (result) return result
+
+    return await this._trySurroundPattern(hits)
+  }
+
+  /**
+   * Tries cross pattern for finishing partially sunk ship.
+   * @param {Bitmask} hits - Hit locations mask
+   * @returns {Promise<WeaponLaunchResult|null>} Result or null
+   * @private
+   */
+  async _tryCrossPattern (hits) {
     const shots = this.score.shot
     const cross = hits.clone.dilateCross()
     const candidates = cross.take(shots)
-    console.log('shot', shots.occupancy, shots.toAscii)
-
-    console.log('hits', hits.toAscii)
-    console.log('cross', cross.toAscii)
-
-    console.log('candidates', candidates.toAscii)
-    const result = await this.tryFinishCondition(candidates, m =>
+    this._logMaskInfo('cross', shots, hits, cross, candidates)
+    return await this.tryFinishCondition(candidates, m =>
       this.selectRandomCandidate(m)
     )
-    if (result) {
-      return result
-    }
+  }
 
+  /**
+   * Tries surround pattern for finishing partially sunk ship.
+   * @param {Bitmask} hits - Hit locations mask
+   * @returns {Promise<WeaponLaunchResult|null>} Result or null
+   * @private
+   */
+  async _trySurroundPattern (hits) {
+    const shots = this.score.shot
     const surround = hits.clone.dilate(1).take(shots)
     return await this.tryFinishCondition(surround, m =>
       this.selectRandomCandidate(m)
@@ -461,10 +517,26 @@ export class Friend extends Waters {
   }
 
   /**
+   * Logs mask information for debugging.
+   * @param {string} pattern - Pattern name
+   * @param {Bitmask} shots - Shot mask
+   * @param {Bitmask} hits - Hits mask
+   * @param {Bitmask} patternMask - Pattern mask
+   * @param {Bitmask} candidates - Candidate mask
+   * @private
+   */
+  _logMaskInfo (pattern, shots, hits, patternMask, candidates) {
+    console.log('shot', shots.occupancy, shots.toAscii)
+    console.log('hits', hits.toAscii)
+    console.log(pattern, patternMask.toAscii)
+    console.log('candidates', candidates.toAscii)
+  }
+
+  /**
    * Attempts to fire at hint-revealed locations.
    * Expands hint area and looks for untried cells within expansion.
    *
-   * @returns {Promise<null|{ weapon: Object; score: Object; }>} Result from finish strategy or null
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
    */
   async finishHints () {
@@ -484,8 +556,8 @@ export class Friend extends Waters {
    * Selects random cell from candidate mask and launches single shot.
    * Switches to single shot weapon before firing.
    *
-   * @param {Object} candidate - Bitmask with randomOccupied property
-   * @returns {Promise<{ weapon: Object; score: Object; }>}
+   * @param {Bitmask} candidate - Bitmask with randomOccupied property
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
    * @private
    */
   async selectRandomCandidate (candidate) {
@@ -498,8 +570,8 @@ export class Friend extends Waters {
    * Selects next shot strategy based on current board state.
    * Priority: Revealed cells > Partially sunk ships > Hint areas > Effect weapon > Seek.
    *
-   * @param {Object} hits - Current hit locations on board
-   * @returns {Promise<null|{ weapon: Object; score: Object; }>} Result from selected shot strategy
+   * @param {Bitmask} hits - Current hit locations on board
+   * @returns {Promise<WeaponLaunchResult|null>} Result from selected shot strategy
    * @private
    */
   async selectShot (hits) {
@@ -551,7 +623,7 @@ export class Friend extends Waters {
    * Gets combined hit mask from all unsunk ships.
    * Used to identify areas with damaged but unsunk ships.
    *
-   * @returns {Object} Bitmask of all current hits
+   * @returns {Bitmask} Bitmask of all current hits
    */
   getHits () {
     const blankMask = this.map.blankMask
@@ -559,13 +631,22 @@ export class Friend extends Waters {
       if (!ship.hits?.occupancy) {
         return acc
       }
-      console.log('unsunk ship', ship.hits, ship.hits.toAscii)
-
-      console.log('existing hits', acc, acc.toAscii)
+      this._logShipHits(ship, acc)
       const result = acc.join(ship.hits)
       console.log('combined hits', result, result.toAscii)
       return result
     }, blankMask)
+  }
+
+  /**
+   * Logs ship hits information.
+   * @param {Object} ship - Ship object
+   * @param {Bitmask} existingHits - Existing hits mask
+   * @private
+   */
+  _logShipHits (ship, existingHits) {
+    console.log('unsunk ship', ship.hits, ship.hits.toAscii)
+    console.log('existing hits', existingHits, existingHits.toAscii)
   }
 
   // ============ Test/Seek Loop ============
@@ -637,11 +718,17 @@ export class Friend extends Waters {
     }
   }
 
+  /**
+   * Resets the model to initial state.
+   */
   resetModel () {
     this.score.reset()
     this.resetMap()
   }
 
+  /**
+   * Builds the board UI.
+   */
   buildBoard () {
     this.UI.buildBoard()
     this.resetShipCells()
@@ -649,6 +736,10 @@ export class Friend extends Waters {
     setupDragHandlers(this.UI)
   }
 
+  /**
+   * Resets the UI and places ships.
+   * @param {Array} ships - The ships to place.
+   */
   resetUI (ships) {
     this.resetBase()
     ships = ships || this.ships
@@ -658,5 +749,10 @@ export class Friend extends Waters {
     this.updateUI(ships)
   }
 
+  /**
+   * Updates the weapon mode (placeholder for compatibility).
+   * @param {*} _wps1 - Unused parameter
+   * @param {*} _cursorInfo - Unused parameter
+   */
   updateMode (_wps1, _cursorInfo) {}
 }
