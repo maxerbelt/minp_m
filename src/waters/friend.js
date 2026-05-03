@@ -63,7 +63,7 @@ export class Friend extends Waters {
    * @param {Object} friendUI - The friend player UI instance
    */
   constructor (friendUI) {
-    super(friendUI)
+    super(friendUI, Player.friend)
     /** @type {boolean} Controls test continuation */
     this.testContinue = true
     /** @type {boolean} Marks this as friendly player */
