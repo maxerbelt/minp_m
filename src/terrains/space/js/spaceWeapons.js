@@ -435,6 +435,7 @@ export class RailBolt extends Strike {
     // Cursor configuration for targeting sequence
     this.launchCursor = 'rail'
     this.postSelectCursor = 1
+    this.postSelectCoords = 1
     this.postSelectShadow = true
     this.totalCursors = 2
     this.splashType = undefined
@@ -699,6 +700,7 @@ export class GaussRound extends Fish {
     this.launchCursor = 'rlaunch'
     this.isOneAndDone = true
     this.postSelectCursor = 1
+    this.postSelectCoords = 1
     this.postSelectShadow = true
     this.totalCursors = 2
 

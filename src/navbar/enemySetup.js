@@ -8,9 +8,11 @@ export function newGame (seek, opponentBoard, friendUI) {
   if (bh.seekingMode) {
     enemy.ships = []
   }
+
   enemy.resetModel()
   enemy.resetUI(enemy.ships)
-  enemy.updateMode()
+  //  enemy.updateMode()
+
   const title = document.getElementById('enemy-title')
   title.textContent = 'Enemy ' + bh.terrain.mapHeading
 
@@ -27,6 +29,7 @@ export function newGame (seek, opponentBoard, friendUI) {
     enemy.UI,
     enemy
   )
+  enemy.setBoardTargetingState(bh.seekingMode)
 }
 
 function highlightAoE (model, r, c) {

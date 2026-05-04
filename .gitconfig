@@ -1,0 +1,3 @@
+[alias]
+  find-change = "!f() { git log -n ${2:-10} -G \"$1\" --oneline -p; }; f"
+  fc = "!f() { git log -n ${2:-10} -G \"$1\" --oneline -p -- ${3:-.}; }; f"

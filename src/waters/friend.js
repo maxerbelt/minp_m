@@ -217,7 +217,8 @@ export class Friend extends Waters {
       cc,
       this.map,
       this.UI,
-      this.opponent?.UI
+      this.opponent?.UI,
+      this
     )
   }
 

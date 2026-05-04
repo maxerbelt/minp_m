@@ -904,8 +904,6 @@ export class Waters {
     if (letter) {
       this.loadOut.switchToWeapon(letter)
 
-      this.setBoardTargetingState(true)
-
       if (weapon.postSelectCoords === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
@@ -921,7 +919,7 @@ export class Waters {
   }
 
   giveTempHint (weapon, cell, oppo) {
-    if (weapon?.givesHint) {
+    if (oppo && weapon?.givesHint) {
       oppo.UI.deactivateTempHints()
       cell.classList.add('temp-hint')
     }
@@ -968,7 +966,8 @@ export class Waters {
   randomAttachedWeapon (oppo) {
     const { launchR, launchC, weaponId, hintR, hintC } =
       this.selectRandomWeapon()
-    const cell = this.opponent.UI.gridCellAt(hintR, hintC)
+
+    const cell = oppo?.UI?.gridCellAt(hintR, hintC)
     this.selectAndArmWeaponId(
       weaponId,
       oppo,
@@ -997,7 +996,7 @@ export class Waters {
    * @param {boolean} [autoSelectWarning] - Unused parameter (for API compatibility)
    * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon and score
    */
-  async launchRandomWeapon (r, c, autoSelectWarning = true) {
+  async launchRandomWeapon (r, c, autoSelectWarning = bh.seekingMode) {
     const result = (await this.launchUnattachedWeapon(r, c)) || {}
     if (result?.score && result.score !== LoadOut.noResult) {
       return result
@@ -1138,15 +1137,17 @@ export class Waters {
     )
   }
 
-  hasTargettedRandomWeaponForWps (autoSelectWarning = true) {
+  hasTargettedRandomWeaponForWps (autoSelectWarning = bh.seekingMode) {
     this.randomAttachedWeapon(this.opponent)
     const currentWeapon = this.loadOut.selectedWeapon
 
     if (!currentWeapon) return false
     const currentShip = this.loadOut.getShipByWeaponId(currentWeapon.id)
     const weaponName = currentWeapon.weapon?.name || 'weapon'
-    if (autoSelectWarning)
+    if (autoSelectWarning) {
       this.displayAutoSelectWarning(weaponName, currentShip)
+    }
+
     this.loadOut.launch = (coords, weapon, wps) => {
       return this.launchWeapon(wps, coords)
     }

@@ -387,7 +387,7 @@ export class PlacementUI extends WatersUI {
     { bg, fg, letter, isSpecial = false, classes = [] } = {}
   ) {
     const cell = this.makeCell(r, c)
-    cell.style.background = bg || 'rgba(255, 209, 102, 0.3)'
+    cell.style.background = bg
     if (letter) cell.style.color = fg || '#ffd166'
     if (isSpecial) {
       cell.classList.add('special')

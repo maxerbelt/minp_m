@@ -80,7 +80,7 @@ class Enemy extends Waters {
    * @private
    */
   _handleSelect () {
-    this.setBoardTargetingState(false)
+    this.setBoardTargetingState(bh.seekingMode)
   }
 
   /**
@@ -158,7 +158,7 @@ class Enemy extends Waters {
    */
   _transitionToOpponentTurn () {
     this._updateSpinner(true, "Enemy's Turn")
-    this.setBoardTargetingState(false)
+    this.setBoardTargetingState(bh.seekingMode)
     this.steps.clearSource()
   }
 
@@ -551,11 +551,11 @@ class Enemy extends Waters {
   updateWeaponStatus (rack, cursorInfo) {
     const coordLength = this.loadOut.selectedCoordinates.length
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
-    const weapon = wps?.weapon
-    // const cursorIdx = cursorInfo?.idx || coordLength
-    const cursorIdx = weapon.stepIdx(coordLength, 0)
+    // const weapon = wps?.weapon
+    let cursorIdx = cursorInfo?.idx || coordLength
+    cursorIdx = Math.min(coordLength - 1, cursorIdx) //weapon.stepIdx(coordLength, 1))
     const newCursor =
-      cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
+      wps?.weapon?.cursors[cursorIdx] || cursorInfo?.cursor || ''
     this.updateCursor(newCursor)
     gameStatus.displayAmmoStatus(wps, bh.maps, coordLength, rack)
   }

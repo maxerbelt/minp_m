@@ -52,7 +52,7 @@ export function packedToCoords (board, W, H) {
   return out
 }
 
-export function packedToBitplanes (board, W, H, colors = 4) {
+function packedToBitplanes (board, W, H, colors = 4) {
   const words = Math.ceil((W * H) / 32)
   const planes = Array.from({ length: colors }, () => new Uint32Array(words))
 
@@ -125,7 +125,7 @@ export function bit (i) {
   return ONE << BigInt(i)
 }
 
-export function packedToOccBig_any (board, W, H) {
+function packedToOccBig_any (board, W, H) {
   let occ = 0n
   const n = W * H
   for (let i = 0; i < n; i++) {
@@ -135,7 +135,7 @@ export function packedToOccBig_any (board, W, H) {
   return occ
 }
 
-export function packedToOccBig_color (board, W, H, target) {
+function packedToOccBig_color (board, W, H, target) {
   let occ = 0n
   for (let i = 0; i < W * H; i++) {
     const c = (board[i >> 4] >> ((i & 15) << 1)) & 3
@@ -143,7 +143,7 @@ export function packedToOccBig_color (board, W, H, target) {
   }
   return occ
 }
-export function packedToOccBig_filter (board, W, H, fn) {
+function packedToOccBig_filter (board, W, H, fn) {
   let occ = 0n
   for (let i = 0; i < W * H; i++) {
     const c = (board[i >> 4] >> ((i & 15) << 1)) & 3

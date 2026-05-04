@@ -446,7 +446,7 @@ export class LoadOut {
     }
     this.notifyCursorChange(oldCursor)
     this.selectableWeapon = this.getFirstRack()
-    this.steps?.targetting(this.selectableWeapon)
+    // this.steps?.targetting(this.selectableWeapon)
   }
 
   /**
@@ -458,6 +458,14 @@ export class LoadOut {
     const weapon = weaponSystem.weapon
     const currentIndex = this.selectedCoordinates.length
 
+    const numcur = weapon.cursors.length
+    if (numcur === currentIndex) {
+      return {
+        cursor: weapon.cursors[numcur - 1],
+        weaponSystem,
+        index: currentIndex
+      }
+    }
     if (this.isCursorSelectionComplete(currentIndex, weapon)) {
       return { cursor: '', weaponSystem, index: -1 }
     }

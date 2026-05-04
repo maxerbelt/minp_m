@@ -210,7 +210,7 @@ export class Weapon {
       return numCoords
     }
     if (this.launchCursor) {
-      let selectOffset = select - (this.postSelectCoords || 0)
+      let selectOffset = select - this.postSelectCursor
       if (selectOffset < 0) selectOffset = 0
       return numCoords + selectOffset
     }

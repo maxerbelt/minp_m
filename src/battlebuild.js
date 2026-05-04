@@ -261,9 +261,9 @@ function _setupBuildButtons () {
     newPlacementBtn: onClickClear,
     acceptBtn: () => onClickAccept(false),
     reuseBtn: onClickDefault,
-    resetBtn: clearShips,
-    publishBtn: playMap,
-    saveBtn: saveMap,
+    resetBtn: _clearAllShips,
+    publishBtn: _onClickPlayMap,
+    saveBtn: _onClickSaveMap,
     rotateBtn: onClickRotate,
     rotateLeftBtn: onClickRotateLeft,
     flipBtn: onClickFlip,
@@ -295,13 +295,13 @@ function _setupBuildKeyboardShortcuts () {
     c: onClickClear,
     d: onClickDefault,
     r: onClickRotate,
-    s: clearShips,
+    s: _clearAllShips,
     l: onClickRotateLeft,
     f: onClickFlip,
     x: onClickTransform,
     u: onClickUndo,
-    p: playMap,
-    v: saveMap,
+    p: _onClickPlayMap,
+    v: _onClickSaveMap,
     ArrowUp: event => moveCursor(event),
     ArrowDown: event => moveCursor(event),
     ArrowLeft: event => moveCursor(event),
@@ -394,5 +394,5 @@ if (editing) {
   _initializePlacement()
 }
 
-tabs.hide?.overrideClickListener(playMap)
-tabs.seek?.overrideClickListener(seekMap)
+tabs.hide?.overrideClickListener(_onClickPlayMap)
+tabs.seek?.overrideClickListener(_onClickSeekMap)

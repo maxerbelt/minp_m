@@ -263,7 +263,7 @@ export function updateSymmetryDisplay (symElement, maskActions) {
  * @param {*} toolValue - Value to set when button is checked
  * @param {Function} setToolFn - Function to call with the tool value
  */
-export function wireLineToolButton (buttonId, toolValue, setToolFn) {
+function wireLineToolButton (buttonId, toolValue, setToolFn) {
   const btn = getElementByIdSafe(buttonId)
   if (!btn) return
 

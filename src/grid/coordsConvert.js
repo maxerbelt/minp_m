@@ -77,7 +77,7 @@ export function coordsToOccBig (coordinateList, width) {
  * @param {*} constantValue - Value to assign to all occupied cells
  * @returns {Array<[number, number, *]>} Array of [x, y, value] tuples
  */
-export function occBigToCoords (occupancyBits, width, height, constantValue) {
+function occBigToCoords (occupancyBits, width, height, constantValue) {
   return _collectBitsAsCoords(occupancyBits, width, height, () => constantValue)
 }
 

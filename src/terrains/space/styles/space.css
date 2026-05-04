@@ -5,6 +5,9 @@
     --rail4-cursor-image: url('../images/rail32_4.png');
     --bolt-cursor-image: url('../images/bolt32.png');
     --bolt-grey-cursor-image: url('../images/boltol32.png');
+    --round-cursor-image: url('../images/round32.png');
+    --round-grey-cursor-image: url('../images/roundol32.png');
+    --rlaunch-grey-cursor-image: url('../images/rlaunchol32.png');
     --missile-cursor-image: url('../images/missile32.png');
     --missile-grey-cursor-image: url('../images/missileol32.png');
     --white-rail-image: url('../images/whiterail26.png');
@@ -39,13 +42,20 @@
     background-image: var(--plasma-explode-image);
 }
 
-.cell.rail,
-.board.rail {
-    cursor: var(--rail-cursor-image) 26 26, pointer;
-}
 
 .board.rail.not-step {
     cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
+}
+
+
+
+.board.round.not-step {
+    cursor: var(--round-grey-cursor-image) 26 26, pointer;
+}
+
+
+.board.rlaunch.not-step {
+    cursor: var(--rlaunch-grey-cursor-image) 26 26, pointer;
 }
 
 .board.bolt {

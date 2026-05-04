@@ -22,7 +22,8 @@ function _replaceBigInt (_key, value) {
  * const msg = formatErrorMessage('Validation Error', { code: 'ERR_001', value: 123n })
  * // Returns: '\n\nValidation Error:\n{\n  "code": "ERR_001",\n  "value": "123n"\n}'
  */
-export function formatErrorMessage (title, obj) {
+
+function formatErrorMessage (title, obj) {
   return `\n\n${title}:\n${JSON.stringify(obj, _replaceBigInt, 2)}`
 }
 
