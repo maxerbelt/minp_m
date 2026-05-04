@@ -69,7 +69,7 @@ export class LoadOut {
    * @param {Weapon[]} weapons - Array of unattached weapons
    * @param {Ship[]} ships - Array of ships with attached weapons
    * @param {ViewModel} viewModel - The view model for grid interactions
-   * @param {{fire: () => void}} steps - The steps object
+   * @param {{fire: () => void, targetting: () => void}} steps - The steps object
    */
   constructor (weapons, ships, viewModel, steps) {
     this.onOutOfAllAmmo = Function.prototype
@@ -446,6 +446,7 @@ export class LoadOut {
     }
     this.notifyCursorChange(oldCursor)
     this.selectableWeapon = this.getFirstRack()
+    this.steps?.targetting(this.selectableWeapon)
   }
 
   /**
@@ -631,13 +632,6 @@ export class LoadOut {
     const oldCursor = this.getCurrentCursor()
     this.selectedCoordinates.push([row, col])
     this.notifyCursorChange(oldCursor)
-    if (
-      this.selectedCoordinates.length === 1 &&
-      weapon &&
-      (weapon.postSelectCursor || weapon.postSelectCoords)
-    ) {
-      this.steps?.targetting()
-    }
   }
   switchToNextWeaponSystem () {
     this.moveToNextWeaponIndex()
@@ -707,7 +701,8 @@ export class LoadOut {
 
   firingInfoIfReady (map, row, col, weaponSystem) {
     const wps = weaponSystem || this.getCurrentWeaponSystem()
-    this.addSelectedCoordinates(row, col, wps?.weapon)
+    const weapon = wps?.weapon
+    this.addSelectedCoordinates(row, col, weapon)
 
     if (this.hasUnattachedWeapons) {
       this.selectedWeapon = wps
@@ -717,6 +712,7 @@ export class LoadOut {
       return this._createFiringInfo(wps, map)
     }
 
+    this.steps?.targetting(weapon)
     return null
   }
 

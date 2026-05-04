@@ -867,33 +867,52 @@ export class Waters {
     }
   }
 
-  selectAndArmWps (rack, oppo, launchR, launchC, hintR, hintC, cell) {
+  /**
+   * Sets the board targeting state.
+   * @param {boolean} isTargeting - Whether the board is in targeting mode.
+   */
+  setBoardTargetingState (isTargeting) {
+    const boardClasses = this.UI.board.classList
+    if (isTargeting) {
+      boardClasses.add('targetting')
+      boardClasses.remove('not-step')
+    } else {
+      boardClasses.remove('targetting')
+      boardClasses.add('not-step')
+    }
+  }
+
+  selectAndArmWps (oppo, weaponId, launchR, launchC, hintR, hintC, cell) {
+    const rack = this.loadOut.getWeaponBySystemId(weaponId)
     const weapon = rack?.weapon
     const letter = weapon?.letter
-    this.giveTempHint(weapon, cell)
+
+    this.giveTempHint(weapon, cell, oppo)
     this.addSource(oppo, launchR, launchC, rack, cell)
     const { shadowR, shadowC } = this.steps.addRack(
       rack,
       weapon,
       letter,
-      weapon?.id,
+      weaponId,
       launchR,
       launchC,
       cell,
       hintR,
       hintC
     )
+
     if (letter) {
       this.loadOut.switchToWeapon(letter)
-      if (weapon.postSelectCursor === 0) {
+
+      this.setBoardTargetingState(true)
+
+      if (weapon.postSelectCoords === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
 
-      rack.launchCoord = [launchR, launchC]
-
-      rack.hintCoord = [hintR, hintC]
+      this.steps?.targetting(weapon)
       this.loadOut.launch = async coords => {
         return await this.launchTo(coords, hintR, hintC, rack)
       }
@@ -901,9 +920,9 @@ export class Waters {
     }
   }
 
-  giveTempHint (weapon, cell) {
-    if (weapon.givesHint) {
-      this.opponent.UI.deactivateTempHints()
+  giveTempHint (weapon, cell, oppo) {
+    if (weapon?.givesHint) {
+      oppo.UI.deactivateTempHints()
       cell.classList.add('temp-hint')
     }
   }
@@ -965,8 +984,8 @@ export class Waters {
     if (weaponId < 1) {
       return
     }
-    const rack = this.loadOut.getWeaponBySystemId(weaponId)
-    this.selectAndArmWps(rack, oppo, launchR, launchC, hintR, hintC, cell)
+
+    this.selectAndArmWps(oppo, weaponId, launchR, launchC, hintR, hintC, cell)
   }
 
   /**

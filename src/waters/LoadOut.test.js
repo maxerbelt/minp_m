@@ -42,7 +42,8 @@ describe('LoadOut', () => {
       id: 1
     }
     mockSteps = {
-      fire: jest.fn()
+      fire: jest.fn(),
+      targetting: jest.fn()
     }
     mockViewModel = {
       gridCellAt: jest.fn(() => ({ id: 1 })),

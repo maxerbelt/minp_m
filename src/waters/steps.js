@@ -223,8 +223,8 @@ export class Steps {
     this._setMode(WeaponMode.sourceSelect, () => this.onSelect(this))
   }
 
-  targetting () {
-    this._setMode(WeaponMode.targetAim, () => this.onAim(this))
+  targetting (weapon) {
+    this._setMode(WeaponMode.targetAim, () => this.onAim(this, weapon))
   }
 
   /**

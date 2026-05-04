@@ -80,7 +80,7 @@ class Enemy extends Waters {
    * @private
    */
   _handleSelect () {
-    this._setBoardTargetingState(false)
+    this.setBoardTargetingState(false)
   }
 
   /**
@@ -88,23 +88,9 @@ class Enemy extends Waters {
    * @private
    */
   _handleAim () {
-    this._setBoardTargetingState(true)
-  }
-
-  /**
-   * Sets the board targeting state.
-   * @param {boolean} isTargeting - Whether the board is in targeting mode.
-   * @private
-   */
-  _setBoardTargetingState (isTargeting) {
-    const boardClasses = this.UI.board.classList
-    if (isTargeting) {
-      boardClasses.add('targetting')
-      boardClasses.remove('not-step')
-    } else {
-      boardClasses.remove('targetting')
-      boardClasses.add('not-step')
-    }
+    const cursorInfo = this.loadOut.getCurrentCursorInfo()
+    this.updateWeaponStatus(cursorInfo?.wps, cursorInfo)
+    this.setBoardTargetingState(true)
   }
 
   /**
@@ -172,7 +158,7 @@ class Enemy extends Waters {
    */
   _transitionToOpponentTurn () {
     this._updateSpinner(true, "Enemy's Turn")
-    this._setBoardTargetingState(false)
+    this.setBoardTargetingState(false)
     this.steps.clearSource()
   }
 
@@ -563,17 +549,15 @@ class Enemy extends Waters {
    * @param {CursorInfo} cursorInfo - Cursor information.
    */
   updateWeaponStatus (rack, cursorInfo) {
+    const coordLength = this.loadOut.selectedCoordinates.length
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
-    const cursorIdx = cursorInfo?.idx || this.loadOut.getCursorIndex()
+    const weapon = wps?.weapon
+    // const cursorIdx = cursorInfo?.idx || coordLength
+    const cursorIdx = weapon.stepIdx(coordLength, 0)
     const newCursor =
       cursorInfo?.cursor || wps?.weapon?.cursors[cursorIdx] || ''
     this.updateCursor(newCursor)
-    gameStatus.displayAmmoStatus(
-      wps,
-      bh.maps,
-      this.loadOut.selectedCoordinates.length,
-      rack
-    )
+    gameStatus.displayAmmoStatus(wps, bh.maps, coordLength, rack)
   }
 
   /**
