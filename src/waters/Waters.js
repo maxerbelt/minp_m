@@ -1870,7 +1870,7 @@ export class Waters {
     this.flash(results.hits > 0 ? 'long' : undefined)
 
     this.score.dtaps += results.dtap
-    this.updateMode()
+    /// this.updateMode()
     return results
   }
   applyToPosition (r, c, weapon, power, acc, options) {

@@ -633,6 +633,7 @@ export class LoadOut {
     if (bh.seekingMode && !unattachedWeaponSystem) {
       unattachedWeaponSystem = this.getFirstRack()
     }
+    if (!unattachedWeaponSystem) return
     this._handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
   }
 
@@ -683,7 +684,6 @@ export class LoadOut {
     this.selectedWeapon = null
     this.clearSelectedCoordinates()
     this.useAmmo(wps)
-    this.checkNoAmmo()
     const fireWeapon = this.fireWeapon.bind(this, map, fireCoordinates, wps)
     return { fireCoordinates, fireWeapon }
   }

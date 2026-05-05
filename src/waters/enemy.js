@@ -88,8 +88,8 @@ class Enemy extends Waters {
    * @private
    */
   _handleAim () {
-    const cursorInfo = this.loadOut.getCurrentCursorInfo()
-    this.updateWeaponStatus(cursorInfo?.wps, cursorInfo)
+    // const cursorInfo = this.loadOut.getCurrentCursorInfo()
+    // this.updateWeaponStatus(cursorInfo?.wps, cursorInfo)
     this.setBoardTargetingState(true)
   }
 
@@ -562,14 +562,21 @@ class Enemy extends Waters {
     const coordLength = this.loadOut.selectedCoordinates.length
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
     const weapon = wps?.weapon
+    const wLetter = weapon?.letter || ''
     const numCursors = weapon?.cursors?.length || 1
     const maxCursorIndex = numCursors - 1
     let cursorIdx = cursorInfo?.idx || coordLength
     cursorIdx = Math.min(maxCursorIndex, cursorIdx) //weapon.stepIdx(coordLength, 1))
-    const newCursor =
-      wps?.weapon?.cursors[cursorIdx] || cursorInfo?.cursor || ''
-    this.updateCursor(newCursor)
-    gameStatus.displayAmmoStatus(wps, bh.maps, coordLength, rack)
+
+    if (wLetter !== this._oldWeaponLetter || cursorIdx !== this._oldCursorIdx) {
+      this._oldWeaponLetter = wLetter
+      this._oldCursorIdx = cursorIdx
+      const newCursor =
+        wps?.weapon?.cursors[cursorIdx] || cursorInfo?.cursor || ''
+
+      this.updateCursor(newCursor)
+      gameStatus.displayAmmoStatus(wps, bh.maps, coordLength, rack)
+    }
   }
 
   /**

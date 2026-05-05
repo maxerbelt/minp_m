@@ -47,10 +47,12 @@
     cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
 }
 
-
-
 .board.round.not-step {
     cursor: var(--round-grey-cursor-image) 26 26, pointer;
+}
+
+.board.round {
+    cursor: var(--round-cursor-image) 26 26, pointer;
 }
 
 
