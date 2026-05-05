@@ -47,6 +47,7 @@ const uiManager = new UIVisibilityManager()
 let buttonManager = null
 let keyboardManager = null
 let seekKeyboardManager = null
+let isBattleHideTransitioning = false
 
 /**
  * Transitions to a game mode with optional callbacks.
@@ -155,6 +156,7 @@ function _prepareBattleUIState () {
  * @private
  */
 function _finalizeBattleInitialization () {
+  isBattleHideTransitioning = false
   enemy.UI.resetBoardSize()
   friend.setupUntried()
   newGame('hide', _resetFriendBoard, friendUI)
@@ -188,9 +190,16 @@ function _onClickAutoPlace () {
  * @private
  */
 function _playBattleHide () {
-  if (!bh.test) {
-    _enterBattleHide()
+  if (
+    bh.test ||
+    stateManager.isMode('hide-seek') ||
+    isBattleHideTransitioning
+  ) {
+    return
   }
+
+  isBattleHideTransitioning = true
+  _enterBattleHide()
 }
 
 /**
