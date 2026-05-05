@@ -682,9 +682,9 @@ export class LoadOut {
   firingInfo (wps, map) {
     const fireCoordinates = structuredClone(this.selectedCoordinates)
     this.selectedWeapon = null
-    this.clearSelectedCoordinates()
     this.useAmmo(wps)
     const fireWeapon = this.fireWeapon.bind(this, map, fireCoordinates, wps)
+    this.clearSelectedCoordinates()
     return { fireCoordinates, fireWeapon }
   }
   /**
