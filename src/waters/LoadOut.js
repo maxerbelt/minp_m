@@ -519,7 +519,7 @@ export class LoadOut {
    * @param {string} oldCursor - Old cursor
    */
   notifyWeaponRemoved (oldCursor) {
-    this.onOutOfAmmo()
+    //  this.onOutOfAmmo()
     this.notifyCursorChange(oldCursor)
     if (this.isOutOfAmmo()) {
       this.onOutOfAllAmmo()
@@ -561,7 +561,7 @@ export class LoadOut {
   setCurrentWeaponIndex (idx) {
     const oldCursor = this.getCurrentCursor()
     this.currentWeaponIndex = idx
-    this.onOutOfAmmo()
+    // this.onOutOfAmmo()
     this.notifyCursorChange(oldCursor)
   }
   /**

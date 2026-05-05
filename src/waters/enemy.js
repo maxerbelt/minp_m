@@ -121,7 +121,7 @@ class Enemy extends Waters {
     if (weapon.postSelectShadow) {
       this.UI.cellWeaponActive(shadowR, shadowC, '', weapon.tag)
     }
-    this.updateMode(rack)
+    // this.updateMode(rack)
   }
 
   /**
@@ -331,11 +331,21 @@ class Enemy extends Waters {
    */
   updateUI () {
     this._updateStats()
-    this.updateMode()
     this._updateButtons()
     super.updateUI(this.ships)
+    this.updateMode()
   }
 
+  setupWeaponButtonHandlers () {
+    const numWeaponButtons = this.UI?.weaponBtns?.length || 0
+    if (this.UI?.weaponBtn == null || numWeaponButtons !== 0) return
+
+    this.UI.weaponBtns = this.UI?.weaponButtons(
+      this.UI?.weaponBtn,
+      this.loadOut?.getLimitedWeaponSystems(),
+      this.onClickWeaponButtons.bind(this)
+    )
+  }
   /**
    * Updates the stats display.
    * @private
@@ -399,7 +409,7 @@ class Enemy extends Waters {
       return result
     }
 
-    result = await this.launchRandomWeapon(r, c, bh.seekingMode)
+    result = await this.launchRandomWeapon(r, c, !bh.seekingMode)
     if (result?.hasTargettedWeapon || result?.score) {
       return result
     }
@@ -551,9 +561,11 @@ class Enemy extends Waters {
   updateWeaponStatus (rack, cursorInfo) {
     const coordLength = this.loadOut.selectedCoordinates.length
     const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
-    // const weapon = wps?.weapon
+    const weapon = wps?.weapon
+    const numCursors = weapon?.cursors?.length || 1
+    const maxCursorIndex = numCursors - 1
     let cursorIdx = cursorInfo?.idx || coordLength
-    cursorIdx = Math.min(coordLength - 1, cursorIdx) //weapon.stepIdx(coordLength, 1))
+    cursorIdx = Math.min(maxCursorIndex, cursorIdx) //weapon.stepIdx(coordLength, 1))
     const newCursor =
       wps?.weapon?.cursors[cursorIdx] || cursorInfo?.cursor || ''
     this.updateCursor(newCursor)
@@ -636,7 +648,7 @@ class Enemy extends Waters {
       this.UI.weaponBtn.textContent = 'single shot'
     }
     this.loadOut.onOutOfAmmo = this.updateMode.bind(this)
-    this.updateUI()
+    this.resetUI(this.ships)
   }
 
   /**

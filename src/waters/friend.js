@@ -725,6 +725,7 @@ export class Friend extends Waters {
   resetModel () {
     this.score.reset()
     this.resetMap()
+    this.resetUI(this.ships)
   }
 
   /**

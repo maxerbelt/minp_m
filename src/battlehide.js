@@ -368,7 +368,6 @@ function _initializePlacement () {
   friendUI.clearPlaceVisuals()
   friendUI.placeMode()
   friend.resetModel()
-  friend.resetUI(friend.ships)
 
   _disablePlacementButtons(friendUI)
   friendUI.showMapTitle()

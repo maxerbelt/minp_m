@@ -996,7 +996,7 @@ export class Waters {
    * @param {boolean} [autoSelectWarning] - Unused parameter (for API compatibility)
    * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon and score
    */
-  async launchRandomWeapon (r, c, autoSelectWarning = bh.seekingMode) {
+  async launchRandomWeapon (r, c, autoSelectWarning = !bh.seekingMode) {
     const result = (await this.launchUnattachedWeapon(r, c)) || {}
     if (result?.score && result.score !== LoadOut.noResult) {
       return result
@@ -1006,7 +1006,7 @@ export class Waters {
     return result
   }
 
-  hasTargettedRandomWeaponBase (autoSelectWarning = true) {
+  hasTargettedRandomWeaponBase (autoSelectWarning = !bh.seekingMode) {
     const current = this.loadOut.getCurrentWeaponSystem()
     const attached = current.hasAmmo()
     if (attached) {
@@ -1137,7 +1137,7 @@ export class Waters {
     )
   }
 
-  hasTargettedRandomWeaponForWps (autoSelectWarning = bh.seekingMode) {
+  hasTargettedRandomWeaponForWps (autoSelectWarning = !bh.seekingMode) {
     this.randomAttachedWeapon(this.opponent)
     const currentWeapon = this.loadOut.selectedWeapon
 
@@ -1653,7 +1653,6 @@ export class Waters {
       return
     }
     this.updateWeaponButtons()
-
     this.updateWeaponStatus(wps1 || this.loadOut.selectedWeapon, cursorInfo)
   }
   updateWeaponButtons () {

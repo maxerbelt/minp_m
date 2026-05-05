@@ -434,9 +434,18 @@ export class Weapon {
    * @param {any} map - Game map object
    * @param {any} viewModel - Primary view model
    * @param {any} [opposingViewModel] - Optional opposing player view model
+   * @param {any} [model] - Optional game model for coordinate transformation
    * @returns {Promise<Object>} Result from subsequent launchTo call
    */
-  async cursorLaunchTo (coords, rr, cc, map, viewModel, opposingViewModel) {
+  async cursorLaunchTo (
+    coords,
+    rr,
+    cc,
+    map,
+    viewModel,
+    opposingViewModel,
+    model
+  ) {
     map = map || bh.map
     const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
     const [sr, sc] = map.randomEdge(...target)
@@ -460,7 +469,15 @@ export class Weapon {
       viewModel
     )
     await this.animateRipple(endCell, container, end)
-    return await this.launchTo(coords, r, c, map, viewModel, opposingViewModel)
+    return await this.launchTo(
+      coords,
+      r,
+      c,
+      map,
+      viewModel,
+      opposingViewModel,
+      model
+    )
   }
 
   /**

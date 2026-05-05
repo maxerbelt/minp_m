@@ -10,9 +10,6 @@ export function newGame (seek, opponentBoard, friendUI) {
   }
 
   enemy.resetModel()
-  enemy.resetUI(enemy.ships)
-  //  enemy.updateMode()
-
   const title = document.getElementById('enemy-title')
   title.textContent = 'Enemy ' + bh.terrain.mapHeading
 
@@ -30,6 +27,7 @@ export function newGame (seek, opponentBoard, friendUI) {
     enemy
   )
   enemy.setBoardTargetingState(bh.seekingMode)
+  enemy.setupWeaponButtonHandlers()
 }
 
 function highlightAoE (model, r, c) {
@@ -102,15 +100,8 @@ export function setupEnemy (placementHandler, testHandler) {
   if (testHandler) {
     enemy.UI?.testBtn?.addEventListener('click', testHandler)
   }
-  enemy.resetModel()
-  const numWeaponButtons = enemy.UI?.weaponBtns?.length || 0
-  if (enemy.UI?.weaponBtn != null && numWeaponButtons === 0) {
-    enemy.UI.weaponBtns = enemy.UI?.weaponButtons(
-      enemy.UI?.weaponBtn,
-      enemy.loadOut?.getLimitedWeaponSystems(),
-      enemy.onClickWeaponButtons.bind(enemy)
-    )
-  }
+  enemy.setupWeaponButtonHandlers()
+
   // Setup keyboard shortcuts and return cleanup function
   return _setupSeekShortcuts(placementHandler, testHandler)
 }
