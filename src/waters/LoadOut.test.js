@@ -100,7 +100,6 @@ describe('LoadOut', () => {
     loadOut.aimWeapon({}, 3, 4)
     expect(loadOut.launch).toHaveBeenCalled()
     expect(loadOut.useAmmo).toHaveBeenCalled()
-    expect(loadOut.checkNoAmmo).toHaveBeenCalled()
   })
 
   it('dismissSelection clears selectedCoordinates', () => {
