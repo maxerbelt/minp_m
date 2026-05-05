@@ -281,11 +281,13 @@ export class Missile extends Bomb {
     this.unattachedCursor = 0
     this.postSelectCursor = 0
     this.postSelectCoords = 1
+    this.postUnattached = 1
     this.postSelectShadow = false
     this.launchCursor = 'launch'
     this.totalCursors = 2
     this.cursors = ['missile']
     this.volatile = true
+    this.points = 2
 
     // Weapon behavior configuration
     this._applyWeaponConfig({

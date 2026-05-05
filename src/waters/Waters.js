@@ -909,8 +909,8 @@ export class Waters {
       } else {
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
-
-      this.steps?.targetting(weapon)
+      this.updateWeaponStatus(rack, undefined)
+      this.steps?.targetting()
       this.loadOut.launch = async coords => {
         return await this.launchTo(coords, hintR, hintC, rack)
       }
@@ -998,7 +998,10 @@ export class Waters {
    */
   async launchRandomWeapon (r, c, autoSelectWarning = !bh.seekingMode) {
     const result = (await this.launchUnattachedWeapon(r, c)) || {}
-    if (result?.score && result.score !== LoadOut.noResult) {
+    if (
+      result.hasUnattached ||
+      (result?.score && result.score !== LoadOut.noResult)
+    ) {
       return result
     }
     result['hasTargettedWeapon'] =
@@ -1183,9 +1186,7 @@ export class Waters {
         return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
       const result = await this.fireWeaponAt(r, c, unAttached, launch)
-      if (result?.score && result.score !== LoadOut.noResult) {
-        return result
-      }
+      return result
     }
     return null
   }
@@ -1889,6 +1890,13 @@ export class Waters {
 
     return result
   }
+  /**
+   * Updates the stats display.
+   * @private
+   */
+  _updateStats (ships = this.ships) {
+    this.UI.score.display(ships, ...this.score.counts())
+  }
 
   updateUI (ships) {
     this.updateTally(ships, this.loadOut.getAllLimitedWeaponSystems())
@@ -1898,7 +1906,7 @@ export class Waters {
     if (this.UI.placing && this.UI.placeTally) {
       this.UI.placeTally(ships)
     } else {
-      this.UI.score.display(ships, ...this.score.counts())
+      this._updateStats(ships)
       this.UI.score.buildTally(ships, weaponSystems, this.UI)
     }
   }

@@ -74,13 +74,19 @@ class Enemy extends Waters {
     this.steps.onAim = this._handleAim.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
   }
-
+  _hasUnattachedForCurrentWeapon () {
+    return (
+      bh.seekingMode ||
+      this.loadOut.isSingleShot ||
+      this.loadOut.getUnattachedWeaponSystem() != null
+    )
+  }
   /**
    * Handles the selection event by updating the board classes.
    * @private
    */
   _handleSelect () {
-    this.setBoardTargetingState(bh.seekingMode)
+    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
   }
 
   /**
@@ -158,7 +164,7 @@ class Enemy extends Waters {
    */
   _transitionToOpponentTurn () {
     this._updateSpinner(true, "Enemy's Turn")
-    this.setBoardTargetingState(bh.seekingMode)
+    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
     this.steps.clearSource()
   }
 
@@ -330,7 +336,6 @@ class Enemy extends Waters {
    * Updates all UI components.
    */
   updateUI () {
-    this._updateStats()
     this._updateButtons()
     super.updateUI(this.ships)
     this.updateMode()
@@ -346,22 +351,16 @@ class Enemy extends Waters {
       this.onClickWeaponButtons.bind(this)
     )
   }
-  /**
-   * Updates the stats display.
-   * @private
-   */
-  _updateStats () {
-    this.UI.score.display(this.ships, ...this.score.counts())
-  }
 
   /**
    * Updates the state of buttons based on game status.
    * @private
    */
   _updateButtons () {
-    const disabled = this.isGameOver() || this.hasNoAmmo()
+    const over = this.isGameOver()
+    const disabled = over || this.hasNoAmmo()
     this.UI.weaponBtn.disabled = disabled
-    this.UI.revealBtn.disabled = this.isGameOver()
+    this.UI.revealBtn.disabled = over
   }
 
   /**
@@ -410,7 +409,7 @@ class Enemy extends Waters {
     }
 
     result = await this.launchRandomWeapon(r, c, !bh.seekingMode)
-    if (result?.hasTargettedWeapon || result?.score) {
+    if (result?.hasTargettedWeapon || result?.score || result?.hasUnattached) {
       return result
     }
 
@@ -452,6 +451,7 @@ class Enemy extends Waters {
 
     this.score.finishTurn()
     this.updateUI()
+    this.opponent?.updateUI()
     this.steps.endTurn()
   }
 
@@ -567,15 +567,27 @@ class Enemy extends Waters {
     const maxCursorIndex = numCursors - 1
     let cursorIdx = cursorInfo?.idx || coordLength
     cursorIdx = Math.min(maxCursorIndex, cursorIdx) //weapon.stepIdx(coordLength, 1))
-
-    if (wLetter !== this._oldWeaponLetter || cursorIdx !== this._oldCursorIdx) {
+    const hasUnattached = this._hasUnattachedForCurrentWeapon()
+    if (
+      wLetter !== this._oldWeaponLetter ||
+      (wLetter !== '-' && coordLength !== this._oldCursorIdx) ||
+      hasUnattached !== (this._oldAttachedState || false)
+    ) {
       this._oldWeaponLetter = wLetter
-      this._oldCursorIdx = cursorIdx
+      this._oldCursorIdx = coordLength
+      this._oldAttachedState = hasUnattached
       const newCursor =
         wps?.weapon?.cursors[cursorIdx] || cursorInfo?.cursor || ''
 
       this.updateCursor(newCursor)
-      gameStatus.displayAmmoStatus(wps, bh.maps, coordLength, rack)
+
+      gameStatus.displayAmmoStatus(
+        wps,
+        bh.maps,
+        coordLength,
+        rack,
+        hasUnattached
+      )
     }
   }
 

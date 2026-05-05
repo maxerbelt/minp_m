@@ -1,3 +1,4 @@
+import { has } from '../grid/bitHelpers.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 
@@ -69,7 +70,7 @@ export class LoadOut {
    * @param {Weapon[]} weapons - Array of unattached weapons
    * @param {Ship[]} ships - Array of ships with attached weapons
    * @param {ViewModel} viewModel - The view model for grid interactions
-   * @param {{fire: () => void, targetting: () => void}} steps - The steps object
+   * @param {{fire: () => void, targetting: (hasAttached: boolean) => void}} steps - The steps object
    */
   constructor (weapons, ships, viewModel, steps) {
     this.onOutOfAllAmmo = Function.prototype
@@ -670,7 +671,7 @@ export class LoadOut {
   }
   async aimWeapon (map, row, col, weaponSystem, launch = this.launch) {
     const info = this.firingInfoIfReady(map, row, col, weaponSystem)
-    if (info) {
+    if (info?.fireCoordinates) {
       const { fireCoordinates, fireWeapon, wps, weapon } = info
 
       this.steps.fire()
@@ -678,6 +679,7 @@ export class LoadOut {
       const score = fireWeapon(launchInfo?.target)
       return { weapon, score }
     }
+    return info
   }
   firingInfo (wps, map) {
     const fireCoordinates = structuredClone(this.selectedCoordinates)
@@ -692,8 +694,12 @@ export class LoadOut {
    * @param {WeaponSystem} weaponSystem - Current weapon system
    * @returns {boolean} True if selection is complete
    */
-  _isSelectionComplete (weaponSystem) {
-    return this.selectedCoordinates.length === weaponSystem.weapon.points
+  _isSelectionComplete (weaponSystem, hasUnattached) {
+    const neededPoints = weaponSystem.weapon.points
+    const totalPoints =
+      this.selectedCoordinates.length +
+      (hasUnattached ? weaponSystem.weapon.postUnattached || 0 : 0)
+    return neededPoints <= totalPoints
   }
 
   /**
@@ -708,19 +714,25 @@ export class LoadOut {
   }
 
   firingInfoIfReady (map, row, col, weaponSystem) {
-    const wps = weaponSystem || this.getCurrentWeaponSystem()
+    let wps = weaponSystem || this.getCurrentWeaponSystem()
     const weapon = wps?.weapon
     this.addSelectedCoordinates(row, col, weapon)
-
-    if (this.hasUnattachedWeapons) {
-      this.selectedWeapon = wps
+    const unattachedWeaponSystem = this.getUnattachedWeaponSystem()
+    const hasUnattached = unattachedWeaponSystem != null
+    if (unattachedWeaponSystem) {
+      this.selectedWeapon = unattachedWeaponSystem
+      wps = unattachedWeaponSystem
     }
 
-    if (this._isSelectionComplete(wps)) {
+    if (this._isSelectionComplete(wps, hasUnattached)) {
       return this._createFiringInfo(wps, map)
     }
 
-    this.steps?.targetting(weapon)
+    this.steps?.targetting()
+
+    if (unattachedWeaponSystem) {
+      return { hasUnattached: true }
+    }
     return null
   }
 

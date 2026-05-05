@@ -348,8 +348,15 @@ class StatusUI {
    * @param {Object} maps - The maps configuration
    * @param {number} [numCoords=-1] - Number of coordinates
    * @param {Object} [selectedWps=null] - Selected weapon system
+   * @param {boolean} [unattached=false] - Whether there is an unattached weapon system
    */
-  displayAmmoStatus (wps, maps, numCoords = -1, selectedWps = null) {
+  displayAmmoStatus (
+    wps,
+    maps,
+    numCoords = -1,
+    selectedWps = null,
+    unattached = false
+  ) {
     if (
       !wps ||
       (selectedWps && wps.weapon.letter !== selectedWps.weapon.letter)
@@ -366,7 +373,8 @@ class StatusUI {
         wps,
         maps,
         numCoords,
-        selectedWps
+        selectedWps,
+        unattached
       )
     } else {
       idxUsed = this._displaySingleShotStatus()
@@ -383,7 +391,7 @@ class StatusUI {
    * @param {Object} selectedWps - Selected weapon system
    * @returns {number} The current step index
    */
-  _displayLimitedAmmoStatus (wps, maps, numCoords, selectedWps) {
+  _displayLimitedAmmoStatus (wps, maps, numCoords, selectedWps, unattached) {
     const ammo = wps.ammoRemaining()
     const weapon = wps.weapon
     const letter = weapon.letter
@@ -391,7 +399,9 @@ class StatusUI {
     this._displayAmmoRemaining(wps, ammo)
 
     if (weapon.numStep >= 2) {
-      const idx = weapon.stepIdx(numCoords, selectedWps ? 1 : 0)
+      const idx = unattached
+        ? (numCoords + (weapon.postUnattached || 0)) % weapon.numStep
+        : weapon.stepIdx(numCoords, selectedWps ? 1 : 0)
       this._displayWhichLaunchStep(idx)
       this._displayAimStep(maps, letter, weapon)
       this._displayLaunchFirstStep(maps, letter, weapon)
@@ -496,15 +506,16 @@ class StatusUI {
         this.icon1.classList.add('on')
         this.icon2.classList.remove('on')
         break
-      case 1:
+      //  case 1:
+      default:
         this.icon1.classList.add('off')
         this.icon2.classList.remove('off')
         this.icon1.classList.remove('on')
         this.icon2.classList.add('on')
         break
-      default:
-        this._noLaunchSteps()
-        break
+      //   default:
+      //      this._noLaunchSteps()
+      //      break
     }
   }
 

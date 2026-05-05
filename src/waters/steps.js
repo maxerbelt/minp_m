@@ -223,8 +223,8 @@ export class Steps {
     this._setMode(WeaponMode.sourceSelect, () => this.onSelect(this))
   }
 
-  targetting (weapon) {
-    this._setMode(WeaponMode.targetAim, () => this.onAim(this, weapon))
+  targetting (hasAttached) {
+    this._setMode(WeaponMode.targetAim, () => this.onAim(this, hasAttached))
   }
 
   /**
@@ -237,6 +237,7 @@ export class Steps {
     this._deactivateCurrentSourceRack()
     this._useSourceAmmo()
     this._revealHintIfRequired()
+    this.select()
   }
 
   /**

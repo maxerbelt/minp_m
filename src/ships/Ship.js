@@ -675,6 +675,7 @@ export class Ship {
     const isLoaded = this._isWeaponLoaded(weaponSystem)
     if (!isLoaded) {
       weaponSystem.damaged = true
+      model.updateUI()
       return { damaged: 'damaged', info: null, hits: [], misses: [] }
     }
     return this._processLoadedMagazineHit(weaponSystem, model, r, c)
@@ -683,7 +684,7 @@ export class Ship {
   /**
    * Internal: Process hit on loaded magazine with potential detonation
    * @param {{ hit: boolean; weapon: { volatile: boolean } }} weaponSystem - Loaded weapon system
-   * @param {{ opponent: { updateUI?: () => void }; UI: any; loadOut: { useAmmo: (w: any) => void } }} model - Game model
+   * @param {{  updateUI: () => void }; opponent: { updateUI?: () => void }; UI: any; loadOut: { useAmmo: (w: any) => void } }} model - Game model
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Object|null} Detonation result if weapon is volatile
@@ -692,12 +693,13 @@ export class Ship {
   _processLoadedMagazineHit (weaponSystem, model, r, c) {
     weaponSystem.hit = true
     const damaged = 'skull'
-    model.opponent?.updateUI()
+    /// model.opponent?.updateUI()
+
     const viewModel = model.UI
     model.loadOut.useAmmo(weaponSystem)
     const cell = viewModel.gridCellAt(r, c)
     viewModel.useAmmoInCell(cell, damaged)
-
+    model.updateUI()
     if (weaponSystem.weapon?.volatile) {
       return this._processDetonation(
         weaponSystem.weapon,
