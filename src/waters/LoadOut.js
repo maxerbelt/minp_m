@@ -676,7 +676,7 @@ export class LoadOut {
 
       this.steps.fire()
       const launchInfo = await launch(fireCoordinates, weapon, wps)
-      const score = fireWeapon(launchInfo?.target)
+      const score = await fireWeapon(launchInfo?.target)
       return { weapon, score }
     }
     return info

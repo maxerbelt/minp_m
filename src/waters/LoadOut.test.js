@@ -102,6 +102,36 @@ describe('LoadOut', () => {
     expect(loadOut.useAmmo).toHaveBeenCalled()
   })
 
+  it('aimWeapon awaits promise-based score from onDestroy before returning', async () => {
+    const weaponSystem = {
+      weapon: {
+        points: 1,
+        postSelectCursor: 1,
+        destroys: true,
+        isOneAndDone: false,
+        aoePlus: jest.fn(() => ({ affectedArea: [[1, 1]], options: {} }))
+      }
+    }
+    loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+    loadOut.onDestroy = jest.fn(async () => ({ sunk: true }))
+    loadOut.launch = jest.fn(async () => ({ target: 'foo' }))
+
+    const result = await loadOut.aimWeapon(
+      {},
+      1,
+      1,
+      weaponSystem,
+      loadOut.launch
+    )
+
+    expect(loadOut.launch).toHaveBeenCalled()
+    expect(loadOut.onDestroy).toHaveBeenCalled()
+    expect(result).toEqual({
+      weapon: weaponSystem.weapon,
+      score: { sunk: true }
+    })
+  })
+
   it('dismissSelection clears selectedCoordinates', () => {
     loadOut.selectedCoordinates = [[1, 2]]
     loadOut.dismissSelection()
