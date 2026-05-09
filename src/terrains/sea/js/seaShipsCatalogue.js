@@ -8,6 +8,7 @@ import { ShipCatalogue } from '../../../ships/ShipGroups.js'
  */
 const SEA_SHIP_COLORS = {
   A: '#ff6666', // coral red
+  E: '#9966ff', // amethyst purple
   T: '#ffccff',
   B: '#66ccff',
   C: '#55cc59',
@@ -29,7 +30,7 @@ const SEA_SHIP_COLORS = {
   K: '#fff',
   W: '#fff',
   '+': '#000',
-  E: '#000',
+  '%': '#000',
   F: '#000',
   Z: '#000'
 }
@@ -41,6 +42,7 @@ const SEA_SHIP_COLORS = {
  */
 const SEA_SHIP_NAMES = {
   A: 'Aircraft Carrier',
+  E: 'Heli Carrier',
   T: 'Tanker',
   B: 'Battleship',
   C: 'Cruiser',
@@ -67,6 +69,7 @@ const SEA_SHIP_NAMES = {
  */
 const SEA_SHIP_SYMMETRIES = {
   A: 'S',
+  E: 'S',
   T: 'S',
   B: 'S',
   C: 'S',
@@ -88,7 +91,7 @@ const SEA_SHIP_SYMMETRIES = {
   K: 'W',
   W: 'W',
   '+': 'W',
-  E: 'W',
+  '%': 'W',
   F: 'W',
   Z: 'W'
 }
@@ -100,6 +103,7 @@ const SEA_SHIP_SYMMETRIES = {
  */
 const SEA_SHIP_BACKGROUNDS = {
   A: 'rgba(255,102,102,0.3)',
+  E: 'rgba(153, 102, 255,0.3)',
   B: 'rgba(102,204,255,0.3)',
   C: 'rgba(102,255,102,0.3)',
   D: 'rgba(153, 255, 51,0.3)',
@@ -123,11 +127,10 @@ const SEA_SHIP_BACKGROUNDS = {
   K1: '#2FA4A9',
   K2: '#cc3333',
   W: '#3333cc',
-  '@': '#66ffcc', // Seafoam Green
+  '%': '#9966ff', // Seafoam Green
   '+': '#8FE3D6',
   '+1': '#1F7F7A', //'#5Fa3b6',
   '+2': '#ff8f7a',
-  E: '#9966ff',
   F: '#33ccff',
   F1: '#33ccff',
   Z: '#33cc33'

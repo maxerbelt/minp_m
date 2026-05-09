@@ -185,6 +185,14 @@ const aircraftCarrier = new SeaVessel('Aircraft Carrier', 'A', 'A', [
   [1, 4]
 ])
 
+const heliCarrier = new SeaVessel('Heli Carrier', 'E', 'A', [
+  [0, 0],
+  [0, 1],
+  [0, 2],
+  [1, 1],
+  [1, 2],
+  [1, 3]
+])
 const tanker = new SeaVessel('Tanker', 'T', 'L', [
   [0, 0],
   [0, 1],
@@ -244,8 +252,11 @@ const submarine = new SeaVessel(
     [0, 1]
   ]
 )
-submarine.vulnerable = ['E']
+submarine.vulnerable = ['%', 'Z'] // vulnerable to depth charges, but not revealed by them
+// only revealed by mega bombs, but not vulnerable to them
+// vulnerable to sonar
 submarine.hardened = ['M']
+
 submarine.immune = ['R']
 submarine.notes = [
   `The ${submarine.descriptionText} is hardened against Mega bombs.`,
@@ -256,6 +267,7 @@ const seaFleet = [
   antiAircraftGun,
   radarStation,
   aircraftCarrier,
+  heliCarrier,
   stealthBomber,
   helicopter,
   jetFighterCraft,
