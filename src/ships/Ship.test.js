@@ -5,6 +5,7 @@ import { describe, it, expect, jest } from '@jest/globals'
 
 import { Ship } from './Ship.js'
 import { Mask } from '../grid/rectangle/mask.js'
+import { SubBoard } from '../grid/SubBoard.js'
 import { Shape } from './Shape.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
@@ -105,6 +106,49 @@ describe('Ship basic behaviors', () => {
     expect(s.cells.length).toBe(0)
     expect(s.getTotalHits()).toBe(0)
     expect(s.sunk).toBe(false)
+  })
+
+  it('normalizes triple-valued placement coordinates to cell pairs', () => {
+    const s = new Ship(4, 'z', 'D')
+    const cells = [
+      [1, 1, 2],
+      [1, 2, 3]
+    ]
+
+    const placed = s.placeAtCells(cells)
+
+    expect(placed).toEqual([
+      [1, 1],
+      [1, 2]
+    ])
+    expect(s.cells).toEqual([
+      [1, 1],
+      [1, 2]
+    ])
+    expect(s.board.depth).toBe(1)
+  })
+
+  it('keeps cells as pairs when board placement has color depth', () => {
+    const s = new Ship(5, 'z', 'E')
+    const board = SubBoard.fromCoords(
+      [
+        [0, 0, 2],
+        [0, 1, 3]
+      ],
+      null,
+      new Mask(0, 0)
+    )
+
+    s.placeAtBoard(board)
+
+    expect(s.cells).toEqual([
+      [0, 0],
+      [0, 1]
+    ])
+    expect(JSON.parse(JSON.stringify(s)).cells).toEqual([
+      [0, 0],
+      [0, 1]
+    ])
   })
 })
 describe('Ship - constructor cell size calculation', () => {

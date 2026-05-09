@@ -129,12 +129,15 @@ export class Ship {
   }
 
   get cells () {
-    // console.trace()
-    return this._cellsArray || this.board.toCoords
+    const coords = this._cellsArray || this.board.toCoords
+    return coords.map(cell =>
+      Array.isArray(cell) ? [cell[0], cell[1]] : [cell?.r, cell?.c]
+    )
   }
   set cells (cells) {
-    this._cellsArray = cells
-    this.board = Mask.fromCoordsSquare(cells)
+    const normalizedCells = this._normalizeCells(cells)
+    this._cellsArray = normalizedCells
+    this.board = Mask.fromCoordsSquare(normalizedCells)
   }
   get board () {
     return this._board || this._shape?.board || Mask.empty(0, 0)
@@ -766,10 +769,20 @@ export class Ship {
    * @param {Array<[number, number]>} cells - Array of [row, col] coordinate pairs
    * @returns {Array<[number, number]>} The cells where ship was placed
    */
+  _normalizeCells (cells) {
+    return Array.isArray(cells)
+      ? cells.map(cell =>
+          Array.isArray(cell) ? [cell[0], cell[1]] : [cell?.r, cell?.c]
+        )
+      : []
+  }
+
   placeAtCells (cells) {
-    const board = SubBoard.fromCoords(cells, null, new Mask(0, 0))
+    const normalizedCells = this._normalizeCells(cells)
+    const board = SubBoard.fromCoords(normalizedCells, null, new Mask(0, 0))
+    this._cellsArray = normalizedCells
     this.placeAtBoard(board)
-    return cells
+    return normalizedCells
   }
 
   /**
@@ -778,6 +791,9 @@ export class Ship {
    * @returns {void}
    */
   placeAtBoard (board) {
+    this._cellsArray = board.toCoords.map(coord =>
+      Array.isArray(coord) ? [coord[0], coord[1]] : [coord?.r, coord?.c]
+    )
     this.board = board
     this.sunk = false
   }
