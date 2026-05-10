@@ -161,8 +161,10 @@ export class SubBoard extends SubMask {
   copyToMask (largeMask) {
     const depth = largeMask.cellMask
     for (const [worldX, worldY, value] of this.occupiedLocationsAndValues()) {
-      const newValue = value > depth ? depth : value
-      largeMask.set(worldX, worldY, newValue)
+      if (largeMask.isValid(worldX, worldY)) {
+        const newValue = value > depth ? depth : value
+        largeMask.set(worldX, worldY, newValue)
+      }
     }
   }
 
