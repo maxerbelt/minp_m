@@ -441,7 +441,7 @@ class Enemy extends Waters {
     if (!this.canTakeTurn()) return
 
     const result = await this.setupWeapon(r, c)
-    if (result?.hasTargettedWeapon) {
+    if (result?.hasTargettedWeapon || result?.hasUnattached) {
       return
     }
 
