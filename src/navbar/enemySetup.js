@@ -10,15 +10,18 @@ export function newGame (seek, opponentBoard, friendUI) {
   }
 
   enemy.resetModel()
+
   const title = document.getElementById('enemy-title')
   title.textContent = 'Enemy ' + bh.terrain.mapHeading
 
   if (otherboard) {
     otherboard()
+    // enemy.opponent?.armWeapons()
   } else if (opponentBoard && friendUI) {
     otherboard = opponentBoard
     friendUI.clearFriendClasses()
     enemy.setupAttachedAim()
+    enemy.opponent?.armWeapons()
   }
   enemy.UI.buildBoardHover(
     highlightAoE,
