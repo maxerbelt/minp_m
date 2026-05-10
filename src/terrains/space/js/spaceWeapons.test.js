@@ -15,7 +15,7 @@ describe('spaceWeapons basic behavior', () => {
     expect(m.plural).toBe('Missiles')
     expect(m.launchCursor).toBe('launch')
     expect(m.cursors).toContain('missile')
-    expect(m.points).toBe(1)
+    expect(m.points).toBe(2)
     expect(m.tag).toBe('missile')
     expect(m.volatile).toBe(true)
 
