@@ -1385,12 +1385,16 @@ export class Waters {
    *
    */
   handleEndTurn () {
-    if (this?.opponent == null) {
+    if (
+      this?.opponent == null ||
+      this.opponent.boardDestroyed ||
+      this.opponent.isRevealed ||
+      this.boardDestroyed ||
+      this.isRevealed
+    ) {
       return
     }
-    if (!this.opponent.boardDestroyed) {
-      this.opponent?._handleBeginTurn?.()
-    }
+    this.opponent?._handleBeginTurn?.()
   }
   /**
    * Resolves the target from hit candidates.
