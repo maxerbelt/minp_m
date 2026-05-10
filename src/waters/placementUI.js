@@ -466,7 +466,7 @@ export class PlacementUI extends WatersUI {
 
     const splashCol = document.createElement('div')
     splashCol.className = 'splash-col'
-    for (const [key] of Object.entries(powerList)) {
+    for (const [key, [r, c, power]] of Object.entries(powerList)) {
       const dragShipContainer = UIElementBuilder.createDragContainer()
       dragShipContainer.className = 'splash-container'
       const dragShip = UIElementBuilder.createDragElement('splash-cells')
@@ -474,7 +474,8 @@ export class PlacementUI extends WatersUI {
         'style',
         `display:grid;place-items: center;--boxSize:${this.cellSizeString()};grid-template-rows:repeat(1, var(--boxSize));grid-template-columns:repeat(1, var(--boxSize));gap:0px;`
       )
-      this.appendSplashCell(dragShip, key)
+
+      this.appendSplashCell(dragShip, r, c, power)
       dragShipContainer.appendChild(dragShip)
       const label = UIElementBuilder.createLabel(legend[key])
       dragShipContainer.appendChild(label)

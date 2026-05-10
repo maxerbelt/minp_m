@@ -90,7 +90,21 @@ export class Score {
     this.shot.clear(c, r)
     this.reveal.set(c, r)
   }
-
+  /**
+   * Moves a shot from shot mask to reveal mask.
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   */
+  shotRevealFinalize (r, c) {
+    if (!this.reveal.test(c, r)) return
+    this.shot.set(c, r)
+    this.reveal.clear(c, r)
+  }
+  shotRevealFinalizeXY (x, y) {
+    if (!this.reveal.test(y, x)) return
+    this.shot.set(y, x)
+    this.reveal.clear(y, x)
+  }
   /**
    * Marks a cell as hinted.
    * @param {number} r - Row coordinate

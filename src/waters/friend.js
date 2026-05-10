@@ -7,6 +7,8 @@ import { Player } from './steps.js'
 import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
 
+const ENEMY_TURN_DELAY = 50
+
 /**
  * @typedef {[number, number]} GridCoordinate - [column, row] coordinate pair
  */
@@ -325,7 +327,12 @@ export class Friend extends Waters {
   isHitValid (r, c) {
     return this.map.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
-
+  async _handleBeginTurn () {
+    this.opponent._transitionToOpponentTurn()
+    await Delay.wait(ENEMY_TURN_DELAY)
+    this.testContinue = true
+    await this.seekStep()
+  }
   /**
    * Seeks single ship target with single shot weapons.
    * Attempts to find and fire at valid untried locations.

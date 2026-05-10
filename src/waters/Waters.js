@@ -1378,23 +1378,26 @@ export class Waters {
     this.steps.onEndTurn = this.handleEndTurn.bind(this)
     this.steps.onHint = this.handleHint.bind(this)
   }
+  get cannotPassTurn () {
+    return (
+      this.opponent == null ||
+      this.opponent.boardDestroyed ||
+      this.opponent.isRevealed ||
+      this.boardDestroyed ||
+      this.isRevealed
+    )
+  }
 
   /**
    * Handles end of turn event.
    * Finishes opponent turn and triggers opponent begin turn if game not over.
    *
    */
-  handleEndTurn () {
-    if (
-      this?.opponent == null ||
-      this.opponent.boardDestroyed ||
-      this.opponent.isRevealed ||
-      this.boardDestroyed ||
-      this.isRevealed
-    ) {
+  async handleEndTurn () {
+    if (this.cannotPassTurn) {
       return
     }
-    this.opponent?._handleBeginTurn?.()
+    await this.opponent?._handleBeginTurn?.()
   }
   /**
    * Resolves the target from hit candidates.
@@ -1607,6 +1610,7 @@ export class Waters {
       misses: missEntries
     } = hitShip.hitAt(this, row, col)
     this.markHit(row, col, damaged)
+    this.score.shotRevealFinalize(row, col)
     let totalHits = 1
     let totalShots = initialShots
 
@@ -1628,6 +1632,7 @@ export class Waters {
 
   _applyHitEntries (hitEntries, totalHits) {
     for (const { cell, damaged } of hitEntries) {
+      this.score.shotRevealFinalizeXY(...cell)
       this.score.shot.set(...cell)
       totalHits++
       this.markHit(cell[0], cell[1], damaged)

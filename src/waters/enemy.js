@@ -10,7 +10,6 @@ import { Delay } from '../core/Delay.js'
 const MAX_PLACEMENT_ATTEMPTS = 50
 const MAX_PLACEMENT_RETRIES = 10
 const ATTEMPTS_PER_RETRY = 25
-const ENEMY_TURN_DELAY = 50
 
 /**
  * @typedef {Object} WeaponLaunchResult
@@ -140,27 +139,8 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles the end turn event, transitioning to the opponent's turn.
-   * @returns {Promise<void>}
-   */
-  async handleEndTurn () {
-    if (
-      !this.opponent ||
-      this.opponent.boardDestroyed ||
-      this.opponent.isRevealed
-    ) {
-      return
-    }
-
-    this._transitionToOpponentTurn()
-    await Delay.wait(ENEMY_TURN_DELAY)
-    this.opponent.testContinue = true
-    await this.opponent.seekStep()
-  }
-
-  /**
    * Transitions the UI to the opponent's turn.
-   * @private
+   *
    */
   _transitionToOpponentTurn () {
     this._updateSpinner(true, "Enemy's Turn")
@@ -171,7 +151,7 @@ class Enemy extends Waters {
   /**
    * Handles the begin turn event.
    */
-  _handleBeginTurn () {
+  async _handleBeginTurn () {
     this._hideWaiting()
     if (this.isGameOver()) {
       this.steps.select()
