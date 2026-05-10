@@ -671,15 +671,7 @@ export class Waters {
    * @param {Array} weaponShips - Ships with weapons
    */
   configureLoadOut (map, weaponShips) {
-    const opponent = this.opponent
-    if (bh.seekingMode && this.hasAttachedWeapons) {
-      this.loadOut = this.createLoadOut(map, weaponShips)
-    } else if (opponent) {
-      const opponentWeaponShips = opponent.ships.filter(ship => ship.hasWeapon)
-      this.loadOut = this.createLoadOut(map, opponentWeaponShips)
-    } else {
-      this.loadOut = this.createLoadOut(map, weaponShips)
-    }
+    this.loadOut = this.createLoadOut(map, weaponShips)
   }
 
   /**
@@ -1908,26 +1900,7 @@ export class Waters {
   }
 
   updateUI (ships) {
-    ships = ships || this.opponent.ship || this.ships
-    // Build weapon systems from displayed ships, not from combat loadout.
-    // In hide mode, combat loadout has opponent ships for targeting UI (setupAttachedAim),
-    // but we need to show the displayed player's own weapons in the tally.
-    const displayLoadOut = this.createLoadOut(
-      bh.map,
-      this.getWeaponShipsForDisplay(ships)
-    )
-    const weaponSystems = displayLoadOut.getAllLimitedWeaponSystems()
-    this.updateTally(ships, weaponSystems)
-  }
-
-  /**
-   * Gets the ships with weapons to display for a given set of ships.
-   * @param {Array} ships - Ships to get weapons for
-   * @returns {Array} Ships with weapons
-   * @private
-   */
-  getWeaponShipsForDisplay (ships) {
-    return ships.filter(ship => ship.hasWeapon)
+    this.updateTally(ships, this.loadOut.getAllLimitedWeaponSystems())
   }
   updateTally (ships, weaponSystems) {
     ships = ships || this.ships

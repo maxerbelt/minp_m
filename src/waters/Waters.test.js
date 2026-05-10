@@ -225,8 +225,27 @@ describe('Waters', () => {
     expect(waters.autoPlace()).toBe(true)
   })
 
-  it('updateUI uses correct loadOut for tally regardless of combat loadOut', () => {
-    // Setup: player with own ships, opponent with different ships
+  it('does not build loadOut from opponent ships when opponent exists in hide mode', () => {
+    const originalMap = bh.map
+    const originalSeekingMode = bh.seekingMode
+    bh.seekingMode = false
+    bh.map = {
+      weapons: [
+        {
+          letter: 'Z',
+          isLimited: true,
+          ammo: 1,
+          cursors: [],
+          points: 0,
+          unattachedCursor: 0,
+          postSelectCursor: 0,
+          buttonHtml: '',
+          classname: ''
+        }
+      ],
+      extraArmedFleetForMap: []
+    }
+
     const ownShip = {
       hasWeapon: true,
       getPrimaryWeapon: () => ({
@@ -259,45 +278,12 @@ describe('Waters', () => {
     waters.ships = [ownShip]
     waters.opponent = { ships: [opponentShip] }
 
-    // Mock the map
-    const originalMap = bh.map
-    const originalSeekingMode = bh.seekingMode
-    bh.seekingMode = false
-    bh.map = {
-      weapons: [
-        {
-          letter: 'Z',
-          isLimited: true,
-          ammo: 1,
-          cursors: [],
-          points: 0,
-          unattachedCursor: 0,
-          postSelectCursor: 0,
-          buttonHtml: '',
-          classname: ''
-        }
-      ],
-      extraArmedFleetForMap: []
-    }
-
-    // Arm weapons - this sets combat loadOut to have opponent ships for targeting UI
     waters.armWeapons()
-    expect(waters.loadOut.ships).toEqual(waters.opponent.ships)
 
-    // Now call updateUI with displayed ships (player's own)
-    const updateTallySpy = jest.spyOn(waters, 'updateTally')
-    waters.updateUI(waters.ships)
+    expect(waters.loadOut.ships).toEqual(waters.ships)
+    expect(waters.loadOut.ships[0]).toBe(ownShip)
+    expect(waters.loadOut.ships).not.toEqual(waters.opponent.ships)
 
-    // Verify updateTally was called with correct displayed ships
-    expect(updateTallySpy).toHaveBeenCalled()
-    const [displayedShips, weaponSystems] = updateTallySpy.mock.calls[0]
-    expect(displayedShips).toEqual(waters.ships)
-    // Verify the displayLoadOut was created from displayed ships, not combat loadOut
-    expect(weaponSystems.length).toBeGreaterThan(0)
-    const weaponLetters = weaponSystems.map(ws => ws.weapon.letter)
-    expect(weaponLetters).toContain('Z')
-
-    updateTallySpy.mockRestore()
     bh.map = originalMap
     bh.seekingMode = originalSeekingMode
   })
