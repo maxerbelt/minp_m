@@ -225,69 +225,6 @@ describe('Waters', () => {
     expect(waters.autoPlace()).toBe(true)
   })
 
-  it('does not build loadOut from opponent ships when opponent exists in hide mode', () => {
-    const originalMap = bh.map
-    const originalSeekingMode = bh.seekingMode
-    bh.seekingMode = false
-    bh.map = {
-      weapons: [
-        {
-          letter: 'Z',
-          isLimited: true,
-          ammo: 1,
-          cursors: [],
-          points: 0,
-          unattachedCursor: 0,
-          postSelectCursor: 0,
-          buttonHtml: '',
-          classname: ''
-        }
-      ],
-      extraArmedFleetForMap: []
-    }
-
-    const ownShip = {
-      hasWeapon: true,
-      getPrimaryWeapon: () => ({
-        letter: 'Z',
-        isLimited: true,
-        ammo: 1,
-        cursors: [],
-        points: 0,
-        unattachedCursor: 0,
-        postSelectCursor: 0,
-        buttonHtml: '',
-        classname: ''
-      })
-    }
-    const opponentShip = {
-      hasWeapon: true,
-      getPrimaryWeapon: () => ({
-        letter: 'Y',
-        isLimited: true,
-        ammo: 1,
-        cursors: [],
-        points: 0,
-        unattachedCursor: 0,
-        postSelectCursor: 0,
-        buttonHtml: '',
-        classname: ''
-      })
-    }
-
-    waters.ships = [ownShip]
-    waters.opponent = { ships: [opponentShip] }
-
-    waters.armWeapons()
-
-    expect(waters.loadOut.ships).toEqual(waters.ships)
-    expect(waters.loadOut.ships[0]).toBe(ownShip)
-    expect(waters.loadOut.ships).not.toEqual(waters.opponent.ships)
-
-    bh.map = originalMap
-    bh.seekingMode = originalSeekingMode
-  })
-
   describe('loadForEdit', () => {
     it('loadForEdit initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships

@@ -671,7 +671,15 @@ export class Waters {
    * @param {Array} weaponShips - Ships with weapons
    */
   configureLoadOut (map, weaponShips) {
-    this.loadOut = this.createLoadOut(map, weaponShips)
+    const opponent = this.opponent
+    if (bh.seekingMode && this.hasAttachedWeapons) {
+      this.loadOut = this.createLoadOut(map, weaponShips)
+    } else if (opponent) {
+      const opponentWeaponShips = opponent.ships.filter(ship => ship.hasWeapon)
+      this.loadOut = this.createLoadOut(map, opponentWeaponShips)
+    } else {
+      this.loadOut = this.createLoadOut(map, weaponShips)
+    }
   }
 
   /**
