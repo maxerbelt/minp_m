@@ -275,4 +275,14 @@ describe('setupTabs and switchTo', () => {
     expect(aboutAttached).toBe(true)
     expect(sourceAttached).toBe(true)
   })
+
+  test('setupTabs attaches add tab handler for rules and map list modes', () => {
+    const rulesAddEl = elements.get('tab-add')
+    setupTabs('rules')
+    expect((rulesAddEl.listeners.click || []).length).toBeGreaterThan(0)
+
+    const listAddEl = elements.get('tab-add')
+    setupTabs('list')
+    expect((listAddEl.listeners.click || []).length).toBeGreaterThan(0)
+  })
 })

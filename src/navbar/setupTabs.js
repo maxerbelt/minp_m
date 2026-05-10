@@ -97,9 +97,9 @@ const MODE_AVAILABLE_HANDLERS = {
   build: ['hide', 'seek', 'list', 'rules', 'import'],
   hide: ['build', 'add', 'seek', 'list', 'rules', 'import'],
   seek: ['build', 'add', 'hide', 'list', 'rules', 'import'],
-  list: ['build', 'hide', 'seek', 'rules', 'import'],
-  rules: ['build', 'hide', 'seek', 'list', 'import'],
-  print: ['build', 'hide', 'seek', 'list', 'rules', 'import']
+  list: ['build', 'add', 'hide', 'seek', 'rules', 'import'],
+  rules: ['build', 'add', 'hide', 'seek', 'list', 'import'],
+  print: ['build', 'add', 'hide', 'seek', 'list', 'rules', 'import']
 }
 
 // Module-level tab and navigation management
