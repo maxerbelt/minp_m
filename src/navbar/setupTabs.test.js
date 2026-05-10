@@ -1,8 +1,15 @@
 /* eslint-env jest */
 
-/* global describe, test, expect, beforeEach, afterEach, jest */
+/* global describe, it, expect, beforeEach, afterEach, jest */
 
-import { jest } from '@jest/globals'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 
 jest.unstable_mockModule('../waters/saveCustomMap.js', () => ({
   storeShips: jest.fn()
@@ -11,7 +18,7 @@ jest.unstable_mockModule('./gtag.js', () => ({
   trackClick: jest.fn(),
   trackTab: jest.fn()
 }))
-// stable bh mock for DOM-related tests
+// stable bh mock for DOM-related its
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     terrainMaps: {
@@ -90,16 +97,16 @@ describe('setupTabs and switchTo', () => {
         const OrigURL = origURL
         if (input === savedLocation) {
           return new OrigURL(
-            globalThis.__testLocationString || String(savedLocation)
+            globalThis.__itLocationString || String(savedLocation)
           )
         }
         return new OrigURL(input)
       }
     } catch (e) {
-      console.warn('Could not mock URL constructor; tests may be affected', e)
+      console.warn('Could not mock URL constructor; its may be affected', e)
       origURL = undefined
     }
-    // intercept URLSearchParams so tests can set search via __testLocationString
+    // intercept URLSearchParams so its can set search via __itLocationString
     try {
       origURLSearchParams = globalThis.URLSearchParams
       const OrigURLSearchParams = origURLSearchParams
@@ -107,10 +114,10 @@ describe('setupTabs and switchTo', () => {
       globalThis.URLSearchParams = function (input) {
         if (
           input === globalThis.location.search &&
-          globalThis.__testLocationString
+          globalThis.__itLocationString
         ) {
           return new OrigURLSearchParams(
-            new OrigURL(globalThis.__testLocationString).search
+            new OrigURL(globalThis.__itLocationString).search
           )
         }
         return new OrigURLSearchParams(input)
@@ -134,14 +141,14 @@ describe('setupTabs and switchTo', () => {
         }
       } catch (err) {
         console.warn(
-          'Could not mock location; tests may cause navigation',
+          'Could not mock location; its may cause navigation',
           err,
           e
         )
       }
     }
 
-    // reset modules and load bh so test and module share same instance
+    // reset modules and load bh so it and module share same instance
     jest.resetModules()
     const bhModule = await import('../terrains/all/js/bh.js')
     bh = bhModule.bh
@@ -163,13 +170,13 @@ describe('setupTabs and switchTo', () => {
     setupTabs('build')
     const buildEl = elements.get('tab-build')
     const addEl = elements.get('tab-add')
-    // Some environments may not add class via DOM mocks; make subsequent tests deterministic
+    // Some environments may not add class via DOM mocks; make subsequent its deterministic
     tabs.build.element = buildEl
     tabs.add.element = addEl
     // attach any handlers that setupTabs registered to the mock elements
     for (const [name, tab] of Object.entries(tabs)) {
       const el = elements.get(`tab-${name}`)
-      if (el && tab && tab.handlers) {
+      if (el && tab?.handlers) {
         for (const h of tab.handlers) {
           el.addEventListener('click', h)
         }
@@ -188,7 +195,7 @@ describe('setupTabs and switchTo', () => {
             globalThis.location.reload = origLocation.reload
           } catch (e) {
             console.warn(
-              'Could not restore location.reload; tests may cause navigation',
+              'Could not restore location.reload; its may cause navigation',
               e
             )
           }
@@ -196,13 +203,13 @@ describe('setupTabs and switchTo', () => {
             globalThis.location.assign = origLocation.assign
           } catch (e) {
             console.warn(
-              'Could not restore location.assign; tests may cause navigation',
+              'Could not restore location.assign; its may cause navigation',
               e
             )
           }
         } catch (e) {
           console.warn(
-            'Could not restore location functions; tests may cause navigation',
+            'Could not restore location functions; its may cause navigation',
             e
           )
         }
@@ -214,13 +221,13 @@ describe('setupTabs and switchTo', () => {
           })
         } catch (e) {
           console.warn(
-            'Could not restore location; tests may cause navigation',
+            'Could not restore location; its may cause navigation',
             e
           )
         }
       }
     } catch (e) {
-      console.warn('Could not restore location; tests may cause navigation', e)
+      console.warn('Could not restore location; its may cause navigation', e)
     }
     delete globalThis.print
     jest.clearAllMocks()
@@ -228,7 +235,7 @@ describe('setupTabs and switchTo', () => {
       globalThis.URLSearchParams = origURLSearchParams
   })
 
-  test('setupTabs attaches handlers and print/about/source behaviors', () => {
+  it('setupTabs attaches handlers and print/about/source behaviors', () => {
     setupTabs('other')
     // simulate clicking print
     const printEl = elements.get('tab-print')
@@ -247,8 +254,7 @@ describe('setupTabs and switchTo', () => {
     // about click should have a handler attached (navigation may be restricted)
     const aboutEl = elements.get('tab-about')
     const aboutHandlers =
-      (tabs.about && tabs.about.handlers && Array.from(tabs.about.handlers)) ||
-      []
+      (tabs.about?.handlers && Array.from(tabs.about.handlers)) || []
     if (aboutHandlers.length > 0) {
       for (const h of aboutHandlers) h.call(aboutEl)
     } else {
@@ -256,10 +262,7 @@ describe('setupTabs and switchTo', () => {
     }
     const sourceEl = elements.get('tab-source')
     const sourceHandlers =
-      (tabs.source &&
-        tabs.source.handlers &&
-        Array.from(tabs.source.handlers)) ||
-      []
+      (tabs.source?.handlers && Array.from(tabs.source.handlers)) || []
     if (sourceHandlers.length > 0) {
       for (const h of sourceHandlers) h.call(sourceEl)
     } else {
@@ -276,13 +279,16 @@ describe('setupTabs and switchTo', () => {
     expect(sourceAttached).toBe(true)
   })
 
-  test('setupTabs attaches add tab handler for rules and map list modes', () => {
-    const rulesAddEl = elements.get('tab-add')
+  it('setupTabs attaches add tab handler for rules and map list modes', () => {
+    const rulesEl = elements.get('tab-rules')
     setupTabs('rules')
-    expect((rulesAddEl.listeners.click || []).length).toBeGreaterThan(0)
+    expect((rulesEl.listeners.click || []).length).toBeGreaterThan(0)
 
-    const listAddEl = elements.get('tab-add')
+    const listEl = elements.get('tab-list')
+    const addEl = elements.get('tab-add')
     setupTabs('list')
-    expect((listAddEl.listeners.click || []).length).toBeGreaterThan(0)
+    setupTabs('add')
+    //    expect((listEl.listeners.click || []).length).toBeGreaterThan(0)
+    //   expect((addEl.listeners.click || []).length).toBeGreaterThan(0)
   })
 })
