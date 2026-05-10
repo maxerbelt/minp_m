@@ -21,7 +21,14 @@ describe('CellsToBePlaced', () => {
       const board = Mask.fromCoords(variant)
       const validator = () => true
 
-      const placing = new CellsToBePlaced(board, 1, 1, validator)
+      const placing = new CellsToBePlaced(
+        board,
+        1,
+        1,
+        validator,
+        undefined,
+        undefined
+      )
 
       expect(placing.board).toBeDefined()
       expect(placing.validator).toBe(validator)
@@ -40,6 +47,60 @@ describe('CellsToBePlaced', () => {
       // The board is embedded at (2, 3), so cells should be at absolute positions
       expect(placing.isCandidate(2, 3)).toBe(true)
     })
+
+    it('constructor displaces the board2', () => {
+      const board1 = new Mask(4, 1, 15n, undefined, 2)
+      const board = board1.embed(0, 3)
+
+      expect(board1.toAscii).toBe('1111')
+      expect(board.toAscii).toBe('1111')
+      const validator = () => true
+      const target = { boundsChecker: () => true, getZone: () => {} }
+
+      const placing = new CellsToBePlaced(board1, 3, 0, validator, 0, target)
+
+      const displacedArea = placing.displacedArea(18, 10)
+
+      expect(displacedArea.toAscii).toBe(
+        `..111111..........
+..111111..........
+..................
+..................
+..................
+..................
+..................
+..................
+..................
+..................`
+      )
+    })
+
+    it('constructor displaces the board', () => {
+      const board1 = new Mask(1, 4, 15n, undefined, 2)
+      const board = board1.embed(3, 0)
+
+      expect(board1.toAscii).toBe('1\n1\n1\n1')
+      expect(board.toAscii).toBe('1\n1\n1\n1')
+      const validator = () => true
+      const target = { boundsChecker: () => true, getZone: () => {} }
+
+      const placing = new CellsToBePlaced(board1, 0, 3, validator, 0, target)
+
+      const displacedArea = placing.displacedArea(18, 10)
+
+      expect(displacedArea.toAscii).toBe(
+        `..................
+..................
+11................
+11................
+11................
+11................
+11................
+11................
+..................
+..................`
+      )
+    })
     it('constructor applies aircraft carrier', () => {
       const occupancyCoords = [
         [0, 0],
@@ -56,7 +117,14 @@ describe('CellsToBePlaced', () => {
 
       const validator = () => true
 
-      const placing = new CellsToBePlaced(board, 7, 4, validator)
+      const placing = new CellsToBePlaced(
+        board,
+        7,
+        4,
+        validator,
+        undefined,
+        undefined
+      )
       const sb = placing.board
       expect(sb).toBeDefined()
       expect(sb.mask.toAscii).toBe('1.\n11\n11\n11\n.1')
@@ -95,7 +163,14 @@ describe('CellsToBePlaced', () => {
 
       const validator = () => true
 
-      const placing = new CellsToBePlaced(board, 7, 4, validator)
+      const placing = new CellsToBePlaced(
+        board,
+        7,
+        4,
+        validator,
+        undefined,
+        undefined
+      )
       const sb = placing.board
       expect(sb).toBeDefined()
       expect(sb.mask.toAscii).toBe('1.\n11\n11\n11\n.1')
@@ -122,7 +197,14 @@ describe('CellsToBePlaced', () => {
       const board = Mask.fromCoords(variant)
       const validator = () => true
 
-      const placing = new CellsToBePlaced(board, 0, 0, validator)
+      const placing = new CellsToBePlaced(
+        board,
+        0,
+        0,
+        validator,
+        undefined,
+        undefined
+      )
 
       expect(placing.notGood).toBeDefined()
     })
@@ -135,7 +217,14 @@ describe('CellsToBePlaced', () => {
         [0, 1]
       ]
       const board = Mask.fromCoords(coords)
-      const placing = new CellsToBePlaced(board, 0, 0, () => true)
+      const placing = new CellsToBePlaced(
+        board,
+        0,
+        0,
+        () => true,
+        undefined,
+        undefined
+      )
 
       const cells = placing.cells
       expect(Array.isArray(cells)).toBe(true)
@@ -182,7 +271,7 @@ describe('CellsToBePlaced', () => {
       }
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 5, target)
 
-      const result = placing.zoneInfo(2, 3)
+      const result = placing.zoneInfo(2, 3, undefined)
 
       expect(target.getZone).toHaveBeenCalledWith(2, 3, 5)
       expect(result).toBe('ZONE_VALUE')
@@ -197,7 +286,7 @@ describe('CellsToBePlaced', () => {
       }
       const placing = new CellsToBePlaced(board, 0, 0, () => true, 7, target)
 
-      placing.zoneInfo(1, 1)
+      placing.zoneInfo(1, 1, undefined)
 
       expect(target.getZone).toHaveBeenCalledWith(1, 1, 7)
     })
