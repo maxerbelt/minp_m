@@ -48,7 +48,7 @@ describe('CellsToBePlaced', () => {
       expect(placing.isCandidate(2, 3)).toBe(true)
     })
 
-    it('constructor displaces the board2', () => {
+    it('displaces the board2', () => {
       const board1 = new Mask(4, 1, 15n, undefined, 2)
       const board = board1.embed(0, 3)
 
@@ -75,12 +75,26 @@ describe('CellsToBePlaced', () => {
       )
     })
 
-    it('constructor displaces the board', () => {
+    it('displaces the board', () => {
       const board1 = new Mask(1, 4, 15n, undefined, 2)
-      const board = board1.embed(3, 0)
+      const board = board1.embed(0, 3)
 
       expect(board1.toAscii).toBe('1\n1\n1\n1')
       expect(board.toAscii).toBe('1\n1\n1\n1')
+      const dilatedBoard = board.flatDilateExpand(1).toMask(18, 10)
+
+      expect(dilatedBoard.toAscii).toBe(
+        `..................
+..................
+11................
+11................
+11................
+11................
+11................
+11................
+..................
+..................`
+      )
       const validator = () => true
       const target = { boundsChecker: () => true, getZone: () => {} }
 
