@@ -1,6 +1,7 @@
 .status {
     display: flex;
     justify-content: space-between;
+    flex-grow: 1;
     gap: 16px;
     font-weight: bold;
     color: #111;
@@ -97,6 +98,7 @@ details[open] .chevron {
 
 .game-status {
     text-align: left;
+    flex-grow: 1;
 }
 
 flex-direction .mode-status {

@@ -568,6 +568,8 @@ class Enemy extends Waters {
         rack,
         hasUnattached
       )
+    } else {
+      gameStatus.displayAmmo(wps)
     }
   }
 

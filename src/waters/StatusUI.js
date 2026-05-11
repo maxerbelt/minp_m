@@ -366,20 +366,50 @@ class StatusUI {
     const weapon = wps.weapon
     gameStatus.showMode(weapon?.name || 'Single Shot')
     this._resetAmmoIcons()
+    this._displayAmmoStepAndHint(wps, maps, numCoords, selectedWps, unattached)
+  }
 
-    let idxUsed
-    if (weapon.isLimited) {
-      idxUsed = this._displayLimitedAmmoStatus(
-        wps,
-        maps,
-        numCoords,
-        selectedWps,
-        unattached
-      )
-    } else {
-      idxUsed = this._displaySingleShotStatus()
-    }
+  /**
+   * Displays the current ammo step and enqueues the weapon step hint.
+   * @private
+   * @param {Object} wps - The weapon system
+   * @param {Object} maps - The maps configuration
+   * @param {number} numCoords - Number of coordinates
+   * @param {Object|null} selectedWps - Selected weapon system
+   * @param {boolean} unattached - Whether there is an unattached weapon system
+   */
+  _displayAmmoStepAndHint (wps, maps, numCoords, selectedWps, unattached) {
+    const weapon = wps.weapon
+    const idxUsed = weapon.isLimited
+      ? this._displayLimitedAmmoStatus(
+          wps,
+          maps,
+          numCoords,
+          selectedWps,
+          unattached
+        )
+      : this._displaySingleShotStatus()
+
     this.addToQueue(weapon.stepHint(idxUsed), false)
+  }
+
+  displayAmmo (wps) {
+    const weapon = wps.weapon
+    if (weapon.isLimited) {
+      this._displayAmmoCount(wps)
+    } else {
+      this._displayInfiniteAmmo()
+    }
+  }
+
+  /**
+   * Displays the ammo count for the weapon system.
+   * @private
+   * @param {Object} wps - The weapon system
+   */
+  _displayAmmoCount (wps) {
+    const ammo = wps.ammoRemaining()
+    this._displayAmmoRemaining(wps, ammo)
   }
 
   /**
@@ -392,19 +422,19 @@ class StatusUI {
    * @returns {number} The current step index
    */
   _displayLimitedAmmoStatus (wps, maps, numCoords, selectedWps, unattached) {
-    const ammo = wps.ammoRemaining()
+    this._displayAmmoCount(wps)
+
     const weapon = wps.weapon
     const letter = weapon.letter
-
-    this._displayAmmoRemaining(wps, ammo)
-
     if (weapon.numStep >= 2) {
-      const idx = unattached
-        ? (numCoords + (weapon.postUnattached || 0)) % weapon.numStep
-        : weapon.stepIdx(numCoords, selectedWps ? 1 : 0)
-      this._displayWhichLaunchStep(idx)
-      this._displayAimStep(maps, letter, weapon)
-      this._displayLaunchFirstStep(maps, letter, weapon)
+      const idx = this._displayLaunchSteps(
+        unattached,
+        numCoords,
+        weapon,
+        selectedWps,
+        maps,
+        letter
+      )
       return idx
     }
 
@@ -428,6 +458,34 @@ class StatusUI {
     this._displayInfiniteAmmo()
     this._displaySShotIcon()
     return 0
+  }
+
+  /**
+   * Displays launch steps for multi-step weapons.
+   * @private
+   * @param {boolean} unattached - Whether there is an unattached weapon system
+   * @param {number} numCoords - Number of coordinates
+   * @param {Object} weapon - The weapon object
+   * @param {Object|null} selectedWps - Selected weapon system
+   * @param {Object} maps - The maps configuration
+   * @param {string} letter - The weapon letter
+   * @returns {number} The current step index
+   */
+  _displayLaunchSteps (
+    unattached,
+    numCoords,
+    weapon,
+    selectedWps,
+    maps,
+    letter
+  ) {
+    const idx = unattached
+      ? (numCoords + (weapon.postUnattached || 0)) % weapon.numStep
+      : weapon.stepIdx(numCoords, selectedWps ? 1 : 0)
+    this._displayWhichLaunchStep(idx)
+    this._displayAimStep(maps, letter, weapon)
+    this._displayLaunchFirstStep(maps, letter, weapon)
+    return idx
   }
 
   /**
