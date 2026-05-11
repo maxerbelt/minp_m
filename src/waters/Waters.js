@@ -1806,7 +1806,6 @@ export class Waters {
   }
 
   updateResultsOfTurn (weapon, hits, dtaps, sunks, reveals = 0, info = '') {
-    //  this.updateMode()
     const messageInfo = info ? info + ' ' : ''
     if (this.boardDestroyed) {
       return
