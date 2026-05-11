@@ -102,7 +102,7 @@ export function setupEnemy (placementHandler, testHandler) {
   if (testHandler) {
     enemy.UI?.testBtn?.addEventListener('click', testHandler)
   }
-  enemy.setupWeaponButtonHandlers()
+  //enemy.setupWeaponButtonHandlers()
 
   // Setup keyboard shortcuts and return cleanup function
   return _setupSeekShortcuts(placementHandler, testHandler)
