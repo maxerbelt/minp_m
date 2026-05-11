@@ -1332,7 +1332,7 @@ export class Waters {
         options
       )
       let result = await this.destroy(weapon, effect, options)
-      console.log('Crash Splash Effect:', splashEffect)
+      //console.log('Crash Splash Effect:', splashEffect)
       options.isSplash = true
       const splashResult = await this.destroy(weapon, splashEffect, options)
       this.accumulateResult(splashResult, result)

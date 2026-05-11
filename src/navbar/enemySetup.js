@@ -16,7 +16,6 @@ export function newGame (seek, opponentBoard, friendUI) {
 
   if (otherboard) {
     otherboard()
-    // enemy.opponent?.armWeapons()
   } else if (opponentBoard && friendUI) {
     otherboard = opponentBoard
     friendUI.clearFriendClasses()

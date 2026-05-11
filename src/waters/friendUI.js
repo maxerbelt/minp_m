@@ -352,22 +352,22 @@ export class FriendUI extends PlacementUI {
     const config = labelMap[mode] || {}
     if (this.score) {
       this.setClasses(this.score.placedLabel, {
-        [UI_CLASSES.HIDDEN]: !config.placed
+        [UI_CLASSES.HIDDEN]: !config?.placed
       })
       this.setClasses(this.score.shotsLabel, {
-        [UI_CLASSES.HIDDEN]: !config.shots
+        [UI_CLASSES.HIDDEN]: !config?.shots
       })
       this.setClasses(this.score.hitsLabel, {
-        [UI_CLASSES.HIDDEN]: !config.hits
+        [UI_CLASSES.HIDDEN]: !config?.hits
       })
       this.setClasses(this.score.sunkLabel, {
-        [UI_CLASSES.HIDDEN]: !config.sunk
+        [UI_CLASSES.HIDDEN]: !config?.sunk
       })
       this.setClasses(this.score.revealsLabel, {
-        [UI_CLASSES.HIDDEN]: !config.reveals
+        [UI_CLASSES.HIDDEN]: !config?.reveals
       })
       this.setClasses(this.score.hintsLabel, {
-        [UI_CLASSES.HIDDEN]: !config.hints
+        [UI_CLASSES.HIDDEN]: !config?.hints
       })
     }
   }
@@ -476,13 +476,14 @@ export class FriendUI extends PlacementUI {
     } else {
       cell.classList.add(UI_CLASSES.EMPTY)
     }
-    dataset.ammo = 0
+    dataset.ammo = '0'
   }
 
   /**
    * Proceeds to the next stage after ship placement.
    */
   gotoNextStageAfterPlacement () {
+    this.clearClasses()
     if (this.isTestEnvironment()) {
       this.setReadyModeAfterPlacement()
     } else {

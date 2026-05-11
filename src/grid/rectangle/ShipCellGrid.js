@@ -470,11 +470,7 @@ export class ShipCellGrid extends GridBase {
       )
       this._maskedGrid.joinWith(displacedCells)
 
-      console.log(`displacedArea   ${displacedCells.toAscii}`)
       ship.addToGrid(this)
-      console.log(
-        `Placed ship ${ship.letter} at \n${this._maskedGrid.toAscii}\ngrid\n${this.toAscii}`
-      )
 
       return ship.cells
     }

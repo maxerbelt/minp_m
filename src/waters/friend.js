@@ -504,7 +504,7 @@ export class Friend extends Waters {
     const shots = this.score.shot
     const cross = hits.clone.dilateCross()
     const candidates = cross.take(shots)
-    this._logMaskInfo('cross', shots, hits, cross, candidates)
+    //  this._logMaskInfo('cross', shots, hits, cross, candidates)
     return await this.tryFinishCondition(candidates, m =>
       this.selectRandomCandidate(m)
     )
@@ -639,9 +639,9 @@ export class Friend extends Waters {
       if (!ship.hits?.occupancy) {
         return acc
       }
-      this._logShipHits(ship, acc)
+      //   this._logShipHits(ship, acc)
       const result = acc.join(ship.hits)
-      console.log('combined hits', result, result.toAscii)
+      //console.log('combined hits', result, result.toAscii)
       return result
     }, blankMask)
   }
