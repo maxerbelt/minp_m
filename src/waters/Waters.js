@@ -451,25 +451,21 @@ export class Waters {
    * @param {Array<string>} keyIds - Candidate key identifiers
    * @param {number} hintR - Hint row coordinate
    * @param {number} hintC - Hint column coordinate
-   * @param {boolean} random - Whether to select randomly
+   * @param {boolean|string} random - Whether to select randomly
    * @param {Object} viewModel - UI view model
    * @returns {WeaponSelection} Weapon selection payload
    * @private
    */
   selectWeaponFromCell (cell, keyIds, hintR, hintC, random, viewModel) {
-    let availableKeys = [...keyIds]
-    if (this.shouldFilterPreviousSourceKeys(hintR, hintC, keyIds)) {
-      availableKeys = availableKeys.filter(k => !this.previousSources.has(k))
-    } else {
-      this.previousSources = new Set()
-    }
+    const availableKeys = this.determineAvailableSelectionKeys(
+      keyIds,
+      hintR,
+      hintC
+    )
     this.lastClick = { r: hintR, c: hintC }
 
     const filteredKeys = this.filterLoadedWeaponKeys(availableKeys)
-    const selectedKey =
-      random || !filteredKeys.length
-        ? randomElement(filteredKeys)
-        : this.findClosestWeaponKey(filteredKeys, hintC, hintR)
+    const selectedKey = this.chooseWeaponKey(filteredKeys, hintR, hintC, random)
 
     if (!selectedKey) {
       return this.selectRandomWeapon()
@@ -477,6 +473,49 @@ export class Waters {
 
     this.previousSources.add(selectedKey)
     return this.processSelectedWeaponKey(selectedKey, viewModel, hintR, hintC)
+  }
+
+  /**
+   * Determines selection keys after repeated click filtering.
+   * @param {Array<string>} keyIds - Candidate key identifiers
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {Array<string>} Available keys for selection
+   * @private
+   */
+  determineAvailableSelectionKeys (keyIds, hintR, hintC) {
+    const availableKeys = [...keyIds]
+    if (this.shouldFilterPreviousSourceKeys(hintR, hintC, keyIds)) {
+      return availableKeys.filter(k => !this.previousSources.has(k))
+    }
+    this.previousSources = new Set()
+    return availableKeys
+  }
+
+  /**
+   * Chooses a weapon key either randomly or by proximity.
+   * @param {Array<string>} filteredKeys - Filtered weapon keys
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @param {boolean|string} random - Whether to select randomly
+   * @returns {string|null} Selected weapon key
+   * @private
+   */
+  chooseWeaponKey (filteredKeys, hintR, hintC, random) {
+    if (this.isRandomSelection(random) || filteredKeys.length === 0) {
+      return randomElement(filteredKeys)
+    }
+    return this.findClosestWeaponKey(filteredKeys, hintC, hintR)
+  }
+
+  /**
+   * Determines whether a selection strategy should be random.
+   * @param {boolean|string} random - Selection mode
+   * @returns {boolean} True when random selection should be used
+   * @private
+   */
+  isRandomSelection (random) {
+    return random === true || random === 'random'
   }
 
   /**
@@ -1060,7 +1099,7 @@ export class Waters {
    * @private
    */
   handleNullCellWeaponSelection (hintR, hintC) {
-    return this.createDefaultWeaponSelection(hintR, hintC)
+    return this.handleMissingCellWeaponSelection(hintR, hintC)
   }
 
   /**
@@ -1071,6 +1110,17 @@ export class Waters {
    * @private
    */
   handleNoKeysWeaponSelection (hintR, hintC) {
+    return this.handleMissingCellWeaponSelection(hintR, hintC)
+  }
+
+  /**
+   * Handles weapon selection paths where a default selection should be returned.
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Weapon selection payload
+   * @private
+   */
+  handleMissingCellWeaponSelection (hintR, hintC) {
     return this.createDefaultWeaponSelection(hintR, hintC)
   }
 
@@ -1324,21 +1374,23 @@ export class Waters {
    * @returns {*} The destruction result.
    */
   async handleNoHits (weapon, effect, options) {
-    if (options?.crashLoc) {
-      const splashEffect = await this.getCrashSplash(
-        weapon,
-        options.crashLoc,
-        effect,
-        options
-      )
-      let result = await this.destroy(weapon, effect, options)
-      //console.log('Crash Splash Effect:', splashEffect)
-      options.isSplash = true
-      const splashResult = await this.destroy(weapon, splashEffect, options)
-      this.accumulateResult(splashResult, result)
-      return result
+    if (!options?.crashLoc) {
+      return await this.destroy(weapon, effect, options)
     }
-    return await this.destroy(weapon, effect, options)
+
+    const splashEffect = await this.getCrashSplash(
+      weapon,
+      options.crashLoc,
+      effect,
+      options
+    )
+    const result = await this.destroy(weapon, effect, options)
+    options.isSplash = true
+    this.accumulateResult(
+      await this.destroy(weapon, splashEffect, options),
+      result
+    )
+    return result
   }
 
   /**
@@ -1347,29 +1399,34 @@ export class Waters {
    * @param {Array} effect - The effect.
    * @param {Array} target - The target.
    * @param {Array} hitCandidates - The hit candidates.
+   * @param {Object} options - Additional options.
    * @returns {*} The destruction result.
    */
   handleHits (weapon, effect, target, hitCandidates, options) {
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
-    if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
-      const splashEffect = this.getCrashSplash(
-        weapon,
-        options.crashLoc,
-        effect,
-        options
-      )
-
-      options.isSplash = true
-      return this.destroy(weapon, splashEffect, options)
-    }
-    const splashEffect = this.getStrikeSplash(
+    const splashEffect = this.selectSplashEffect(
       weapon,
       resolvedTarget,
       effect,
       options
     )
-
     return this.destroy(weapon, splashEffect, options)
+  }
+
+  /**
+   * Chooses the correct splash effect based on weapon state.
+   * @param {*} weapon - The weapon.
+   * @param {Array} resolvedTarget - Resolved hit target.
+   * @param {Array} effect - The original effect.
+   * @param {Object} options - Additional options.
+   * @returns {Array} The splash effect.
+   * @private
+   */
+  selectSplashEffect (weapon, resolvedTarget, effect, options) {
+    if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
+      return this.getCrashSplash(weapon, options.crashLoc, effect, options)
+    }
+    return this.getStrikeSplash(weapon, resolvedTarget, effect, options)
   }
   /**
    * Initializes the steps event handlers.
@@ -1848,11 +1905,66 @@ export class Waters {
     return key === null
   }
   applyToAoE (effect, weapon, options) {
+    const normalizedEffect = this.normalizeEffect(effect, weapon, options)
     let acc = LoadOut.noResult
-    for (const [r, c, power] of effect) {
+
+    for (const [r, c, power] of normalizedEffect) {
       acc = this.applyToPosition(r, c, weapon, power, acc, options)
     }
     return acc
+  }
+
+  /**
+   * Normalizes an effect into a safely iterable shape array.
+   * @param {*} effect - Raw effect payload from a weapon
+   * @param {*} weapon - The weapon generating the effect
+   * @param {Object} options - Additional options
+   * @returns {Array<Array<number>>} Normalized effect payload
+   * @private
+   */
+  normalizeEffect (effect, weapon, options) {
+    if (effect == null) {
+      this.warnInvalidEffect(effect, weapon, options)
+      return []
+    }
+
+    let normalized = []
+    if (Array.isArray(effect)) {
+      normalized = effect
+    } else if (
+      typeof effect[Symbol.iterator] === 'function' &&
+      typeof effect !== 'string'
+    ) {
+      normalized = Array.from(effect)
+    } else {
+      this.warnInvalidEffect(effect, weapon, options)
+      return []
+    }
+
+    const filtered = normalized.filter(
+      item => Array.isArray(item) && item.length >= 3
+    )
+    if (filtered.length !== normalized.length) {
+      this.warnInvalidEffect(effect, weapon, options)
+    }
+    return filtered
+  }
+
+  /**
+   * Warns when a weapon effect payload is malformed.
+   * @param {*} effect - Raw effect payload
+   * @param {*} weapon - The weapon generating the payload
+   * @param {Object} options - Additional options
+   * @private
+   */
+  warnInvalidEffect (effect, weapon, options) {
+    if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'test') {
+      console.warn('Invalid weapon effect payload:', {
+        effect,
+        weapon: weapon?.name || weapon?.letter,
+        options
+      })
+    }
   }
 
   /**
@@ -1879,7 +1991,7 @@ export class Waters {
     const results = this.applyToAoE(effect, weapon, options)
     this.flash(results.hits > 0 ? 'long' : undefined)
 
-    this.score.dtaps += results.dtap
+    this.score.dtaps += results.dtap || 0
     /// this.updateMode()
     return results
   }
