@@ -1,5 +1,0 @@
-const SUPPORTED_BITS_PER_CELL = [1, 2, 4, 8]
-const SUPPORTED_DEPTHS = SUPPORTED_BITS_PER_CELL.map(bits => 1 << bits) // [2, 4, 16, 256]
-
-const SUPPORTED_DEPTHS_REV = SUPPORTED_DEPTHS.slice().reverse()
-const SUPPORTED_BITS_PER_CELL_REV = SUPPORTED_BITS_PER_CELL.slice().reverse()
