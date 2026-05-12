@@ -10,11 +10,6 @@ export class RectDrawColor extends RectDraw {
   // Constants
   // ============================================================================
 
-  /** Supported depth values */
-  static get SUPPORTED_DEPTHS () {
-    return [2, 4, 16, 256]
-  }
-
   /** RGB color cube step size for 256-color palette */
   static get RGB_CUBE_STEP () {
     return 51
