@@ -1,31 +1,14 @@
 /**
- * Store32Morphology - Helper utilities for Store32 (Uint32Array) morphology.
+ * Store32Morphology - Helper utilities for Store32 morphology.
  *
- * Isolates morphology-specific operations from Store32 to maintain separation
- * of concerns. Store32 focuses on Uint32Array storage semantics while this class
- * handles morphological operation logic.
- *
- * Operations are split by storage type:
- * - Shift-based: for 1-bit (occupancy) grids using fast bit operations
- * - Cell-wise: for multi-bit (colored) grids using per-cell iteration
- *
- * Uint32Array operations require word-by-word processing, unlike BigInt's
- * monolithic representation. All array operations respect word boundaries.
- *
- * @example
- * // 1-bit dilation using shifts
- * const dilated = Store32Morphology.propagateVerticalShift(store, bits, width, masks)
- *
- * @example
- * // Multi-bit dilation using per-cell propagation
- * const dilated = Store32Morphology.expandAdjacentCellsHorizontally(store, bits)
+ * This module isolates morphology-specific operations from Store32 so that
+ * Store32 stays focused on Uint32Array storage semantics and bitboard representation.
  */
 export class Store32Morphology {
   /**
    * Normalize an edge mask value for Uint32Array bitwise calculations.
-   * Converts primitives to Uint32Array for consistent word-wise operations.
-   * @param {Uint32Array|number|null|undefined} maskValue - Value to normalize
-   * @returns {Uint32Array} Normalized edge mask
+   * @param {Uint32Array|number|null|undefined} maskValue
+   * @returns {Uint32Array}
    */
   static normalizeEdgeMask (maskValue) {
     if (maskValue instanceof Uint32Array) return maskValue
@@ -34,12 +17,9 @@ export class Store32Morphology {
 
   /**
    * Expand each populated cell into its horizontal neighbors.
-   * Per-cell dilation for multi-bit stores: propagates color values left and right.
-   * Does not use edge masks (relies on grid boundaries via iteration).
-   *
-   * @param {Object} store - Store32 instance with width, height properties
-   * @param {Uint32Array} bitboard - Input colored bitboard
-   * @returns {Uint32Array} Bitboard with colors expanded to adjacent columns
+   * @param {Object} store - Store32 instance
+   * @param {Uint32Array} bitboard
+   * @returns {Uint32Array}
    */
   static expandAdjacentCellsHorizontally (store, bitboard) {
     const width = store.width
@@ -59,13 +39,10 @@ export class Store32Morphology {
 
   /**
    * Expand each populated cell into its vertical neighbors.
-   * Per-cell dilation for multi-bit stores: propagates color values up and down.
-   * Does not use edge masks (relies on grid boundaries via iteration).
-   *
-   * @param {Object} store - Store32 instance with width, height properties
-   * @param {Uint32Array} bitboard - Input colored bitboard
-   * @param {number} gridWidth - Width of grid (for row offset calculation)
-   * @returns {Uint32Array} Bitboard with colors expanded to adjacent rows
+   * @param {Object} store - Store32 instance
+   * @param {Uint32Array} bitboard
+   * @param {number} gridWidth
+   * @returns {Uint32Array}
    */
   static propagateAdjacentCellsVertically (store, bitboard, gridWidth) {
     const height = store.height
@@ -85,17 +62,11 @@ export class Store32Morphology {
 
   /**
    * Propagate 1-bit values vertically using Uint32Array shifts and edge masks.
-   * Optimized shift-based operation for single-bit grids (occupancy only).
-   * Applies edge masks to prevent cells from expanding beyond grid boundaries.
-   * Processes word-by-word to respect Uint32Array structure.
-   *
-   * @param {Object} store - Store32 instance with shiftBits and combineMasked methods
-   * @param {Uint32Array} bitboard - Input 1-bit occupancy bitboard
-   * @param {number} gridWidth - Width in cells (shift amount for vertical operations)
-   * @param {Object} [edgeMasks] - Edge masks to restrict boundary expansion
-   * @param {Uint32Array} [edgeMasks.notTop] - Mask preventing expansion beyond top edge
-   * @param {Uint32Array} [edgeMasks.notBottom] - Mask preventing expansion beyond bottom edge
-   * @returns {Uint32Array} Bitboard with vertical expansion (up and down shifts)
+   * @param {Object} store - Store32 instance
+   * @param {Uint32Array} bitboard
+   * @param {number} gridWidth
+   * @param {Object} edgeMasks
+   * @returns {Uint32Array}
    */
   static propagateVerticalShift (store, bitboard, gridWidth, edgeMasks) {
     const bitsPerCell = store.bitsPerCell
@@ -120,12 +91,9 @@ export class Store32Morphology {
 
   /**
    * Apply horizontal erosion for multi-bit stores using neighbor survival rules.
-   * Per-cell operation that removes colors from cells without horizontal neighbors.
-   * A cell survives only if it has an occupied neighbor on both left and right.
-   *
-   * @param {Object} store - Store32 instance with cellSurvivesHorizontalErosion method
-   * @param {Uint32Array} bitboard - Input colored bitboard
-   * @returns {Uint32Array} Eroded bitboard with edge colors removed
+   * @param {Object} store - Store32 instance
+   * @param {Uint32Array} bitboard
+   * @returns {Uint32Array}
    */
   static erodeHorizontalCells (store, bitboard) {
     const result = bitboard.slice()
@@ -141,13 +109,10 @@ export class Store32Morphology {
 
   /**
    * Apply vertical erosion for multi-bit stores using neighbor survival rules.
-   * Per-cell operation that removes colors from cells without vertical neighbors.
-   * A cell survives only if it has an occupied neighbor on both top and bottom.
-   *
-   * @param {Object} store - Store32 instance with cellSurvivesVerticalErosion method
-   * @param {Uint32Array} bitboard - Input colored bitboard
-   * @param {number} gridWidth - Grid width (used for neighbor offset calculation)
-   * @returns {Uint32Array} Eroded bitboard with edge colors removed
+   * @param {Object} store - Store32 instance
+   * @param {Uint32Array} bitboard
+   * @param {number} gridWidth
+   * @returns {Uint32Array}
    */
   static erodeVerticalCells (store, bitboard, gridWidth) {
     const result = bitboard.slice()
