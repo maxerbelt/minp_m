@@ -1,5 +1,5 @@
 import { RectDraw } from './rectdraw.js'
-import { maxColorsToBitsPerCell } from '../../grid/bitStore/helpers/bithelper.js'
+import { BitMath } from '../../grid/bitStore/helpers/bitMath.js'
 /**
  * Enhanced rectangular grid drawer supporting 2, 4, 16, and 256 color depths
  * Depth parameter controls bits per cell: 2→1bit, 4→2bits, 16→4bits, 256→8bits
@@ -67,7 +67,7 @@ export class RectDrawColor extends RectDraw {
     super(canvasId, width, height, cellSize, offsetX, offsetY, depth)
 
     // Convert depth to bits per cell
-    this.bitsPerCell = maxColorsToBitsPerCell(depth)
+    this.bitsPerCell = BitMath.maxColorsToBitsPerCell(depth)
     this.maxColor = (1 << this.bitsPerCell) - 1 // 2^bitsPerCell - 1
     this.colorPalette = this._buildColorPalette(this.bitsPerCell)
   }
