@@ -40,8 +40,9 @@ export class ShipCellDisplayer {
    */
   static #setBaseAttributes (cell, ship) {
     const letter = this.#getShipLetter(ship)
-    cell.dataset.id = ship?.id
-    cell.dataset.letter = letter
+    const ds = cell.dataset
+    ds.id = ship?.id
+    ds.letter = letter
     return letter
   }
 
@@ -70,11 +71,11 @@ export class ShipCellDisplayer {
    * @param {Object} ship - Ship object for variant property
    */
   static #setWeaponAttributes (cell, weaponSlot, ship) {
+    const ds = cell.dataset
     const weaponLetter = weaponSlot.weapon.letter
-    cell.dataset.wletter = weaponLetter
-    cell.dataset.ammo = weaponSlot.ammo
-    cell.dataset.wid = weaponSlot.id
-    cell.dataset.variant = ship.variant
+    ds.wletter = weaponLetter
+    ds.ammo = weaponSlot.ammo
+    ds.wid = weaponSlot.id
     cell.textContent = ''
     cell.classList.add(this.#CSS_CLASSES.WEAPON)
   }
@@ -98,22 +99,32 @@ export class ShipCellDisplayer {
    * @param {number} c - Column coordinate
    */
   static #setSurroundAttributes (cell, ship, r, c) {
-    const letter = this.#getShipLetter(ship)
-    cell.dataset.sletter = letter
-
-    const primaryWeapon = ship.getPrimaryWeapon()
-    cell.dataset.wletters = primaryWeapon.letter
-    cell.dataset.variant = ship.variant
-
-    const turn = ship.getTurn(r, c)
-    CellClassManager.clearCellClasses(cell, [
-      CellClassManager.CELL_CLASSES.orientation
-    ])
-    if (turn && turn !== '') {
-      cell.classList.add(turn)
+    const ds = cell.dataset
+    if (ds.sletter == null) {
+      // Already has a ship letter, skip
+      const letter = this.#getShipLetter(ship)
+      ds.sletter = letter
+      ds.variant = ship.variant
     }
 
-    cell.dataset.surround = ship.id
+    if (ds.wletter == null) {
+      const primaryWeapon = ship.getPrimaryWeapon()
+      ds.wletter = primaryWeapon.letter
+
+      const cursorClass = primaryWeapon?.launchCursor
+      if (cursorClass) {
+        cell.classList.add(cursorClass)
+        CellClassManager.clearCellClasses(cell, [
+          CellClassManager.CELL_CLASSES.orientation
+        ])
+        const turn = ship.getTurn(r, c)
+        if (turn && turn !== '') {
+          cell.classList.add(turn)
+        }
+      }
+
+      ds.surround = ship.id
+    }
     const keyIds = ship.makeKeyIds()
     addKeyToCell(cell, 'keyIds', keyIds)
   }
@@ -176,7 +187,7 @@ export class ShipCellDisplayer {
     const weaponSlot = ship?.rackAt(c, r)
 
     if (weaponSlot) {
-      cell.dataset.ammo = '1'
+      ds.ammo = '1'
       cell.classList.add(this.#CSS_CLASSES.WEAPON)
       cell.textContent = ''
     } else {
