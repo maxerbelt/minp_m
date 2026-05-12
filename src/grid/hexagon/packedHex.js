@@ -2,7 +2,7 @@ import { MaskBase } from '../MaskBase.js'
 import { HexagonShape } from './HexagonShape.js'
 import { ActionsHex } from './actionHex.js'
 import { Store32 } from '../bitStore/store32.js'
-import { BitMath } from '../bitMath.js'
+import { BitMath } from '../bitStore/helpers/bitMath.js'
 
 /**
  * PackedHex - Packed hexagonal grid mask implementation

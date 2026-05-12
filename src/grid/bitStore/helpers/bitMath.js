@@ -5,6 +5,16 @@
  * @class BitMath
  */
 export class BitMath {
+  static SUPPORTED_BITS_PER_CELL = [1, 2, 4, 8]
+  static get SUPPORTED_DEPTHS () {
+    return this.SUPPORTED_BITS_PER_CELL.map(bits => 1 << bits)
+  }
+  static get SUPPORTED_DEPTHS_REV () {
+    return this.SUPPORTED_DEPTHS.reverse()
+  }
+  static get SUPPORTED_BITS_PER_CELL_REV () {
+    return this.SUPPORTED_BITS_PER_CELL.slice().reverse()
+  }
   /**
    * Checks if a number is a power of 2.
    * Uses bit manipulation: (n & (n-1)) === 0 for n > 0.

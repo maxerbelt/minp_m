@@ -1,7 +1,7 @@
 import { lazy } from '../../core/utilities.js'
 import { buildTransformMaps } from './buildTransformMaps.js'
 import { Store32 } from '../bitStore/store32.js'
-import { BitMath } from '../bitMath.js'
+import { BitMath } from '../bitStore/helpers/bitMath.js'
 import { RectMaskBase } from './RectMaskBase.js'
 
 /**
