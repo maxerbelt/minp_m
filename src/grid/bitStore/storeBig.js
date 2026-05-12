@@ -1,17 +1,18 @@
 import { StoreBase } from './storeBase.js'
-import { BigStoreMorphology } from './BigStoreMorphology.js'
+import { BigStoreMorphology } from './helpers/BigStoreMorphology.js'
 import { popcountBigInt } from '../placeTools.js'
-import { bitsSafeBI } from '../bitHelpers.js'
+import { bitsSafeBI } from './helpers/bitHelpers.js'
 import { errorMsg } from '../../core/errorMsg.js'
 const one = 1n
 const zero = 0n
 
 export class StoreBig extends StoreBase {
-  constructor (depth = 1, size = 0, bitLength, width, height) {
-    super(one, zero, BigInt, depth, size, bitLength, width, height)
+  constructor (numOfColors = 2, size = 0, bitLength = 1, width, height) {
+    super(one, zero, BigInt, numOfColors, size, bitLength, width, height)
+
+    this.bitsPerCell = this.bitsPerCell || 1
 
     // Store32-compatible properties
-    this.bitsPerCell = this.bitsPerCell || 1
     this.cellsPerWord = Math.floor(256 / this.bitsPerCell) // BigInt word size is larger
     this.cpwShift = Math.log2(this.cellsPerWord)
     // wordsPerRow should divide grid width by cells-per-word
