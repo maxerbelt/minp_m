@@ -124,7 +124,6 @@ export class RectDraw extends DrawBase {
    * @param {number} y - Y coordinate.
    * @param {string} [color='#4caf50'] - Fill color.
    * @param {string} [strokeColor='#333'] - Stroke color.
-   * @private
    */
   _drawRectCell (x, y, color = '#4caf50', strokeColor = '#333') {
     this._drawCell(x, y, color, strokeColor)
@@ -136,7 +135,6 @@ export class RectDraw extends DrawBase {
 
   /**
    * Draw hovered cell in orange highlight.
-   * @private
    */
   _drawHover () {
     if (this.hoverLocation !== null) {
