@@ -1,5 +1,6 @@
 /* eslint-env jest */
-/* global describe, it, expect, beforeEach */
+/* global describe, it, expect,  beforeEach, afterEach, jest */
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { StoreBig } from './storeBig.js'
 import { Mask } from '../rectangle/mask.js'
 
@@ -21,7 +22,7 @@ describe('StoreBig', () => {
   describe('constructor', () => {
     it('should initialize with default parameters', () => {
       const s = new StoreBig()
-      expect(s.depth).toBe(1)
+      expect(s.depth).toBe(2)
       expect(s.size).toBe(0n)
       expect(s.one).toBe(1n)
     })

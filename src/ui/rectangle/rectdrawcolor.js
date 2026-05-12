@@ -62,7 +62,11 @@ export class RectDrawColor extends RectDraw {
     super(canvasId, width, height, cellSize, offsetX, offsetY, depth)
 
     // Convert depth to bits per cell
-    this.bitsPerCell = BitMath.maxColorsToBitsPerCell(depth)
+    try {
+      this.bitsPerCell = BitMath.maxColorsToBitsPerCell(depth)
+    } catch (error) {
+      throw new Error(`Unsupported depth: ${depth}`)
+    }
     this.maxColor = (1 << this.bitsPerCell) - 1 // 2^bitsPerCell - 1
     this.colorPalette = this._buildColorPalette(this.bitsPerCell)
   }

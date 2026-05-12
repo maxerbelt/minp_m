@@ -7,7 +7,7 @@ const one = 1n
 const zero = 0n
 
 export class StoreBig extends StoreBase {
-  constructor (numOfColors = 2, size = 0, bitLength = 1, width, height) {
+  constructor (numOfColors = 2, size = 0, bitLength = null, width, height) {
     super(one, zero, BigInt, numOfColors, size, bitLength, width, height)
 
     this.bitsPerCell = this.bitsPerCell || 1
