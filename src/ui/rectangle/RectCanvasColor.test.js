@@ -3,7 +3,7 @@
  * @jest-environment jsdom
  */
 
-import { jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 /* global describe, it,  expect, beforeEach, afterEach */
 
 import { RectDrawColor } from './rectdrawcolor.js'
