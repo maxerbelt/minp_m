@@ -21,46 +21,76 @@ import { Random } from '../core/Random.js'
 
 /**
  * @typedef {Object} WeaponResult
- * @property {number} hits - Number of hits
- * @property {number} dtaps - Number of double taps
- * @property {number} sunk - Number of ships sunk
- * @property {number} reveals - Number of reveals
- * @property {number} shots - Number of shots fired
- * @property {string} info - Additional information
+ * @property {number} hits - Number of hits scored
+ * @property {number} dtaps - Number of double-tap events (reshot same cell)
+ * @property {number|string} sunk - Number or letter of sunk ships
+ * @property {number} reveals - Number of cells revealed
+ * @property {number} shots - Number of shots fired (including multi-hit)
+ * @property {string} info - Additional contextual information
  */
 
 /**
  * @typedef {Object} WeaponSelection
- * @property {number} launchR - Launch row coordinate
- * @property {number} launchC - Launch column coordinate
- * @property {number} weaponId - Weapon system ID
- * @property {number} hintR - Hint row coordinate
- * @property {number} hintC - Hint column coordinate
+ * @property {number|null} launchR - Launch row coordinate
+ * @property {number|null} launchC - Launch column coordinate
+ * @property {number|null} weaponId - Weapon system ID
+ * @property {number|null} hintR - Hint row coordinate
+ * @property {number|null} hintC - Hint column coordinate
  */
 
 /**
  * @typedef {Object} ShipPlacement
- * @property {Array} ships - Array of ships
- * @property {string} map - Map title
+ * @property {Ship[]} ships - Array of placed ships
+ * @property {Array} shipCellGrid - 2D grid of ship cells
+ * @property {string} map - Map title identifier
  */
 
 /**
  * @typedef {Object} HitResult
- * @property {string} letter - Ship letter
- * @property {string} info - Hit information
- * @property {boolean} damaged - Whether ship was damaged
- * @property {Array} list - List of hit entries
- * @property {Array} misses - List of miss entries
+ * @property {string} letter - Ship letter identifier
+ * @property {string} info - Hit information message
+ * @property {boolean} damaged - Whether ship cell was damaged
+ * @property {Array<Array<number>>} list - List of hit cell entries [r, c]
+ * @property {Array<Array<number>>} misses - List of miss cell entries [r, c]
+ */
+
+/**
+ * @typedef {Object} TargetResolutionContext
+ * @property {Weapon} weapon - The weapon being fired
+ * @property {number} r - Target row
+ * @property {number} c - Target column
+ * @property {number} power - Weapon power level
+ * @property {Object} options - Additional firing context
+ */
+
+/**
+ * @typedef {Object} EffectNormalizationResult
+ * @property {Array<Array<number>>} normalized - [r, c, power] coordinate triples
+ * @property {boolean} isValid - Whether effect was properly formatted
+ * @property {Array<Array<number>>} filtered - Entries with exactly 3+ elements
  */
 
 /**
  * Core game logic class managing ship placement, weapon systems, and battle mechanics.
  * Handles the main game state and interactions between ships, weapons, and UI.
+ *
+ * @class Waters
+ * @description Coordinates ship placement, weapon management, targeting, firing, and hit resolution.
+ * Maintains separation between player state, opponent state, and UI presentation.
+ *
+ * Responsibilities:
+ * - Ship placement and validation
+ * - Weapon loading and selection
+ * - Firing mechanics and result accumulation
+ * - Hit/miss/sunk detection and display
+ * - Turn management and game status
  */
 export class Waters {
   /**
    * Initializes the Waters game instance with UI and basic setup.
-   * @param {Object} ui - The user interface instance
+   *
+   * @param {Object} ui - The user interface instance for rendering
+   * @param {string|null} [playerType] - Type of player (AI, Human, etc.)
    */
   constructor (ui, playerType = null) {
     assembleTerrains()
@@ -80,24 +110,42 @@ export class Waters {
     this.resetShipCells()
     this.displayInfo = gameStatus.info2.bind(gameStatus)
   }
+  // ==================== Storage & Serialization ====================
+
   /**
-   * Gets the clipboard key for storing placed ships.
-   * @returns {string} The storage key
+   * Gets the storage key for persisted ship placements.
+   *
+   * @returns {string} Local storage key identifier
+   * @private
    */
-  getClipboardKey () {
+  _getStorageKey () {
     return 'geoffs-battleship.placed-ships'
   }
 
   /**
-   * Alias for legacy method name.
+   * Gets the clipboard key for storing placed ships (alias for compatibility).
+   *
    * @returns {string} The storage key
+   * @deprecated Use _getStorageKey() instead
    */
-  clipboardKey () {
-    return this.getClipboardKey()
+  getClipboardKey () {
+    return this._getStorageKey()
   }
 
   /**
-   * Gets the current placed ships data.
+   * Alias for legacy method name.
+   *
+   * @returns {string} The storage key
+   * @deprecated Use _getStorageKey() instead
+   */
+  clipboardKey () {
+    return this._getStorageKey()
+  }
+
+  /**
+   * Gets the current placed ships data for serialization.
+   * CONSOLIDATED: unified data collection for persistence and export.
+   *
    * @returns {ShipPlacement} Current ship placement data
    */
   getPlacedShipsData () {
@@ -110,7 +158,9 @@ export class Waters {
 
   /**
    * Alias for legacy method name.
+   *
    * @returns {ShipPlacement} Current ship placement data
+   * @deprecated Use getPlacedShipsData() instead
    */
   placedShips () {
     return this.getPlacedShipsData()
@@ -1070,89 +1120,15 @@ export class Waters {
   }
 
   /**
-   * Handles weapon selection when a specific ship is provided.
-   * @param {Object} ship - The ship to select weapon for
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @param {boolean|string} random - Whether to select randomly
-   * @param {Object} viewModel - UI view model
-   * @param {HTMLElement|null} cell - Cell element
-   * @returns {WeaponSelection} Weapon selection payload
-   * @private
-   */
-  handleShipBasedWeaponSelection (ship, hintR, hintC, random, viewModel, cell) {
-    return this.selectWeaponFromShip(
-      ship,
-      hintR,
-      hintC,
-      random,
-      viewModel,
-      cell
-    )
-  }
-
-  /**
-   * Handles weapon selection when no cell is provided.
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @returns {WeaponSelection} Weapon selection payload
-   * @private
-   */
-  handleNullCellWeaponSelection (hintR, hintC) {
-    return this.handleMissingCellWeaponSelection(hintR, hintC)
-  }
-
-  /**
-   * Handles weapon selection when cell has no valid keys.
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @returns {WeaponSelection} Weapon selection payload
-   * @private
-   */
-  handleNoKeysWeaponSelection (hintR, hintC) {
-    return this.handleMissingCellWeaponSelection(hintR, hintC)
-  }
-
-  /**
-   * Handles weapon selection paths where a default selection should be returned.
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @returns {WeaponSelection} Weapon selection payload
-   * @private
-   */
-  handleMissingCellWeaponSelection (hintR, hintC) {
-    return this.createDefaultWeaponSelection(hintR, hintC)
-  }
-
-  /**
-   * Handles weapon selection from cell keys.
-   * @param {HTMLElement} cell - Cell element
-   * @param {Array<string>} keys - Weapon keys
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @param {boolean|string} random - Whether to select randomly
-   * @param {Object} viewModel - UI view model
-   * @returns {WeaponSelection} Weapon selection payload
-   * @private
-   */
-  handleCellBasedWeaponSelection (cell, keys, hintR, hintC, random, viewModel) {
-    return this.selectWeaponFromCell(
-      cell,
-      keys,
-      hintR,
-      hintC,
-      random,
-      viewModel
-    )
-  }
-
-  /**
    * Selects a weapon system by ID with various selection strategies.
+   * CONSOLIDATED: unified weapon selection dispatcher with single entry point.
+   * Routes to appropriate selection method based on available context.
+   *
    * @param {HTMLElement|null} cell - Cell element for selection
    * @param {number} hintR - Hint row coordinate
    * @param {number} hintC - Hint column coordinate
    * @param {boolean|string} random - Whether to select randomly
-   * @param {Object} [ship] - Specific ship to select from
+   * @param {Object} [ship] - Specific ship to select from (overrides cell)
    * @param {Object} [oppo] - Opponent instance
    * @returns {WeaponSelection} Weapon selection payload
    */
@@ -1160,8 +1136,9 @@ export class Waters {
     oppo = oppo || this.opponent
     const viewModel = this.getViewModel(oppo)
 
+    // Route 1: Ship-based selection (highest priority)
     if (ship) {
-      return this.handleShipBasedWeaponSelection(
+      return this.selectWeaponFromShip(
         ship,
         hintR,
         hintC,
@@ -1171,16 +1148,17 @@ export class Waters {
       )
     }
 
+    // Route 2: Cell-based selection
     if (cell === null) {
-      return this.handleNullCellWeaponSelection(hintR, hintC)
+      return this.createDefaultWeaponSelection(hintR, hintC)
     }
 
     const keys = keyListFromCell(cell, 'keyIds')
     if (!keys) {
-      return this.handleNoKeysWeaponSelection(hintR, hintC)
+      return this.createDefaultWeaponSelection(hintR, hintC)
     }
 
-    return this.handleCellBasedWeaponSelection(
+    return this.selectWeaponFromCell(
       cell,
       keys,
       hintR,

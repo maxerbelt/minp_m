@@ -1,14 +1,28 @@
 /**
  * BigStoreMorphology - Helper utilities for BigInt store morphology.
  *
- * This module isolates morphology-specific operations from StoreBig so that
- * StoreBig stays focused on BigInt storage semantics and bitboard representation.
+ * Isolates morphology-specific operations from StoreBig to maintain separation
+ * of concerns. StoreBig focuses on BigInt storage semantics while this class
+ * handles morphological operation logic.
+ *
+ * Operations are split by storage type:
+ * - Shift-based: for 1-bit (occupancy) grids using fast bit operations
+ * - Cell-wise: for multi-bit (colored) grids using per-cell iteration
+ *
+ * @example
+ * // 1-bit dilation using shifts
+ * const dilated = BigStoreMorphology.propagateVerticalShift(store, bits, width, masks)
+ *
+ * @example
+ * // Multi-bit dilation using per-cell propagation
+ * const dilated = BigStoreMorphology.expandAdjacentCellsHorizontally(store, bits)
  */
 export class BigStoreMorphology {
   /**
    * Normalize an edge mask value for BigInt bitwise calculations.
-   * @param {bigint|number|null|undefined} maskValue
-   * @returns {bigint}
+   * Converts numbers and other primitives to BigInt for consistent operations.
+   * @param {bigint|number|null|undefined} maskValue - Value to normalize
+   * @returns {bigint} Normalized edge mask as BigInt
    */
   static normalizeEdgeMask (maskValue) {
     return typeof maskValue === 'bigint' ? maskValue : BigInt(maskValue || 0n)
@@ -16,9 +30,12 @@ export class BigStoreMorphology {
 
   /**
    * Expand each populated cell into its horizontal neighbors.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @returns {bigint}
+   * Per-cell dilation for multi-bit stores: propagates color values left and right.
+   * Does not use edge masks (relies on grid boundaries via iteration).
+   *
+   * @param {Object} store - StoreBig instance with width, height properties
+   * @param {bigint} bitboard - Input colored bitboard
+   * @returns {bigint} Bitboard with colors expanded to adjacent columns
    */
   static expandAdjacentCellsHorizontally (store, bitboard) {
     const width = store.width
@@ -35,10 +52,13 @@ export class BigStoreMorphology {
 
   /**
    * Expand each populated cell into its vertical neighbors.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {number} gridWidth
-   * @returns {bigint}
+   * Per-cell dilation for multi-bit stores: propagates color values up and down.
+   * Does not use edge masks (relies on grid boundaries via iteration).
+   *
+   * @param {Object} store - StoreBig instance with width, height properties
+   * @param {bigint} bitboard - Input colored bitboard
+   * @param {number} gridWidth - Width of grid (for row offset calculation)
+   * @returns {bigint} Bitboard with colors expanded to adjacent rows
    */
   static propagateAdjacentCellsVertically (store, bitboard, gridWidth) {
     const height = store.height
@@ -56,11 +76,16 @@ export class BigStoreMorphology {
 
   /**
    * Propagate 1-bit values vertically using BigInt shifts and edge masks.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {number} gridWidth
-   * @param {Object} edgeMasks
-   * @returns {bigint}
+   * Optimized shift-based operation for single-bit grids (occupancy only).
+   * Applies edge masks to prevent cells from expanding beyond grid boundaries.
+   *
+   * @param {Object} store - StoreBig instance with shiftBits and combineMasked methods
+   * @param {bigint} bitboard - Input 1-bit occupancy bitboard
+   * @param {number} gridWidth - Width in cells (shift amount for vertical operations)
+   * @param {Object} [edgeMasks] - Edge masks to restrict boundary expansion
+   * @param {bigint} [edgeMasks.notTop] - Mask preventing expansion beyond top edge
+   * @param {bigint} [edgeMasks.notBottom] - Mask preventing expansion beyond bottom edge
+   * @returns {bigint} Bitboard with vertical expansion (up and down shifts)
    */
   static propagateVerticalShift (store, bitboard, gridWidth, edgeMasks) {
     const srcForUp = store.prepareSrcForUpExpansion(bitboard, edgeMasks)
@@ -74,9 +99,12 @@ export class BigStoreMorphology {
 
   /**
    * Apply horizontal erosion for multi-bit stores using neighbor survival rules.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @returns {bigint}
+   * Per-cell operation that removes colors from cells without horizontal neighbors.
+   * A cell survives only if it has an occupied neighbor on both left and right.
+   *
+   * @param {Object} store - StoreBig instance with cellSurvivesHorizontalErosion method
+   * @param {bigint} bitboard - Input colored bitboard
+   * @returns {bigint} Eroded bitboard with edge colors removed
    */
   static erodeHorizontalCells (store, bitboard) {
     let result = bitboard
@@ -91,10 +119,13 @@ export class BigStoreMorphology {
 
   /**
    * Apply vertical erosion for multi-bit stores using neighbor survival rules.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {number} gridWidth
-   * @returns {bigint}
+   * Per-cell operation that removes colors from cells without vertical neighbors.
+   * A cell survives only if it has an occupied neighbor on both top and bottom.
+   *
+   * @param {Object} store - StoreBig instance with cellSurvivesVerticalErosion method
+   * @param {bigint} bitboard - Input colored bitboard
+   * @param {number} gridWidth - Grid width (used for neighbor offset calculation)
+   * @returns {bigint} Eroded bitboard with edge colors removed
    */
   static erodeVerticalCells (store, bitboard, gridWidth) {
     const size = gridWidth * store.height
