@@ -1,4 +1,4 @@
-import { BitMath } from '../bitMath.js'
+import { BitMath } from './helpers/bitMath.js'
 import { BitGrid } from '../bitgrid.js'
 export class StoreBase {
   constructor (
