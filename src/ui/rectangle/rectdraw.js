@@ -69,7 +69,6 @@ export class RectDraw extends DrawBase {
   /**
    * Iterate over grid dimensions executing callback for each cell.
    * @param {Function} callback - Function receiving (x, y) coordinates.
-   * @private
    */
   _iterateGridCells (callback) {
     for (let y = 0; y < this.height; y++) {
@@ -84,7 +83,6 @@ export class RectDraw extends DrawBase {
    * @param {number} x - X coordinate.
    * @param {number} y - Y coordinate.
    * @returns {boolean} True if cell is set.
-   * @private
    */
   _isCellSet (x, y) {
     return this.mask.at(x, y) === 1
