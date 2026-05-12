@@ -497,7 +497,7 @@ describe('SubBoard', () => {
     })
 
     it('creates independent copy from source mask', () => {
-      const sourceMask = new Mask(5, 5)
+      const sourceMask = new Mask(5, 5, 0n)
       sourceMask.set(0, 0)
 
       const sb = SubBoard.fromMask(sourceMask, 0, 0, 5, 5)

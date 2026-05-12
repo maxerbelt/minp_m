@@ -1,7 +1,7 @@
 /* eslint-env jest */
 
-/* global describe, it, expect, beforeEach, test */
-
+/* global describe, it, expect, beforeEach, it */
+import { describe, expect, it, jest } from '@jest/globals'
 import { Mask } from './rectangle/mask.js'
 
 BigInt.prototype.toJSON = function () {
@@ -10,19 +10,19 @@ BigInt.prototype.toJSON = function () {
 
 describe('MaskBase square getter', () => {
   describe('basic functionality', () => {
-    test('square getter exists and is callable', () => {
+    it('square getter exists and is callable', () => {
       const mask = Mask.empty(4, 2)
       expect(mask).toHaveProperty('square')
       expect(typeof mask.square).not.toBe('undefined')
     })
 
-    test('square getter returns a Mask instance', () => {
+    it('square getter returns a Mask instance', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
       expect(squared).toBeInstanceOf(Mask)
     })
 
-    test('returns square dimensions for rectangular mask', () => {
+    it('returns square dimensions for rectangular mask', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
@@ -33,7 +33,7 @@ describe('MaskBase square getter', () => {
   })
 
   describe('square dimension calculation', () => {
-    test('should return 4x4 for 4x2 mask', () => {
+    it('should return 4x4 for 4x2 mask', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
@@ -41,7 +41,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(4)
     })
 
-    test('should return 4x4 for 2x4 mask', () => {
+    it('should return 4x4 for 2x4 mask', () => {
       const mask = Mask.empty(2, 4)
       const squared = mask.square
 
@@ -49,7 +49,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(4)
     })
 
-    test('should return same dimensions for square mask', () => {
+    it('should return same dimensions for square mask', () => {
       const mask = Mask.empty(5, 5)
       const squared = mask.square
 
@@ -57,7 +57,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(5)
     })
 
-    test('should handle 1x1 mask', () => {
+    it('should handle 1x1 mask', () => {
       const mask = Mask.empty(1, 1)
       const squared = mask.square
 
@@ -65,7 +65,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(1)
     })
 
-    test('should use Math.max for size calculation', () => {
+    it('should use Math.max for size calculation', () => {
       const testCases = [
         { w: 3, h: 7, expected: 7 },
         { w: 10, h: 5, expected: 10 },
@@ -83,14 +83,14 @@ describe('MaskBase square getter', () => {
   })
 
   describe('depth preservation', () => {
-    test('should preserve depth on rectangular to square conversion', () => {
+    it('should preserve depth on rectangular to square conversion', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
       expect(squared.depth).toBe(1)
     })
 
-    test('should preserve depth for multi-depth masks', () => {
+    it('should preserve depth for multi-depth masks', () => {
       const depthTests = [1, 2, 3, 4]
 
       for (const depth of depthTests) {
@@ -101,7 +101,7 @@ describe('MaskBase square getter', () => {
       }
     })
 
-    test('should preserve depth when already square', () => {
+    it('should preserve depth when already square', () => {
       const mask = new Mask(5, 5, 0n, null, 3)
       const squared = mask.square
 
@@ -110,7 +110,7 @@ describe('MaskBase square getter', () => {
   })
 
   describe('bit content preservation', () => {
-    test('should preserve non-zero bits when expanding narrow mask', () => {
+    it('should preserve non-zero bits when expanding narrow mask', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -123,7 +123,7 @@ describe('MaskBase square getter', () => {
       expect(squared.at(0, 1)).toBeGreaterThan(0)
     })
 
-    test('should expand to square with low occupancy', () => {
+    it('should expand to square with low occupancy', () => {
       const coords = [[0, 0]]
       const mask = Mask.fromCoords(coords, 4, 1)
       const squared = mask.square
@@ -132,7 +132,7 @@ describe('MaskBase square getter', () => {
       expect(squared.occupancy).toBe(1)
     })
 
-    test('should preserve occupancy count', () => {
+    it('should preserve occupancy count', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -145,7 +145,7 @@ describe('MaskBase square getter', () => {
       expect(squared.occupancy).toBe(original_occupancy)
     })
 
-    test('should handle empty mask expansion', () => {
+    it('should handle empty mask expansion', () => {
       const mask = Mask.empty(4, 1)
       const squared = mask.square
 
@@ -156,7 +156,7 @@ describe('MaskBase square getter', () => {
   })
 
   describe('constructor and type consistency', () => {
-    test('should create masks of same type', () => {
+    it('should create masks of same type', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
@@ -164,14 +164,14 @@ describe('MaskBase square getter', () => {
       expect(squared).toBeInstanceOf(Mask)
     })
 
-    test('should be a new instance, not reference to original', () => {
+    it('should be a new instance, not reference to original', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
       expect(squared).not.toBe(mask)
     })
 
-    test('should be a new instance even for already-square masks', () => {
+    it('should be a new instance even for already-square masks', () => {
       const mask = Mask.empty(5, 5)
       const squared = mask.square
 
@@ -180,7 +180,7 @@ describe('MaskBase square getter', () => {
   })
 
   describe('idempotence and consistency', () => {
-    test('applying square twice should be consistent', () => {
+    it('applying square twice should be consistent', () => {
       const coords = [
         [0, 0],
         [0, 1]
@@ -195,7 +195,7 @@ describe('MaskBase square getter', () => {
       expect(squared2.occupancy).toBe(squared1.occupancy)
     })
 
-    test('multiple calls should produce consistent results', () => {
+    it('multiple calls should produce consistent results', () => {
       const mask = Mask.empty(3, 1)
 
       const squared1 = mask.square
@@ -206,7 +206,7 @@ describe('MaskBase square getter', () => {
       expect(squared1.depth).toBe(squared2.depth)
     })
 
-    test('store properties should be consistent', () => {
+    it('store properties should be consistent', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
@@ -217,7 +217,7 @@ describe('MaskBase square getter', () => {
   })
 
   describe('rectangular dimensions', () => {
-    test('handles very wide mask', () => {
+    it('handles very wide mask', () => {
       const mask = Mask.empty(20, 1)
       const squared = mask.square
 
@@ -225,7 +225,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(20)
     })
 
-    test('handles very tall mask', () => {
+    it('handles very tall mask', () => {
       const mask = Mask.empty(1, 20)
       const squared = mask.square
 
@@ -233,7 +233,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(20)
     })
 
-    test('handles nearly-square mask with width > height', () => {
+    it('handles nearly-square mask with width > height', () => {
       const mask = Mask.empty(10, 8)
       const squared = mask.square
 
@@ -241,7 +241,7 @@ describe('MaskBase square getter', () => {
       expect(squared.height).toBe(10)
     })
 
-    test('handles nearly-square mask with height > width', () => {
+    it('handles nearly-square mask with height > width', () => {
       const mask = Mask.empty(8, 10)
       const squared = mask.square
 
@@ -251,7 +251,7 @@ describe('MaskBase square getter', () => {
   })
 
   describe('with occupied cells', () => {
-    test('expands row of cells to square', () => {
+    it('expands row of cells to square', () => {
       const coords = [
         [0, 0],
         [0, 1],
@@ -266,7 +266,7 @@ describe('MaskBase square getter', () => {
       expect(squared.occupancy).toBe(4)
     })
 
-    test('expands column of cells to square', () => {
+    it('expands column of cells to square', () => {
       const coords = [
         [0, 0],
         [1, 0],
@@ -280,7 +280,7 @@ describe('MaskBase square getter', () => {
       expect(squared.occupancy).toBe(3)
     })
 
-    test('preserves cell colors in multi-depth mask', () => {
+    it('preserves cell colors in multi-depth mask', () => {
       const mask = new Mask(2, 3, null, null, 1)
       mask.set(0, 0)
       mask.set(1, 1)
