@@ -1,7 +1,14 @@
 /* eslint-env jest */
 
 /* global describe, it, expect,  beforeEach, afterEach, jest */
-
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 import { RectDrawColor } from './rectdrawcolor.js'
 
 describe('RectDrawColor - Multi-Color Support', () => {

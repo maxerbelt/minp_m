@@ -2,7 +2,14 @@
 /* global describe, it, expect, beforeEach, afterEach, jest */
 
 import { RectDraw } from './rectdraw.js'
-import { jest } from '@jest/globals'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 
 describe('RectDraw', () => {
   let rectDraw
