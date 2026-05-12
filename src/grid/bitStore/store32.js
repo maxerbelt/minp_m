@@ -2,7 +2,7 @@ import { StoreBase } from './storeBase.js'
 import { Store32Morphology } from './helpers/Store32Morphology.js'
 import { areArraysOrderedAndEqual } from '../../variants/normalize.js'
 import { BitMath } from './helpers/bitMath.js'
-import { bitSafeArr } from '../bitHelpers.js'
+import { bitSafeArr } from './helpers/bitHelpers.js'
 
 const OP_AND = 0
 const OP_OR = 1

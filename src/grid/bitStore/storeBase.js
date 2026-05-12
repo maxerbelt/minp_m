@@ -1,5 +1,5 @@
 import { BitMath } from './helpers/bitMath.js'
-import { BitGrid } from '../bitgrid.js'
+import { BitGrid } from './helpers/bitgrid.js'
 export class StoreBase {
   constructor (
     one,

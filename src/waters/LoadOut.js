@@ -1,4 +1,4 @@
-import { has } from '../grid/bitHelpers.js'
+import { has } from '../grid/bitStore/helpers/bitHelpers.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 

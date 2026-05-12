@@ -1,4 +1,4 @@
-import { bitsSafe } from './bitHelpers.js'
+import { bitsSafe } from './bitStore/helpers/bitHelpers.js'
 
 /**
  * Shared utility: Calculate delta (distance) and step direction for line drawing.

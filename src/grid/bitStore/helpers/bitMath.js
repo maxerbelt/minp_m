@@ -88,4 +88,36 @@ export class BitMath {
       bitLength !== null ? bitLength : BitMath.bitLength32(depth)
     return BitMath.nextPow2(effectiveBitLength)
   }
+
+  /**
+   * Convert number of colors to bits per cell
+   * @param {number} numOfColors - Number of colors (2, 4, 16, or 256)
+   * @returns {number} Bits per cell
+ 
+   */
+  static numOfColorsToBitsPerCell (numOfColors) {
+    for (const bits of BitMath.SUPPORTED_BITS_PER_CELL_REV) {
+      const maxColors = 1 << bits
+      if (numOfColors <= maxColors) {
+        return bits
+      }
+    }
+    throw new Error(
+      `Unsupported number of colors: ${numOfColors}. Supported numbers: ${BitMath.SUPPORTED_DEPTHS.join(
+        ', '
+      )}`
+    )
+  }
+
+  static maxColorsToBitsPerCell (maxColors) {
+    for (const bits of BitMath.SUPPORTED_BITS_PER_CELL_REV) {
+      const colors = 1 << bits
+      if (maxColors === colors) {
+        return bits
+      }
+    }
+    throw new Error(
+      `Unsupported number of colors: ${maxColors}. Supported numbers upto 256`
+    )
+  }
 }
