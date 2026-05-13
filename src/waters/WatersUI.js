@@ -74,7 +74,8 @@ const NOTES_TYPE_MAP = {
 
 /**
  * Manages game board UI state and rendering for a player's waters/territory.
- * Responsibilities:
+ *
+ * **Responsibilities:**
  * - Render grid cells with proper terrain and edge coloring
  * - Handle ship display and weapon positioning
  * - Manage battle state visualization (hits, misses, sunk ships)
@@ -82,8 +83,19 @@ const NOTES_TYPE_MAP = {
  * - Manage board size calculations for different display modes
  * - Support ship placement and weapon targeting UI
  *
- * Design: Stateful utility class tracking board state, size calculations,
- * and player territory context. Delegates specialized tasks to helper classes.
+ * **Design:** Stateful utility class tracking board state, size calculations,
+ * and player territory context. Delegates specialized tasks to helper classes:
+ * - CellClassManager: Cell CSS state management
+ * - ShipCellDisplayer: Ship visual representation
+ * - BoardConfigurator: DOM layout and sizing
+ * - SurroundingCellsHelper: Neighbor cell computation
+ *
+ * **Key Patterns:**
+ * - CELL_SIZE_CONFIG: Configuration-driven cell size calculations (eliminates 3× duplicated methods)
+ * - _addSurroundingCells(): Generic strategy pattern for surrounding cell collection
+ * - _clearAllCellVisuals(): Unified clearing logic for different contexts
+ * - _detectAndApplyEdges(): Extracted edge detection from colorizeCell
+ * - _displaySurroundingMisses/_displayCenterCells: Decomposed displaySurround for clarity
  *
  * @class WatersUI
  */
@@ -106,32 +118,21 @@ export class WatersUI {
   }
 
   /**
-   * Removes specified CSS classes from a cell element.
-   * No-op if classNames array is empty to avoid unnecessary DOM updates.
+   * Updates cell CSS classes: adds newClasses, removes oldClasses.
+   * No-op if arrays are empty to avoid unnecessary DOM updates.
    *
-   * @param {HTMLElement} cell - DOM element to remove classes from
-   * @param {string[]} classNames - Array of class names to remove
+   * @param {HTMLElement} cell - DOM element to update
+   * @param {string[]} oldClasses - Array of class names to remove
+   * @param {string[]} newClasses - Array of class names to add
    * @returns {void}
    * @private
    */
-  _removeClassesFromCell (cell, classNames) {
-    if (classNames.length) {
-      cell.classList.remove(...classNames)
+  _updateCellClasses (cell, oldClasses = [], newClasses = []) {
+    if (oldClasses.length) {
+      cell.classList.remove(...oldClasses)
     }
-  }
-
-  /**
-   * Adds specified CSS classes to a cell element.
-   * No-op if classNames array is empty to avoid unnecessary DOM updates.
-   *
-   * @param {HTMLElement} cell - DOM element to add classes to
-   * @param {string[]} classNames - Array of class names to add
-   * @returns {void}
-   * @private
-   */
-  _addClassesToCell (cell, classNames) {
-    if (classNames.length) {
-      cell.classList.add(...classNames)
+    if (newClasses.length) {
+      cell.classList.add(...newClasses)
     }
   }
 
@@ -207,85 +208,56 @@ export class WatersUI {
   }
 
   /**
-   * Calculates cell size in pixels for screen display based on map dimensions.
-   * Divides container width evenly across map columns.
+   * Configuration for cell size calculations by display mode.
+   * Each mode specifies: how to get column count and the divisor formula.
+   * @private
+   */
+  static CELL_SIZE_CONFIG = {
+    SCREEN: { getDivisor: map => map.cols },
+    LIST: { getDivisor: () => 22 },
+    PRINT: { getDivisor: map => map.cols + 1 }
+  }
+
+  /**
+   * Calculates cell size in pixels using configuration for display mode.
+   * Consolidates screen, list, and print size calculations.
    *
-   * @param {Object} [map] - Map configuration object with cols property
-   * @param {number} map.cols - Number of columns in map
+   * @param {string} mode - Display mode: 'SCREEN', 'LIST', or 'PRINT'
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @param {number} [containerWidthOverride] - Optional container width (defaults to this.containerWidth)
    * @returns {number} Cell size in pixels
    * @private
    */
-  _calculateCellSizeScreen (map) {
+  _calculateCellSize (mode, map, containerWidthOverride) {
+    const config = WatersUI.CELL_SIZE_CONFIG[mode]
+    if (!config) throw new Error(`Unknown cell size mode: ${mode}`)
+
     map = map || bh.map
-    return this.containerWidth / (map?.cols || 18)
+    const width =
+      mode === 'PRINT' ? 600 : containerWidthOverride || this.containerWidth
+    const divisor = config.getDivisor(map, width)
+    return width / divisor
   }
 
   /**
-   * Calculates cell size in pixels for list display (fixed narrow column).
-   * Uses fixed 22-column layout for ship/unit list displays.
-   *
-   * @returns {number} Cell size in pixels
-   * @private
-   */
-  _calculateCellSizeList () {
-    return this.containerWidth / 22
-  }
-
-  /**
-   * Calculates cell size in pixels for print display.
-   * Uses fixed 600px width divided across map columns plus borders.
-   *
-   * @param {Object} [map] - Map configuration object with cols property
-   * @param {number} map.cols - Number of columns in map
-   * @returns {number} Cell size in pixels
-   * @private
-   */
-  _calculateCellSizePrint (map) {
-    map = map || bh.map
-    return 600 / (map.cols + 1)
-  }
-
-  /**
-   * Returns the CSS unit suffix for cell sizes.
-   *
-   * @returns {string} CSS unit (always 'px')
-   * @private
-   */
-  _getCellSizeUnit () {
-    return 'px'
-  }
-
-  /**
-   * Calculates appropriate cell size based on current display mode.
-   * Delegates to print or screen calculation based on isPrinting state.
+   * Gets current cell size for screen display (or as specified).
+   * Selects screen or print mode based on isPrinting state.
    *
    * @param {Object} [map] - Map configuration (optional, uses current map if not provided)
    * @returns {number} Cell size in pixels
    */
   cellSize (map) {
-    return this.isPrinting
-      ? this._calculateCellSizePrint(map)
-      : this._calculateCellSizeScreen(map)
+    const mode = this.isPrinting ? 'PRINT' : 'SCREEN'
+    return this._calculateCellSize(mode, map)
   }
 
   /**
-   * Formats a cell size value as a CSS size string (value + unit).
-   *
-   * @param {number} value - Numeric size value
-   * @returns {string} CSS size string (e.g., '35px')
-   * @private
-   */
-  _formatCellSizeValue (value) {
-    return `${value}${this._getCellSizeUnit()}`
-  }
-
-  /**
-   * Gets current cell size as CSS-formatted string for screen display.
+   * Gets current cell size as CSS-formatted string (mode-aware).
    *
    * @returns {string} CSS size string (e.g., '35px')
    */
   cellSizeString () {
-    return this._formatCellSizeValue(this.cellSize())
+    return `${this.cellSize()}px`
   }
 
   /**
@@ -294,7 +266,7 @@ export class WatersUI {
    * @returns {string} CSS size string (e.g., '26px')
    */
   cellSizeStringList () {
-    return this._formatCellSizeValue(this._calculateCellSizeList())
+    return `${this._calculateCellSize('LIST')}px`
   }
 
   /**
@@ -303,50 +275,33 @@ export class WatersUI {
    * @returns {string} CSS size string (e.g., '30px')
    */
   cellSizeStringPrint () {
-    return this._formatCellSizeValue(this._calculateCellSizePrint())
+    return `${this._calculateCellSize('PRINT')}px`
   }
 
   /**
-   * @deprecated Use cellSizeScreen instead (not used in new code)
+   * @deprecated Use cellSize instead
    * @param {Object} [map] - Map configuration
    * @returns {number} Cell size for screen
    */
   cellSizeScreen (map) {
-    return this._calculateCellSizeScreen(map)
+    return this._calculateCellSize('SCREEN', map)
   }
 
   /**
-   * @deprecated Use cellSizeStringList instead (maintained for backward compatibility)
+   * @deprecated Use cellSizeStringList instead
    * @returns {number} Cell size for list display
    */
   cellSizeList () {
-    return this._calculateCellSizeList()
+    return this._calculateCellSize('LIST')
   }
 
   /**
-   * @deprecated Use cellSizeStringPrint instead (maintained for backward compatibility)
+   * @deprecated Use cellSizeStringPrint instead
    * @param {Object} [map] - Map configuration
    * @returns {number} Cell size for print
    */
   cellSizePrint (map) {
-    return this._calculateCellSizePrint(map)
-  }
-
-  /**
-   * @deprecated Use _getCellSizeUnit instead (internal use only)
-   * @returns {string} CSS unit
-   */
-  cellUnit () {
-    return this._getCellSizeUnit()
-  }
-
-  /**
-   * @deprecated Use _formatCellSizeValue instead (internal use only)
-   * @param {number} value - Size value to format
-   * @returns {string} Formatted CSS size string
-   */
-  formatCellSize (value) {
-    return this._formatCellSizeValue(value)
+    return this._calculateCellSize('PRINT', map)
   }
 
   /**
@@ -525,10 +480,9 @@ export class WatersUI {
    * Displays sunk marker and clears hit-related state.
    *
    * @param {HTMLElement} cell - DOM element to update
-   * @param {string} [_letter] - Ship letter (unused, kept for API compatibility)
    * @returns {void}
    */
-  displayAsSunk (cell, _letter) {
+  displayAsSunk (cell) {
     CellClassManager.applyFriendlySunkCellState(cell)
     this._clearCellText(cell)
   }
@@ -563,12 +517,11 @@ export class WatersUI {
    *
    * @param {number} row - Row coordinate
    * @param {number} column - Column coordinate
-   * @param {string} letter - Ship letter (for identification)
    * @returns {void}
    */
-  cellSunkAt (row, column, letter) {
+  cellSunkAt (row, column) {
     const cell = this.gridCellAt(row, column)
-    this.displayAsSunk(cell, letter)
+    this.displayAsSunk(cell)
   }
 
   /**
@@ -651,6 +604,25 @@ export class WatersUI {
   }
 
   /**
+   * Adds weapon activation styling to a cell.
+   * Applies weapon classes, rotation, and optional contrast for visual emphasis.
+   *
+   * @param {HTMLElement} cell - DOM element to style
+   * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
+   * @param {string} [extraClass] - Additional class to apply (optional)
+   * @private
+   */
+  _applyWeaponStyling (cell, rotationClass, extraClass) {
+    const classesToAdd = ['weapon', 'active']
+    if (extraClass) classesToAdd.push(extraClass)
+    if (rotationClass) classesToAdd.push(rotationClass)
+
+    this._updateCellClasses(cell, ['wake'], classesToAdd)
+    this.addContrast(cell)
+    this._clearCellText(cell)
+  }
+
+  /**
    * Marks a cell as having an active weapon with specific rotation.
    * Displays weapon indicator and applies rotation/cursor classes.
    *
@@ -662,15 +634,7 @@ export class WatersUI {
    */
   cellWeaponActive (row, column, rotationClass, extraClass) {
     const cell = this.gridCellAt(row, column)
-    cell.classList.add('weapon', 'active')
-    this.addContrast(cell)
-
-    if (extraClass) {
-      cell.classList.add(extraClass)
-    }
-    if (rotationClass) cell.classList.add(rotationClass)
-    cell.classList.remove('wake')
-    this._clearCellText(cell)
+    this._applyWeaponStyling(cell, rotationClass, extraClass)
   }
 
   /**
@@ -720,6 +684,41 @@ export class WatersUI {
   }
 
   /**
+   * Adds surrounding cells to container using specified strategy.
+   * Generic method that delegates to SurroundingCellsHelper with flexible result format.
+   *
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @param {number} row - Row coordinate of center cell
+   * @param {number} column - Column coordinate of center cell
+   * @param {Set|Object|Array} container - Container to accumulate results
+   * @param {string} strategy - Result format: 'keySet' | 'objectMap' | 'array'
+   * @param {Function} [maker] - Callback for 'objectMap'/'array' strategies (optional)
+   * @returns {void}
+   * @private
+   */
+  _addSurroundingCells (map, row, column, container, strategy, maker) {
+    map = map || bh.map
+    let result
+
+    switch (strategy) {
+      case 'keySet':
+        result = SurroundingCellsHelper.asKeySet(map, row, column)
+        result.forEach(key => container.add(key))
+        break
+      case 'objectMap':
+        result = SurroundingCellsHelper.asObjectMap(map, row, column, maker)
+        Object.assign(container, result)
+        break
+      case 'array':
+        result = SurroundingCellsHelper.asArray(map, row, column, maker)
+        container.push(...result)
+        break
+      default:
+        throw new Error(`Unknown surround strategy: ${strategy}`)
+    }
+  }
+
+  /**
    * Adds surrounding cell keys to a set container.
    * Retrieves all neighbors of specified cell and adds their keys.
    *
@@ -730,8 +729,7 @@ export class WatersUI {
    * @returns {void}
    */
   surround (map, row, column, container) {
-    const keys = SurroundingCellsHelper.asKeySet(map || bh.map, row, column)
-    keys.forEach(key => container.add(key))
+    this._addSurroundingCells(map, row, column, container, 'keySet')
   }
 
   /**
@@ -746,13 +744,7 @@ export class WatersUI {
    * @returns {void}
    */
   surroundObj (map, row, column, container, maker) {
-    const obj = SurroundingCellsHelper.asObjectMap(
-      map || bh.map,
-      row,
-      column,
-      maker
-    )
-    Object.assign(container, obj)
+    this._addSurroundingCells(map, row, column, container, 'objectMap', maker)
   }
 
   /**
@@ -767,13 +759,7 @@ export class WatersUI {
    * @returns {void}
    */
   surroundList (map, row, column, container, maker) {
-    const list = SurroundingCellsHelper.asArray(
-      map || bh.map,
-      row,
-      column,
-      maker
-    )
-    container.push(...list)
+    this._addSurroundingCells(map, row, column, container, 'array', maker)
   }
 
   /**
@@ -850,6 +836,36 @@ export class WatersUI {
   }
 
   /**
+   * Displays surrounding cells with miss indicator.
+   * Marks all neighbors (but not original cells) as miss for area-of-effect.
+   *
+   * @param {Set<string>} surroundingKeys - Set of surrounding cell keys
+   * @param {Function} cellMiss - Callback to mark cells as miss: (row, col) => void
+   * @private
+   */
+  _displaySurroundingMisses (surroundingKeys, cellMiss) {
+    for (const key of surroundingKeys) {
+      const [row, column] = parsePair(key)
+      cellMiss(row, column)
+    }
+  }
+
+  /**
+   * Displays center cells using provided display function.
+   * Typically marks original cells with ship or hit indicators.
+   *
+   * @param {Iterable<[number, number]>} cells - Original cell coordinates
+   * @param {Object} ship - Ship object for display
+   * @param {Function} displayFn - Callback to display cells: (row, col, ship) => void
+   * @private
+   */
+  _displayCenterCells (cells, ship, displayFn) {
+    for (const [row, column] of cells) {
+      displayFn(row, column, ship)
+    }
+  }
+
+  /**
    * Displays surrounding cells with miss indicator and center cells with display function.
    * Used for area-of-effect visualization (e.g., weapon splash).
    *
@@ -860,15 +876,10 @@ export class WatersUI {
    * @returns {void}
    */
   displaySurround (cells, ship, cellMiss, display) {
-    const surround = this.hollowCells(cells)
-    const surroundings = [...surround].map(p => parsePair(p))
-    for (const [row, column] of surroundings) {
-      cellMiss(row, column)
-    }
+    const surroundingKeys = this.hollowCells(cells)
+    this._displaySurroundingMisses(surroundingKeys, cellMiss)
     if (display) {
-      for (const [row, column] of cells) {
-        display(row, column, ship)
-      }
+      this._displayCenterCells(cells, ship, display)
     }
   }
 
@@ -972,21 +983,17 @@ export class WatersUI {
   }
 
   /**
-   * Applies terrain coloring and edge detection to a cell.
-   * Determines if cell borders land/water and adds appropriate edge classes.
-   * Called during board initialization and terrain refresh.
+   * Checks if cell has edge with land based on neighboring cell.
+   * Edge classes indicate transition from water to land.
    *
-   * @param {HTMLElement} cell - DOM element to colorize
+   * @param {HTMLElement} cell - DOM element for edge class application
    * @param {number} row - Row coordinate
    * @param {number} column - Column coordinate
-   * @param {Object} [map] - Map configuration (defaults to current map)
-   * @returns {void}
+   * @param {Object} map - Map configuration
+   * @param {boolean} isLand - Whether current cell is land
+   * @private
    */
-  colorizeCell (cell, row, column, map) {
-    if (!map) map = bh.map
-    map.tagCell(cell.classList, row, column)
-    const isLand = map.isLand(row, column)
-
+  _detectAndApplyEdges (cell, row, column, map, isLand) {
     // Check right edge (water next to land)
     const columnRight = column + 1
     if (!isLand && columnRight < map.cols && map.isLand(row, columnRight)) {
@@ -1008,6 +1015,24 @@ export class WatersUI {
     if (row !== 0 && !isLand && map.isLand(row - 1, column)) {
       cell.classList.add('topEdge')
     }
+  }
+
+  /**
+   * Applies terrain coloring and edge detection to a cell.
+   * Determines if cell borders land/water and adds appropriate edge classes.
+   * Called during board initialization and terrain refresh.
+   *
+   * @param {HTMLElement} cell - DOM element to colorize
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @returns {void}
+   */
+  colorizeCell (cell, row, column, map) {
+    map = map || bh.map
+    map.tagCell(cell.classList, row, column)
+    const isLand = map.isLand(row, column)
+    this._detectAndApplyEdges(cell, row, column, map, isLand)
   }
 
   /**
@@ -1151,16 +1176,16 @@ export class WatersUI {
   }
 
   /**
-   * Clears cell visuals using provided clearing strategy across entire board.
-   * Generic method accepting custom clearing callback for different contexts.
+   * Clears cell visuals across entire board using provided strategy.
+   * Generic method applying custom clearing callback and detail level to all cells.
    *
    * @param {'none'|'content'|'all'} details - What to clear: 'none', 'content', or 'all'
-   * @param {Function} [classClear] - Custom clearing function: (cell) => void
+   * @param {Function} [classClearer] - Function to clear cell classes: (cell) => void
    * @returns {void}
    * @private
    */
-  clearVisualsBase (details, classClear) {
-    const clear = classClear || this.clearCell.bind(this)
+  _clearAllCellVisuals (details, classClearer) {
+    const clear = classClearer || this.clearCell.bind(this)
     this._forEachBoardCell(el => this.clearCellVisuals(el, details, clear))
   }
 
@@ -1171,7 +1196,7 @@ export class WatersUI {
    * @returns {void}
    */
   clearVisuals () {
-    this.clearVisualsBase('all')
+    this._clearAllCellVisuals('all')
   }
 
   /**
@@ -1181,7 +1206,7 @@ export class WatersUI {
    * @returns {void}
    */
   clearFriendVisuals () {
-    this.clearVisualsBase(
+    this._clearAllCellVisuals(
       'all',
       CellClassManager.clearFriendCell.bind(CellClassManager)
     )
@@ -1194,7 +1219,7 @@ export class WatersUI {
    * @returns {void}
    */
   clearFriendClasses () {
-    this.clearVisualsBase(
+    this._clearAllCellVisuals(
       'none',
       CellClassManager.clearFriendCell.bind(CellClassManager)
     )
@@ -1207,7 +1232,7 @@ export class WatersUI {
    * @returns {void}
    */
   clearPlaceVisuals () {
-    this.clearVisualsBase('all', this.clearPlaceCell.bind(this))
+    this._clearAllCellVisuals('all', this.clearPlaceCell.bind(this))
   }
 
   /**
