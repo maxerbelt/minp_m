@@ -4,14 +4,13 @@ import { bh } from '../../terrains/all/js/bh.js'
 
 /**
  * @typedef {Object} ColorMaps
- * @property {Object<string, string>} shipLetterColors
- * @property {Object<string, string>} shipColors
+ * @property {Record<string, string>} shipLetterColors
+ * @property {Record<string, string>} shipColors
  */
 
 /**
  * @typedef {Object} WeaponSlot
- * @property {Object} weapon
- * @property {string} weapon.letter
+ * @property {Weapon} weapon
  * @property {number} ammo
  * @property {string|number} id
  */
@@ -29,7 +28,7 @@ import { bh } from '../../terrains/all/js/bh.js'
  * @property {number} variant
  * @property {boolean} hasWeapon
  * @property {function(number, number): WeaponSlot} rackAt
- * @property {function(): Array<string>} makeKeyIds
+ * @property {function(): string[]} makeKeyIds
  * @property {function(): Weapon} getPrimaryWeapon
  * @property {function(number, number): string} getTurn
  */
@@ -59,7 +58,6 @@ export class ShipCellDisplayer {
   /**
    * CSS class names used for styling and state management.
    * @type {Object<string, string>}
-   * @private
    */
   static #CSS_CLASSES = {
     WEAPON: 'weapon',
@@ -72,7 +70,6 @@ export class ShipCellDisplayer {
    * Default fallback colors when ship-specific styles are not available.
    * Used as last resort when colorMaps lookups fail.
    * @type {Object<string, string>}
-   * @private
    */
   static #DEFAULT_STYLES = {
     COLOR: '#fff',
@@ -83,7 +80,6 @@ export class ShipCellDisplayer {
    * Data attribute names for storing ship and weapon information on DOM elements.
    * Standardizes dataset key naming across all cell operations.
    * @type {Object<string, string>}
-   * @private
    */
   static #DATA_ATTRIBUTES = {
     SHIP_ID: 'id',
@@ -287,7 +283,6 @@ export class ShipCellDisplayer {
    * Extracted to reduce coupling with bh global and enable optimization.
    *
    * @returns {ColorMaps} Color map object with shipLetterColors and shipColors properties
-   * @private
    */
   static #getColorMaps () {
     return bh.maps
@@ -302,7 +297,6 @@ export class ShipCellDisplayer {
    * @param {number} column - Column coordinate for weapon lookup
    * @param {number} row - Row coordinate for weapon lookup
    * @returns {WeaponSlot|null|undefined} Weapon slot object if found, null/undefined otherwise
-   * @private
    */
   static #getWeaponSlotAt (ship, column, row) {
     return ship?.rackAt(column, row)
@@ -319,7 +313,6 @@ export class ShipCellDisplayer {
    * @param {ColorMaps} colorMaps - Color mapping configuration
    * @param {boolean} [includeWeaponVisuals=true] - Whether to apply weapon-specific visual state (clears text, adds weapon class)
    * @returns {void}
-   * @private
    */
   static #displayCellContent (
     cell,
@@ -352,7 +345,6 @@ export class ShipCellDisplayer {
    *
    * @param {Ship|null|undefined} ship - Ship object with optional letter property
    * @returns {string} The ship's letter or '-' as fallback placeholder
-   * @private
    */
   static #getShipLetter (ship) {
     return ship?.letter || '-'
@@ -366,7 +358,6 @@ export class ShipCellDisplayer {
    * @param {HTMLDivElement} cell - DOM element to annotate with ship data
    * @param {Ship|null|undefined} ship - Ship object containing id and letter
    * @returns {string} The ship letter (extracted for convenience in chaining)
-   * @private
    */
   static #setBaseAttributes (cell, ship) {
     const letter = this.#getShipLetter(ship)
@@ -386,7 +377,6 @@ export class ShipCellDisplayer {
    * @param {number} weaponSlot.ammo - Remaining ammunition count for display
    * @param {string|number} weaponSlot.id - Unique weapon slot identifier
    * @returns {void}
-   * @private
    */
   static #setWeaponDataset (cell, weaponSlot) {
     this.#setDatasetAttribute(
@@ -411,7 +401,6 @@ export class ShipCellDisplayer {
    * @param {HTMLDivElement} cell
    * @param {string} key
    * @param {string|number|undefined} value
-   * @private
    */
   static #setDatasetAttribute (cell, key, value) {
     if (value !== undefined) {
@@ -427,7 +416,6 @@ export class ShipCellDisplayer {
    * @param {HTMLDivElement} cell - DOM element to annotate
    * @param {Ship} ship - Ship object containing letter and variant
    * @returns {void}
-   * @private
    */
   static #initializeShipCellData (cell, ship) {
     const shipLetterKey = this.#DATA_ATTRIBUTES.SHIP_PRIMARY_LETTER
@@ -452,7 +440,6 @@ export class ShipCellDisplayer {
    * @param {number} row - Row coordinate for turn/rotation calculation
    * @param {number} column - Column coordinate for turn/rotation calculation
    * @returns {void}
-   * @private
    */
   static #initializeWeaponCellData (cell, ship, row, column) {
     const weaponLetterKey = this.#DATA_ATTRIBUTES.WEAPON_LETTER
@@ -475,7 +462,6 @@ export class ShipCellDisplayer {
    * @param {number} row
    * @param {number} column
    * @param {Weapon} primaryWeapon
-   * @private
    */
   static #applyWeaponCursorStyles (cell, ship, row, column, primaryWeapon) {
     const cursorClass = primaryWeapon?.launchCursor
@@ -503,7 +489,6 @@ export class ShipCellDisplayer {
    * @param {number} row - Row coordinate for key ID and turn calculations
    * @param {number} column - Column coordinate for key ID and turn calculations
    * @returns {void}
-   * @private
    */
   static #setSurroundAttributes (cell, ship, row, column) {
     this.#initializeShipCellData(cell, ship)
@@ -528,7 +513,6 @@ export class ShipCellDisplayer {
    * @param {Object<string, string>} colorMaps.shipLetterColors - Map of letter → text color hex values
    * @param {Object<string, string>} colorMaps.shipColors - Map of letter → background color rgba/hex values
    * @returns {void}
-   * @private
    */
   static #applyShipStyles (cell, letter, colorMaps) {
     cell.style.color =
@@ -544,7 +528,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLDivElement} cell - DOM element to update with weapon visual state
    * @returns {void}
-   * @private
    */
   static #applyWeaponVisuals (cell) {
     this.#clearCellText(cell)
@@ -557,7 +540,6 @@ export class ShipCellDisplayer {
    *
    * @param {Object|null|undefined} ship - Ship object with hasWeapon property
    * @returns {boolean} True if ship has at least one armed weapon, false otherwise
-   * @private
    */
   static #hasWeapons (ship) {
     return ship?.hasWeapon ?? false
@@ -573,7 +555,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to clear of text
    * @returns {void}
-   * @private
    */
   static #clearCellText (cell) {
     cell.textContent = ''
@@ -585,7 +566,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to reset styling on
    * @returns {void}
-   * @private
    */
   static #resetCellStyle (cell) {
     cell.style.background = ''
@@ -599,7 +579,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to clear completely
    * @returns {void}
-   * @private
    */
   static #clearCellTextAndStyle (cell) {
     this.#clearCellText(cell)
@@ -614,7 +593,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to conditionally update
    * @param {string} letter - Ship letter to display if cell has no damage class
    * @returns {void}
-   * @private
    */
   static #setLetterIfNotDamaged (cell, letter) {
     if (
