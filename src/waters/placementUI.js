@@ -824,7 +824,7 @@ export class PlacementUI extends WatersUI {
    */
   cellPlacedAt (r, c, ship) {
     const cell = this.gridCellAt(r, c)
-    ShipCellDisplayer.displayPlacedCell(ship, r, c, cell)
+    ShipCellDisplayer.displayPlacedCell(cell, ship, r, c)
   }
 
   /**
