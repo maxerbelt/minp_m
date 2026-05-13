@@ -3,6 +3,7 @@ import { gameStatus } from './StatusUI.js'
 import { WatersUI } from './WatersUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 import { CellClassManager } from './helpers/CellClassManager.js'
+import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 
 /**
  * UI class for managing enemy board interactions and weapon selection.
@@ -143,8 +144,7 @@ class EnemyUI extends WatersUI {
    * @param {string} letter - The ship letter.
    */
   displayAsSunk (cell, letter) {
-    CellClassManager.clearDisplayCell(cell)
-    this.displaySunkCell(cell, letter)
+    ShipCellDisplayer.displayEnemySunkCell(cell, letter)
   }
 
   /**

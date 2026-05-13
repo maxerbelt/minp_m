@@ -34,12 +34,65 @@ const DEFAULT_CELL_CLEAN_CLASSES = [
   'active'
 ]
 
+/**
+ * Retrieves all child elements from a board element.
+ * @param {HTMLElement|null} board - The board element
+ * @returns {HTMLCollection} Child elements or empty collection
+ * @private
+ */
 const getBoardChildren = board => board?.children || []
 
+/**
+ * Configuration mapping ship types to tray element IDs.
+ * Maps unit types to their corresponding UI tray containers.
+ * @type {Object<string, string>}
+ * @private
+ */
+const TRAY_TYPE_MAP = {
+  A: 'planeTray',
+  S: 'shipTray',
+  X: 'specialTray',
+  G: 'buildingTray',
+  W: 'weaponTray'
+}
+
+/**
+ * Configuration mapping ship types to notes element IDs.
+ * Maps unit types to their information/notes containers.
+ * @type {Object<string, string>}
+ * @private
+ */
+const NOTES_TYPE_MAP = {
+  A: 'planeNotes',
+  S: 'shipNotes',
+  M: 'specialNotes',
+  T: 'specialNotes',
+  X: 'specialNotes',
+  G: 'buildingNotes',
+  W: 'weaponNotes'
+}
+
+/**
+ * Manages game board UI state and rendering for a player's waters/territory.
+ * Responsibilities:
+ * - Render grid cells with proper terrain and edge coloring
+ * - Handle ship display and weapon positioning
+ * - Manage battle state visualization (hits, misses, sunk ships)
+ * - Coordinate cell clearing and highlighting
+ * - Manage board size calculations for different display modes
+ * - Support ship placement and weapon targeting UI
+ *
+ * Design: Stateful utility class tracking board state, size calculations,
+ * and player territory context. Delegates specialized tasks to helper classes.
+ *
+ * @class WatersUI
+ */
 export class WatersUI {
   /**
-   * @param {string} territory
-   * @param {string} title
+   * Initializes the UI manager for a player's territory.
+   *
+   * @param {string} territory - Territory identifier (e.g., 'friend', 'enemy')
+   * @param {string} title - Display title for this territory's board
    */
   constructor (territory, title) {
     this.board = document.getElementById(territory + '-board')
@@ -53,9 +106,13 @@ export class WatersUI {
   }
 
   /**
+   * Removes specified CSS classes from a cell element.
+   * No-op if classNames array is empty to avoid unnecessary DOM updates.
+   *
+   * @param {HTMLElement} cell - DOM element to remove classes from
+   * @param {string[]} classNames - Array of class names to remove
+   * @returns {void}
    * @private
-   * @param {HTMLElement} cell
-   * @param {string[]} classNames
    */
   _removeClassesFromCell (cell, classNames) {
     if (classNames.length) {
@@ -64,52 +121,13 @@ export class WatersUI {
   }
 
   /**
+   * Adds specified CSS classes to a cell element.
+   * No-op if classNames array is empty to avoid unnecessary DOM updates.
+   *
+   * @param {HTMLElement} cell - DOM element to add classes to
+   * @param {string[]} classNames - Array of class names to add
+   * @returns {void}
    * @private
-   * @param {HTMLElement} cell
-   */
-  _clearCellText (cell) {
-    cell.textContent = ''
-  }
-
-  /**
-   * @private
-   * @param {HTMLElement} cell
-   */
-  _resetCellStyle (cell) {
-    cell.style.background = ''
-    cell.style.color = ''
-  }
-
-  /**
-   * @private
-   * @returns {string[]}
-   */
-  _weaponTags () {
-    return bh.terrain?.weapons?.tags || []
-  }
-
-  /**
-   * @private
-   * @returns {string[]}
-   */
-  _cursorTags () {
-    return bh.terrain?.weapons?.cursors || []
-  }
-
-  /**
-   * @private
-   * @param {function(HTMLElement): void} callback
-   */
-  _forEachBoardCell (callback) {
-    for (const cell of getBoardChildren(this.board)) {
-      callback(cell)
-    }
-  }
-
-  /**
-   * @private
-   * @param {HTMLElement} cell
-   * @param {string[]} classNames
    */
   _addClassesToCell (cell, classNames) {
     if (classNames.length) {
@@ -118,18 +136,36 @@ export class WatersUI {
   }
 
   /**
+   * Clears text content from a cell element.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
    * @private
-   * @param {HTMLElement} cell
-   * @param {string[]} classNames
-   * @returns {boolean}
    */
-  _cellContainsAny (cell, classNames) {
-    return classNames.some(className => cell.classList.contains(className))
+  _clearCellText (cell) {
+    cell.textContent = ''
   }
 
   /**
+   * Resets inline style properties on a cell element.
+   * Clears background and color styles set by game logic.
+   *
+   * @param {HTMLElement} cell - DOM element to reset
+   * @returns {void}
    * @private
-   * @param {HTMLElement} cell
+   */
+  _resetCellStyle (cell) {
+    cell.style.background = ''
+    cell.style.color = ''
+  }
+
+  /**
+   * Clears both text content and inline styles from a cell.
+   * Convenience method combining text and style reset operations.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
+   * @private
    */
   _clearCellTextAndStyle (cell) {
     this._clearCellText(cell)
@@ -137,18 +173,77 @@ export class WatersUI {
   }
 
   /**
+   * Gets weapon CSS class tags defined in current terrain configuration.
+   * Returns empty array if terrain not yet loaded.
+   *
+   * @returns {string[]} Array of weapon-related CSS class names
    * @private
-   * @returns {string[]}
+   */
+  _weaponTags () {
+    return bh.terrain?.weapons?.tags || []
+  }
+
+  /**
+   * Gets weapon cursor CSS class tags defined in current terrain configuration.
+   * Returns empty array if terrain not yet loaded.
+   *
+   * @returns {string[]} Array of cursor-related CSS class names
+   * @private
+   */
+  _cursorTags () {
+    return bh.terrain?.weapons?.cursors || []
+  }
+
+  /**
+   * Gets CSS classes to clear during hit cell state reset.
+   * Combines default cleanup classes with current terrain weapon tags.
+   *
+   * @returns {string[]} Array of class names to remove from hit cells
+   * @private
    */
   _hitCleanupClasses () {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this._weaponTags()]
   }
 
   /**
+   * Iterates over all cells in the board, calling callback for each.
+   * Provides functional interface to board cell enumeration.
+   *
+   * @param {Function} callback - Function to call for each cell
+   * @param {HTMLElement} callback.cell - The board cell element
+   * @returns {void}
    * @private
-   * @param {number} rows
-   * @param {number} cols
-   * @param {function(number, number): void} callback
+   */
+  _forEachBoardCell (callback) {
+    for (const cell of getBoardChildren(this.board)) {
+      callback(cell)
+    }
+  }
+
+  /**
+   * Checks if a cell contains any of the specified CSS classes.
+   * Used to query cell state without knowing exact state class.
+   *
+   * @param {HTMLElement} cell - DOM element to check
+   * @param {string[]} classNames - Array of class names to test
+   * @returns {boolean} True if cell has any of the specified classes
+   * @private
+   */
+  _cellContainsAny (cell, classNames) {
+    return classNames.some(className => cell.classList.contains(className))
+  }
+
+  /**
+   * Iterates over grid coordinates, calling callback for each cell position.
+   * Provides functional interface to grid enumeration for board construction.
+   *
+   * @param {number} rows - Number of rows in grid
+   * @param {number} cols - Number of columns in grid
+   * @param {Function} callback - Function to call for each coordinate
+   * @param {number} callback.row - Current row index
+   * @param {number} callback.column - Current column index
+   * @returns {void}
+   * @private
    */
   _buildGrid (rows, cols, callback) {
     for (let r = 0; r < rows; r++) {
@@ -184,112 +279,215 @@ export class WatersUI {
   }
 
   /**
-   * @param {{cols:number}} [map]
-   * @returns {number}
+   * Calculates cell size in pixels for screen display based on map dimensions.
+   * Divides container width evenly across map columns.
+   *
+   * @param {Object} [map] - Map configuration object with cols property
+   * @param {number} map.cols - Number of columns in map
+   * @returns {number} Cell size in pixels
+   * @private
    */
-  cellSizeScreen (map) {
+  _calculateCellSizeScreen (map) {
     map = map || bh.map
     return this.containerWidth / (map?.cols || 18)
   }
 
   /**
-   * @returns {number}
+   * Calculates cell size in pixels for list display (fixed narrow column).
+   * Uses fixed 22-column layout for ship/unit list displays.
+   *
+   * @returns {number} Cell size in pixels
+   * @private
    */
-  cellSizeList () {
+  _calculateCellSizeList () {
     return this.containerWidth / 22
   }
 
   /**
-   * @param {{cols:number}} [map]
-   * @returns {number}
+   * Calculates cell size in pixels for print display.
+   * Uses fixed 600px width divided across map columns plus borders.
+   *
+   * @param {Object} [map] - Map configuration object with cols property
+   * @param {number} map.cols - Number of columns in map
+   * @returns {number} Cell size in pixels
+   * @private
    */
-  cellSizePrint (map) {
+  _calculateCellSizePrint (map) {
     map = map || bh.map
     return 600 / (map.cols + 1)
   }
 
   /**
-   * @returns {string}
+   * Returns the CSS unit suffix for cell sizes.
+   *
+   * @returns {string} CSS unit (always 'px')
+   * @private
    */
-  cellUnit () {
+  _getCellSizeUnit () {
     return 'px'
   }
 
   /**
-   * @param {{cols:number}} [map]
-   * @returns {number}
+   * Calculates appropriate cell size based on current display mode.
+   * Delegates to print or screen calculation based on isPrinting state.
+   *
+   * @param {Object} [map] - Map configuration (optional, uses current map if not provided)
+   * @returns {number} Cell size in pixels
    */
   cellSize (map) {
-    return this.isPrinting ? this.cellSizePrint(map) : this.cellSizeScreen()
+    return this.isPrinting
+      ? this._calculateCellSizePrint(map)
+      : this._calculateCellSizeScreen(map)
   }
 
   /**
-   * @param {number} value
-   * @returns {string}
+   * Formats a cell size value as a CSS size string (value + unit).
+   *
+   * @param {number} value - Numeric size value
+   * @returns {string} CSS size string (e.g., '35px')
+   * @private
    */
-  formatCellSize (value) {
-    return `${value}${this.cellUnit()}`
+  _formatCellSizeValue (value) {
+    return `${value}${this._getCellSizeUnit()}`
   }
 
   /**
-   * @returns {string}
+   * Gets current cell size as CSS-formatted string for screen display.
+   *
+   * @returns {string} CSS size string (e.g., '35px')
    */
   cellSizeString () {
-    return this.formatCellSize(this.cellSize())
+    return this._formatCellSizeValue(this.cellSize())
   }
 
   /**
-   * @returns {string}
+   * Gets current cell size as CSS-formatted string for list display.
+   *
+   * @returns {string} CSS size string (e.g., '26px')
    */
   cellSizeStringList () {
-    return this.formatCellSize(this.cellSizeList())
+    return this._formatCellSizeValue(this._calculateCellSizeList())
   }
 
   /**
-   * @returns {string}
+   * Gets current cell size as CSS-formatted string for print display.
+   *
+   * @returns {string} CSS size string (e.g., '30px')
    */
   cellSizeStringPrint () {
-    return this.formatCellSize(this.cellSizePrint())
+    return this._formatCellSizeValue(this._calculateCellSizePrint())
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @returns {number}
+   * @deprecated Use cellSizeScreen instead (not used in new code)
+   * @param {Object} [map] - Map configuration
+   * @returns {number} Cell size for screen
    */
-  _gridIndex (r, c) {
-    return r * bh.map.cols + c
+  cellSizeScreen (map) {
+    return this._calculateCellSizeScreen(map)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @returns {HTMLElement|null}
+   * @deprecated Use cellSizeStringList instead (maintained for backward compatibility)
+   * @returns {number} Cell size for list display
    */
-  gridCellRawAt (r, c) {
-    return this.board?.children?.[this._gridIndex(r, c)] || null
+  cellSizeList () {
+    return this._calculateCellSizeList()
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @returns {HTMLElement}
+   * @deprecated Use cellSizeStringPrint instead (maintained for backward compatibility)
+   * @param {Object} [map] - Map configuration
+   * @returns {number} Cell size for print
    */
-  gridCellAt (r, c) {
-    const result = this.gridCellRawAt(r, c)
+  cellSizePrint (map) {
+    return this._calculateCellSizePrint(map)
+  }
+
+  /**
+   * @deprecated Use _getCellSizeUnit instead (internal use only)
+   * @returns {string} CSS unit
+   */
+  cellUnit () {
+    return this._getCellSizeUnit()
+  }
+
+  /**
+   * @deprecated Use _formatCellSizeValue instead (internal use only)
+   * @param {number} value - Size value to format
+   * @returns {string} Formatted CSS size string
+   */
+  formatCellSize (value) {
+    return this._formatCellSizeValue(value)
+  }
+
+  /**
+   * Calculates linear index from 2D grid coordinates.
+   * Index = row * columnCount + column (standard row-major ordering).
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {number} Linear array index in flattened grid
+   * @private
+   */
+  _gridIndex (row, column) {
+    return row * bh.map.cols + column
+  }
+
+  /**
+   * Retrieves grid cell element at coordinates without validation.
+   * Returns null if cell not found (safer for defensive programming).
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {HTMLElement|null} Cell element or null if not found
+   */
+  gridCellRawAt (row, column) {
+    return this.board?.children?.[this._gridIndex(row, column)] || null
+  }
+
+  /**
+   * Retrieves grid cell element at coordinates with validation.
+   * Throws error if cell not found to catch coordinate errors early.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {HTMLElement} Cell element (guaranteed valid)
+   * @throws {Error} If cell at coordinates is invalid or missing
+   */
+  gridCellAt (row, column) {
+    const result = this.gridCellRawAt(row, column)
     if (result?.classList) return result
-    throw new Error(`Invalid cell at ${r},${c}: ${JSON.stringify(result)}`)
+    throw new Error(
+      `Invalid cell at ${row},${column}: ${JSON.stringify(result)}`
+    )
   }
 
+  /**
+   * Generator yielding cell elements for each coordinate in iterable.
+   * Provides lazy evaluation of coordinate-to-cell mapping.
+   *
+   * @param {Iterable<[number, number]>} coords - Iterable of [row, col] coordinate pairs
+   * @yields {HTMLElement} Cell element for each coordinate
+   * @private
+   */
   *gridCellsForCoords (coords) {
-    for (const [r, c] of coords) {
-      yield this.gridCellAt(r, c)
+    for (const [row, column] of coords) {
+      yield this.gridCellAt(row, column)
     }
   }
 
+  /**
+   * Generator yielding tuples of [cell, row, column, power] for coordinates.
+   * Enriches coordinate data with cell reference for efficient processing.
+   *
+   * @param {Iterable<[number, number, any]>} coords - Iterable of [row, col, power] tuples
+   * @yields {[HTMLElement, number, number, any]} Tuple of cell element with coordinates and power
+   * @private
+   */
   *cellsAndCoords (coords) {
-    for (const [r, c, power] of coords) {
-      yield [this.gridCellAt(r, c), r, c, power]
+    for (const [row, column, power] of coords) {
+      yield [this.gridCellAt(row, column), row, column, power]
     }
   }
 
@@ -336,21 +534,11 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {string} letter
-   */
-  displaySunkCell (cell, letter) {
-    ShipCellDisplayer.setShipCellColors(cell, letter)
-    cell.classList.add('enm-sunk')
-    if (CellClassManager.hasClass(cell, CellClassManager.CELL_CLASSES.damage)) {
-      cell.textContent = ''
-    } else {
-      cell.textContent = letter
-    }
-  }
-
-  /**
-   * @param {Object[]} ships
+   * Resets all ships to initial state and reveals them on the board.
+   * Used when starting a new game or round.
+   *
+   * @param {Object[]} ships - Array of ship objects to reset
+   * @returns {void}
    */
   resetShips (ships) {
     for (const ship of ships) {
@@ -360,7 +548,11 @@ export class WatersUI {
   }
 
   /**
-   * @param {Object[]} ships
+   * Reveals multiple ships on the board without resetting them.
+   * Useful for showing previously hidden ships.
+   *
+   * @param {Object[]} ships - Array of ship objects to reveal
+   * @returns {void}
    */
   revealShips (ships) {
     for (const ship of ships) {
@@ -369,18 +561,26 @@ export class WatersUI {
   }
 
   /**
-   * @param {Object} ship
+   * Displays a single ship on the board in fog-of-war state.
+   * Shows ship letter or weapon indicator based on cell content.
+   *
+   * @param {Object} ship - Ship object with cells property (iterable of [col, row])
+   * @returns {void}
    */
   revealShip (ship) {
-    const map = bh.maps
-    for (const [c, r] of ship.cells) {
-      const cell = this.gridCellAt(r, c)
-      ShipCellDisplayer.displayAsRevealed(cell, ship, map)
+    const colorMaps = bh.maps
+    for (const [column, row] of ship.cells) {
+      const cell = this.gridCellAt(row, column)
+      ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
     }
   }
 
   /**
-   * @param {HTMLElement} cell
+   * Clears all content and classes from a cell.
+   * Removes text, damage, and display state indicators.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
    */
   clearCellContent (cell) {
     this._clearCellText(cell)
@@ -388,9 +588,15 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {'none'|'content'|'all'} details
-   * @param {function(HTMLElement): void} [classClear]
+   * Generic method to clear cell visuals using custom clearing strategy.
+   * Delegates class clearing to provided function for context-specific behavior.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @param {'none'|'content'|'all'} details - What to clear:
+   *   'none' = only call classClear, 'content' = text only, 'all' = text and style
+   * @param {Function} [classClear] - Function to clear cell classes (defaults to clearCell)
+   * @returns {void}
+   * @private
    */
   clearCellVisuals (cell, details, classClear) {
     const clear = classClear || this.clearCell.bind(this)
@@ -403,7 +609,11 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
+   * Clears all visual state from a placement cell.
+   * Removes text, styles, and all relevant classes for placement phase.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
    */
   clearPlaceCellVisuals (cell) {
     this._clearCellTextAndStyle(cell)
@@ -411,7 +621,11 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
+   * Clears placement-related classes from a cell.
+   * Removes weapon, placement, and terrain class information.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
    */
   clearPlaceCell (cell) {
     CellClassManager.clearPlaceCell(cell)
@@ -419,73 +633,102 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {string} [_letter]
+   * Marks a friendly cell as sunk.
+   * Displays sunk marker and clears hit-related state.
+   *
+   * @param {HTMLElement} cell - DOM element to update
+   * @param {string} [_letter] - Ship letter (unused, kept for API compatibility)
+   * @returns {void}
    */
   displayAsSunk (cell, _letter) {
     CellClassManager.clearDisplayCell(cell)
     cell.classList.add('frd-sunk')
-    this.cellHitBase(cell)
+    this._applyHitCellState(cell)
     cell.classList.remove('frd-hit')
   }
 
+  /**
+   * Clears all cell classes from every cell in the board.
+   * Returns board to base state (only terrain coloring remains).
+   *
+   * @returns {void}
+   */
   clearClasses () {
     this._forEachBoardCell(cell => CellClassManager.clearCell(cell))
   }
 
   /**
-   * @param {HTMLElement} cell
+   * Applies hit state to a cell with optional damage indicator.
+   * Called after hit animation completes to show permanent damage.
+   *
+   * @param {HTMLElement} cell - DOM element to update
+   * @param {string} [damageType] - Damage class to add (e.g., 'skull', 'burnt')
+   * @returns {void}
+   * @private
    */
-  resetHitCellState (cell) {
-    this._removeClassesFromCell(cell, this._hitCleanupClasses())
-    this._removeClassesFromCell(cell, this._cursorTags())
-  }
-
-  /**
-   * @param {HTMLElement} cell
-   * @param {string} [damaged]
-   */
-  cellHitBase (cell, damaged) {
-    this.resetHitCellState(cell)
+  _applyHitCellState (cell, damageType) {
+    CellClassManager.resetHitCellState(cell)
     cell.classList.add('frd-hit')
-    if (damaged) {
-      cell.classList.add(damaged)
+    if (damageType) {
+      cell.classList.add(damageType)
     }
     this._clearCellText(cell)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @param {string} letter
+   * @deprecated Use _applyHitCellState instead (kept for backward compatibility)
+   * @param {HTMLElement} cell - DOM element
+   * @param {string} [damaged] - Damage type
+   * @returns {void}
    */
-  cellSunkAt (r, c, letter) {
-    const cell = this.gridCellAt(r, c)
+  cellHitBase (cell, damaged) {
+    this._applyHitCellState(cell, damaged)
+  }
+
+  /**
+   * Marks a cell as sunk at specified coordinates.
+   * Delegates to displayAsSunk for consistent sunk state handling.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {string} letter - Ship letter (for identification)
+   * @returns {void}
+   */
+  cellSunkAt (row, column, letter) {
+    const cell = this.gridCellAt(row, column)
     this.displayAsSunk(cell, letter)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @param {string} [damage]
+   * Marks a cell as hit at specified coordinates.
+   * Applied when enemy successfully targets a location.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {string} [damageType] - Damage indicator class (e.g., 'skull')
+   * @returns {void}
    */
-  cellHit (r, c, damage) {
-    const cell = this.gridCellAt(r, c)
-
+  cellHit (row, column, damageType) {
+    const cell = this.gridCellAt(row, column)
     this._removeClassesFromCell(cell, this._hitCleanupClasses())
     cell.classList.add('hit')
-    if (damage) {
-      cell.classList.add(damage)
+    if (damageType) {
+      cell.classList.add(damageType)
     }
     this._clearCellText(cell)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
+   * Reveals a cell with semi-visibility indicator.
+   * Semi means cell is revealed but not confirmed as hit or miss yet.
+   * Returns result code for game logic based on cell state.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {number} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
    */
-  cellSemiReveal (r, c) {
-    const cell = this.gridCellAt(r, c)
+  cellSemiReveal (row, column) {
+    const cell = this.gridCellAt(row, column)
 
     if (this._cellContainsAny(cell, ['placed', 'miss', 'hit'])) {
       return LoadOut.noResult
@@ -497,11 +740,16 @@ export class WatersUI {
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
+   * Applies hint indicator to a cell showing potential targets.
+   * Used to show aiming assistance or weapon spread hints.
+   * Deactivates other hints to ensure only current hint is visible.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {void}
    */
-  cellHintReveal (r, c) {
-    const cell = this.gridCellAt(r, c)
+  cellHintReveal (row, column) {
+    const cell = this.gridCellAt(row, column)
 
     if (this._cellContainsAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
       return
@@ -513,125 +761,182 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} _cell
+   * Adds visual contrast to a cell.
+   * Override in subclasses for territory-specific behavior.
+   * Default implementation does nothing (for friendly board).
+   *
+   * @param {HTMLElement} _cell - DOM element to update
+   * @returns {void}
+   * @protected
    */
   addContrast (_cell) {
     /* only needs implementation if enemy */
   }
 
   /**
-   * @param {HTMLElement} _cell
+   * Removes shadow weapon indicator from a cell.
+   * Override in subclasses for territory-specific behavior.
+   * Default implementation does nothing (for friendly board).
+   *
+   * @param {HTMLElement} _cell - DOM element to update
+   * @returns {void}
+   * @protected
    */
   removeShadowWeapon (_cell) {
     /* only needs implementation if enemy */
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @param {string} turn
-   * @param {string} [extra]
+   * Marks a cell as having an active weapon with specific rotation.
+   * Displays weapon indicator and applies rotation/cursor classes.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
+   * @param {string} [extraClass] - Additional class to apply (optional)
+   * @returns {void}
    */
-  cellWeaponActive (r, c, turn, extra) {
-    const cell = this.gridCellAt(r, c)
+  cellWeaponActive (row, column, rotationClass, extraClass) {
+    const cell = this.gridCellAt(row, column)
     cell.classList.add('weapon', 'active')
     this.addContrast(cell)
 
-    if (extra) {
-      cell.classList.add(extra)
+    if (extraClass) {
+      cell.classList.add(extraClass)
     }
-    if (turn) cell.classList.add(turn)
+    if (rotationClass) cell.classList.add(rotationClass)
     cell.classList.remove('wake')
     this._clearCellText(cell)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
+   * Deactivates weapon display on a cell.
+   * Removes weapon and rotation indicators.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {void}
    */
-  cellWeaponDeactivate (r, c) {
-    const cell = this.gridCellAt(r, c)
+  cellWeaponDeactivate (row, column) {
+    const cell = this.gridCellAt(row, column)
     this.removeShadowWeapon(cell)
     deactivateWeapon(cell)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
+   * Deactivates temporary hint display on a cell.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {void}
    */
-  cellHintDeactivate (r, c) {
-    const cell = this.gridCellAt(r, c)
+  cellHintDeactivate (row, column) {
+    const cell = this.gridCellAt(row, column)
     deactivateTempHint(cell)
   }
 
   /**
-   * @param {number} r
-   * @param {number} c
-   * @param {string} [damage]
+   * Marks a cell as a miss (no ship hit).
+   * Skips if cell already has a ship placed to protect ships.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {string} [damageType] - Optional damage indicator class
+   * @returns {void}
    */
-  cellMiss (r, c, damage) {
-    const cell = this.gridCellAt(r, c)
+  cellMiss (row, column, damageType) {
+    const cell = this.gridCellAt(row, column)
 
     if (cell.classList.contains('placed')) return
     cell.classList.add('miss')
-    if (damage) {
-      cell.classList.add(damage)
+    if (damageType) {
+      cell.classList.add(damageType)
     }
     cell.classList.remove('wake')
   }
 
   /**
-   * @param {Object} map
-   * @param {number} r
-   * @param {number} c
-   * @param {Set<string>} container
+   * Adds surrounding cell keys to a set container.
+   * Retrieves all neighbors of specified cell and adds their keys.
+   *
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @param {number} row - Row coordinate of center cell
+   * @param {number} column - Column coordinate of center cell
+   * @param {Set<string>} container - Set to accumulate surrounding cell keys
+   * @returns {void}
    */
-  surround (map, r, c, container) {
-    const keys = SurroundingCellsHelper.asKeySet(map || bh.map, r, c)
+  surround (map, row, column, container) {
+    const keys = SurroundingCellsHelper.asKeySet(map || bh.map, row, column)
     keys.forEach(key => container.add(key))
   }
 
   /**
-   * @param {Object} map
-   * @param {number} r
-   * @param {number} c
-   * @param {Object} container
-   * @param {function(number, number): HTMLElement} maker
+   * Adds surrounding cells as object mappings to container.
+   * Retrieves neighbors and applies maker function to each coordinate.
+   *
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @param {number} row - Row coordinate of center cell
+   * @param {number} column - Column coordinate of center cell
+   * @param {Object} container - Object to accumulate surrounding cell mappings
+   * @param {Function} maker - Callback to transform [row, col] → HTMLElement
+   * @returns {void}
    */
-  surroundObj (map, r, c, container, maker) {
-    const obj = SurroundingCellsHelper.asObjectMap(map || bh.map, r, c, maker)
+  surroundObj (map, row, column, container, maker) {
+    const obj = SurroundingCellsHelper.asObjectMap(
+      map || bh.map,
+      row,
+      column,
+      maker
+    )
     Object.assign(container, obj)
   }
 
   /**
-   * @param {Object} map
-   * @param {number} r
-   * @param {number} c
-   * @param {Array<any>} container
-   * @param {function(number, number): any} maker
+   * Adds surrounding cells to array container.
+   * Retrieves neighbors and applies maker function to each coordinate.
+   *
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @param {number} row - Row coordinate of center cell
+   * @param {number} column - Column coordinate of center cell
+   * @param {Array} container - Array to accumulate surrounding cell elements
+   * @param {Function} maker - Callback to transform [row, col] → any value
+   * @returns {void}
    */
-  surroundList (map, r, c, container, maker) {
-    const list = SurroundingCellsHelper.asArray(map || bh.map, r, c, maker)
+  surroundList (map, row, column, container, maker) {
+    const list = SurroundingCellsHelper.asArray(
+      map || bh.map,
+      row,
+      column,
+      maker
+    )
     container.push(...list)
   }
 
   /**
-   * @param {Iterable<[number, number]>} cells
-   * @returns {Set<string>}
+   * Converts coordinate pairs to set of cell keys.
+   * Keys are formatted as 'col-row' for keyed lookups.
+   *
+   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
+   * @returns {Set<string>} Set of cell keys
+   * @private
    */
   cellSet (cells) {
     const result = new Set()
-    for (const [r, c] of cells) {
-      result.add(makeKey(c, r))
+    for (const [row, column] of cells) {
+      result.add(makeKey(column, row))
     }
     return result
   }
 
   /**
-   * @param {Iterable<[number, number]>} cells
-   * @returns {Set<string>}
+   * Calculates hollow set (outer ring without interior).
+   * Returns surrounding cells minus original cells.
+   * Useful for area-of-effect calculations.
+   *
+   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
+   * @returns {Set<string>} Set of hollow cells (surrounding but not original)
+   * @private
    */
-
   hollowCells (cells) {
     const surround = this.surroundCells(cells)
     const original = this.cellSet(cells)
@@ -639,84 +944,148 @@ export class WatersUI {
   }
 
   /**
-   * @param {Iterable<[number, number]>} cells
-   * @returns {Set<string>}
+   * Calculates all cells surrounding given cells (flood fill perimeter).
+   * Includes diagonal neighbors.
+   *
+   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
+   * @returns {Set<string>} Set of surrounding cell keys
+   * @private
    */
   surroundCells (cells) {
     const map = bh.map
     const surroundings = new Set()
-    for (const [c, r] of cells) {
-      this.surround(map, r, c, surroundings)
+    for (const [column, row] of cells) {
+      this.surround(map, row, column, surroundings)
     }
     return surroundings
   }
 
   /**
-   * @param {Iterable<HTMLElement>} cells
-   * @param {Object} [container]
-   * @returns {HTMLElement[]}
+   * Gets surrounding cell DOM elements for given cell elements.
+   * Retrieves neighbor cells and returns as flat array.
+   *
+   * @param {Iterable<HTMLElement>} cells - Iterable of DOM cell elements
+   * @param {Object} [container] - Optional container object to accumulate results
+   * @returns {HTMLElement[]} Array of surrounding cell elements
+   * @private
    */
   surroundCellElement (cells, container) {
     const map = bh.map
     const surroundings = container || {}
     for (const cell of cells) {
-      const [r, c] = coordsFromCell(cell)
-      this.surroundObj(map, r, c, surroundings, this.gridCellAt.bind(this))
+      const [row, column] = coordsFromCell(cell)
+      this.surroundObj(
+        map,
+        row,
+        column,
+        surroundings,
+        this.gridCellAt.bind(this)
+      )
     }
     return Object.values(surroundings)
   }
 
   /**
-   * @param {Iterable<[number, number]>} cells
-   * @param {Object} ship
-   * @param {function(number, number): void} cellMiss
-   * @param {function(number, number, Object): void} [display]
+   * Displays surrounding cells with miss indicator and center cells with display function.
+   * Used for area-of-effect visualization (e.g., weapon splash).
+   *
+   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
+   * @param {Object} ship - Ship object for center cell display
+   * @param {Function} cellMiss - Callback to mark surrounding cells as miss: (row, col) => void
+   * @param {Function} [display] - Optional callback to display center cells: (row, col, ship) => void
+   * @returns {void}
    */
   displaySurround (cells, ship, cellMiss, display) {
     const surround = this.hollowCells(cells)
     const surroundings = [...surround].map(p => parsePair(p))
-    for (const [r, c] of surroundings) {
-      cellMiss(r, c)
+    for (const [row, column] of surroundings) {
+      cellMiss(row, column)
     }
     if (display) {
-      for (const [r, c] of cells) {
-        display(r, c, ship)
+      for (const [row, column] of cells) {
+        display(row, column, ship)
       }
     }
   }
 
+  /**
+   * Resets board CSS dimensions for screen display.
+   * Delegates to BoardConfigurator for DOM manipulation.
+   *
+   * @param {Object} map - Map configuration with rows/cols
+   * @param {string} cellSize - CSS size string (e.g., '35px')
+   * @returns {void}
+   */
   resetBoardSize (map, cellSize) {
     BoardConfigurator.resetBoardSize(this.board, map, cellSize)
   }
 
+  /**
+   * Resets board CSS dimensions for print display.
+   * Delegates to BoardConfigurator for DOM manipulation.
+   *
+   * @param {Object} map - Map configuration with rows/cols
+   * @returns {void}
+   */
   resetBoardSizePrint (map) {
     BoardConfigurator.resetBoardSizePrint(this.board, map)
   }
 
-  colorize (r, c) {
-    this.colorizeCell(this.gridCellRawAt(r, c), r, c)
+  /**
+   * Applies terrain coloring to cell at coordinates.
+   * Convenience wrapper over colorizeCell using cell lookup.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {void}
+   */
+  colorize (row, column) {
+    this.colorizeCell(this.gridCellRawAt(row, column), row, column)
   }
 
-  recolor (r, c) {
-    this.recolorCell(this.gridCellRawAt(r, c), r, c)
+  /**
+   * Removes and reapplies terrain coloring to cell at coordinates.
+   * Used when terrain has changed and colors need refresh.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {void}
+   */
+  recolor (row, column) {
+    this.recolorCell(this.gridCellRawAt(row, column), row, column)
   }
 
+  /**
+   * Refreshes terrain coloring for all board cells.
+   * Called when terrain configuration has changed.
+   *
+   * @returns {void}
+   */
   refreshAllColor () {
     this._forEachBoardCell(el => this.refreshColor(el))
   }
 
   /**
-   * @param {HTMLElement} cell
+   * Removes and reapplies terrain coloring for a single cell.
+   * Extracts coordinates from cell dataset and recolorizes.
+   *
+   * @param {HTMLElement} cell - DOM element to refresh
+   * @returns {void}
    */
   refreshColor (cell) {
-    const r = Number.parseInt(cell.dataset.r)
-    const c = Number.parseInt(cell.dataset.c)
+    const row = Number.parseInt(cell.dataset.r)
+    const column = Number.parseInt(cell.dataset.c)
     this.uncolorCell(cell)
-    this.colorizeCell(cell, r, c)
+    this.colorizeCell(cell, row, column)
   }
 
   /**
-   * @param {HTMLElement} cell
+   * Removes all edge-related classes from a cell.
+   * Used before reapplying terrain coloring.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
+   * @private
    */
   uncolorCell (cell) {
     const edgeClasses = Object.values(CellClassManager.CELL_CLASSES.edge)
@@ -724,123 +1093,229 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {number} r
-   * @param {number} c
+   * Removes and reapplies terrain coloring for a cell at coordinates.
+   * Convenience method combining uncolorCell and colorizeCell.
+   *
+   * @param {HTMLElement} cell - DOM element to update
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @returns {void}
+   * @private
    */
-  recolorCell (cell, r, c) {
+  recolorCell (cell, row, column) {
     this.uncolorCell(cell)
-    this.colorizeCell(cell, r, c)
+    this.colorizeCell(cell, row, column)
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {number} r
-   * @param {number} c
-   * @param {Object} [map]
+   * Applies terrain coloring and edge detection to a cell.
+   * Determines if cell borders land/water and adds appropriate edge classes.
+   * Called during board initialization and terrain refresh.
+   *
+   * @param {HTMLElement} cell - DOM element to colorize
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @returns {void}
    */
-  colorizeCell (cell, r, c, map) {
+  colorizeCell (cell, row, column, map) {
     if (!map) map = bh.map
-    map.tagCell(cell.classList, r, c)
-    const land = map.isLand(r, c)
-    const c1 = c + 1
-    const r1 = r + 1
-    if (!land && c1 < map.cols && map.isLand(r, c1)) {
+    map.tagCell(cell.classList, row, column)
+    const isLand = map.isLand(row, column)
+
+    // Check right edge (water next to land)
+    const columnRight = column + 1
+    if (!isLand && columnRight < map.cols && map.isLand(row, columnRight)) {
       cell.classList.add('rightEdge')
     }
-    if (c !== 0 && !land && map.isLand(r, c - 1)) {
+
+    // Check left edge (water next to land)
+    if (column !== 0 && !isLand && map.isLand(row, column - 1)) {
       cell.classList.add('leftEdge')
     }
-    if (r1 < map.rows && land !== map.isLand(r1, c)) {
+
+    // Check bottom edge (transition between land/water vertically)
+    const rowBelow = row + 1
+    if (rowBelow < map.rows && isLand !== map.isLand(rowBelow, column)) {
       cell.classList.add('bottomEdge')
     }
-    if (r !== 0 && !land && map.isLand(r - 1, c)) {
+
+    // Check top edge (water next to land vertically)
+    if (row !== 0 && !isLand && map.isLand(row - 1, column)) {
       cell.classList.add('topEdge')
     }
   }
 
+  /**
+   * Creates and appends an empty cell (used for corner label cell).
+   *
+   * @returns {void}
+   * @private
+   */
   buildEmptyCell () {
     const cell = document.createElement('div')
     cell.className = 'cell empty'
     this.board.appendChild(cell)
   }
 
-  buildRowLabel (max, r) {
+  /**
+   * Creates and appends a row label cell.
+   *
+   * @param {number} maxRows - Total rows (used to calculate inverted index)
+   * @param {number} row - Row index (0-based)
+   * @returns {void}
+   * @private
+   */
+  buildRowLabel (maxRows, row) {
     const cell = document.createElement('div')
     cell.className = 'cell row-label'
-    cell.dataset.r = r
-    cell.textContent = `${max - r}`
+    cell.dataset.r = row
+    cell.textContent = `${maxRows - row}`
     this.board.appendChild(cell)
   }
 
-  buildColLabel (c) {
+  /**
+   * Creates and appends a column label cell with letter.
+   *
+   * @param {number} column - Column index (0-based)
+   * @returns {void}
+   * @private
+   */
+  buildColLabel (column) {
     const cell = document.createElement('div')
     cell.className = 'cell col-label'
-    cell.dataset.c = c
-    cell.textContent = String.fromCodePoint(startCharCode + c)
+    cell.dataset.c = column
+    cell.textContent = String.fromCodePoint(startCharCode + column)
     this.board.appendChild(cell)
   }
 
-  buildCell (r, c, onClickCell, map) {
+  /**
+   * Creates and appends a game board cell with optional click handler.
+   * Applies terrain coloring, coordinates, and click listener.
+   *
+   * @param {number} row - Row coordinate
+   * @param {number} column - Column coordinate
+   * @param {Function} [onClickCell] - Optional click event handler
+   * @param {Object} [map] - Map configuration for terrain coloring
+   * @returns {void}
+   * @private
+   */
+  buildCell (row, column, onClickCell, map) {
     const cell = document.createElement('div')
     cell.className = 'cell'
-    this.colorizeCell(cell, r, c, map)
-    setCellCoords(cell, r, c)
+    this.colorizeCell(cell, row, column, map)
+    setCellCoords(cell, row, column)
     if (onClickCell) {
       cell.addEventListener('click', onClickCell)
     }
     this.board.appendChild(cell)
   }
 
+  /**
+   * Builds board grid for print output with labels.
+   * Creates grid with row/column labels for printing.
+   *
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @returns {void}
+   */
   buildBoardPrint (map) {
     map = map || bh.map
     this.board.innerHTML = ''
     this.buildEmptyCell()
-    for (let c = 0; c < map.cols; c++) {
-      this.buildColLabel(c)
+    for (let column = 0; column < map.cols; column++) {
+      this.buildColLabel(column)
     }
-    for (let r = 0; r < map.rows; r++) {
-      this.buildRowLabel(map.rows, r)
-      for (let c = 0; c < map.cols; c++) {
-        this.buildCell(r, c, null, map)
+    for (let row = 0; row < map.rows; row++) {
+      this.buildRowLabel(map.rows, row)
+      for (let column = 0; column < map.cols; column++) {
+        this.buildCell(row, column, null, map)
       }
     }
   }
 
+  /**
+   * Builds board grid for interactive display with optional click handlers.
+   * Creates grid cells and binds click events if handler provided.
+   *
+   * @param {Function} [onClickCell] - Click handler: (row, col) => void
+   * @param {Object} [thisRef] - Context object for click handler binding
+   * @param {Object} [map] - Map configuration (defaults to current map)
+   * @returns {void}
+   */
   buildBoard (onClickCell, thisRef, map) {
     map = map || bh.map
     this.board.innerHTML = ''
-    this._buildGrid(map.rows, map.cols, (r, c) => {
+    this._buildGrid(map.rows, map.cols, (row, column) => {
       if (onClickCell) {
-        this.buildCell(r, c, onClickCell.bind(thisRef, r, c), map)
+        this.buildCell(row, column, onClickCell.bind(thisRef, row, column), map)
       } else {
-        this.buildCell(r, c, null, map)
+        this.buildCell(row, column, null, map)
       }
     })
   }
 
+  /**
+   * Removes all area-of-effect highlight classes from board.
+   * Clears target and splash effect visual indicators.
+   *
+   * @returns {void}
+   */
   removeHighlightAoE () {
     const tags = ['target', ...Object.values(bh.splashTags)]
     this._forEachBoardCell(el => el.classList.remove(...tags))
   }
 
+  /**
+   * Attaches hover event listeners to all board cells.
+   * Shows/hides area-of-effect or targeting information on hover.
+   *
+   * @param {Function} onEnter - Mouseenter handler: (weaponSource, row, col) => void
+   * @param {Function} onLeave - Mouseleave handler: (row, col) => void
+   * @param {Object} [thisRef] - Context for onLeave binding
+   * @param {any} [weaponSource] - Weapon source data passed to onEnter
+   * @returns {void}
+   */
   buildBoardHover (onEnter, onLeave, thisRef, weaponSource) {
     this._forEachBoardCell(el => {
-      const [r, c] = coordsFromCell(el)
-      el.addEventListener('mouseenter', onEnter.bind(null, weaponSource, r, c))
-      el.addEventListener('mouseleave', onLeave.bind(thisRef, r, c))
+      const [row, column] = coordsFromCell(el)
+      el.addEventListener(
+        'mouseenter',
+        onEnter.bind(null, weaponSource, row, column)
+      )
+      el.addEventListener('mouseleave', onLeave.bind(thisRef, row, column))
     })
   }
 
+  /**
+   * Clears cell visuals using provided clearing strategy across entire board.
+   * Generic method accepting custom clearing callback for different contexts.
+   *
+   * @param {'none'|'content'|'all'} details - What to clear: 'none', 'content', or 'all'
+   * @param {Function} [classClear] - Custom clearing function: (cell) => void
+   * @returns {void}
+   * @private
+   */
   clearVisualsBase (details, classClear) {
     const clear = classClear || this.clearCell.bind(this)
     this._forEachBoardCell(el => this.clearCellVisuals(el, details, clear))
   }
 
+  /**
+   * Clears all cell visuals (text, styles, and classes) from entire board.
+   * Returns board to clean state with only terrain coloring.
+   *
+   * @returns {void}
+   */
   clearVisuals () {
     this.clearVisualsBase('all')
   }
 
+  /**
+   * Clears friendly board cell visuals including damage indicators.
+   * Preserves terrain coloring but removes game state classes.
+   *
+   * @returns {void}
+   */
   clearFriendVisuals () {
     this.clearVisualsBase(
       'all',
@@ -848,6 +1323,12 @@ export class WatersUI {
     )
   }
 
+  /**
+   * Clears only friendly cell classes, preserving text and styling.
+   * Used when resetting game state without visual refresh.
+   *
+   * @returns {void}
+   */
   clearFriendClasses () {
     this.clearVisualsBase(
       'none',
@@ -855,64 +1336,118 @@ export class WatersUI {
     )
   }
 
+  /**
+   * Clears placement mode visuals from entire board.
+   * Returns board to battle-ready state after ship placement phase.
+   *
+   * @returns {void}
+   */
   clearPlaceVisuals () {
     this.clearVisualsBase('all', this.clearPlaceCell.bind(this))
   }
 
+  /**
+   * Displays a game status notice to the player.
+   * Queues notice for display in status UI.
+   *
+   * @param {string} notice - Notice text to display
+   * @returns {void}
+   */
   showNotice (notice) {
     gameStatus.addToQueue(notice, false)
   }
 
+  /**
+   * Displays help tips for current game state.
+   * Shown in status panel when available.
+   *
+   * @returns {void}
+   */
   showTips () {
     gameStatus.setTips(this.tips, null)
   }
 
+  /**
+   * Hides any displayed tips or notices.
+   * Clears status message queue.
+   *
+   * @returns {void}
+   */
   hideTips () {
     gameStatus.clearQueue()
   }
 
+  /**
+   * Removes all weapon activation indicators from board.
+   * Deactivates visual targeting display for all cells.
+   *
+   * @returns {void}
+   */
   deactivateWeapons () {
     this._forEachBoardCell(cell => deactivateWeapon(cell))
   }
 
+  /**
+   * Removes temporary hint indicators from entire board.
+   * Clears targeting or placement hints.
+   *
+   * @returns {void}
+   */
   deactivateTempHints () {
     this._forEachBoardCell(cell => deactivateTempHint(cell))
   }
 
   /**
-   * Shows/hides unit type containers based on which units exist in the fleet
-   * @param {Array} ships - Array of ship objects
+   * Shows/hides unit type containers based on which units exist in the fleet.
+   * Only displays UI containers for unit types present in the fleet.
+   *
+   * @param {Object[]} ships - Array of ship objects with type() method
+   * @returns {void}
    */
   hideEmptyUnits (ships) {
-    const counts = ships.reduce((acc, ship) => {
-      const type = ship.type()
-      const unitType = type === 'M' || type === 'T' ? 'X' : type
+    const unitCounts = this._countUnitsByType(ships)
+    Terrain.showsUnits('-container', letter => unitCounts[letter])
+  }
+
+  /**
+   * Counts ships by unit type across fleet.
+   * Normalizes M/T types to X type for display.
+   *
+   * @param {Object[]} ships - Array of ship objects
+   * @returns {Object<string, number>} Map of unit type to count
+   * @private
+   */
+  _countUnitsByType (ships) {
+    return ships.reduce((acc, ship) => {
+      const unitType = this.getUnitType(ship)
       acc[unitType] = (acc[unitType] || 0) + 1
       return acc
     }, {})
-
-    Terrain.showsUnits('-container', letter => {
-      return counts[letter]
-    })
   }
 
   /**
-   * Maps ship type to display unit type (M/T -> X, others unchanged)
+   * Maps ship type to display unit type.
+   * Normalizes Missile (M) and Torpedo (T) types to Special (X) unit type.
+   *
    * @param {Object} ship - Ship object with type() method
-   * @returns {string} Unit type identifier
+   * @returns {string} Display unit type (A, S, X, G, or W)
    */
   getUnitType (ship) {
-    const type = ship.type()
-    if (type === 'M' || type === 'T') return 'X'
-    return type
+    const shipType = ship.type()
+    if (shipType === 'M' || shipType === 'T') return 'X'
+    return shipType
   }
 
   /**
-   * Adds a ship to a unit group, incrementing its count
+   * Adds a ship to a unit type group, incrementing count.
+   * Creates group entry if needed with ship shape.
+   *
    * @param {Object} group - Group object keyed by ship letter
    * @param {Object} ship - Ship object with letter and shape() method
+   * @returns {void}
+   * @private
    */
-  addToGroup (group, ship) {
+  _addShipToGroup (group, ship) {
     const key = ship.letter
     let value = group[key] || { shape: ship.shape(), count: 0 }
     value.count++
@@ -920,36 +1455,44 @@ export class WatersUI {
   }
 
   /**
-   * Groups ships by unit type (A, S, X, G, W, etc.)
-   * Each group contains ships organized by their letter with shape and count
-   * @param {Array} ships - Array of ship objects
-   * @returns {Object} Ships grouped by type, each containing {letter: {shape, count}}
+   * @deprecated Use _addShipToGroup instead (kept for backward compatibility)
+   * @param {Object} group - Group object
+   * @param {Object} ship - Ship object
+   * @returns {void}
+   */
+  addToGroup (group, ship) {
+    this._addShipToGroup(group, ship)
+  }
+
+  /**
+   * Groups ships by unit type with shape and count info.
+   * Organizes fleet into unit type buckets for loadout display.
+   * Each group contains ship entries keyed by letter with shape/count.
+   *
+   * @param {Object[]} ships - Array of ship objects
+   * @returns {Object<string, Object>} Ships grouped by type:
+   *   { A: {D: {shape: ..., count: 2}}, S: {A: {shape: ..., count: 1}}, ...}
    */
   splitUnits (ships) {
     return ships.reduce((acc, ship) => {
-      const key = this.getUnitType(ship)
-      const group = acc[key] || {}
-      this.addToGroup(group, ship)
-      acc[key] = group
+      const unitType = this.getUnitType(ship)
+      const group = acc[unitType] || {}
+      this._addShipToGroup(group, ship)
+      acc[unitType] = group
       return acc
     }, {})
   }
 
   /**
-   * Gets the tray DOM element for a specific ship type
-   * @param {string} type - Ship type (A, S, X, G, W)
-   * @returns {HTMLDivElement} The tray element
-   * @throws {Error} If tray not found for type
+   * Gets the tray DOM element for a specific unit type.
+   * Trays display ship/unit loadout and information.
+   *
+   * @param {string} type - Unit type identifier (A, S, X, G, W)
+   * @returns {HTMLDivElement} The tray container element
+   * @throws {Error} If type is unknown or tray element not found
    */
   getTrayOfType (type) {
-    const trayMap = {
-      A: 'planeTray',
-      S: 'shipTray',
-      X: 'specialTray',
-      G: 'buildingTray',
-      W: 'weaponTray'
-    }
-    const trayId = trayMap[type]
+    const trayId = TRAY_TYPE_MAP[type]
     if (!trayId) {
       throw new Error('Unknown type for ' + type)
     }
@@ -961,27 +1504,19 @@ export class WatersUI {
   }
 
   /**
-   * Gets the notes DOM element for a specific ship type
-   * @param {string} type - Ship type (A, S, X, G, W)
-   * @returns {HTMLDivElement|null} The notes element, or null if not found
+   * Gets the notes/information DOM element for a specific unit type.
+   * Notes display unit descriptions and stats.
+   *
+   * @param {string} type - Unit type identifier (A, S, X, G, W, or M/T for special)
+   * @returns {HTMLDivElement|null} The notes container element, or null if not found
+   * @throws {Error} If type is unknown
    */
   getNotesOfType (type) {
-    switch (type) {
-      case 'A':
-        return document.getElementById('planeNotes')
-      case 'S':
-        return document.getElementById('shipNotes')
-      case 'M':
-      case 'T':
-      case 'X':
-        return document.getElementById('specialNotes')
-      case 'G':
-        return document.getElementById('buildingNotes')
-      case 'W':
-        return document.getElementById('weaponNotes')
-      default:
-        throw new Error('Unknown type for ' + type)
+    const notesId = NOTES_TYPE_MAP[type]
+    if (!notesId) {
+      throw new Error('Unknown type for ' + type)
     }
+    return document.getElementById(notesId)
   }
 }
 
