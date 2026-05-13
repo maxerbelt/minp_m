@@ -1953,7 +1953,7 @@ export class Waters {
     let acc = LoadOut.noResult
 
     for (const [r, c, power] of normalizedEffect) {
-      acc = this.applyToPosition(r, c, weapon, power, acc, options)
+      acc = this.applyToPosition(r, c, weapon, power, acc)
     }
     return acc
   }
@@ -2002,7 +2002,7 @@ export class Waters {
    * @private
    */
   warnInvalidEffect (effect, weapon, options) {
-    if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'test') {
+    if (process == null || process.env?.NODE_ENV !== 'test') {
       console.warn('Invalid weapon effect payload:', {
         effect,
         weapon: weapon?.name || weapon?.letter,
@@ -2039,7 +2039,7 @@ export class Waters {
     /// this.updateMode()
     return results
   }
-  applyToPosition (r, c, weapon, power, acc, options) {
+  applyToPosition (r, c, weapon, power, acc) {
     if (bh.inBounds(r, c)) {
       const result = this.processShot(weapon, r, c, power)
       this.accumulateResult(result, acc)

@@ -3,6 +3,22 @@ import { Waters } from './Waters.js'
 import { customUI } from './customUI.js'
 
 /**
+ * @typedef {Object} Weapon
+ * @property {string} letter
+ */
+
+/**
+ * @typedef {Object} Ship
+ * @property {Array<*>} cells
+ * @property {function(): { displacement: number }} shape
+ * @property {number} [variant]
+ */
+
+/**
+ * @typedef {Object} CustomUI
+ */
+
+/**
  * Custom game mode that extends Waters with additional ship displacement calculations.
  * Provides metrics for evaluating fleet composition and playability.
  *
@@ -10,15 +26,20 @@ import { customUI } from './customUI.js'
  * @extends Waters
  */
 class Custom extends Waters {
+  static #THRESHOLDS = {
+    playable: 0.35,
+    sparse: 0.15
+  }
+
   /**
    * Creates a Custom game instance.
-   * @param {Object} ui - The custom UI instance
+   * @param {CustomUI} ui - The custom UI instance
    */
   constructor (ui) {
     super(ui)
-    /** @type {Array<Object>} Candidate ships for placement */
+    /** @type {Array<Ship>} Candidate ships for placement */
     this.candidateShips = []
-    /** @type {Array<Object>} Currently tracked ships */
+    /** @type {Array<Ship>} Currently tracked ships */
     this.ships = []
   }
 
@@ -27,11 +48,9 @@ class Custom extends Waters {
    * Formula: (rows + 1) × (cols + 1) + 1
    *
    * @returns {number} The displaced area in grid units
-   * @private
    */
   calculateDisplacedArea () {
-    const map = bh.map
-    return (map.rows + 1) * (map.cols + 1) + 1
+    return this.#getAvailablePlacementArea()
   }
 
   /**
@@ -44,13 +63,25 @@ class Custom extends Waters {
   }
 
   /**
+   * Gets the collection of ships that already occupy cells.
+   *
+   * @returns {Array<Ship>} Placed ships
+   * @private
+   */
+  getPlacedShips () {
+    return this.ships.filter(
+      ship => Array.isArray(ship.cells) && ship.cells.length > 0
+    )
+  }
+
+  /**
    * Gets the number of ships that have been placed on the board.
    * A placed ship has at least one cell occupied.
    *
    * @returns {number} Count of ships with cells assigned
    */
   getPlacedShipCount () {
-    return this.ships.filter(ship => ship.cells.length > 0).length
+    return this.getPlacedShips().length
   }
 
   /**
@@ -61,29 +92,29 @@ class Custom extends Waters {
    */
   getTotalShipDisplacement () {
     return this.ships.reduce(
-      (total, ship) => total + ship.shape().displacement,
+      (total, ship) => total + this.#getShipDisplacement(ship),
       0
     )
   }
 
   /**
    * Evaluates if the current fleet composition provides playable difficulty.
-   * Playable when displacement ratio is below 35% of available area.
+   * Playable when displacement ratio is below the playable threshold.
    *
-   * @returns {boolean} True if fleet ratio < 0.35 (playable)
+   * @returns {boolean} True if fleet ratio < playable threshold
    */
   hasPlayableShips () {
-    return this.getDisplacementRatio() < 0.35
+    return this.#isDisplacementBelowThreshold(Custom.#THRESHOLDS.playable)
   }
 
   /**
    * Evaluates if the current fleet is sparse (few ships).
-   * Few ships when displacement ratio is below 15% of available area.
+   * Sparse when displacement ratio is below the sparse threshold.
    *
-   * @returns {boolean} True if fleet ratio < 0.15 (sparse)
+   * @returns {boolean} True if fleet ratio < sparse threshold
    */
   hasFewShips () {
-    return this.getDisplacementRatio() < 0.15
+    return this.#isDisplacementBelowThreshold(Custom.#THRESHOLDS.sparse)
   }
 
   /**
@@ -94,7 +125,40 @@ class Custom extends Waters {
    * @returns {number} Displacement ratio (0.0 to 1.0+)
    */
   getDisplacementRatio () {
-    return this.getTotalShipDisplacement() / this.calculateDisplacedArea()
+    return this.getTotalShipDisplacement() / this.#getAvailablePlacementArea()
+  }
+
+  /**
+   * Computes the available placement area for the active map.
+   *
+   * @returns {number}
+   * @private
+   */
+  #getAvailablePlacementArea () {
+    const map = bh.map
+    return (map.rows + 1) * (map.cols + 1) + 1
+  }
+
+  /**
+   * Returns a ship's displacement value.
+   *
+   * @param {Ship} ship
+   * @returns {number}
+   * @private
+   */
+  #getShipDisplacement (ship) {
+    return ship?.shape?.()?.displacement || 0
+  }
+
+  /**
+   * Indicates whether displacement ratio is below a threshold.
+   *
+   * @param {number} threshold
+   * @returns {boolean}
+   * @private
+   */
+  #isDisplacementBelowThreshold (threshold) {
+    return this.getDisplacementRatio() < threshold
   }
 }
 

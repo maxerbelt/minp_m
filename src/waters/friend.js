@@ -35,6 +35,23 @@ const ENEMY_TURN_DELAY = 50
  */
 
 /**
+ * @typedef {Object} MapInfo
+ * @property {number} rows
+ * @property {number} cols
+ * @property {Bitmask} fullMask
+ * @property {Bitmask} blankMask
+ * @property {function(number, number): boolean} inBounds
+ */
+
+/**
+ * @typedef {'DestroyOne'|'Bomb'|'Scan'|'Seek'} EffectType
+ */
+
+/**
+ * @typedef {function(): Promise<WeaponLaunchResult|null>} FinishStrategy
+ */
+
+/**
  * Configuration constants for AI seeking behavior.
  * @typedef {Object} SeekConstants
  * @property {number} IMPACT_MIN - Minimum impact level for bomb search
@@ -197,9 +214,17 @@ export class Friend extends Waters {
    * @private
    */
   createLaunchFunction (weaponSystem) {
-    return async coords => {
-      return await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
-    }
+    return async coords =>
+      await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
+  }
+
+  /**
+   * Creates a launch function for the currently selected weapon system.
+   * @returns {Function} Launch function for the current weapon system
+   * @private
+   */
+  _createCurrentLaunchFunction () {
+    return this.createLaunchFunction(this.currentWeaponSystem)
   }
 
   /**
@@ -233,9 +258,14 @@ export class Friend extends Waters {
    * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
    */
   async launchCurrentWeapon (r, c) {
-    const wps = this.currentWeaponSystem
-    const launch = this.createLaunchFunction(wps)
-    return await this.loadOut.aimWeapon(this.map, r, c, wps, launch)
+    const launch = this._createCurrentLaunchFunction()
+    return await this.loadOut.aimWeapon(
+      this.map,
+      r,
+      c,
+      this.currentWeaponSystem,
+      launch
+    )
   }
 
   /**
@@ -252,13 +282,13 @@ export class Friend extends Waters {
     if (result?.score && result.score !== LoadOut.noResult) {
       return result
     }
-    const wps = this.currentWeaponSystem
-    const launch = this.createLaunchFunction(wps)
+
+    const launch = this._createCurrentLaunchFunction()
     return await this.loadOut.aimWeapon(
       this.map,
       fallbackR,
       fallbackC,
-      wps,
+      this.currentWeaponSystem,
       launch
     )
   }
@@ -463,6 +493,18 @@ export class Friend extends Waters {
   }
 
   /**
+   * Attempts to select a random target from a candidate mask.
+   * @param {Bitmask} mask - Candidate mask to use for selection.
+   * @returns {Promise<WeaponLaunchResult|null>} Result from firing at the selected candidate
+   * @private
+   */
+  async _finishMaskCandidates (mask) {
+    return await this.tryFinishCondition(mask, candidate =>
+      this.selectRandomCandidate(candidate)
+    )
+  }
+
+  /**
    * Attempts to fire at revealed but not yet attacked cells.
    * Prioritizes previously revealed locations for follow-up shots.
    *
@@ -472,9 +514,7 @@ export class Friend extends Waters {
   async finishRevealed () {
     if (this.score.reveal.occupancy === 0) return null
     this.score.reveal = this.score.reveal.take(this.score.shot)
-    return await this.tryFinishCondition(this.score.reveal, mask =>
-      this.selectRandomCandidate(mask)
-    )
+    return await this._finishMaskCandidates(this.score.reveal)
   }
 
   /**
@@ -505,9 +545,7 @@ export class Friend extends Waters {
     const cross = hits.clone.dilateCross()
     const candidates = cross.take(shots)
     //  this._logMaskInfo('cross', shots, hits, cross, candidates)
-    return await this.tryFinishCondition(candidates, m =>
-      this.selectRandomCandidate(m)
-    )
+    return await this._finishMaskCandidates(candidates)
   }
 
   /**
@@ -519,9 +557,7 @@ export class Friend extends Waters {
   async _trySurroundPattern (hits) {
     const shots = this.score.shot
     const surround = hits.clone.dilate(1).take(shots)
-    return await this.tryFinishCondition(surround, m =>
-      this.selectRandomCandidate(m)
-    )
+    return await this._finishMaskCandidates(surround)
   }
 
   /**
@@ -553,9 +589,7 @@ export class Friend extends Waters {
       const surroundHints = this.score.hint.clone
         .dilate(1)
         .take(this.score.shot)
-      return await this.tryFinishCondition(surroundHints, m =>
-        this.selectRandomCandidate(m)
-      )
+      return await this._finishMaskCandidates(surroundHints)
     }
     return null
   }
@@ -684,8 +718,17 @@ export class Friend extends Waters {
     const hits = this.getHits()
     this.setWeaponFireHandlers()
     const result = await this.selectShot(hits)
+    await this._finalizeSeekStep(result)
+  }
+
+  /**
+   * Finalizes a seek action by updating results, UI, and turn state.
+   * @param {WeaponLaunchResult|null} result - The result from a shot or action.
+   * @private
+   */
+  async _finalizeSeekStep (result) {
     if (result?.score && result.score !== LoadOut.noResult) {
-      this.updateResultsOfBomb(result?.weapon, result.score)
+      this.updateResultsOfBomb(result.weapon, result.score)
     }
     this.score.finishTurn()
     this.updateUI()
@@ -712,12 +755,16 @@ export class Friend extends Waters {
    *
    * @returns {Promise<void>}
    */
-  async seekRaw () {
+  async _initializeSeekRun () {
     this.testContinue = true
     this.boardDestroyed = false
     this.armWeapons()
     this.score.shot = this.map.blankMask
     this.setupUntried()
+  }
+
+  async seekRaw () {
+    await this._initializeSeekRun()
 
     while (!this.isCancelled()) {
       await Delay.wait(SEEK_CONSTANTS.SEEK_DELAY_MS)

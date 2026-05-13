@@ -26,6 +26,30 @@ const ATTEMPTS_PER_RETRY = 25
  */
 
 /**
+ * @typedef {Object} Weapon
+ * @property {string} letter
+ * @property {Array<string>} [cursors]
+ * @property {string} [launchCursor]
+ * @property {string} [tag]
+ * @property {boolean} [postSelectShadow]
+ */
+
+/**
+ * @typedef {Object} EnemyUI
+ * @property {HTMLElement} board
+ * @property {HTMLButtonElement} [weaponBtn]
+ * @property {HTMLButtonElement} [revealBtn]
+ * @property {Array<HTMLElement>} [weaponBtns]
+ * @property {function(number, number): void} [cellWeaponActive]
+ * @property {function(number, number): void} [cellWeaponDeactivate]
+ * @property {function(number, number): void} [cellHintDeactivate]
+ * @property {function(): void} [clearClasses]
+ * @property {function(Array): void} [revealAll]
+ * @property {function(): void} [playMode]
+ * @property {function(): void} [reset]
+ */
+
+/**
  * Represents the enemy player in the Waters game, handling AI behavior, ship placement, and weapon management.
  * Extends the Waters class to provide enemy-specific logic.
  */
@@ -54,6 +78,12 @@ class Enemy extends Waters {
 
     /** @type {string|null} Previous cursor class for board. */
     this._oldCursor = null
+
+    /** @type {number|null} Previous cursor index for weapon status. */
+    this._oldCursorIdx = null
+
+    /** @type {boolean|null} Previous attached weapon state. */
+    this._oldAttachedState = null
 
     /** @type {string|null} Previous weapon letter. */
     this._oldWeaponLetter = null
@@ -240,8 +270,8 @@ class Enemy extends Waters {
    * @param {number} attempt - The current attempt number.
    * @returns {boolean} True if placement succeeded.
    */
-  _attemptShipPlacement (ships, attempt) {
-    for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS; i++) {
+  _attemptShipPlacement (ships) {
+    for (let trial = 0; trial < MAX_PLACEMENT_ATTEMPTS; trial++) {
       if (this.shipCellGrid.attemptToPlaceShips(ships)) {
         return true
       }
@@ -254,9 +284,10 @@ class Enemy extends Waters {
    * @private
    * @param {Array} ships - The ships to place.
    * @param {number} attempt - The current attempt number.
+   * @returns {Promise<undefined|boolean>}
    */
   async _handlePlacementFailure (ships, attempt) {
-    const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
+    const totalAttempts = this._placementAttemptCount(attempt)
     gameStatus.addToQueue(
       `Having difficulty placing all ships (${totalAttempts} attempts)`,
       true
@@ -267,10 +298,7 @@ class Enemy extends Waters {
       return this._attemptShipPlacementWithRetry(ships, attempt + 1)
     }
 
-    this.UI.enableBtns()
-    gameStatus.addToQueue('Failed to place all ships after many attempts', true)
-    this.boardDestroyed = true
-    throw new Error('Failed to place all ships after many attempts')
+    this._finalizePlacementFailure()
   }
 
   /**
@@ -281,7 +309,28 @@ class Enemy extends Waters {
    * @returns {boolean} True if succeeded.
    */
   _attemptShipPlacementWithRetry (ships, attempt) {
-    return this._attemptShipPlacement(ships, attempt)
+    return this._attemptShipPlacement(ships)
+  }
+
+  /**
+   * Computes the number of placement attempts for the current retry cycle.
+   * @private
+   * @param {number} attempt - Retry attempt index.
+   * @returns {number}
+   */
+  _placementAttemptCount (attempt) {
+    return (attempt + 1) * ATTEMPTS_PER_RETRY
+  }
+
+  /**
+   * Finalizes placement failure state after all retries have been exhausted.
+   * @private
+   */
+  _finalizePlacementFailure () {
+    this.UI.enableBtns()
+    gameStatus.addToQueue('Failed to place all ships after many attempts', true)
+    this.boardDestroyed = true
+    throw new Error('Failed to place all ships after many attempts')
   }
 
   /**
@@ -388,12 +437,12 @@ class Enemy extends Waters {
    */
   async _launchWeaponSequence (r, c) {
     let result = await this.launchSelectedWeapon(r, c)
-    if (result?.score && result.score !== LoadOut.noResult) {
+    if (this._isFinalLaunchResult(result)) {
       return result
     }
 
     result = await this.launchRandomWeapon(r, c, !bh.seekingMode)
-    if (result?.hasTargettedWeapon || result?.score || result?.hasUnattached) {
+    if (this._isFinalLaunchResult(result)) {
       return result
     }
 
@@ -416,6 +465,20 @@ class Enemy extends Waters {
   }
 
   /**
+   * Determines whether a weapon launch requires no further action.
+   * @private
+   * @param {WeaponLaunchResult|null} result
+   * @returns {boolean}
+   */
+  _isFinalLaunchResult (result) {
+    return !!(
+      result?.score ||
+      result?.hasTargettedWeapon ||
+      result?.hasUnattached
+    )
+  }
+
+  /**
    * Handles cell click for enemy turn.
    * @param {number} r - Row coordinate.
    * @param {number} c - Column coordinate.
@@ -425,14 +488,30 @@ class Enemy extends Waters {
     if (!this.canTakeTurn()) return
 
     const result = await this.setupWeapon(r, c)
-    if (result?.hasTargettedWeapon || result?.hasUnattached) {
-      return
-    }
+    if (this._shouldWaitForWeaponResult(result)) return
 
     if (result?.score) {
       this.updateResultsOfBomb(result.weapon, result.score)
     }
 
+    this._finalizeTurn()
+  }
+
+  /**
+   * Determines whether the enemy should wait for an additional weapon result.
+   * @private
+   * @param {WeaponLaunchResult|null} result
+   * @returns {boolean}
+   */
+  _shouldWaitForWeaponResult (result) {
+    return !!(result?.hasTargettedWeapon || result?.hasUnattached)
+  }
+
+  /**
+   * Finalizes the enemy turn after a successful shot.
+   * @private
+   */
+  _finalizeTurn () {
     this.score.finishTurn()
     this.updateUI()
     this.opponent?.updateUI()
@@ -544,37 +623,91 @@ class Enemy extends Waters {
    */
   updateWeaponStatus (rack, cursorInfo) {
     const coordLength = this.loadOut.selectedCoordinates.length
-    const wps = cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
-    const weapon = wps?.weapon
-    const wLetter = weapon?.letter || ''
-    const numCursors = weapon?.cursors?.length || 1
-    const maxCursorIndex = numCursors - 1
-    let cursorIdx = cursorInfo?.idx || coordLength
-    cursorIdx = Math.min(maxCursorIndex, cursorIdx) //weapon.stepIdx(coordLength, 1))
+    const weaponSystem =
+      cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
+    const weapon = weaponSystem?.weapon
+    const weaponLetter = weapon?.letter || ''
     const hasUnattached = this._hasUnattachedForCurrentWeapon()
+    const cursorIndex = this._normalizeCursorIndex(
+      cursorInfo?.idx,
+      weapon?.cursors?.length,
+      coordLength
+    )
+
     if (
-      wLetter !== this._oldWeaponLetter ||
-      (wLetter !== '-' && coordLength !== this._oldCursorIdx) ||
-      hasUnattached !== (this._oldAttachedState || false)
+      this._shouldRefreshWeaponStatus(weaponLetter, coordLength, hasUnattached)
     ) {
-      this._oldWeaponLetter = wLetter
+      this._oldWeaponLetter = weaponLetter
       this._oldCursorIdx = coordLength
       this._oldAttachedState = hasUnattached
-      const newCursor =
-        wps?.weapon?.cursors[cursorIdx] || cursorInfo?.cursor || ''
-
-      this.updateCursor(newCursor)
-
-      gameStatus.displayAmmoStatus(
-        wps,
-        bh.maps,
-        coordLength,
+      this._updateCursorAndAmmo(
         rack,
+        cursorInfo,
+        weaponSystem,
+        cursorIndex,
         hasUnattached
       )
     } else {
-      gameStatus.displayAmmo(wps)
+      gameStatus.displayAmmo(weaponSystem)
     }
+  }
+
+  /**
+   * Normalizes the cursor index for the current weapon.
+   * @private
+   * @param {number|undefined} requestedIdx
+   * @param {number|undefined} cursorCount
+   * @param {number} coordLength
+   * @returns {number}
+   */
+  _normalizeCursorIndex (requestedIdx, cursorCount, coordLength) {
+    const maxCursorIndex = Math.max((cursorCount || 1) - 1, 0)
+    const initialIdx = requestedIdx ?? coordLength
+    return Math.min(maxCursorIndex, initialIdx)
+  }
+
+  /**
+   * Determines whether the weapon status display should refresh.
+   * @private
+   * @param {string} weaponLetter
+   * @param {number} coordLength
+   * @param {boolean} hasUnattached
+   * @returns {boolean}
+   */
+  _shouldRefreshWeaponStatus (weaponLetter, coordLength, hasUnattached) {
+    return (
+      weaponLetter !== this._oldWeaponLetter ||
+      (weaponLetter !== '-' && coordLength !== this._oldCursorIdx) ||
+      hasUnattached !== (this._oldAttachedState || false)
+    )
+  }
+
+  /**
+   * Updates the cursor and ammo display for the current weapon state.
+   * @private
+   * @param {*} rack
+   * @param {CursorInfo} cursorInfo
+   * @param {*} weaponSystem
+   * @param {number} cursorIndex
+   * @param {boolean} hasUnattached
+   */
+  _updateCursorAndAmmo (
+    rack,
+    cursorInfo,
+    weaponSystem,
+    cursorIndex,
+    hasUnattached
+  ) {
+    const newCursor =
+      weaponSystem?.weapon?.cursors?.[cursorIndex] || cursorInfo?.cursor || ''
+    this.updateCursor(newCursor)
+    gameStatus.displayAmmoStatus(
+      weaponSystem,
+      bh.maps,
+      this.loadOut.selectedCoordinates.length,
+      rack,
+      hasUnattached
+    )
   }
 
   /**
