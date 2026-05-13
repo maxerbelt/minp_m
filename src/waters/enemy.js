@@ -401,7 +401,7 @@ class Enemy extends Waters {
    * @returns {boolean} True if a turn can be taken.
    */
   canTakeTurn () {
-    if (this.isGameOver() || this.hasNoAmmo()) {
+    if (this.isGameOver() || this.loadOut.hasNoCurrentAmmo()) {
       return false
     }
     if (this.timeoutId) {

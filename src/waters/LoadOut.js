@@ -1255,7 +1255,6 @@ export class LoadOut {
    * Checks if arsenal has any remaining ammo.
    *
    * @returns {boolean} True if any limited weapon has ammo
-   * @private
    */
   _hasArsenalAmmo () {
     return this.ammoRemaining() > 0
