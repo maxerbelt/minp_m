@@ -252,18 +252,6 @@ export class Weapon {
   }
 
   /**
-   * Get ammunition status description (legacy).
-   * Deprecated in favor of ammoStatus() without ammo count.
-   *
-   * @param {number} ammoLeft - Remaining ammunition count
-   * @returns {string} Status text with remaining ammo
-   * @deprecated Use ammoStatus() instead
-   */
-  ammoStatusOld (ammoLeft) {
-    return `${this.name}  Mode (${ammoLeft} left)`
-  }
-
-  /**
    * Get current ammunition status description.
    *
    * @param {number} _ammoLeft - Remaining ammunition (parameter kept for API compatibility)

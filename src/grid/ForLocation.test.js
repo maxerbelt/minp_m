@@ -20,7 +20,7 @@ function makeMockStore (initialBits = 0n) {
 }
 
 describe('ForLocation', () => {
-  it('at returns numeric value, test and isNonZero behave correctly', () => {
+  it('at returns numeric value, test and isOccupied behave correctly', () => {
     const pos = 2
     const bits = 1n << BigInt(pos) // bit at pos = 1
     const store = makeMockStore(bits)
@@ -29,7 +29,7 @@ describe('ForLocation', () => {
     expect(loc.at()).toBe(1)
     expect(loc.test(1)).toBe(true)
     expect(loc.test(0)).toBe(false)
-    expect(loc.isNonZero()).toBe(true)
+    expect(loc.isOccupied()).toBe(true)
 
     // underlying store helpers were used
     expect(store.numValue).toHaveBeenCalledWith(bits, pos)

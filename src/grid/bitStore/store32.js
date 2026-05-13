@@ -587,7 +587,7 @@ export class Store32 extends StoreBase {
     )
   }
 
-  isNonZero (bitboard, i) {
+  isOccupied (bitboard, i) {
     const { word, shift } = this.readRef(i)
     return this.rightShift(bitboard?.[word], shift) !== 0
   }

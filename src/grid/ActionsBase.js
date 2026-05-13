@@ -318,12 +318,12 @@ export class ActionsBase {
     }
     if (
       this.store &&
-      typeof this.store.isNonZero === 'function' &&
+      typeof this.store.isOccupied === 'function' &&
       (this.indexer?.size || this.cube?.size)
     ) {
       const size = this.indexer?.size || this.cube?.size
       for (let i = 0; i < size; i++) {
-        if (this.store.isNonZero(bitboard, i)) {
+        if (this.store.isOccupied(bitboard, i)) {
           yield i
         }
       }

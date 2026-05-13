@@ -79,7 +79,7 @@ export class Packed extends RectMaskBase {
   }
 
   // ============================================================================
-  // Cell Access - at, set, testFor, isNonZero
+  // Cell Access - at, set, testFor, isOccupied
   // ============================================================================
 
   /**
@@ -144,9 +144,9 @@ export class Packed extends RectMaskBase {
    * @param {number} y - Y coordinate
    * @returns {boolean} True if cell has non-zero value
    */
-  isNonZero (x, y) {
+  isOccupied (x, y) {
     const idx = this.index(x, y)
-    return this.store.isNonZero(this.bits, idx)
+    return this.store.isOccupied(this.bits, idx)
   }
 
   // ============================================================================

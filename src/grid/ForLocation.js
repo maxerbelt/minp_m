@@ -157,23 +157,6 @@ export class ForLocation {
   }
 
   /**
-   * @deprecated Use isOccupied() instead
-   * @returns {boolean} True if cell is occupied (contains a value)
-   */
-  isNonZero () {
-    return this.isOccupied()
-  }
-
-  /**
-   * @deprecated Use clearMaskBits() instead
-   * @param {bigint} mask Bit mask specifying which bits to clear
-   * @returns {bigint} Cell bits after clearing the masked bits
-   */
-  clearBits (mask) {
-    return this.clearMaskBits(mask)
-  }
-
-  /**
    * @deprecated Use cellBits property instead
    * @private
    * @type {bigint}
