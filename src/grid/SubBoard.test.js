@@ -706,17 +706,17 @@ describe('SubBoard', () => {
       // Verify the coordinates are stored correctly
       expect(sb.occupancy).toBe(originalCoords.length)
 
-      // copyToCoords returns window-relative coordinates
+      // copyToCoords returns world-relative coordinates for SubBoard
       const extracted = sb.copyToCoords()
       expect(extracted.length).toBeGreaterThan(0)
 
-      // All coordinates should be window-relative
+      // All coordinates should fall within the original world range
       for (const coord of extracted) {
         const [x, y] = coord
-        expect(x).toBeGreaterThanOrEqual(0)
-        expect(x).toBeLessThanOrEqual(3) // window-relative
-        expect(y).toBeGreaterThanOrEqual(0)
-        expect(y).toBeLessThanOrEqual(3)
+        expect(x).toBeGreaterThanOrEqual(2)
+        expect(x).toBeLessThanOrEqual(5)
+        expect(y).toBeGreaterThanOrEqual(2)
+        expect(y).toBeLessThanOrEqual(5)
       }
     })
 

@@ -3,6 +3,9 @@ import { minMaxXY } from '../core/utilities.js'
 
 /** @typedef {import('./MaskBase.js').MaskBase} MaskBase */
 /** @typedef {import('./rectangle/packed.js').Packed} Packed */
+/** @typedef {[number, number]} CoordinatePair */
+/** @typedef {[number, number, number]} CoordinateTuple */
+/** @typedef {MaskBase|Packed} MaskLike */
 
 /**
  * SubBoard - A windowed view into a larger grid with world-relative coordinates
@@ -26,8 +29,26 @@ export class SubBoard extends SubMask {
    * @param {number} [depth] - Color depth, defaults to template's depth
    */
   constructor (offsetX, offsetY, width, height, base, template, depth) {
-    base = base || template.emptyMaskOfSize(width, height, depth)
-    super(base, offsetX, offsetY, width, height)
+    const mask = base || SubBoard._buildBaseMask(template, width, height, depth)
+    super(mask, offsetX, offsetY, width, height)
+  }
+
+  /**
+   * Build the underlying base mask when one is not provided.
+   * @private
+   * @param {MaskLike|null|undefined} template - Template mask used to create the underlying window mask
+   * @param {number} width - Width of the window
+   * @param {number} height - Height of the window
+   * @param {number} [depth] - Desired depth for the new mask
+   * @returns {MaskLike} The created base mask
+   */
+  static _buildBaseMask (template, width, height, depth) {
+    if (!template) {
+      throw new Error(
+        'SubBoard requires a template mask when no base mask is provided.'
+      )
+    }
+    return template.emptyMaskOfSize(width, height, depth)
   }
 
   // ============================================================================
@@ -104,6 +125,34 @@ export class SubBoard extends SubMask {
     return this._isInWorldBounds(worldX, worldY)
   }
 
+  /**
+   * Create a human-readable explanation of the SubBoard bounds.
+   * @private
+   * @returns {string} Bounds description for error messages
+   */
+  _boundsDescription () {
+    return `[${this.offsetX}, ${this.offsetX + this.windowWidth - 1}] x [${
+      this.offsetY
+    }, ${this.offsetY + this.windowHeight - 1}]`
+  }
+
+  /**
+   * Assert world-relative coordinates are inside the window.
+   * @private
+   * @param {number} worldX - World X coordinate
+   * @param {number} worldY - World Y coordinate
+   * @returns {CoordinatePair} [localX, localY]
+   * @throws {Error} If coordinates are out of window bounds
+   */
+  _assertWorldCoordinates (worldX, worldY) {
+    if (!this._isInWorldBounds(worldX, worldY)) {
+      throw new Error(
+        `Coordinates (${worldX}, ${worldY}) out of window bounds ${this._boundsDescription()}`
+      )
+    }
+    return this._worldToLocal(worldX, worldY)
+  }
+
   // ============================================================================
   // ELEMENT ACCESS - Get/set values with world-relative coordinates
   // ============================================================================
@@ -117,17 +166,37 @@ export class SubBoard extends SubMask {
    * @throws {Error} If coordinates are out of window bounds
    */
   set (worldX, worldY, color = 1) {
+    const [localX, localY] = this._assertWorldCoordinates(worldX, worldY)
+    return this.mask.set(localX, localY, color)
+  }
+
+  /**
+   * Read a value from world-relative coordinates.
+   * @param {number} worldX - World X coordinate
+   * @param {number} worldY - World Y coordinate
+   * @param {number} [depth=0] - Depth layer to read
+   * @returns {number|null} Value at the world coordinate, or null when outside bounds
+   */
+  at (worldX, worldY, depth = 0) {
     if (!this._isInWorldBounds(worldX, worldY)) {
-      throw new Error(
-        `Coordinates (${worldX}, ${worldY}) out of window bounds [${
-          this.offsetX
-        }, ${this.offsetX + this.windowWidth - 1}] x [${this.offsetY}, ${
-          this.offsetY + this.windowHeight - 1
-        }]`
-      )
+      return null
     }
     const [localX, localY] = this._worldToLocal(worldX, worldY)
-    return this.mask.set(localX, localY, color)
+    return this.mask.at(localX, localY, depth)
+  }
+
+  /**
+   * Get the window-relative index for world coordinates.
+   * @param {number} worldX - World X coordinate
+   * @param {number} worldY - World Y coordinate
+   * @returns {number} Index in the underlying mask, or -1 when outside bounds
+   */
+  index (worldX, worldY) {
+    if (!this._isInWorldBounds(worldX, worldY)) {
+      return -1
+    }
+    const [localX, localY] = this._worldToLocal(worldX, worldY)
+    return this.mask.index(localX, localY)
   }
 
   // ============================================================================
@@ -159,6 +228,18 @@ export class SubBoard extends SubMask {
       yield [...this._localToWorld(localX, localY), value]
     }
   }
+
+  /**
+   * Convert all occupied window cells to world-relative coordinate tuples.
+   * @returns {Array<CoordinateTuple>} [worldX, worldY, value] tuples
+   */
+  copyToCoords () {
+    return Array.from(
+      this.mask.occupiedLocationsAndValues(),
+      ([x, y, value]) => [x + this.offsetX, y + this.offsetY, Number(value)]
+    )
+  }
+
   // ============================================================================
   // DELEGATION - Properties delegated to underlying mask
   // ============================================================================
@@ -231,17 +312,14 @@ export class SubBoard extends SubMask {
    * @param {Object} largeMask - Source mask to copy from
    */
   copyFromMask (largeMask) {
-    const depth = this.mask.store.cellMask
-    for (let localY = 0; localY < this.windowHeight; localY++) {
-      for (let localX = 0; localX < this.windowWidth; localX++) {
-        const [worldX, worldY] = this._localToWorld(localX, localY)
-        const value = largeMask.at(worldX, worldY)
-        if (value > 0) {
-          const clampedValue = this._clampToDepth(value, depth)
-          this.mask.set(localX, localY, clampedValue)
-        }
+    const depthMask = this.mask.store.cellMask
+    this._forEachWindowCell((localX, localY) => {
+      const [worldX, worldY] = this._localToWorld(localX, localY)
+      const value = largeMask.at(worldX, worldY)
+      if (value > 0) {
+        this.mask.set(localX, localY, this._clampToDepth(value, depthMask))
       }
-    }
+    })
   }
 
   /**
