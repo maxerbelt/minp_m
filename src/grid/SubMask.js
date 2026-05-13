@@ -13,6 +13,49 @@
  * work in window-relative coordinates (0 to width-1, 0 to height-1), which are automatically
  * translated to absolute coordinates in the underlying mask.
  */
+
+/**
+ * @typedef {Object} TransformContext
+ * @property {string} type - Type of transformation
+ * @property {*} [param] - Optional transform-specific parameter
+ */
+
+/**
+ * @typedef {Array<number>} Point2D
+ * @property {number} 0 - X coordinate
+ * @property {number} 1 - Y coordinate
+ */
+
+/**
+ * @typedef {Array<number>} WindowCell
+ * @property {number} 0 - X coordinate
+ * @property {number} 1 - Y coordinate
+ * @property {number} 2 - Value at that coordinate
+ */
+
+/**
+ * @typedef {string[]} SymbolsArray
+ */
+
+const DEFAULT_ASCII_SYMBOLS = [
+  '.',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  'a',
+  'b',
+  'c',
+  'd',
+  'e',
+  'f'
+]
+
 export class SubMask {
   /**
    * Create a SubMask window view into a larger mask
@@ -61,22 +104,101 @@ export class SubMask {
   // ============================================================================
 
   /**
-   * Private helper: Apply offset to window-relative coordinates
+   * Convert window-relative coordinates to absolute parent-mask coordinates.
    * @protected
+   * @param {number} x - Window-relative X coordinate
+   * @param {number} y - Window-relative Y coordinate
+   * @returns {Point2D} Absolute coordinates
    */
-  _applyOffset (x, y) {
+  _toAbsoluteCoords (x, y) {
     return [x + this.offsetX, y + this.offsetY]
   }
 
-  _removeOffset (x, y) {
+  /**
+   * Convert absolute parent-mask coordinates to window-relative coordinates.
+   * @protected
+   * @param {number} x - Absolute X coordinate
+   * @param {number} y - Absolute Y coordinate
+   * @returns {Point2D} Window-relative coordinates
+   */
+  _toWindowCoords (x, y) {
     return [x - this.offsetX, y - this.offsetY]
   }
+
   /**
-   * Private helper: Check if coordinates are within window bounds
+   * Private helper: Apply offset to window-relative coordinates.
+   * Kept for compatibility with existing tests and external callers.
+   * @protected
+   */
+  _applyOffset (x, y) {
+    return this._toAbsoluteCoords(x, y)
+  }
+
+  /**
+   * Private helper: Remove offset from absolute coordinates.
+   * Kept for compatibility with existing tests and external callers.
+   * @protected
+   */
+  _removeOffset (x, y) {
+    return this._toWindowCoords(x, y)
+  }
+
+  /**
+   * Private helper: Check if coordinates are within window bounds.
    * @protected
    */
   _isInWindow (x, y) {
     return x >= 0 && x < this.windowWidth && y >= 0 && y < this.windowHeight
+  }
+
+  /**
+   * Execute a callback with absolute coordinates if the window-relative
+   * coordinate pair is valid.
+   * @private
+   * @param {number} x - Window-relative X coordinate
+   * @param {number} y - Window-relative Y coordinate
+   * @param {function(number, number): *} callback - Function called with absolute coords
+   * @returns {*} Result of callback or undefined if out of bounds
+   */
+  _withAbsoluteCoordinates (x, y, callback) {
+    if (!this._isInWindow(x, y)) {
+      return undefined
+    }
+    const [absX, absY] = this._toAbsoluteCoords(x, y)
+    return callback(absX, absY)
+  }
+
+  /**
+   * Ensure window-relative coordinates are valid and return absolute coords.
+   * @private
+   * @param {number} x - Window-relative X coordinate
+   * @param {number} y - Window-relative Y coordinate
+   * @returns {Point2D} Absolute coordinates
+   * @throws {Error} If coordinates are out of window bounds
+   */
+  _assertWindowCoordinates (x, y) {
+    if (!this._isInWindow(x, y)) {
+      throw new Error(
+        `Coordinates (${x}, ${y}) out of window bounds [0, ${
+          this.windowWidth - 1
+        }] x [0, ${this.windowHeight - 1}]`
+      )
+    }
+    return this._toAbsoluteCoords(x, y)
+  }
+
+  /**
+   * Execute a callback for a row in window-relative coordinates.
+   * @private
+   * @param {number} r - Window-relative row
+   * @param {function(number): void} callback - Callback with absolute row index
+   */
+  _withWindowRow (r, callback) {
+    if (!this._isInWindow(0, r)) {
+      return
+    }
+    const [, absR] = this._toAbsoluteCoords(0, r)
+    callback(absR)
   }
 
   /**
@@ -88,18 +210,17 @@ export class SubMask {
    * @param {number} [depth=0] - Depth layer to read (may be ignored for Mask)
    * @returns {number} Value at that position, or null if out of bounds
    */
-  at (x, y) {
-    if (!this._isInWindow(x, y)) {
-      return null
-    }
-    const [absX, absY] = this._applyOffset(x, y)
-    // Call mask.at() without depth parameter if it doesn't support it
-    // (JavaScript will ignore the extra parameter anyway)
-    return this.mask.at(absX, absY)
+  at (x, y, depth = 0) {
+    const value = this._withAbsoluteCoordinates(x, y, (absX, absY) =>
+      this.mask.at(absX, absY, depth)
+    )
+    return value === undefined ? null : value
   }
+
   test (x, y, color = 1) {
     return this.at(x, y) === color
   }
+
   /**
    * Set value at window-relative coordinates
    * For Mask instances, the third parameter is color (default 1).
@@ -111,14 +232,7 @@ export class SubMask {
    * @throws {Error} If coordinates are out of window bounds
    */
   set (x, y, color = 1) {
-    if (!this._isInWindow(x, y)) {
-      throw new Error(
-        `Coordinates (${x}, ${y}) out of window bounds [0, ${
-          this.windowWidth - 1
-        }] x [0, ${this.windowHeight - 1}]`
-      )
-    }
-    const [absX, absY] = this._applyOffset(x, y)
+    const [absX, absY] = this._assertWindowCoordinates(x, y)
     return this.mask.set(absX, absY, color)
   }
 
@@ -140,17 +254,9 @@ export class SubMask {
    * @returns {ForLocation} Position helper for bit manipulation
    * @throws {Error} If coordinates are out of window bounds
    */
-  for (x, y) {
-    if (!this._isInWindow(x, y)) {
-      throw new Error(
-        `Coordinates (${x}, ${y}) out of window bounds [0, ${
-          this.windowWidth - 1
-        }] x [0, ${this.windowHeight - 1}]`
-      )
-    }
-    const [absX, absY] = this._applyOffset(x, y)
-    // Call mask.for() without depth parameter if it doesn't support it
-    return this.mask.for(absX, absY)
+  for (x, y, depth = 0) {
+    const [absX, absY] = this._assertWindowCoordinates(x, y)
+    return this.mask.for(absX, absY, depth)
   }
 
   /**
@@ -160,11 +266,10 @@ export class SubMask {
    * @returns {number} Index in the shape's grid, or -1 if out of bounds
    */
   index (x, y) {
-    if (!this._isInWindow(x, y)) {
-      return -1
-    }
-    const [absX, absY] = this._applyOffset(x, y)
-    return this.mask.index(absX, absY)
+    const indexValue = this._withAbsoluteCoordinates(x, y, (absX, absY) =>
+      this.mask.index(absX, absY)
+    )
+    return indexValue === undefined ? -1 : indexValue
   }
 
   /**
@@ -209,11 +314,7 @@ export class SubMask {
    * @param {number} c1 - Column end
    */
   setRange (r, c0, c1) {
-    if (!this._isInWindow(0, r)) {
-      return
-    }
-    const [, absR] = this._applyOffset(0, r)
-    this.mask.setRange(absR, c0, c1)
+    this._withWindowRow(r, absR => this.mask.setRange(absR, c0, c1))
   }
 
   /**
@@ -223,11 +324,7 @@ export class SubMask {
    * @param {number} c1 - Column end
    */
   clearRange (r, c0, c1) {
-    if (!this._isInWindow(0, r)) {
-      return
-    }
-    const [, absR] = this._applyOffset(0, r)
-    this.mask.clearRange(absR, c0, c1)
+    this._withWindowRow(r, absR => this.mask.clearRange(absR, c0, c1))
   }
 
   // ============================================================================
@@ -245,20 +342,38 @@ export class SubMask {
   /**
    * Load coordinates into this window
    * Expects window-relative coordinates (0 to width-1, 0 to height-1)
+   * @param {Array<Point2D>} coords - Coordinates to load into the window
    */
   fromCoords (coords) {
-    // Clear existing content
-    for (let y = 0; y < this.windowHeight; y++) {
-      for (let x = 0; x < this.windowWidth; x++) {
-        if (this.at(x, y) !== 0 && this.at(x, y) !== null) {
-          this.clear(x, y)
-        }
+    this._clearWindow()
+    for (const [x, y] of coords) {
+      if (this.isValid(x, y)) {
+        this.set(x, y, 1)
       }
     }
-    // Load new coordinates
-    for (const [x, y] of coords) {
-      if (x >= 0 && x < this.windowWidth && y >= 0 && y < this.windowHeight) {
-        this.set(x, y, 1)
+  }
+
+  /**
+   * Clear all bits inside the window.
+   * @private
+   */
+  _clearWindow () {
+    this._forEachWindowCell((x, y) => {
+      if (this.at(x, y) !== 0) {
+        this.clear(x, y)
+      }
+    })
+  }
+
+  /**
+   * Iterate through all window-relative coordinates.
+   * @private
+   * @param {function(number, number): void} callback - Called for each window coordinate
+   */
+  _forEachWindowCell (callback) {
+    for (let y = 0; y < this.windowHeight; y++) {
+      for (let x = 0; x < this.windowWidth; x++) {
+        callback(x, y)
       }
     }
   }
@@ -277,56 +392,19 @@ export class SubMask {
 
   /**
    * Get ASCII representation with custom symbols
-   * @param {Array<string>} [symbols] - Symbol array for each depth value
+   * @param {SymbolsArray} [symbols] - Symbol array for each depth value
    * @returns {string} ASCII art with custom symbols
    */
-  toAsciiWith (
-    symbols = [
-      '.',
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-      '7',
-      '8',
-      '9',
-      'a',
-      'b',
-      'c',
-      'd',
-      'e',
-      'f'
-    ]
-  ) {
+  toAsciiWith (symbols = DEFAULT_ASCII_SYMBOLS) {
     return this._generateAscii(symbols)
   }
 
   /**
    * Generate ASCII representation of window
    * @protected
+   * @param {SymbolsArray} [symbols] - Symbol array for each depth value
    */
-  _generateAscii (
-    symbols = [
-      '.',
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-      '7',
-      '8',
-      '9',
-      'a',
-      'b',
-      'c',
-      'd',
-      'e',
-      'f'
-    ]
-  ) {
+  _generateAscii (symbols = DEFAULT_ASCII_SYMBOLS) {
     const lines = []
     for (let y = 0; y < this.windowHeight; y++) {
       let line = ''
@@ -372,48 +450,66 @@ export class SubMask {
    * @protected
    */
   _adjustOffsetForTransform (transformContext) {
-    // This implementation depends on the specific transform
-    // Common transforms might include:
-    // - rotations: offset needs to be rotated around center
-    // - flips: offset needs to be mirrored around center
-    // - translations: offset shifts by translation amount
-
     const { type, param } = transformContext
 
     switch (type) {
       case 'rotate-90':
-        // For 90-degree rotation around top-left (0,0):
-        // new position = (oldY, -oldX)
-        // For rotation around other centers, adjustment differs
-        {
-          const newOffsetX = this.offsetY
-          const newOffsetY = -this.offsetX
-          this.offsetX = newOffsetX
-          this.offsetY = newOffsetY
-        }
+        this._rotateOffset90()
         break
 
       case 'flip-horizontal':
-        // Flip around vertical axis
-        this.offsetX = this.mask.width - this.offsetX - this.windowWidth
+        this._flipHorizontalOffset()
         break
 
       case 'flip-vertical':
-        // Flip around horizontal axis
-        this.offsetY = this.mask.height - this.offsetY - this.windowHeight
+        this._flipVerticalOffset()
         break
 
       case 'translate':
-        // Simple offset translation
-        if (param && typeof param === 'object') {
-          this.offsetX += param.x || 0
-          this.offsetY += param.y || 0
-        }
+        this._translateOffset(param)
         break
 
       default:
-        // No offset adjustment for unknown transforms
         break
+    }
+  }
+
+  /**
+   * Rotate the window offset 90 degrees around the top-left origin.
+   * @private
+   */
+  _rotateOffset90 () {
+    const newOffsetX = this.offsetY
+    const newOffsetY = -this.offsetX
+    this.offsetX = newOffsetX
+    this.offsetY = newOffsetY
+  }
+
+  /**
+   * Flip the window offset horizontally across the mask.
+   * @private
+   */
+  _flipHorizontalOffset () {
+    this.offsetX = this.mask.width - this.offsetX - this.windowWidth
+  }
+
+  /**
+   * Flip the window offset vertically across the mask.
+   * @private
+   */
+  _flipVerticalOffset () {
+    this.offsetY = this.mask.height - this.offsetY - this.windowHeight
+  }
+
+  /**
+   * Translate the window offset by the provided delta.
+   * @private
+   * @param {*} param - Translation parameters
+   */
+  _translateOffset (param) {
+    if (param && typeof param === 'object') {
+      this.offsetX += param.x || 0
+      this.offsetY += param.y || 0
     }
   }
 
@@ -428,14 +524,12 @@ export class SubMask {
    */
   copyToCoords () {
     const coords = []
-    for (let y = 0; y < this.windowHeight; y++) {
-      for (let x = 0; x < this.windowWidth; x++) {
-        const value = this.at(x, y)
-        if (value > 0) {
-          coords.push([x, y, value])
-        }
+    this._forEachWindowCell((x, y) => {
+      const value = this.at(x, y)
+      if (value > 0) {
+        coords.push([x, y, value])
       }
-    }
+    })
     return coords
   }
 
@@ -458,15 +552,13 @@ export class SubMask {
    * @param {MaskBase} largeMask - The source mask to copy from
    */
   copyFromMask (largeMask) {
-    for (let y = 0; y < this.windowHeight; y++) {
-      for (let x = 0; x < this.windowWidth; x++) {
-        const [absX, absY] = this._applyOffset(x, y)
-        const value = largeMask.at(absX, absY)
-        if (value > 0) {
-          this.set(x, y, value)
-        }
+    this._forEachWindowCell((x, y) => {
+      const [absX, absY] = this._applyOffset(x, y)
+      const value = largeMask.at(absX, absY)
+      if (value > 0) {
+        this.set(x, y, value)
       }
-    }
+    })
   }
 
   /**
@@ -475,15 +567,13 @@ export class SubMask {
    * @param {MaskBase} largeMask - The target mask to copy to
    */
   copyToMask (largeMask) {
-    for (let y = 0; y < this.windowHeight; y++) {
-      for (let x = 0; x < this.windowWidth; x++) {
-        const value = this.at(x, y)
-        if (value > 0) {
-          const [absX, absY] = this._applyOffset(x, y)
-          largeMask.set(absX, absY, value)
-        }
+    this._forEachWindowCell((x, y) => {
+      const value = this.at(x, y)
+      if (value > 0) {
+        const [absX, absY] = this._applyOffset(x, y)
+        largeMask.set(absX, absY, value)
       }
-    }
+    })
   }
   toMask (newWidth, newHeight) {
     const newMask = this.mask.emptyMaskOfSize(newWidth, newHeight)
@@ -526,13 +616,11 @@ export class SubMask {
    */
   get occupancy () {
     let count = 0
-    for (let y = 0; y < this.windowHeight; y++) {
-      for (let x = 0; x < this.windowWidth; x++) {
-        if (this.at(x, y) > 0) {
-          count++
-        }
+    this._forEachWindowCell((x, y) => {
+      if (this.at(x, y) > 0) {
+        count++
       }
-    }
+    })
     return count
   }
 
