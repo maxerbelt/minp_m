@@ -226,9 +226,8 @@ export class WatersUI {
    * @param {Object} [map] - Map configuration (defaults to current map)
    * @param {number} [containerWidthOverride] - Optional container width (defaults to this.containerWidth)
    * @returns {number} Cell size in pixels
-   * @private
    */
-  _calculateCellSize (mode, map, containerWidthOverride) {
+  #calculateCellSize (mode, map, containerWidthOverride) {
     const config = WatersUI.CELL_SIZE_CONFIG[mode]
     if (!config) throw new Error(`Unknown cell size mode: ${mode}`)
 
@@ -248,7 +247,7 @@ export class WatersUI {
    */
   cellSize (map) {
     const mode = this.isPrinting ? 'PRINT' : 'SCREEN'
-    return this._calculateCellSize(mode, map)
+    return this.#calculateCellSize(mode, map)
   }
 
   /**
@@ -266,7 +265,7 @@ export class WatersUI {
    * @returns {string} CSS size string (e.g., '26px')
    */
   cellSizeStringList () {
-    return `${this._calculateCellSize('LIST')}px`
+    return `${this.#calculateCellSize('LIST')}px`
   }
 
   /**
@@ -275,7 +274,7 @@ export class WatersUI {
    * @returns {string} CSS size string (e.g., '30px')
    */
   cellSizeStringPrint () {
-    return `${this._calculateCellSize('PRINT')}px`
+    return `${this.#calculateCellSize('PRINT')}px`
   }
 
   /**
@@ -285,9 +284,9 @@ export class WatersUI {
    * @param {number} row - Row coordinate
    * @param {number} column - Column coordinate
    * @returns {number} Linear array index in flattened grid
-   * @private
+
    */
-  _gridIndex (row, column) {
+  #gridIndex (row, column) {
     return row * bh.map.cols + column
   }
 
@@ -300,7 +299,7 @@ export class WatersUI {
    * @returns {HTMLElement|null} Cell element or null if not found
    */
   gridCellRawAt (row, column) {
-    return this.board?.children?.[this._gridIndex(row, column)] || null
+    return this.board?.children?.[this.#gridIndex(row, column)] || null
   }
 
   /**

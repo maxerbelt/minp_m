@@ -266,7 +266,7 @@ export class ShipCellDisplayer {
    * - other: No clearing performed (for validation)
    *
    * @param {HTMLElement} cell - DOM element to clear
-   * @param {'content'|'all'} details - Scope of clearing: 'content' for text only, 'all' for text and styles
+   * @param {'none'|'content'|'all'} details - What to clear: Scope of clearing: 'content' for text only, 'all' for text and styles
    * @returns {void}
    */
   static clearDetails (cell, details) {
