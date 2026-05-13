@@ -451,6 +451,18 @@ export class CellClassManager {
     this.#removeClassesFromCell(cell, this.#cursorTags())
   }
 
+  /**
+   * Removes weapon-related classes from a cell.
+   * Part of splitting resetHitCellState into semantic concerns.
+   * Clears cursor indicators added during targeting/preview.
+   *
+   * @param {HTMLElement} cell - The cell element to update
+   * @returns {void}
+   * @private
+   */
+  static #removeWeaponClasses (cell) {
+    this.#removeClassesFromCell(cell, this.#weaponTags())
+  }
   // ──────────────────────────────────────────────────────────────────
   // PRIVATE HELPERS - State Application (Hit & Sunk)
   // ──────────────────────────────────────────────────────────────────
@@ -517,7 +529,12 @@ export class CellClassManager {
       this.CELL_CLASSES.display,
       this.CELL_CLASSES.orientation
     ])
-    this.#removeClassesFromCell(cell, this.#weaponTags())
+    this.clearWeaponClasses(cell)
+  }
+
+  static clearWeaponClasses (cell) {
+    this.#removeWeaponClasses(cell)
+    this.#removeCursorClasses(cell)
   }
 
   /**
