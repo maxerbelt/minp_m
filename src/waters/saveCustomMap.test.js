@@ -112,7 +112,7 @@ describe('storeShips', () => {
     map = { weapons: [] }
     customModule.custom.getPlacedShipCount.mockClear()
     customModule.custom.store.mockClear()
-    customModule.custom.placedShips.mockClear()
+    customModule.custom.getPlacedShipsData.mockClear()
   })
 
   it('appends placedShips if build mode and placed ships exist', () => {
