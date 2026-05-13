@@ -470,7 +470,8 @@ export class WatersUI {
    * @private
    */
   clearCellVisuals (cell, details, classClear) {
-    const clear = classClear || this.clearCell.bind(this)
+    const clear =
+      classClear || CellClassManager.clearCell.bind(CellClassManager)
     ShipCellDisplayer.clearDetails(cell, details)
     clear(cell)
   }
@@ -1185,7 +1186,8 @@ export class WatersUI {
    * @private
    */
   _clearAllCellVisuals (details, classClearer) {
-    const clear = classClearer || this.clearCell.bind(this)
+    const clear =
+      classClearer || CellClassManager.clearCell.bind(CellClassManager)
     this._forEachBoardCell(el => this.clearCellVisuals(el, details, clear))
   }
 
@@ -1232,7 +1234,10 @@ export class WatersUI {
    * @returns {void}
    */
   clearPlaceVisuals () {
-    this._clearAllCellVisuals('all', this.clearPlaceCell.bind(this))
+    this._clearAllCellVisuals(
+      'all',
+      CellClassManager.clearPlaceCell.bind(CellClassManager)
+    )
   }
 
   /**
