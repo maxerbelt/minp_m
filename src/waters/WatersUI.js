@@ -147,65 +147,6 @@ export class WatersUI {
   }
 
   /**
-   * Resets inline style properties on a cell element.
-   * Clears background and color styles set by game logic.
-   *
-   * @param {HTMLElement} cell - DOM element to reset
-   * @returns {void}
-   * @private
-   */
-  _resetCellStyle (cell) {
-    cell.style.background = ''
-    cell.style.color = ''
-  }
-
-  /**
-   * Clears both text content and inline styles from a cell.
-   * Convenience method combining text and style reset operations.
-   *
-   * @param {HTMLElement} cell - DOM element to clear
-   * @returns {void}
-   * @private
-   */
-  _clearCellTextAndStyle (cell) {
-    this._clearCellText(cell)
-    this._resetCellStyle(cell)
-  }
-
-  /**
-   * Gets weapon CSS class tags defined in current terrain configuration.
-   * Returns empty array if terrain not yet loaded.
-   *
-   * @returns {string[]} Array of weapon-related CSS class names
-   * @private
-   */
-  _weaponTags () {
-    return bh.terrain?.weapons?.tags || []
-  }
-
-  /**
-   * Gets weapon cursor CSS class tags defined in current terrain configuration.
-   * Returns empty array if terrain not yet loaded.
-   *
-   * @returns {string[]} Array of cursor-related CSS class names
-   * @private
-   */
-  _cursorTags () {
-    return bh.terrain?.weapons?.cursors || []
-  }
-
-  /**
-   * Gets CSS classes to clear during hit cell state reset.
-   * Combines default cleanup classes with current terrain weapon tags.
-   *
-   * @returns {string[]} Array of class names to remove from hit cells
-   * @private
-   */
-  _hitCleanupClasses () {
-    return [...DEFAULT_CELL_CLEAN_CLASSES, ...this._weaponTags()]
-  }
-
-  /**
    * Iterates over all cells in the board, calling callback for each.
    * Provides functional interface to board cell enumeration.
    *
@@ -576,18 +517,6 @@ export class WatersUI {
   }
 
   /**
-   * Clears all content and classes from a cell.
-   * Removes text, damage, and display state indicators.
-   *
-   * @param {HTMLElement} cell - DOM element to clear
-   * @returns {void}
-   */
-  clearCellContent (cell) {
-    this._clearCellText(cell)
-    CellClassManager.clearCell(cell)
-  }
-
-  /**
    * Generic method to clear cell visuals using custom clearing strategy.
    * Delegates class clearing to provided function for context-specific behavior.
    *
@@ -600,36 +529,8 @@ export class WatersUI {
    */
   clearCellVisuals (cell, details, classClear) {
     const clear = classClear || this.clearCell.bind(this)
-    if (details === 'content') {
-      this._clearCellText(cell)
-    } else if (details === 'all') {
-      this._clearCellTextAndStyle(cell)
-    }
+    ShipCellDisplayer.clearDetails(cell, details)
     clear(cell)
-  }
-
-  /**
-   * Clears all visual state from a placement cell.
-   * Removes text, styles, and all relevant classes for placement phase.
-   *
-   * @param {HTMLElement} cell - DOM element to clear
-   * @returns {void}
-   */
-  clearPlaceCellVisuals (cell) {
-    this._clearCellTextAndStyle(cell)
-    this.clearPlaceCell(cell)
-  }
-
-  /**
-   * Clears placement-related classes from a cell.
-   * Removes weapon, placement, and terrain class information.
-   *
-   * @param {HTMLElement} cell - DOM element to clear
-   * @returns {void}
-   */
-  clearPlaceCell (cell) {
-    CellClassManager.clearPlaceCell(cell)
-    cell.classList.remove(...this._weaponTags())
   }
 
   /**
@@ -641,10 +542,8 @@ export class WatersUI {
    * @returns {void}
    */
   displayAsSunk (cell, _letter) {
-    CellClassManager.clearDisplayCell(cell)
-    cell.classList.add('frd-sunk')
-    this._applyHitCellState(cell)
-    cell.classList.remove('frd-hit')
+    CellClassManager.applyFriendlySunkCellState(cell)
+    this._clearCellText(cell)
   }
 
   /**
@@ -667,22 +566,8 @@ export class WatersUI {
    * @private
    */
   _applyHitCellState (cell, damageType) {
-    CellClassManager.resetHitCellState(cell)
-    cell.classList.add('frd-hit')
-    if (damageType) {
-      cell.classList.add(damageType)
-    }
+    CellClassManager.applyFriendlyHitCellState(cell, damageType)
     this._clearCellText(cell)
-  }
-
-  /**
-   * @deprecated Use _applyHitCellState instead (kept for backward compatibility)
-   * @param {HTMLElement} cell - DOM element
-   * @param {string} [damaged] - Damage type
-   * @returns {void}
-   */
-  cellHitBase (cell, damaged) {
-    this._applyHitCellState(cell, damaged)
   }
 
   /**
@@ -710,11 +595,7 @@ export class WatersUI {
    */
   cellHit (row, column, damageType) {
     const cell = this.gridCellAt(row, column)
-    this._removeClassesFromCell(cell, this._hitCleanupClasses())
-    cell.classList.add('hit')
-    if (damageType) {
-      cell.classList.add(damageType)
-    }
+    CellClassManager.applyEnemyHitCellState(cell, damageType)
     this._clearCellText(cell)
   }
 
@@ -730,11 +611,9 @@ export class WatersUI {
   cellSemiReveal (row, column) {
     const cell = this.gridCellAt(row, column)
 
-    if (this._cellContainsAny(cell, ['placed', 'miss', 'hit'])) {
+    if (!CellClassManager.applySemiRevealState(cell)) {
       return LoadOut.noResult
     }
-    cell.classList.add('semi')
-    cell.classList.remove('wake')
     this._clearCellText(cell)
     return LoadOut.missResult
   }
@@ -751,11 +630,9 @@ export class WatersUI {
   cellHintReveal (row, column) {
     const cell = this.gridCellAt(row, column)
 
-    if (this._cellContainsAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
+    if (!CellClassManager.applyHintState(cell)) {
       return
     }
-    cell.classList.add('hint')
-    cell.classList.remove('wake', 'temp-hint')
     this.deactivateTempHints()
     this._clearCellText(cell)
   }

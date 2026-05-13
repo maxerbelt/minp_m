@@ -151,7 +151,7 @@ export class PlacementUI extends WatersUI {
 
   makeDroppable (model) {
     this._forEachBoardCell(cell => {
-      this.clearCellContent(cell)
+      ShipCellDisplayer.clearPlaceCell(cell)
       dragNDrop.drop(cell, model, this)
       dragNDrop.dragEnter(cell, model, this)
     })
@@ -160,7 +160,7 @@ export class PlacementUI extends WatersUI {
   makeAddDroppable (model) {
     dragNDrop.addWeaponDrop(model, this)
     this._forEachBoardCell(cell => {
-      this.clearCellContent(cell)
+      ShipCellDisplayer.clearPlaceCell(cell)
       dragNDrop.addDrop(cell, model, this)
       dragNDrop.dragEnter(cell, model, this)
     })

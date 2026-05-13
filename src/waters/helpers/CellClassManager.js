@@ -135,7 +135,48 @@ export class CellClassManager {
     this.#removeClassesFromCell(cell, this.#hitCleanupClasses())
     this.#removeClassesFromCell(cell, this.#cursorTags())
   }
+  static applyFriendlyHitCellState (cell, damageType) {
+    CellClassManager.resetHitCellState(cell)
+    cell.classList.add('frd-hit')
+    if (damageType) {
+      cell.classList.add(damageType)
+    }
+  }
+  static applyEnemyHitCellState (cell, damageType) {
+    this.#removeClassesFromCell(cell, this.#hitCleanupClasses())
+    cell.classList.add('hit')
+    if (damageType) {
+      cell.classList.add(damageType)
+    }
+  }
 
+  static applyFriendlySunkCellState (cell) {
+    CellClassManager.clearDisplayCell(cell)
+    CellClassManager.resetHitCellState(cell)
+    cell.classList.add('frd-sunk')
+  }
+  static applyEnemySunkCellState (cell) {
+    CellClassManager.clearDisplayCell(cell)
+    CellClassManager.resetHitCellState(cell)
+    cell.classList.add('enm-sunk')
+  }
+  applySemiRevealState (cell) {
+    if (this.hasAny(cell, ['placed', 'miss', 'hit'])) {
+      return false
+    }
+    cell.classList.add('semi')
+    cell.classList.remove('wake')
+    return true
+  }
+
+  applyHintState (cell) {
+    if (this.hasAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
+      return false
+    }
+    cell.classList.add('hint')
+    cell.classList.remove('wake', 'temp-hint')
+    return true
+  }
   /**
    * Clears specified class groups from a cell element.
    * Filters out empty group objects to handle edge cases.
@@ -161,7 +202,11 @@ export class CellClassManager {
    */
   static hasClass (cell, classGroup) {
     const groupClasses = Object.values(classGroup)
-    return groupClasses.some(cls => cell.classList.contains(cls))
+    return this.hasAny(cell, groupClasses)
+  }
+  static hasAny (cell, classes) {
+    const cellClasses = cell.classList
+    return classes.some(cls => cellClasses.contains(cls))
   }
 
   /**
@@ -282,7 +327,7 @@ export class CellClassManager {
       this.CELL_CLASSES.display,
       this.CELL_CLASSES.orientation
     ])
-
+    this.#removeClassesFromCell(cell, this.#weaponTags())
     this.#clearCellDatasetExceptCoordinates(cell)
   }
 

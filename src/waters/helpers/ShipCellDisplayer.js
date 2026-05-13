@@ -277,23 +277,71 @@ export class ShipCellDisplayer {
   static #clearCellText (cell) {
     cell.textContent = ''
   }
+  /**
+   * Resets inline style properties on a cell element.
+   * Clears background and color styles set by game logic.
+   *
+   * @param {HTMLElement} cell - DOM element to reset
+   * @returns {void}
+   */
+  static #resetCellStyle (cell) {
+    cell.style.background = ''
+    cell.style.color = ''
+  }
 
+  /**
+   * Clears both text content and inline styles from a cell.
+   * Convenience method combining text and style reset operations.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
+   * @private
+   */
+  static #clearCellTextAndStyle (cell) {
+    this.#clearCellText(cell)
+    this.#resetCellStyle(cell)
+  }
+  /**
+   * Clears all visual state from a placement cell.
+   * Removes text, styles, and all relevant classes for placement phase.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @returns {void}
+   */
+  static clearPlaceCell (cell) {
+    this.#clearCellTextAndStyle(cell)
+    CellClassManager.clearPlaceCell(cell)
+  }
   /**
    * Displays a cell as sunk.
    * @param {HTMLElement} cell - The cell element.
    * @param {string} letter - The ship letter.
    */
   static displayEnemySunkCell (cell, letter) {
-    CellClassManager.clearDisplayCell(cell)
+    CellClassManager.applyEnemySunkCellState(cell)
     ShipCellDisplayer.setShipCellColors(cell, letter)
-    cell.classList.add('enm-sunk')
     if (CellClassManager.hasClass(cell, CellClassManager.CELL_CLASSES.damage)) {
       this.#clearCellText(cell)
     } else {
       cell.textContent = letter
     }
   }
-
+  /**
+   * Generic method to clear cell visuals using custom clearing strategy.
+   * Delegates class clearing to provided function for context-specific behavior.
+   *
+   * @param {HTMLElement} cell - DOM element to clear
+   * @param {'none'|'content'|'all'} details - What to clear:
+   *   'none' = only call classClear, 'content' = text only, 'all' = text and style
+   * @returns {void}
+   */
+  clearDetails (cell, details) {
+    if (details === 'content') {
+      this.#clearCellText(cell)
+    } else if (details === 'all') {
+      this.#clearCellTextAndStyle(cell)
+    }
+  }
   /**
    * Displays a revealed cell in fog-of-war scenarios.
    * Shows ship letter or weapon indicator based on what occupies the position.

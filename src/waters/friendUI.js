@@ -448,7 +448,8 @@ export class FriendUI extends PlacementUI {
    */
   cellHit (r, c, damaged) {
     const cell = this.gridCellAt(r, c)
-    this.cellHitBase(cell, damaged)
+    CellClassManager.applyFriendlyHitCellState(cell, damageType)
+    this._clearCellText(cell)
   }
 
   /**
