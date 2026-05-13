@@ -18,7 +18,6 @@ export class ForLocation {
   constructor (bitPosition, cellBits, bitStore) {
     /**
      * @type {number}
-     * @private
      */
     this.bitPosition = bitPosition
 

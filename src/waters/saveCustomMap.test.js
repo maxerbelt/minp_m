@@ -46,7 +46,7 @@ jest.unstable_mockModule('./custom.js', () => ({
   custom: {
     getPlacedShipCount: jest.fn(),
     store: jest.fn(),
-    placedShips: jest.fn()
+    getPlacedShipsData: jest.fn()
   }
 }))
 
@@ -74,7 +74,7 @@ describe('saveCustomMap', () => {
     gtag.trackLevelEnd.mockClear()
     customModule.custom.getPlacedShipCount.mockClear()
     customModule.custom.store.mockClear()
-    customModule.custom.placedShips.mockClear()
+    customModule.custom.getPlacedShipsData.mockClear()
     terrainModule.bh.maps.addCurrentCustomMap.mockClear()
     // also clear the bh.js mock (used by the module under test)
     const bhModule = await import('../terrains/all/js/bh.js')
@@ -91,7 +91,7 @@ describe('saveCustomMap', () => {
 
   it('filters weapons, stores, and adds map if placed ships exist', async () => {
     customModule.custom.getPlacedShipCount.mockReturnValue(2)
-    customModule.custom.placedShips.mockReturnValue(['ship1'])
+    customModule.custom.getPlacedShipsData.mockReturnValue(['ship1'])
     saveCustomMap(map)
     // Only weapons with ammo > 0 or unlimited should remain
     expect(map.weapons).toEqual([

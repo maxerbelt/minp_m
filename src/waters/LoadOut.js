@@ -65,11 +65,25 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 
 /**
  * @typedef {Object} FiringInfo
- * @property {number[][]} fireCoordinates - Target coordinates
- * @property {function(Object): Promise<FireResult>} fireWeapon - Weapon firing function
+ * @property {number[][]} [fireCoordinates] - Target coordinates (null if still selecting)
+ * @property {function(Object): Promise<FireResult>} [fireWeapon] - Weapon firing function
  * @property {WeaponsSystem} [wps] - Weapon system being fired
  * @property {Weapon} [weapon] - Weapon being fired
  * @property {boolean} [hasUnattached] - Whether unattached weapon is involved
+ */
+
+/**
+ * @typedef {Object} FireWeaponInfoContext
+ * @property {Weapon} weapon - The weapon object
+ * @property {Array} affectedArea - Cells affected by weapon
+ * @property {Object} options - Weapon-specific options
+ */
+
+/**
+ * @typedef {Object} SingleShotInfo
+ * @property {Weapon} weapon - The weapon object
+ * @property {Array} affectedLoc - Affected location
+ * @property {WeaponsSystem} wps - Weapon system
  */
 
 /**
@@ -160,6 +174,7 @@ export class LoadOut {
   /**
    * Builds firing info once weapon selection is complete.
    * CONSOLIDATED: unified firing info collection and validation.
+   * HIGH-LEVEL: orchestrates selection validation and firing preparation.
    *
    * @param {Object} map - Game map
    * @param {number} row - Selected row
@@ -168,17 +183,31 @@ export class LoadOut {
    * @returns {FiringInfo|null} Complete firing info if ready, null/partial if still selecting
    */
   firingInfoIfReady (map, row, col, weaponSystem) {
-    let wps = weaponSystem || this.getCurrentWeaponSystem()
+    const wps = weaponSystem || this.getCurrentWeaponSystem()
     const weapon = wps?.weapon
-    this.addSelectedCoordinates(row, col, weapon)
 
+    this.addSelectedCoordinates(row, col, weapon)
     const unattachedWeaponSystem = this.getUnattachedWeaponSystem()
-    const hasUnattached = unattachedWeaponSystem != null
 
     if (unattachedWeaponSystem) {
       this.selectedWeapon = unattachedWeaponSystem
-      wps = unattachedWeaponSystem
     }
+
+    return this._resolveFiringState(wps, unattachedWeaponSystem, map)
+  }
+
+  /**
+   * Determines the current firing state and returns appropriate info.
+   * Routes to firing info building or continuation depending on selection state.
+   *
+   * @param {WeaponsSystem} wps - Current weapon system
+   * @param {WeaponsSystem|undefined} unattachedWeaponSystem - Unattached weapon if present
+   * @param {Object} map - Game map
+   * @returns {FiringInfo|null} Firing info or continuation signal
+   * @private
+   */
+  _resolveFiringState (wps, unattachedWeaponSystem, map) {
+    const hasUnattached = unattachedWeaponSystem != null
 
     // Selection complete - build firing info
     if (this._isSelectionComplete(wps, hasUnattached)) {
@@ -269,19 +298,42 @@ export class LoadOut {
 
   /**
    * Computes affected area and options for firing.
+   * CONSOLIDATED: single method for all firing computation.
    *
    * @param {number[][]} coordinates - Target coordinates
    * @param {WeaponsSystem} weaponSystem - Weapon system
    * @param {Object} map - Game map
-   * @returns {{weapon: Weapon, affectedArea: Array, options: Object}} Fire info
+   * @returns {FireWeaponInfoContext} Fire context with weapon, area, and options
    * @private
    */
   _computeFireWeaponInfo (coordinates, weaponSystem, map) {
-    const c = coordinates || this.selectedCoordinates
-    const wps = weaponSystem || this.getCurrentWeaponSystem()
-    const weapon = wps.weapon
-    const { affectedArea, options } = weapon.aoePlus(map, c)
+    const resolvedCoordinates = this._resolveTargetCoordinates(coordinates)
+    const resolvedWeaponSystem = this._resolveWeaponSystem(weaponSystem)
+    const weapon = resolvedWeaponSystem.weapon
+    const { affectedArea, options } = weapon.aoePlus(map, resolvedCoordinates)
     return { weapon, affectedArea, options }
+  }
+
+  /**
+   * Resolves target coordinates, defaulting to current selection.
+   *
+   * @param {number[][]} [coordinates] - Target coordinates
+   * @returns {number[][]} Resolved coordinates
+   * @private
+   */
+  _resolveTargetCoordinates (coordinates) {
+    return coordinates || this.selectedCoordinates
+  }
+
+  /**
+   * Resolves weapon system, defaulting to current weapon.
+   *
+   * @param {WeaponsSystem} [weaponSystem] - Weapon system
+   * @returns {WeaponsSystem} Resolved weapon system
+   * @private
+   */
+  _resolveWeaponSystem (weaponSystem) {
+    return weaponSystem || this.getCurrentWeaponSystem()
   }
 
   /**
@@ -395,9 +447,19 @@ export class LoadOut {
    * @returns {Weapon|undefined} Matching weapon
    */
   getWeaponBySystemId (rackId) {
-    const loadedWeapons = this.getLoadedWeapons()
-    const foundWeapon = loadedWeapons.find(rack => rack.id === rackId)
-    return foundWeapon
+    return this._findWeaponInCollection(this.getLoadedWeapons(), rackId)
+  }
+
+  /**
+   * Finds weapon in a collection by system ID.
+   *
+   * @param {Weapon[]} weaponCollection - Collection to search
+   * @param {string} weaponId - Weapon system ID
+   * @returns {Weapon|undefined} Matching weapon or undefined
+   * @private
+   */
+  _findWeaponInCollection (weaponCollection, weaponId) {
+    return weaponCollection.find(weapon => weapon.id === weaponId)
   }
 
   /**
@@ -502,25 +564,25 @@ export class LoadOut {
 
   /**
    * Builds the weapon dictionary from unattached systems and attached weapons.
-   * Attached weapons override unattached ones with the same letter.
+   * Entry point for dictionary construction.
    *
    * @param {WeaponsSystem[]} unattachedSystems - Unattached weapon systems
    * @returns {Object<string, WeaponsSystem>} Weapon dictionary indexed by letter
    * @private
    */
   buildWeaponDictionary (unattachedSystems) {
-    const weaponByLetter = this.createLetterMap(unattachedSystems)
-    return this.addAttachedWeapons(weaponByLetter)
+    const weaponByLetter = this._createUnattachedWeaponMap(unattachedSystems)
+    return this._mergeAttachedWeapons(weaponByLetter)
   }
 
   /**
-   * Creates a map of weapon systems keyed by weapon letter.
+   * Creates initial map from unattached weapon systems.
    *
    * @param {WeaponsSystem[]} weaponSystems - Weapon systems to map
-   * @returns {Object<string, WeaponsSystem>} Letter-keyed map
+   * @returns {Object<string, WeaponsSystem>} Letter-keyed map of unattached weapons
    * @private
    */
-  createLetterMap (weaponSystems) {
+  _createUnattachedWeaponMap (weaponSystems) {
     return weaponSystems.reduce((map, weaponSystem) => {
       map[weaponSystem.weapon.letter] = weaponSystem
       return map
@@ -528,14 +590,14 @@ export class LoadOut {
   }
 
   /**
-   * Adds attached weapons from ships to the dictionary.
+   * Merges attached weapons from ships into the weapon dictionary.
    * Attached weapons of same letter create multi-system entries.
    *
    * @param {Object<string, WeaponsSystem>} weaponByLetter - Existing dictionary
    * @returns {Object<string, WeaponsSystem>} Updated dictionary with attached weapons
    * @private
    */
-  addAttachedWeapons (weaponByLetter) {
+  _mergeAttachedWeapons (weaponByLetter) {
     return this.ships.reduce((map, ship) => {
       const weapon = ship.getPrimaryWeapon()
       if (weapon) {
@@ -752,12 +814,24 @@ export class LoadOut {
 
   /**
    * Gets the index of a weapon by its letter.
+   * UNIFIED: single source for weapon lookup by letter.
    *
    * @param {string} weaponLetter - Weapon letter to find
    * @returns {number} Index of weapon or -1 if not found
    * @private
    */
   _getWeaponIndexForLetter (weaponLetter) {
+    return this._findWeaponIndexByLetterAndAmmo(weaponLetter)
+  }
+
+  /**
+   * Finds weapon index by letter with ammo validation.
+   *
+   * @param {string} weaponLetter - Weapon letter
+   * @returns {number} Index if found and has ammo, -1 otherwise
+   * @private
+   */
+  _findWeaponIndexByLetterAndAmmo (weaponLetter) {
     return this.weaponSystems.findIndex(weaponSystem =>
       this._isWeaponAvailable(weaponSystem, weaponLetter)
     )
@@ -789,6 +863,7 @@ export class LoadOut {
 
   /**
    * Switches to a weapon by letter.
+   * UNIFIED: consolidated entry point for weapon switching by letter.
    *
    * @param {string} weaponLetter - Weapon letter to switch to
    * @returns {boolean} True if switch successful, false if weapon not available
@@ -802,6 +877,7 @@ export class LoadOut {
 
   /**
    * Switches to the first/single-shot weapon.
+   * UNIFIED: guaranteed to succeed (single-shot always available).
    *
    * @returns {boolean} Always true (single shot always available)
    */
@@ -812,7 +888,7 @@ export class LoadOut {
 
   /**
    * Switches to the next weapon in sequence.
-   * Consolidates weapon switching logic: single responsibility method.
+   * CONSOLIDATED: private helper for weapon rotation.
    *
    * @private
    */
@@ -843,6 +919,7 @@ export class LoadOut {
 
   /**
    * Switches to preferred weapon based on game settings.
+   * UNIFIED: consolidated preference-based weapon switching.
    *
    * @returns {*} Operation associated with preferred weapon or null
    */
@@ -850,6 +927,22 @@ export class LoadOut {
     const preferences = bh.maps.weaponPreference
     for (const [letter, op] of preferences) {
       if (this.switchToWeapon(letter)) {
+        return op
+      }
+    }
+    return null
+  }
+
+  /**
+   * Finds first preferred weapon available in current arsenal.
+   *
+   * @returns {*|null} Operation of first available preference or null
+   * @private
+   */
+  _findAvailablePreferredWeapon () {
+    const preferences = bh.maps.weaponPreference
+    for (const [letter, op] of preferences) {
+      if (this.hasWeaponByLetter(letter)) {
         return op
       }
     }
@@ -870,6 +963,7 @@ export class LoadOut {
   /**
    * Gets information about the current cursor state.
    * IMPROVED: clearer logic for determining which cursor should display.
+   * HIGH-LEVEL: consolidated cursor state determination.
    *
    * @returns {CursorInfo} Object with cursor, weapon system, and index
    */
@@ -877,6 +971,20 @@ export class LoadOut {
     const weaponSystem = this.getCurrentWeaponSystem()
     const weapon = weaponSystem.weapon
     const currentIndex = this.selectedCoordinates.length
+
+    return this._resolveCursorState(weapon, weaponSystem, currentIndex)
+  }
+
+  /**
+   * Determines the correct cursor based on selection state.
+   *
+   * @param {Weapon} weapon - Current weapon
+   * @param {WeaponsSystem} weaponSystem - Current weapon system
+   * @param {number} currentIndex - Number of coordinates selected
+   * @returns {CursorInfo} Resolved cursor info
+   * @private
+   */
+  _resolveCursorState (weapon, weaponSystem, currentIndex) {
     const numcur = weapon.cursors.length
 
     // If we've selected all cursors, stay on the last one
@@ -980,17 +1088,30 @@ export class LoadOut {
 
   /**
    * Clears all selected coordinates and resets cursor.
-   *
+   * HIGH-LEVEL: compound operation for clearing selection state.
    */
   clearSelectedCoordinates () {
     const oldCursor = this.getCurrentCursor()
     this.selectedCoordinates = []
+
+    const unattachedWeaponSystem = this._resolveUnattachedWeaponForClear()
+    if (!unattachedWeaponSystem) return
+
+    this._handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
+  }
+
+  /**
+   * Resolves which unattached weapon to use when clearing selection.
+   *
+   * @returns {WeaponsSystem|undefined} Unattached weapon system if applicable
+   * @private
+   */
+  _resolveUnattachedWeaponForClear () {
     let unattachedWeaponSystem = this.getUnattachedWeaponSystem()
     if (bh.seekingMode && !unattachedWeaponSystem) {
       unattachedWeaponSystem = this.getFirstRack()
     }
-    if (!unattachedWeaponSystem) return
-    this._handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
+    return unattachedWeaponSystem
   }
 
   /**
@@ -1013,16 +1134,48 @@ export class LoadOut {
   /**
    * Checks if weapon is ready to fire (armed).
    * In hide mode, unattached weapon must be selected with sufficient coordinates.
+   * UNIFIED: consolidated armament state check.
    *
    * @returns {boolean} True if armed and ready
    */
   isArmed () {
-    const isHideMode = !bh.seekingMode
-    const selected = this.selectedWeapon
     return (
-      isHideMode &&
-      selected &&
-      this.selectedCoordinates.length >= selected.weapon.postSelectCursor
+      this._isHideMode() &&
+      this._isWeaponSelected() &&
+      this._hasSufficientSelection()
+    )
+  }
+
+  /**
+   * Checks if game is in hide mode (not seeking mode).
+   *
+   * @returns {boolean} True if hide mode active
+   * @private
+   */
+  _isHideMode () {
+    return !bh.seekingMode
+  }
+
+  /**
+   * Checks if a weapon is selected for firing.
+   *
+   * @returns {boolean} True if weapon selected
+   * @private
+   */
+  _isWeaponSelected () {
+    return this.selectedWeapon !== null && this.selectedWeapon !== undefined
+  }
+
+  /**
+   * Checks if enough coordinates selected for current weapon.
+   *
+   * @returns {boolean} True if sufficient selection
+   * @private
+   */
+  _hasSufficientSelection () {
+    return (
+      this.selectedCoordinates.length >=
+      this.selectedWeapon.weapon.postSelectCursor
     )
   }
 
@@ -1058,6 +1211,7 @@ export class LoadOut {
 
   /**
    * Checks if current weapon has ammo remaining.
+   * UNIFIED: single check for current weapon ammo state.
    *
    * @returns {boolean} True if current weapon can fire
    */
@@ -1075,13 +1229,35 @@ export class LoadOut {
   }
 
   /**
+   * Checks if current weapon is expired (depleted).
+   * Helper for ammo state validation.
+   *
+   * @returns {boolean} True if current weapon has no ammo
+   * @private
+   */
+  _isCurrentWeaponExpired () {
+    return this.hasNoCurrentAmmo()
+  }
+
+  /**
    * Checks if any weapon has remaining ammo.
+   * UNIFIED: consolidated ammo state check across arsenal.
    *
    * @returns {boolean} True if arsenal has ammo
    */
   hasAllAmmo () {
     const currentWeaponSystem = this.getCurrentWeaponSystem()
     if (!currentWeaponSystem.weapon.isLimited) return true
+    return this._hasArsenalAmmo()
+  }
+
+  /**
+   * Checks if arsenal has any remaining ammo.
+   *
+   * @returns {boolean} True if any limited weapon has ammo
+   * @private
+   */
+  _hasArsenalAmmo () {
     return this.ammoRemaining() > 0
   }
 
@@ -1111,14 +1287,21 @@ export class LoadOut {
 
   /**
    * Removes limited weapon systems with no ammo remaining.
-   *
+   * CONSOLIDATED: unified ammo depletion checking.
    */
   checkAllAmmo () {
-    for (const wps of this.getLimitedWeaponSystems()) {
-      if (!wps.hasAmmoRemaining()) {
-        this._removeCurrentWeaponSystem()
-      }
-    }
+    const expiredWeapons = this._findExpiredWeapons()
+    expiredWeapons.forEach(() => this._removeCurrentWeaponSystem())
+  }
+
+  /**
+   * Finds all expired (depleted) limited weapons.
+   *
+   * @returns {WeaponsSystem[]} Array of depleted weapons
+   * @private
+   */
+  _findExpiredWeapons () {
+    return this.getLimitedWeaponSystems().filter(wps => !wps.hasAmmoRemaining())
   }
 
   /**
@@ -1144,8 +1327,19 @@ export class LoadOut {
   _removeWeaponAtIndex (index) {
     this.weaponSystems.splice(index, 1)
     if (index >= this.weaponSystems.length) {
-      this.currentWeaponIndex = 0
+      this.currentWeaponIndex = this._calculateAdjustedIndex(index)
     }
+  }
+
+  /**
+   * Calculates adjusted index after removal.
+   *
+   * @param {number} removedIndex - Index that was removed
+   * @returns {number} Safe index for current selection
+   * @private
+   */
+  _calculateAdjustedIndex (removedIndex) {
+    return removedIndex > 0 ? removedIndex - 1 : 0
   }
 
   /**

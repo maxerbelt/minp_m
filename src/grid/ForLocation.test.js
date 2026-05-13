@@ -51,7 +51,7 @@ describe('ForLocation', () => {
     expect(store.bitMaskByPos).toHaveBeenCalledWith(newPos)
     // clearMaskBits called with original bits and the mask for pos
     const expectedMask = 1n << BigInt(newPos)
-    expect(store.clearMaskBits).toHaveBeenCalledWith(initialBits, expectedMask)
+    expect(store.clearBits).toHaveBeenCalledWith(initialBits, expectedMask)
     // setMask called for pos and color
     expect(store.setMask).toHaveBeenCalledWith(newPos, 1)
 

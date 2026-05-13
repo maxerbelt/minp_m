@@ -30,7 +30,7 @@ describe('Mask', () => {
       //  mask.set(5, 5)
       const forloc = mask.for(5, 5)
       mask.bits = forloc.set()
-      expect(forloc.pos).toBe(55n)
+      expect(forloc.bitPosition).toBe(55n)
       expect(forloc.at()).toBe(1)
       expect(forloc.test()).toBe(true)
     })
