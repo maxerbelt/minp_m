@@ -207,7 +207,7 @@ export class ShipCellDisplayer {
    * Applies sunk state class, updates colors, and conditionally shows ship letter.
    * Text is hidden if cell has damage indicators, otherwise displays letter.
    *
-   * @param {HTMLElement} cell - DOM element to update with sunk state visual
+   * @param {HTMLDivElement} cell - DOM element to update with sunk state visual
    * @param {string} letter - Ship letter for color lookup and potential display
    * @returns {void}
    */
