@@ -157,19 +157,6 @@ export class ForLocation {
   }
 
   /**
-   * @deprecated Use cellBits property instead
-   * @private
-   * @type {bigint}
-   */
-  get bits () {
-    return this.cellBits
-  }
-
-  set bits (value) {
-    this.cellBits = value
-  }
-
-  /**
    * @deprecated Use bitStore property instead (renamed for clarity)
    * @private
    * @type {Store}
