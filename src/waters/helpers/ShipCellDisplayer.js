@@ -391,9 +391,9 @@ export class ShipCellDisplayer {
       const primaryWeapon = ship.getPrimaryWeapon()
       dataset[weaponLetterKey] = primaryWeapon.letter
       dataset[this.#DATA_ATTRIBUTES.WEAPON_SURROUND] = ship.id
-
       const cursorClass = primaryWeapon?.launchCursor
       if (cursorClass) {
+        CellClassManager.clearWeaponClasses(cell)
         cell.classList.add(cursorClass)
         CellClassManager.clearCellClasses(cell, [
           CellClassManager.CELL_CLASSES.orientation
