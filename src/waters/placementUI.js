@@ -12,7 +12,6 @@ import { ElementCache } from './helpers/ElementCache.js'
 import { TrayManager } from './helpers/TrayManager.js'
 import { DirectionMovement } from './helpers/DirectionMovement.js'
 import { UIElementBuilder } from './helpers/UIElementBuilder.js'
-import { CellClassManager } from './helpers/CellClassManager.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 
 export class PlacementUI extends WatersUI {
@@ -1538,22 +1537,4 @@ export function moveCursorBase (event, viewModel, model) {
   } else {
     viewModel.assignByCursor(event.key, model.ships)
   }
-}
-
-/**
- * Partitions array items into groups based on property getter function.
- * Utility function for array grouping/bucketing operations.
- * Used to organize ships by type, weapons by category, etc.
- *
- * @param {*[]} arr - Array to partition
- * @param {Function} propgetter - Function that returns grouping key for item
- * @returns {Object<string|number, *[]>} Map of key to items in group
- */
-function partitionBy (arr, propgetter) {
-  return arr.reduce((acc, item) => {
-    const key = propgetter(item)
-    if (!acc[key]) acc[key] = []
-    acc[key].push(item)
-    return acc
-  }, {})
 }

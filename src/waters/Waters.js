@@ -733,7 +733,10 @@ export class Waters {
     this.initShips()
 
     placedShips = this.retrievePlacedShips(placedShips, map)
-    if (!placedShips) return
+    if (!placedShips) {
+      this.autoPlace()
+      return
+    }
 
     this.updateGlobalIds(placedShips)
     const unmatchedShips = this.placeMatchingShips(
