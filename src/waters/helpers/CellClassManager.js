@@ -109,7 +109,6 @@ export class CellClassManager {
     },
     placement: {
       empty: 'empty'
-      //    launch: 'launch'
     },
     edge: {
       land: 'land',

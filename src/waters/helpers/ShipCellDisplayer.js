@@ -30,7 +30,10 @@ export class ShipCellDisplayer {
    * @private
    */
   static #CSS_CLASSES = {
-    WEAPON: 'weapon'
+    WEAPON: 'weapon',
+    PLACED: 'placed',
+    HIT: 'hit',
+    SUNK: 'sunk'
   }
 
   /**
@@ -83,12 +86,18 @@ export class ShipCellDisplayer {
    * @param {HTMLDivElement} cell - DOM element to render into
    * @returns {void}
    */
-  static displayShipCell (ship, row, column, cell) {
+  static #displayShipCell (ship, row, column, cell) {
     const colorMaps = this.#getColorMaps()
     const weaponSlot = this.#getWeaponSlotAt(ship, column, row)
 
     this.#displayCellContent(cell, ship, weaponSlot, colorMaps)
     this.displaySurroundAttributes(cell, ship, row, column)
+  }
+
+  displayPlacedCell (cell, ship, r, c) {
+    CellClassManager.clearCell(cell)
+    this.#displayShipCell(ship, r, c, cell)
+    cell.classList.add(this.#CSS_CLASSES.PLACED)
   }
 
   /**

@@ -411,7 +411,8 @@ export class FriendUI extends PlacementUI {
    */
   _clearBoardCells () {
     this._forEachBoardCell(cell => {
-      cell.classList.remove(UI_CLASSES.HIT, UI_CLASSES.PLACED)
+      //   cell.classList.remove(UI_CLASSES.HIT, UI_CLASSES.PLACED)
+      CellClassManager.clearDisplayCell(cell)
     })
   }
 

@@ -815,22 +815,6 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * Displays a placed ship on the board with appropriate styling and state.
-   * Clears existing cell visuals, renders ship display, and marks as placed.
-   *
-   * @param {HTMLElement} cell - Board cell to display on
-   * @param {Object} ship - Ship object with id, letter, and position data
-   * @param {number} r - Row position on board
-   * @param {number} c - Column position on board
-   * @returns {void}
-   */
-  displayAsPlaced (cell, ship, r, c) {
-    CellClassManager.clearCell(cell)
-    ShipCellDisplayer.displayShipCell(ship, r, c, cell)
-    cell.classList.add(PlacementUI.#CSS_CLASSES.PLACED)
-  }
-
-  /**
    * Updates cell at specified board coordinates to display placed ship.
    * Convenience method combining grid lookup and display.
    *
@@ -841,7 +825,7 @@ export class PlacementUI extends WatersUI {
    */
   cellPlacedAt (r, c, ship) {
     const cell = this.gridCellAt(r, c)
-    this.displayAsPlaced(cell, ship, r, c)
+    ShipCellDisplayer.displayPlacedCell(ship, r, c, cell)
   }
 
   /**
