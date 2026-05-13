@@ -1257,10 +1257,10 @@ export class Waters {
     const { r, c } = this.steps.sourceHint || { r: 0, c: 0 }
     return await this.launchTo(coords, r, c, wps)
   }
-
+  //onClickOppoCell = null
   setupAttachedAim () {
     const oppo = this.opponent
-    if (bh.seekingMode || !this.loadOut || !oppo) return
+    if (bh.seekingMode || !this.loadOut || !oppo || !this.onClickOppoCell) return
     const armedShips = this.loadOut.getArmedShips()
     for (const ship of armedShips) {
       const cells = oppo.shipCells(ship.id)
@@ -1270,7 +1270,7 @@ export class Waters {
           const [r, c] = coordsFromCell(cell)
           cell.addEventListener(
             'click',
-            this.onClickOppoCell.bind(this, r, c, ship.id)
+            this.onClickOppoCell.bind(this, r, c)
           )
           cell.dataset.listen = true
           //     const w = ship.getPrimaryWeapon()

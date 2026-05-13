@@ -1,16 +1,4 @@
 {
   "liveServer.settings.port": 5501,
-  "liveServer.settings.root": "/src",
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": ["source.formatDocument", "source.fixAll.eslint"],
-  "eslint.validate": ["javascript"],
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[html]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[css]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  "liveServer.settings.root": "/src"
 }

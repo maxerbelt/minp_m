@@ -2,6 +2,7 @@ import { bh } from '../terrains/all/js/bh.js'
 import { gameStatus } from './StatusUI.js'
 import { WatersUI } from './WatersUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
+import { CellClassManager } from './helpers/CellClassManager.js'
 
 /**
  * UI class for managing enemy board interactions and weapon selection.
@@ -142,7 +143,7 @@ class EnemyUI extends WatersUI {
    * @param {string} letter - The ship letter.
    */
   displayAsSunk (cell, letter) {
-    this.clearDisplayCell(cell)
+    CellClassManager.clearDisplayCell(cell)
     this.displaySunkCell(cell, letter)
   }
 

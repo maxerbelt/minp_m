@@ -326,45 +326,6 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {Object} ship
-   */
-  displayShipCellBase (cell, ship) {
-    const letter = ship?.letter || '-'
-    cell.dataset.id = ship?.id
-    cell.dataset.letter = letter
-    this.setShipCellColors(cell, letter)
-  }
-
-  /**
-   * @param {Object} ship
-   * @param {HTMLElement} cell
-   */
-  displayLetterShipCell (ship, cell) {
-    const letter = ship?.letter || '-'
-    cell.dataset.letter = letter
-    cell.textContent = letter
-    this.displayShipCellBase(cell, ship)
-  }
-
-  /**
-   * @param {Object} ship
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
-   */
-  visibleShipCell (ship, r, c, cell) {
-    const maps = bh.maps
-    const weapon = ship?.rackAt(c, r)
-    if (weapon) {
-      ShipCellDisplayer.displayArmedCell(cell, ship, weapon, maps)
-    } else {
-      ShipCellDisplayer.displayLetterCell(cell, ship, maps)
-    }
-    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
-  }
-
-  /**
    * @param {Object} ship
    * @param {number} r
    * @param {number} c
@@ -379,27 +340,13 @@ export class WatersUI {
    * @param {string} letter
    */
   displaySunkCell (cell, letter) {
-    this.setShipCellColors(cell, letter)
+    ShipCellDisplayer.setShipCellColors(cell, letter)
     cell.classList.add('enm-sunk')
-    if (
-      cell.classList.contains('burnt') ||
-      cell.classList.contains('damaged') ||
-      cell.classList.contains('skull')
-    ) {
+    if (CellClassManager.hasClass(cell, CellClassManager.CELL_CLASSES.damage)) {
       cell.textContent = ''
     } else {
       cell.textContent = letter
     }
-  }
-
-  /**
-   * @param {HTMLElement} cell
-   * @param {string} letter
-   */
-  setShipCellColors (cell, letter) {
-    const maps = bh.maps
-    cell.style.color = maps.shipLetterColors[letter] || '#fff'
-    cell.style.background = maps.shipColors[letter] || 'rgba(255,255,255,0.2)'
   }
 
   /**
@@ -437,7 +384,7 @@ export class WatersUI {
    */
   clearCellContent (cell) {
     this._clearCellText(cell)
-    this.clearCell(cell)
+    CellClassManager.clearCell(cell)
   }
 
   /**
@@ -466,27 +413,6 @@ export class WatersUI {
   /**
    * @param {HTMLElement} cell
    */
-  clearCell (cell) {
-    CellClassManager.clearCell(cell)
-  }
-
-  /**
-   * @param {HTMLElement} cell
-   */
-  clearDisplayCell (cell) {
-    CellClassManager.clearDisplayCell(cell)
-  }
-
-  /**
-   * @param {HTMLElement} cell
-   */
-  clearFriendCell (cell) {
-    CellClassManager.clearFriendCell(cell)
-  }
-
-  /**
-   * @param {HTMLElement} cell
-   */
   clearPlaceCell (cell) {
     CellClassManager.clearPlaceCell(cell)
     cell.classList.remove(...this._weaponTags())
@@ -497,14 +423,14 @@ export class WatersUI {
    * @param {string} [_letter]
    */
   displayAsSunk (cell, _letter) {
-    this.clearDisplayCell(cell)
+    CellClassManager.clearDisplayCell(cell)
     cell.classList.add('frd-sunk')
     this.cellHitBase(cell)
     cell.classList.remove('frd-hit')
   }
 
   clearClasses () {
-    this._forEachBoardCell(cell => this.clearCell(cell))
+    this._forEachBoardCell(cell => CellClassManager.clearCell(cell))
   }
 
   /**
@@ -916,11 +842,17 @@ export class WatersUI {
   }
 
   clearFriendVisuals () {
-    this.clearVisualsBase('all', this.clearFriendCell.bind(this))
+    this.clearVisualsBase(
+      'all',
+      CellClassManager.clearFriendCell.bind(CellClassManager)
+    )
   }
 
   clearFriendClasses () {
-    this.clearVisualsBase('none', this.clearFriendCell.bind(this))
+    this.clearVisualsBase(
+      'none',
+      CellClassManager.clearFriendCell.bind(CellClassManager)
+    )
   }
 
   clearPlaceVisuals () {

@@ -1,5 +1,6 @@
 import { addKeyToCell, coordsFromCell } from '../../core/utilities.js'
 import { CellClassManager } from './CellClassManager.js'
+import { bh } from '../../terrains/all/js/bh.js'
 
 /**
  * Manages the display of ship cells with various visual states
@@ -166,6 +167,36 @@ export class ShipCellDisplayer {
   static displaySurroundAttributes (cell, ship, r, c) {
     if (!this.#hasWeapons(ship)) return
     this.#setSurroundAttributes(cell, ship, r, c)
+  }
+  /**
+   * @param {Object} ship
+   * @param {number} r
+   * @param {number} c
+   * @param {HTMLElement} cell
+   */
+  static displayShipCell (ship, r, c, cell) {
+    const maps = bh.maps
+    const weapon = ship?.rackAt(c, r)
+    ShipCellDisplayer.#displayShipPartCell(cell, ship, r, c, maps, weapon)
+  }
+
+  static #displayShipPartCell (cell, ship, r, c, maps, weapon) {
+    if (weapon) {
+      ShipCellDisplayer.displayArmedCell(cell, ship, weapon, maps)
+    } else {
+      ShipCellDisplayer.displayLetterCell(cell, ship, maps)
+    }
+    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
+  }
+
+  /**
+   * @param {HTMLElement} cell
+   * @param {string} letter
+   */
+  static setShipCellColors (cell, letter) {
+    const maps = bh.maps
+    cell.style.color = maps.shipLetterColors[letter] || '#fff'
+    cell.style.background = maps.shipColors[letter] || 'rgba(255,255,255,0.2)'
   }
 
   /**

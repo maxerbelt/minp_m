@@ -12,6 +12,8 @@ import { ElementCache } from './helpers/ElementCache.js'
 import { TrayManager } from './helpers/TrayManager.js'
 import { DirectionMovement } from './helpers/DirectionMovement.js'
 import { UIElementBuilder } from './helpers/UIElementBuilder.js'
+import { CellClassManager } from './helpers/CellClassManager.js'
+import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 
 export class PlacementUI extends WatersUI {
   constructor (territory, title) {
@@ -432,8 +434,8 @@ export class PlacementUI extends WatersUI {
   }
 
   displayAsPlaced (cell, ship, r, c) {
-    this.visibleShipCell(ship, r, c, cell)
-    this.clearCell(cell)
+    CellClassManager.clearCell(cell)
+    ShipCellDisplayer.displayShipCell(cell, ship, r, c)
     cell.classList.add('placed')
   }
 
@@ -714,7 +716,7 @@ export class PlacementUI extends WatersUI {
     } else {
       box.textContent = letter
     }
-    this.setShipCellColors(box, letter)
+    ShipCellDisplayer.setShipCellColors(box, letter)
     return box
   }
 

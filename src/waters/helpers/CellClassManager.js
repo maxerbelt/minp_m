@@ -84,7 +84,16 @@ export class CellClassManager {
     const classesToRemove = classGroups.flatMap(group => Object.values(group))
     cell.classList.remove(...classesToRemove)
   }
+  static hasClass (cell, classGroup) {
+    const groupClasses = Object.values(classGroup)
+    const cellClasses = cell.classList
+    return groupClasses.some(cls => cellClasses.contains(cls))
+  }
 
+  static hasAnyClass (cell, classGroups) {
+    const classesToCheck = classGroups.flatMap(group => Object.values(group))
+    return classesToCheck.some(cls => cell.classList.contains(cls))
+  }
   /**
    * Retrieves all class names from specified groups.
    * @param {CellClassGroup[]} classGroups - Array of class group objects.
