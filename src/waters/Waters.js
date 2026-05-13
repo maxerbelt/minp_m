@@ -1273,9 +1273,9 @@ export class Waters {
             this.onClickOppoCell.bind(this, r, c, ship.id)
           )
           cell.dataset.listen = true
-          const w = ship.getPrimaryWeapon()
-          const cursor = w?.launchCursor
-          if (cursor) cell.classList.add(cursor)
+          //     const w = ship.getPrimaryWeapon()
+          //    const cursor = w?.launchCursor
+          //    if (cursor) cell.classList.add(cursor)
         }
       }
     }

@@ -68,9 +68,8 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLDivElement} cell - DOM element to update
    * @param {Object} weaponSlot - Object with weapon, ammo, and id properties
-   * @param {Object} ship - Ship object for variant property
    */
-  static #setWeaponAttributes (cell, weaponSlot, ship) {
+  static #setWeaponAttributes (cell, weaponSlot) {
     const ds = cell.dataset
     const weaponLetter = weaponSlot.weapon.letter
     ds.wletter = weaponLetter
@@ -153,7 +152,7 @@ export class ShipCellDisplayer {
    */
   static displayArmedCell (cell, ship, weaponSlot, colorMaps) {
     const letter = this.#setBaseAttributes(cell, ship)
-    this.#setWeaponAttributes(cell, weaponSlot, ship)
+    this.#setWeaponAttributes(cell, weaponSlot)
     this.#applyShipStyles(cell, letter, colorMaps)
   }
 
@@ -187,7 +186,7 @@ export class ShipCellDisplayer {
     const weaponSlot = ship?.rackAt(c, r)
 
     if (weaponSlot) {
-      ds.ammo = '1'
+      cell.dataset.ammo = '1'
       cell.classList.add(this.#CSS_CLASSES.WEAPON)
       cell.textContent = ''
     } else {
