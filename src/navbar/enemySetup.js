@@ -87,20 +87,25 @@ function _setupSeekShortcuts (placementHandler, testHandler) {
 }
 
 export function setupEnemy (placementHandler, testHandler) {
-  // Wire button handlers
-  enemy.UI.restartBtn.addEventListener(
-    'click',
-    newGame.bind(null, 'seek', null)
-  )
+  // Refresh enemy button references after navbar content loads.
+  enemy.UI?.refreshButtons?.()
+
+  // Wire button handlers safely
+  const restartBtn = enemy.UI?.buttons?.restart
+  if (restartBtn?.addEventListener) {
+    restartBtn.addEventListener('click', newGame.bind(null, 'seek', null))
+  }
   enemy.wireupButtons()
 
   // Setup optional placement button if provided
-  if (placementHandler) {
-    enemy.UI?.placeBtn?.addEventListener('click', placementHandler)
+  const placeBtn = enemy.UI?.buttons?.place
+  if (placementHandler && placeBtn?.addEventListener) {
+    placeBtn.addEventListener('click', placementHandler)
   }
 
-  if (testHandler) {
-    enemy.UI?.testBtn?.addEventListener('click', testHandler)
+  const testBtn = enemy.UI?.buttons?.test
+  if (testHandler && testBtn?.addEventListener) {
+    testBtn.addEventListener('click', testHandler)
   }
   //enemy.setupWeaponButtonHandlers()
 

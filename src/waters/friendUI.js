@@ -2,6 +2,7 @@ import { bh } from '../terrains/all/js/bh.js'
 import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
+import { CellClassManager } from './helpers/CellClassManager.js'
 
 /** @enum {string} */
 const UI_MODES = {
@@ -29,6 +30,58 @@ const UI_CLASSES = {
   MEDIUM: 'medium',
   SMALL: 'small',
   ALT: 'alt'
+}
+
+/**
+ * @typedef {Object} FriendUIConfig
+ * @property {string} tabText
+ * @property {boolean} showPlacingControls
+ * @property {boolean} showGameControls
+ * @property {boolean} showShipTrays
+ * @property {boolean} showTransformBtns
+ * @property {boolean} showTips
+ * @property {boolean} showStatus
+ * @property {boolean} standardPanels
+ * @property {boolean} clearBoardCells
+ * @property {boolean} addAltPanels
+ */
+
+/**
+ * @typedef {Object} ScoreLabelVisibility
+ * @property {boolean} placed
+ * @property {boolean} shots
+ * @property {boolean} hits
+ * @property {boolean} sunk
+ * @property {boolean} reveals
+ * @property {boolean} hints
+ */
+
+const MODE_TAB_TEXT = {
+  [UI_MODES.PLACING]: 'Hide and Seek Game',
+  [UI_MODES.READY]: 'Hide Game',
+  [UI_MODES.TESTING]: 'Hide Game',
+  [UI_MODES.SEEKING]: 'Hide and Seek Game'
+}
+
+const SCORE_LABEL_KEYS = ['placed', 'shots', 'hits', 'sunk', 'reveals', 'hints']
+
+const MODE_SCORE_LABELS = {
+  [UI_MODES.PLACING]: {
+    placed: true,
+    shots: false,
+    hits: false,
+    sunk: false,
+    reveals: false,
+    hints: false
+  },
+  [UI_MODES.READY]: {
+    placed: false,
+    shots: true,
+    hits: true,
+    sunk: true,
+    reveals: true,
+    hints: true
+  }
 }
 
 /**
@@ -135,68 +188,66 @@ export class FriendUI extends PlacementUI {
    * Synchronizes the tab text based on the current mode.
    */
   syncTab () {
-    const tabTextMap = {
-      [UI_MODES.PLACING]: 'Hide and Seek Game',
-      [UI_MODES.READY]: 'Hide Game',
-      [UI_MODES.TESTING]: 'Hide Game',
-      [UI_MODES.SEEKING]: 'Hide and Seek Game'
-    }
-    this.setTabText(tabTextMap[this.mode])
+    this.setTabText(MODE_TAB_TEXT[this.mode] || '')
   }
 
   /**
    * Applies common UI configuration for modes.
-   * @param {Object} config - Configuration object.
-   * @param {string} config.tabText - Text for the tab.
-   * @param {boolean} config.showPlacingControls - Whether to show placing controls.
-   * @param {boolean} config.showGameControls - Whether to show game controls.
-   * @param {boolean} config.showShipTrays - Whether to show ship trays.
-   * @param {boolean} config.showTransformBtns - Whether to show transform buttons.
-   * @param {boolean} config.showTips - Whether to show tips.
-   * @param {boolean} config.showStatus - Whether to show status.
-   * @param {boolean} config.standardPanels - Whether to use standard panels.
-   * @param {boolean} config.clearBoardCells - Whether to clear board cells.
-   * @param {boolean} config.addAltPanels - Whether to add alt panels.
+   * @param {FriendUIConfig} config - Configuration object.
    * @private
    */
   _applyCommonUIConfig (config) {
     this.setTabText(config.tabText)
-    if (config.showPlacingControls) {
-      this._showPlacingControls()
-    } else {
-      this._hidePlacingControls()
-    }
-    if (config.showGameControls) {
-      this._showGameControls()
-    } else {
-      this._hideGameControls()
-    }
-    if (config.showShipTrays) {
-      this.trayManager.showShipTrays()
-    } else {
-      this.trayManager.hideShipTrays()
-    }
-    if (config.showTransformBtns) {
-      this.showTransformBtns()
-    } else {
-      this.hideTransformBtns()
-    }
-    if (config.showTips) {
-      this.showTips()
-    } else {
-      this.hideTips()
-    }
+    this._applyConfigState(
+      config.showPlacingControls,
+      this._showPlacingControls,
+      this._hidePlacingControls
+    )
+    this._applyConfigState(
+      config.showGameControls,
+      this._showGameControls,
+      this._hideGameControls
+    )
+    this._applyConfigState(
+      config.showShipTrays,
+      this.trayManager.showShipTrays.bind(this.trayManager),
+      this.trayManager.hideShipTrays.bind(this.trayManager)
+    )
+    this._applyConfigState(
+      config.showTransformBtns,
+      this.showTransformBtns,
+      this.hideTransformBtns
+    )
+    this._applyConfigState(config.showTips, this.showTips, this.hideTips)
     if (config.showStatus) {
       this.showStatus()
     }
-    if (config.standardPanels) {
-      this.standardPanels()
-    }
-    if (config.clearBoardCells) {
-      this._clearBoardCells()
-    }
-    if (config.addAltPanels) {
-      this._addAltPanels()
+    this._applyFeatureFlag(config.standardPanels, this.standardPanels)
+    this._applyFeatureFlag(config.clearBoardCells, this._clearBoardCells)
+    this._applyFeatureFlag(config.addAltPanels, this._addAltPanels)
+  }
+
+  /**
+   * Calls the selected method based on a boolean feature flag.
+   * @param {boolean} active
+   * @param {Function} onMethod
+   * @param {Function} offMethod
+   * @private
+   */
+  _applyConfigState (active, onMethod, offMethod) {
+    const callback = active ? onMethod : offMethod
+    callback.call(this)
+  }
+
+  /**
+   * Executes a method when a feature flag is enabled.
+   * @param {boolean} active
+   * @param {Function} method
+   * @private
+   */
+  _applyFeatureFlag (active, method) {
+    if (active) {
+      method.call(this)
     }
   }
 
@@ -310,8 +361,7 @@ export class FriendUI extends PlacementUI {
    * @private
    */
   _showGameControls () {
-    this.toggleElements([this.testBtn, this.seekBtn], true)
-    this.toggleElements([this.stopBtn], false)
+    this._toggleGameControls(true)
   }
 
   /**
@@ -319,7 +369,17 @@ export class FriendUI extends PlacementUI {
    * @private
    */
   _hideGameControls () {
-    this.toggleElements([this.testBtn, this.seekBtn, this.stopBtn], false)
+    this._toggleGameControls(false)
+  }
+
+  /**
+   * Toggles the visibility of game controls.
+   * @param {boolean} isVisible
+   * @private
+   */
+  _toggleGameControls (isVisible) {
+    this.toggleElements([this.testBtn, this.seekBtn], isVisible)
+    this.toggleElements([this.stopBtn], false)
   }
 
   // ============ Score Labels ============
@@ -330,46 +390,17 @@ export class FriendUI extends PlacementUI {
    * @private
    */
   _updateScoreLabels (mode) {
-    const labelMap = {
-      [UI_MODES.PLACING]: {
-        placed: true,
-        shots: false,
-        hits: false,
-        sunk: false,
-        reveals: false,
-        hints: false
-      },
-      [UI_MODES.READY]: {
-        placed: false,
-        shots: true,
-        hits: true,
-        sunk: true,
-        reveals: true,
-        hints: true
-      }
+    const config = MODE_SCORE_LABELS[mode] || {}
+    if (!this.score) {
+      return
     }
 
-    const config = labelMap[mode] || {}
-    if (this.score) {
-      this.setClasses(this.score.placedLabel, {
-        [UI_CLASSES.HIDDEN]: !config?.placed
+    SCORE_LABEL_KEYS.forEach(labelKey => {
+      const labelElement = this.score[`${labelKey}Label`]
+      this.setClasses(labelElement, {
+        [UI_CLASSES.HIDDEN]: !config[labelKey]
       })
-      this.setClasses(this.score.shotsLabel, {
-        [UI_CLASSES.HIDDEN]: !config?.shots
-      })
-      this.setClasses(this.score.hitsLabel, {
-        [UI_CLASSES.HIDDEN]: !config?.hits
-      })
-      this.setClasses(this.score.sunkLabel, {
-        [UI_CLASSES.HIDDEN]: !config?.sunk
-      })
-      this.setClasses(this.score.revealsLabel, {
-        [UI_CLASSES.HIDDEN]: !config?.reveals
-      })
-      this.setClasses(this.score.hintsLabel, {
-        [UI_CLASSES.HIDDEN]: !config?.hints
-      })
-    }
+    })
   }
 
   // ============ Visual Management ============
@@ -448,7 +479,7 @@ export class FriendUI extends PlacementUI {
    */
   cellHit (r, c, damaged) {
     const cell = this.gridCellAt(r, c)
-    CellClassManager.applyFriendlyHitCellState(cell, damageType)
+    CellClassManager.applyFriendlyHitCellState(cell, damaged)
     this._clearCellText(cell)
   }
 
@@ -469,7 +500,16 @@ export class FriendUI extends PlacementUI {
    * @param {string} damage - Damage type or empty string.
    */
   useAmmoInCell (cell, damage) {
-    const dataset = cell.dataset
+    this._applyAmmoState(cell, damage)
+  }
+
+  /**
+   * Applies ammo state classes and dataset values for an ammo cell.
+   * @param {HTMLElement} cell
+   * @param {string} damage
+   * @private
+   */
+  _applyAmmoState (cell, damage) {
     cell.classList.remove(UI_CLASSES.ACTIVE)
     if (damage) {
       cell.classList.add(damage)
@@ -477,7 +517,7 @@ export class FriendUI extends PlacementUI {
     } else {
       cell.classList.add(UI_CLASSES.EMPTY)
     }
-    dataset.ammo = '0'
+    cell.dataset.ammo = '0'
   }
 
   /**

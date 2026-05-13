@@ -2,8 +2,33 @@ import { bh } from '../terrains/all/js/bh.js'
 import { gameStatus } from './StatusUI.js'
 import { WatersUI } from './WatersUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
-import { CellClassManager } from './helpers/CellClassManager.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
+
+/**
+ * @typedef {Object} EnemyWeaponDescriptor
+ * @property {string} letter
+ * @property {string} btnClass
+ * @property {string} buttonHtml
+ */
+
+/**
+ * @typedef {Object} EnemyWeaponSystem
+ * @property {EnemyWeaponDescriptor} weapon
+ */
+
+/**
+ * @callback WeaponButtonCallback
+ * @param {string} letter
+ * @returns {void}
+ */
+
+const ENEMY_BUTTON_IDS = {
+  reveal: 'revealBtn',
+  place: 'newPlace2',
+  restart: 'newGame',
+  test: 'test2Btn',
+  weapon: 'weaponBtn'
+}
 
 /**
  * UI class for managing enemy board interactions and weapon selection.
@@ -14,20 +39,60 @@ class EnemyUI extends WatersUI {
    */
   constructor () {
     super('enemy', 'Enemy')
-    this.revealBtn = document.getElementById('revealBtn')
-    this.placeBtn = document.getElementById('newPlace2')
-    this.restartBtn = document.getElementById('newGame')
-    this.testBtn = document.getElementById('test2Btn')
-    this.weaponBtn = document.getElementById('weaponBtn')
+    this.buttons = this._initializeButtons()
+    this._refreshButtonAliases()
     this.playMode()
+  }
+
+  /**
+   * Builds the enemy UI button references from DOM ids.
+   * @returns {{reveal: HTMLElement|null, place: HTMLElement|null, restart: HTMLElement|null, test: HTMLElement|null, weapon: HTMLElement|null}}
+   * @private
+   */
+  _initializeButtons () {
+    return {
+      reveal: this._getButtonById(ENEMY_BUTTON_IDS.reveal),
+      place: this._getButtonById(ENEMY_BUTTON_IDS.place),
+      restart: this._getButtonById(ENEMY_BUTTON_IDS.restart),
+      test: this._getButtonById(ENEMY_BUTTON_IDS.test),
+      weapon: this._getButtonById(ENEMY_BUTTON_IDS.weapon)
+    }
+  }
+
+  /**
+   * Refreshes button references from live DOM elements.
+   * Useful when navbar content is loaded after UI initialization.
+   */
+  refreshButtons () {
+    this.buttons = this._initializeButtons()
+    this._refreshButtonAliases()
+  }
+
+  /**
+   * Synchronizes shortcut button properties with the current button set.
+   * @private
+   */
+  _refreshButtonAliases () {
+    this.weaponBtn = this.buttons.weapon
+    this.revealBtn = this.buttons.reveal
+  }
+
+  /**
+   * Retrieves a button element by its DOM id.
+   * @param {string} id
+   * @returns {HTMLElement|null}
+   * @private
+   */
+  _getButtonById (id) {
+    return document.getElementById(id)
   }
 
   /**
    * Creates weapon buttons by cloning a template node for each weapon system.
    * @param {HTMLElement} node - The template node to clone.
-   * @param {Array} wpss - Array of weapon systems.
-   * @param {function(string): void} callback - Callback function called with weapon letter on click.
-   * @returns {Array<HTMLElement>} Array of created button elements.
+   * @param {Array<EnemyWeaponSystem>|Object<string, EnemyWeaponSystem>} wpss - Weapon systems.
+   * @param {WeaponButtonCallback} callback - Callback function called with weapon letter on click.
+   * @returns {HTMLElement[]} Array of created button elements.
    */
   weaponButtons (node, wpss, callback) {
     const weaponButtons = []
@@ -36,43 +101,88 @@ class EnemyUI extends WatersUI {
       return weaponButtons
     }
 
-    const numWeapons = wpss?.length || 0
-    if (numWeapons === 0) {
+    if (typeof callback !== 'function') {
+      console.warn('Weapon button callback is not a function')
+      return weaponButtons
+    }
+
+    const parent = node.parentNode
+    if (!parent) {
+      console.warn('Weapon button parent node not found')
+      return weaponButtons
+    }
+
+    const cloneClass = node.id ? `${node.id}-clone` : 'weapon-button-clone'
+    this._removeWeaponButtonClones(parent, cloneClass)
+
+    const weaponEntries = this._weaponSystemEntries(wpss)
+    if (weaponEntries.length === 0) {
       console.warn('No weapon systems provided for weapon buttons')
       return weaponButtons
     }
 
-    const parent = node?.parentNode
-    const cloneClass = `${node.id}-clone`
-
-    // 1. Remove existing clones
-    parent.querySelectorAll(`.${cloneClass}`).forEach(el => el.remove())
-
-    // 2. Create new clones
     let last = node
-    const entries = Object.entries(wpss)
-    for (const [i, wps] of entries) {
-      const weapon = wps.weapon
-      const letter = weapon.letter
-      const clone = node.cloneNode(true)
-
-      // add class to root clone
-      clone.classList.add(cloneClass, weapon.btnClass)
-      clone.dataset.letter = letter
-      clone.addEventListener('click', () => callback(letter))
-      clone.innerHTML = weapon.buttonHtml
-
-      // update root id
-      if (clone?.id) {
-        clone.id = `${node.id}-${i}`
-      }
-
-      // insert after previous
+    for (const [index, wps] of weaponEntries) {
+      const clone = this._buildWeaponButtonClone(
+        node,
+        cloneClass,
+        wps.weapon,
+        index,
+        callback
+      )
       parent.insertBefore(clone, last.nextSibling)
       last = clone
       weaponButtons.push(clone)
     }
+
     return weaponButtons
+  }
+
+  /**
+   * Returns an array of weapon system entries for iteration.
+   * @param {Array<EnemyWeaponSystem>|Object<string, EnemyWeaponSystem>} wpss
+   * @returns {Array<[string, EnemyWeaponSystem]>}
+   * @private
+   */
+  _weaponSystemEntries (wpss) {
+    if (!wpss || typeof wpss !== 'object') {
+      return []
+    }
+    return Object.entries(wpss)
+  }
+
+  /**
+   * Removes previously cloned weapon buttons from the DOM.
+   * @param {ParentNode} parent
+   * @param {string} cloneClass
+   * @private
+   */
+  _removeWeaponButtonClones (parent, cloneClass) {
+    parent.querySelectorAll(`.${cloneClass}`).forEach(el => el.remove())
+  }
+
+  /**
+   * Builds a cloned weapon button with event wiring.
+   * @param {HTMLElement} template
+   * @param {string} cloneClass
+   * @param {EnemyWeaponDescriptor} weapon
+   * @param {string} index
+   * @param {WeaponButtonCallback} callback
+   * @returns {HTMLElement}
+   * @private
+   */
+  _buildWeaponButtonClone (template, cloneClass, weapon, index, callback) {
+    const clone = template.cloneNode(true)
+    clone.classList.add(cloneClass, weapon.btnClass)
+    clone.dataset.letter = weapon.letter
+    clone.addEventListener('click', () => callback(weapon.letter))
+    clone.innerHTML = weapon.buttonHtml
+
+    if (clone.id && template.id) {
+      clone.id = `${template.id}-${index}`
+    }
+
+    return clone
   }
 
   /**
@@ -89,22 +199,38 @@ class EnemyUI extends WatersUI {
    * Switches to reveal mode, showing relevant buttons.
    */
   revealMode () {
-    this.revealBtn?.classList?.add('hidden')
-    this.placeBtn?.classList?.remove('hidden')
-    this.restartBtn?.classList?.remove('hidden')
-    this.testBtn?.classList?.remove('hidden')
-    this.weaponBtn?.classList?.add('hidden')
+    this._setButtonHidden(['reveal', 'weapon'], true)
+    this._setButtonHidden(['place', 'restart', 'test'], false)
   }
 
   /**
    * Switches to play mode, showing relevant buttons.
    */
   playMode () {
-    this.revealBtn?.classList?.remove('hidden')
-    this.placeBtn?.classList?.add('hidden')
-    this.restartBtn?.classList?.add('hidden')
-    this.testBtn?.classList?.add('hidden')
-    this.weaponBtn?.classList?.remove('hidden')
+    this._setButtonHidden(['reveal', 'weapon'], false)
+    this._setButtonHidden(['place', 'restart', 'test'], true)
+  }
+
+  /**
+   * Shows or hides buttons by key.
+   * @param {string[]} buttonKeys
+   * @param {boolean} hidden
+   * @private
+   */
+  _setButtonHidden (buttonKeys, hidden) {
+    buttonKeys.forEach(key =>
+      this._toggleElementHidden(this.buttons[key], hidden)
+    )
+  }
+
+  /**
+   * Applies the hidden class to a target element.
+   * @param {HTMLElement|null} element
+   * @param {boolean} hidden
+   * @private
+   */
+  _toggleElementHidden (element, hidden) {
+    element?.classList.toggle('hidden', hidden)
   }
 
   /**
@@ -112,11 +238,7 @@ class EnemyUI extends WatersUI {
    * @param {boolean} [isDisabled=true] - Whether to disable the buttons.
    */
   disableBtns (isDisabled = true) {
-    if (this.revealBtn) this.revealBtn.disabled = isDisabled
-    if (this.placeBtn) this.placeBtn.disabled = isDisabled
-    if (this.restartBtn) this.restartBtn.disabled = isDisabled
-    if (this.testBtn) this.testBtn.disabled = isDisabled
-    if (this.weaponBtn) this.weaponBtn.disabled = isDisabled
+    this._setButtonsDisabled(Object.values(this.buttons), isDisabled)
   }
 
   /**
@@ -124,6 +246,20 @@ class EnemyUI extends WatersUI {
    */
   enableBtns () {
     this.disableBtns(false)
+  }
+
+  /**
+   * Sets disabled state on a collection of buttons.
+   * @param {Array<HTMLElement|null>} buttons
+   * @param {boolean} disabled
+   * @private
+   */
+  _setButtonsDisabled (buttons, disabled) {
+    buttons.forEach(button => {
+      if (button) {
+        button.disabled = disabled
+      }
+    })
   }
 
   /**

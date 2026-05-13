@@ -339,8 +339,12 @@ class Enemy extends Waters {
   _updateButtons () {
     const over = this.isGameOver()
     const disabled = over || this.hasNoAmmo()
-    this.UI.weaponBtn.disabled = disabled
-    this.UI.revealBtn.disabled = over
+    if (this.UI?.weaponBtn) {
+      this.UI.weaponBtn.disabled = disabled
+    }
+    if (this.UI?.revealBtn) {
+      this.UI.revealBtn.disabled = over
+    }
   }
 
   /**
@@ -631,8 +635,12 @@ class Enemy extends Waters {
     if (this.revealHandler == null) {
       this.revealHandler = this.onClickReveal.bind(this)
     }
-    this.UI.weaponBtn.addEventListener('click', this.weaponSelectHandler)
-    this.UI.revealBtn.addEventListener('click', this.revealHandler)
+    if (this.UI?.weaponBtn?.addEventListener) {
+      this.UI.weaponBtn.addEventListener('click', this.weaponSelectHandler)
+    }
+    if (this.UI?.revealBtn?.addEventListener) {
+      this.UI.revealBtn.addEventListener('click', this.revealHandler)
+    }
   }
 
   /**
@@ -645,8 +653,10 @@ class Enemy extends Waters {
     this._oldCursor = null
     this._oldWeaponLetter = null
     this.loadOut.onOutOfAllAmmo = () => {
-      this.UI.weaponBtn.disabled = true
-      this.UI.weaponBtn.textContent = 'single shot'
+      if (this.UI?.weaponBtn) {
+        this.UI.weaponBtn.disabled = true
+        this.UI.weaponBtn.textContent = 'single shot'
+      }
     }
     this.loadOut.onOutOfAmmo = this.updateMode.bind(this)
     this.resetUI(this.ships)

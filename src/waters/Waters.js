@@ -362,21 +362,27 @@ export class Waters {
    * @returns {ShipPlacement|null} Validated placed ships or null
    */
   validatePlacedShips (placed, map) {
-    const placedShips = placed || map.example
-
-    if (Array.isArray(placedShips)) {
-      if (placedShips.length === 0) {
-        this.autoPlace()
-        return null
-      }
-      return { ships: placedShips, map: map.title }
-    } else {
-      if (!placedShips?.ships || placedShips.ships.length === 0) {
-        this.autoPlace()
-        return null
-      }
-      return placedShips
+    const placedShips = this._normalizePlacedShips(placed, map)
+    if (!placedShips || placedShips.ships.length === 0) {
+      this.autoPlace()
+      return null
     }
+    return placedShips
+  }
+
+  /**
+   * Normalizes placed ship input into a ShipPlacement object.
+   * @param {ShipPlacement|Array} placed - Raw placed ships value
+   * @param {Object} map - Map object for fallback example data
+   * @returns {ShipPlacement|null}
+   * @private
+   */
+  _normalizePlacedShips (placed, map) {
+    const placedShips = placed || map.example
+    if (Array.isArray(placedShips)) {
+      return { ships: placedShips, map: map.title }
+    }
+    return placedShips || null
   }
 
   /**
@@ -399,16 +405,35 @@ export class Waters {
 
   /**
    * Creates a normalized weapon selection payload.
-   * @param {number} launchR - Launch row coordinate
-   * @param {number} launchC - Launch column coordinate
-   * @param {number} weaponId - Weapon system ID
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
+   * @param {number|null} launchR - Launch row coordinate
+   * @param {number|null} launchC - Launch column coordinate
+   * @param {number|null} weaponId - Weapon system ID
+   * @param {number|null} hintR - Hint row coordinate
+   * @param {number|null} hintC - Hint column coordinate
    * @returns {WeaponSelection} Weapon selection payload
    * @private
    */
-  createWeaponSelection (launchR, launchC, weaponId, hintR, hintC) {
+  _buildWeaponSelectionPayload (launchR, launchC, weaponId, hintR, hintC) {
     return { launchR, launchC, weaponId, hintR, hintC }
+  }
+
+  /**
+   * Creates a normalized weapon selection payload.
+   * @param {number|null} launchR - Launch row coordinate
+   * @param {number|null} launchC - Launch column coordinate
+   * @param {number|null} weaponId - Weapon system ID
+   * @param {number|null} hintR - Hint row coordinate
+   * @param {number|null} hintC - Hint column coordinate
+   * @returns {WeaponSelection} Weapon selection payload
+   */
+  createWeaponSelection (launchR, launchC, weaponId, hintR, hintC) {
+    return this._buildWeaponSelectionPayload(
+      launchR,
+      launchC,
+      weaponId,
+      hintR,
+      hintC
+    )
   }
 
   /**
@@ -451,13 +476,20 @@ export class Waters {
    * @private
    */
   filterLoadedWeaponKeys (keyIds) {
-    const loadedWeaponIds = new Set(
-      this.loadOut.getLoadedWeapons().map(w => w.id)
-    )
+    const loadedWeaponIds = this._getLoadedWeaponIds()
     return keyIds.filter(key => {
       const [, , weaponId] = parseTriple(key)
       return loadedWeaponIds.has(weaponId)
     })
+  }
+
+  /**
+   * Returns the set of loaded weapon IDs for the current load out.
+   * @returns {Set<number>}
+   * @private
+   */
+  _getLoadedWeaponIds () {
+    return new Set(this.loadOut.getLoadedWeapons().map(w => w.id))
   }
 
   /**
@@ -512,10 +544,15 @@ export class Waters {
       hintR,
       hintC
     )
-    this.lastClick = { r: hintR, c: hintC }
+    this._setLastClick(hintR, hintC)
 
     const filteredKeys = this.filterLoadedWeaponKeys(availableKeys)
-    const selectedKey = this.chooseWeaponKey(filteredKeys, hintR, hintC, random)
+    const selectedKey = this._chooseWeaponKeyOrFallback(
+      filteredKeys,
+      hintR,
+      hintC,
+      random
+    )
 
     if (!selectedKey) {
       return this.selectRandomWeapon()
@@ -523,6 +560,35 @@ export class Waters {
 
     this.previousSources.add(selectedKey)
     return this.processSelectedWeaponKey(selectedKey, viewModel, hintR, hintC)
+  }
+
+  /**
+   * Stores the last click coordinates for repeated selection handling.
+   * @param {number} hintR
+   * @param {number} hintC
+   * @private
+   */
+  _setLastClick (hintR, hintC) {
+    this.lastClick = { r: hintR, c: hintC }
+  }
+
+  /**
+   * Chooses a weapon key or returns null when none are available.
+   * @param {Array<string>} filteredKeys
+   * @param {number} hintR
+   * @param {number} hintC
+   * @param {boolean|string} random
+   * @returns {string|null}
+   * @private
+   */
+  _chooseWeaponKeyOrFallback (filteredKeys, hintR, hintC, random) {
+    if (filteredKeys.length === 0) {
+      return null
+    }
+    if (this.isRandomSelection(random)) {
+      return randomElement(filteredKeys)
+    }
+    return this.findClosestWeaponKey(filteredKeys, hintC, hintR)
   }
 
   /**
@@ -690,9 +756,8 @@ export class Waters {
   retrievePlacedShips (placedShips, map) {
     const stored = localStorage.getItem(this.getClipboardKey())
     placedShips = placedShips || (stored ? JSON.parse(stored) : null)
-
     if (map.title !== placedShips?.map) {
-      placedShips = null
+      return null
     }
     return this.validatePlacedShips(placedShips, map)
   }
@@ -1260,7 +1325,8 @@ export class Waters {
   //onClickOppoCell = null
   setupAttachedAim () {
     const oppo = this.opponent
-    if (bh.seekingMode || !this.loadOut || !oppo || !this.onClickOppoCell) return
+    if (bh.seekingMode || !this.loadOut || !oppo || !this.onClickOppoCell)
+      return
     const armedShips = this.loadOut.getArmedShips()
     for (const ship of armedShips) {
       const cells = oppo.shipCells(ship.id)
@@ -1268,10 +1334,7 @@ export class Waters {
       for (const cell of surround) {
         if (!cell.dataset.listen) {
           const [r, c] = coordsFromCell(cell)
-          cell.addEventListener(
-            'click',
-            this.onClickOppoCell.bind(this, r, c)
-          )
+          cell.addEventListener('click', this.onClickOppoCell.bind(this, r, c))
           cell.dataset.listen = true
           //     const w = ship.getPrimaryWeapon()
           //    const cursor = w?.launchCursor
