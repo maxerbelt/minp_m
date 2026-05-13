@@ -80,14 +80,6 @@ export class ShapeBase {
   }
 
   /**
-   * @deprecated Use columnStride instead. This getter is maintained for backward compatibility.
-   * @type {number}
-   */
-  get rowMax () {
-    return this.columnStride
-  }
-
-  /**
    * Converts a linear index back to 2D coordinates via the indexer.
    *
    * @param {number} index - Linear index in the grid (0-based)

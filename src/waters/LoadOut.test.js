@@ -47,7 +47,7 @@ describe('LoadOut', () => {
     }
     mockViewModel = {
       gridCellAt: jest.fn(() => ({ id: 1 })),
-      cellSizeScreen: jest.fn(() => 10)
+      cellSize: jest.fn(() => 10)
     }
     loadOut = new LoadOut([mockWeapon], [mockShip], mockViewModel, mockSteps)
     loadOut.onDestroy = jest.fn()

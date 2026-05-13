@@ -31,7 +31,7 @@ const mockUI = {
     getTrayItem: jest.fn()
   },
   removeDragShip: jest.fn(),
-  cellSizeScreen: jest.fn(),
+  cellSize: jest.fn(),
   surroundCells: jest.fn(),
   surroundCellElement: jest.fn(),
   makeDroppable: jest.fn(),
@@ -89,8 +89,8 @@ describe('Waters', () => {
     ])
   })
 
-  it('clipboardKey returns correct string', () => {
-    expect(waters.clipboardKey()).toBe('geoffs-battleship.placed-ships')
+  it('_getStorageKey returns correct string', () => {
+    expect(waters._getStorageKey()).toBe('geoffs-battleship.placed-ships')
   })
 
   it('placedShips returns correct object', () => {

@@ -279,32 +279,6 @@ export class WatersUI {
   }
 
   /**
-   * @deprecated Use cellSize instead
-   * @param {Object} [map] - Map configuration
-   * @returns {number} Cell size for screen
-   */
-  cellSizeScreen (map) {
-    return this._calculateCellSize('SCREEN', map)
-  }
-
-  /**
-   * @deprecated Use cellSizeStringList instead
-   * @returns {number} Cell size for list display
-   */
-  cellSizeList () {
-    return this._calculateCellSize('LIST')
-  }
-
-  /**
-   * @deprecated Use cellSizeStringPrint instead
-   * @param {Object} [map] - Map configuration
-   * @returns {number} Cell size for print
-   */
-  cellSizePrint (map) {
-    return this._calculateCellSize('PRINT', map)
-  }
-
-  /**
    * Calculates linear index from 2D grid coordinates.
    * Index = row * columnCount + column (standard row-major ordering).
    *

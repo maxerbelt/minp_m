@@ -44,7 +44,7 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 /**
  * @typedef {Object} ViewModel
  * @property {function(number, number): HTMLElement} gridCellAt - Gets grid cell at coordinates
- * @property {function(): number} cellSizeScreen - Gets cell size for screen
+ * @property {function(): number} cellSize - Gets cell size for screen
  */
 
 /**
@@ -482,7 +482,7 @@ export class LoadOut {
     )
     return weapon.animateExplodeRaw(
       targetCell,
-      viewModel.cellSizeScreen(),
+      viewModel.cellSize(),
       null,
       null
     )

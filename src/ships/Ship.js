@@ -721,7 +721,7 @@ export class Ship {
    * Internal: Process magazine detonation damage in surrounding cells
    * @param {{ animateDetonation: (cell: any, cellSize: number) => void }} weapon - Volatile weapon
    * @param {any} cell - Grid cell where detonation occurs
-   * @param {{ cellSizeScreen: () => number }} viewModel - View model
+   * @param {{ cellSize: () => number }} viewModel - View model
    * @param {any} model - Game model
    * @param {number} r - Row coordinate of detonation center
    * @param {number} c - Column coordinate of detonation center
@@ -731,7 +731,7 @@ export class Ship {
    */
   _processDetonation (weapon, cell, viewModel, model, r, c, damaged) {
     const detonationInfo = 'Magazine Detonated'
-    weapon.animateDetonation(cell, viewModel.cellSizeScreen())
+    weapon.animateDetonation(cell, viewModel.cellSize())
     const { hits, misses } = this._processCellDamage(
       model,
       bh.map.surround(r, c)

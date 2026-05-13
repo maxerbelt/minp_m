@@ -176,14 +176,6 @@ export class AsciiGrid extends GridBase {
   }
 
   /**
-   * @deprecated Use columnStride instead. This getter is maintained for backward compatibility.
-   * @type {number}
-   */
-  get rowMax () {
-    return this.columnStride
-  }
-
-  /**
    * Creates an AsciiGrid from a mask object.
    * Iterates mask.occupiedLocations) and copies set cells to the new grid.
    *

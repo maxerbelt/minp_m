@@ -123,26 +123,6 @@ export class Waters {
   }
 
   /**
-   * Gets the clipboard key for storing placed ships (alias for compatibility).
-   *
-   * @returns {string} The storage key
-   * @deprecated Use _getStorageKey() instead
-   */
-  getClipboardKey () {
-    return this._getStorageKey()
-  }
-
-  /**
-   * Alias for legacy method name.
-   *
-   * @returns {string} The storage key
-   * @deprecated Use _getStorageKey() instead
-   */
-  clipboardKey () {
-    return this._getStorageKey()
-  }
-
-  /**
    * Gets the current placed ships data for serialization.
    * CONSOLIDATED: unified data collection for persistence and export.
    *
@@ -171,7 +151,12 @@ export class Waters {
    */
   storePlacedShips () {
     // Custom replacer to handle BigInt serialization
-    const replacer = (key, value) => {
+    /**
+     * @param {string} _key
+     * @param {unknown} value
+     * @returns {unknown}
+     */
+    const replacer = (_key, value) => {
       if (typeof value === 'bigint') {
         return value.toString()
       }
@@ -179,7 +164,7 @@ export class Waters {
     }
 
     localStorage.setItem(
-      this.getClipboardKey(),
+      this._getStorageKey(),
       JSON.stringify(this.getPlacedShipsData(), replacer)
     )
   }
@@ -609,22 +594,6 @@ export class Waters {
   }
 
   /**
-   * Chooses a weapon key either randomly or by proximity.
-   * @param {Array<string>} filteredKeys - Filtered weapon keys
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @param {boolean|string} random - Whether to select randomly
-   * @returns {string|null} Selected weapon key
-   * @private
-   */
-  chooseWeaponKey (filteredKeys, hintR, hintC, random) {
-    if (this.isRandomSelection(random) || filteredKeys.length === 0) {
-      return randomElement(filteredKeys)
-    }
-    return this.findClosestWeaponKey(filteredKeys, hintC, hintR)
-  }
-
-  /**
    * Determines whether a selection strategy should be random.
    * @param {boolean|string} random - Selection mode
    * @returns {boolean} True when random selection should be used
@@ -757,7 +726,7 @@ export class Waters {
    * @returns {ShipPlacement|null} Retrieved or validated placed ships
    */
   retrievePlacedShips (placedShips, map) {
-    const stored = localStorage.getItem(this.getClipboardKey())
+    const stored = localStorage.getItem(this._getStorageKey())
     placedShips = placedShips || (stored ? JSON.parse(stored) : null)
     if (map.title !== placedShips?.map) {
       return null
@@ -1550,7 +1519,7 @@ export class Waters {
   }
 
   async animateStrikeSplash (targetCoords, weapon) {
-    const cellSize = this.UI.cellSizeScreen()
+    const cellSize = this.UI.cellSize()
     const targetCell = this.UI.gridCellAt(targetCoords[0], targetCoords[1])
     await weapon.animateSplashExplode(targetCell, cellSize)
   }

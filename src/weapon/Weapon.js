@@ -464,7 +464,7 @@ export class Weapon {
     const { container, end } = await this.animateFlying(
       sourceCell,
       endCell,
-      viewModel.cellSizeScreen(),
+      viewModel.cellSize(),
       options,
       viewModel
     )
@@ -783,7 +783,7 @@ export class Weapon {
     return await this.animateFlying(
       source,
       target,
-      viewModel.cellSizeScreen(),
+      viewModel.cellSize(),
       this.defaultAnimateOptions,
       viewModel
     )
