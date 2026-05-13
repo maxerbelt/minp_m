@@ -1,4 +1,3 @@
-import { has } from '../grid/bitStore/helpers/bitHelpers.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 
@@ -30,14 +29,14 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  */
 
 /**
- * @typedef {Object} WeaponSystem
+ * @typedef {Object} WeaponsSystem
  * @property {Weapon} weapon - The weapon object
  * @property {number} ammo - Current ammo count
  * @property {function(): number} ammoCapacity - Total ammo capacity
  * @property {function(): number} ammoRemaining - Remaining ammo count
  * @property {function(): boolean} hasAmmoRemaining - Checks if has ammo remaining
  * @property {function(): void} useAmmo - Consumes ammo
- * @property {function(): WeaponSystem|undefined} getUnattachedWeapon - Gets unattached weapon
+ * @property {function(): WeaponsSystem|undefined} getUnattachedWeapon - Gets unattached weapon
  * @property {function(): boolean} hasAmmo - Checks if has ammo
  */
 
@@ -60,7 +59,7 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 /**
  * @typedef {Object} CursorInfo
  * @property {string} cursor - Current cursor type
- * @property {WeaponSystem} weaponSystem - Current weapon system
+ * @property {WeaponsSystem} weaponSystem - Current weapon system
  * @property {number} index - Current index
  */
 
@@ -68,7 +67,7 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @typedef {Object} FiringInfo
  * @property {number[][]} fireCoordinates - Target coordinates
  * @property {function(Object): Promise<FireResult>} fireWeapon - Weapon firing function
- * @property {WeaponSystem} [wps] - Weapon system being fired
+ * @property {WeaponsSystem} [wps] - Weapon system being fired
  * @property {Weapon} [weapon] - Weapon being fired
  * @property {boolean} [hasUnattached] - Whether unattached weapon is involved
  */
@@ -141,7 +140,7 @@ export class LoadOut {
    * @param {Object} map - Game map
    * @param {number} row - Target row
    * @param {number} col - Target column
-   * @param {WeaponSystem} [weaponSystem] - Override weapon system
+   * @param {WeaponsSystem} [weaponSystem] - Override weapon system
    * @param {function} [launch] - Custom launch animation (defaults to static method)
    * @returns {Promise<{weapon: Weapon, score: FireResult}|FiringInfo>} Firing result
    */
@@ -165,7 +164,7 @@ export class LoadOut {
    * @param {Object} map - Game map
    * @param {number} row - Selected row
    * @param {number} col - Selected column
-   * @param {WeaponSystem} [weaponSystem] - Override weapon system
+   * @param {WeaponsSystem} [weaponSystem] - Override weapon system
    * @returns {FiringInfo|null} Complete firing info if ready, null/partial if still selecting
    */
   firingInfoIfReady (map, row, col, weaponSystem) {
@@ -200,10 +199,10 @@ export class LoadOut {
    * Checks if weapon selection is complete.
    * Compares selected coordinates against weapon point requirements.
    *
-   * @param {WeaponSystem} weaponSystem - Weapon being checked
+   * @param {WeaponsSystem} weaponSystem - Weapon being checked
    * @param {boolean} hasUnattached - Whether unattached weapon is involved
    * @returns {boolean} True if selection is complete
-   * @private
+   * @privates
    */
   _isSelectionComplete (weaponSystem, hasUnattached) {
     const neededPoints = weaponSystem.weapon.points
@@ -217,7 +216,7 @@ export class LoadOut {
    * Builds firing metadata: coordinates and firing function.
    * CONSOLIDATED: single method for all firing prep.
    *
-   * @param {WeaponSystem} wps - Weapon being fired
+   * @param {WeaponsSystem} wps - Weapon being fired
    * @param {Object} map - Game map
    * @returns {{fireCoordinates: number[][], fireWeapon: function}} Firing data
    * @private
@@ -236,7 +235,7 @@ export class LoadOut {
    *
    * @param {Object} map - Game map
    * @param {number[][]} fireCoordinates - Coordinates to fire at
-   * @param {WeaponSystem} wps - Weapon system
+   * @param {WeaponsSystem} wps - Weapon system
    * @returns {function(Object): Promise<FireResult>} Function to execute firing
    * @private
    */
@@ -250,7 +249,7 @@ export class LoadOut {
    *
    * @param {Object} map - Game map
    * @param {number[][]} coordinates - Target coordinates
-   * @param {WeaponSystem} weaponSystem - Weapon system
+   * @param {WeaponsSystem} weaponSystem - Weapon system
    * @param {Object} target - Target information
    * @returns {Promise<FireResult>} Result of firing
    */
@@ -272,7 +271,7 @@ export class LoadOut {
    * Computes affected area and options for firing.
    *
    * @param {number[][]} coordinates - Target coordinates
-   * @param {WeaponSystem} weaponSystem - Weapon system
+   * @param {WeaponsSystem} weaponSystem - Weapon system
    * @param {Object} map - Game map
    * @returns {{weapon: Weapon, affectedArea: Array, options: Object}} Fire info
    * @private
@@ -323,7 +322,7 @@ export class LoadOut {
    * Fires single-shot weapon at coordinates.
    *
    * @param {number[][]} coordinates - Target coordinates
-   * @param {WeaponSystem} [sShot] - Single shot weapon (defaults to index 0)
+   * @param {WeaponsSystem} [sShot] - Single shot weapon (defaults to index 0)
    * @returns {Promise<FireResult>} Result of firing
    */
   fireSingleShot (coordinates, sShot) {
@@ -337,9 +336,9 @@ export class LoadOut {
   /**
    * Builds single-shot weapon firing info.
    *
-   * @param {WeaponSystem} [sShot] - Single shot weapon
+   * @param {WeaponsSystem} [sShot] - Single shot weapon
    * @param {number[][]} [coordinates] - Target coordinates
-   * @returns {{weapon: Weapon, affectedLoc: Array, wps: WeaponSystem}} Single shot info
+   * @returns {{weapon: Weapon, affectedLoc: Array, wps: WeaponsSystem}} Single shot info
    * @private
    */
   _buildSingleShotInfo (sShot, coordinates) {
@@ -353,10 +352,10 @@ export class LoadOut {
   /**
    * Gets info for single-shot aiming interaction.
    *
-   * @param {WeaponSystem} [sShot] - Single shot weapon
+   * @param {WeaponsSystem} [sShot] - Single shot weapon
    * @param {number} row - Target row
    * @param {number} col - Target column
-   * @returns {{fireSingleShot: function, wps: WeaponSystem, coordinates: number[][], weapon: Weapon}} Aim info
+   * @returns {{fireSingleShot: function, wps: WeaponsSystem, coordinates: number[][], weapon: Weapon}} Aim info
    */
   aimSingleShotInfo (sShot, row, col) {
     sShot = sShot || this.getSingleShotWps()
@@ -505,8 +504,8 @@ export class LoadOut {
    * Builds the weapon dictionary from unattached systems and attached weapons.
    * Attached weapons override unattached ones with the same letter.
    *
-   * @param {WeaponSystem[]} unattachedSystems - Unattached weapon systems
-   * @returns {Object<string, WeaponSystem>} Weapon dictionary indexed by letter
+   * @param {WeaponsSystem[]} unattachedSystems - Unattached weapon systems
+   * @returns {Object<string, WeaponsSystem>} Weapon dictionary indexed by letter
    * @private
    */
   buildWeaponDictionary (unattachedSystems) {
@@ -517,8 +516,8 @@ export class LoadOut {
   /**
    * Creates a map of weapon systems keyed by weapon letter.
    *
-   * @param {WeaponSystem[]} weaponSystems - Weapon systems to map
-   * @returns {Object<string, WeaponSystem>} Letter-keyed map
+   * @param {WeaponsSystem[]} weaponSystems - Weapon systems to map
+   * @returns {Object<string, WeaponsSystem>} Letter-keyed map
    * @private
    */
   createLetterMap (weaponSystems) {
@@ -532,8 +531,8 @@ export class LoadOut {
    * Adds attached weapons from ships to the dictionary.
    * Attached weapons of same letter create multi-system entries.
    *
-   * @param {Object<string, WeaponSystem>} weaponByLetter - Existing dictionary
-   * @returns {Object<string, WeaponSystem>} Updated dictionary with attached weapons
+   * @param {Object<string, WeaponsSystem>} weaponByLetter - Existing dictionary
+   * @returns {Object<string, WeaponsSystem>} Updated dictionary with attached weapons
    * @private
    */
   addAttachedWeapons (weaponByLetter) {
@@ -554,7 +553,7 @@ export class LoadOut {
    *
    * @static
    * @param {Weapon[]} weapons - Weapons to convert
-   * @returns {WeaponSystem[]} Weapon systems
+   * @returns {WeaponsSystem[]} Weapon systems
    */
   static createWeaponSystems (weapons) {
     return weapons.map(weapon => new WeaponSystem(weapon))
@@ -572,7 +571,7 @@ export class LoadOut {
   /**
    * Gets the unattached weapon system for the current selection.
    *
-   * @returns {WeaponSystem|undefined} Unattached weapon system if available
+   * @returns {WeaponsSystem|undefined} Unattached weapon system if available
    */
   getUnattachedWeaponSystem () {
     return this.getCurrentWeaponSystem()?.getUnattachedWeapon()
@@ -581,7 +580,7 @@ export class LoadOut {
   /**
    * Gets weapon systems that have limited ammo (current set).
    *
-   * @returns {WeaponSystem[]} Limited weapon systems in current arsenal
+   * @returns {WeaponsSystem[]} Limited weapon systems in current arsenal
    */
   getLimitedWeaponSystems () {
     return this.weaponSystems.filter(wps => wps.weapon.isLimited)
@@ -591,7 +590,7 @@ export class LoadOut {
    * Gets all weapon systems that have limited ammo (all-time).
    * Includes weapons that may have been depleted.
    *
-   * @returns {WeaponSystem[]} All limited weapon systems
+   * @returns {WeaponsSystem[]} All limited weapon systems
    */
   getAllLimitedWeaponSystems () {
     return this.allWeaponSystems.filter(wps => wps.weapon.isLimited)
@@ -636,7 +635,7 @@ export class LoadOut {
    * Validates whether a weapon system has usable ammo.
    * UNIFIED ammo validation: encapsulates the logic for checking if a weapon can fire.
    *
-   * @param {WeaponSystem} weaponSystem - Weapon system to check
+   * @param {WeaponsSystem} weaponSystem - Weapon system to check
    * @returns {boolean} True if the weapon can fire (unlimited weapons always fire-ready)
    * @private
    */
@@ -662,7 +661,7 @@ export class LoadOut {
    * Checks if a weapon is available for firing.
    * CONSOLIDATED: unifies weapon availability checks across different contexts.
    *
-   * @param {WeaponSystem} weaponSystem - Weapon system to check
+   * @param {WeaponsSystem} weaponSystem - Weapon system to check
    * @param {string} weaponLetter - Weapon letter to match
    * @returns {boolean} True if letter matches and weapon has ammo
    * @private
@@ -676,7 +675,7 @@ export class LoadOut {
   /**
    * Gets the current weapon system by index.
    *
-   * @returns {WeaponSystem} Current weapon system
+   * @returns {WeaponsSystem} Current weapon system
    */
   getCurrentWeaponSystem () {
     return this.weaponSystems[this.currentWeaponIndex]
@@ -695,7 +694,7 @@ export class LoadOut {
   /**
    * Gets the first/single-shot weapon system (index 0).
    *
-   * @returns {WeaponSystem} Single shot weapon system
+   * @returns {WeaponsSystem} Single shot weapon system
    */
   getSingleShotWps () {
     return this.weaponSystems[0]
@@ -713,7 +712,7 @@ export class LoadOut {
   /**
    * Gets next weapon system in rotation.
    *
-   * @returns {WeaponSystem} Next weapon system
+   * @returns {WeaponsSystem} Next weapon system
    */
   getNextWeaponSystem () {
     return this.weaponSystems[this.getNextWeaponIndex()]
@@ -948,7 +947,7 @@ export class LoadOut {
   /**
    * Determines if unattached weapon should advance cursor on selection clear.
    *
-   * @param {WeaponSystem|undefined} unattachedWeaponSystem - Weapon to check
+   * @param {WeaponsSystem|undefined} unattachedWeaponSystem - Weapon to check
    * @returns {boolean} True if weapon uses unattached cursor advancement
    * @private
    */
@@ -964,7 +963,7 @@ export class LoadOut {
    * IMPROVED: clearer logic separation for unattached cursor handling.
    *
    * @param {string} oldCursor - Previous cursor
-   * @param {WeaponSystem|undefined} unattachedWeaponSystem - Unattached weapon
+   * @param {WeaponsSystem|undefined} unattachedWeaponSystem - Unattached weapon
    * @private
    */
   _handleUnattachedCursorSelection (oldCursor, unattachedWeaponSystem) {
@@ -1058,7 +1057,7 @@ export class LoadOut {
    * Consumes ammo for a weapon system.
    * Automatically removes weapon if ammo depleted.
    *
-   * @param {WeaponSystem} [weaponSystem] - Weapon to consume ammo from (defaults to current)
+   * @param {WeaponsSystem} [weaponSystem] - Weapon to consume ammo from (defaults to current)
    */
   useAmmo (weaponSystem) {
     const wps = weaponSystem || this.getCurrentWeaponSystem()
