@@ -1,6 +1,6 @@
 // src/grid/ForLocation.test.js
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
 /* global describe, it, expect */
 import { ForLocation } from './ForLocation'
 
@@ -49,17 +49,17 @@ describe('ForLocation', () => {
     expect(store.check).toHaveBeenCalledWith(1)
     // bitMaskByPos called for the location position
     expect(store.bitMaskByPos).toHaveBeenCalledWith(newPos)
-    // clearBits called with original bits and the mask for pos
+    // clearMaskBits called with original bits and the mask for pos
     const expectedMask = 1n << BigInt(newPos)
-    expect(store.clearBits).toHaveBeenCalledWith(initialBits, expectedMask)
+    expect(store.clearMaskBits).toHaveBeenCalledWith(initialBits, expectedMask)
     // setMask called for pos and color
     expect(store.setMask).toHaveBeenCalledWith(newPos, 1)
 
     // result should include the previously set bit and the newly set bit
     const expectedBits = (initialBits & ~expectedMask) | (1n << BigInt(newPos))
     expect(result).toBe(expectedBits)
-    // instance bits updated
-    expect(loc.bits).toBe(expectedBits)
+
+    expect(loc.cellBits).toBe(expectedBits)
   })
 
   it('set with color 0 clears the bit at position', () => {
@@ -73,10 +73,10 @@ describe('ForLocation', () => {
     expect(store.check).toHaveBeenCalledWith(0)
     // resulting bits should have that bit cleared
     expect(result & (1n << BigInt(pos))).toBe(0n)
-    expect(loc.bits & (1n << BigInt(pos))).toBe(0n)
+    expect(loc.cellBits & (1n << BigInt(pos))).toBe(0n)
   })
 
-  it('clearBits delegates to store.clearBits and returns its result', () => {
+  it('clearMaskBits delegates to store.clearBits and returns its result', () => {
     const pos = 0
     const initialBits = (1n << 2n) | (1n << 5n)
     const store = makeMockStore(initialBits)
@@ -85,7 +85,7 @@ describe('ForLocation', () => {
     const loc = new ForLocation(pos, initialBits, store)
 
     const mask = 1n << 5n
-    const out = loc.clearBits(mask)
+    const out = loc.clearMaskBits(mask)
     expect(store.clearBits).toHaveBeenCalledWith(initialBits, mask)
     expect(out).toBe(initialBits & ~mask)
   })

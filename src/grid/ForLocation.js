@@ -24,7 +24,6 @@ export class ForLocation {
 
     /**
      * @type {bigint}
-     * @private
      */
     this.cellBits = cellBits
 
@@ -186,15 +185,6 @@ export class ForLocation {
 
   set bits (value) {
     this.cellBits = value
-  }
-
-  /**
-   * @deprecated Use bitPosition property instead (renamed for clarity)
-   * @private
-   * @type {number}
-   */
-  get pos () {
-    return this.bitPosition
   }
 
   /**
