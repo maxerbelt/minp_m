@@ -164,23 +164,9 @@ export class BitGrid {
    *
    * @param {bigint} bitboard - Bitboard to check
    * @returns {boolean} True if fast path should be used for value retrieval
-   * @private
    */
   #shouldUseFastPath (bitboard) {
     return this.fast && this.store.bitsOccupied && this.store.bitWidth === 1
-  }
-
-  /**
-   * Legacy alias for locationsWithValues(bitboard, false).
-   * Yields all cells with their values.
-   *
-   * @deprecated Use locationsWithValues(bitboard, false) instead
-   * @param {bigint} bitboard - Bitboard to iterate
-   * @generator
-   * @yields {[number, number, bigint]} [x, y, value] tuples
-   */
-  *locationAndValues (bitboard) {
-    yield* this.locationsWithValues(bitboard, false)
   }
 
   /**

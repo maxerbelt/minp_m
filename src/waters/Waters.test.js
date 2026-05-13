@@ -93,8 +93,8 @@ describe('Waters', () => {
     expect(waters._getStorageKey()).toBe('geoffs-battleship.placed-ships')
   })
 
-  it('placedShips returns correct object', () => {
-    const result = waters.placedShips()
+  it('getPlacedShipsData returns correct object', () => {
+    const result = waters.getPlacedShipsData()
     expect(result).toHaveProperty('ships')
     expect(result).toHaveProperty('shipCellGrid')
     expect(result).toHaveProperty('map')

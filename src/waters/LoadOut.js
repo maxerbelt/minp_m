@@ -833,16 +833,6 @@ export class LoadOut {
   }
 
   /**
-   * Switches to next weapon (alias for switchToNextWeaponSystem).
-   *
-   * @returns {Weapon} The new current weapon
-   * @deprecated Use switchToNextWeaponSystem() instead
-   */
-  switchWeapon () {
-    return this.switchToNextWeaponSystem()
-  }
-
-  /**
    * Checks if current weapon is the single-shot weapon.
    *
    * @returns {boolean} True if at index 0

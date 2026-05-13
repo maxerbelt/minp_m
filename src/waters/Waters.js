@@ -137,16 +137,6 @@ export class Waters {
   }
 
   /**
-   * Alias for legacy method name.
-   *
-   * @returns {ShipPlacement} Current ship placement data
-   * @deprecated Use getPlacedShipsData() instead
-   */
-  placedShips () {
-    return this.getPlacedShipsData()
-  }
-
-  /**
    * Stores the current ship placement to local storage.
    */
   storePlacedShips () {

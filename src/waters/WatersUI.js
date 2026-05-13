@@ -1312,24 +1312,15 @@ export class WatersUI {
    * @param {Object} group - Group object keyed by ship letter
    * @param {Object} ship - Ship object with letter and shape() method
    * @returns {void}
-   * @private
    */
-  _addShipToGroup (group, ship) {
+  addShipToGroup (group, ship) {
     const key = ship.letter
     let value = group[key] || { shape: ship.shape(), count: 0 }
     value.count++
     group[key] = value
   }
 
-  /**
-   * @deprecated Use _addShipToGroup instead (kept for backward compatibility)
-   * @param {Object} group - Group object
-   * @param {Object} ship - Ship object
-   * @returns {void}
-   */
-  addToGroup (group, ship) {
-    this._addShipToGroup(group, ship)
-  }
+ 
 
   /**
    * Groups ships by unit type with shape and count info.
@@ -1344,7 +1335,7 @@ export class WatersUI {
     return ships.reduce((acc, ship) => {
       const unitType = this.getUnitType(ship)
       const group = acc[unitType] || {}
-      this._addShipToGroup(group, ship)
+      this.addShipToGroup(group, ship)
       acc[unitType] = group
       return acc
     }, {})

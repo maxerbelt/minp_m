@@ -1184,22 +1184,6 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * Adds a ship to a group/map accumulator, incrementing count.
-   * Used in reduce operations for grouping ships by letter.
-   *
-   * @param {Object<string, Object>} group - Accumulator map of ships by letter
-   * @param {Object} ship - Ship to add to group
-   * @returns {void}
-   * @private
-   */
-  #addToGroup (group, ship) {
-    const key = ship.letter
-    let value = group[key] || { shape: ship.shape(), count: 0 }
-    value.count++
-    group[key] = value
-  }
-
-  /**
    * Splits ship array into groups by normalized unit type.
    * Creates a map of unit types to ship groups for categorization.
    *
@@ -1210,7 +1194,7 @@ export class PlacementUI extends WatersUI {
     return ships.reduce((acc, ship) => {
       const key = this.#normalizeUnitType(ship.type())
       const group = acc[key] || {}
-      this.#addToGroup(group, ship)
+      this.addShipToGroup(group, ship)
       acc[key] = group
       return acc
     }, {})

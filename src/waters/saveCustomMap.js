@@ -33,7 +33,7 @@ export function saveCustomMap (map) {
   if (hasPlacedShips()) {
     map.weapons = filterWeaponsWithAmmo(map.weapons)
     custom.store()
-    bh.maps.addCurrentCustomMap(custom.placedShips())
+    bh.maps.addCurrentCustomMap(custom.getPlacedShipsData())
   }
 }
 

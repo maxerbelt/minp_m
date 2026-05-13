@@ -251,7 +251,7 @@ class Enemy extends Waters {
    */
   switchMode () {
     if (this.isGameOver() || this.hasNoAmmo()) return
-    this.loadOut.switchWeapon()
+    this.loadOut.switchToNextWeaponSystem()
     this.updateUI()
   }
 
