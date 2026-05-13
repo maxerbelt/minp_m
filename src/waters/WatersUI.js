@@ -162,19 +162,6 @@ export class WatersUI {
   }
 
   /**
-   * Checks if a cell contains any of the specified CSS classes.
-   * Used to query cell state without knowing exact state class.
-   *
-   * @param {HTMLElement} cell - DOM element to check
-   * @param {string[]} classNames - Array of class names to test
-   * @returns {boolean} True if cell has any of the specified classes
-   * @private
-   */
-  _cellContainsAny (cell, classNames) {
-    return classNames.some(className => cell.classList.contains(className))
-  }
-
-  /**
    * Iterates over grid coordinates, calling callback for each cell position.
    * Provides functional interface to grid enumeration for board construction.
    *
