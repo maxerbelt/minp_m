@@ -1,5 +1,7 @@
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach, afterEach, jest */
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
+
 import { SubMask } from './SubMask.js'
 import { Mask } from './rectangle/mask.js'
 
@@ -9,7 +11,7 @@ describe('SubMask', () => {
 
   beforeEach(() => {
     // Create a 10x10 parent mask
-    parentMask = new Mask(10, 10)
+    parentMask = new Mask(10, 10, 0n, undefined, 2)
 
     // Create a 5x5 window starting at offset (2, 2)
     subMask = new SubMask(parentMask, 2, 2, 5, 5)
@@ -164,7 +166,7 @@ describe('SubMask', () => {
     it('for() returns ForLocation helper for valid window coordinates', () => {
       const forHelper = subMask.for(1, 1)
       expect(forHelper).toBeDefined()
-      expect(forHelper.bits).toBe(parentMask.bits)
+      expect(forHelper.cellBits).toBe(parentMask.bits)
     })
 
     it('for() throws for out-of-bounds coordinates', () => {
