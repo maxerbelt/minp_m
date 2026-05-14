@@ -9,41 +9,74 @@ import { AudioManager } from './core/AudioManager.js'
 
 /**
  * @typedef {Object} EnemyUI
- * @property {Function} resetBoardSize - Resets enemy board display dimensions
+ * @property {Function} resetBoardSize - Resets enemy board display dimensions.
  */
-
-// Initialize UI manager for visibility control
-const uiManager = new UIVisibilityManager()
-const stateManager = new GameStateManager('seek')
 
 /**
- * Prepares the board reset callback for game initialization.
- * @returns {Function} Bound reset function
+ * @typedef {Object} ModeCallbacks
+ * @property {Function} onInit - Called when a mode is initialized.
+ * @property {Function} onExit - Called when a mode is exited.
+ */
+
+const SEEK_MODE = 'seek'
+const NAVBAR_TITLE = "Geoff's Hidden Battle (Seek)"
+
+const uiManager = new UIVisibilityManager()
+const stateManager = new GameStateManager(SEEK_MODE)
+
+/**
+ * Creates a bound callback for resetting the enemy board size.
+ * @returns {Function} Bound reset callback.
  * @private
  */
-function _getBoardResetCallback () {
+function _createBoardResetCallback () {
   return enemyUI.resetBoardSize.bind(enemyUI)
 }
 
 /**
- * Creates the game start callback for use in setup.
- * @returns {Function} Callback to start new game
+ * Creates a callback that starts the seek game mode.
+ * @returns {Function} Start game callback.
  * @private
  */
-function _getGameStartCallback () {
-  return () => newGame('seek')
+function _createGameStartCallback () {
+  return () => newGame(SEEK_MODE, () => {}, null)
 }
 
 /**
- * Configures game options with callbacks for board reset and game start.
+ * Configures game options for seek mode.
  * @private
  */
-function _setupGameConfiguration () {
-  setupGameOptions(_getBoardResetCallback(), _getGameStartCallback())
+function _configureSeekGameOptions () {
+  setupGameOptions(_createBoardResetCallback(), _createGameStartCallback())
 }
 
 /**
- * Sets up enemy player for seek mode gameplay.
+ * Creates the seek mode lifecycle callbacks.
+ * @returns {ModeCallbacks} Mode callback handlers.
+ * @private
+ */
+function _buildSeekModeCallbacks () {
+  return {
+    onInit: _initializeSeekMode,
+    onExit: () => {
+      // No explicit cleanup required for seek mode.
+    }
+  }
+}
+
+/**
+ * Registers seek mode callbacks and visible UI state.
+ * @private
+ */
+function _registerSeekMode () {
+  stateManager.registerModeCallbacks(SEEK_MODE, _buildSeekModeCallbacks())
+  stateManager.saveUIVisibility(SEEK_MODE, {
+    'choose-map-container': true
+  })
+}
+
+/**
+ * Loads enemy configuration for seek mode.
  * @private
  */
 function _setupEnemyPlayer () {
@@ -51,45 +84,7 @@ function _setupEnemyPlayer () {
 }
 
 /**
- * Starts a new game in seek mode.
- * Initializes the game state and begins play.
- * @private
- */
-function _startSeekGame () {
-  newGame('seek')
-}
-
-/**
- * Initializes seek mode gameplay.
- * Coordinates setup of game options, enemy player, and game start.
- * @private
- */
-function _initializeSeekMode () {
-  _setupGameConfiguration()
-  _setupEnemyPlayer()
-  _startSeekGame()
-}
-
-/**
- * Registers seek mode callbacks and UI configuration with state manager.
- * @private
- */
-function _registerSeekMode () {
-  stateManager.registerModeCallbacks('seek', {
-    onInit: _initializeSeekMode,
-    onExit: () => {
-      // Cleanup happens automatically
-    }
-  })
-
-  stateManager.saveUIVisibility('seek', {
-    'choose-map-container': true
-  })
-}
-
-/**
- * Initializes audio manager for seek mode.
- * Sets up audio playback and effects.
+ * Initializes audio services for seek mode.
  * @private
  */
 function _initializeAudio () {
@@ -98,26 +93,33 @@ function _initializeAudio () {
 }
 
 /**
- * Loads and applies seek mode UI from navbar.
- * Displays the navigation bar and applies saved UI visibility state.
+ * Loads the navigation bar and applies saved visibility state.
  * @private
  */
-async function _loadAndApplyUI () {
-  await fetchNavBar('seek', "Geoff's Hidden Battle (Seek)")
-  stateManager.applyUIVisibility(uiManager, 'seek')
+async function _loadSeekUI () {
+  await fetchNavBar(SEEK_MODE, NAVBAR_TITLE)
+  stateManager.applyUIVisibility(uiManager, SEEK_MODE)
 }
 
 /**
- * Initializes the seek game mode.
- * Orchestrates registration, audio setup, UI loading, and game initialization.
+ * Initializes seek mode state and starts the game.
+ * @private
+ */
+function _initializeSeekMode () {
+  _configureSeekGameOptions()
+  _setupEnemyPlayer()
+  newGame(SEEK_MODE, () => {}, null)
+}
+
+/**
+ * Bootstraps the seek game mode.
  * @private
  */
 async function _initializeSeekGameMode () {
   _registerSeekMode()
   _initializeAudio()
-  await _loadAndApplyUI()
+  await _loadSeekUI()
   _initializeSeekMode()
 }
 
-// Start seek game initialization
-_initializeSeekGameMode()
+await _initializeSeekGameMode()
