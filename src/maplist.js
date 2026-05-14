@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Map list management for displaying and interacting with battle maps.
+ * Provides UI for listing, renaming, deleting, duplicating, and exporting maps.
+ */
+
 import { bh } from './terrains/all/js/bh.js'
 import { WatersUI } from './waters/WatersUI.js'
 import { Waters } from './waters/Waters.js'
@@ -8,8 +13,23 @@ import { switchToEdit, fetchNavBar } from './navbar/navbar.js'
 import { trackClick } from './navbar/gtag.js'
 import { ButtonManager } from './ui/ButtonManager.js'
 
-const MAX_BOARD_WIDTH = 200
-const MIN_TALLY_WIDTH = 160
+/**
+ * Maximum width for board display in pixels.
+ * @constant {number}
+ */
+const MAX_BOARD_WIDTH = 400
+
+/**
+ * Minimum width for tally box display in pixels.
+ * @constant {number}
+ */
+const MIN_TALLY_WIDTH = 200
+
+/**
+ * Default list includes option (custom maps).
+ * @constant {string}
+ */
+const DEFAULT_LIST_INCLUDES = '0'
 
 /**
  * @typedef {Object} MapModel
@@ -36,19 +56,34 @@ const MIN_TALLY_WIDTH = 160
  * @property {HTMLButtonElement[]} buttonList
  */
 
+/**
+ * Manages the display and interaction of a list of maps.
+ * Handles map listing, renaming, deletion, duplication, and export operations.
+ */
 class MapList {
-  constructor (id) {
-    this.listId = id || 'list-container'
-    this.container = this._findElement(this.listId)
-    this.input = this._findElement('inputField')
-    this.inputDiv = this._findElement('inputDiv')
-    this.okBtn = this._findElement('okBtn')
-    this.cancelBtn = this._findElement('cancelBtn')
-
+  /**
+   * @param {string} [listId='list-container'] - ID of the container element.
+   */
+  constructor (listId = 'list-container') {
+    /** @type {string} */
+    this.listId = listId
+    /** @type {HTMLElement} */
+    this.container = this._findElement(listId)
+    /** @type {HTMLInputElement} */
+    this.input = /** @type {HTMLInputElement} */ this._findElement('inputField')
+    /** @type {HTMLDivElement} */
+    this.inputDiv = /** @type {HTMLDivElement} */ this._findElement('inputDiv')
+    /** @type {HTMLButtonElement} */
+    this.okBtn = /** @type {HTMLButtonElement} */ this._findElement('okBtn')
+    /** @type {HTMLButtonElement} */
+    this.cancelBtn =
+      /** @type {HTMLButtonElement} */ this._findElement('cancelBtn')
+    /** @type {RenameEntry|null} */
     this.currentRenameEntry = null
-    this.listIncludes = '0'
+    /** @type {string} */
+    this.listIncludes = DEFAULT_LIST_INCLUDES
 
-    this._registerRenameDialogButtons()
+    this._bindRenameEvents()
   }
 
   /**
@@ -58,6 +93,14 @@ class MapList {
    */
   _findElement (id) {
     return /** @type {HTMLElement} */ (document.getElementById(id))
+  }
+
+  /**
+   * @private
+   */
+  _bindRenameEvents () {
+    this.okBtn.addEventListener('click', this.renameOk.bind(this))
+    this.cancelBtn.addEventListener('click', this.renameCancel.bind(this))
   }
 
   /**
@@ -387,24 +430,51 @@ class MapList {
    * @returns {[HTMLDivElement, HTMLDivElement]}
    */
   setupTallyBox (idx, entryContent) {
-    const boardWrapper = document.createElement('div')
-    boardWrapper.className = 'board-wrap map-list'
-    boardWrapper.style.minWidth = `${MIN_TALLY_WIDTH}px`
-
-    const tallyContainer = document.createElement('div')
-    tallyContainer.className = 'tally-box-container map-list'
-    tallyContainer.id = `tally-container-${idx}`
-    tallyContainer.style.minWidth = `${MIN_TALLY_WIDTH}px`
-
-    const tallyBox = document.createElement('div')
-    tallyBox.id = `${idx}-tallybox`
-    tallyBox.className = 'tally-boxes'
+    const boardWrapper = this._createTallyBoardWrapper()
+    const tallyContainer = this._createTallyContainer(idx)
+    const tallyBox = this._createTallyBox(idx)
 
     tallyContainer.appendChild(tallyBox)
     boardWrapper.appendChild(tallyContainer)
     entryContent.appendChild(boardWrapper)
 
     return [tallyBox, boardWrapper]
+  }
+
+  /**
+   * @private
+   * @returns {HTMLDivElement}
+   */
+  _createTallyBoardWrapper () {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'board-wrap map-list'
+    wrapper.style.minWidth = `${MIN_TALLY_WIDTH}px`
+    return wrapper
+  }
+
+  /**
+   * @private
+   * @param {number} idx
+   * @returns {HTMLDivElement}
+   */
+  _createTallyContainer (idx) {
+    const container = document.createElement('div')
+    container.className = 'tally-box-container map-list'
+    container.id = `tally-container-${idx}`
+    container.style.minWidth = `${MIN_TALLY_WIDTH}px`
+    return container
+  }
+
+  /**
+   * @private
+   * @param {number} idx
+   * @returns {HTMLDivElement}
+   */
+  _createTallyBox (idx) {
+    const tallyBox = document.createElement('div')
+    tallyBox.id = `${idx}-tallybox`
+    tallyBox.className = 'tally-boxes'
+    return tallyBox
   }
 
   /**
@@ -430,17 +500,8 @@ class MapList {
    * @param {number} idx
    */
   addEntry (map, idx) {
-    const entry = document.createElement('div')
-    entry.id = `custom-map-${map.title}`
-    entry.className = 'map-entry'
-    entry.classList.add('info-wrap', idx % 2 ? 'alt' : 'standard')
-
-    const entryTitle = document.createElement('h2')
-    entryTitle.textContent = map.title
-    entry.appendChild(entryTitle)
-
-    const entryContent = document.createElement('div')
-    entryContent.className = 'entry-container'
+    const entry = this._createMapEntry(map, idx)
+    const entryContent = this._createEntryContent()
 
     const boardViewModel = new WatersUI()
     const boardNode = this.addMiniMap(map, boardViewModel, entryContent, idx)
@@ -451,6 +512,45 @@ class MapList {
     this.container.appendChild(entry)
     this.fillTallyBox(idx, map, tallyBox, boardViewModel)
 
+    this._adjustButtonHeight(buttonsNode, boardNode, tallyWrapper)
+  }
+
+  /**
+   * @private
+   * @param {MapModel} map
+   * @param {number} idx
+   * @returns {HTMLDivElement}
+   */
+  _createMapEntry (map, idx) {
+    const entry = document.createElement('div')
+    entry.id = `custom-map-${map.title}`
+    entry.className = 'map-entry'
+    entry.classList.add('info-wrap', idx % 2 ? 'alt' : 'standard')
+
+    const entryTitle = document.createElement('h2')
+    entryTitle.textContent = map.title
+    entry.appendChild(entryTitle)
+
+    return entry
+  }
+
+  /**
+   * @private
+   * @returns {HTMLDivElement}
+   */
+  _createEntryContent () {
+    const entryContent = document.createElement('div')
+    entryContent.className = 'entry-container'
+    return entryContent
+  }
+
+  /**
+   * @private
+   * @param {HTMLElement} buttonsNode
+   * @param {HTMLElement} boardNode
+   * @param {HTMLElement} tallyWrapper
+   */
+  _adjustButtonHeight (buttonsNode, boardNode, tallyWrapper) {
     buttonsNode.style.maxHeight = `${
       Math.max(boardNode.offsetHeight, tallyWrapper.offsetHeight, 60) + 20
     }px`
@@ -498,8 +598,10 @@ class MapList {
 }
 
 /**
- * @param {string} json
- * @param {string} filename
+ * Saves JSON data as a downloadable file using the browser's download API.
+ * Falls back to creating a blob URL and triggering a download link.
+ * @param {string} json - The JSON string to save.
+ * @param {string} [filename='data.json'] - The name of the file to download.
  */
 function saveAsJson (json, filename = 'data.json') {
   const blob = new Blob([json], { type: 'application/json' })
@@ -516,7 +618,9 @@ function saveAsJson (json, filename = 'data.json') {
 }
 
 /**
- * @param {MapModel} map
+ * Downloads a PDF game sheet for a pre-generated map.
+ * @param {MapModel} map - The map to print.
+ * @returns {string} The PDF file path.
  */
 function printGameSheet (map) {
   trackClick(map, 'download pdf')
@@ -532,8 +636,9 @@ function printGameSheet (map) {
 }
 
 /**
- * @param {MapModel} map
- * @param {string|undefined} suggestedName
+ * Saves a map to a file using the modern File System API or falls back to download.
+ * @param {MapModel} map - The map to save.
+ * @param {string|undefined} suggestedName - Optional suggested filename.
  * @returns {Promise<{success:boolean, handle?:unknown, fallback?:boolean, error?:unknown}>}
  */
 async function saveToFile (map, suggestedName) {
