@@ -305,7 +305,7 @@ export class ParameterManager {
   _validateNumbers (...numbers) {
     for (const num of numbers) {
       if (typeof num !== 'number' || Number.isNaN(num)) {
-        throw new Error(`Invalid number: ${num}`)
+        throw new TypeError(`Invalid number: ${num}`)
       }
     }
   }

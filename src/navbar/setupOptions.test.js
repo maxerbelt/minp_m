@@ -1,7 +1,14 @@
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 
-/* global describe, require,   test, expect, beforeEach, afterEach, jest */
+/* global describe, it, expect, beforeEach, afterEach, jest */
 
 jest.unstable_mockModule('./chooseUI.js', () => ({
   ChooseFromListUI: class {
@@ -43,7 +50,6 @@ jest.unstable_mockModule('../network/SetParams.js', () => ({
   setSizeParams: jest.fn(),
   setMapParams: jest.fn()
 }))
-let setupGameOptions
 let origURLSearchParams
 let setupMapListOptions
 let resetCustomMap
@@ -65,23 +71,23 @@ describe('setupOptions', () => {
       if (globalThis.location && typeof globalThis.location === 'object') {
         if (
           Object.getOwnPropertyDescriptor(globalThis.location, 'reload')
-            ?.writable !== false
+            ?.writable === false
         ) {
+          globalThis.location.reload = jest.fn()
+        } else {
           reloadSpy = jest
             .spyOn(globalThis.location, 'reload')
             .mockImplementation(() => {})
-        } else {
-          globalThis.location.reload = jest.fn()
         }
         if (
           Object.getOwnPropertyDescriptor(globalThis.location, 'assign')
-            ?.writable !== false
+            ?.writable === false
         ) {
+          globalThis.location.assign = jest.fn()
+        } else {
           assignSpy = jest
             .spyOn(globalThis.location, 'assign')
             .mockImplementation(() => {})
-        } else {
-          globalThis.location.assign = jest.fn()
         }
       }
     } catch (e) {
@@ -187,25 +193,25 @@ describe('setupOptions', () => {
   })
   afterEach(() => {
     try {
-      if (reloadSpy && reloadSpy.mockRestore) reloadSpy.mockRestore()
-      if (assignSpy && assignSpy.mockRestore) assignSpy.mockRestore()
+      if (reloadSpy?.mockRestore) reloadSpy.mockRestore()
+      if (assignSpy?.mockRestore) assignSpy.mockRestore()
     } catch (e) {
       console.warn('Could not restore location.reload/assign spies', e)
     }
     if (origURL) globalThis.URL = origURL
     bh.terrainMaps.current = origTerrainMapsCurrent
-    if (typeof origURLSearchParams !== 'undefined')
+    if (origURLSearchParams !== undefined)
       globalThis.URLSearchParams = origURLSearchParams
   })
 
-  test('setupMapListOptions returns correct default index and calls terrainSelect', () => {
+  it('setupMapListOptions returns correct default index and calls terrainSelect', () => {
     globalThis.__testLocationString = 'http://example.com/?mapType=All'
     const out = setupMapListOptions(() => {})
     expect(out).toBe('1')
     expect(terrainSelect).toHaveBeenCalled()
   })
 
-  test('setupGameOptions returns placedShips value from location', async () => {
+  it('setupGameOptions returns placedShips value from location', async () => {
     // mock setupMapSelection used inside setupGameOptions
     jest.unstable_mockModule('./setupMapSelection.js', () => ({
       setupMapSelection: () => true,
@@ -221,7 +227,7 @@ describe('setupOptions', () => {
     expect(called).toBe(true)
   })
 
-  test('resetCustomMap calls saveCustomMap and resets maps', () => {
+  it('resetCustomMap calls saveCustomMap and resets maps', () => {
     // set the current map on terrainMaps so bh.map getter returns it
     bh.terrainMaps.current.current = { rows: 5, cols: 6 }
     // ensure bh.map returns the same current map used by resetCustomMap
@@ -233,7 +239,7 @@ describe('setupOptions', () => {
     expect(bh.terrainMaps.current.setToBlank).toHaveBeenCalledWith(5, 6)
   })
 
-  test('setupBuildOptions calls editHandler when targetMap present', () => {
+  it('setupBuildOptions calls editHandler when targetMap present', () => {
     // make setupMapOptions return a target map by making getEditableMap truthy
     bh.terrainMaps.current.getEditableMap = jest
       .fn()
@@ -245,7 +251,7 @@ describe('setupOptions', () => {
     expect(editHandler).toHaveBeenCalledWith({ title: 'editable' })
   })
 
-  test('setupBuildOptions calls boardSetup when no targetMap', () => {
+  it('setupBuildOptions calls boardSetup when no targetMap', () => {
     bh.terrainMaps.current.getEditableMap = jest.fn().mockReturnValue(null)
     const boardSetup = jest.fn()
     const result = setupBuildOptions(boardSetup, () => {}, 'build')
