@@ -31,12 +31,12 @@ const PARAM_TERRAIN = 'terrain'
  * Switch current game mode to edit mode for a specific map.
  * Prepares URL parameters and navigates to the map editor.
  * @param {MapObject} [map] - Map object with optional title property.
- * @param {boolean} [huntMode] - Whether in hunt/battle mode.
+ * @param {string} [buildMode] - Current build mode ('build' or other).
  * @returns {void}
  */
-export function switchToEdit (map, huntMode) {
+export function switchToEdit (map, buildMode) {
   const params = _buildSwitchModeParams(map?.title)
-  _redirectToMode(params, huntMode, BATTLEBUILD_PAGE, map)
+  _redirectToMode(params, buildMode, BATTLEBUILD_PAGE, map)
 }
 
 /**
@@ -106,13 +106,13 @@ function _appendTerrainParam (params) {
  * Redirect to the target mode after persisting state.
  * @private
  * @param {URLSearchParams} params - URL parameters to pass.
- * @param {boolean} huntMode - Hunt/battle mode flag.
+ * @param {string} buildMode - Current build mode ('build' or other).
  * @param {string} targetPage - Target page path.
  * @param {MapObject} [map] - Current map object.
  * @returns {void}
  */
-function _redirectToMode (params, huntMode, targetPage, map) {
-  storeShips(params, huntMode, targetPage, map)
+function _redirectToMode (params, buildMode, targetPage, map) {
+  storeShips(params, buildMode, targetPage, map)
   globalThis.location.href = _buildNavigationUrl(targetPage, params)
 }
 
