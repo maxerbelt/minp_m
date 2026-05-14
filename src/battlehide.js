@@ -35,6 +35,16 @@ import { AudioManager } from './core/AudioManager.js'
  * @property {Array} ships - Array of ships
  */
 
+/**
+ * @typedef {Object<string, Function>} ButtonHandlers
+ * Button ID to handler function mapping
+ */
+
+/**
+ * @typedef {Object<string, Function>} ShortcutHandlers
+ * Keyboard key to handler function mapping
+ */
+
 const friend = makeFriend()
 placedShipsInstance.registerUndo(friend.UI.undoBtn)
 const friendUI = friend.UI
@@ -48,6 +58,62 @@ let buttonManager = null
 let keyboardManager = null
 let seekKeyboardManager = null
 let isBattleHideTransitioning = false
+
+/**
+ * Hides the enemy container UI element.
+ * @private
+ */
+function hideEnemyContainer () {
+  uiManager.hide('enemy-container')
+}
+
+/**
+ * Moves the tally title back to the friend tally container.
+ * @private
+ */
+function restoreTallyTitle () {
+  const tallyTitle = document.getElementById('tally-title')
+  const tallyBox = document.getElementById('friend-tally-container')
+  tallyBox.prepend(tallyTitle)
+}
+
+/**
+ * Resets opponent references for both players.
+ * @private
+ */
+function resetOpponents () {
+  enemy.opponent = null
+  friend.opponent = null
+}
+
+/**
+ * Shows the enemy container and adjusts status line styling.
+ * @private
+ */
+function showEnemyContainer () {
+  uiManager.show('enemy-container')
+  gameStatus.line.classList.add('small')
+  gameStatus.chevron.classList.remove('hidden')
+}
+
+/**
+ * Moves the tally title to the place controls container.
+ * @private
+ */
+function moveTallyTitleToPlaceControls () {
+  const tallyTitle = document.getElementById('tally-title')
+  const placeControls = document.getElementById('place-controls')
+  placeControls.appendChild(tallyTitle)
+}
+
+/**
+ * Sets opponent references between friend and enemy players.
+ * @private
+ */
+function setOpponents () {
+  enemy.opponent = friend
+  friend.opponent = enemy
+}
 
 /**
  * Transitions to a game mode with optional callbacks.
@@ -70,12 +136,9 @@ function _transitionToMode (targetMode, onBefore, onAfter) {
  * @private
  */
 function _prepareReturnToPlacement () {
-  uiManager.hide('enemy-container')
-  const tallyTitle = document.getElementById('tally-title')
-  const tallyBox = document.getElementById('friend-tally-container')
-  tallyBox.prepend(tallyTitle)
-  enemy.opponent = null
-  friend.opponent = null
+  hideEnemyContainer()
+  restoreTallyTitle()
+  resetOpponents()
 }
 
 /**
@@ -83,7 +146,7 @@ function _prepareReturnToPlacement () {
  * Resets opponent relationships and reinitializes placement UI.
  * @private
  */
-function _onClickReturnToPlacement () {
+function handleReturnToPlacement () {
   _transitionToMode(
     'hide-placement',
     _prepareReturnToPlacement,
@@ -96,7 +159,7 @@ function _onClickReturnToPlacement () {
  * Triggers test play, then resets to placement state.
  * @private
  */
-function _onClickReturnFromTest () {
+function handleReturnFromTest () {
   _transitionToMode(
     'hide-placement',
     _prepareReturnToPlacement,
@@ -109,7 +172,7 @@ function _onClickReturnFromTest () {
  * Tests AI behavior in placement context.
  * @private
  */
-function _onClickStartTestMode () {
+function handleStartTestMode () {
   friend.test.bind(friend)()
 }
 
@@ -127,7 +190,7 @@ function _resetFriendBoard () {
  * Transitions to seek mode and initiates battle/hide gameplay.
  * @private
  */
-function _onClickStartSeek () {
+function handleStartSeek () {
   friendUI.seekMode()
   _playBattleHide()
 }
@@ -139,16 +202,9 @@ function _onClickStartSeek () {
  */
 function _prepareBattleUIState () {
   friendUI.seekMode()
-  uiManager.show('enemy-container')
-  gameStatus.line.classList.add('small')
-  gameStatus.chevron.classList.remove('hidden')
-
-  const tallyTitle = document.getElementById('tally-title')
-  const placeControls = document.getElementById('place-controls')
-  placeControls.appendChild(tallyTitle)
-
-  enemy.opponent = friend
-  friend.opponent = enemy
+  showEnemyContainer()
+  moveTallyTitleToPlaceControls()
+  setOpponents()
 }
 
 /**
@@ -179,7 +235,7 @@ function _enterBattleHide () {
  * Auto-places ships and conditionally initiates battle mode.
  * @private
  */
-function _onClickAutoPlace () {
+function handleAutoPlace () {
   friend.autoPlace2()
   _playBattleHide()
 }
@@ -231,7 +287,7 @@ function onClickUndo () {
  * Clears test continuation flag and re-enables test button.
  * @private
  */
-function _onClickStopTest () {
+function handleStopTest () {
   friend.testContinue = false
   friendUI.readyMode()
   friendUI.testBtn.disabled = false
@@ -240,7 +296,7 @@ function _onClickStopTest () {
 /**
  * Builds the button-to-handler mapping for placement mode.
  * Organizes all placement phase controls.
- * @returns {Object<string, Function>} Button ID to handler map
+ * @returns {ButtonHandlers} Button ID to handler map
  * @private
  */
 function _getPlacementButtonHandlers () {
@@ -251,10 +307,10 @@ function _getPlacementButtonHandlers () {
     transformBtn: onClickTransform,
     flipBtn: onClickFlip,
     undoBtn: onClickUndo,
-    autoBtn: _onClickAutoPlace,
-    testBtn: _onClickStartTestMode,
-    seekBtn: _onClickStartSeek,
-    stopBtn: _onClickStopTest
+    autoBtn: handleAutoPlace,
+    testBtn: handleStartTestMode,
+    seekBtn: handleStartSeek,
+    stopBtn: handleStopTest
   }
 }
 
@@ -284,7 +340,7 @@ function _moveCursor (event) {
 /**
  * Builds keyboard shortcut handlers for placement/hide mode.
  * Maps keys to placement control functions.
- * @returns {Object<string, Function>} Key to handler map
+ * @returns {ShortcutHandlers} Key to handler map
  * @private
  */
 function _getPlacementShortcutHandlers () {
@@ -294,8 +350,8 @@ function _getPlacementShortcutHandlers () {
     l: onClickRotateLeft,
     f: onClickFlip,
     x: onClickTransform,
-    t: _onClickStartTestMode,
-    s: _onClickStopTest,
+    t: handleStartTestMode,
+    s: handleStopTest,
     u: onClickUndo,
     ArrowUp: event => _moveCursor(event),
     ArrowDown: event => _moveCursor(event),
@@ -453,7 +509,7 @@ function _registerBattleMode () {
   stateManager.registerModeCallbacks('hide-seek', {
     onInit: () => {
       _setupSeekKeyboardShortcuts()
-      setupEnemy(_onClickReturnToPlacement, _onClickReturnFromTest)
+      setupEnemy(handleReturnToPlacement, handleReturnFromTest)
     },
     onExit: () => {
       // Managers are auto-cleaned up by stateManager
