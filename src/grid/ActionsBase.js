@@ -60,8 +60,7 @@ export class ActionsBase {
   get rotTags () {
     if (!this.transformMaps) return []
     this.rotateTags =
-      this.rotateTags ||
-      this._extractTransformNames(this.transformMaps, tag => tag.includes('r'))
+      this.rotateTags || this._extractTransformTags(tag => tag.includes('r'))
     return this.rotateTags || []
   }
 
@@ -72,9 +71,19 @@ export class ActionsBase {
   get flpTags () {
     if (!this.transformMaps) return []
     this.flipTags =
-      this.flipTags ||
-      this._extractTransformNames(this.transformMaps, tag => tag.includes('f'))
+      this.flipTags || this._extractTransformTags(tag => tag.includes('f'))
     return this.flipTags || []
+  }
+
+  /**
+   * Extract transform names from maps by filter predicate.
+   * @private
+   * @param {Function} predicate - Filter function for tag names
+   * @returns {Array<string>} Filtered tag names
+   */
+  _extractTransformTags (predicate) {
+    if (Array.isArray(this.transformMaps)) return []
+    return Object.keys(this.transformMaps).filter(predicate)
   }
 
   /**
@@ -124,11 +133,7 @@ export class ActionsBase {
    * @returns {Array} Array of rotated bitboards (excludes default)
    */
   get rotationVariants () {
-    if (this._rotationVariants) return [...this._rotationVariants]
-    const variants = new Set([this.defaultVariant, ...this.rotVariantsRaw])
-    variants.delete(this.defaultVariant)
-    this._rotationVariants = [...variants]
-    return [...this._rotationVariants]
+    return this._getCachedVariants('_rotationVariants', this.rotVariantsRaw)
   }
 
   /**
@@ -136,11 +141,22 @@ export class ActionsBase {
    * @returns {Array} Array of reflected bitboards (excludes default)
    */
   get flipVariants () {
-    if (this._flipVariants) return [...this._flipVariants]
-    const variants = new Set([this.defaultVariant, ...this.flpVariantsRaw])
+    return this._getCachedVariants('_flipVariants', this.flpVariantsRaw)
+  }
+
+  /**
+   * Compute and cache unique variants, excluding the default.
+   * @private
+   * @param {string} cacheProp - Cache property name
+   * @param {Array} variantsRaw - Raw variant array
+   * @returns {Array} Unique variants excluding default
+   */
+  _getCachedVariants (cacheProp, variantsRaw) {
+    if (this[cacheProp]) return [...this[cacheProp]]
+    const variants = new Set([this.defaultVariant, ...variantsRaw])
     variants.delete(this.defaultVariant)
-    this._flipVariants = [...variants]
-    return [...this._flipVariants]
+    this[cacheProp] = [...variants]
+    return [...this[cacheProp]]
   }
 
   /**
