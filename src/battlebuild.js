@@ -18,6 +18,15 @@ import { moveCursorBase } from './waters/placementUI.js'
  * @property {Function} setMap - Saves current map
  * @property {Array} ships - Array of placed ships
  */
+
+/**
+ * @typedef {Object.<string, (...args: any[]) => void>} ButtonHandlerMap
+ */
+
+/**
+ * @typedef {Object.<string, (event: Event) => void>} KeyboardShortcutHandlerMap
+ */
+
 import {
   dragOverAddingHandlerSetup,
   onClickRotate,
@@ -57,11 +66,24 @@ let buttonManager = null
 let keyboardManager = null
 
 /**
+ * @private
+ * @param {Array<HTMLElement>} elements
+ * @param {boolean} disabled
+ */
+function _setButtonsDisabled (elements, disabled) {
+  elements.forEach(element => {
+    if (element) {
+      element.disabled = disabled
+    }
+  })
+}
+
+/**
  * Resets ship placement state (cells, visuals, score).
  * @param {boolean} [showNotice=false] - Whether to show user notice
  * @private
  */
-function _resetShipPlacement (showNotice = false) {
+function _resetPlacementState (showNotice = false) {
   if (showNotice) {
     customUI.showNotice('ships removed')
   }
@@ -75,8 +97,8 @@ function _resetShipPlacement (showNotice = false) {
  * Reverts state and removes the most recent ship from grid.
  * @private
  */
-function onClickUndo () {
-  _resetShipPlacement()
+function _handleUndo () {
+  _resetPlacementState()
   placedShipsInstance.popAndRefresh(
     custom.shipCellGrid.grid,
     ship => {
@@ -140,7 +162,7 @@ function _setupShipAdditionDragHandlers () {
  * @param {boolean} editingMap - Whether map editing is enabled
  * @private
  */
-function onClickAccept (editingMap) {
+function _handleAccept (editingMap) {
   const ships = _createAndValidateCandidateShips()
   _saveMapIfEditing(editingMap)
   _setupShipAdditionMode(ships)
@@ -150,9 +172,9 @@ function onClickAccept (editingMap) {
  * Resets map to correct size and refreshes display.
  * @private
  */
-function onClickDefault () {
+function _handleReuse () {
   setNewMapToCorrectSize()
-  _refreshBuildDisplay()
+  _refreshBuildUI()
 }
 
 /**
@@ -160,8 +182,8 @@ function onClickDefault () {
  * Removes all ships, resets state, and shows notification.
  * @private
  */
-function _clearAllShips () {
-  _resetShipPlacement(true)
+function _removeAllPlacedShips () {
+  _resetPlacementState(true)
   placedShipsInstance.popAll(ship => {
     customUI.subtraction(custom, ship)
   })
@@ -173,8 +195,8 @@ function _clearAllShips () {
  * Restores UI state for fresh ship placement.
  * @private
  */
-function _reinitializePlacementAfterClear () {
-  _clearAllShips()
+function _restartPlacementAfterClear () {
+  _removeAllPlacedShips()
   customUI.trayManager.setTrays()
   _initializePlacement()
   customUI.displayShipTrackingInfo(custom)
@@ -187,16 +209,16 @@ function _reinitializePlacementAfterClear () {
  */
 function _clearMapAndRefresh () {
   bh.maps.clearBlank()
-  _refreshBuildDisplay()
+  _refreshBuildUI()
 }
 
 /**
  * Handles clear button click - clears ships or maps depending on mode.
  * @private
  */
-function onClickClear () {
+function _handleClear () {
   if (customUI.placingShips) {
-    _reinitializePlacementAfterClear()
+    _restartPlacementAfterClear()
     return
   }
   _clearMapAndRefresh()
@@ -207,7 +229,7 @@ function onClickClear () {
  * Updates colors and button states.
  * @private
  */
-function _refreshBuildDisplay () {
+function _refreshBuildUI () {
   customUI.refreshAllColor()
   _refreshBuildControls()
 }
@@ -219,7 +241,7 @@ function _refreshBuildDisplay () {
  * @param {boolean} [trackAsComplete=true] - Whether to track as complete
  * @private
  */
-function _navigateToMode (targetMode, trackAsComplete = true) {
+function _transitionToMode (targetMode, trackAsComplete = true) {
   trackLevelEnd(bh.map, trackAsComplete)
   switchTo(targetMode, 'build')
 }
@@ -228,16 +250,16 @@ function _navigateToMode (targetMode, trackAsComplete = true) {
  * Switches to seek mode while preserving build progress.
  * @private
  */
-function _onClickSeekMap () {
-  _navigateToMode('battleseek')
+function _handleSeekMap () {
+  _transitionToMode('battleseek')
 }
 
 /**
  * Publishes the current map and returns to the main index.
  * @private
  */
-function _onClickPlayMap () {
-  _navigateToMode('index')
+function _handlePlayMap () {
+  _transitionToMode('index')
 }
 
 /**
@@ -245,7 +267,7 @@ function _onClickPlayMap () {
  * Records incomplete tracking and loads edit mode.
  * @private
  */
-function _onClickSaveMap () {
+function _handleSaveMap () {
   const saveMap = bh.map
   trackLevelEnd(saveMap, false)
   switchToEdit(saveMap, 'build')
@@ -257,23 +279,31 @@ function _onClickSaveMap () {
  */
 function _setupBuildButtons () {
   buttonManager = new ButtonManager(customUI)
-  buttonManager.registerButtons({
-    newPlacementBtn: onClickClear,
-    acceptBtn: () => onClickAccept(false),
-    reuseBtn: onClickDefault,
-    resetBtn: _clearAllShips,
-    publishBtn: _onClickPlayMap,
-    saveBtn: _onClickSaveMap,
-    rotateBtn: onClickRotate,
-    rotateLeftBtn: onClickRotateLeft,
-    flipBtn: onClickFlip,
-    transformBtn: onClickTransform,
-    undoBtn: onClickUndo
-  })
+  buttonManager.registerButtons(_createBuildButtonHandlers())
   buttonManager.wireUp()
   dragNDrop.takeDrop(customUI, custom)
   stateManager.registerModeManager('build', buttonManager)
   return buttonManager
+}
+
+/**
+ * @private
+ * @returns {ButtonHandlerMap}
+ */
+function _createBuildButtonHandlers () {
+  return {
+    newPlacementBtn: _handleClear,
+    acceptBtn: () => _handleAccept(false),
+    reuseBtn: _handleReuse,
+    resetBtn: _removeAllPlacedShips,
+    publishBtn: _handlePlayMap,
+    saveBtn: _handleSaveMap,
+    rotateBtn: onClickRotate,
+    rotateLeftBtn: onClickRotateLeft,
+    flipBtn: onClickFlip,
+    transformBtn: onClickTransform,
+    undoBtn: _handleUndo
+  }
 }
 
 /**
@@ -290,30 +320,38 @@ function moveCursor (event) {
  */
 function _setupBuildKeyboardShortcuts () {
   keyboardManager = new KeyboardShortcutManager()
-  const shortcutHandlers = {
-    a: () => onClickAccept(false),
-    c: onClickClear,
-    d: onClickDefault,
-    r: onClickRotate,
-    s: _clearAllShips,
-    l: onClickRotateLeft,
-    f: onClickFlip,
-    x: onClickTransform,
-    u: onClickUndo,
-    p: _onClickPlayMap,
-    v: _onClickSaveMap,
-    ArrowUp: event => moveCursor(event),
-    ArrowDown: event => moveCursor(event),
-    ArrowLeft: event => moveCursor(event),
-    ArrowRight: event => moveCursor(event),
-    Tab: event => tabCursor(event, customUI, custom),
-    Enter: event => enterCursor(event, customUI, custom)
-  }
+  const shortcutHandlers = _createBuildKeyboardShortcuts()
 
   keyboardManager.registerShortcuts(shortcutHandlers)
   keyboardManager.activate()
   stateManager.registerModeManager('build', keyboardManager)
   return keyboardManager
+}
+
+/**
+ * @private
+ * @returns {KeyboardShortcutHandlerMap}
+ */
+function _createBuildKeyboardShortcuts () {
+  return {
+    a: () => _handleAccept(false),
+    c: _handleClear,
+    d: _handleReuse,
+    r: onClickRotate,
+    s: _removeAllPlacedShips,
+    l: onClickRotateLeft,
+    f: onClickFlip,
+    x: onClickTransform,
+    u: _handleUndo,
+    p: _handlePlayMap,
+    v: _handleSaveMap,
+    ArrowUp: moveCursor,
+    ArrowDown: moveCursor,
+    ArrowLeft: moveCursor,
+    ArrowRight: moveCursor,
+    Tab: event => tabCursor(event, customUI, custom),
+    Enter: event => enterCursor(event, customUI, custom)
+  }
 }
 
 /**
@@ -338,11 +376,16 @@ function _initializePlacement () {
  * @private
  */
 function _disableBuildTransformButtons () {
-  customUI.rotateBtn.disabled = true
-  customUI.flipBtn.disabled = true
-  customUI.rotateLeftBtn.disabled = true
-  customUI.undoBtn.disabled = true
-  customUI.resetBtn.disabled = true
+  _setButtonsDisabled(
+    [
+      customUI.rotateBtn,
+      customUI.flipBtn,
+      customUI.rotateLeftBtn,
+      customUI.undoBtn,
+      customUI.resetBtn
+    ],
+    true
+  )
 }
 
 /**
@@ -380,7 +423,7 @@ const editing = setupBuildOptions(
   customUI.resetBoardSize.bind(customUI),
   _initializePlacement,
   'build',
-  () => onClickAccept(true)
+  () => _handleAccept(true)
 )
 
 // Initialize managers for build mode
@@ -394,5 +437,5 @@ if (editing) {
   _initializePlacement()
 }
 
-tabs.hide?.overrideClickListener(_onClickPlayMap)
-tabs.seek?.overrideClickListener(_onClickSeekMap)
+tabs.hide?.overrideClickListener(_handlePlayMap)
+tabs.seek?.overrideClickListener(_handleSeekMap)
