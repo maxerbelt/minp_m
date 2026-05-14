@@ -35,8 +35,8 @@ const PARAM_TERRAIN = 'terrain'
  * @returns {void}
  */
 export function switchToEdit (map, buildMode) {
-  const params = _buildSwitchModeParams(map?.title)
-  _redirectToMode(params, buildMode, BATTLEBUILD_PAGE, map)
+  const params = _createEditModeParams(map?.title)
+  _navigateToTarget(buildMode, BATTLEBUILD_PAGE, params, map)
 }
 
 /**
@@ -73,17 +73,17 @@ function _createUrlParams (queryString) {
 }
 
 /**
- * Build URL parameters for mode switching.
+ * Build edit-mode URL parameters.
  * @private
  * @param {string} [mapName] - Optional map name to include in params.
  * @returns {URLSearchParams} Parameters for navigation.
  */
-function _buildSwitchModeParams (mapName) {
+function _createEditModeParams (mapName) {
   const params = new URLSearchParams()
 
   if (mapName) {
     params.set(PARAM_EDIT, mapName)
-    _appendTerrainParam(params)
+    _appendTerrainTag(params)
   }
 
   return params
@@ -95,7 +95,7 @@ function _buildSwitchModeParams (mapName) {
  * @param {URLSearchParams} params - Parameters to update.
  * @returns {void}
  */
-function _appendTerrainParam (params) {
+function _appendTerrainTag (params) {
   const terrainTag = bh.terrain?.tag
   if (terrainTag) {
     params.set(PARAM_TERRAIN, terrainTag)
@@ -103,15 +103,15 @@ function _appendTerrainParam (params) {
 }
 
 /**
- * Redirect to the target mode after persisting state.
+ * Navigate to the target mode after persisting state.
  * @private
- * @param {URLSearchParams} params - URL parameters to pass.
  * @param {string} buildMode - Current build mode ('build' or other).
  * @param {string} targetPage - Target page path.
+ * @param {URLSearchParams} params - URL parameters to pass.
  * @param {MapObject} [map] - Current map object.
  * @returns {void}
  */
-function _redirectToMode (params, buildMode, targetPage, map) {
+function _navigateToTarget (buildMode, targetPage, params, map) {
   storeShips(params, buildMode, targetPage, map)
   globalThis.location.href = _buildNavigationUrl(targetPage, params)
 }
