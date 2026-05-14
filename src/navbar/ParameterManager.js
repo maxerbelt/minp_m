@@ -24,8 +24,10 @@ export class ParameterManager {
    * @param {URLSearchParams} [urlParams] - Optional URLSearchParams instance.
    */
   constructor (urlParams = new URLSearchParams(globalThis.location.search)) {
+    /** @type {string} Current window location */
+    const location = globalThis.location.href
     /** @type {URL} Current window location as URL */
-    this.url = new URL(globalThis.location)
+    this.url = new URL(location)
     /** @type {URLSearchParams} URL search parameters */
     this.params = urlParams
   }

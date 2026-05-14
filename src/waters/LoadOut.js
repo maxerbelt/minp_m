@@ -813,6 +813,15 @@ export class LoadOut {
   }
 
   /**
+   * Gets the index of a weapon by letter.
+   * @param {string} weaponLetter - Weapon letter to find
+   * @returns {number} Index of weapon or -1 if not found
+   */
+  getWeaponIndexForLetter (weaponLetter) {
+    return this._getWeaponIndexForLetter(weaponLetter)
+  }
+
+  /**
    * Gets the index of a weapon by its letter.
    * UNIFIED: single source for weapon lookup by letter.
    *
@@ -927,22 +936,6 @@ export class LoadOut {
     const preferences = bh.maps.weaponPreference
     for (const [letter, op] of preferences) {
       if (this.switchToWeapon(letter)) {
-        return op
-      }
-    }
-    return null
-  }
-
-  /**
-   * Finds first preferred weapon available in current arsenal.
-   *
-   * @returns {*|null} Operation of first available preference or null
-   * @private
-   */
-  _findAvailablePreferredWeapon () {
-    const preferences = bh.maps.weaponPreference
-    for (const [letter, op] of preferences) {
-      if (this.hasWeaponByLetter(letter)) {
         return op
       }
     }

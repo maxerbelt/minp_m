@@ -1,3 +1,5 @@
+import { ParameterManager } from './ParameterManager.js'
+
 /**
  * @typedef {Function} SetupCallback
  * @returns {void}

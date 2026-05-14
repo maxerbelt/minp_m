@@ -1,49 +1,21 @@
 /* eslint-env jest */
 
-/* global describe, beforeAll, jest, it, expect, beforeEach, afterEach, globalThis */
+/* global describe, beforeAll, jest, it, expect, beforeEach, afterEach */
 import { Ghost } from './Ghost.js'
 import { Brush } from './Brush.js'
-import { jest } from '@jest/globals'
+import {
+  describe,
+  beforeAll,
+  jest,
+  it,
+  expect,
+  beforeEach,
+  afterEach
+} from '@jest/globals'
 
-// Minimal DOM mock for environments without jsdom
-beforeAll(() => {
-  if (globalThis.document == 'null') globalThis.document = {}
-  if (!globalThis.document.body) {
-    globalThis.document.body = {
-      __children: [],
-      innerHTML: '',
-      appendChild (el) {
-        this.__children.push(el)
-      },
-      contains (el) {
-        return this.__children.includes(el)
-      },
-      removeChild (el) {
-        this.__children = this.__children.filter(e => e !== el)
-      }
-    }
-  }
-
-  if (!globalThis.document.createElement) {
-    globalThis.document.createElement = tag => {
-      const el = {
-        tagName: tag.toUpperCase(),
-        className: '',
-        innerHTML: '',
-        style: {},
-        remove () {
-          if (globalThis.document?.body?.removeChild) {
-            globalThis.document.body.removeChild(this)
-          } else if (globalThis.document.body) {
-            globalThis.document.body.__children =
-              globalThis.document.body.__children.filter(e => e !== this)
-          }
-        }
-      }
-      return el
-    }
-  }
-})
+/**
+ * @jest-environment jsdom
+ */
 
 describe('selection Ghost', () => {
   let originalBody

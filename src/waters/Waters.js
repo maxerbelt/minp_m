@@ -384,29 +384,29 @@ export class Waters {
 
   /**
    * Creates a normalized weapon selection payload.
-   * @param {number|null} launchR - Launch row coordinate
-   * @param {number|null} launchC - Launch column coordinate
-   * @param {number|null} weaponId - Weapon system ID
-   * @param {number|null} hintR - Hint row coordinate
-   * @param {number|null} hintC - Hint column coordinate
-   * @returns {WeaponSelection} Weapon selection payload
    * @private
+   * @param {number|null} launchR - Launch row coordinate.
+   * @param {number|null} launchC - Launch column coordinate.
+   * @param {number|null} weaponId - Weapon system ID.
+   * @param {number|null} hintR - Hint row coordinate.
+   * @param {number|null} hintC - Hint column coordinate.
+   * @returns {WeaponSelection} Weapon selection payload.
    */
-  _buildWeaponSelectionPayload (launchR, launchC, weaponId, hintR, hintC) {
+  _createWeaponSelectionPayload (launchR, launchC, weaponId, hintR, hintC) {
     return { launchR, launchC, weaponId, hintR, hintC }
   }
 
   /**
    * Creates a normalized weapon selection payload.
-   * @param {number|null} launchR - Launch row coordinate
-   * @param {number|null} launchC - Launch column coordinate
-   * @param {number|null} weaponId - Weapon system ID
-   * @param {number|null} hintR - Hint row coordinate
-   * @param {number|null} hintC - Hint column coordinate
-   * @returns {WeaponSelection} Weapon selection payload
+   * @param {number|null} launchR - Launch row coordinate.
+   * @param {number|null} launchC - Launch column coordinate.
+   * @param {number|null} weaponId - Weapon system ID.
+   * @param {number|null} hintR - Hint row coordinate.
+   * @param {number|null} hintC - Hint column coordinate.
+   * @returns {WeaponSelection} Weapon selection payload.
    */
   createWeaponSelection (launchR, launchC, weaponId, hintR, hintC) {
-    return this._buildWeaponSelectionPayload(
+    return this._createWeaponSelectionPayload(
       launchR,
       launchC,
       weaponId,
@@ -653,6 +653,11 @@ export class Waters {
     return this.placeMatchingShipsFromData(placedShips, placer)
   }
 
+  /**
+   * Places a matching ship during edit mode using provided ship cells.
+   * @param {Object} matchingShip - The ship instance to place.
+   * @param {Object} ship - The source ship data containing cells.
+   */
   placeMatchingShipForEdit (matchingShip, ship) {
     matchingShip.cells = ship.cells
     placedShipsInstance.push(matchingShip, ship.cells)
@@ -660,6 +665,11 @@ export class Waters {
     this.UI.placement(ship.cells, this, matchingShip)
   }
 
+  /**
+   * Places a matching ship during regular load using provided ship cells.
+   * @param {Object} matchingShip - The ship instance to place.
+   * @param {Object} ship - The source ship data containing cells.
+   */
   placeMatchingShip (matchingShip, ship) {
     matchingShip.placeAtCells(ship.cells)
 
@@ -730,10 +740,24 @@ export class Waters {
 
   /**
    * Updates global ID counters based on loaded ships.
-   * @param {ShipPlacement} placedShips - The placed ships data
+   * @param {ShipPlacement} placedShips - The placed ships data.
    */
   updateGlobalIds (placedShips) {
-    const { maxShipId, maxWeaponId } = placedShips.ships.reduce(
+    const { maxShipId, maxWeaponId } = this._getMaxIdsFromShips(
+      placedShips.ships
+    )
+    Ship.id = maxShipId + 1
+    WeaponSystem.id = maxWeaponId + 1
+  }
+
+  /**
+   * Calculates the maximum ship and weapon IDs from placed ships.
+   * @private
+   * @param {Ship[]} ships - Array of ships to inspect.
+   * @returns {{maxShipId: number, maxWeaponId: number}} Maximum IDs.
+   */
+  _getMaxIdsFromShips (ships) {
+    return ships.reduce(
       (accumulator, ship) => {
         accumulator.maxShipId = Math.max(ship.id, accumulator.maxShipId)
         accumulator.maxWeaponId = Object.values(ship.weapons).reduce(
@@ -744,13 +768,11 @@ export class Waters {
       },
       { maxShipId: 1, maxWeaponId: 1 }
     )
-    Ship.id = maxShipId + 1
-    WeaponSystem.id = maxWeaponId + 1
   }
 
   /**
    * Resets the map state and loads new map configuration.
-   * @param {Object} map - The map to set
+   * @param {Object} map - The map to set.
    */
   resetMap (map) {
     this.boardDestroyed = false
@@ -787,19 +809,29 @@ export class Waters {
 
   /**
    * Configures the load out system for weapons.
-   * @param {Object} map - The map object
-   * @param {Array} weaponShips - Ships with weapons
+   * @param {Object} map - The map object.
+   * @param {Array} weaponShips - Ships with weapons.
    */
   configureLoadOut (map, weaponShips) {
-    const opponent = this.opponent
+    const shipsForLoadOut = this._resolveLoadOutShips(map, weaponShips)
+    this.loadOut = this.createLoadOut(map, shipsForLoadOut)
+  }
+
+  /**
+   * Resolves the ship list to be used for load out creation.
+   * @private
+   * @param {Object} map - The map object.
+   * @param {Array} weaponShips - Default weapon ships.
+   * @returns {Array} Ships to include in the load out.
+   */
+  _resolveLoadOutShips (map, weaponShips) {
     if (bh.seekingMode && this.hasAttachedWeapons) {
-      this.loadOut = this.createLoadOut(map, weaponShips)
-    } else if (opponent) {
-      const opponentWeaponShips = opponent.ships.filter(ship => ship.hasWeapon)
-      this.loadOut = this.createLoadOut(map, opponentWeaponShips)
-    } else {
-      this.loadOut = this.createLoadOut(map, weaponShips)
+      return weaponShips
     }
+    if (this.opponent) {
+      return this.opponent.ships.filter(ship => ship.hasWeapon)
+    }
+    return weaponShips
   }
 
   /**
@@ -837,7 +869,7 @@ export class Waters {
    * @returns {WeaponSelection} Weapon selection data
    */
   selectRandomWeapon () {
-    const armedShips = this.loadOut.getCurrentWeaponSystem().armedShips()
+    const armedShips = this.loadOut.getArmedShips()
     const selectedShip = randomElement(armedShips)
 
     if (!selectedShip) {
@@ -1062,41 +1094,33 @@ export class Waters {
     }
   }
 
-  selectAttachedWeapon (cell, r, c, oppo) {
-    const { launchR, launchC, weaponId, hintR, hintC } = this.selectWeaponId(
-      cell,
-      r,
-      c,
-      false,
-      null,
-      oppo
-    )
-
+  /**
+   * Arms the selected weapon and updates the opponent view state.
+   * @param {WeaponSelection} selection - Weapon selection payload
+   * @param {Object} oppo - Opponent instance
+   * @private
+   */
+  _armSelectedWeapon (selection, oppo) {
+    const cell = oppo?.UI?.gridCellAt(selection.hintR, selection.hintC)
     this.selectAndArmWeaponId(
-      weaponId,
+      selection.weaponId,
       oppo,
-      launchR,
-      launchC,
-      hintR,
-      hintC,
+      selection.launchR,
+      selection.launchC,
+      selection.hintR,
+      selection.hintC,
       cell
     )
   }
 
-  randomAttachedWeapon (oppo) {
-    const { launchR, launchC, weaponId, hintR, hintC } =
-      this.selectRandomWeapon()
+  selectAttachedWeapon (cell, r, c, oppo) {
+    const selection = this.selectWeaponId(cell, r, c, false, null, oppo)
+    this._armSelectedWeapon(selection, oppo)
+  }
 
-    const cell = oppo?.UI?.gridCellAt(hintR, hintC)
-    this.selectAndArmWeaponId(
-      weaponId,
-      oppo,
-      launchR,
-      launchC,
-      hintR,
-      hintC,
-      cell
-    )
+  randomAttachedWeapon (oppo) {
+    const selection = this.selectRandomWeapon()
+    this._armSelectedWeapon(selection, oppo)
   }
 
   selectAndArmWeaponId (weaponId, oppo, launchR, launchC, hintR, hintC, cell) {
@@ -1108,16 +1132,20 @@ export class Waters {
   }
 
   /**
-   * Launches randomly selected weapon at specified location.
-   * Returns true if weapon was successfully launched (no result).
+   * Launches randomly selected weapon at the target coordinates.
+   * If an unattached weapon fires, returns that result.
+   * Otherwise, attempts to select a targeted attached weapon system.
    *
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @param {boolean} [autoSelectWarning] - Unused parameter (for API compatibility)
-   * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon and score
+   * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
+   * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon or selection state
    */
   async launchRandomWeapon (r, c, autoSelectWarning = !bh.seekingMode) {
-    const result = (await this.launchUnattachedWeapon(r, c)) || {}
+    const result =
+      /** @type {null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }} */ (
+        (await this.launchUnattachedWeapon(r, c)) || {}
+      )
     if (
       result.hasUnattached ||
       (result?.score && result.score !== LoadOut.noResult)
@@ -1125,11 +1153,16 @@ export class Waters {
       return result
     }
     result['hasTargettedWeapon'] =
-      this.hasTargettedRandomWeaponBase(autoSelectWarning)
+      this.prepareTargetedRandomWeaponSelection(autoSelectWarning)
     return result
   }
 
-  hasTargettedRandomWeaponBase (autoSelectWarning = !bh.seekingMode) {
+  /**
+   * Attempts to select an attached random weapon system when no unattached weapon fired.
+   * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
+   * @returns {boolean} True if a weapon was selected
+   */
+  prepareTargetedRandomWeaponSelection (autoSelectWarning = !bh.seekingMode) {
     const current = this.loadOut.getCurrentWeaponSystem()
     const attached = current.hasAmmo()
     if (attached) {

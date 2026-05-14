@@ -458,9 +458,10 @@ export class WatersUI {
    * Displays sunk marker and clears hit-related state.
    *
    * @param {HTMLDivElement} cell - DOM element to update
+   * @param {string} _letter - Ship letter
    * @returns {void}
    */
-  displayAsSunk (cell) {
+  displayAsSunk (cell, _letter) {
     CellClassManager.applyFriendlySunkCellState(cell)
     this._clearCellText(cell)
   }
@@ -476,16 +477,15 @@ export class WatersUI {
   }
 
   /**
-   * Marks a cell as sunk at specified coordinates.
-   * Delegates to displayAsSunk for consistent sunk state handling.
-   *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @returns {void}
+  /**
+   * Marks a cell at coordinates as sunk.
+   * @param {number} r - Row index.
+   * @param {number} c - Column index.
+   * @param {string} letter - Ship letter.
    */
-  cellSunkAt (row, column) {
-    const cell = this.gridCellAt(row, column)
-    this.displayAsSunk(cell)
+  cellSunkAt (r, c, letter) {
+    const cell = this.gridCellAt(r, c)
+    this.displayAsSunk(cell, letter)
   }
 
   /**
