@@ -10,6 +10,23 @@ import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { Zip } from '../core/Zip.js'
 
+/**
+ * @typedef {[number, number]} CoordinatePair
+ */
+
+/**
+ * @typedef {Set<string>|Array<any>|null} RackInput
+ */
+
+/**
+ * @typedef {Object<string, any>} WeaponMap
+ */
+
+/**
+ * @callback AmmoBuilder
+ * @returns {any} Ammunition payload for a weapon rack
+ */
+
 export const token = 'geoffs-hidden-battle'
 
 export class Shape {
@@ -41,7 +58,7 @@ export class Shape {
     this.rackPositions = Mask.fromCoordsSquare(
       this._normalizeRackCoordinates(racks)
     )
-    this.canAttachWeapons = this._hasRackCoordinates(racks)
+    this.canAttachWeapons = this._hasValidRackInput(racks)
 
     this.isAttachedToRack = false
     this.terrain = bh.terrain
@@ -112,9 +129,7 @@ export class Shape {
    * @returns {Array} Vulnerable cells array
    */
   get vulnerable () {
-    if (this._vulnerable) return this._vulnerable
-    this._vulnerable = []
-    return this._vulnerable
+    return this._getOrInitArrayProperty('_vulnerable')
   }
 
   /**
@@ -130,9 +145,7 @@ export class Shape {
    * @returns {Array} Hardened cells array
    */
   get hardened () {
-    if (this._hardened) return this._hardened
-    this._hardened = []
-    return this._hardened
+    return this._getOrInitArrayProperty('_hardened')
   }
 
   /**
@@ -148,9 +161,7 @@ export class Shape {
    * @returns {Array} Immune cells array
    */
   get immune () {
-    if (this._immune) return this._immune
-    this._immune = []
-    return this._immune
+    return this._getOrInitArrayProperty('_immune')
   }
 
   /**
@@ -162,12 +173,24 @@ export class Shape {
   }
 
   /**
-   * Internal: Extract row and column from various coordinate formats
-   * @param {string|Array<number>|any} value - Coordinate in various formats
-   * @returns {[number, number]} Array of [row, column] or [NaN, NaN] if invalid
+   * Internal: Get or initialize a named array property.
+   * @param {string} property - Internal property name
+   * @returns {Array} Array value stored in property
    * @private
    */
-  _extractRackCoordinate (value) {
+  _getOrInitArrayProperty (property) {
+    if (this[property]) return this[property]
+    this[property] = []
+    return this[property]
+  }
+
+  /**
+   * Internal: Normalize a rack coordinate value into a row/column pair.
+   * @param {string|Array<number>|any} value - Coordinate value in various formats
+   * @returns {CoordinatePair} Valid [row, column] or [NaN, NaN] if invalid
+   * @private
+   */
+  _parseRackCoordinate (value) {
     if (typeof value === 'string') {
       return parsePair(value)
     }
@@ -179,30 +202,38 @@ export class Shape {
 
   /**
    * Internal: Normalize rack coordinates from various input formats
-   * @param {Set<any>|Array<any>|null} racks - Rack coordinates in various formats
-   * @returns {Array<[number, number]>} Array of valid [row, col] coordinate pairs
+   * @param {RackInput} racks - Rack coordinates in various formats
+   * @returns {Array<CoordinatePair>} Array of valid [row, col] coordinate pairs
    * @private
    */
   _normalizeRackCoordinates (racks) {
-    if (!racks) return []
+    if (!this._hasValidRackInput(racks)) return []
 
-    const coordinates = Zip.toArray(racks)
-    return coordinates
-      .map(v => this._extractRackCoordinate(v))
-      .filter(([r, c]) => Number.isFinite(r) && Number.isFinite(c))
+    return Zip.toArray(racks)
+      .map(v => this._parseRackCoordinate(v))
+      .filter(this._isFiniteCoordinate)
   }
 
   /**
-   * Internal: Check if rack coordinates are present
-   * @param {Set<any>|Array<any>|null} racks - Rack coordinates
+   * Internal: Check whether the rack input contains any coordinates.
+   * @param {RackInput} racks - Rack input container
    * @returns {boolean} True if racks container has coordinates
    * @private
    */
-  _hasRackCoordinates (racks) {
+  _hasValidRackInput (racks) {
     if (!racks) return false
     if (racks instanceof Set) return racks.size > 0
-    if (Array.isArray(racks)) return racks.length > 0
-    return false
+    return Array.isArray(racks) && racks.length > 0
+  }
+
+  /**
+   * Internal: Validate coordinate pair values.
+   * @param {CoordinatePair} coord - Coordinate pair
+   * @returns {boolean} True if row and column are finite numbers
+   * @private
+   */
+  _isFiniteCoordinate ([r, c]) {
+    return Number.isFinite(r) && Number.isFinite(c)
   }
 
   /**
@@ -211,11 +242,7 @@ export class Shape {
    * @private
    */
   _buildRacksFromPositions () {
-    const rackSet = new Set()
-    for (const [r, c] of this.rackPositions.toCoords) {
-      rackSet.add(makeKey(r, c))
-    }
-    return rackSet
+    return new Set(this.rackPositions.toCoords.map(([r, c]) => makeKey(r, c)))
   }
 
   /**
@@ -324,8 +351,8 @@ export class Shape {
 
   /**
    * Attach weapons to all rack positions on this shape
-   * @param {Function} ammoBuilder - Factory function creating ammunition for each rack
-   * @returns {Object} Attached weapons indexed by coordinate
+   * @param {AmmoBuilder} ammoBuilder - Factory function creating ammunition for each rack
+   * @returns {WeaponMap} Attached weapons indexed by coordinate
    * @throws {Error} If no racks available or weapon already attached
    */
   attachWeapon (ammoBuilder) {

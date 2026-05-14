@@ -6,6 +6,48 @@ import { SubBoard } from '../grid/subBoard.js'
 import { Zip } from '../core/Zip.js'
 
 /**
+ * @typedef {Object} WeaponSystem
+ * Weapon system interface
+ * @property {number} id - Unique weapon ID
+ * @property {string} letter - Weapon letter identifier
+ * @property {number} ammo - Current ammunition count
+ * @property {number} row - Row coordinate
+ * @property {number} col - Column coordinate
+ * @property {boolean} [damaged] - Whether weapon is damaged
+ * @property {boolean} [hit] - Whether weapon has been hit
+ * @property {Function} [hasAmmo] - Check if weapon has ammo
+ * @property {Function} [ammoRemaining] - Get remaining ammo
+ * @property {Function} [ammoCapacity] - Get ammo capacity
+ * @property {Function} [reset] - Reset weapon state
+ */
+
+/**
+ * @typedef {Object} Placement
+ * Placement configuration interface
+ * @property {SubBoard} board - Board defining placement
+ * @property {Object} [weapons] - Weapon systems by coordinate
+ * @property {number} [variant] - Placement variant index
+ */
+
+/**
+ * @typedef {Object} HitResult
+ * Hit processing result interface
+ * @property {string} letter - Ship letter identifier
+ * @property {string|null} info - Hit information message
+ * @property {string|null} damaged - Damage type indicator
+ * @property {Array} list - Array of hit results
+ * @property {Array} misses - Array of miss results
+ */
+
+/**
+ * @typedef {Object} DamageResult
+ * Damage processing result interface
+ * @property {Array} hits - Array of hit coordinates
+ * @property {Array} misses - Array of miss coordinates
+ * @property {number} dtaps - Number of double taps (already hit cells)
+ */
+
+/**
  * @param {string | any[]} arr
  */
 function firstElement (arr) {
@@ -167,7 +209,7 @@ export class Ship {
      */
     this._cellsArray = []
     this.placed = false
-    this.board = this.shape()?.board || Mask.empty(0, 0)
+    this.board = Mask.empty(0, 0)
   }
 
   static id = 1
@@ -522,33 +564,90 @@ export class Ship {
     let weaponsById = preserveExisting ? this.weaponsById : new Map()
     let weaponArray = preserveExisting ? this._weaponArray : []
 
-    const processedWeapons = Array.isArray(weaponsToProcess)
-      ? weaponsToProcess
-      : Array.from(weaponsToProcess.entries || weaponsToProcess)
+    const processedWeapons = this._normalizeWeaponsInput(weaponsToProcess)
 
     for (const item of processedWeapons) {
-      const [key, weaponSystem] = Array.isArray(item) ? item : [, item]
-
-      // Skip non-object values (test mocks, invalid data)
-      if (typeof weaponSystem !== 'object' || weaponSystem === null) {
-        continue
-      }
-
-      const [r, c] = parsePair(key)
-      if (r != null && c != null) {
-        weaponSystem.row = r
-        weaponSystem.col = c
-
-        if (weaponSystem.id != null) {
-          weaponsById.set(weaponSystem.id, weaponSystem)
-          if (!preserveExisting || !weaponArray.includes(weaponSystem)) {
-            weaponArray.push(weaponSystem)
-          }
-        }
-      }
+      this._processWeaponItem(item, weaponsById, weaponArray, preserveExisting)
     }
 
     return { weaponsById, weaponArray }
+  }
+
+  /**
+   * Internal: Normalize weapons input to array format
+   * @param {Map<number, any>|Array<any>} weaponsToProcess - Input weapons data
+   * @returns {Array} Normalized array of weapon items
+   * @private
+   */
+  _normalizeWeaponsInput (weaponsToProcess) {
+    return Array.isArray(weaponsToProcess)
+      ? weaponsToProcess
+      : Array.from(weaponsToProcess.entries || weaponsToProcess)
+  }
+
+  /**
+   * Internal: Process single weapon item and update collections
+   * @param {Array} item - [key, weaponSystem] pair
+   * @param {Map} weaponsById - Weapons by ID map
+   * @param {Array} weaponArray - Weapons array
+   * @param {boolean} preserveExisting - Whether to preserve existing collections
+   * @returns {void}
+   * @private
+   */
+  _processWeaponItem (item, weaponsById, weaponArray, preserveExisting) {
+    const [key, weaponSystem] = Array.isArray(item) ? item : [, item]
+
+    // Skip non-object values (test mocks, invalid data)
+    if (typeof weaponSystem !== 'object' || weaponSystem === null) {
+      return
+    }
+
+    const [r, c] = parsePair(key)
+    if (r != null && c != null) {
+      this._assignCoordinatesToWeapon(weaponSystem, r, c)
+      this._updateWeaponCollections(
+        weaponSystem,
+        weaponsById,
+        weaponArray,
+        preserveExisting
+      )
+    }
+  }
+
+  /**
+   * Internal: Assign row and column coordinates to weapon system
+   * @param {WeaponSystem} weaponSystem - Weapon system to update
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {void}
+   * @private
+   */
+  _assignCoordinatesToWeapon (weaponSystem, r, c) {
+    weaponSystem.row = r
+    weaponSystem.col = c
+  }
+
+  /**
+   * Internal: Update weapon collections with new weapon system
+   * @param {WeaponSystem} weaponSystem - Weapon system to add
+   * @param {Map} weaponsById - Weapons by ID map
+   * @param {Array} weaponArray - Weapons array
+   * @param {boolean} preserveExisting - Whether to preserve existing collections
+   * @returns {void}
+   * @private
+   */
+  _updateWeaponCollections (
+    weaponSystem,
+    weaponsById,
+    weaponArray,
+    preserveExisting
+  ) {
+    if (weaponSystem.id != null) {
+      weaponsById.set(weaponSystem.id, weaponSystem)
+      if (!preserveExisting || !weaponArray.includes(weaponSystem)) {
+        weaponArray.push(weaponSystem)
+      }
+    }
   }
 
   /**
@@ -668,7 +767,7 @@ export class Ship {
 
   /**
    * Internal: Process hit on weapon magazine (check if loaded/vulnerable)
-   * @param {{ damaged: boolean }} weaponSystem - Weapon system at impact point
+   * @param {WeaponSystem} weaponSystem - Weapon system at impact point
    * @param {any} model - Game model
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
@@ -678,32 +777,44 @@ export class Ship {
   _processMagazineHit (weaponSystem, model, r, c) {
     const isLoaded = this._isWeaponLoaded(weaponSystem)
     if (!isLoaded) {
-      weaponSystem.damaged = true
-      model.updateUI()
-      return { damaged: 'damaged', info: null, hits: [], misses: [] }
+      return this._handleUnloadedWeaponHit(weaponSystem, model)
     }
-    return this._processLoadedMagazineHit(weaponSystem, model, r, c)
+    return this._handleLoadedWeaponHit(weaponSystem, model, r, c)
   }
 
   /**
-   * Internal: Process hit on loaded magazine with potential detonation
-   * @param {{ hit: boolean; weapon: { volatile: boolean } }} weaponSystem - Loaded weapon system
-   * @param {{  updateUI: () => void }; opponent: { updateUI?: () => void }; UI: any; loadOut: { useAmmo: (w: any) => void } }} model - Game model
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Object|null} Detonation result if weapon is volatile
+   * Internal: Handle hit on unloaded weapon system
+   * @param {WeaponSystem} weaponSystem - Weapon system that was hit
+   * @param {any} model - Game model
+   * @returns {Object} Damage result for unloaded weapon
    * @private
    */
-  _processLoadedMagazineHit (weaponSystem, model, r, c) {
+  _handleUnloadedWeaponHit (weaponSystem, model) {
+    weaponSystem.damaged = true
+    model.updateUI()
+    return { damaged: 'damaged', info: null, hits: [], misses: [] }
+  }
+
+  /**
+   * Internal: Handle hit on loaded weapon system
+   * @param {WeaponSystem} weaponSystem - Loaded weapon system that was hit
+   * @param {any} model - Game model
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {Object} Damage result for loaded weapon
+   * @private
+   */
+  _handleLoadedWeaponHit (weaponSystem, model, r, c) {
     weaponSystem.hit = true
     const damaged = 'skull'
-    /// model.opponent?.updateUI()
+    // model.opponent?.updateUI()
 
     const viewModel = model.UI
     model.loadOut.useAmmo(weaponSystem)
     const cell = viewModel.gridCellAt(r, c)
     viewModel.useAmmoInCell(cell, damaged)
     model.updateUI()
+
     if (weaponSystem.weapon?.volatile) {
       return this._processDetonation(
         weaponSystem.weapon,
@@ -715,7 +826,21 @@ export class Ship {
         damaged
       )
     }
-    return { damaged: damaged, info: null, hits: [], misses: [] }
+
+    return { damaged, info: null, hits: [], misses: [] }
+  }
+
+  /**
+   * Internal: Process hit on loaded magazine with potential detonation
+   * @param {WeaponSystem} weaponSystem - Loaded weapon system
+   * @param {any} model - Game model
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {Object} Damage result for loaded weapon
+   * @private
+   */
+  _processLoadedMagazineHit (weaponSystem, model, r, c) {
+    return this._handleLoadedWeaponHit(weaponSystem, model, r, c)
   }
 
   /**
