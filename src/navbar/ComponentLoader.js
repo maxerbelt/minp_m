@@ -1,6 +1,22 @@
 /**
- * ComponentLoader - Handles loading and inserting HTML components
- * Provides reusable component loading with error handling strategies
+ * @typedef {string | Element} ComponentLoaderInsertPoint
+ */
+
+/**
+ * @callback ComponentLoaderCallback
+ * @param {string} [html]
+ * @returns {void | Promise<void>}
+ */
+
+/**
+ * @typedef {Object} ComponentLoaderCacheStats
+ * @property {number} cachedComponents
+ * @property {number} loading
+ */
+
+/**
+ * ComponentLoader handles fetching HTML components and rendering them into the DOM.
+ * It manages caching, concurrent loads, and callback invocation with centralized error handling.
  */
 export class ComponentLoader {
   constructor () {
@@ -9,144 +25,171 @@ export class ComponentLoader {
   }
 
   /**
-   * Load component and insert into DOM
+   * Loads a component, inserts it into the DOM, and invokes a callback.
+   * @param {ComponentLoaderInsertPoint} insertPoint
+   * @param {string} componentPath
+   * @param {ComponentLoaderCallback|null} callback
+   * @returns {Promise<string>}
    */
   async loadComponent (insertPoint, componentPath, callback = null) {
     try {
       const html = await this._fetchComponent(componentPath)
-      this._insertComponent(insertPoint, html)
-      await this._executeCallback(callback)
+      this._insertHtml(insertPoint, html)
+      await this._invokeCallback(callback, html)
       return html
-    } catch (err) {
-      this._handleError(insertPoint, err, callback)
-      throw err
+    } catch (error) {
+      this._handleLoadError(insertPoint, error, callback)
+      throw error
     }
   }
 
   /**
-   * Load component with caching
+   * Loads a component using cache if available.
+   * @param {ComponentLoaderInsertPoint} insertPoint
+   * @param {string} componentPath
+   * @param {ComponentLoaderCallback|null} callback
+   * @returns {Promise<string>}
    */
   async loadComponentCached (insertPoint, componentPath, callback = null) {
-    if (this.cache.has(componentPath)) {
-      const html = this.cache.get(componentPath)
-      this._insertComponent(insertPoint, html)
-      await this._executeCallback(callback)
-      return html
-    }
-
     return this.loadComponent(insertPoint, componentPath, callback)
   }
 
   /**
-   * Preload component into cache without inserting
+   * Preloads a component into cache without inserting it.
+   * @param {string} componentPath
+   * @returns {Promise<string>}
    */
   async preloadComponent (componentPath) {
-    if (this.cache.has(componentPath)) {
-      return this.cache.get(componentPath)
-    }
-
     try {
-      const html = await this._fetchComponent(componentPath)
-      this.cache.set(componentPath, html)
-      return html
-    } catch (err) {
-      console.error(`Failed to preload component ${componentPath}:`, err)
-      throw err
+      return await this._fetchComponent(componentPath)
+    } catch (error) {
+      console.error(`Failed to preload component ${componentPath}:`, error)
+      throw error
     }
   }
 
   /**
-   * Fetch component HTML from server
+   * Returns an existing cached component or begins fetching it.
    * @private
+   * @param {string} componentPath
+   * @returns {Promise<string>}
    */
   async _fetchComponent (componentPath) {
-    // Use cached promise if already loading
-    if (this.loadingPromises.has(componentPath)) {
-      return this.loadingPromises.get(componentPath)
+    const cachedPromise = this.loadingPromises.get(componentPath)
+    if (cachedPromise) {
+      return cachedPromise
     }
 
-    const promise = (async () => {
-      const res = await fetch(componentPath)
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
-      }
-
-      const html = await res.text()
-      this.cache.set(componentPath, html)
-      return html
-    })()
-
-    this.loadingPromises.set(componentPath, promise)
+    const fetchPromise = this._createFetchPromise(componentPath)
+    this.loadingPromises.set(componentPath, fetchPromise)
 
     try {
-      return await promise
+      return await fetchPromise
     } finally {
       this.loadingPromises.delete(componentPath)
     }
   }
 
   /**
-   * Insert HTML into DOM element
+   * Creates a promise for fetching component HTML.
    * @private
+   * @param {string} componentPath
+   * @returns {Promise<string>}
    */
-  _insertComponent (insertPoint, html) {
-    const element = this._getElement(insertPoint)
+  async _createFetchPromise (componentPath) {
+    const response = await fetch(componentPath)
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP error fetching ${componentPath}: ${response.status}`
+      )
+    }
+
+    const html = await response.text()
+    this.cache.set(componentPath, html)
+    return html
+  }
+
+  /**
+   * Inserts HTML content into the target element.
+   * @private
+   * @param {ComponentLoaderInsertPoint} insertPoint
+   * @param {string} html
+   * @returns {void}
+   */
+  _insertHtml (insertPoint, html) {
+    const element = this._resolveInsertPoint(insertPoint)
     if (element) {
       element.innerHTML = html
     }
   }
 
   /**
-   * Get DOM element by ID or element reference
+   * Resolves an insert point to a DOM element reference.
    * @private
+   * @param {ComponentLoaderInsertPoint} insertPoint
+   * @returns {Element|null}
    */
-  _getElement (insertPoint) {
+  _resolveInsertPoint (insertPoint) {
     if (typeof insertPoint === 'string') {
       return document.getElementById(insertPoint)
     }
+
     return insertPoint instanceof Element ? insertPoint : null
   }
 
   /**
-   * Execute callback safely
+   * Invokes a callback safely.
    * @private
+   * @param {ComponentLoaderCallback|null} callback
+   * @param {string} html
+   * @returns {Promise<void>}
    */
-  async _executeCallback (callback) {
-    if (typeof callback === 'function') {
-      try {
-        callback()
-      } catch (error) {
-        console.log('Callback error:', error)
-      }
+  async _invokeCallback (callback, html) {
+    if (typeof callback !== 'function') {
+      return
+    }
+
+    try {
+      await callback(html)
+    } catch (error) {
+      console.log('Callback error:', error)
     }
   }
 
   /**
-   * Handle component loading error
+   * Handles load failures and reports errors through callback.
    * @private
+   * @param {ComponentLoaderInsertPoint} insertPoint
+   * @param {Error} error
+   * @param {ComponentLoaderCallback|null} callback
+   * @returns {void}
    */
-  _handleError (insertPoint, err, callback) {
-    console.error(`Failed to load ${insertPoint}:`, err)
+  _handleLoadError (insertPoint, error, callback) {
+    console.error(`Failed to load component at ${insertPoint}:`, error)
 
-    if (typeof callback === 'function') {
-      try {
-        callback(err)
-      } catch (error) {
-        console.log('Error callback failed:', error)
-      }
+    if (typeof callback !== 'function') {
+      return
+    }
+
+    try {
+      callback(error)
+    } catch (callbackError) {
+      console.log('Error callback failed:', callbackError)
     }
   }
 
   /**
-   * Clear component cache
+   * Clears the cached component HTML.
+   * @returns {void}
    */
   clearCache () {
     this.cache.clear()
   }
 
   /**
-   * Get cache statistics
+   * Returns cache and loading statistics.
+   * @returns {ComponentLoaderCacheStats}
    */
   getCacheStats () {
     return {
@@ -157,7 +200,8 @@ export class ComponentLoader {
 }
 
 /**
- * Create global component loader instance
+ * Creates a new ComponentLoader instance.
+ * @returns {ComponentLoader}
  */
 export function createComponentLoader () {
   return new ComponentLoader()

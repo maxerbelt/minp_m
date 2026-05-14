@@ -2,113 +2,221 @@ import { bh } from '../terrains/all/js/bh.js'
 import { enemy } from '../waters/enemy.js'
 import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 
-let otherboard = null
+/**
+ * @typedef {Object} EnemyUI
+ * @property {function(): void} refreshButtons
+ * @property {Object<string, HTMLElement>} buttons
+ * @property {Object<string, HTMLElement>} weaponBtns
+ * @property {function(function, function, Object, Object): void} buildBoardHover
+ * @property {function(): void} removeHighlightAoE
+ */
+
+/**
+ * @typedef {Object} WeaponSystem
+ * @property {Object} weapon
+ */
+
+/**
+ * @typedef {Object} LoadOutModel
+ * @property {Array<Array<number>>} [selectedCoordinates]
+ * @property {Array<Array<number>>} [coordinates]
+ * @property {Object} [selectedWeapon]
+ * @property {function(): WeaponSystem} getCurrentWeaponSystem
+ */
+
+/**
+ * @typedef {Object} BoardMap
+ * @property {function(number, number): boolean} inBounds
+ */
+
+let cleanupOpponentBoard = null
+
+/**
+ * Start a new enemy game with optional opponent board setup.
+ * @param {string} seek
+ * @param {function(): void|null} opponentBoard
+ * @param {Object|null} friendUI
+ */
 export function newGame (seek, opponentBoard, friendUI) {
   bh.seekingMode = seek === 'seek'
+
   if (bh.seekingMode) {
     enemy.ships = []
   }
 
   enemy.resetModel()
-
-  const title = document.getElementById('enemy-title')
-  title.textContent = 'Enemy ' + bh.terrain.mapHeading
-
-  if (otherboard) {
-    otherboard()
-  } else if (opponentBoard && friendUI) {
-    otherboard = opponentBoard
-    friendUI.clearFriendClasses()
-    enemy.opponent?.armWeapons()
-  }
-
-  enemy.UI.buildBoardHover(
-    highlightAoE,
-    enemy.UI.removeHighlightAoE,
-    enemy.UI,
-    enemy
-  )
+  _updateEnemyTitle()
+  _initializeOpponentBoard(opponentBoard, friendUI)
+  _initializeEnemyBoardHover()
   enemy.setBoardTargetingState(bh.seekingMode)
   enemy.setupWeaponButtonHandlers()
 }
 
-function highlightAoE (model, r, c) {
-  const map = bh.map
-  if (!map.inBounds(r, c)) return
-  const viewModel = model.UI
-  const coordinates =
-    model.loadOut?.selectedCoordinates || model.loadOut?.coordinates
-  const wps =
-    model.loadOut?.selectedWeapon || model.loadOut.getCurrentWeaponSystem()
-  const weapon = wps?.weapon
-  viewModel.removeHighlightAoE()
-  const newCoords = [...coordinates, [r, c]]
-  if (!weapon || weapon.points > newCoords.length) return
-  const cells = weapon.splashAoe(map, newCoords)
-  for (const [rr, cc, power] of cells) {
-    if (map.inBounds(rr, cc)) {
-      const cellClass = bh.splashTags[power]
-      const cell = viewModel.gridCellAt(rr, cc)
-      cell.classList.add(cellClass, 'target')
-    }
-  }
-}
 /**
- * Setup keyboard shortcuts for seek mode
- * Supports placement (P), new game (R), reveal (V), and mode toggle (M/S)
+ * Update enemy title text using the current terrain heading.
  * @private
  */
-function _setupSeekShortcuts (placementHandler, testHandler) {
-  // Create keyboard shortcut manager with seek mode handlers
-  const shortcutMgr = new KeyboardShortcutManager()
+function _updateEnemyTitle () {
+  const title = document.getElementById('enemy-title')
+  if (title) {
+    title.textContent = 'Enemy ' + bh.terrain.mapHeading
+  }
+}
 
-  // Register shortcut handlers
+/**
+ * Initialize the opponent board cleanup or arm weapons for a friend UI.
+ * @private
+ */
+function _initializeOpponentBoard (opponentBoard, friendUI) {
+  if (cleanupOpponentBoard) {
+    cleanupOpponentBoard()
+    return
+  }
+
+  if (opponentBoard && friendUI) {
+    cleanupOpponentBoard = opponentBoard
+    friendUI.clearFriendClasses()
+    enemy.opponent?.armWeapons()
+  }
+}
+
+/**
+ * Configure enemy board hover behavior.
+ * @private
+ */
+function _initializeEnemyBoardHover () {
+  enemy.UI.buildBoardHover(
+    _highlightAreaOfEffect,
+    enemy.UI.removeHighlightAoE,
+    enemy.UI,
+    enemy
+  )
+}
+
+/**
+ * Highlight the area of effect for the current selected weapon.
+ * @param {Object} model
+ * @param {number} r
+ * @param {number} c
+ */
+function _highlightAreaOfEffect (model, r, c) {
+  const map = bh.map
+  if (!map.inBounds(r, c)) return
+
+  const viewModel = model.UI
+  const coordinates = _getActiveCoordinates(model)
+  const weapon = _getActiveWeapon(model)
+
+  viewModel.removeHighlightAoE()
+
+  const targetCoordinates = [...coordinates, [r, c]]
+  if (!weapon || weapon.points > targetCoordinates.length) return
+
+  _applyAreaEffectHighlight(map, viewModel, weapon, targetCoordinates)
+}
+
+/**
+ * Returns either selected coordinates or the default loadout coordinates.
+ * @private
+ * @param {Object} model
+ * @returns {Array<Array<number>>}
+ */
+function _getActiveCoordinates (model) {
+  return model.loadOut?.selectedCoordinates || model.loadOut?.coordinates || []
+}
+
+/**
+ * Returns the current weapon object for the loaded model.
+ * @private
+ * @param {Object} model
+ * @returns {Object|undefined}
+ */
+function _getActiveWeapon (model) {
+  const selectedWeapon = model.loadOut?.selectedWeapon
+  const weaponSystem = selectedWeapon || model.loadOut?.getCurrentWeaponSystem()
+  return weaponSystem?.weapon
+}
+
+/**
+ * Adds visual highlights for splash area of effect cells.
+ * @private
+ * @param {BoardMap} map
+ * @param {Object} viewModel
+ * @param {Object} weapon
+ * @param {Array<Array<number>>} targetCoordinates
+ */
+function _applyAreaEffectHighlight (map, viewModel, weapon, targetCoordinates) {
+  const cells = weapon.splashAoe(map, targetCoordinates)
+
+  for (const [rr, cc, power] of cells) {
+    if (!map.inBounds(rr, cc)) continue
+
+    const cell = viewModel.gridCellAt(rr, cc)
+    const cellClass = bh.splashTags[power]
+    cell.classList.add(cellClass, 'target')
+  }
+}
+
+/**
+ * Setup keyboard shortcuts for seek mode.
+ * Supports placement, test, new game, reveal, and weapon selection.
+ * @private
+ */
+function _initializeSeekShortcuts (placementHandler, testHandler) {
+  const shortcutMgr = new KeyboardShortcutManager()
+  const shortcuts = _buildSeekShortcuts(placementHandler, testHandler)
+
+  shortcutMgr.registerShortcuts(shortcuts)
+  shortcutMgr.activate()
+
+  return () => shortcutMgr.deactivate()
+}
+
+/**
+ * Build the shortcuts object for seek mode.
+ * @private
+ */
+function _buildSeekShortcuts (placementHandler, testHandler) {
   const shortcuts = {
-    p: () => {
-      if (placementHandler) placementHandler()
-    },
-    t: () => {
-      if (testHandler) testHandler()
-    },
+    p: () => placementHandler?.(),
+    t: () => testHandler?.(),
     r: () => newGame(),
     q: () => enemy.onClickReveal(),
     s: () => enemy.onClickSingleShotButton()
   }
 
-  const btns = enemy.UI?.weaponBtns || {}
-  for (const letter of Object.values(btns).map(btn => btn.dataset.letter)) {
-    shortcuts[letter.toLowerCase()] = () => enemy.onClickWeaponButtons(letter)
+  const weaponButtons = enemy.UI?.weaponBtns || {}
+  for (const button of Object.values(weaponButtons)) {
+    const letter = button.dataset.letter
+    if (letter) {
+      shortcuts[letter.toLowerCase()] = () => enemy.onClickWeaponButtons(letter)
+    }
   }
-  shortcutMgr.registerShortcuts(shortcuts)
-  shortcutMgr.activate()
 
-  // Return cleanup function
-  return () => shortcutMgr.deactivate()
+  return shortcuts
+}
+
+/**
+ * Add click handler to an element if it exists.
+ * @private
+ */
+function _attachClickHandler (element, handler) {
+  if (element?.addEventListener && typeof handler === 'function') {
+    element.addEventListener('click', handler)
+  }
 }
 
 export function setupEnemy (placementHandler, testHandler) {
-  // Refresh enemy button references after navbar content loads.
   enemy.UI?.refreshButtons?.()
 
-  // Wire button handlers safely
-  const restartBtn = enemy.UI?.buttons?.restart
-  if (restartBtn?.addEventListener) {
-    restartBtn.addEventListener('click', newGame.bind(null, 'seek', null))
-  }
+  _attachClickHandler(
+    enemy.UI?.buttons?.restart,
+    newGame.bind(null, 'seek', null)
+  )
   enemy.wireupButtons()
 
-  // Setup optional placement button if provided
-  const placeBtn = enemy.UI?.buttons?.place
-  if (placementHandler && placeBtn?.addEventListener) {
-    placeBtn.addEventListener('click', placementHandler)
-  }
+  _attachClickHandler(enemy.UI?.buttons?.place, placementHandler)
+  _attachClickHandler(enemy.UI?.buttons?.test, testHandler)
 
-  const testBtn = enemy.UI?.buttons?.test
-  if (testHandler && testBtn?.addEventListener) {
-    testBtn.addEventListener('click', testHandler)
-  }
-  //enemy.setupWeaponButtonHandlers()
-
-  // Setup keyboard shortcuts and return cleanup function
-  return _setupSeekShortcuts(placementHandler, testHandler)
+  return _initializeSeekShortcuts(placementHandler, testHandler)
 }

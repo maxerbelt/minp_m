@@ -4,23 +4,50 @@ import { showShipInfo } from '../docs/shipprint.js'
 import { showWeapons } from '../docs/weaponprint.js'
 
 /**
- * Display the secondary tab bar
- * Removes 'hidden' class to reveal pre-existing secondary navigation elements
- * @returns {void}
+ * @typedef {import('../waters/friend.js').Friend} Friend
+ * @typedef {import('../selection/dragndrop.js').Ship} Ship
  */
-export function show2ndBar () {
-  const tabBar = document.getElementById('second-tab-bar')
-  if (tabBar) {
-    tabBar.classList.remove('hidden')
-  }
+
+const HIDDEN_CLASS = 'hidden'
+
+/**
+ * Retrieve a DOM element by its ID.
+ * @param {string} elementId - The ID of the DOM element.
+ * @returns {HTMLElement|null} The matching element or null if not found.
+ */
+function queryElementById (elementId) {
+  return document.getElementById(elementId)
 }
 
 /**
- * Display friend ship and weapon information in detail views
- * Renders detailed ship information and weapon configurations
- * @param {Friend} friend - Friend instance with ships data
- * @param {Array} [ships=friend.ships] - Ships to display (defaults to all friend ships)
- * @param {boolean} [all=false] - Include all weapon details when true
+ * Toggle the hidden state of a DOM element.
+ * @param {string} elementId - The ID of the element to update.
+ * @param {boolean} hidden - Whether the element should be hidden.
+ * @returns {void}
+ */
+function setHiddenState (elementId, hidden) {
+  const element = queryElementById(elementId)
+  if (!element) {
+    return
+  }
+
+  element.classList.toggle(HIDDEN_CLASS, hidden)
+}
+
+/**
+ * Display the secondary tab bar.
+ * Removes the 'hidden' class from the secondary navigation container.
+ * @returns {void}
+ */
+export function show2ndBar () {
+  setHiddenState('second-tab-bar', false)
+}
+
+/**
+ * Display friend ship and weapon information in detail views.
+ * @param {Friend} friend - Friend instance with ships data.
+ * @param {Array<Ship>} [ships=friend.ships] - Ships to display (defaults to all friend ships).
+ * @param {boolean} [all=false] - Include all weapon details when true.
  * @returns {void}
  */
 export function showRules (friend, ships = friend.ships, all = false) {
@@ -29,24 +56,18 @@ export function showRules (friend, ships = friend.ships, all = false) {
 }
 
 /**
- * Create a new Friend instance with associated UI
- * Factory function that initializes both the UI component and the Friend model
- * @returns {Friend} A new Friend instance bound to its FriendUI
+ * Create a new Friend instance with associated UI.
+ * @returns {Friend} A new Friend instance bound to its FriendUI.
  */
 export function makeFriend () {
-  const friendUI = new FriendUI()
-  const friend = new Friend(friendUI)
-  return friend
+  return new Friend(new FriendUI())
 }
 
 /**
- * Hide the map selector control
- * Adds 'hidden' class to prevent display of map selection UI
+ * Hide the map selector control.
+ * Adds the 'hidden' class to the map selector container.
  * @returns {void}
  */
 export function hideMapSelector () {
-  const mapContainer = document.getElementById('choose-map-container')
-  if (mapContainer) {
-    mapContainer.classList.add('hidden')
-  }
+  setHiddenState('choose-map-container', true)
 }

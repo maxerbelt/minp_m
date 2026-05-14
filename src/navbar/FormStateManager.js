@@ -1,80 +1,97 @@
 /**
- * FormStateManager - Centralized form state management with validation
- * Provides state tracking, validation, change notifications, and reset functionality
+ * @typedef {Object<string, any>} FormState
+ */
+
+/**
+ * @callback ValidatorFn
+ * @param {*} value
+ * @returns {*}
+ */
+
+/**
+ * @callback ChangeHandlerFn
+ * @param {*} value
+ * @returns {void}
+ */
+
+/**
+ * FormStateManager - Centralized form state management with validation.
+ * Provides state tracking, validation, change notifications, and reset functionality.
  *
  * @class FormStateManager
- * @description Manages mutable form state with immutable snapshots for change detection
+ * @description Manages mutable form state with immutable snapshots for change detection.
  */
 export class FormStateManager {
   /**
-   * Initialize form state manager
-   * @param {Object} [initialState={}] - Initial state values
+   * @param {FormState} [initialState={}] - Initial state values.
    */
   constructor (initialState = {}) {
-    /** @type {Object} Current form state */
-    this.state = { ...initialState }
+    /** @type {FormState} Current form state. */
+    this.state = this._cloneState(initialState)
 
-    /** @type {Object} Snapshot of original state for change tracking */
-    this.originalState = { ...initialState }
+    /** @type {FormState} Snapshot of original state for change tracking. */
+    this.originalState = this._cloneState(initialState)
 
-    /** @type {Object<string, Function>} Field-level validators */
+    /** @type {Object<string, ValidatorFn>} Field-level validators. */
     this.validators = {}
 
-    /** @type {Object<string, Function>} Field change notification handlers */
-    this.onChange = {}
+    /** @type {Object<string, ChangeHandlerFn>} Field change notification handlers. */
+    this.changeHandlers = {}
+    this.onChange = this.changeHandlers
   }
 
   /**
-   * Register a validation function for a field
-   * @param {string} field - Field name to validate
-   * @param {Function} validator - Validator function: (value) => validatedValue
-   * @throws {TypeError} If validator is not a function
+   * Register a validation function for a field.
+   * @param {string} field - Field name to validate.
+   * @param {ValidatorFn} validator - Validator function.
+   * @throws {TypeError} If validator is not a function.
    */
   registerValidator (field, validator) {
-    this._validateCallback(validator, 'validator')
+    this._validateFunction(validator, 'validator')
     this.validators[field] = validator
   }
 
   /**
-   * Register a change handler callback for a field
-   * @param {string} field - Field name to monitor
-   * @param {Function} handler - Handler function: (value) => void
-   * @throws {TypeError} If handler is not a function
+   * Register a change handler callback for a field.
+   * @param {string} field - Field name to monitor.
+   * @param {ChangeHandlerFn} handler - Handler function.
+   * @throws {TypeError} If handler is not a function.
    */
   registerChangeHandler (field, handler) {
-    this._validateCallback(handler, 'handler')
-    this.onChange[field] = handler
+    this._validateFunction(handler, 'handler')
+    this.changeHandlers[field] = handler
   }
 
   /**
-   * Retrieve current value of a field
-   * @param {string} field - Field name
-   * @returns {*} Current field value
+   * Retrieve current value of a field.
+   * @param {string} field - Field name.
+   * @returns {*} Current field value.
    */
   get (field) {
     return this.state[field]
   }
 
   /**
-   * Set field value with validation and change notification
-   * @param {string} field - Field name
-   * @param {*} value - New field value
-   * @returns {boolean} True if value was set successfully, false if validation failed
+   * Set field value with validation and change notification.
+   * @param {string} field - Field name.
+   * @param {*} value - New field value.
+   * @returns {boolean} True if value was set successfully, false if validation failed.
    */
   set (field, value) {
-    const validated = this._validate(field, value)
-    if (validated !== undefined && validated !== null) {
-      this.state[field] = validated
-      this._notifyChange(field, validated)
-      return true
+    const validated = this._validateField(field, value)
+    if (!this._isAcceptableValue(validated)) {
+      return false
     }
-    return false
+
+    this.state[field] = validated
+    this._notifyChange(field, validated)
+    return true
   }
 
   /**
-   * Update multiple fields at once
-   * @param {Object} updates - Object with field names and values: { field: value, ... }
-   * @returns {Object} Successfully updated fields with their new values
+   * Update multiple fields at once.
+   * @param {FormState} updates - Object with field names and values.
+   * @returns {FormState} Successfully updated fields with their new values.
    */
   update (updates) {
     const result = {}
@@ -87,31 +104,31 @@ export class FormStateManager {
   }
 
   /**
-   * Get complete current state
-   * @returns {Object} Copy of current state object
+   * Get complete current state.
+   * @returns {FormState} Copy of current state object.
    */
   getAll () {
-    return { ...this.state }
+    return this._cloneState(this.state)
   }
 
   /**
-   * Reset state to original values
+   * Reset state to original values.
    */
   reset () {
-    this.state = { ...this.originalState }
+    this.state = this._cloneState(this.originalState)
   }
 
   /**
-   * Check if any field has changed from original state
-   * @returns {boolean} True if state differs from original
+   * Check if any field has changed from original state.
+   * @returns {boolean} True if state differs from original.
    */
   hasChanged () {
-    return JSON.stringify(this.state) !== JSON.stringify(this.originalState)
+    return this._statesAreDifferent(this.state, this.originalState)
   }
 
   /**
-   * Get all fields that differ from original state
-   * @returns {Object} Changed fields with their new values
+   * Get all fields that differ from original state.
+   * @returns {FormState} Changed fields with their new values.
    */
   getChangedFields () {
     const changed = {}
@@ -124,77 +141,98 @@ export class FormStateManager {
   }
 
   /**
-   * Remove all registered change handlers
+   * Remove all registered change handlers.
    */
   clearHandlers () {
-    this.onChange = {}
+    this.changeHandlers = {}
+    this.onChange = this.changeHandlers
   }
 
   /**
-   * Validate a callback function for use as handler or validator
    * @private
-   * @param {*} callback - Function to validate
-   * @param {string} callbackType - Type of callback for error message
-   * @throws {TypeError} If callback is not a function
+   * @param {*} func
+   * @param {string} label
    */
-  _validateCallback (callback, callbackType) {
-    if (typeof callback !== 'function') {
-      throw new TypeError(
-        `${callbackType} must be a function, received ${typeof callback}`
-      )
+  _validateFunction (func, label) {
+    if (typeof func !== 'function') {
+      throw new TypeError(`${label} must be a function, received ${typeof func}`)
     }
   }
 
   /**
-   * Apply field validator and return validated value
    * @private
-   * @param {string} field - Field name
-   * @param {*} value - Value to validate
-   * @returns {*} Validated value or original if no validator
+   * @param {string} field
+   * @param {*} value
+   * @returns {*}
    */
-  _validate (field, value) {
+  _validateField (field, value) {
     const validator = this.validators[field]
-    if (validator) {
-      return validator(value)
-    }
-    return value
+    return validator ? validator(value) : value
   }
 
   /**
-   * Safely invoke field change handler
    * @private
-   * @param {string} field - Field name
-   * @param {*} value - New field value
+   * @param {*} value
+   * @returns {boolean}
+   */
+  _isAcceptableValue (value) {
+    return value !== undefined && value !== null
+  }
+
+  /**
+   * @private
+   * @param {string} field
+   * @param {*} value
    */
   _notifyChange (field, value) {
-    const handler = this.onChange[field]
-    if (handler && typeof handler === 'function') {
-      try {
-        handler(value)
-      } catch (error) {
-        console.error(`Error in change handler for field '${field}':`, error)
-      }
+    const handler = this.changeHandlers[field]
+    if (typeof handler !== 'function') {
+      return
     }
+
+    try {
+      handler(value)
+    } catch (error) {
+      console.error(`Error in change handler for field '${field}':`, error)
+    }
+  }
+
+  /**
+   * @private
+   * @param {FormState} state
+   * @returns {FormState}
+   */
+  _cloneState (state) {
+    return { ...state }
+  }
+
+  /**
+   * @private
+   * @param {FormState} left
+   * @param {FormState} right
+   * @returns {boolean}
+   */
+  _statesAreDifferent (left, right) {
+    return JSON.stringify(left) !== JSON.stringify(right)
   }
 }
 
 /**
- * GameBoardStateManager - Specialized form state manager for game board configuration
- * Manages board-specific state: dimensions (height, width), terrain type, water type, map type
+ * GameBoardStateManager - Specialized form state manager for game board configuration.
+ * Manages board-specific state: dimensions (height, width), terrain type, water type, map type.
  *
  * @class GameBoardStateManager
  * @extends FormStateManager
- * @description Centralizes game board settings with predefined defaults and convenience accessors
+ * @description Centralizes game board settings with predefined defaults and convenience accessors.
  */
 export class GameBoardStateManager extends FormStateManager {
   /**
-   * Initialize game board state with predefined board settings
-   * @param {Object} [initialState={}] - Override initial board state
-   * @param {number} [initialState.height=10] - Board height in cells
-   * @param {number} [initialState.width=10] - Board width in cells
-   * @param {string} [initialState.terrain='standard'] - Terrain type
-   * @param {string} [initialState.water='standard'] - Water type
-   * @param {string} [initialState.mapType='rectangular'] - Map geometry type
+   * @param {Object} [initialState={}] - Override initial board state.
+   * @param {number} [initialState.height=10] - Board height in cells.
+   * @param {number} [initialState.width=10] - Board width in cells.
+   * @param {string} [initialState.terrain='standard'] - Terrain type.
+   * @param {string} [initialState.water='standard'] - Water type.
+   * @param {string} [initialState.mapType='rectangular'] - Map geometry type.
    */
   constructor (initialState = {}) {
     super({
@@ -208,8 +246,8 @@ export class GameBoardStateManager extends FormStateManager {
   }
 
   /**
-   * Get current board dimensions
-   * @returns {Object} Object with height and width properties
+   * Get current board dimensions.
+   * @returns {Object} Object with height and width properties.
    */
   getDimensions () {
     return {
@@ -219,11 +257,11 @@ export class GameBoardStateManager extends FormStateManager {
   }
 
   /**
-   * Set board dimensions with validation
-   * @param {number} height - Board height in cells (must be positive integer)
-   * @param {number} width - Board width in cells (must be positive integer)
-   * @returns {Object} Successfully updated dimensions
-   * @throws {Error} If dimensions validation fails
+   * Set board dimensions with validation.
+   * @param {number} height - Board height in cells (must be positive integer).
+   * @param {number} width - Board width in cells (must be positive integer).
+   * @returns {FormState} Successfully updated dimensions.
+   * @throws {Error} If dimensions validation fails.
    */
   setDimensions (height, width) {
     if (!this._validateDimensions(height, width)) {
@@ -235,8 +273,8 @@ export class GameBoardStateManager extends FormStateManager {
   }
 
   /**
-   * Get current terrain configuration
-   * @returns {Object} Object with terrain and water properties
+   * Get current terrain configuration.
+   * @returns {Object} Object with terrain and water properties.
    */
   getTerrainSettings () {
     return {
@@ -246,38 +284,38 @@ export class GameBoardStateManager extends FormStateManager {
   }
 
   /**
-   * Set terrain configuration
-   * @param {string} terrain - Terrain type identifier
-   * @param {string} water - Water type identifier
-   * @returns {Object} Successfully updated terrain settings
+   * Set terrain configuration.
+   * @param {string} terrain - Terrain type identifier.
+   * @param {string} water - Water type identifier.
+   * @returns {FormState} Successfully updated terrain settings.
    */
   setTerrainSettings (terrain, water) {
     return this.update({ terrain, water })
   }
 
   /**
-   * Get current map type
-   * @returns {string} Map type identifier (e.g., 'rectangular', 'hexagonal')
+   * Get current map type.
+   * @returns {string} Map type identifier (e.g., 'rectangular', 'hexagonal').
    */
   getMapType () {
     return this.state.mapType
   }
 
   /**
-   * Set map type
-   * @param {string} mapType - Map geometry type
-   * @returns {Object} Successfully updated map type
+   * Set map type.
+   * @param {string} mapType - Map geometry type.
+   * @returns {FormState} Successfully updated map type.
    */
   setMapType (mapType) {
     return this.update({ mapType })
   }
 
   /**
-   * Validate board dimensions are numeric and positive
+   * Validate board dimensions are numeric and positive.
    * @private
-   * @param {number} height - Height to validate
-   * @param {number} width - Width to validate
-   * @returns {boolean} True if dimensions are valid
+   * @param {number} height - Height to validate.
+   * @param {number} width - Width to validate.
+   * @returns {boolean} True if dimensions are valid.
    */
   _validateDimensions (height, width) {
     return (
@@ -290,18 +328,18 @@ export class GameBoardStateManager extends FormStateManager {
 }
 
 /**
- * Factory function to create a new FormStateManager instance
- * @param {Object} [initialState={}] - Initial state values
- * @returns {FormStateManager} A new form state manager
+ * Factory function to create a new FormStateManager instance.
+ * @param {FormState} [initialState={}] - Initial state values.
+ * @returns {FormStateManager} A new form state manager.
  */
 export function createFormStateManager (initialState = {}) {
   return new FormStateManager(initialState)
 }
 
 /**
- * Factory function to create a new GameBoardStateManager instance
- * @param {Object} [initialState={}] - Override initial board state
- * @returns {GameBoardStateManager} A new game board state manager
+ * Factory function to create a new GameBoardStateManager instance.
+ * @param {FormState} [initialState={}] - Override initial board state.
+ * @returns {GameBoardStateManager} A new game board state manager.
  */
 export function createGameBoardStateManager (initialState = {}) {
   return new GameBoardStateManager(initialState)

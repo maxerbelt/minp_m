@@ -1,68 +1,184 @@
+/**
+ * @typedef {HTMLSelectElement} ChooseUISelectElement
+ */
+
+/**
+ * @callback ChooseUIChangeCallback
+ * @param {string} value
+ * @param {string} text
+ */
+
+/**
+ * @typedef {HTMLOptionElement} ChooseUIOptionElement
+ */
+
+/**
+ * Base class for select-based UI components.
+ * Responsible for option lifecycle and change event wiring.
+ */
 class ChooseUI {
+  /**
+   * @param {string} targetId
+   */
   constructor (targetId) {
     if (new.target === ChooseUI) {
       throw new Error(
         'base class cannot be instantiated directly. Please extend it.'
       )
     }
-    this.choose = document.getElementById(targetId)
+
+    this.selectElement = document.getElementById(targetId)
+    this.choose = this.selectElement
   }
 
-  addOption (id, choice, defaultIndex, defaultText) {
-    let option = document.createElement('option')
-    option.value = id
-    option.textContent = choice
-    this.choose.appendChild(option)
-    if (id === defaultIndex || choice === defaultText) {
-      option.selected = 'selected'
+  /**
+   * Creates an option element.
+   * @param {string|number} value
+   * @param {string|number} text
+   * @returns {ChooseUIOptionElement}
+   */
+  _createOption (value, text) {
+    const option = document.createElement('option')
+    option.value = String(value)
+    option.textContent = String(text)
+    return option
+  }
+
+  /**
+   * Marks the option as selected if it matches the provided values.
+   * @param {ChooseUIOptionElement} option
+   * @param {string|number} selectedValue
+   * @param {string|number} selectedText
+   * @returns {void}
+   */
+  _applySelectionState (option, selectedValue, selectedText) {
+    if (
+      option.value === String(selectedValue) ||
+      option.textContent === String(selectedText)
+    ) {
+      option.selected = true
     }
   }
-  empty () {
-    this.choose.length = 0
+
+  /**
+   * Adds a new option element to the select.
+   * @param {string|number} id
+   * @param {string|number} label
+   * @param {string|number} selectedValue
+   * @param {string|number} selectedText
+   * @returns {void}
+   */
+  addOption (id, label, selectedValue, selectedText) {
+    const option = this._createOption(id, label)
+    this._applySelectionState(option, selectedValue, selectedText)
+    this.selectElement.appendChild(option)
   }
+
+  /**
+   * Removes all existing options.
+   * @returns {void}
+   */
+  clearOptions () {
+    this.selectElement.length = 0
+  }
+
+  /**
+   * Checks whether the select already contains options.
+   * @returns {boolean}
+   */
+  hasOptions () {
+    return this.selectElement?.options?.length > 0
+  }
+
+  /**
+   * Returns the number of options currently rendered.
+   * @returns {number}
+   */
   numOptions () {
-    return this.choose?.options?.length || 0
+    return this.selectElement?.options?.length || 0
   }
-  setup (callback, selectedId, selectedText) {
-    const numOptions = this.numOptions()
-    if (numOptions > 0) {
-      this.resetOptions(selectedId, selectedText)
-      return
+
+  /**
+   * Initializes option state and change handling.
+   * @param {ChooseUIChangeCallback} callback
+   * @param {string|number} selectedValue
+   * @param {string|number} selectedText
+   * @returns {void}
+   */
+  setup (callback, selectedValue, selectedText) {
+    if (this.hasOptions()) {
+      this.resetOptions(selectedValue, selectedText)
+    } else {
+      this.setOptions(selectedValue, selectedText)
     }
-    this.setOptions(selectedId, selectedText)
+
     this.onChange(callback)
   }
 
-  resetOptions (selectedId, selectedText) {
-    this.empty()
-    this.setOptions(selectedId, selectedText)
+  /**
+   * Resets existing options and re-populates.
+   * @param {string|number} selectedValue
+   * @param {string|number} selectedText
+   * @returns {void}
+   */
+  resetOptions (selectedValue, selectedText) {
+    this.clearOptions()
+    this.setOptions(selectedValue, selectedText)
   }
-  setOptions (_selectedId, _selectedText) {}
+
+  /**
+   * Concrete subclasses must implement option creation logic.
+   * @param {string|number} _selectedValue
+   * @param {string|number} _selectedText
+   */
+  setOptions (_selectedValue, _selectedText) {
+    throw new Error('setOptions must be implemented by subclasses.')
+  }
+
+  /**
+   * Attaches a change listener to the select element.
+   * @param {ChooseUIChangeCallback} callback
+   * @returns {void}
+   */
   onChange (callback) {
-    this.choose.addEventListener('change', function () {
-      const index = this.value
-      const text = this.options[this.selectedIndex].textContent
-      callback(index, text)
+    this.selectElement.addEventListener('change', () => {
+      const value = this.selectElement.value
+      const text =
+        this.selectElement.options[this.selectElement.selectedIndex].textContent
+      callback(value, text)
     })
   }
 }
 
 export class ChooseFromListUI extends ChooseUI {
+  /**
+   * @param {Array<string>} list
+   * @param {string} targetId
+   */
   constructor (list, targetId) {
     super(targetId)
     this.list = list
   }
 
-  setOptions (selectedId, selectedText) {
-    let id = 0
-    this.list.forEach(choice => {
-      this.addOption(id, choice, selectedId, selectedText)
-      id++
+  /**
+   * Populates the select from a list of choices.
+   * @param {string|number} selectedValue
+   * @param {string|number} selectedText
+   */
+  setOptions (selectedValue, selectedText) {
+    this.list.forEach((choice, index) => {
+      this.addOption(index, choice, selectedValue, selectedText)
     })
   }
 }
 
 export class ChooseNumberUI extends ChooseUI {
+  /**
+   * @param {number} min
+   * @param {number} max
+   * @param {number} step
+   * @param {string} targetId
+   */
   constructor (min, max, step, targetId) {
     super(targetId)
     this.min = min
@@ -70,10 +186,15 @@ export class ChooseNumberUI extends ChooseUI {
     this.step = step
   }
 
+  /**
+   * Populates the select with a numeric range.
+   * @param {number} defaultIndex
+   * @param {string|number} _text
+   */
   setOptions (defaultIndex, _text) {
-    if (defaultIndex === undefined) defaultIndex = this.min
+    const selectedValue = defaultIndex === undefined ? this.min : defaultIndex
     for (let i = this.min; i <= this.max; i += this.step) {
-      this.addOption(i, i, defaultIndex, defaultIndex)
+      this.addOption(i, i, selectedValue, selectedValue)
     }
   }
 }

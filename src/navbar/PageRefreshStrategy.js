@@ -1,47 +1,37 @@
 /**
- * PageRefreshStrategy - Strategy for managing page refresh operations
- * Handles different types of page refreshes and state preservation
+ * @typedef {() => void} RefreshCallback
+ * @typedef {() => void} ErrorableCallback
  *
- * @class
+ * @typedef {Object} RefreshStrategyOptions
+ * @property {RefreshCallback} [beforeRefresh] - Callback before refresh.
+ * @property {RefreshCallback} [afterRefresh] - Callback after refresh.
+ */
+
+/**
+ * PageRefreshStrategy - Strategy for managing page refresh operations.
+ * Handles different types of page refreshes and state preservation.
+ *
+ * @class PageRefreshStrategy
  */
 export class PageRefreshStrategy {
   /**
-   * @typedef {Object} RefreshStrategyOptions
-   * @property {Function} [beforeRefresh] - Callback before refresh
-   * @property {Function} [afterRefresh] - Callback after refresh
-   */
-
-  /**
-   * Creates a new PageRefreshStrategy instance
-   * @param {RefreshStrategyOptions} options - Configuration options
+   * Creates a new PageRefreshStrategy instance.
+   * @param {RefreshStrategyOptions} options - Configuration options.
    */
   constructor (options = {}) {
-    /** @type {Function[]} Array of handlers to execute during refresh */
+    /** @type {RefreshCallback[]} Array of handlers to execute during refresh. */
     this.refreshHandlers = []
-    /** @type {Function} Callback to execute before refresh */
+
+    /** @type {RefreshCallback} Callback to execute before refresh. */
     this.beforeRefresh = options.beforeRefresh || (() => {})
-    /** @type {Function} Callback to execute after refresh */
+
+    /** @type {RefreshCallback} Callback to execute after refresh. */
     this.afterRefresh = options.afterRefresh || (() => {})
   }
 
   /**
-   * Execute all refresh handlers with error handling
-   * @private
-   * @returns {void}
-   */
-  _executeHandlers () {
-    this.refreshHandlers.forEach(handler => {
-      try {
-        handler()
-      } catch (error) {
-        console.error('Refresh handler error:', error)
-      }
-    })
-  }
-
-  /**
-   * Register a refresh handler that executes during refresh
-   * @param {Function} handler - Handler function to register
+   * Register a refresh handler that executes during refresh.
+   * @param {RefreshCallback} handler - Handler function to register.
    * @returns {void}
    */
   addRefreshHandler (handler) {
@@ -51,151 +41,198 @@ export class PageRefreshStrategy {
   }
 
   /**
-   * Execute full page refresh with handlers and page reload
+   * Execute full page refresh with handlers and page reload.
    * @returns {void}
    */
   refreshPage () {
-    this.beforeRefresh()
-    this._executeHandlers()
-    this.afterRefresh()
+    this._runRefreshCycle()
     globalThis.location.reload()
   }
 
   /**
-   * Execute soft refresh (without page reload)
+   * Execute soft refresh (without page reload).
    * @returns {void}
    */
   softRefresh () {
-    this.beforeRefresh()
-    this._executeHandlers()
-    this.afterRefresh()
+    this._runRefreshCycle()
   }
 
   /**
-   * Clear all registered refresh handlers
+   * Clear all registered refresh handlers.
    * @returns {void}
    */
   clearHandlers () {
     this.refreshHandlers = []
   }
+
+  /**
+   * Execute refresh lifecycle callbacks and registered handlers.
+   * @private
+   * @returns {void}
+   */
+  _runRefreshCycle () {
+    this._safeInvokeCallback(this.beforeRefresh, 'before refresh')
+    this._executeHandlers()
+    this._safeInvokeCallback(this.afterRefresh, 'after refresh')
+  }
+
+  /**
+   * Execute all refresh handlers with error handling.
+   * @private
+   * @returns {void}
+   */
+  _executeHandlers () {
+    this.refreshHandlers.forEach(handler => {
+      this._safeInvokeCallback(handler, 'refresh handler')
+    })
+  }
+
+  /**
+   * Safely invoke a callback and log any errors.
+   * @private
+   * @param {ErrorableCallback} callback - Callback to invoke.
+   * @param {string} description - Context description for error logging.
+   * @returns {void}
+   */
+  _safeInvokeCallback (callback, description) {
+    if (typeof callback !== 'function') {
+      return
+    }
+
+    try {
+      callback()
+    } catch (error) {
+      console.error(`${description} error:`, error)
+    }
+  }
 }
 
 /**
- * StateRefreshStrategy - Specifically for refreshing game state
- * Extends PageRefreshStrategy with board and starfield management
+ * @typedef {Object} StateRefreshOptions
+ * @property {RefreshCallback} [beforeRefresh] - Callback before refresh.
+ * @property {RefreshCallback} [afterRefresh] - Callback after refresh.
+ * @property {RefreshCallback} [boardSetup] - Board setup callback.
+ * @property {RefreshCallback} [clearStarfield] - Starfield clear callback.
+ */
+
+/**
+ * StateRefreshStrategy - Specifically for refreshing game state.
+ * Extends PageRefreshStrategy with board and starfield management.
  *
  * @class
  * @extends {PageRefreshStrategy}
  */
 export class StateRefreshStrategy extends PageRefreshStrategy {
   /**
-   * @typedef {Object} StateRefreshOptions
-   * @property {Function} [beforeRefresh] - Callback before refresh
-   * @property {Function} [afterRefresh] - Callback after refresh
-   * @property {Function} [boardSetup] - Board setup callback
-   * @property {Function} [clearStarfield] - Starfield clear callback
-   */
-
-  /**
-   * Creates a new StateRefreshStrategy instance
-   * @param {StateRefreshOptions} options - Configuration options
+   * Creates a new StateRefreshStrategy instance.
+   * @param {StateRefreshOptions} options - Configuration options.
    */
   constructor (options = {}) {
     super(options)
-    /** @type {Function} Callback to setup board */
+
+    /** @type {RefreshCallback} Callback to setup board. */
     this.boardSetupCallback = options.boardSetup || (() => {})
-    /** @type {Function} Callback to clear starfield */
+
+    /** @type {RefreshCallback} Callback to clear starfield. */
     this.clearStarfieldCallback = options.clearStarfield || (() => {})
   }
 
   /**
-   * Refresh game board state
+   * Refresh game board state.
    * @returns {void}
-   * @throws {Error} If board setup fails
    */
   refreshBoardState () {
-    try {
+    this._safeRefreshOperation(() => {
       this.boardSetupCallback()
       this.softRefresh()
-    } catch (error) {
-      console.error('Board state refresh error:', error)
-    }
+    }, 'Board state refresh')
   }
 
   /**
-   * Refresh with starfield clearing
+   * Refresh with starfield clearing.
    * @returns {void}
-   * @throws {Error} If refresh fails
    */
   refreshWithStarfield () {
-    try {
+    this._safeRefreshOperation(() => {
       this.clearStarfieldCallback()
       this.boardSetupCallback()
       this.softRefresh()
-    } catch (error) {
-      console.error('Starfield refresh error:', error)
-    }
+    }, 'Starfield refresh')
   }
 
   /**
-   * Alias for refreshWithStarfield - clear and refresh
+   * Alias for refreshWithStarfield - clear and refresh.
    * @returns {void}
    */
   clearAndRefresh () {
     this.refreshWithStarfield()
   }
+
+  /**
+   * Invoke a refresh operation and log failures.
+   * @private
+   * @param {Function} operation - Operation to perform.
+   * @param {string} label - Descriptive label for logging.
+   * @returns {void}
+   */
+  _safeRefreshOperation (operation, label) {
+    try {
+      operation()
+    } catch (error) {
+      console.error(`${label} error:`, error)
+    }
+  }
 }
 
 /**
- * NavStateManager - Manages navigation and refresh state together
- * Coordinates parameter management, navigation, and refresh strategies
+ * @typedef {Object} NavStateManagerOptions
+ * @property {ParameterManager} [paramManager] - Parameter manager instance.
+ * @property {PageRefreshStrategy} [refreshStrategy] - Refresh strategy instance.
+ * @property {Object} [navigationService] - Navigation service instance.
+ */
+
+/**
+ * NavStateManager - Manages navigation and refresh state together.
+ * Coordinates parameter management, navigation, and refresh strategies.
  *
  * @class
  */
 export class NavStateManager {
   /**
-   * @typedef {Object} NavStateManagerOptions
-   * @property {ParameterManager} [paramManager] - Parameter manager instance
-   * @property {PageRefreshStrategy} [refreshStrategy] - Refresh strategy instance
-   * @property {Object} [navigationService] - Navigation service instance
-   */
-
-  /**
-   * Creates a new NavStateManager instance
-   * @param {NavStateManagerOptions} options - Configuration options
+   * Creates a new NavStateManager instance.
+   * @param {NavStateManagerOptions} options - Configuration options.
    */
   constructor (options = {}) {
-    /** @type {ParameterManager} Parameter manager for URL parameters */
+    /** @type {ParameterManager} */
     this.paramManager = options.paramManager
-    /** @type {PageRefreshStrategy} Strategy for page refreshes */
+
+    /** @type {PageRefreshStrategy} */
     this.refreshStrategy = options.refreshStrategy
-    /** @type {Object} Service for navigation mode switching */
+
+    /** @type {Object} */
     this.navigationService = options.navigationService
   }
 
   /**
-   * Navigate to target mode and refresh
-   * @param {string} targetMode - Target navigation mode
-   * @param {string|null} [mapName=null] - Optional map name for navigation
+   * Navigate to target mode and refresh.
+   * @param {string} targetMode - Target navigation mode.
+   * @param {string|null} [mapName=null] - Optional map name for navigation.
    * @returns {void}
    */
   navigateAndRefresh (targetMode, mapName = null) {
-    if (
-      this.navigationService &&
-      typeof this.navigationService.switchToMode === 'function'
-    ) {
+    if (this._hasFunction(this.navigationService?.switchToMode)) {
       this.navigationService.switchToMode(targetMode, undefined, mapName)
       this.refreshStrategy?.softRefresh()
     }
   }
 
   /**
-   * Update parameters and refresh
-   * @param {Object} updates - Parameter updates to apply
+   * Update parameters and refresh.
+   * @param {Object} updates - Parameter updates to apply.
    * @returns {void}
    */
   updateParamsAndRefresh (updates) {
-    if (this.paramManager && typeof this.paramManager.update === 'function') {
+    if (this._hasFunction(this.paramManager?.update)) {
       this.paramManager.update(updates)
       this.paramManager.updateHistoryState()
       this.refreshStrategy?.softRefresh()
@@ -203,40 +240,50 @@ export class NavStateManager {
   }
 
   /**
-   * Build parameters using builder function and apply them with refresh
-   * @param {Function} paramBuilder - Function that builds parameter object
+   * Build parameters using builder function and apply them with refresh.
+   * @param {Function} paramBuilder - Function that builds parameter object.
    * @returns {void}
    */
   buildAndApplyParams (paramBuilder) {
-    if (typeof paramBuilder === 'function') {
+    if (this._hasFunction(paramBuilder)) {
       const params = paramBuilder()
       this.updateParamsAndRefresh(params)
     }
   }
+
+  /**
+   * Determine whether a given value is a function.
+   * @private
+   * @param {*} value - Value to test.
+   * @returns {boolean} True if the value is callable.
+   */
+  _hasFunction (value) {
+    return typeof value === 'function'
+  }
 }
 
 /**
- * Factory function to create a PageRefreshStrategy instance
- * @param {RefreshStrategyOptions} options - Configuration options
- * @returns {PageRefreshStrategy} New PageRefreshStrategy instance
+ * Factory function to create a PageRefreshStrategy instance.
+ * @param {RefreshStrategyOptions} options - Configuration options.
+ * @returns {PageRefreshStrategy} New PageRefreshStrategy instance.
  */
 export function createPageRefreshStrategy (options = {}) {
   return new PageRefreshStrategy(options)
 }
 
 /**
- * Factory function to create a StateRefreshStrategy instance
- * @param {StateRefreshOptions} options - Configuration options
- * @returns {StateRefreshStrategy} New StateRefreshStrategy instance
+ * Factory function to create a StateRefreshStrategy instance.
+ * @param {StateRefreshOptions} options - Configuration options.
+ * @returns {StateRefreshStrategy} New StateRefreshStrategy instance.
  */
 export function createStateRefreshStrategy (options = {}) {
   return new StateRefreshStrategy(options)
 }
 
 /**
- * Factory function to create a NavStateManager instance
- * @param {NavStateManagerOptions} options - Configuration options
- * @returns {NavStateManager} New NavStateManager instance
+ * Factory function to create a NavStateManager instance.
+ * @param {NavStateManagerOptions} options - Configuration options.
+ * @returns {NavStateManager} New NavStateManager instance.
  */
 export function createNavStateManager (options = {}) {
   return new NavStateManager(options)
