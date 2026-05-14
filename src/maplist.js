@@ -50,6 +50,14 @@ const DEFAULT_LIST_INCLUDES = '0'
  */
 
 /**
+ * @typedef {Object} ElementOptions
+ * @property {string} [id]
+ * @property {string} [className]
+ * @property {string} [textContent]
+ * @property {Record<string, string>} [styles]
+ */
+
+/**
  * @typedef {Object} RenameEntry
  * @property {MapModel} map
  * @property {HTMLButtonElement[]} buttonList
@@ -95,24 +103,28 @@ class MapList {
 
   /**
    * @private
+   * @param {HTMLElement|null} element
+   * @param {() => void} handler
+   */
+  _bindClickEvent (element, handler) {
+    if (element && typeof element.addEventListener === 'function') {
+      element.addEventListener('click', handler)
+    }
+  }
+
+  /**
+   * @private
    */
   _bindRenameEvents () {
-    if (this.okBtn && typeof this.okBtn.addEventListener === 'function') {
-      this.okBtn.addEventListener('click', this.renameOk.bind(this))
-    }
-    if (
-      this.cancelBtn &&
-      typeof this.cancelBtn.addEventListener === 'function'
-    ) {
-      this.cancelBtn.addEventListener('click', this.renameCancel.bind(this))
-    }
+    this._bindClickEvent(this.okBtn, this.renameOk.bind(this))
+    this._bindClickEvent(this.cancelBtn, this.renameCancel.bind(this))
   }
 
   /**
    * Rename the currently selected map if the input value is valid.
    */
   renameOk () {
-    const newName = this.input.value.trim()
+    const newName = this.input?.value.trim() ?? ''
     const map = this.currentRenameEntry?.map
 
     if (!newName || !map) {
@@ -146,8 +158,10 @@ class MapList {
    * @private
    */
   _resetRenameDialog () {
-    this.inputDiv.classList.add('hidden')
-    this.input.value = ''
+    this.inputDiv?.classList.add('hidden')
+    if (this.input) {
+      this.input.value = ''
+    }
     this.currentRenameEntry = null
   }
 
@@ -155,8 +169,39 @@ class MapList {
    * Reload the map list.
    */
   refresh () {
-    this.container.innerHTML = ''
+    if (this.container) {
+      this.container.innerHTML = ''
+    }
     this.makeList()
+  }
+
+  /**
+   * @private
+   * @param {string} tag
+   * @param {Object} [options]
+   * @param {string} [options.id]
+   * @param {string} [options.className]
+   * @param {string} [options.textContent]
+   * @param {Record<string, string>} [options.styles]
+   * @returns {HTMLElement}
+   */
+  _createElement (tag, options = {}) {
+    const element = document.createElement(tag)
+
+    if (options.id) {
+      element.id = options.id
+    }
+    if (options.className) {
+      element.className = options.className
+    }
+    if (options.textContent !== undefined) {
+      element.textContent = options.textContent
+    }
+    if (options.styles) {
+      Object.assign(element.style, options.styles)
+    }
+
+    return element
   }
 
   /**
@@ -168,9 +213,13 @@ class MapList {
    * @returns {HTMLButtonElement}
    */
   _createButton (label, idx, container, handler) {
-    const button = document.createElement('button')
-    button.id = `${label}-${idx}`
-    button.textContent = label
+    const button = /** @type {HTMLButtonElement} */ (
+      this._createElement('button', {
+        id: `${label}-${idx}`,
+        textContent: label
+      })
+    )
+
     button.addEventListener('click', handler)
     container.appendChild(button)
     return button
@@ -184,25 +233,46 @@ class MapList {
    * @returns {ButtonConfig[]}
    */
   _getMapButtonConfigs (map, controls, buttonsContainer) {
-    const configs = [
+    if (map.isPreGenerated) {
+      return this._getPreGeneratedMapButtonConfigs(map)
+    }
+
+    return this._getCustomMapButtonConfigs(map, controls, buttonsContainer)
+  }
+
+  /**
+   * @private
+   * @param {MapModel} map
+   * @returns {ButtonConfig[]}
+   */
+  _getPreGeneratedMapButtonConfigs (map) {
+    return [
       this._buildDuplicateConfig(map),
       this._buildExportConfig(map),
       this._buildPlayConfig(map),
       this._buildSeekConfig(map),
       this._buildPrintConfig(map)
     ]
+  }
 
-    if (!map.isPreGenerated) {
-      configs.unshift(this._buildDeleteConfig(map))
-      configs.splice(
-        1,
-        0,
-        this._buildRenameConfig(map, controls, buttonsContainer)
-      )
-      configs.splice(4, 0, this._buildEditConfig(map))
-    }
-
-    return configs
+  /**
+   * @private
+   * @param {MapModel} map
+   * @param {HTMLButtonElement[]} controls
+   * @param {HTMLDivElement} buttonsContainer
+   * @returns {ButtonConfig[]}
+   */
+  _getCustomMapButtonConfigs (map, controls, buttonsContainer) {
+    return [
+      this._buildDeleteConfig(map),
+      this._buildRenameConfig(map, controls, buttonsContainer),
+      this._buildDuplicateConfig(map),
+      this._buildExportConfig(map),
+      this._buildEditConfig(map),
+      this._buildPlayConfig(map),
+      this._buildSeekConfig(map),
+      this._buildPrintConfig(map)
+    ]
   }
 
   /**
@@ -369,10 +439,12 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createBoardWrapper () {
-    const wrapper = document.createElement('div')
-    wrapper.className = 'board-wrap map-list'
-    wrapper.style.maxWidth = `${MAX_BOARD_WIDTH}px`
-    return wrapper
+    return /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        className: 'board-wrap map-list',
+        styles: { maxWidth: `${MAX_BOARD_WIDTH}px` }
+      })
+    )
   }
 
   /**
@@ -381,13 +453,17 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createBoardElement (idx) {
-    const board = document.createElement('div')
-    board.className = 'board'
-    board.id = `custom-map-board-${idx}`
-    board.style.maxWidth = `${MAX_BOARD_WIDTH}px`
-    board.style.margin = '0 0'
-    board.style.padding = '0 0'
-    return board
+    return /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        id: `custom-map-board-${idx}`,
+        className: 'board',
+        styles: {
+          maxWidth: `${MAX_BOARD_WIDTH}px`,
+          margin: '0 0',
+          padding: '0 0'
+        }
+      })
+    )
   }
 
   /**
@@ -397,20 +473,25 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   addEntryButtons (idx, map, entryContent) {
-    const buttonsContainer = document.createElement('div')
-    buttonsContainer.className = 'panel-controls map-list'
+    const buttonsContainer = /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        className: 'panel-controls map-list'
+      })
+    )
     const controls = []
 
-    const configs = this._getMapButtonConfigs(map, controls, buttonsContainer)
-    configs.forEach(config => {
-      const button = this._createButton(
-        config.label,
-        idx,
-        buttonsContainer,
-        config.handler
-      )
-      controls.push(button)
-    })
+    this._getMapButtonConfigs(map, controls, buttonsContainer).forEach(
+      config => {
+        controls.push(
+          this._createButton(
+            config.label,
+            idx,
+            buttonsContainer,
+            config.handler
+          )
+        )
+      }
+    )
 
     entryContent.appendChild(buttonsContainer)
     return buttonsContainer
@@ -439,10 +520,12 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createTallyBoardWrapper () {
-    const wrapper = document.createElement('div')
-    wrapper.className = 'board-wrap map-list'
-    wrapper.style.minWidth = `${MIN_TALLY_WIDTH}px`
-    return wrapper
+    return /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        className: 'board-wrap map-list',
+        styles: { minWidth: `${MIN_TALLY_WIDTH}px` }
+      })
+    )
   }
 
   /**
@@ -451,11 +534,13 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createTallyContainer (idx) {
-    const container = document.createElement('div')
-    container.className = 'tally-box-container map-list'
-    container.id = `tally-container-${idx}`
-    container.style.minWidth = `${MIN_TALLY_WIDTH}px`
-    return container
+    return /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        id: `tally-container-${idx}`,
+        className: 'tally-box-container map-list',
+        styles: { minWidth: `${MIN_TALLY_WIDTH}px` }
+      })
+    )
   }
 
   /**
@@ -464,10 +549,12 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createTallyBox (idx) {
-    const tallyBox = document.createElement('div')
-    tallyBox.id = `${idx}-tallybox`
-    tallyBox.className = 'tally-boxes'
-    return tallyBox
+    return /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        id: `${idx}-tallybox`,
+        className: 'tally-boxes'
+      })
+    )
   }
 
   /**
@@ -517,14 +604,15 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createMapEntry (map, idx) {
-    const entry = document.createElement('div')
-    entry.id = `custom-map-${map.title}`
-    entry.className = 'map-entry'
-    entry.classList.add('info-wrap', idx % 2 ? 'alt' : 'standard')
+    const entry = /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        id: `custom-map-${map.title}`,
+        className: 'map-entry'
+      })
+    )
 
-    const entryTitle = document.createElement('h2')
-    entryTitle.textContent = map.title
-    entry.appendChild(entryTitle)
+    entry.classList.add('info-wrap', idx % 2 ? 'alt' : 'standard')
+    entry.appendChild(this._createElement('h2', { textContent: map.title }))
 
     return entry
   }
@@ -534,9 +622,11 @@ class MapList {
    * @returns {HTMLDivElement}
    */
   _createEntryContent () {
-    const entryContent = document.createElement('div')
-    entryContent.className = 'entry-container'
-    return entryContent
+    return /** @type {HTMLDivElement} */ (
+      this._createElement('div', {
+        className: 'entry-container'
+      })
+    )
   }
 
   /**
@@ -622,12 +712,10 @@ function printGameSheet (map) {
   const location = `../docs/gamesheets/${map.terrain.tag}/${map.name}.pdf`
 
   // @ts-ignore
-  if (process !== undefined) {
-    //} && process.env.JEST_WORKER_ID) {
-    return location
+  if (process === undefined) {
+    globalThis.location.href = location
   }
 
-  globalThis.location.href = location
   return location
 }
 
