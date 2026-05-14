@@ -1,5 +1,4 @@
 /* eslint-env jest */
-/* eslint-disable */
 import {
   describe,
   it,
@@ -18,10 +17,10 @@ jest.unstable_mockModule('../src/ui/ButtonManager.js', () => ({
 
 jest.unstable_mockModule('../src/waters/WatersUI.js', () => ({
   WatersUI: class {
-    resetBoardSize() {}
-    buildBoard() {}
-    showMapTitle() {}
-    cellSizeStringList() {
+    resetBoardSize () {}
+    buildBoard () {}
+    showMapTitle () {}
+    cellSizeStringList () {
       return []
     }
   }
@@ -29,11 +28,11 @@ jest.unstable_mockModule('../src/waters/WatersUI.js', () => ({
 
 jest.unstable_mockModule('../src/waters/Waters.js', () => ({
   Waters: class {
-    setMap() {}
-    get ships() {
+    setMap () {}
+    get ships () {
       return []
     }
-    get loadOut() {
+    get loadOut () {
       return { weaponSystems: [] }
     }
   }
@@ -41,8 +40,8 @@ jest.unstable_mockModule('../src/waters/Waters.js', () => ({
 
 jest.unstable_mockModule('../src/waters/ScoreUI.js', () => ({
   ScoreUI: class {
-    constructor() {}
-    buildTally() {}
+    constructor () {}
+    buildTally () {}
   }
 }))
 

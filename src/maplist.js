@@ -11,7 +11,6 @@ import { setupMapListOptions } from './navbar/setupOptions.js'
 import { switchTo } from './navbar/setupTabs.js'
 import { switchToEdit, fetchNavBar } from './navbar/navbar.js'
 import { trackClick } from './navbar/gtag.js'
-import { ButtonManager } from './ui/ButtonManager.js'
 
 /**
  * Maximum width for board display in pixels.
@@ -37,7 +36,7 @@ const DEFAULT_LIST_INCLUDES = '0'
  * @property {string} title
  * @property {string} name
  * @property {{tag:string}} terrain
- * @property {() => void} rename
+ * @property {(newName: string) => void} rename
  * @property {() => void} remove
  * @property {() => void} clone
  * @property {() => string} exportName
@@ -69,15 +68,14 @@ class MapList {
     this.listId = listId
     /** @type {HTMLElement} */
     this.container = this._findElement(listId)
-    /** @type {HTMLInputElement} */
-    this.input = /** @type {HTMLInputElement} */ this._findElement('inputField')
-    /** @type {HTMLDivElement} */
-    this.inputDiv = /** @type {HTMLDivElement} */ this._findElement('inputDiv')
-    /** @type {HTMLButtonElement} */
-    this.okBtn = /** @type {HTMLButtonElement} */ this._findElement('okBtn')
-    /** @type {HTMLButtonElement} */
-    this.cancelBtn =
-      /** @type {HTMLButtonElement} */ this._findElement('cancelBtn')
+    /** @type {any} */
+    this.input = this._findElement('inputField')
+    /** @type {any} */
+    this.inputDiv = this._findElement('inputDiv')
+    /** @type {any} */
+    this.okBtn = this._findElement('okBtn')
+    /** @type {any} */
+    this.cancelBtn = this._findElement('cancelBtn')
     /** @type {RenameEntry|null} */
     this.currentRenameEntry = null
     /** @type {string} */
@@ -101,18 +99,6 @@ class MapList {
   _bindRenameEvents () {
     this.okBtn.addEventListener('click', this.renameOk.bind(this))
     this.cancelBtn.addEventListener('click', this.renameCancel.bind(this))
-  }
-
-  /**
-   * @private
-   */
-  _registerRenameDialogButtons () {
-    const renameManager = new ButtonManager(this)
-    renameManager.registerButtons({
-      okBtn: this.renameOk.bind(this),
-      cancelBtn: this.renameCancel.bind(this)
-    })
-    renameManager.wireUp()
   }
 
   /**
@@ -484,6 +470,7 @@ class MapList {
    * @param {Object} boardViewModel
    */
   fillTallyBox (idx, map, tallyBox, boardViewModel) {
+    // @ts-ignore
     const model = new Waters()
     model.setMap(map)
     boardViewModel.score = new ScoreUI(idx.toString())
@@ -503,6 +490,7 @@ class MapList {
     const entry = this._createMapEntry(map, idx)
     const entryContent = this._createEntryContent()
 
+    // @ts-ignore
     const boardViewModel = new WatersUI()
     const boardNode = this.addMiniMap(map, boardViewModel, entryContent, idx)
     const [tallyBox, tallyWrapper] = this.setupTallyBox(idx, entryContent)
@@ -559,10 +547,10 @@ class MapList {
   /**
    * @param {string|undefined} listIncludes
    */
-  makeList (listIncludes) {
+  makeList (listIncludes = undefined) {
     const titleEl = this._findElement('list-title')
     const listLabel = `${bh.mapHeading} List`
-    this.listIncludes = listIncludes || this.listIncludes
+    this.listIncludes = listIncludes ?? this.listIncludes
 
     const { title, maps } = this._resolveMapList(this.listIncludes, listLabel)
     titleEl.textContent = title
@@ -626,7 +614,8 @@ function printGameSheet (map) {
   trackClick(map, 'download pdf')
   const location = `../docs/gamesheets/${map.terrain.tag}/${map.name}.pdf`
 
-  if (typeof process !== 'undefined') {
+  // @ts-ignore
+  if (process !== undefined) {
     //} && process.env.JEST_WORKER_ID) {
     return location
   }
@@ -641,7 +630,7 @@ function printGameSheet (map) {
  * @param {string|undefined} suggestedName - Optional suggested filename.
  * @returns {Promise<{success:boolean, handle?:unknown, fallback?:boolean, error?:unknown}>}
  */
-async function saveToFile (map, suggestedName) {
+async function saveToFile (map, suggestedName = undefined) {
   const json = map.jsonString()
   const name = map.exportName()
   const filename = suggestedName || (name ? `${name}.json` : 'map.json')
@@ -677,21 +666,14 @@ async function saveToFile (map, suggestedName) {
  * @private
  * @param {MapList} mapList
  */
-function _onNavBarReady (mapList) {
-  document.getElementById('second-tab-bar')?.classList.remove('hidden')
-  document.getElementById('choose-include')?.classList.remove('hidden')
-
-  const includes = setupMapListOptions(mapList.makeList.bind(mapList))
-  mapList.makeList(includes)
-}
-
 export { MapList, saveAsJson, printGameSheet, saveToFile }
 
 // Initialize if in browser and not in test
 if (
-  typeof window !== 'undefined' &&
+  globalThis.window !== undefined &&
   typeof document !== 'undefined' &&
-  !(typeof process !== 'undefined') // && !process?.env?.JEST_WORKER_ID)
+  // @ts-ignore
+  typeof process === 'undefined' // && !process?.env?.JEST_WORKER_ID)
 ) {
   const mapList = new MapList()
   await fetchNavBar('list', 'List of Hidden Battle Maps')
