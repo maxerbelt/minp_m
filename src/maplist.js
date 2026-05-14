@@ -97,8 +97,15 @@ class MapList {
    * @private
    */
   _bindRenameEvents () {
-    this.okBtn.addEventListener('click', this.renameOk.bind(this))
-    this.cancelBtn.addEventListener('click', this.renameCancel.bind(this))
+    if (this.okBtn && typeof this.okBtn.addEventListener === 'function') {
+      this.okBtn.addEventListener('click', this.renameOk.bind(this))
+    }
+    if (
+      this.cancelBtn &&
+      typeof this.cancelBtn.addEventListener === 'function'
+    ) {
+      this.cancelBtn.addEventListener('click', this.renameCancel.bind(this))
+    }
   }
 
   /**
