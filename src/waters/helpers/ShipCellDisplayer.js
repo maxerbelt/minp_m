@@ -419,7 +419,7 @@ export class ShipCellDisplayer {
    */
   static #initializeShipCellData (cell, ship) {
     const shipLetterKey = this.#DATA_ATTRIBUTES.SHIP_PRIMARY_LETTER
-    if (cell.dataset[shipLetterKey] !== undefined) return
+    // if (cell.dataset[shipLetterKey] !== undefined) return
 
     const letter = this.#getShipLetter(ship)
     this.#setDatasetAttribute(cell, shipLetterKey, letter)
@@ -443,7 +443,7 @@ export class ShipCellDisplayer {
    */
   static #initializeWeaponCellData (cell, ship, row, column) {
     const weaponLetterKey = this.#DATA_ATTRIBUTES.WEAPON_LETTER
-    if (cell.dataset[weaponLetterKey] !== undefined) return
+    // if (cell.dataset[weaponLetterKey] !== undefined) return
 
     const primaryWeapon = ship.getPrimaryWeapon()
     this.#setDatasetAttribute(cell, weaponLetterKey, primaryWeapon.letter)
