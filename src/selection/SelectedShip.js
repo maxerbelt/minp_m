@@ -1,104 +1,160 @@
 /**
+ * @typedef {Object} Ship
+ * @property {string} id
+ * @property {string} letter
+ * @property {function(): Shape} shape
+ */
+
+/**
+ * @typedef {Object} Shape
+ * @property {function(): Variants} variants
+ * @property {function(): string} type
+ */
+
+/**
+ * @typedef {Object} Variants
+ * @property {boolean} canFlip
+ * @property {boolean} canRotate
+ * @property {boolean} canTransform
+ * @property {number} index
+ * @property {function(): Object} placeable
+ * @property {function(): Object} variant
+ * @property {function(): Board} boardFor
+ * @property {function(): Object} rotate
+ * @property {function(): Object} leftRotate
+ * @property {function(): Object} flip
+ * @property {function(): Object} nextForm
+ * @property {function(): void} [onChange]
+ */
+
+/**
+ * @typedef {function(Element, Board, string): void} ContentBuilder
+ */
+
+/**
+ * @typedef {Object} Board
+ * @property {function(): Array<Object>} occupiedLocations
+ */
+
+/**
  * Represents a selected ship with variant management capabilities.
- * Provides delegating methods for variant operations (rotate, flip, transform).
+ * Delegates variant operations to the underlying shape variant manager.
  * @class SelectedShip
  */
 export class SelectedShip {
   /**
    * Creates a SelectedShip instance.
-   * @param {Object} ship - The ship object with id, letter, shape() method
-   * @param {number} variantIndex - Index of the current variant
-   * @param {Function} contentBuilder - Function(element, board, letter) to render ship
+   * @param {Ship} ship - The ship object with id, letter, shape() method.
+   * @param {number} variantIndex - Index of the current variant.
+   * @param {function(Element, Board, string): void} contentBuilder - Function to render the ship.
    */
   constructor (ship, variantIndex, contentBuilder) {
+    this._ship = ship
+    this._contentBuilder = contentBuilder
     this.ship = ship
+    this._shape = ship.shape()
+    this._variants = this._shape.variants()
+    this._variants.index = variantIndex
+    this.variants = this._variants
+    this._contentBuilder = contentBuilder
     this.contentBuilder = contentBuilder
-    const shape = ship.shape()
-    this.shape = shape
-    this.type = shape.type()
+
     this.id = ship.id
     this.letter = ship.letter
-    this.variants = shape.variants()
-    this.variants.index = variantIndex
+    this.shape = this._shape
+    this.type = this._shape.type()
   }
 
   /**
-   * Checks if the ship can be flipped (delegates to variants).
-   * @returns {boolean} True if flipping is allowed
+   * Delegates calls to the variant manager.
+   * @param {string} operationName - The variant operation name.
+   * @returns {*} The delegated value or result.
+   * @private
+   */
+  _delegateVariantOperation (operationName) {
+    const operation = this._variants[operationName]
+    return typeof operation === 'function'
+      ? operation.call(this._variants)
+      : operation
+  }
+
+  /**
+   * Checks whether the current variant can be flipped.
+   * @returns {boolean}
    */
   canFlip () {
-    return this.variants.canFlip
+    return this._delegateVariantOperation('canFlip')
   }
 
   /**
-   * Checks if the ship can be rotated (delegates to variants).
-   * @returns {boolean} True if rotation is allowed
+   * Checks whether the current variant can be rotated.
+   * @returns {boolean}
    */
   canRotate () {
-    return this.variants.canRotate
+    return this._delegateVariantOperation('canRotate')
   }
 
   /**
-   * Checks if the ship can be transformed (delegates to variants).
-   * @returns {boolean} True if transformation is allowed
+   * Checks whether the current variant can be transformed.
+   * @returns {boolean}
    */
   canTransform () {
-    return this.variants.canTransform
+    return this._delegateVariantOperation('canTransform')
   }
 
   /**
-   * Gets the current placeable variant for placement operations.
-   * @returns {Object} The placeable variant
+   * Gets the current variant representation for placement operations.
+   * @returns {Object}
    */
   placeable () {
-    return this.variants.placeable()
+    return this._delegateVariantOperation('placeable')
   }
 
   /**
    * Gets the current variant object.
-   * @returns {Object} The current variant
+   * @returns {Object}
    */
   variant () {
-    return this.variants.variant()
+    return this._delegateVariantOperation('variant')
   }
 
   /**
    * Gets the board representation for the current variant.
-   * @returns {Object} The board with occupiedLocations() method
+   * @returns {Board}
    */
   board () {
-    return this.variants.boardFor()
+    return this._delegateVariantOperation('boardFor')
   }
 
   /**
-   * Rotates the ship variant clockwise.
-   * @returns {Object} The rotated variant
+   * Rotates the current variant clockwise.
+   * @returns {Object}
    */
   rotate () {
-    return this.variants.rotate()
+    return this._delegateVariantOperation('rotate')
   }
 
   /**
-   * Rotates the ship variant counter-clockwise.
-   * @returns {Object} The left-rotated variant
+   * Rotates the current variant counter-clockwise.
+   * @returns {Object}
    */
   leftRotate () {
-    return this.variants.leftRotate()
+    return this._delegateVariantOperation('leftRotate')
   }
 
   /**
-   * Flips the ship variant horizontally.
-   * @returns {Object} The flipped variant
+   * Flips the current variant horizontally.
+   * @returns {Object}
    */
   flip () {
-    return this.variants.flip()
+    return this._delegateVariantOperation('flip')
   }
 
   /**
-   * Advances to the next form of the ship variant.
-   * @returns {Object} The next form variant
+   * Advances the current variant to its next form.
+   * @returns {Object}
    */
   nextForm () {
-    return this.variants.nextForm()
+    return this._delegateVariantOperation('nextForm')
   }
 }

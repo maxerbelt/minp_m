@@ -1,6 +1,22 @@
 import { SelectedShip } from './SelectedShip.js'
 
 /**
+ * @typedef {Object} Board
+ * @property {function(): Array<Object>} occupiedLocations
+ */
+
+/**
+ * @typedef {Object} VariantManager
+ * @property {function(): Board} boardFor
+ * @property {number} index
+ * @property {function(): void} [onChange]
+ */
+
+/**
+ * @typedef {function(Element, Board, string): void} ShipContentBuilder
+ */
+
+/**
  * Represents a clicked ship that updates its source element on variant changes.
  * Extends SelectedShip to automatically sync source element when ship variant changes.
  * @class ClickedShip
@@ -9,39 +25,56 @@ import { SelectedShip } from './SelectedShip.js'
 export class ClickedShip extends SelectedShip {
   /**
    * Creates a ClickedShip instance.
-   * @param {Object} ship - The ship object with id, letter, shape() method
-   * @param {HTMLElement} source - The source HTML element to keep in sync
-   * @param {number} variantIndex - Index of the current variant
-   * @param {Function} contentBuilder - Function(element, board, letter) to render ship
+   * @param {Object} ship - The ship object with id, letter, shape() method.
+   * @param {HTMLElement|null} source - The source HTML element to keep in sync.
+   * @param {number} variantIndex - Index of the current variant.
+   * @param {ShipContentBuilder} contentBuilder - Function(element, board, letter) to render ship.
    */
   constructor (ship, source, variantIndex, contentBuilder) {
     super(ship, variantIndex, contentBuilder)
     this.source = source
-    this._setupVariantChangeHandler()
+    this._attachVariantChangeListener()
   }
 
   /**
-   * Sets up the onChange handler to sync source element when variant changes.
+   * Returns the active variant manager instance.
+   * @returns {VariantManager}
+   * @private
+   */
+  _variantManager () {
+    return this.variants
+  }
+
+  /**
+   * Attaches the variant change callback to refresh the source element.
    * @returns {void}
    * @private
    */
-  _setupVariantChangeHandler () {
-    this.variants.onChange = () => {
-      this._updateSourceElement()
+  _attachVariantChangeListener () {
+    this._variantManager().onChange = () => {
+      this._refreshSourceFromCurrentVariant()
     }
   }
 
   /**
-   * Updates the source element with current variant board and dataset.
+   * Refreshes the source element from the current variant board.
    * @returns {void}
    * @private
    */
-  _updateSourceElement () {
+  _refreshSourceFromCurrentVariant () {
     if (!this.source) return
+    this._renderVariantInSource(this._variantManager().boardFor())
+  }
 
-    const board = this.variants.boardFor()
+  /**
+   * Renders a variant board into the source element and updates the variant index.
+   * @param {Board} board
+   * @returns {void}
+   * @private
+   */
+  _renderVariantInSource (board) {
     this.source.innerHTML = ''
     this.contentBuilder(this.source, board, this.letter)
-    this.source.dataset.variant = this.variants.index
+    this.source.dataset.variant = String(this._variantManager().index)
   }
 }

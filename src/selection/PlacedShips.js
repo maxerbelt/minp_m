@@ -1,4 +1,28 @@
 /**
+ * @typedef {Object} PlacedShip
+ * @property {Function} placeAtCells - Places the ship at the given cells
+ * @property {Function} removeFromPlacement - Removes the ship from placement state
+ * @property {Function} addToGrid - Adds the ship back onto the grid
+ */
+
+/**
+ * @typedef {Object} ShipCellGrid
+ * @property {any} [grid] - Arbitrary grid metadata used during refresh
+ */
+
+/**
+ * @typedef {Function} MarkCallback
+ * @param {PlacedShip} ship - Ship being marked on the grid
+ * @returns {void}
+ */
+
+/**
+ * @typedef {Function} ReturnShipCallback
+ * @param {PlacedShip} ship - Removed ship to return
+ * @returns {void}
+ */
+
+/**
  * Manages a collection of ships that have been placed on the board.
  * Provides undo/reset functionality and maintains the placement history.
  */
@@ -9,7 +33,7 @@ export class PlacedShips {
   constructor () {
     /**
      * Array of ships that have been placed on the board.
-     * @type {Array<Object>}
+     * @type {Array<PlacedShip>}
      * @private
      */
     this.ships = []
@@ -43,24 +67,24 @@ export class PlacedShips {
    */
   reset () {
     this.ships = []
-    this.updateUndo()
+    this._updateControls()
   }
 
   /**
    * Registers undo and reset button controls for UI state management.
-   * @param {HTMLButtonElement} undoBtn - The undo button element
-   * @param {HTMLButtonElement} resetBtn - The reset button element
+   * @param {HTMLButtonElement|null} undoBtn - The undo button element
+   * @param {HTMLButtonElement|null} resetBtn - The reset button element
    * @returns {void}
    */
   registerUndo (undoBtn, resetBtn) {
     this.undoBtn = undoBtn
     this.resetBtn = resetBtn
-    this.updateUndo()
+    this._updateControls()
   }
 
   /**
    * Removes the last placed ship from the collection.
-   * @returns {Object} The removed ship
+   * @returns {PlacedShip} The removed ship
    * @throws {Error} When there are no placed ships to remove
    */
   pop () {
@@ -79,16 +103,26 @@ export class PlacedShips {
    * @returns {void}
    */
   updateUndo () {
-    this._setButtonState(this.undoBtn)
-    this._setButtonState(this.resetBtn)
+    this._updateControls()
+  }
+
+  /**
+   * Updates all registered button controls with the current disabled state.
+   * @returns {void}
+   * @private
+   */
+  _updateControls () {
+    const disabled = this.isEmpty()
+    this._setButtonDisabledState(this.undoBtn, disabled)
+    this._setButtonDisabledState(this.resetBtn, disabled)
   }
 
   /**
    * Removes a placed ship and refreshes the remaining ships on the grid.
-   * @param {Object} shipCellGrid - The grid containing ship cell data
-   * @param {Function} mark - Function called for each remaining ship after re-adding
-   * @param {Function} returnShip - Function called with the removed ship
-   * @returns {Object|null} The removed ship, or null if none were placed
+   * @param {ShipCellGrid} shipCellGrid - The grid containing ship cell data
+   * @param {MarkCallback} mark - Function called for each remaining ship after re-adding
+   * @param {ReturnShipCallback} returnShip - Function called with the removed ship
+   * @returns {PlacedShip|null} The removed ship, or null if none were placed
    */
   popAndRefresh (shipCellGrid, mark, returnShip) {
     const ship = this.pop()
@@ -101,13 +135,13 @@ export class PlacedShips {
 
   /**
    * Refreshes all remaining ships on the grid after a ship removal.
-   * @param {Object} shipCellGrid - The grid containing ship cell data
-   * @param {Function} mark - Function called for each ship after re-adding to grid
+   * @param {ShipCellGrid} shipCellGrid - The grid containing ship cell data
+   * @param {MarkCallback} mark - Function called for each ship after re-adding to grid
    * @returns {void}
    * @private
    */
   _refreshAllShipsOnGrid (shipCellGrid, mark) {
-    this._forEachShip(ship => {
+    this._forEachPlacedShip(ship => {
       ship.addToGrid(shipCellGrid)
       mark(ship)
     })
@@ -115,17 +149,17 @@ export class PlacedShips {
 
   /**
    * Returns all placed ships to a callback function and clears the collection.
-   * @param {Function} returnShip - Callback invoked with each ship
+   * @param {ReturnShipCallback} returnShip - Callback invoked with each ship
    * @returns {void}
    */
   popAll (returnShip) {
-    this._forEachShip(returnShip)
+    this._forEachPlacedShip(returnShip)
     this.reset()
   }
 
   /**
    * Adds a ship to the placed collection at specified cell coordinates.
-   * @param {Object} ship - The ship object to place
+   * @param {PlacedShip} ship - The ship object to place
    * @param {Array} placed - Cell coordinates where the ship was placed
    * @returns {Array} The placed ship cells
    */
@@ -145,7 +179,7 @@ export class PlacedShips {
 
   /**
    * Gets a shallow copy of the placed ships list.
-   * @returns {Array<Object>} A shallow copy of the placed ships list
+   * @returns {Array<PlacedShip>} A shallow copy of the placed ships list
    */
   getAll () {
     return this.ships.slice()
@@ -153,11 +187,11 @@ export class PlacedShips {
 
   /**
    * Iterates over every placed ship and calls the provided callback.
-   * @param {Function} callback - Function to call for each ship
+   * @param {ReturnShipCallback|MarkCallback} callback - Function to call for each ship
    * @returns {void}
    * @private
    */
-  _forEachShip (callback) {
+  _forEachPlacedShip (callback) {
     for (const ship of this.ships) {
       callback(ship)
     }
@@ -165,14 +199,14 @@ export class PlacedShips {
 
   /**
    * Updates the disabled state of a button based on whether any ships are placed.
-   * Buttons are disabled when no ships are placed.
    * @param {HTMLButtonElement|null} button - The button to update
+   * @param {boolean} disabled - Whether the button should be disabled
    * @returns {void}
    * @private
    */
-  _setButtonState (button) {
+  _setButtonDisabledState (button, disabled) {
     if (!button) return
-    button.disabled = this.isEmpty()
+    button.disabled = disabled
   }
 }
 
