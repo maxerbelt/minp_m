@@ -46,7 +46,7 @@ import { AudioManager } from './core/AudioManager.js'
  */
 
 const friend = makeFriend()
-placedShipsInstance.registerUndo(friend.UI.undoBtn)
+placedShipsInstance.registerUndo(friend.UI.undoBtn, friend.UI.newPlacementBtn)
 const friendUI = friend.UI
 
 friendUI.resetBoardSize()

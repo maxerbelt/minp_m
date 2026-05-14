@@ -1,13 +1,45 @@
 /**
- * Tab - Represents a single navigation tab with event handling
- * Manages tab DOM element, event listeners, and visual state
- *
+ * @typedef {Object} TabConfig
+ * @property {string[]} [current=[]] - Tab names to mark as current.
+ * @property {Object.<string, Function>} [handlers={}] - Map of tab names to handler functions.
+ */
+
+/**
+ * @typedef {Object} TabInstance
+ * @property {string} name - Tab name identifier.
+ * @property {HTMLElement|null} element - DOM element for this tab.
+ * @property {Set<Function>} handlers - Set of registered event handlers.
+ * @property {Function} addClickListener - Add click listener.
+ * @property {Function} overrideClickListener - Replace click listener.
+ * @property {Function} markAsCurrent - Mark as current tab.
+ * @property {Function} cleanup - Clean up resources.
+ */
+
+/**
+ * @typedef {Object} TabManagerInstance
+ * @property {Object.<string, TabInstance>} tabs - Map of tab names to Tab instances.
+ * @property {string|null} currentMode - Current active hunt mode.
+ * @property {Function} initializeTabs - Initialize tabs.
+ * @property {Function} getTab - Get tab instance.
+ * @property {Function} setCurrentMode - Set current mode.
+ * @property {Function} getCurrentMode - Get current mode.
+ * @property {Function} isMode - Check if mode matches current.
+ * @property {Function} configureForMode - Configure for mode.
+ * @property {Function} addListener - Add event listener.
+ * @property {Function} replaceListener - Replace event listener.
+ * @property {Function} cleanup - Clean up all tabs.
+ */
+
+/**
+ * Tab - Represents a single navigation tab with event handling.
+ * Manages tab DOM element, event listeners, and visual state.
  * @class
+ * @implements {TabInstance}
  */
 class Tab {
   /**
-   * Creates a new Tab instance
-   * @param {string} name - Tab name (used to find element with id `tab-{name}`)
+   * Creates a new Tab instance.
+   * @param {string} name - Tab name (used to find element with id `tab-{name}`).
    */
   constructor (name) {
     /** @type {string} Tab name identifier */
@@ -19,8 +51,8 @@ class Tab {
   }
 
   /**
-   * Add click listener while tracking it for later removal
-   * @param {Function} handler - Click event handler function
+   * Add click listener while tracking it for later removal.
+   * @param {Function} handler - Click event handler function.
    * @returns {void}
    */
   addClickListener (handler) {
@@ -31,9 +63,9 @@ class Tab {
   }
 
   /**
-   * Replace all listeners with a single new one
-   * Clears existing handlers and adds the new one
-   * @param {Function} handler - New click event handler function
+   * Replace all listeners with a single new one.
+   * Clears existing handlers and adds the new one.
+   * @param {Function} handler - New click event handler function.
    * @returns {void}
    */
   overrideClickListener (handler) {
@@ -42,8 +74,8 @@ class Tab {
   }
 
   /**
-   * Mark this tab as the current active location
-   * Adds 'you-are-here' CSS class to highlight current tab
+   * Mark this tab as the current active location.
+   * Adds 'you-are-here' CSS class to highlight current tab.
    * @returns {void}
    */
   markAsCurrent () {
@@ -53,7 +85,7 @@ class Tab {
   }
 
   /**
-   * Remove all registered event listeners
+   * Remove all registered event listeners.
    * @private
    * @returns {void}
    */
@@ -67,7 +99,7 @@ class Tab {
   }
 
   /**
-   * Clean up tab resources and listeners
+   * Clean up tab resources and listeners.
    * @returns {void}
    */
   cleanup () {
@@ -76,20 +108,14 @@ class Tab {
 }
 
 /**
- * TabManager - Centralized tab creation and navigation management
- * Manages tab UI state, event listeners, and mode-based visibility/behavior
- *
+ * TabManager - Centralized tab creation and navigation management.
+ * Manages tab UI state, event listeners, and mode-based visibility/behavior.
  * @class
+ * @implements {TabManagerInstance}
  */
 class TabManager {
   /**
-   * @typedef {Object} TabConfig
-   * @property {string[]} [current=[]] - Tab names to mark as current
-   * @property {Object.<string, Function>} [handlers={}] - Map of tab names to handler functions
-   */
-
-  /**
-   * Creates a new TabManager instance
+   * Creates a new TabManager instance.
    */
   constructor () {
     /** @type {Object.<string, Tab>} Map of tab names to Tab instances */
@@ -99,9 +125,9 @@ class TabManager {
   }
 
   /**
-   * Initialize all tabs for the application
-   * Creates Tab instances for each name provided
-   * @param {string[]} tabNames - Names of tabs to initialize
+   * Initialize all tabs for the application.
+   * Creates Tab instances for each name provided.
+   * @param {string[]} tabNames - Names of tabs to initialize.
    * @returns {void}
    */
   initializeTabs (tabNames) {
@@ -111,17 +137,17 @@ class TabManager {
   }
 
   /**
-   * Get a specific tab instance
-   * @param {string} name - Tab name to retrieve
-   * @returns {Tab|undefined} Tab instance or undefined if not found
+   * Get a specific tab instance.
+   * @param {string} name - Tab name to retrieve.
+   * @returns {Tab|undefined} Tab instance or undefined if not found.
    */
   getTab (name) {
     return this.tabs[name]
   }
 
   /**
-   * Set the current active hunt mode
-   * @param {string} huntMode - Mode identifier to set as current
+   * Set the current active hunt mode.
+   * @param {string} huntMode - Mode identifier to set as current.
    * @returns {void}
    */
   setCurrentMode (huntMode) {
@@ -129,27 +155,27 @@ class TabManager {
   }
 
   /**
-   * Get the current active hunt mode
-   * @returns {string|null} Current mode identifier or null
+   * Get the current active hunt mode.
+   * @returns {string|null} Current mode identifier or null.
    */
   getCurrentMode () {
     return this.currentMode
   }
 
   /**
-   * Check if a given mode matches the current mode
-   * @param {string} mode - Mode to check
-   * @returns {boolean} True if mode equals current mode
+   * Check if a given mode matches the current mode.
+   * @param {string} mode - Mode to check.
+   * @returns {boolean} True if mode equals current mode.
    */
   isMode (mode) {
     return this.currentMode === mode
   }
 
   /**
-   * Configure tab behavior for a specific mode
-   * Marks current tabs and adds event listeners to others
-   * @param {string} mode - Mode identifier
-   * @param {TabConfig} tabConfig - Configuration with current tabs and handlers
+   * Configure tab behavior for a specific mode.
+   * Marks current tabs and adds event listeners to others.
+   * @param {string} mode - Mode identifier.
+   * @param {TabConfig} tabConfig - Configuration with current tabs and handlers.
    * @returns {void}
    */
   configureForMode (mode, tabConfig) {
@@ -167,9 +193,9 @@ class TabManager {
   }
 
   /**
-   * Add event listener to tab if it exists
-   * @param {string} tabName - Name of tab to add listener to
-   * @param {Function} handler - Click event handler function
+   * Add event listener to tab if it exists.
+   * @param {string} tabName - Name of tab to add listener to.
+   * @param {Function} handler - Click event handler function.
    * @returns {void}
    */
   addListener (tabName, handler) {
@@ -180,10 +206,10 @@ class TabManager {
   }
 
   /**
-   * Replace event listener for tab
-   * Removes existing listeners and adds a new one
-   * @param {string} tabName - Name of tab to replace listener for
-   * @param {Function} handler - New click event handler function
+   * Replace event listener for tab.
+   * Removes existing listeners and adds a new one.
+   * @param {string} tabName - Name of tab to replace listener for.
+   * @param {Function} handler - New click event handler function.
    * @returns {void}
    */
   replaceListener (tabName, handler) {
@@ -194,7 +220,7 @@ class TabManager {
   }
 
   /**
-   * Clean up all tabs and their resources
+   * Clean up all tabs and their resources.
    * @returns {void}
    */
   cleanup () {
@@ -208,11 +234,11 @@ class TabManager {
   // ============================================================================
 
   /**
-   * Add handler to tab only if tab is not the current mode
-   * Avoids adding listeners to the currently active tab
+   * Add handler to tab only if tab is not the current mode.
+   * Avoids adding listeners to the currently active tab.
    * @private
-   * @param {string} tabName - Name of tab to potentially add handler to
-   * @param {Function} handler - Click event handler function
+   * @param {string} tabName - Name of tab to potentially add handler to.
+   * @param {Function} handler - Click event handler function.
    * @returns {void}
    */
   _addHandlerIfNotCurrent (tabName, handler) {
@@ -223,10 +249,10 @@ class TabManager {
   }
 
   /**
-   * Mark tab as current if it exists
-   * Adds visual indication that this is the active location
+   * Mark tab as current if it exists.
+   * Adds visual indication that this is the active location.
    * @private
-   * @param {string} tabName - Name of tab to mark as current
+   * @param {string} tabName - Name of tab to mark as current.
    * @returns {void}
    */
   _markTabIfExists (tabName) {
@@ -238,9 +264,9 @@ class TabManager {
 }
 
 /**
- * Create TabManager pre-configured with standard game tabs
- * Factory function for creating fully initialized TabManager
- * @returns {TabManager} TabManager instance with all standard tabs initialized
+ * Create TabManager pre-configured with standard game tabs.
+ * Factory function for creating fully initialized TabManager.
+ * @returns {TabManager} TabManager instance with all standard tabs initialized.
  */
 export function createTabManager () {
   const manager = new TabManager()

@@ -1,6 +1,16 @@
 /* eslint-env jest */
 
-import { jest } from '@jest/globals'
+/* eslint-env jest */
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
+
+/* global describe, it, expect, beforeEach, afterEach, jest */
 
 /**
  * @typedef {{
@@ -95,7 +105,7 @@ function createBhMock () {
 }
 
 /**
- * Install URL and URLSearchParams shims for test location overrides.
+ * Install URL and URLSearchParams shims for it location overrides.
  * @param {Location} savedLocation
  */
 function installUrlMocks (savedLocation) {
@@ -127,7 +137,7 @@ function installUrlMocks (savedLocation) {
 }
 
 /**
- * Restore global URL helpers after each test.
+ * Restore global URL helpers after each it.
  */
 function restoreUrlMocks () {
   if (origURLSearchParams != null) {
@@ -240,7 +250,7 @@ describe('setupMapSelection and setupMapControl', () => {
     delete globalThis.__testLocationString
   })
 
-  test('setupMapControl uses terrainSelect and returns targetMap when present', () => {
+  it('setupMapControl uses terrainSelect and returns targetMap when present', () => {
     const urlParams = new URLSearchParams('?mapName=foo')
     const boardSetup = jest.fn()
     const refresh = jest.fn()
@@ -255,7 +265,7 @@ describe('setupMapSelection and setupMapControl', () => {
     }
   })
 
-  test('setupMapSelection returns placedShips flag from location.search', () => {
+  it('setupMapSelection returns placedShips flag from location.search', () => {
     globalThis.__testLocationString = 'http://example.com/?placedShips=1'
 
     const result = setupMapSelection(
@@ -266,7 +276,7 @@ describe('setupMapSelection and setupMapControl', () => {
     expect(result).toBe(true)
   })
 
-  test('setMapFromParams picks map by size when mapName missing', () => {
+  it('setMapFromParams picks map by size when mapName missing', () => {
     const urlParams = new URLSearchParams('?height=5&width=7')
 
     const target = setupMapControl(
