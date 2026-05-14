@@ -497,16 +497,22 @@ export class RailBolt extends Strike {
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
    */
   getTurn (variant, r, c) {
+    if (r === 0 && c === 0) {
+      return variant === 0 ? 'turn4' : ''
+    }
+    if (r === 0) return 'turn4'
+    if (c === 0) return 'turn3'
+    if (r === c) return 'turn2'
+    if (r === -c) return ''
     if (variant === 0) {
       const r0 = Math.abs(r)
       const c0 = Math.abs(c)
-      if (r0 === c0) return ''
       return c0 < r0 ? 'turn3' : 'turn4'
     }
-    const r0 = Math.abs(r + c)
-    const c0 = Math.abs(c - r)
-    if (r0 === c0) return 'turn4'
-    return c0 < r0 ? 'turn2' : ''
+
+    const d0 = Math.abs(r + c)
+    const d1 = Math.abs(c - r)
+    return d1 < d0 ? 'turn2' : ''
   }
   /**
    * Gets the audio file for rail bolt flight sound
