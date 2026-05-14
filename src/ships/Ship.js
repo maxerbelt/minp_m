@@ -129,7 +129,8 @@ export class Ship {
   }
 
   get cells () {
-    const coords = this._cellsArray || this.board.toCoords
+    const hasSavedCells = this._cellsArray && this._cellsArray.length > 0
+    const coords = hasSavedCells ? this._cellsArray : this.board.toCoords
     return coords.map(cell =>
       Array.isArray(cell) ? [cell[0], cell[1]] : [cell?.r, cell?.c]
     )
