@@ -409,7 +409,7 @@ function _loadSavedShipsAndStartBattle () {
  */
 function _onNavBarReady () {
   uiManager.show('choose-map-container')
-
+  friendUI.onFleetPlaced = () => enemy.setupAttachedAim()
   const placedShips = setupGameOptions(
     friendUI.resetBoardSize.bind(friendUI),
     _initializePlacement

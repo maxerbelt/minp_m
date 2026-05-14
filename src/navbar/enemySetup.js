@@ -19,9 +19,9 @@ export function newGame (seek, opponentBoard, friendUI) {
   } else if (opponentBoard && friendUI) {
     otherboard = opponentBoard
     friendUI.clearFriendClasses()
-    enemy.setupAttachedAim()
     enemy.opponent?.armWeapons()
   }
+
   enemy.UI.buildBoardHover(
     highlightAoE,
     enemy.UI.removeHighlightAoE,

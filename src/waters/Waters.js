@@ -178,7 +178,7 @@ export class Waters {
     onShipPlaced = Function.prototype,
     onPlacementReset = Function.prototype
   ) {
-    return this.shipCellGrid.attemptToPlaceShips(
+    const result = this.shipCellGrid.attemptToPlaceShips(
       ships,
       (ship, placedCells) => {
         onShipPlaced?.(ship, placedCells)
@@ -186,6 +186,10 @@ export class Waters {
       },
       this.handlePlacementFailure.bind(this, onPlacementReset)
     )
+    if (result) {
+      this.UI.onFleetPlaced?.()
+    }
+    return result
   }
 
   /**
@@ -1287,9 +1291,16 @@ export class Waters {
   //onClickOppoCell = null
   setupAttachedAim () {
     const oppo = this.opponent
-    if (bh.seekingMode || !this.loadOut || !oppo || !this.onClickOppoCell)
+    if (
+      bh.seekingMode ||
+      !this.loadOut?.ships ||
+      !oppo ||
+      this.loadOut.ships.length === 0 ||
+      !this.onClickOppoCell
+    )
       return
-    const armedShips = this.loadOut.getArmedShips()
+
+    const armedShips = this.loadOut.ships
     for (const ship of armedShips) {
       const cells = oppo.shipCells(ship.id)
       const surround = oppo.UI.surroundCellElement(cells)

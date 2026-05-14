@@ -555,5 +555,7 @@ export class FriendUI extends PlacementUI {
   setReadyAndSeekModeAfterPlacement () {
     this.readyMode()
     this.seekMode()
+
+    this.onFleetPlaced?.()
   }
 }
