@@ -6,6 +6,67 @@ import { cursor } from './cursor.js'
 import { CustomMap } from '../terrains/all/js/map.js'
 
 /**
+ * @typedef {Object} ViewModel
+ * View model interface for UI interactions
+ * @property {Function} removeHighlight - Removes highlight from cells
+ * @property {boolean} placingShips - Whether in ship placement mode
+ * @property {Function} gridCellAt - Gets cell element at coordinates
+ * @property {Function} disableRotateFlip - Disables rotation/flip controls
+ * @property {Function} removeClicked - Removes clicked state
+ * @property {Function} assignByCursor - Assigns cursor to direction
+ * @property {Function} getFirstTrayItem - Gets first tray item
+ * @property {Function} trayManager - Tray manager object
+ * @property {Function} setDragShipContents - Sets drag ship contents
+ * @property {Function} addition - Handles ship addition
+ * @property {Function} placement - Handles ship placement
+ * @property {Function} removeDragShip - Removes drag ship
+ * @property {Function} displayShipTrackingInfo - Displays ship info
+ * @property {Function} checkTrays - Checks tray states
+ * @property {Function} recolor - Recolors cell
+ * @property {Function} score - Score object
+ * @property {Function} updateChangeClearButton - Updates button
+ * @property {Function} refreshAllColor - Refreshes colors
+ * @property {Function} assignClicked - Assigns clicked ship
+ * @property {Function} assignClickedWeapon - Assigns clicked weapon
+ * @property {Function} showNotice - Shows notice
+ * @property {HTMLElement} board - Board element
+ * @property {HTMLElement} trays - Trays element
+ * @property {Array} placelistenCancellables - Placement listeners
+ * @property {Array} brushlistenCancellables - Brush listeners
+ */
+
+/**
+ * @typedef {Object} Model
+ * Model interface for game state
+ * @property {Object} shipCellGrid - Ship cell grid
+ * @property {Array} ships - Array of ships
+ * @property {Function} armWeapons - Arms weapons
+ */
+
+/**
+ * @typedef {Object} Ship
+ * Ship object interface
+ * @property {number} id - Ship ID
+ * @property {Function} shape - Gets ship shape
+ */
+
+/**
+ * @typedef {Object} Weapon
+ * Weapon object interface
+ * @property {string} letter - Weapon letter
+ * @property {string} tip - Weapon tip text
+ * @property {number} ammo - Weapon ammo count
+ */
+
+/**
+ * @typedef {Object} ShipElement
+ * Ship element interface
+ * @property {string} dataset.id - Ship ID in dataset
+ * @property {string} dataset.variant - Variant index
+ * @property {string} style.opacity - Element opacity
+ */
+
+/**
  * Manages drag-and-drop state for ships and weapons.
  * Encapsulates module-level state to avoid side effects.
  * @class DragDropState
@@ -707,29 +768,81 @@ class DragNDrop {
 
   /**
    * Highlights cells showing where ship would be placed.
-   * @param {Object} viewModel - The view model
+   * @param {ViewModel} viewModel - The view model
    * @param {Object} shipCellGrid - The ship cell grid
    * @param {number} [r] - Row coordinate (uses lastEntered if null)
    * @param {number} [c] - Column coordinate (uses lastEntered if null)
    * @returns {void}
    */
   highlight (viewModel, shipCellGrid, r, c) {
-    const map = bh.map
     if (!state.selection?.ghost) return
-    if (r === null) r = state.lastEntered[0]
-    if (c === null) c = state.lastEntered[1]
 
-    const [c0, r0] = state.selection.offsetCell(r, c)
-    if (!map.inBounds(c0, r0)) return
+    const { row, col } = this._getCoordinates(r, c)
+    const { c0, r0 } = this._calculatePlacementPosition(row, col)
+    if (!bh.map.inBounds(c0, r0)) return
 
     viewModel.removeHighlight()
 
+    const { placing, canPlace, cells } = this._getPlacingAndCells(
+      r0,
+      c0,
+      shipCellGrid
+    )
+    this._applyHighlights(viewModel, cells, canPlace, placing)
+  }
+
+  /**
+   * Gets coordinates, using lastEntered if null.
+   * @param {number|null} r - Row
+   * @param {number|null} c - Column
+   * @returns {Object} Object with row and col
+   * @private
+   */
+  _getCoordinates (r, c) {
+    const row = r === null ? state.lastEntered[0] : r
+    const col = c === null ? state.lastEntered[1] : c
+    return { row, col }
+  }
+
+  /**
+   * Calculates placement position with offset.
+   * @param {number} row - Row
+   * @param {number} col - Column
+   * @returns {Object} Object with c0 and r0
+   * @private
+   */
+  _calculatePlacementPosition (row, col) {
+    const [c0, r0] = state.selection.offsetCell(row, col)
+    return { c0, r0 }
+  }
+
+  /**
+   * Gets placing object, canPlace flag, and occupied cells.
+   * @param {number} r0 - Offset row
+   * @param {number} c0 - Offset column
+   * @param {Object} shipCellGrid - Ship cell grid
+   * @returns {Object} Object with placing, canPlace, cells
+   * @private
+   */
+  _getPlacingAndCells (r0, c0, shipCellGrid) {
     const placing = state.selection.placeable().placeAt(r0, c0)
     const canPlace = placing.canPlace(shipCellGrid)
     const cells = [...placing.board.occupiedLocations()]
+    return { placing, canPlace, cells }
+  }
 
+  /**
+   * Applies highlight classes to cells.
+   * @param {ViewModel} viewModel - The view model
+   * @param {Array} cells - Occupied cells
+   * @param {boolean} canPlace - Whether placement is valid
+   * @param {Object} placing - The placement object
+   * @returns {void}
+   * @private
+   */
+  _applyHighlights (viewModel, cells, canPlace, placing) {
     for (const [cc, rr] of cells) {
-      if (map.inBounds(rr, cc)) {
+      if (bh.map.inBounds(rr, cc)) {
         const cell = viewModel.gridCellAt(rr, cc)
         const cellClass = this._getHighlightClass(canPlace, placing, cc, rr)
         cell.classList.add(cellClass)
@@ -954,8 +1067,8 @@ class DragNDrop {
 
   /**
    * Handles ship drag start event.
-   * @param {Object} viewModel - The view model
-   * @param {Array} ships - Available ships
+   * @param {ViewModel} viewModel - The view model
+   * @param {Array<Ship>} ships - Available ships
    * @param {DragEvent} event - The dragstart event
    * @returns {void}
    */
@@ -964,22 +1077,93 @@ class DragNDrop {
     const { shipId, shipElement, isNotShipElement } = this._getShip(event)
     if (isNotShipElement) return
 
+    const { ship, variantIndex } = this._getShipAndVariant(
+      ships,
+      shipId,
+      shipElement
+    )
+    const { offsetX, offsetY } = this._calculateOffsets(event, shipElement)
+
+    this._prepareDragUI(viewModel, ship, event)
+    state.selection = this._createAndPositionSelection(
+      ship,
+      offsetX,
+      offsetY,
+      viewModel,
+      shipElement,
+      variantIndex,
+      event
+    )
+    shipElement.style.opacity = '0.6'
+  }
+
+  /**
+   * Gets ship and variant index from ship ID and element.
+   * @param {Array<Ship>} ships - Available ships
+   * @param {number} shipId - Ship ID
+   * @param {ShipElement} shipElement - Ship element
+   * @returns {Object} Object with ship and variantIndex
+   * @private
+   */
+  _getShipAndVariant (ships, shipId, shipElement) {
     const ship = ships.find(s => s.id === shipId)
     const variantIndex = Number.parseInt(shipElement.dataset.variant)
+    return { ship, variantIndex }
+  }
 
-    event.dataTransfer.setData('ship', shipId.toString())
-    viewModel.showNotice(ship.shape().tip)
-
+  /**
+   * Calculates drag offsets from event and element.
+   * @param {DragEvent} event - The drag event
+   * @param {ShipElement} shipElement - Ship element
+   * @returns {Object} Object with offsetX and offsetY
+   * @private
+   */
+  _calculateOffsets (event, shipElement) {
     const rect = shipElement.getBoundingClientRect()
     const offsetX = event.clientX - rect.left
     const offsetY = event.clientY - rect.top
+    return { offsetX, offsetY }
+  }
 
+  /**
+   * Prepares UI for drag operation.
+   * @param {ViewModel} viewModel - The view model
+   * @param {Ship} ship - The ship
+   * @param {DragEvent} event - The drag event
+   * @returns {void}
+   * @private
+   */
+  _prepareDragUI (viewModel, ship, event) {
+    event.dataTransfer.setData('ship', ship.id.toString())
+    viewModel.showNotice(ship.shape().tip)
     viewModel.removeClicked()
     event.dataTransfer.effectAllowed = 'all'
     event.dataTransfer.setDragImage(new Image(), 0, 0)
-
     cursor.isDragging = true
-    state.selection = _makeSelection(
+  }
+
+  /**
+   * Creates and positions the dragged ship selection.
+   * @param {Ship} ship - The ship
+   * @param {number} offsetX - X offset
+   * @param {number} offsetY - Y offset
+   * @param {ViewModel} viewModel - The view model
+   * @param {ShipElement} shipElement - Ship element
+   * @param {number} variantIndex - Variant index
+   * @param {DragEvent} event - The drag event
+   * @returns {DraggedShip} The created selection
+   * @private
+   */
+  _createAndPositionSelection (
+    ship,
+    offsetX,
+    offsetY,
+    viewModel,
+    shipElement,
+    variantIndex,
+    event
+  ) {
+    const selection = _makeSelection(
       ship,
       offsetX,
       offsetY,
@@ -987,8 +1171,8 @@ class DragNDrop {
       shipElement,
       variantIndex
     )
-    state.selection.moveTo(event.clientX, event.clientY)
-    shipElement.style.opacity = '0.6'
+    selection.moveTo(event.clientX, event.clientY)
+    return selection
   }
 
   // ============================================================================
