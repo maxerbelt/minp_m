@@ -296,10 +296,14 @@ export class WatersUI {
    *
    * @param {number} row - Row coordinate
    * @param {number} column - Column coordinate
-   * @returns {HTMLElement|null} Cell element or null if not found
+   * @returns {HTMLDivElement|null} Cell element or null if not found
    */
   gridCellRawAt (row, column) {
-    return this.board?.children?.[this.#gridIndex(row, column)] || null
+    return (
+      /** @type {HTMLDivElement|null} */ (
+        this.board?.children?.[this.#gridIndex(row, column)]
+      ) || null
+    )
   }
 
   /**
@@ -308,7 +312,7 @@ export class WatersUI {
    *
    * @param {number} row - Row coordinate
    * @param {number} column - Column coordinate
-   * @returns {HTMLElement} Cell element (guaranteed valid)
+   * @returns {HTMLDivElement} Cell element (guaranteed valid)
    * @throws {Error} If cell at coordinates is invalid or missing
    */
   gridCellAt (row, column) {
@@ -348,8 +352,8 @@ export class WatersUI {
   }
 
   /**
-   * @param {Array<[HTMLElement, number, number, any]>} cells
-   * @param {function(HTMLElement, any): Promise<void>} effect
+   * @param {Array<[HTMLDivElement, number, number, any]>} cells
+   * @param {function(HTMLDivElement, any): Promise<void>} effect
    * @param {number} [mindelay=380]
    * @param {number} [maxdelay=730]
    * @returns {Promise<PromiseSettledResult<void>[]>}
@@ -362,8 +366,8 @@ export class WatersUI {
   }
 
   /**
-   * @param {HTMLElement} cell
-   * @param {function(HTMLElement, any): Promise<void>} effect
+   * @param {HTMLDivElement} cell
+   * @param {function(HTMLDivElement, any): Promise<void>} effect
    * @param {number} [mindelay=380]
    * @param {number} [maxdelay=730]
    * @param {any} [power=null]
@@ -435,7 +439,7 @@ export class WatersUI {
    * Generic method to clear cell visuals using custom clearing strategy.
    * Delegates class clearing to provided function for context-specific behavior.
    *
-   * @param {HTMLElement} cell - DOM element to clear
+   * @param {HTMLDivElement} cell - DOM element to clear
    * @param {'none'|'content'|'all'} details - What to clear:
    *   'none' = only call classClear, 'content' = text only, 'all' = text and style
    * @param {Function} [classClear] - Function to clear cell classes (defaults to clearCell)
@@ -453,7 +457,7 @@ export class WatersUI {
    * Marks a friendly cell as sunk.
    * Displays sunk marker and clears hit-related state.
    *
-   * @param {HTMLElement} cell - DOM element to update
+   * @param {HTMLDivElement} cell - DOM element to update
    * @returns {void}
    */
   displayAsSunk (cell) {
@@ -469,20 +473,6 @@ export class WatersUI {
    */
   clearClasses () {
     this._forEachBoardCell(cell => CellClassManager.clearCell(cell))
-  }
-
-  /**
-   * Applies hit state to a cell with optional damage indicator.
-   * Called after hit animation completes to show permanent damage.
-   *
-   * @param {HTMLElement} cell - DOM element to update
-   * @param {string} [damageType] - Damage class to add (e.g., 'skull', 'burnt')
-   * @returns {void}
-   * @private
-   */
-  _applyHitCellState (cell, damageType) {
-    CellClassManager.applyFriendlyHitCellState(cell, damageType)
-    this._clearCellText(cell)
   }
 
   /**
@@ -556,7 +546,7 @@ export class WatersUI {
    * Override in subclasses for territory-specific behavior.
    * Default implementation does nothing (for friendly board).
    *
-   * @param {HTMLElement} _cell - DOM element to update
+   * @param {HTMLDivElement} _cell - DOM element to update
    * @returns {void}
    * @protected
    */
@@ -569,7 +559,7 @@ export class WatersUI {
    * Override in subclasses for territory-specific behavior.
    * Default implementation does nothing (for friendly board).
    *
-   * @param {HTMLElement} _cell - DOM element to update
+   * @param {HTMLDivElement} _cell - DOM element to update
    * @returns {void}
    * @protected
    */
@@ -581,7 +571,7 @@ export class WatersUI {
    * Adds weapon activation styling to a cell.
    * Applies weapon classes, rotation, and optional contrast for visual emphasis.
    *
-   * @param {HTMLElement} cell - DOM element to style
+   * @param {HTMLDivElement} cell - DOM element to style
    * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
    * @param {string} [extraClass] - Additional class to apply (optional)
    * @private
@@ -1319,8 +1309,6 @@ export class WatersUI {
     value.count++
     group[key] = value
   }
-
- 
 
   /**
    * Groups ships by unit type with shape and count info.

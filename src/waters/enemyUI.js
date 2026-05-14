@@ -46,7 +46,7 @@ class EnemyUI extends WatersUI {
 
   /**
    * Builds the enemy UI button references from DOM ids.
-   * @returns {{reveal: HTMLElement|null, place: HTMLElement|null, restart: HTMLElement|null, test: HTMLElement|null, weapon: HTMLElement|null}}
+   * @returns {{reveal: HTMLButtonElement|null, place: HTMLButtonElement|null, restart: HTMLButtonElement|null, test: HTMLButtonElement|null, weapon: HTMLButtonElement|null}}
    * @private
    */
   _initializeButtons () {
@@ -80,11 +80,11 @@ class EnemyUI extends WatersUI {
   /**
    * Retrieves a button element by its DOM id.
    * @param {string} id
-   * @returns {HTMLElement|null}
+   * @returns {HTMLButtonElement|null}
    * @private
    */
   _getButtonById (id) {
-    return document.getElementById(id)
+    return /** @type {HTMLButtonElement|null} */ document.getElementById(id)
   }
 
   /**
@@ -172,7 +172,7 @@ class EnemyUI extends WatersUI {
    * @private
    */
   _buildWeaponButtonClone (template, cloneClass, weapon, index, callback) {
-    const clone = template.cloneNode(true)
+    const clone = /** @type {HTMLElement} */ (template.cloneNode(true))
     clone.classList.add(cloneClass, weapon.btnClass)
     clone.dataset.letter = weapon.letter
     clone.addEventListener('click', () => callback(weapon.letter))
@@ -256,7 +256,7 @@ class EnemyUI extends WatersUI {
 
   /**
    * Sets disabled state on a collection of buttons.
-   * @param {Array<HTMLElement|null>} buttons
+   * @param {Array<HTMLButtonElement|null>} buttons
    * @param {boolean} disabled
    * @private
    */
@@ -282,7 +282,7 @@ class EnemyUI extends WatersUI {
 
   /**
    * Displays a cell as sunk.
-   * @param {HTMLElement} cell - The cell element.
+   * @param {HTMLDivElement} cell - The cell element.
    * @param {string} letter - The ship letter.
    */
   displayAsSunk (cell, letter) {

@@ -70,7 +70,6 @@ export class CellClassManager {
    * Dataset keys that should be preserved when clearing a cell's dataset.
    * 'r' = row index, 'c' = column index
    * @type {Set<string>}
-   * @private
    */
   static #PRESERVED_DATASET_KEYS = new Set(['r', 'c'])
 
@@ -133,7 +132,7 @@ export class CellClassManager {
    * Clears weapon-related classes and cursor classes added during targeting/animation.
    * Preserves display state (hit/miss) and damage indicators.
    *
-   * @param {HTMLElement} cell - DOM element to reset
+   * @param {HTMLDivElement} cell - DOM element to reset
    * @returns {void}
    */
   static resetHitCellState (cell) {
@@ -146,7 +145,7 @@ export class CellClassManager {
    * Resets transient effects, adds friendly hit indicator, and optionally applies damage type.
    * Friendly hit states use 'frd-hit' class to distinguish from enemy perspective.
    *
-   * @param {HTMLElement} cell - DOM element to update
+   * @param {HTMLDivElement} cell - DOM element to update
    * @param {string} [damageType] - Optional damage indicator class (burnt, damaged, skull)
    * @returns {void}
    */
@@ -159,7 +158,7 @@ export class CellClassManager {
    * Resets transient effects, adds hit indicator, and optionally applies damage type.
    * Enemy hit states use 'hit' class to show revealed targeting success.
    *
-   * @param {HTMLElement} cell - DOM element to update
+   * @param {HTMLDivElement} cell - DOM element to update
    * @param {string} [damageType] - Optional damage indicator class (burnt, damaged, skull)
    * @returns {void}
    */
@@ -171,7 +170,7 @@ export class CellClassManager {
    * Applies friendly board sunk ship state.
    * Clears previous display state, resets animation effects, and applies friendly sunk indicator.
    *
-   * @param {HTMLElement} cell - The friendly board cell to mark as sunk
+   * @param {HTMLDivElement} cell - The friendly board cell to mark as sunk
    * @returns {void}
    */
   static applyFriendlySunkCellState (cell) {
@@ -182,7 +181,7 @@ export class CellClassManager {
    * Applies enemy board sunk ship state.
    * Clears previous display state, resets animation effects, and applies enemy sunk indicator.
    *
-   * @param {HTMLElement} cell - The enemy board cell to mark as sunk
+   * @param {HTMLDivElement} cell - The enemy board cell to mark as sunk
    * @returns {void}
    */
   static applyEnemySunkCellState (cell) {
@@ -193,11 +192,11 @@ export class CellClassManager {
    * Only applies if cell is in clean state (no placement, hit, or miss markers).
    * Removes wake class when semi state is applied to represent more solid visibility.
    *
-   * @param {HTMLElement} cell - DOM element to update
+   * @param {HTMLDivElement} cell - DOM element to update
    * @returns {boolean} True if semi state was successfully applied, false if cell was in incompatible state
    */
   applySemiRevealState (cell) {
-    if (this.hasAny(cell, ['placed', 'miss', 'hit'])) {
+    if (CellClassManager.hasAny(cell, ['placed', 'miss', 'hit'])) {
       return false
     }
     cell.classList.add('semi')
@@ -210,11 +209,11 @@ export class CellClassManager {
    * Only applies if cell is in clean state (no placement, hit, miss, or semi markers).
    * Removes wake and temporary hint classes to update hint indication.
    *
-   * @param {HTMLElement} cell - DOM element to update
+   * @param {HTMLDivElement} cell - DOM element to update
    * @returns {boolean} True if hint state was successfully applied, false if cell was in incompatible state
    */
   applyHintState (cell) {
-    if (this.hasAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
+    if (CellClassManager.hasAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
       return false
     }
     cell.classList.add('hint')
@@ -338,7 +337,7 @@ export class CellClassManager {
    * Resets cell dataset except for row/column coordinates.
    * Used when aborting or canceling ship placement.
    *
-   * @param {HTMLElement} cell - The placement cell to clear
+   * @param {HTMLDivElement} cell - The placement cell to clear
    * @returns {void}
    */
   static clearPlaceCell (cell) {
@@ -352,7 +351,6 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The cell element whose dataset will be cleared
    * @returns {void}
-   * @private
    */
   static #clearCellDatasetExceptCoordinates (cell) {
     for (const key in cell.dataset) {
@@ -371,7 +369,6 @@ export class CellClassManager {
    * Returns empty array if terrain not yet loaded to handle initialization order.
    *
    * @returns {string[]} Array of weapon-related CSS class names from terrain config
-   * @private
    */
   static #weaponTags () {
     return bh.terrain?.weapons?.tags || []
@@ -382,7 +379,6 @@ export class CellClassManager {
    * Returns empty array if terrain not yet loaded to handle initialization order.
    *
    * @returns {string[]} Array of cursor-related CSS class names from terrain config
-   * @private
    */
   static #cursorTags () {
     return bh.terrain?.weapons?.cursors || []
@@ -400,7 +396,6 @@ export class CellClassManager {
    * @param {HTMLElement} cell - DOM element to remove classes from
    * @param {string[]} classNames - Array of class names to remove
    * @returns {void}
-   * @private
    */
   static #removeClassesFromCell (cell, classNames) {
     if (classNames.length) {
@@ -418,7 +413,6 @@ export class CellClassManager {
    * Used to remove transient animation and weapon-related classes.
    *
    * @returns {string[]} Array of class names to remove from hit cells
-   * @private
    */
   static #hitCleanupClasses () {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this.#weaponTags()]
@@ -429,9 +423,8 @@ export class CellClassManager {
    * Part of splitting resetHitCellState into semantic concerns.
    * Clears weapon markers, portal, and animation states.
    *
-   * @param {HTMLElement} cell - The cell element to update
+   * @param {HTMLDivElement} cell - The cell element to update
    * @returns {void}
-   * @private
    */
   static #removeWeaponAndAnimationClasses (cell) {
     this.#removeClassesFromCell(cell, this.#hitCleanupClasses())
@@ -444,7 +437,6 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The cell element to update
    * @returns {void}
-   * @private
    */
   static #removeCursorClasses (cell) {
     this.#removeClassesFromCell(cell, this.#cursorTags())
@@ -457,7 +449,6 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The cell element to update
    * @returns {void}
-   * @private
    */
   static #removeWeaponClasses (cell) {
     this.#removeClassesFromCell(cell, this.#weaponTags())
@@ -474,11 +465,10 @@ export class CellClassManager {
    * 2. Add hit state indicator class (friendly vs enemy)
    * 3. Apply optional damage type
    *
-   * @param {HTMLElement} cell - The cell element to update
+   * @param {HTMLDivElement} cell - The cell element to update
    * @param {string} stateClass - CSS class indicating hit state ('hit' or 'frd-hit')
    * @param {string} [damageType] - Optional damage indicator class (burnt, damaged, skull)
    * @returns {void}
-   * @private
    */
   static #applyHitState (cell, stateClass, damageType) {
     this.resetHitCellState(cell)
@@ -496,10 +486,9 @@ export class CellClassManager {
    * 2. Reset animation/weapon effects
    * 3. Apply sunk state class (friendly vs enemy)
    *
-   * @param {HTMLElement} cell - The cell element to update
+   * @param {HTMLDivElement} cell - The cell element to update
    * @param {string} sunkClass - CSS class indicating sunk state ('enm-sunk' or 'frd-sunk')
    * @returns {void}
-   * @private
    */
   static #applySunkState (cell, sunkClass) {
     this.clearDisplayCell(cell)
@@ -516,9 +505,8 @@ export class CellClassManager {
    * Removes weapon markers, damage indicators, placement hints, display states, and orientation.
    * Extracted from clearPlaceCell to separate class concerns from dataset concerns.
    *
-   * @param {HTMLElement} cell - The placement cell to clear
+   * @param {HTMLDivElement} cell - The placement cell to clear
    * @returns {void}
-   * @private
    */
   static #clearPlacementClasses (cell) {
     this.clearCellClasses(cell, [
@@ -541,9 +529,8 @@ export class CellClassManager {
    * Removes all dataset attributes except row/column coordinates.
    * Extracted from clearPlaceCell to separate dataset concerns from class concerns.
    *
-   * @param {HTMLElement} cell - The placement cell to clear
+   * @param {HTMLDivElement} cell - The placement cell to clear
    * @returns {void}
-   * @private
    */
   static #clearPlacementDataset (cell) {
     this.#clearCellDatasetExceptCoordinates(cell)
