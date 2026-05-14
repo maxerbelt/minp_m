@@ -1,6 +1,12 @@
 /* eslint-env jest */
-/* global describe,it,expect,beforeEach,jest */
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 
 jest.unstable_mockModule('../src/ui/ButtonManager.js', () => ({
   ButtonManager: jest.fn().mockImplementation(() => ({
@@ -62,6 +68,7 @@ jest.unstable_mockModule('../src/navbar/setupTabs.js', () => ({
 
 jest.unstable_mockModule('../src/navbar/navbar.js', () => ({
   switchToEdit: jest.fn(),
+  // @ts-ignore
   fetchNavBar: jest.fn().mockResolvedValue()
 }))
 
@@ -76,8 +83,10 @@ let saveToFile
 let bh
 
 beforeEach(async () => {
-  if (typeof globalThis.document !== 'undefined') {
+  if (globalThis.document) {
+    // @ts-ignore
     globalThis.document.getElementById = jest.fn()
+    // @ts-ignore
     globalThis.document.createElement = jest.fn().mockImplementation(tag => ({
       tagName: typeof tag === 'string' ? tag.toUpperCase() : '',
       href: '',
@@ -95,11 +104,15 @@ beforeEach(async () => {
     }))
 
     if (globalThis.document.body) {
+      // @ts-ignore
       globalThis.document.body.appendChild = jest.fn()
     }
   } else {
+    // @ts-ignore
     globalThis.document = {
+      // @ts-ignore
       getElementById: jest.fn(),
+      // @ts-ignore
       createElement: jest.fn().mockImplementation(tag => ({
         tagName: typeof tag === 'string' ? tag.toUpperCase() : '',
         href: '',
@@ -115,22 +128,28 @@ beforeEach(async () => {
         textContent: '',
         addEventListener: jest.fn()
       })),
+      // @ts-ignore
       body: { appendChild: jest.fn() }
     }
   }
 
   const OriginalURL = globalThis.URL
+  // @ts-ignore
   class TestURL extends OriginalURL {}
   Object.defineProperty(TestURL, 'createObjectURL', {
+    // @ts-ignore
     value: jest.fn(),
     writable: true
   })
   Object.defineProperty(TestURL, 'revokeObjectURL', {
+    // @ts-ignore
     value: jest.fn(),
     writable: true
   })
+  // @ts-ignore
   globalThis.URL = TestURL
 
+  // @ts-ignore
   globalThis.fetch = jest.fn()
 
   jest.resetModules()
@@ -192,6 +211,7 @@ describe('MapList', () => {
     mockOkBtn = {}
     mockCancelBtn = {}
 
+    // @ts-ignore
     document.getElementById.mockImplementation(id => {
       switch (id) {
         case 'list-container':
@@ -221,7 +241,8 @@ describe('MapList', () => {
       }
     })
 
-    document.createElement.mockImplementation(tag => {
+    // @ts-ignore
+    document.createElement.mockImplementation(_tag => {
       return {
         id: '',
         textContent: '',
@@ -369,6 +390,7 @@ describe('MapList', () => {
 
     beforeEach(() => {
       mockTitleEl = { textContent: '' }
+      // @ts-ignore
       document.getElementById.mockImplementation(id => {
         if (id === 'list-title') return mockTitleEl
         return null
@@ -412,7 +434,9 @@ describe('MapList', () => {
 describe('saveAsJson', () => {
   beforeEach(() => {
     jest.useFakeTimers()
+    // @ts-ignore
     document.body.appendChild = jest.fn()
+    // @ts-ignore
     document.createElement = jest.fn().mockReturnValue({
       href: '',
       download: '',
@@ -420,6 +444,7 @@ describe('saveAsJson', () => {
       remove: jest.fn(),
       appendChild: jest.fn()
     })
+    // @ts-ignore
     globalThis.URL.createObjectURL = jest.fn().mockReturnValue('blob:url')
     globalThis.URL.revokeObjectURL = jest.fn()
   })
@@ -468,6 +493,7 @@ describe('saveToFile', () => {
   })
 
   it('should use modern file picker when available', async () => {
+    // @ts-ignore
     globalThis.showSaveFilePicker = jest.fn().mockResolvedValue({
       createWritable: jest.fn().mockResolvedValue({
         write: jest.fn().mockResolvedValue(),
@@ -491,6 +517,7 @@ describe('saveToFile', () => {
   })
 
   it('should handle file picker cancellation', async () => {
+    // @ts-ignore
     globalThis.showSaveFilePicker = jest
       .fn()
       .mockRejectedValue(new Error('User cancelled'))
