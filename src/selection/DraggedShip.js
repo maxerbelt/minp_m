@@ -3,6 +3,19 @@ import { SelectedShip } from './SelectedShip.js'
 import { placedShipsInstance } from './PlacedShips.js'
 
 /**
+ * @typedef {[number, number]} CursorPosition
+ * @typedef {[number, number]} OffsetVector
+ * @typedef {import('./Ghost.js').Ghost} GhostType
+ * @typedef {import('./SelectedShip.js').SelectedShip} SelectedShipType
+ * @typedef {Object} MouseDragEvent
+ * @property {number} clientX
+ * @property {number} clientY
+ * @typedef {Object} ShipCellGrid
+ * @typedef {Object} Placeable
+ * @property {Function} canPlace
+ */
+
+/**
  * Represents a dragged ship with ghost preview and placement logic.
  * Extends SelectedShip to add drag-specific behavior like ghost preview,
  * offset tracking, and placement validation.
@@ -30,18 +43,41 @@ export class DraggedShip extends SelectedShip {
     contentBuilder
   ) {
     super(ship, variantIndex, contentBuilder)
-    const row = Math.floor(dragOffsetY / cellSize)
-    const col = Math.floor(dragOffsetX / cellSize)
+
     this.source = source
-    this.cursor = [row, col]
+    this.cursor = DraggedShip._computeCursor(dragOffsetX, dragOffsetY, cellSize)
     this.offset = [dragOffsetX, dragOffsetY]
-    this.ghost = new Ghost(super.board(), ship.letter, contentBuilder)
+    this.ghost = this._createGhost()
     this.shown = true
   }
 
   /**
+   * Computes cursor cell position using drag offset and cell size.
+   * @param {number} dragOffsetX
+   * @param {number} dragOffsetY
+   * @param {number} cellSize
+   * @returns {CursorPosition}
+   * @private
+   */
+  static _computeCursor (dragOffsetX, dragOffsetY, cellSize) {
+    return [
+      Math.floor(dragOffsetY / cellSize),
+      Math.floor(dragOffsetX / cellSize)
+    ]
+  }
+
+  /**
+   * Creates the ghost preview instance for the dragged ship.
+   * @returns {GhostType}
+   * @private
+   */
+  _createGhost () {
+    return new Ghost(super.board(), this.ship.letter, this.contentBuilder)
+  }
+
+  /**
    * Checks if the ship ghost is not currently visible.
-   * @returns {boolean} True if not shown
+   * @returns {boolean}
    */
   isNotShown () {
     return !this.shown
@@ -53,7 +89,7 @@ export class DraggedShip extends SelectedShip {
    */
   hide () {
     this.shown = false
-    this._hideGhost()
+    this._ghostAction('hide')
   }
 
   /**
@@ -62,7 +98,7 @@ export class DraggedShip extends SelectedShip {
    */
   show () {
     this.shown = true
-    this._showGhost()
+    this._ghostAction('show')
   }
 
   /**
@@ -70,7 +106,8 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   remove () {
-    this._removeGhost()
+    this._ghostAction('remove')
+    this.ghost = null
   }
 
   /**
@@ -80,20 +117,17 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   moveTo (x, y) {
-    this._moveGhostTo(x, y)
+    this._ghostAction('moveTo', x, y)
   }
 
   /**
    * Updates ghost position based on mouse event coordinates and offset.
-   * Adjusts coordinates by the drag offset and magic offset (13px) for pointer centering.
-   * @param {MouseEvent} event - Mouse event with clientX and clientY
+   * @param {MouseDragEvent} event - Mouse event with clientX and clientY
    * @returns {void}
    */
   move (event) {
-    this.moveTo(
-      event.clientX - this.offset[0] - 13,
-      event.clientY - this.offset[1] - 13
-    )
+    const [x, y] = this._calculateGhostPosition(event)
+    this.moveTo(x, y)
   }
 
   /**
@@ -101,12 +135,12 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   setGhostVariant () {
-    this._setGhostVariant()
+    this._ghostAction('setVariant', this.board())
   }
 
   /**
    * Rotates the ship and updates ghost preview.
-   * @returns {Object} The rotated variant
+   * @returns {Object}
    */
   rotate () {
     this._handleTransformation()
@@ -124,7 +158,7 @@ export class DraggedShip extends SelectedShip {
 
   /**
    * Rotates the ship counter-clockwise and updates ghost.
-   * @returns {Object} The left-rotated variant
+   * @returns {Object}
    */
   leftRotate () {
     this._handleTransformation()
@@ -133,7 +167,7 @@ export class DraggedShip extends SelectedShip {
 
   /**
    * Flips the ship horizontally and updates ghost.
-   * @returns {Object} The flipped variant
+   * @returns {Object}
    */
   flip () {
     this._handleTransformation()
@@ -141,39 +175,35 @@ export class DraggedShip extends SelectedShip {
   }
 
   /**
-   * Checks if the ship can be placed at the given grid position (without offset).
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @param {Object} shipCellGrid - Ship cell grid for collision detection
-   * @returns {boolean} True if can place
+   * Checks if the ship can be placed at the given grid position (without cursor offset).
+   * @param {number} row
+   * @param {number} col
+   * @param {ShipCellGrid} shipCellGrid
+   * @returns {boolean}
    */
   canPlaceRaw (row, col, shipCellGrid) {
-    const placeable = this.placeable()
-    if (this.ghost) {
-      return placeable.canPlace(row, col, shipCellGrid)
-    }
-    return false
+    const placeable = this._currentPlaceable()
+    return Boolean(
+      this.ghost && placeable && placeable.canPlace(row, col, shipCellGrid)
+    )
   }
 
   /**
    * Calculates grid position offset from cursor.
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @returns {[number, number]} [offsetRow, offsetCol] relative to cursor
+   * @param {number} row
+   * @param {number} col
+   * @returns {CursorPosition}
    */
   offsetCell (row, col) {
-    const offsetRow = row - this.cursor[0]
-    const offsetCol = col - this.cursor[1]
-    return [offsetRow, offsetCol]
+    return [row - this.cursor[0], col - this.cursor[1]]
   }
 
   /**
    * Checks if the ship can be placed at the cursor-adjusted position.
-   * Applies cursor offset to grid coordinates before validation.
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @param {Object} shipCellGrid - Ship cell grid for collision detection
-   * @returns {boolean} True if can place
+   * @param {number} row
+   * @param {number} col
+   * @param {ShipCellGrid} shipCellGrid
+   * @returns {boolean}
    */
   canPlace (row, col, shipCellGrid) {
     const [offsetRow, offsetCol] = this.offsetCell(row, col)
@@ -182,32 +212,28 @@ export class DraggedShip extends SelectedShip {
 
   /**
    * Places the ship cells at the cursor-adjusted position.
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @param {Object} shipCellGrid - Ship cell grid for collision detection
-   * @returns {Array|null} Placed ship cells or null if cannot place
+   * @param {number} row
+   * @param {number} col
+   * @param {ShipCellGrid} shipCellGrid
+   * @returns {Array|null}
    */
   placeCells (row, col, shipCellGrid) {
     const [offsetRow, offsetCol] = this.offsetCell(row, col)
-    if (this.canPlaceRaw(offsetRow, offsetCol, shipCellGrid)) {
-      return this.addCurrentToShipCells(offsetRow, offsetCol, shipCellGrid)
-    }
-    return null
+    return this.canPlaceRaw(offsetRow, offsetCol, shipCellGrid)
+      ? this.addCurrentToShipCells(offsetRow, offsetCol, shipCellGrid)
+      : null
   }
 
   /**
    * Places the ship and registers it with placed ships manager.
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @param {Object} shipCellGrid - Ship cell grid for collision detection
-   * @returns {Object|null} Placed ship instance or null if placement failed
+   * @param {number} row
+   * @param {number} col
+   * @param {ShipCellGrid} shipCellGrid
+   * @returns {Object|null}
    */
   place (row, col, shipCellGrid) {
     const placedCells = this.placeCells(row, col, shipCellGrid)
-    if (placedCells) {
-      return placedShipsInstance.push(this.ship, placedCells)
-    }
-    return null
+    return placedCells ? placedShipsInstance.push(this.ship, placedCells) : null
   }
 
   // ============================================================================
@@ -216,7 +242,6 @@ export class DraggedShip extends SelectedShip {
 
   /**
    * Handles transformation by resetting offset and updating ghost.
-   * @returns {void}
    * @private
    */
   _handleTransformation () {
@@ -225,61 +250,45 @@ export class DraggedShip extends SelectedShip {
   }
 
   /**
-   * Hides the ghost element.
-   * @returns {void}
+   * Safely invokes a ghost method when the ghost exists.
+   * @param {string} method
+   * @param {...any} args
    * @private
    */
-  _hideGhost () {
-    this.ghost?.hide()
+  _ghostAction (method, ...args) {
+    this.ghost?.[method]?.(...args)
   }
 
   /**
-   * Shows the ghost element.
-   * @returns {void}
+   * Computes the screen coordinates for ghost positioning.
+   * @param {MouseDragEvent} event
+   * @returns {Array<number>}
    * @private
    */
-  _showGhost () {
-    this.ghost?.show()
+  _calculateGhostPosition (event) {
+    return [
+      event.clientX - this.offset[0] - 13,
+      event.clientY - this.offset[1] - 13
+    ]
   }
 
   /**
-   * Removes the ghost element from DOM.
-   * @returns {void}
+   * Gets the current placeable from the selected ship.
+   * @returns {Placeable|null}
    * @private
    */
-  _removeGhost () {
-    this.ghost?.remove()
-    this.ghost = null
-  }
-
-  /**
-   * Moves the ghost element to specified coordinates.
-   * @param {number} x - X coordinate in pixels
-   * @param {number} y - Y coordinate in pixels
-   * @returns {void}
-   * @private
-   */
-  _moveGhostTo (x, y) {
-    this.ghost?.moveTo(x, y)
-  }
-
-  /**
-   * Updates the ghost variant display.
-   * @returns {void}
-   * @private
-   */
-  _setGhostVariant () {
-    this.ghost?.setVariant(this.board())
+  _currentPlaceable () {
+    return this.placeable()
   }
 
   /**
    * Adds the placeable to ship cells at given position.
    * Places the variant and adds ship to grid.
-   * @param {Object} placeable - The placeable variant
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @param {Object} shipCellGrid - Ship cell grid
-   * @returns {Array} Ship cells after placement
+   * @param {Placeable} placeable
+   * @param {number} row
+   * @param {number} col
+   * @param {ShipCellGrid} shipCellGrid
+   * @returns {Array}
    * @private
    */
   addPlaceableToShipCells (placeable, row, col, shipCellGrid) {
@@ -290,15 +299,15 @@ export class DraggedShip extends SelectedShip {
 
   /**
    * Adds the current variant to ship cells at given position.
-   * @param {number} row - Grid row position
-   * @param {number} col - Grid column position
-   * @param {Object} shipCellGrid - Ship cell grid
-   * @returns {Array} Ship cells after placement
+   * @param {number} row
+   * @param {number} col
+   * @param {ShipCellGrid} shipCellGrid
+   * @returns {Array}
    * @private
    */
   addCurrentToShipCells (row, col, shipCellGrid) {
     return this.addPlaceableToShipCells(
-      this.placeable(),
+      this._currentPlaceable(),
       row,
       col,
       shipCellGrid
