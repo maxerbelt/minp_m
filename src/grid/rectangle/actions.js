@@ -3,6 +3,20 @@ import { buildTransformMaps } from './buildTransformMaps.js'
 import { ActionsBase } from '../ActionsBase.js'
 
 /**
+ * @typedef {Object} RectangleMask
+ * @property {Object} [store]
+ * @property {Object} [indexer]
+ * @property {bigint} [bits]
+ * @property {number} [width]
+ * @property {number} [height]
+ * @property {Function} [emptyOfSize]
+ *
+ * @typedef {Object<string, Array<number>>} TransformMapObject
+ * @typedef {Array<number>} TransformMapArray
+ * @typedef {TransformMapObject|Array<TransformMapArray>} TransformMaps
+ */
+
+/**
  * Rectangle/square grid Actions handler with D4 symmetry.
  * Handles rotations (90°, 180°, 270°) and reflections (vertical, horizontal, diagonal).
  * Extends ActionsBase to provide rectangle-specific normalization and classification.
@@ -25,10 +39,11 @@ export class Actions extends ActionsBase {
 
     // Template normalized to square after expanding to square bitboard
     lazy(this, 'template', () => {
-      const squareBits = this.original.store.expandToSquare(
-        this.original.bits,
-        this.original.height,
-        this.original.width
+      const original = /** @type {RectangleMask} */ (this.original)
+      const squareBits = original.store.expandToSquare(
+        original.bits,
+        original.height,
+        original.width
       )
       return this.normalized(squareBits)
     })
@@ -60,7 +75,8 @@ export class Actions extends ActionsBase {
    */
   get emptyMask () {
     if (this._emptyMask) return this._emptyMask
-    this._emptyMask = this.original?.emptyOfSize(this.width, this.height)
+    const original = /** @type {RectangleMask} */ (this.original)
+    this._emptyMask = original?.emptyOfSize(this.width, this.height)
     return this._emptyMask
   }
 
@@ -86,48 +102,59 @@ export class Actions extends ActionsBase {
   }
 
   /**
+   * Apply the named transform map to the supplied bitboard.
+   * @private
+   * @param {string} tag - Transform map name
+   * @param {bigint|null} [bits=null] - Optional bitboard
+   * @returns {bigint} Transformed bitboard
+   */
+  _applyTransformTag (tag, bits = null) {
+    return this.applyMap(this.transformMaps[tag], bits)
+  }
+
+  /**
    * Apply 90° clockwise rotation transformation.
-   * @param {bigint} bits - Optional bitboard
+   * @param {bigint|null} bits - Optional bitboard
    * @returns {bigint} Rotated bitboard
    */
   r90Map (bits = null) {
-    return this.applyMap(this.transformMaps.r90, bits)
+    return this._applyTransformTag('r90', bits)
   }
 
   /**
    * Apply 180° rotation transformation.
-   * @param {bigint} bits - Optional bitboard
+   * @param {bigint|null} bits - Optional bitboard
    * @returns {bigint} Rotated bitboard
    */
   r180Map (bits = null) {
-    return this.applyMap(this.transformMaps.r180, bits)
+    return this._applyTransformTag('r180', bits)
   }
 
   /**
    * Apply 270° clockwise rotation transformation.
-   * @param {bigint} bits - Optional bitboard
+   * @param {bigint|null} bits - Optional bitboard
    * @returns {bigint} Rotated bitboard
    */
   r270Map (bits = null) {
-    return this.applyMap(this.transformMaps.r270, bits)
+    return this._applyTransformTag('r270', bits)
   }
 
   /**
    * Apply vertical flip transformation.
-   * @param {bigint} bits - Optional bitboard
+   * @param {bigint|null} bits - Optional bitboard
    * @returns {bigint} Flipped bitboard
    */
   fxMap (bits = null) {
-    return this.applyMap(this.transformMaps.fx, bits)
+    return this._applyTransformTag('fx', bits)
   }
 
   /**
    * Apply horizontal flip transformation.
-   * @param {bigint} bits - Optional bitboard
+   * @param {bigint|null} bits - Optional bitboard
    * @returns {bigint} Flipped bitboard
    */
   fyMap (bits = null) {
-    return this.applyMap(this.transformMaps.fy, bits)
+    return this._applyTransformTag('fy', bits)
   }
 
   /**
@@ -144,27 +171,16 @@ export class Actions extends ActionsBase {
    * @returns {string} Orbit type classification
    */
   classifyOrbitType () {
-    const maps = this.transformMaps
-    const template = this.template
     const symmetryCount = this.order
 
-    if (symmetryCount === 8) return 'ASYM' // Full asymmetry (all 8 transforms differ)
+    if (symmetryCount === 8) return 'ASYM'
     if (symmetryCount === 4) {
-      // 4 symmetries: either 180° rotation fixes it, or rotations by 90° cycle
-      if (this.applyMap(maps.r180) === template) return 'O4F' // 180° fixes it (diagonal symmetry)
-      return 'O4R' // Rotational symmetry only
+      return this._isFixedByTransform('r180') ? 'O4F' : 'O4R'
     }
     if (symmetryCount === 2) {
-      // 2 symmetries: check if both flips + rotation give same result
-      if (
-        this.applyMap(maps.r90) === this.applyMap(maps.fx) &&
-        this.applyMap(maps.r90) === this.applyMap(maps.fy)
-      ) {
-        return 'O2F' // Both flips are equivalent (V4 mirror symmetry)
-      }
-      return 'O2R' // Only one symmetry (half-turn blinker)
+      return this._areTransformsEquivalent('r90', 'fx', 'fy') ? 'O2F' : 'O2R'
     }
-    return 'SYM' // Full D4 symmetry
+    return 'SYM'
   }
 
   /**
@@ -173,24 +189,41 @@ export class Actions extends ActionsBase {
    * @returns {string} Stabilizer group name
    */
   classifyStabilizer () {
-    const maps = this.transformMaps
-    const template = this.template
     const symmetryCount = this.order
 
-    if (symmetryCount === 8) return 'C1' // Trivial stabilizer (all transforms produce different results)
+    if (symmetryCount === 8) return 'C1'
     if (symmetryCount === 4) {
-      if (this.applyMap(maps.r180) === template) return 'C2F' // 180° fixes it (reflection symmetry V4)
-      return 'C2R' // Rotational symmetry (order 2)
+      return this._isFixedByTransform('r180') ? 'C2F' : 'C2R'
     }
     if (symmetryCount === 2) {
-      if (
-        this.applyMap(maps.r90) === this.applyMap(maps.fx) &&
-        this.applyMap(maps.r90) === this.applyMap(maps.fy)
-      ) {
-        return 'V4' // Klein 4-group (both mirror lines)
-      }
-      return 'C4' // Cyclic group of order 4 (single rotation)
+      return this._areTransformsEquivalent('r90', 'fx', 'fy') ? 'V4' : 'C4'
     }
-    return 'D4' // Full D4 symmetry group
+    return 'D4'
+  }
+
+  /**
+   * Check whether a transform leaves the template unchanged.
+   * @private
+   * @param {string} transformKey - Transform map key
+   * @returns {boolean}
+   */
+  _isFixedByTransform (transformKey) {
+    return this.applyMap(this.transformMaps[transformKey]) === this.template
+  }
+
+  /**
+   * Compare multiple transforms for equivalence.
+   * @private
+   * @param {string} firstKey - First transform map key
+   * @param {string} secondKey - Second transform map key
+   * @param {string} thirdKey - Third transform map key
+   * @returns {boolean}
+   */
+  _areTransformsEquivalent (firstKey, secondKey, thirdKey) {
+    const firstImage = this.applyMap(this.transformMaps[firstKey])
+    return (
+      this.applyMap(this.transformMaps[secondKey]) === firstImage &&
+      this.applyMap(this.transformMaps[thirdKey]) === firstImage
+    )
   }
 }

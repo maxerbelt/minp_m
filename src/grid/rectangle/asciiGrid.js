@@ -39,10 +39,10 @@ export class AsciiGrid extends GridBase {
    * const custom = new AsciiGrid(5, 3, null, ' ');
    * // Creates 5x3 grid filled with spaces
    */
-  constructor (width, height, ascii, fillChar = '.') {
+  constructor (width, height, ascii = null, fillChar = '.') {
     super(RectangleShape(width, height))
     this.fillChar = fillChar
-    this.string = ascii || fill(fillChar, width, height)
+    this.string = ascii || buildAsciiString(fillChar, width, height)
     this.#rowStride = width + 1 // +1 for newline
   }
 
@@ -81,16 +81,15 @@ export class AsciiGrid extends GridBase {
    */
   set (x, y, color = 1) {
     const idx = this.index(x, y)
-    const char = color ? '#' : this.fillChar
-    this.string =
-      this.string.substring(0, idx) + char + this.string.substring(idx + 1)
+    const char = this.#cellCharacter(color)
+    this.string = this.#replaceCharacterAt(idx, char)
   }
 
   /**
    * Creates a new grid with the same dimensions and fillChar,
    * but initialized to empty state (all cells = '.').
    *
-   * @type {AsciiGrid}
+   * @returns {AsciiGrid}
    */
   get empty () {
     return this.#createGridWithFill('.')
@@ -100,7 +99,7 @@ export class AsciiGrid extends GridBase {
    * Creates a new grid with the same dimensions and fillChar,
    * but initialized to full state (all cells = '#').
    *
-   * @type {AsciiGrid}
+   * @returns {AsciiGrid}
    */
   get full () {
     return this.#createGridWithFill('#')
@@ -115,7 +114,7 @@ export class AsciiGrid extends GridBase {
    */
   #createGridWithFill (fillCharacter) {
     const grid = new AsciiGrid(this.width, this.height, null, this.fillChar)
-    grid.string = fill(fillCharacter, this.width, this.height)
+    grid.string = buildAsciiString(fillCharacter, this.width, this.height)
     return grid
   }
 
@@ -123,7 +122,7 @@ export class AsciiGrid extends GridBase {
    * Returns the raw string representation.
    * Direct access to underlying ASCII format (rows separated by '\n').
    *
-   * @type {string}
+   * @returns {string}
    */
   get toAscii () {
     return this.string
@@ -148,11 +147,10 @@ export class AsciiGrid extends GridBase {
    * Counts the number of non-empty cells (excluding fillChar and newlines).
    * Useful for determining grid occupancy/density.
    *
-   * @type {number}
+   * @returns {number}
    */
   get occupancy () {
-    return this.string.split('').filter(c => c !== this.fillChar && c !== '\n')
-      .length
+    return [...this.string].filter(c => this.#isOccupiedCharacter(c)).length
   }
 
   /**
@@ -177,10 +175,10 @@ export class AsciiGrid extends GridBase {
 
   /**
    * Creates an AsciiGrid from a mask object.
-   * Iterates mask.occupiedLocations) and copies set cells to the new grid.
+   * Iterates mask.occupiedLocationsAndValues() and copies set cells to the new grid.
    *
    * @static
-   * @param {Object} mask - Mask object with width, height, at(x,y), and occupiedLocations) method
+   * @param {Object} mask - Mask object with width, height, and occupiedLocationsAndValues() method
    * @param {string} [fillChar='.'] - Character for empty cells
    * @returns {AsciiGrid} New grid populated from mask data
    *
@@ -194,21 +192,50 @@ export class AsciiGrid extends GridBase {
     }
     return grid
   }
+
+  /**
+   * Convert an input color into its character representation.
+   * @param {number|boolean} color - Color value to map
+   * @returns {string} Character used for that color
+   */
+  #cellCharacter (color) {
+    return color ? '#' : this.fillChar
+  }
+
+  /**
+   * Replace a character at a specific linear index in the ASCII string.
+   * @param {number} index - Linear index in the ASCII string
+   * @param {string} char - Character to write
+   * @returns {string} New ASCII string with the replacement
+   */
+  #replaceCharacterAt (index, char) {
+    return (
+      this.string.substring(0, index) + char + this.string.substring(index + 1)
+    )
+  }
+
+  /**
+   * Determine whether a character represents an occupied cell.
+   * @param {string} char - Single character from the ASCII grid string
+   * @returns {boolean}
+   */
+  #isOccupiedCharacter (char) {
+    return char !== this.fillChar && char !== '\n'
+  }
 }
 
 /**
  * Utility function to generate a filled ASCII grid string.
  * Creates a rectangular string with newlines, e.g.:
- *   '....\n....\n....\n' for a 4x3 grid
+ *   '....\n....\n....' for a 4x3 grid
  *
  * @param {string} fillChar - Character to repeat
  * @param {number} width - Grid width (columns per row)
  * @param {number} height - Grid height (number of rows)
  * @returns {string} Multi-line ASCII string representation
- *
  * @private
  */
-function fill (fillChar, width, height) {
+function buildAsciiString (fillChar, width, height) {
   const row = fillChar.repeat(width)
-  return Array(height).fill(row).join('\n')
+  return Array.from({ length: height }, () => row).join('\n')
 }
