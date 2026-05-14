@@ -711,8 +711,7 @@ function printGameSheet (map) {
   trackClick(map, 'download pdf')
   const location = `../docs/gamesheets/${map.terrain.tag}/${map.name}.pdf`
 
-  // @ts-ignore
-  if (process === undefined) {
+  if (globalThis.process === undefined) {
     globalThis.location.href = location
   }
 
