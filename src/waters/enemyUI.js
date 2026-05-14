@@ -201,6 +201,9 @@ class EnemyUI extends WatersUI {
   revealMode () {
     this._setButtonHidden(['reveal', 'weapon'], true)
     this._setButtonHidden(['place', 'restart', 'test'], false)
+    document
+      .querySelectorAll('.weaponBtn-clone')
+      .forEach(el => el.classList.add('hidden'))
   }
 
   /**
@@ -209,6 +212,9 @@ class EnemyUI extends WatersUI {
   playMode () {
     this._setButtonHidden(['reveal', 'weapon'], false)
     this._setButtonHidden(['place', 'restart', 'test'], true)
+    document
+      .querySelectorAll('.weaponBtn-clone')
+      .forEach(el => el.classList.remove('hidden'))
   }
 
   /**
