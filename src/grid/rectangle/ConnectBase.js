@@ -16,6 +16,9 @@ export class ConnectBase {
     this.neighborOffsets = neighborOffsets
   }
 
+  /**
+   * @returns {NeighborOffset[]}
+   */
   static get orthogonalNeighborOffsets () {
     return [
       [+1, 0],
@@ -25,6 +28,9 @@ export class ConnectBase {
     ]
   }
 
+  /**
+   * @returns {NeighborOffset[]}
+   */
   static get diagonalNeighborOffsets () {
     return [
       [+1, +1],
@@ -34,6 +40,9 @@ export class ConnectBase {
     ]
   }
 
+  /**
+   * @returns {NeighborOffset[]}
+   */
   static get allNeighborOffsets () {
     return ConnectBase.combineNeighborOffsetGroups(
       this.orthogonalNeighborOffsets,
