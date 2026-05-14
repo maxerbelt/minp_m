@@ -1,7 +1,25 @@
 import { errorMsg } from '../core/errorMsg.js'
 import { mixed } from '../terrains/all/js/terrain.js'
 import { Variant3 } from '../variants/Variant3.js'
+import { Mask } from '../grid/rectangle/mask.js'
 import { Shape } from './Shape.js'
+
+/**
+ * @typedef {[number, number]} CoordinatePair
+ */
+
+/**
+ * @typedef {Object} SubShape
+ * @property {Mask} board - Board representing the sub-shape occupancy
+ * @property {string} subterrain - Terrain type for this sub-shape
+ * @property {number} [faction] - Fractional area contribution after dimension fix
+ * @property {Function} [setBoardFromSecondary] - Method to attach secondary board into primary shape
+ * @property {Function} [expand] - Optional board expand method when resizing is required
+ */
+
+/**
+ * @typedef {Array<Mask>} LayerBoards
+ */
 
 /**
  * Hybrid - A ship that combines multiple sub-shapes with different terrain requirements
@@ -32,7 +50,6 @@ export class Hybrid extends Shape {
     this._initializeSubGroups(subGroups)
     this.descriptionText = description
     this.subterrain = mixed
-    this.canBeOn = _subterrain => true
   }
 
   /**
@@ -42,46 +59,46 @@ export class Hybrid extends Shape {
    */
   _initializeSubGroups (subGroups) {
     const [head, ...tail] = subGroups
-    const layers = []
+    const layerBoards = this._buildSecondaryLayerBoards(tail, head)
 
-    // Process secondary sub-groups
-    for (const subGroup of tail) {
-      this._processSecondarySubGroup(subGroup, head, layers)
-    }
-
-    // Add layers to main board if any exist
-    if (layers.length > 0) {
-      this.board.addLayers(layers)
-    }
-
-    // Process primary sub-group
+    this._applyLayerBoards(layerBoards)
     this._processPrimarySubGroup(head)
-
-    this.primary = head
-    this.secondary = tail[0]
-    this.subGroups = subGroups
+    this._saveSubGroupReferences(head, tail, subGroups)
   }
 
   /**
-   * Processes a secondary sub-group, fixing its dimensions and adding to layers
-   * @param {SubShape} subGroup - Secondary sub-group to process
-   * @param {SubShape} head - Primary sub-group for board reference
-   * @param {Array} layers - Array to collect layer boards
+   * Builds processed layer boards for secondary sub-groups.
+   * @param {Array<SubShape>} secondaryGroups - Secondary sub-groups
+   * @param {SubShape} primaryGroup - Primary group for board reference
+   * @returns {LayerBoards} Array of layer boards
    * @private
    */
-  _processSecondarySubGroup (subGroup, head, layers) {
+  _buildSecondaryLayerBoards (secondaryGroups, primaryGroup) {
+    return secondaryGroups.map(group =>
+      this._processSecondaryGroup(group, primaryGroup)
+    )
+  }
+
+  /**
+   * Processes a secondary sub-group and returns its board.
+   * @param {SubShape} subGroup - Secondary sub-group to process
+   * @param {SubShape} primaryGroup - Primary sub-group for board reference
+   * @returns {Mask} The processed secondary board
+   * @private
+   */
+  _processSecondaryGroup (subGroup, primaryGroup) {
     this._fixSubGroupDimensions(subGroup)
-    head.setBoardFromSecondary(this.board, subGroup.board)
-    layers.push(subGroup.board)
+    primaryGroup.setBoardFromSecondary(this.board, subGroup.board)
+    return subGroup.board
   }
 
   /**
    * Processes the primary sub-group
-   * @param {SubShape} head - Primary sub-group to process
+   * @param {SubShape} primaryGroup - Primary sub-group to process
    * @private
    */
-  _processPrimarySubGroup (head) {
-    this._fixSubGroupDimensions(head)
+  _processPrimarySubGroup (primaryGroup) {
+    this._fixSubGroupDimensions(primaryGroup)
   }
 
   /**
@@ -108,6 +125,17 @@ export class Hybrid extends Shape {
    * @private
    */
   _validateAndExpandSubGroupBoard (subGroup, width, height) {
+    this._assertBoardCanExpand(subGroup)
+    subGroup.board = subGroup.board.expand(width, height)
+  }
+
+  /**
+   * Internal: Assert that the subgroup board supports expansion.
+   * @param {SubShape} subGroup - Subgroup being validated
+   * @throws {Error} If the subgroup board cannot be expanded
+   * @private
+   */
+  _assertBoardCanExpand (subGroup) {
     if (typeof subGroup?.board?.expand !== 'function') {
       console.warn(
         'Subgroup board does not have an expand method:',
@@ -117,7 +145,30 @@ export class Hybrid extends Shape {
         errorMsg('Subgroup board must have an expand method', subGroup.board)
       )
     }
-    subGroup.board = subGroup.board.expand(width, height)
+  }
+
+  /**
+   * Applies a set of layer boards to the hybrid main board.
+   * @param {LayerBoards} layerBoards - Layer boards to attach to the main board
+   * @private
+   */
+  _applyLayerBoards (layerBoards) {
+    if (layerBoards.length > 0) {
+      this.board.addLayers(layerBoards)
+    }
+  }
+
+  /**
+   * Store subgroup references for later hybrid behavior.
+   * @param {SubShape} primaryGroup - Primary subgroup
+   * @param {Array<SubShape>} secondaryGroups - Secondary subgroups
+   * @param {Array<SubShape>} subGroups - Original subgroup list
+   * @private
+   */
+  _saveSubGroupReferences (primaryGroup, secondaryGroups, subGroups) {
+    this.primary = primaryGroup
+    this.secondary = secondaryGroups[0]
+    this.subGroups = subGroups
   }
 
   /**
@@ -145,6 +196,14 @@ export class Hybrid extends Shape {
       this.symmetry
     )
     return this._variants
+  }
+
+  /**
+   * @param {string} _subterrain - Subterrain to match (ignored for hybrid)
+   * @returns {boolean} True for all subterrain types in hybrid ships
+   */
+  canBeOn (_subterrain) {
+    return true
   }
 
   /**
