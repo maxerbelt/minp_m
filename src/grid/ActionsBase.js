@@ -6,15 +6,25 @@
  * Subclasses must implement:
  * - normalized(bits, width, height): Apply shape-specific normalization
  * - classifyOrbitType(): Classify symmetry orbit types
+ *
+ * @typedef {Object} Mask
+ * @property {Object} [store]
+ * @property {Object} [indexer]
+ * @property {Object} [cube]
+ * @property {*} [bits]
+ *
+ * @typedef {Object<string, Array<number>>} TransformMapObject
+ * @typedef {Array<number>} TransformMapArray
+ * @typedef {TransformMapObject|Array<TransformMapArray>} TransformMaps
  */
 export class ActionsBase {
   /**
    * Create an Actions handler for a grid shape.
    * @param {number} width - Grid width
    * @param {number} height - Grid height
-   * @param {Object} mask - Optional mask object with store, indexer, cube, bits
-   * @param {Array<string>} rotateTags - Optional rotation transform names
-   * @param {Array<string>} flipTags - Optional reflection transform names
+   * @param {Mask|null} mask - Optional mask object with store, indexer, cube, bits
+   * @param {Array<string>|null} rotateTags - Optional rotation transform names
+   * @param {Array<string>|null} flipTags - Optional reflection transform names
    */
   constructor (width, height, mask = null, rotateTags = null, flipTags = null) {
     this.width = width
@@ -26,7 +36,7 @@ export class ActionsBase {
 
   /**
    * Get the bitboard store from the original mask.
-   * @returns {Object} Store object with bit manipulation methods
+   * @returns {Object|undefined}
    */
   get store () {
     if (this._store) return this._store
@@ -36,7 +46,7 @@ export class ActionsBase {
 
   /**
    * Get the grid indexer from the original mask.
-   * @returns {Object} Indexer object with grid position methods
+   * @returns {Object|undefined}
    */
   get indexer () {
     if (this._indexer) return this._indexer
@@ -45,9 +55,19 @@ export class ActionsBase {
   }
 
   /**
+   * Get the cube helper from the original mask.
+   * @returns {Object|undefined}
+   */
+  get cube () {
+    if (this._cube) return this._cube
+    this._cube = this.original?.cube
+    return this._cube
+  }
+
+  /**
    * Get transformation maps (rotations and reflections).
    * Default implementation accesses via indexer; subclasses may override.
-   * @returns {Object|Array} Transform maps indexed by name or array
+   * @returns {TransformMaps|undefined}
    */
   get transformMaps () {
     return this.original?.indexer?.transformMaps
@@ -60,7 +80,7 @@ export class ActionsBase {
   get rotTags () {
     if (!this.transformMaps) return []
     this.rotateTags =
-      this.rotateTags || this._extractTransformTags(tag => tag.includes('r'))
+      this.rotateTags || this._filterTransformKeys(tag => tag.includes('r'))
     return this.rotateTags || []
   }
 
@@ -71,35 +91,13 @@ export class ActionsBase {
   get flpTags () {
     if (!this.transformMaps) return []
     this.flipTags =
-      this.flipTags || this._extractTransformTags(tag => tag.includes('f'))
+      this.flipTags || this._filterTransformKeys(tag => tag.includes('f'))
     return this.flipTags || []
   }
 
   /**
-   * Extract transform names from maps by filter predicate.
-   * @private
-   * @param {Function} predicate - Filter function for tag names
-   * @returns {Array<string>} Filtered tag names
-   */
-  _extractTransformTags (predicate) {
-    if (Array.isArray(this.transformMaps)) return []
-    return Object.keys(this.transformMaps).filter(predicate)
-  }
-
-  /**
-   * Extract transform names from maps by filter predicate.
-   * @private
-   * @param {Object|Array} maps - Transform maps
-   * @param {Function} predicate - Filter function for tag names
-   * @returns {Array<string>} Filtered tag names
-   */
-  _extractTransformNames (maps, predicate) {
-    if (Array.isArray(maps)) return []
-    return Object.keys(maps).filter(predicate)
-  }
-  /**
    * Get the default variant (template) after applying default transformation.
-   * @returns {*} Transformed bitboard
+   * @returns {*|null} Transformed bitboard or null when unavailable
    */
   get defaultVariant () {
     if (this._defaultVariant) return this._defaultVariant
@@ -113,7 +111,7 @@ export class ActionsBase {
   /**
    * Get all rotational variants from transform maps.
    * @private
-   * @returns {Array} Array of rotated bitboards
+   * @returns {Array<*>} Array of rotated bitboards
    */
   get rotVariantsRaw () {
     return this.rotTags.map(tag => this.applyMapByName(tag))
@@ -122,7 +120,7 @@ export class ActionsBase {
   /**
    * Get all reflection variants from transform maps.
    * @private
-   * @returns {Array} Array of reflected bitboards
+   * @returns {Array<*>} Array of reflected bitboards
    */
   get flpVariantsRaw () {
     return this.flpTags.map(tag => this.applyMapByName(tag))
@@ -130,7 +128,7 @@ export class ActionsBase {
 
   /**
    * Get all unique rotational variants.
-   * @returns {Array} Array of rotated bitboards (excludes default)
+   * @returns {Array<*>} Array of rotated bitboards (excludes default)
    */
   get rotationVariants () {
     return this._getCachedVariants('_rotationVariants', this.rotVariantsRaw)
@@ -138,7 +136,7 @@ export class ActionsBase {
 
   /**
    * Get all unique reflection variants.
-   * @returns {Array} Array of reflected bitboards (excludes default)
+   * @returns {Array<*>} Array of reflected bitboards (excludes default)
    */
   get flipVariants () {
     return this._getCachedVariants('_flipVariants', this.flpVariantsRaw)
@@ -148,8 +146,8 @@ export class ActionsBase {
    * Compute and cache unique variants, excluding the default.
    * @private
    * @param {string} cacheProp - Cache property name
-   * @param {Array} variantsRaw - Raw variant array
-   * @returns {Array} Unique variants excluding default
+   * @param {Array<*>} variantsRaw - Raw variant array
+   * @returns {Array<*>} Unique variants excluding default
    */
   _getCachedVariants (cacheProp, variantsRaw) {
     if (this[cacheProp]) return [...this[cacheProp]]
@@ -161,7 +159,7 @@ export class ActionsBase {
 
   /**
    * Check if shape can be rotated (has non-symmetric rotations).
-   * @returns {boolean} True if rotational variants exist
+   * @returns {boolean}
    */
   canRotate () {
     return this.rotationVariants.length !== 0
@@ -169,7 +167,7 @@ export class ActionsBase {
 
   /**
    * Check if shape can be flipped (has non-symmetric reflections).
-   * @returns {boolean} True if reflection variants exist
+   * @returns {boolean}
    */
   canFlip () {
     return this.flipVariants.length !== 0
@@ -182,13 +180,11 @@ export class ActionsBase {
    * @throws Error if no non-symmetric rotation exists
    */
   rotate (bits = null) {
-    if (!this.canRotate()) {
+    const tag = this._findNonSymmetricTag(this.rotTags)
+    if (!tag) {
       throw new Error('No non-symmetric rotation found for this shape')
     }
-    return this.applyMapByName(
-      this.rotateTags.find(tag => this.nonSymmetric(tag)),
-      bits
-    )
+    return this.applyMapByName(tag, bits)
   }
 
   /**
@@ -198,11 +194,10 @@ export class ActionsBase {
    * @throws Error if no non-symmetric rotation exists
    */
   rotateCCW (bits = null) {
-    if (!this.canRotate()) {
+    const tag = this._findNonSymmetricTag(this.rotTags, true)
+    if (!tag) {
       throw new Error('No non-symmetric rotation found for this shape')
     }
-    const tags = this.rotateTags.slice().reverse()
-    const tag = tags.find(tag => this.nonSymmetric(tag))
     return this.applyMapByName(tag, bits)
   }
 
@@ -213,13 +208,11 @@ export class ActionsBase {
    * @throws Error if no non-symmetric reflection exists
    */
   flip (bits = null) {
-    if (!this.canFlip()) {
+    const tag = this._findNonSymmetricTag(this.flpTags)
+    if (!tag) {
       throw new Error('No non-symmetric flip found for this shape')
     }
-    return this.applyMapByName(
-      this.flipTags.find(tag => this.nonSymmetric(tag)),
-      bits
-    )
+    return this.applyMapByName(tag, bits)
   }
 
   /**
@@ -228,19 +221,7 @@ export class ActionsBase {
    * @returns {*} Transformed bitboard
    */
   rotateFlip (bits = null) {
-    const flipped = this.flip(bits)
-    return this.rotate(flipped)
-  }
-
-  /**
-   * Check if a transform tag produces a non-symmetric result.
-   * @private
-   * @param {string} tag - Transform map name
-   * @returns {boolean} True if transform changes the shape
-   */
-  nonSymmetric (tag) {
-    const map = this.transformMaps?.[tag]
-    return map != null && this.applyMap(map) !== this.original.bits
+    return this.rotate(this.flip(bits))
   }
 
   /**
@@ -250,8 +231,7 @@ export class ActionsBase {
    * @returns {*} Transformed and normalized bitboard
    */
   applyMapByName (tag, bits = null) {
-    const map = this.transformMaps?.[tag]
-    return this.applyMap(map, bits)
+    return this.applyMap(this._mapForTag(tag), bits)
   }
 
   /**
@@ -265,16 +245,16 @@ export class ActionsBase {
    * @throws Error if not implemented in subclass
    */
   normalized (bits, width = this.width, height = this.height) {
-    const b = bits == null ? this.template : bits
+    const normalizedBits = bits == null ? this.template : bits
     if (this.store && typeof this.store.normalizeUpLeft === 'function') {
-      return this.store.normalizeUpLeft(b, width, height)
+      return this.store.normalizeUpLeft(normalizedBits, width, height)
     }
     throw new Error('normalized() not implemented in subclass')
   }
 
   /**
    * Find the canonical (lexicographically smallest) form under all symmetries.
-   * @param {Object} maps - Transformation maps
+   * @param {TransformMaps|undefined} maps - Transformation maps
    * @param {*} bits - Bitboard to canonicalize
    * @param {number} width - Grid width
    * @param {number} height - Grid height
@@ -298,11 +278,11 @@ export class ActionsBase {
   /**
    * Get all unique symmetries of a bitboard.
    * @private
-   * @param {Object} maps - Transformation maps
+   * @param {TransformMaps|undefined} maps - Transformation maps
    * @param {*} bits - Bitboard to transform
    * @param {number} width - Grid width
    * @param {number} height - Grid height
-   * @returns {Set} Set of unique transformed bitboards
+   * @returns {Set<*>} Set of unique transformed bitboards
    */
   symetriesFor (
     maps = this.transformMaps,
@@ -310,8 +290,7 @@ export class ActionsBase {
     width = this.width,
     height = this.height
   ) {
-    const images = this.orbitRaw(maps, bits, width, height)
-    return new Set(images)
+    return new Set(this.orbitRaw(maps, bits, width, height))
   }
 
   /**
@@ -319,25 +298,29 @@ export class ActionsBase {
    * Uses preferred source: cube > indexer > generic fallback.
    * @private
    * @param {*} bitboard - Bitboard to iterate
-   * @returns {Iterator<number>} Indices of set bits
+   * @returns {IterableIterator<number>} Indices of set bits
    */
+  // @ts-ignore: method may be referenced by subclasses outside this file
   *_bitsIndices (bitboard) {
     if (this.cube && typeof this.cube.bitsIndices === 'function') {
       yield* this.cube.bitsIndices(bitboard)
       return
     }
-    if (this.indexer && typeof this.indexer.bitsIndices === 'function') {
-      if (!Array.isArray(bitboard) && !(bitboard instanceof Uint32Array)) {
-        yield* this.indexer.bitsIndices(bitboard)
-        return
-      }
+    if (
+      this.indexer?.bitsIndices &&
+      !Array.isArray(bitboard) &&
+      !(bitboard instanceof Uint32Array)
+    ) {
+      yield* this.indexer.bitsIndices(bitboard)
+      return
     }
+
+    const size = this._storageSize()
     if (
       this.store &&
       typeof this.store.isOccupied === 'function' &&
-      (this.indexer?.size || this.cube?.size)
+      size != null
     ) {
-      const size = this.indexer?.size || this.cube?.size
       for (let i = 0; i < size; i++) {
         if (this.store.isOccupied(bitboard, i)) {
           yield i
@@ -353,41 +336,30 @@ export class ActionsBase {
    * Uses preferred source: cube > indexer > generic fallback.
    * @private
    * @param {*} bitboard - Bitboard or spatial structure
-   * @returns {Iterator<number>} Cell indices
+   * @returns {IterableIterator<number>} Cell indices
    */
   *_indices (bitboard) {
-    if (this.cube && typeof this.cube.bitsIndices === 'function') {
+    if (this.cube && typeof this.cube.indices === 'function') {
       yield* this.cube.indices(bitboard)
       return
     }
-    if (typeof this.indexer?.indices === 'function') {
-      if (!Array.isArray(bitboard) && !(bitboard instanceof Uint32Array)) {
-        yield* this.indexer.indices(bitboard)
-        return
-      }
+    if (
+      this.indexer?.indices &&
+      !Array.isArray(bitboard) &&
+      !(bitboard instanceof Uint32Array)
+    ) {
+      yield* this.indexer.indices(bitboard)
+      return
     }
-    if (this.indexer?.size || this.cube?.size) {
-      const size = this.indexer?.size || this.cube?.size
+
+    const size = this._storageSize()
+    if (size != null) {
       for (let i = 0; i < size; i++) {
         yield i
       }
       return
     }
     throw new Error('no indices implementation available')
-  }
-
-  /**
-   * Convert arbitrary bitboard representation to bigint.
-   * @private
-   * @param {*} bitboard - Bitboard in any supported format
-   * @returns {bigint} Bitboard as bigint
-   */
-  _convertToBigint (bitboard) {
-    let result = 0n
-    for (const index of this._bitsIndices(bitboard)) {
-      result |= 1n << BigInt(index)
-    }
-    return result
   }
 
   /**
@@ -399,13 +371,12 @@ export class ActionsBase {
   _defaultMap () {
     const maps = this.transformMaps
     if (Array.isArray(maps)) return maps[0]
-    if (maps?.id !== undefined) return maps.id
-    return undefined
+    return maps?.id
   }
 
   /**
    * Apply a transformation map to a bitboard using index mapping.
-   * @param {Array<number>} map - Index mapping array
+   * @param {Array<number>|undefined} map - Index mapping array
    * @param {*} bits - Optional bitboard; uses template if omitted
    * @param {number} width - Grid width for normalization
    * @param {number} height - Grid height for normalization
@@ -420,7 +391,7 @@ export class ActionsBase {
     let output = this.store?.empty || 0n
     const bitboard = bits == null ? this.template : bits
     for (const index of this._indices(bitboard)) {
-      const mappedIndex = map[index]
+      const mappedIndex = map?.[index]
       if (mappedIndex !== undefined) {
         const color = this.store.getIdx(bitboard, index)
         output = this.store.setIdx(output, mappedIndex, color)
@@ -443,11 +414,11 @@ export class ActionsBase {
 
   /**
    * Generate all orbit members (symmetries) of a bitboard.
-   * @param {Object} maps - Transformation maps (defaults to this.transformMaps)
+   * @param {TransformMaps|undefined} maps - Transformation maps
    * @param {*} bits - Bitboard (defaults to template)
    * @param {number} width - Grid width
    * @param {number} height - Grid height
-   * @returns {Array} Unique transformed bitboards
+   * @returns {Array<*>} Unique transformed bitboards
    */
   orbitRaw (
     maps = this.transformMaps,
@@ -468,8 +439,8 @@ export class ActionsBase {
   /**
    * Get the orbit (all symmetries) of the template bitboard.
    * Results are cached for subsequent calls.
-   * @param {Object} maps - Transformation maps (defaults to this.transformMaps)
-   * @returns {Array} Array of unique symmetries
+   * @param {TransformMaps|undefined} maps - Transformation maps
+   * @returns {Array<*>} Array of unique symmetries
    */
   orbit (maps = this.transformMaps) {
     if (maps === this.transformMaps) {
@@ -502,12 +473,66 @@ export class ActionsBase {
   /**
    * Get all unique symmetries of the template bitboard.
    * Results are cached for subsequent calls.
-   * @returns {Array} Array of unique symmetries
+   * @returns {Array<*>} Array of unique symmetries
    */
   get symmetries () {
     if (this._symmetries) return [...this._symmetries]
     const images = this.orbit(this.transformMaps)
     this._symmetries = [...new Set(images)]
     return [...this._symmetries]
+  }
+
+  /**
+   * Get the transformation map associated with a tag.
+   * @private
+   * @param {string} tag - Transform map name
+   * @returns {Array<number>|undefined}
+   */
+  _mapForTag (tag) {
+    return this.transformMaps?.[tag]
+  }
+
+  /**
+   * Filter transform keys by predicate.
+   * @private
+   * @param {(key: string) => boolean} predicate - Filter function for tag names
+   * @returns {Array<string>} Matching transform tags
+   */
+  _filterTransformKeys (predicate) {
+    const maps = this.transformMaps
+    if (!maps || Array.isArray(maps)) return []
+    return Object.keys(maps).filter(predicate)
+  }
+
+  /**
+   * Find the first non-symmetric transform tag.
+   * @private
+   * @param {Array<string>} tags - Candidate transform tags
+   * @param {boolean} [reverse=false] - Search in reverse order
+   * @returns {string|undefined}
+   */
+  _findNonSymmetricTag (tags, reverse = false) {
+    const candidates = reverse ? [...tags].reverse() : tags
+    return candidates.find(tag => this._isNonSymmetricTag(tag))
+  }
+
+  /**
+   * Determine whether a given transform tag changes the shape.
+   * @private
+   * @param {string} tag - Transform map name
+   * @returns {boolean}
+   */
+  _isNonSymmetricTag (tag) {
+    const map = this._mapForTag(tag)
+    return map != null && this.applyMap(map) !== this.original?.bits
+  }
+
+  /**
+   * Determine size used by generic index iteration.
+   * @private
+   * @returns {number|undefined}
+   */
+  _storageSize () {
+    return this.indexer?.size || this.cube?.size
   }
 }
