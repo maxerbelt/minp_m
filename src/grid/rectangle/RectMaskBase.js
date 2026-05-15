@@ -1,5 +1,13 @@
 import { MaskBase } from '../MaskBase.js'
 import { RectangleShape } from './RectangleShape.js'
+import { Random } from '../../core/Random.js'
+
+/**
+ * @typedef {[number, number]} Coordinate
+ * @typedef {[number, number, number]} CoordinateWithValue
+ * @typedef {*} BitRepresentation
+ * @typedef {Object} TransformCapabilities
+ */
 
 /**
  * Base class for rectangular grid masks providing common functionality
@@ -7,10 +15,26 @@ import { RectangleShape } from './RectangleShape.js'
  */
 export class RectMaskBase extends MaskBase {
   /**
+   * Transformation method configurations
+   * @private
+   * @type {Object<string, string>}
+   */
+  static _transformationConfigs = {
+    rotate: 'No non-symmetric rotation found for this shape',
+    r90Map: 'No 90-degree rotation found for this shape',
+    r180Map: 'No 180-degree rotation found for this shape',
+    r270Map: 'No 270-degree rotation found for this shape',
+    fxMap: 'No horizontal flip found for this shape',
+    fyMap: 'No vertical flip found for this shape',
+    rotateFlip: 'No rotate-flip transformation found for this shape',
+    rotateCCW: 'No counter-clockwise rotation found for this shape',
+    flip: 'No non-symmetric flip found for this shape'
+  }
+  /**
    * Create a new rectangular mask base
    * @param {number} width - Width of the grid
    * @param {number} height - Height of the grid
-   * @param {*} bits - Bit representation of the mask data
+   * @param {BitRepresentation} bits - Bit representation of the mask data
    * @param {Object} store - Bit storage implementation
    * @param {number} [depth=1] - Color depth (number of possible values per cell)
    */
@@ -64,7 +88,7 @@ export class RectMaskBase extends MaskBase {
    * Get bit position in store for rectangular coordinates
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
-   * @returns {*} Bit position in the store
+   * @returns {BitRepresentation} Bit position in the store
    */
   bitPos (x, y) {
     return this.store.bitPos(this.index(x, y))
@@ -74,7 +98,7 @@ export class RectMaskBase extends MaskBase {
    * Get bit position for XY coordinates (alias for bitPos)
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
-   * @returns {*} Bit position
+   * @returns {BitRepresentation} Bit position
    */
   bitPosXY (x, y) {
     return this.bitPos(x, y)
@@ -84,7 +108,7 @@ export class RectMaskBase extends MaskBase {
    * Get bit position for row/column coordinates
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {*} Bit position
+   * @returns {BitRepresentation} Bit position
    */
   bitPosRC (r, c) {
     return this.bitPos(c, r)
@@ -110,7 +134,7 @@ export class RectMaskBase extends MaskBase {
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
    * @param {number} [color=1] - Value to set
-   * @returns {*} Updated bits
+   * @returns {BitRepresentation} Updated bits
    */
   set (x, y, color = 1) {
     this.bits = this.store.setIdx(this.bits, this.index(x, y), color)
@@ -144,7 +168,7 @@ export class RectMaskBase extends MaskBase {
    * Clear (zero out) a cell at (x, y)
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
-   * @returns {*} Updated bits
+   * @returns {BitRepresentation} Updated bits
    */
   clear (x, y) {
     return this.set(x, y, 0)
@@ -163,7 +187,7 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Get transformation capabilities for this mask
-   * @returns {Object} Object with capability flags like canRotate, canFlip
+   * @returns {TransformCapabilities} Object with capability flags like canRotate, canFlip
    */
   getTransformCapabilities () {
     return this.indexer?.getTransformCapabilities(this) || {}
@@ -177,8 +201,8 @@ export class RectMaskBase extends MaskBase {
    * @private
    */
   _applyTransformation (actionMethod, errorMessage) {
-    const transformed = this.actions?.[actionMethod](this.bits)
-    if (transformed) {
+    const transformed = this.actions?.[actionMethod]?.(this.bits)
+    if (transformed !== undefined) {
       this.bits = transformed
       return this
     }
@@ -219,7 +243,7 @@ export class RectMaskBase extends MaskBase {
   rotate () {
     return this._applyTransformation(
       'rotate',
-      'No non-symmetric rotation found for this shape'
+      RectMaskBase._transformationConfigs.rotate
     )
   }
 
@@ -230,7 +254,7 @@ export class RectMaskBase extends MaskBase {
   r90 () {
     return this._applyTransformation(
       'r90Map',
-      'No 90-degree rotation found for this shape'
+      RectMaskBase._transformationConfigs.r90Map
     )
   }
 
@@ -241,7 +265,7 @@ export class RectMaskBase extends MaskBase {
   r180 () {
     return this._applyTransformation(
       'r180Map',
-      'No 180-degree rotation found for this shape'
+      RectMaskBase._transformationConfigs.r180Map
     )
   }
 
@@ -252,7 +276,7 @@ export class RectMaskBase extends MaskBase {
   r270 () {
     return this._applyTransformation(
       'r270Map',
-      'No 270-degree rotation found for this shape'
+      RectMaskBase._transformationConfigs.r270Map
     )
   }
 
@@ -263,7 +287,7 @@ export class RectMaskBase extends MaskBase {
   fx () {
     return this._applyTransformation(
       'fxMap',
-      'No horizontal flip found for this shape'
+      RectMaskBase._transformationConfigs.fxMap
     )
   }
 
@@ -274,7 +298,7 @@ export class RectMaskBase extends MaskBase {
   fy () {
     return this._applyTransformation(
       'fyMap',
-      'No vertical flip found for this shape'
+      RectMaskBase._transformationConfigs.fyMap
     )
   }
 
@@ -285,7 +309,7 @@ export class RectMaskBase extends MaskBase {
   rotateFlip () {
     return this._applyTransformation(
       'rotateFlip',
-      'No rotate-flip transformation found for this shape'
+      RectMaskBase._transformationConfigs.rotateFlip
     )
   }
 
@@ -296,7 +320,7 @@ export class RectMaskBase extends MaskBase {
   rotateCCW () {
     return this._applyTransformation(
       'rotateCCW',
-      'No counter-clockwise rotation found for this shape'
+      RectMaskBase._transformationConfigs.rotateCCW
     )
   }
 
@@ -307,7 +331,7 @@ export class RectMaskBase extends MaskBase {
   flip () {
     return this._applyTransformation(
       'flip',
-      'No non-symmetric flip found for this shape'
+      RectMaskBase._transformationConfigs.flip
     )
   }
   /**
@@ -325,9 +349,41 @@ export class RectMaskBase extends MaskBase {
   }
 
   /**
+   * Load coordinates
+   * @param {Coordinate[]} coords - Array of coordinates
+   */
+  fromCoords (coords) {
+    this._coords.fromCoordinates(coords)
+  }
+
+  /**
+   * Convert coordinates to bits
+   * @param {Coordinate[]} coords - Array of coordinates
+   * @returns {BitRepresentation} Bit representation
+   */
+  bitsFromCoords (coords) {
+    return this._coords.coordinatesToBits(coords)
+  }
+
+  /**
+   * Get random occupied coordinate
+   * @returns {Coordinate} Random occupied coordinate
+   */
+  get randomOccupied () {
+    return Random.element(this.toCoords)
+  }
+
+  /**
+   * Get all occupied coordinates
+   * @returns {Coordinate[]} Array of coordinates
+   */
+  get toCoords () {
+    return this._coords.bitsToCoordinates().map(a => a.slice(0, 2))
+  }
+  /**
    * Invert coordinates by swapping x and y values
-   * @param {Array<Array<number>>} coords - Array of [x, y] or [x, y, value] coordinates
-   * @returns {Array<Array<number>>} Coordinates with x and y swapped
+   * @param {Coordinate[]} coords - Array of [x, y] or [x, y, value] coordinates
+   * @returns {Coordinate[]} Coordinates with x and y swapped
    */
   static invertCoords (coords) {
     return coords.map(c => RectMaskBase.invertCoord(c))
@@ -335,8 +391,8 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Invert a single coordinate by swapping x and y
-   * @param {Array<number>} coord - [x, y] or [x, y, value] coordinate
-   * @returns {Array<number>} Coordinate with x and y swapped
+   * @param {CoordinateWithValue} coord - [x, y] or [x, y, value] coordinate
+   * @returns {CoordinateWithValue} Coordinate with x and y swapped
    */
   static invertCoord (coord) {
     return [coord[1], coord[0], coord[2] || 1]
@@ -344,73 +400,4 @@ export class RectMaskBase extends MaskBase {
   // ============================================================================
   // Coordinate Conversion
   // ============================================================================
-
-  /**
-   * Load coordinates in XY format (x, y)
-   * @param {Array<Array<number>>} coords - Array of [x, y] or [x, y, value] coordinates
-   */
-  fromXYcoords (coords) {
-    this.fromCoords(coords)
-  }
-
-  /**
-   * Load coordinates in RC format (row, column) - swaps to XY internally
-   * @param {Array<Array<number>>} coords - Array of [row, col] or [row, col, value] coordinates
-   */
-  fromRCcoords (coords) {
-    this.fromCoords(RectMaskBase.invertCoords(coords)) // Swap x and y
-  }
-
-  /**
-   * Convert XY coordinates to bits
-   * @param {Array<Array<number>>} coords - Array of [x, y] or [x, y, value] coordinates
-   * @returns {*} Bit representation of the coordinates
-   */
-  bitsFromXYcoords (coords) {
-    return this.bitsFromCoords(coords)
-  }
-
-  /**
-   * Convert RC coordinates to bits (swaps to XY internally)
-   * @param {Array<Array<number>>} coords - Array of [row, col] or [row, col, value] coordinates
-   * @returns {*} Bit representation of the coordinates
-   */
-  bitsFromRCcoords (coords) {
-    return this.bitsFromCoords(RectMaskBase.invertCoords(coords))
-  }
-  // ============================================================================
-  // Random & Coordinate Conversion
-  // ============================================================================
-
-  /**
-   * Get a random occupied coordinate in XY format
-   * @returns {Array<number>} [x, y] coordinate of a random occupied cell
-   */
-  get randomXYoccupied () {
-    return this.randomOccupied
-  }
-
-  /**
-   * Get a random occupied coordinate in RC format (row, column)
-   * @returns {Array<number>} [row, col] coordinate of a random occupied cell
-   */
-  get randomRCoccupied () {
-    return RectMaskBase.invertCoord(this.randomOccupied)
-  }
-
-  /**
-   * Get all occupied cells as [x, y] coordinate array
-   * @returns {Array<Array<number>>} Array of [x, y] coordinates
-   */
-  get toXYcoords () {
-    return this.toCoords
-  }
-
-  /**
-   * Get all occupied cells as [row, col] coordinate array
-   * @returns {Array<Array<number>>} Array of [row, col] coordinates
-   */
-  get toRCcoords () {
-    return RectMaskBase.invertCoords(this.toCoords)
-  }
 }
