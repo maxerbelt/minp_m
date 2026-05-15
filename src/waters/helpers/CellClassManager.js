@@ -404,7 +404,7 @@ export class CellClassManager {
     }
   }
 
-/**
+  /**
    * Gets all weapon-related CSS class names, including weapon tags and cursor tags.
    * Used for bulk operations on weapon-related classes.
    *
@@ -435,6 +435,10 @@ export class CellClassManager {
   static #getTransientClassesForHit () {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this.#weaponTags()]
   }
+
+  /**
+   * Clears shadow weapon classes and display classes from a cell.
+   * Used for resetting weapon-related visual states.
    *
    * @param {HTMLElement} cell - The cell element to clear
    * @returns {void}
