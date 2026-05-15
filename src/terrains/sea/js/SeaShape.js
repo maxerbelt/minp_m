@@ -9,6 +9,7 @@ import {
   littoral
 } from './seaAndLand.js'
 import { Shape } from '../../../ships/Shape.js'
+import { SubTerrain } from '../../all/js/SubTerrain.js'
 
 /**
  * Base class for all sea and land terrain shapes.
@@ -74,7 +75,6 @@ export class Building extends SeaShape {
     this.subterrain = Building.subterrain
     this.validator = Building.validator
     this.zoneDetail = Building.zoneDetail
-    this.canBeOn = HillFort.canBe
     this.immune = ['Z', '+']
   }
 
@@ -84,6 +84,15 @@ export class Building extends SeaShape {
    */
   type () {
     return 'G'
+  }
+
+  /**
+   * Checks if this building can be placed on the given subterrain.
+   * @param {SubTerrain} subterrain - The subterrain to check
+   * @returns {boolean} True if placement is valid (land only)
+   */
+  canBeOn (subterrain) {
+    return subterrain == land
   }
 
   // Static properties for building placement rules
@@ -119,7 +128,6 @@ export class HillFort extends Building {
     )
     this.validator = HillFort.validator
     this.zoneDetail = HillFort.zoneDetail
-    this.canBeOn = HillFort.canBe
     this.notes = [
       `${description} can not touch sea squares; must be surrounded by land squares.`
     ]
@@ -163,7 +171,6 @@ export class CoastalPort extends Building {
     )
     this.validator = CoastalPort.validator
     this.zoneDetail = CoastalPort.zoneDetail
-    this.canBeOn = CoastalPort.canBe
     this.notes = [`${description} must be touching sea squares.`]
   }
 
@@ -206,7 +213,6 @@ export class Plane extends SeaShape {
       racks
     )
     this.subterrain = all
-    this.canBeOn = Plane.canBe
     this.immune = ['Z', '+']
     this.vulnerable = ['F']
   }
@@ -228,10 +234,11 @@ export class Plane extends SeaShape {
   }
 
   /**
-   * Checks if this plane can be placed anywhere.
+   * Checks if this plane can be placed on the given subterrain.
+   * @param {any} _subterrain - The subterrain to check (unused)
    * @returns {boolean} Always returns true (planes can be placed anywhere)
    */
-  canBeOn () {
+  canBeOn (_subterrain) {
     return true
   }
 
@@ -272,7 +279,6 @@ export class SeaVessel extends SeaShape {
     this.subterrain = sea
     this.validator = SeaVessel.validator
     this.zoneDetail = SeaVessel.zoneDetail
-    this.canBeOn = SeaVessel.canBe
   }
 
   /**
@@ -297,6 +303,15 @@ export class SeaVessel extends SeaShape {
    */
   description () {
     return this.descriptionText
+  }
+
+  /**
+   * Checks if this sea vessel can be placed on the given subterrain.
+   * @param {SubTerrain} subterrain - The subterrain to check
+   * @returns {boolean} True if placement is valid (sea only)
+   */
+  canBeOn (subterrain) {
+    return subterrain == sea
   }
 
   // Static properties for sea vessel placement rules
@@ -335,7 +350,6 @@ export class DeepSeaVessel extends SeaVessel {
     this.notes = [
       `${description} can not touch land squares; must be surrounded by sea squares.`
     ]
-    this.canBeOn = DeepSeaVessel.canBe
   }
 
   /**
@@ -377,7 +391,6 @@ export class ShallowDock extends SeaVessel {
     this.validator = ShallowDock.validator
     this.zoneDetail = ShallowDock.zoneDetail
     this.notes = [`${description} must be touching land squares.`]
-    this.canBeOn = ShallowDock.canBe
   }
 
   /**

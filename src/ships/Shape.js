@@ -8,6 +8,7 @@ import { Blinker } from '../variants/Blinker.js'
 import { makeKey, parsePair } from '../core/utilities.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Mask } from '../grid/rectangle/mask.js'
+import { SubTerrain } from '../terrains/all/js/SubTerrain.js'
 import { Zip } from '../core/Zip.js'
 
 /**
@@ -330,7 +331,7 @@ export class Shape {
   }
   /**
    * Check if shape can exist on given subterrain
-   * @param {string} subterrain - Subterrain type to check
+   * @param {SubTerrain} subterrain - Subterrain type to check
    * @returns {boolean} True if shape matches subterrain
    */
   canBeOn (subterrain) {
