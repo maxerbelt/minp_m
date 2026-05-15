@@ -598,7 +598,7 @@ class Enemy extends Waters {
    * @param {number} co - Opponent column coordinate.
    */
   _deactivateOpponentWeapon (ro, co) {
-    if (ro !== undefined && co !== undefined) {
+    if (ro != null && co != null) {
       this.opponent?.UI?.cellWeaponDeactivate?.(ro, co, true)
     }
   }
@@ -610,7 +610,7 @@ class Enemy extends Waters {
    * @param {number} shadowC - Shadow column coordinate.
    */
   _deactivateOwnShadow (shadowR, shadowC) {
-    if (shadowR !== undefined && shadowC !== undefined) {
+    if (shadowR != null && shadowC != null) {
       this.UI.cellWeaponDeactivate(shadowR, shadowC)
       this.opponent?.UI?.cellHintDeactivate?.(shadowR, shadowC)
     }

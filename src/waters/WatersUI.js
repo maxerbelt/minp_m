@@ -555,19 +555,6 @@ export class WatersUI {
   }
 
   /**
-   * Removes shadow weapon indicator from a cell.
-   * Override in subclasses for territory-specific behavior.
-   * Default implementation does nothing (for friendly board).
-   *
-   * @param {HTMLDivElement} _cell - DOM element to update
-   * @returns {void}
-   * @protected
-   */
-  removeShadowWeapon (_cell) {
-    /* only needs implementation if enemy */
-  }
-
-  /**
    * Adds weapon activation styling to a cell.
    * Applies weapon classes, rotation, and optional contrast for visual emphasis.
    *
@@ -611,8 +598,7 @@ export class WatersUI {
    */
   cellWeaponDeactivate (row, column) {
     const cell = this.gridCellAt(row, column)
-    this.removeShadowWeapon(cell)
-    deactivateWeapon(cell)
+    CellClassManager.deactivateWeapon(cell)
   }
 
   /**
@@ -624,7 +610,7 @@ export class WatersUI {
    */
   cellHintDeactivate (row, column) {
     const cell = this.gridCellAt(row, column)
-    deactivateTempHint(cell)
+    CellClassManager.deactivateTempHint(cell)
   }
 
   /**
@@ -1241,7 +1227,7 @@ export class WatersUI {
    * @returns {void}
    */
   deactivateWeapons () {
-    this._forEachBoardCell(cell => deactivateWeapon(cell))
+    this._forEachBoardCell(cell => CellClassManager.deactivateWeapon(cell))
   }
 
   /**
@@ -1251,7 +1237,7 @@ export class WatersUI {
    * @returns {void}
    */
   deactivateTempHints () {
-    this._forEachBoardCell(cell => deactivateTempHint(cell))
+    this._forEachBoardCell(cell => CellClassManager.deactivateTempHint(cell))
   }
 
   /**
@@ -1364,23 +1350,4 @@ export class WatersUI {
     }
     return document.getElementById(notesId)
   }
-}
-
-function deactivateWeapon (cell) {
-  if (cell.classList.contains('contrast')) {
-    cell.classList.remove(
-      'active',
-      'contrast',
-      'turn2',
-      'turn3',
-      'turn4',
-      ...bh.terrain.weapons.tags
-    )
-  } else {
-    cell.classList.remove('active')
-  }
-}
-
-function deactivateTempHint (cell) {
-  cell.classList.remove('temp-hint')
 }

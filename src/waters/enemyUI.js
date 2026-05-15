@@ -3,6 +3,7 @@ import { gameStatus } from './StatusUI.js'
 import { WatersUI } from './WatersUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
+import { CellClassManager } from './helpers/CellClassManager.js'
 
 /**
  * @typedef {Object} EnemyWeaponDescriptor
@@ -330,14 +331,6 @@ class EnemyUI extends WatersUI {
     if (damage) {
       cell.classList.add(damage)
     }
-  }
-
-  /**
-   * Removes weapon shadow from a cell.
-   * @param {HTMLElement} cell - The cell element.
-   */
-  removeShadowWeapon (cell) {
-    cell.classList.remove('weapon', 'contrast')
   }
 
   /**

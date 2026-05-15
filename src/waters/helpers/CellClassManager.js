@@ -94,7 +94,8 @@ export class CellClassManager {
     weapon: {
       weapon: 'weapon',
       active: 'active',
-      contrast: 'contrast'
+      contrast: 'contrast',
+      tempHint: 'temp-hint'
     },
     damage: {
       burnt: 'burnt',
@@ -418,6 +419,34 @@ export class CellClassManager {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this.#weaponTags()]
   }
 
+  static clearShadowWeaponClasses (cell) {
+    const shadowWeaponClasses = new Set([
+      ...this.#weaponTags(),
+      ...this.#cursorTags()
+    ])
+    this.#removeClassesFromCell(cell, [...shadowWeaponClasses])
+    this.clearCellClasses(cell, [this.CELL_CLASSES.display])
+  }
+
+  static deactivateWeapon (cell) {
+    if (cell.classList.contains('contrast')) {
+      const shadowWeaponClasses = new Set([
+        ...this.#weaponTags(),
+        ...this.#cursorTags()
+      ])
+      this.#removeClassesFromCell(cell, [...shadowWeaponClasses])
+      this.clearCellClasses(cell, [
+        this.CELL_CLASSES.weapon,
+        this.CELL_CLASSES.orientation
+      ])
+    } else {
+      cell.classList.remove('active')
+    }
+  }
+
+  static deactivateTempHint (cell) {
+    cell.classList.remove('temp-hint')
+  }
   /**
    * Removes weapon and animation-related classes from a cell.
    * Part of splitting resetHitCellState into semantic concerns.

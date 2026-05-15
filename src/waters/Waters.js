@@ -1501,6 +1501,8 @@ export class Waters {
     if (this.cannotPassTurn) {
       return
     }
+    this.UI.deactivateWeapons()
+    this.opponent?.UI.deactivateWeapons()
     await this.opponent?._handleBeginTurn?.()
   }
   /**

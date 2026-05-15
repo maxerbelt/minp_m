@@ -382,8 +382,8 @@ export class RectMaskBase extends MaskBase {
   }
   /**
    * Invert coordinates by swapping x and y values
-   * @param {Coordinate[]} coords - Array of [x, y] or [x, y, value] coordinates
-   * @returns {Coordinate[]} Coordinates with x and y swapped
+   * @param {CoordinateWithValue[]} coords - Array of [x, y, value] coordinates
+   * @returns {CoordinateWithValue[]} Coordinates with x and y swapped
    */
   static invertCoords (coords) {
     return coords.map(c => RectMaskBase.invertCoord(c))
