@@ -1,5 +1,4 @@
 import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/WeaponCatelogue.js'
-import { RectListCanvas } from '../../../grid/rectangle/rectListCanvas.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import {
   addNeighborList,
@@ -31,23 +30,6 @@ import { coordToKey } from '../../../core/utilities.js'
 const CSS_CLASSES = {
   MARKER: 'marker',
   PORTAL: 'portal'
-}
-
-/**
- * Draws a ray line on canvas and returns point list
- * Converts canvas coordinates to grid coordinates with power tagging
- * @private
- * @param {number} rowStart - Starting row coordinate
- * @param {number} colStart - Starting column coordinate
- * @param {number} rowEnd - Ending row coordinate
- * @param {number} colEnd - Ending column coordinate
- * @param {number} power - Damage power level for each cell
- * @returns {Array<[number, number, number]>} Array of [row, column, power] tuples
- */
-function drawRayLinePoints (rowStart, colStart, rowEnd, colEnd, power) {
-  const canvas = RectListCanvas.BhMapList()
-  canvas.drawRay(colStart, rowStart, colEnd, rowEnd, power)
-  return canvas.list
 }
 
 /**
@@ -107,29 +89,34 @@ function createSquareExplosion (
 }
 
 /**
+ * Animation configuration for dual-board weapon launch
+ * @typedef {Object} AnimationContext
+ * @property {number} sourceRow - Source row coordinate
+ * @property {number} sourceCol - Source column coordinate
+ * @property {Object} viewModel - Primary view model
+ * @property {Object} opposingViewModel - Opposing player view model
+ */
+
+/**
  * Handles launch animation for weapons with dual-board effects
  * @param {Object} weapon - The weapon instance
- * @param {Array} coords - Target coordinates
- * @param {number} sourceRow - Source row
- * @param {number} sourceCol - Source column
- * @param {Object} map - Game map
- * @param {Object} viewModel - Primary view model
- * @param {Object} opposingViewModel - Opposing view model
- * @param {Object} gameModel - Game model
- * @param {Function} animationCallback - Custom animation callback
+ * @param {number[][]} coords - Target coordinates
+ * @param {AnimationContext} context - Animation context (source coords and view models)
+ * @param {Object} map - Game map object
+ * @param {Object} gameModel - Game model object
+ * @param {Function} [animationCallback] - Optional custom animation callback
  * @returns {Promise} Launch promise
  */
 async function launchWithDualBoardAnimation (
   weapon,
   coords,
-  sourceRow,
-  sourceCol,
+  context,
   map,
-  viewModel,
-  opposingViewModel,
   gameModel,
   animationCallback
 ) {
+  const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
+
   return await weapon.launchRightTo(
     coords,
     sourceRow,
@@ -146,22 +133,12 @@ async function launchWithDualBoardAnimation (
  * Builds source and target cell references for portal-style animation.
  * @param {Object} weapon - The weapon instance used for coordinate normalization.
  * @param {number[][]} coords - Target coordinates.
- * @param {number} sourceRow - Source row coordinate.
- * @param {number} sourceCol - Source column coordinate.
+ * @param {AnimationContext} context - Animation context (source coords and view models)
  * @param {Object} map - Game map object for coordinate normalization.
- * @param {ViewModel} viewModel - Primary view model.
- * @param {ViewModel} opposingViewModel - Opposing view model.
  * @returns {DualBoardCells} Portal animation cell references.
  */
-function resolvePortalCells (
-  weapon,
-  coords,
-  sourceRow,
-  sourceCol,
-  map,
-  viewModel,
-  opposingViewModel
-) {
+function resolvePortalCells (weapon, coords, context, map) {
+  const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
   const [[startRow, startCol], targetCoord] = weapon.redoCoords(
     map,
     [sourceRow, sourceCol],
@@ -178,6 +155,7 @@ function resolvePortalCells (
 /**
  * Adds portal CSS classes to cells for dual-board animation.
  * @param {DualBoardCells} cells - Source and target cell references.
+ * @returns {void}
  */
 function addPortalClasses (cells) {
   cells.sourceCell1.classList.add(CSS_CLASSES.MARKER)
@@ -189,6 +167,7 @@ function addPortalClasses (cells) {
 /**
  * Removes portal CSS classes from cells after animation.
  * @param {DualBoardCells} cells - Source and target cell references.
+ * @returns {void}
  */
 function removePortalClasses (cells) {
   cells.sourceCell1.classList.remove(CSS_CLASSES.MARKER)
@@ -198,27 +177,17 @@ function removePortalClasses (cells) {
 }
 
 /**
- * Performs portal-style dual-board animation for rail bolt
+ * Performs portal-style dual-board animation for weapons
  * @param {Object} weapon - The weapon instance
- * @param {Array} coords - Target coordinates
- * @param {number} sourceRow - Source row
- * @param {number} sourceCol - Source column
- * @param {Object} map - Game map
- * @param {Object} viewModel - Primary view model
- * @param {Object} opposingViewModel - Opposing view model
- * @param {Object} gameModel - Game model
+ * @param {number[][]} coords - Target coordinates
+ * @param {AnimationContext} context - Animation context (source coords and view models)
+ * @param {Object} map - Game map object
+ * @param {Object} gameModel - Game model object
  * @returns {Promise} Animation promise
  */
-async function performPortalAnimation (
-  weapon,
-  coords,
-  sourceRow,
-  sourceCol,
-  map,
-  viewModel,
-  opposingViewModel,
-  gameModel
-) {
+async function performPortalAnimation (weapon, coords, context, map, gameModel) {
+  const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
+
   if (!opposingViewModel) {
     return await weapon.launchRightTo(
       coords,
@@ -231,15 +200,7 @@ async function performPortalAnimation (
     )
   }
 
-  const cells = resolvePortalCells(
-    weapon,
-    coords,
-    sourceRow,
-    sourceCol,
-    map,
-    viewModel,
-    opposingViewModel
-  )
+  const cells = resolvePortalCells(weapon, coords, context, map)
   addPortalClasses(cells)
 
   try {
@@ -562,13 +523,11 @@ export class RailBolt extends Strike {
         ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
       )
       if (idx !== undefined) {
-        switch (idx) {
-          case last:
-            next = fullLine[idx - 1]
-            break
-          default:
-            next = fullLine[idx + 1]
-            break
+        // Determine next point based on position in trajectory line
+        if (idx === last) {
+          next = fullLine[idx - 1]
+        } else {
+          next = fullLine[idx + 1]
         }
 
         if (next) {
@@ -607,72 +566,14 @@ export class RailBolt extends Strike {
     opposingViewModel,
     gameModel
   ) {
+    const context = { sourceRow, sourceCol, viewModel, opposingViewModel }
     return await launchWithDualBoardAnimation(
       this,
       coords,
-      sourceRow,
-      sourceCol,
+      context,
       map,
-      viewModel,
-      opposingViewModel,
       gameModel,
-      performPortalAnimation.bind(null, this)
-    )
-  }
-
-  /**
-   * Executes dual-board rail bolt animation with portal effect
-   * Routes to parent launchTo if no opposing view model exists
-   * Performs bidirectional animation with marker/portal CSS transitions
-   * @private
-   * @async
-   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
-   * @param {number} sourceRow - Source row coordinate
-   * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model
-   * @returns {Promise<void>} Resolves when animations complete
-   */
-  async _performRailBoltAnimation (
-    coords,
-    sourceRow,
-    sourceCol,
-    map,
-    viewModel,
-    opposingViewModel,
-    gameModel
-  ) {
-    if (!opposingViewModel) {
-      return await super.launchTo(
-        coords,
-        sourceRow,
-        sourceCol,
-        map,
-        viewModel,
-        opposingViewModel,
-        gameModel
-      )
-    }
-
-    const cells = resolvePortalCells(
-      this,
-      coords,
-      sourceRow,
-      sourceCol,
-      map,
-      viewModel,
-      opposingViewModel
-    )
-
-    addPortalClasses(cells)
-
-    await Weapon.prototype.animateFlyingOnVM.call(
-      this,
-      cells.sourceCell1,
-      cells.targetCell1,
-      viewModel
+      performPortalAnimation.bind(null, this, coords, context, map, gameModel)
     )
   }
 
@@ -871,14 +772,14 @@ export class GaussRound extends Fish {
     return list
   }
   /**
-   * Determines turn phase for missile variant
+   * Determines turn phase for Gauss round variant
    * Maps variant ID to turn duration classes for animation pacing
-   * @param {number} variant - Weapon variant identifier (0, 2, 3)
-   * @param {number} r - Row coordinate for turn calculation
-   * @param {number} c - Column coordinate for turn calculation
-   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
+   * @param {number} variant - Weapon variant identifier (1, 3)
+   * @param {number} _r - Row coordinate (unused for Gauss round)
+   * @param {number} _c - Column coordinate (unused for Gauss round)
+   * @returns {string} CSS turn class name ('turn2') or empty string
    */
-  getTurn (variant, r, c) {
+  getTurn (variant, _r, _c) {
     const turnMap = {
       1: 'turn2',
       3: 'turn2'
@@ -906,13 +807,13 @@ export class GaussRound extends Fish {
 
   /**
    * Computes blast radius pattern from explosion center
-   * Creates expanding square pattern: center → 3×3 → 5×5 → cardinal distance-3
+   * Creates expanding square pattern: center → 3×3 → 5×5 → cardinal distance
    * @param {number} centerRow - Explosion center row
    * @param {number} centerCol - Explosion center column
    * @returns {Array<[number, number, number]>} Damage pattern as [row, col, power] tuples
    */
   boom (centerRow, centerCol) {
-    return createSquareExplosion(centerRow, centerCol)
+    return createSquareExplosion(centerRow, centerCol, 2)
   }
 
   /**
@@ -939,8 +840,7 @@ export class GaussRound extends Fish {
   }
   aoePlus (map, coords) {
     const affectedArea = this.aoe(map, coords)
-    const crashLoc =
-      affectedArea.length > 0 ? affectedArea[affectedArea.length - 1] : null
+    const crashLoc = affectedArea.length > 0 ? affectedArea.at(-1) : null
     const fullLine = this.aoeFull(coords)
     return { affectedArea, options: { crashLoc, fullLine } }
   }
@@ -966,27 +866,23 @@ export class GaussRound extends Fish {
         ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
       )
       if (idx !== undefined) {
-        switch (idx) {
-          case 0:
-            next2 = fullLine[idx + 3]
-            prev = fullLine[idx + 2]
-            next = fullLine[idx + 1]
-            break
-          case 1:
-            next2 = fullLine[idx + 2]
-            prev = fullLine[idx - 1]
-            next = fullLine[idx + 1]
-            break
-          case last:
-            next2 = fullLine[idx + 1]
-            prev = fullLine[idx - 2]
-            next = fullLine[idx - 1]
-            break
-          default:
-            next2 = fullLine[idx + 2]
-            prev = fullLine[idx - 1]
-            next = fullLine[idx + 1]
-            break
+        // Determine offset trajectory points based on position in line
+        if (idx === 0) {
+          next2 = fullLine[idx + 3]
+          prev = fullLine[idx + 2]
+          next = fullLine[idx + 1]
+        } else if (idx === 1) {
+          next2 = fullLine[idx + 2]
+          prev = fullLine[idx - 1]
+          next = fullLine[idx + 1]
+        } else if (idx === last) {
+          next2 = fullLine[idx + 1]
+          prev = fullLine[idx - 2]
+          next = fullLine[idx - 1]
+        } else {
+          next2 = fullLine[idx + 2]
+          prev = fullLine[idx - 1]
+          next = fullLine[idx + 1]
         }
 
         if (prev) {
@@ -1059,16 +955,23 @@ export class GaussRound extends Fish {
     opposingViewModel,
     gameModel
   ) {
+    const context = { sourceRow, sourceCol, viewModel, opposingViewModel }
     return await launchWithDualBoardAnimation(
       this,
       coords,
-      sourceRow,
-      sourceCol,
+      context,
       map,
-      viewModel,
-      opposingViewModel,
       gameModel,
-      this.performGaussRoundAnimation.bind(this)
+      this.performGaussRoundAnimation.bind(
+        this,
+        coords,
+        sourceRow,
+        sourceCol,
+        map,
+        viewModel,
+        opposingViewModel,
+        gameModel
+      )
     )
   }
 

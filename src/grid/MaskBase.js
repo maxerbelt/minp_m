@@ -96,7 +96,7 @@ export class MaskBase extends CanvasGrid {
    * Test if cell at (x, y) matches color value
    */
   test (x, y, color = 1) {
-    return this.for(x, y).test(color)
+    return this.for(x, y).hasColor(color)
   }
 
   /**
@@ -117,7 +117,7 @@ export class MaskBase extends CanvasGrid {
    * Get cell value at (x, y)
    */
   at (x, y) {
-    return this.for(x, y).at()
+    return this.for(x, y).readCellValue()
   }
 
   for (...args) {

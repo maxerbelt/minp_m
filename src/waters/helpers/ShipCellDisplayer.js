@@ -257,7 +257,7 @@ export class ShipCellDisplayer {
    * - other: No clearing performed (for validation)
    *
    * @param {HTMLElement} cell - DOM element to clear
-   * @param {'none'|'content'|'all'} details - What to clear: Scope of clearing: 'content' for text only, 'all' for text and styles
+   * @param {'none'|'content'|'all'} details - Clearing scope: 'content' for text only, 'all' for text and styles
    * @returns {void}
    */
   static clearDetails (cell, details) {
@@ -477,18 +477,45 @@ export class ShipCellDisplayer {
    * @param {number} row
    * @param {number} column
    * @param {Weapon} primaryWeapon
+   * @returns {void}
    */
   static #applyWeaponCursorStyles (cell, ship, row, column, primaryWeapon) {
     const cursorClass = primaryWeapon?.launchCursor
     if (!cursorClass) return
 
+    this.#applyWeaponCursorClass(cell, cursorClass)
+    this.#applyWeaponOrientationClass(cell, ship, row, column)
+  }
+
+  /**
+   * Applies weapon cursor styling class to a cell.
+   * Clears existing weapon classes and applies the cursor class.
+   * @param {HTMLElement} cell
+   * @param {string} cursorClass
+   * @returns {void}
+   * @private
+   */
+  static #applyWeaponCursorClass (cell, cursorClass) {
     CellClassManager.clearWeaponClasses(cell)
     cell.classList.add(cursorClass)
+  }
+
+  /**
+   * Applies weapon orientation (turn) class to a cell.
+   * Clears existing orientation classes and applies the turn class if available.
+   * @param {HTMLElement} cell
+   * @param {Ship} ship
+   * @param {number} row
+   * @param {number} column
+   * @returns {void}
+   * @private
+   */
+  static #applyWeaponOrientationClass (cell, ship, row, column) {
     CellClassManager.clearCellClasses(cell, [
       CellClassManager.CELL_CLASSES.orientation
     ])
 
-    const turn = ship.getTurn(row, column)
+    const turn = ship?.getTurn?.(row, column)
     if (turn) {
       cell.classList.add(turn)
     }

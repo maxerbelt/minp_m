@@ -1,6 +1,7 @@
 // src/grid/store32.test.js
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach */
+import { describe, it, expect, beforeEach } from '@jest/globals'
 import { Store32 } from './store32.js'
 import { Packed } from '../rectangle/packed.js'
 
@@ -109,8 +110,8 @@ describe('Store32 extract layers', () => {
   describe('extractColorLayer', () => {
     it('should return empty bitboard for empty input', () => {
       const result = store4.extractColorLayer(board4, 1, 4, 4)
-      for (let i = 0; i < result.length; i++) {
-        expect(result[i]).toBe(0)
+      for (const element of result) {
+        expect(element).toBe(0)
       }
     })
 
