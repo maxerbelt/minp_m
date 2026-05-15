@@ -371,8 +371,7 @@ class Enemy extends Waters {
   }
 
   setupWeaponButtonHandlers () {
-    const numWeaponButtons = this.UI?.weaponBtns?.length || 0
-    if (this.UI?.weaponBtn == null || numWeaponButtons !== 0) return
+    if (this.UI?.weaponBtn == null) return
 
     this.UI.weaponBtns = this.UI?.weaponButtons(
       this.UI?.weaponBtn,
@@ -430,6 +429,7 @@ class Enemy extends Waters {
 
   /**
    * Launches the weapon sequence, trying selected, random, and default launch flows.
+   * In Hide and Seek mode with all attached weapons, respects the currently selected weapon.
    * @private
    * @param {number} r - Target row.
    * @param {number} c - Target column.
@@ -438,6 +438,13 @@ class Enemy extends Waters {
   async _launchWeaponSequence (r, c) {
     let result = await this.launchSelectedWeapon(r, c)
     if (this._isFinalLaunchResult(result)) {
+      return result
+    }
+
+    // In Hide and Seek mode with all attached weapons, do not fall back to random selection
+    // This ensures the player's weapon choice is respected and allows multi-coordinate weapons to work
+    if (bh.seekingMode && bh.terrain?.hasAttachedWeapons) {
+      // Return the current result (null for incomplete selection, allowing next click to continue)
       return result
     }
 

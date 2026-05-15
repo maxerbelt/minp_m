@@ -1127,16 +1127,24 @@ export class LoadOut {
   /**
    * Checks if weapon is ready to fire (armed).
    * In hide mode, unattached weapon must be selected with sufficient coordinates.
+   * In seeking mode with all attached weapons, armed when weapon is selected and ready.
    * UNIFIED: consolidated armament state check.
    *
    * @returns {boolean} True if armed and ready
    */
   isArmed () {
-    return (
+    const isInHideMode =
       this._isHideMode() &&
       this._isWeaponSelected() &&
       this._hasSufficientSelection()
-    )
+
+    // In seeking mode with all attached weapons, allow firing if weapon is selected
+    const isInSeekingWithAttached =
+      bh.seekingMode &&
+      bh.terrain?.hasAttachedWeapons &&
+      this._isWeaponSelected()
+
+    return isInHideMode || isInSeekingWithAttached
   }
 
   /**
