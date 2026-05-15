@@ -124,8 +124,15 @@ class ZoneValidatedBuilding extends Building {
     return subterrain === this.subterrain && zone === this.zone
   }
 
-  /** @type {Function} Validator function that uses canBe logic for zone validation */
-  static validator = zoneInfo => this.canBe(zoneInfo[0], zoneInfo[1])
+  /**
+   * Validator function that checks the passed zoneInfo against this class.
+   * @param {Array} zoneInfo - Tuple of [subterrain, zone]
+   * @returns {boolean} True if the subterrain and zone match
+   */
+  static validator (zoneInfo) {
+    return this.canBe(zoneInfo[0], zoneInfo[1])
+  }
+
   /** @type {number} Zone detail level for validation */
   static zoneDetail = 2
 }
@@ -211,6 +218,7 @@ export class Plane extends SeaShape {
     this.subterrain = all
     this.immune = ['Z', '+']
     this.vulnerable = ['F']
+    this.canBeOn = Plane.canBe
   }
 
   /**
@@ -339,8 +347,15 @@ class ZoneValidatedSeaVessel extends SeaVessel {
     return subterrain === this.subterrain && zone === this.zone
   }
 
-  /** @type {Function} Validator function that uses canBe logic for zone validation */
-  static validator = zoneInfo => this.canBe(zoneInfo[0], zoneInfo[1])
+  /**
+   * Validator function that checks the passed zoneInfo against this class.
+   * @param {Array} zoneInfo - Tuple of [subterrain, zone]
+   * @returns {boolean} True if the subterrain and zone match
+   */
+  static validator (zoneInfo) {
+    return this.canBe(zoneInfo[0], zoneInfo[1])
+  }
+
   /** @type {number} Zone detail level for validation */
   static zoneDetail = 2
 }
