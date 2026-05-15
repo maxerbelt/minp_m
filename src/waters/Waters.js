@@ -8,6 +8,8 @@ import {
   coordsFromCell
 } from '../core/utilities.js'
 import { placedShipsInstance } from '../selection/PlacedShips.js'
+
+/* global process */
 import { Score } from './Score.js'
 import { gameStatus } from './StatusUI.js'
 import { assembleTerrains } from '../terrains/all/js/gameMaps.js'

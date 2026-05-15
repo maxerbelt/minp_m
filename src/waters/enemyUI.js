@@ -3,7 +3,6 @@ import { gameStatus } from './StatusUI.js'
 import { WatersUI } from './WatersUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
-import { CellClassManager } from './helpers/CellClassManager.js'
 
 /**
  * @typedef {Object} EnemyWeaponDescriptor
@@ -96,34 +95,17 @@ class EnemyUI extends WatersUI {
    * @returns {HTMLElement[]} Array of created button elements.
    */
   weaponButtons (node, wpss, callback) {
-    const weaponButtons = []
-    if (!node || !wpss) {
-      console.warn('Weapon buttons node or weapon systems not found')
-      return weaponButtons
+    const validation = this._validateWeaponButtonParams(node, wpss, callback)
+    if (!validation.isValid) {
+      return []
     }
 
-    if (typeof callback !== 'function') {
-      console.warn('Weapon button callback is not a function')
-      return weaponButtons
-    }
-
-    const parent = node.parentNode
-    if (!parent) {
-      console.warn('Weapon button parent node not found')
-      return weaponButtons
-    }
-
-    const cloneClass = node.id ? `${node.id}-clone` : 'weapon-button-clone'
+    const { parent, cloneClass, weaponEntries } = validation
     this._removeWeaponButtonClones(parent, cloneClass)
 
-    const weaponEntries = this._weaponSystemEntries(wpss)
-    if (weaponEntries.length === 0) {
-      console.warn('No weapon systems provided for weapon buttons')
-      return weaponButtons
-    }
-
+    const weaponButtons = []
     let last = node
-    for (const [index, wps] of weaponEntries) {
+    weaponEntries.forEach(([index, wps]) => {
       const clone = this._buildWeaponButtonClone(
         node,
         cloneClass,
@@ -134,9 +116,44 @@ class EnemyUI extends WatersUI {
       parent.insertBefore(clone, last.nextSibling)
       last = clone
       weaponButtons.push(clone)
-    }
+    })
 
     return weaponButtons
+  }
+
+  /**
+   * Validates parameters for weapon button creation.
+   * @param {HTMLElement} node
+   * @param {Array<EnemyWeaponSystem>|Object<string, EnemyWeaponSystem>} wpss
+   * @param {WeaponButtonCallback} callback
+   * @returns {Object} Validation result with isValid, parent, cloneClass, weaponEntries.
+   * @private
+   */
+  _validateWeaponButtonParams (node, wpss, callback) {
+    if (!node || !wpss) {
+      console.warn('Weapon buttons node or weapon systems not found')
+      return { isValid: false }
+    }
+
+    if (typeof callback !== 'function') {
+      console.warn('Weapon button callback is not a function')
+      return { isValid: false }
+    }
+
+    const parent = node.parentNode
+    if (!parent) {
+      console.warn('Weapon button parent node not found')
+      return { isValid: false }
+    }
+
+    const cloneClass = node.id ? `${node.id}-clone` : 'weapon-button-clone'
+    const weaponEntries = this._weaponSystemEntries(wpss)
+    if (weaponEntries.length === 0) {
+      console.warn('No weapon systems provided for weapon buttons')
+      return { isValid: false }
+    }
+
+    return { isValid: true, parent, cloneClass, weaponEntries }
   }
 
   /**
@@ -188,6 +205,7 @@ class EnemyUI extends WatersUI {
 
   /**
    * Displays the fleet as sunk and updates game status.
+   * @returns {void}
    */
   displayFleetSunk () {
     gameStatus.showMode('Fleet Destroyed')
@@ -198,6 +216,7 @@ class EnemyUI extends WatersUI {
 
   /**
    * Switches to reveal mode, showing relevant buttons.
+   * @returns {void}
    */
   revealMode () {
     this._setButtonHidden(['reveal', 'weapon'], true)
@@ -209,6 +228,7 @@ class EnemyUI extends WatersUI {
 
   /**
    * Switches to play mode, showing relevant buttons.
+   * @returns {void}
    */
   playMode () {
     this._setButtonHidden(['reveal', 'weapon'], false)
@@ -225,53 +245,58 @@ class EnemyUI extends WatersUI {
    * @private
    */
   _setButtonHidden (buttonKeys, hidden) {
-    buttonKeys.forEach(key =>
-      this._toggleElementHidden(this.buttons[key], hidden)
-    )
+    this._setButtonsProperty(buttonKeys, 'hidden', hidden)
   }
 
   /**
-   * Applies the hidden class to a target element.
-   * @param {HTMLElement|null} element
-   * @param {boolean} hidden
+   * Disables or enables buttons by key.
+   * @param {string[]} buttonKeys
+   * @param {boolean} disabled
    * @private
    */
-  _toggleElementHidden (element, hidden) {
-    element?.classList.toggle('hidden', hidden)
+  _setButtonsDisabled (buttonKeys, disabled) {
+    this._setButtonsProperty(buttonKeys, 'disabled', disabled)
   }
 
   /**
-   * Disables or enables all buttons.
-   * @param {boolean} [isDisabled=true] - Whether to disable the buttons.
+   * Sets a property on multiple buttons.
+   * @param {string[]} buttonKeys
+   * @param {string} property - 'hidden' or 'disabled'
+   * @param {boolean} value
+   * @private
    */
-  disableBtns (isDisabled = true) {
-    this._setButtonsDisabled(Object.values(this.buttons), isDisabled)
+  _setButtonsProperty (buttonKeys, property, value) {
+    buttonKeys.forEach(key => {
+      const button = this.buttons[key]
+      if (property === 'hidden') {
+        this._toggleElementHidden(button, value)
+      } else if (property === 'disabled') {
+        button.disabled = value
+      }
+    })
   }
 
   /**
    * Enables all buttons.
+   * @returns {void}
    */
   enableBtns () {
     this.disableBtns(false)
   }
 
   /**
-   * Sets disabled state on a collection of buttons.
-   * @param {Array<HTMLButtonElement|null>} buttons
-   * @param {boolean} disabled
-   * @private
+   * Disables or enables all buttons.
+   * @param {boolean} [isDisabled=true] - Whether to disable the buttons.
+   * @returns {void}
    */
-  _setButtonsDisabled (buttons, disabled) {
-    buttons.forEach(button => {
-      if (button) {
-        button.disabled = disabled
-      }
-    })
+  disableBtns (isDisabled = true) {
+    this._setButtonsProperty(Object.keys(this.buttons), 'disabled', isDisabled)
   }
 
   /**
    * Reveals all ships and switches to reveal mode.
    * @param {Array} ships - Array of ships to reveal.
+   * @returns {void}
    */
   revealAll (ships) {
     this.revealShips(ships)
@@ -285,6 +310,7 @@ class EnemyUI extends WatersUI {
    * Displays a cell as sunk.
    * @param {HTMLDivElement} cell - The cell element.
    * @param {string} letter - The ship letter.
+   * @returns {void}
    */
   displayAsSunk (cell, letter) {
     ShipCellDisplayer.displayEnemySunkCell(cell, letter)
