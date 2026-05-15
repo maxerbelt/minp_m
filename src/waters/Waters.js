@@ -1352,20 +1352,29 @@ export class Waters {
 
   /**
    * Adds click listeners to opponent surrounding cells.
+   * Cells that surround multiple armed ships receive only one listener.
    * @private
    * @param {Object} oppo - The opponent instance.
    */
   _addAttachedAimListeners (oppo) {
     const armedShips = this.loadOut.ships
+    const cellsToListen = new Set()
+
+    // Collect all unique surrounding cells across all armed ships
     for (const ship of armedShips) {
       const cells = oppo.shipCells(ship.id)
       const surround = oppo.UI.surroundCellElement(cells)
       for (const cell of surround) {
-        const [r, c] = coordsFromCell(cell)
-        const handler = this.onClickOppoCell.bind(this, r, c)
-        cell.addEventListener('click', handler)
-        cell._clickOppoHandler = handler
+        cellsToListen.add(cell)
       }
+    }
+
+    // Add listener only once per cell
+    for (const cell of cellsToListen) {
+      const [r, c] = coordsFromCell(cell)
+      const handler = this.onClickOppoCell.bind(this, r, c)
+      cell.addEventListener('click', handler)
+      cell._clickOppoHandler = handler
     }
   }
   resetBase () {
@@ -2124,10 +2133,12 @@ export class Waters {
 
   /**
    * Handles cursor changes on the board.
-   * @param {string} _oldCursoroldCursor - The previous cursor class.
+   * @param {string} _oldCursor - The previous cursor class.
    * @param {Object} _newCursorInfo - Information about the new cursor.
    */
-  cursorChange (_oldCursor, _newCursorInfo) {}
+  cursorChange (_oldCursor, _newCursorInfo) {
+    // only needs implementation if enemy
+  }
 }
 
 /**
@@ -2138,7 +2149,7 @@ export class Waters {
  * @returns {Object|null} The found element or null
  */
 function removeFirstMatching (array, predicate, fallbackObject) {
-  const idx = array.findIndex(predicate)
+  const idx = array.findIndex(element => predicate(element))
   if (idx === -1) {
     if (fallbackObject) {
       console.log('not found : ', JSON.stringify(fallbackObject))

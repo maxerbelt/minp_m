@@ -145,6 +145,7 @@ describe('Ship basic behaviors', () => {
       [0, 0],
       [0, 1]
     ])
+    // NOSONAR - Using JSON.parse/stringify for compatibility with older Node.js/Jest environments
     expect(JSON.parse(JSON.stringify(s)).cells).toEqual([
       [0, 0],
       [0, 1]
@@ -294,7 +295,7 @@ describe('Ship - getTurn', () => {
       windowWidth: 1
     }
     s.variant = 2
-    void s.getTurn(5, 5)
+    s.getTurn(5, 5)
     // r0 = 5 - 0 - (1 - 1) / 2 = 5 - 0 = 5
     // c0 = 5 - 0 - (1 - 1) / 2 = 5 - 0 = 5
     expect(mockWeapon.getTurn).toHaveBeenCalledWith(2, 5, 5)

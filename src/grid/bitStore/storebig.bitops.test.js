@@ -1,5 +1,6 @@
 /* eslint-env jest */
 /* global describe, it, expect, beforeEach */
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { StoreBig } from './storeBig.js'
 import { Mask } from '../rectangle/mask.js'
 
@@ -7,7 +8,7 @@ function ascii (width, height, bits, depth = 2) {
   const m = new Mask(width, height, bits, null, depth)
   return m.toAscii
 }
-BigInt.prototype.toJSON = function () {
+BigInt.prototype['toJSON'] = function () {
   return this.toString()
 }
 describe('StoreBig bit operations', () => {
