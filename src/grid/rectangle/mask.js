@@ -373,20 +373,90 @@ export class Mask extends RectMaskBase {
   // ============================================================================
 
   /**
-   * Expand mask to new width, padding on right
+   * Expand mask border symmetrically on all sides.
+   * Creates a new mask with expanded dimensions, placing original content
+   * at the specified offset with fillValue padding around it.
+   *
+   * @param {number} borderSize - Number of cells to expand on each side
+   * @param {number} [fillValue=0] - Value to use for padding
+   * @returns {Mask} New mask with expanded dimensions
    */
-  /*
-  expandBorder (borderSize, fillValue = 0) {
-    const newMask = this.clone.expand(borderSize, fillValue)
-    return new Mask(
-      this.width + 2 * borderSize,
-      this.height + 2 * borderSize,
-      newMask.bits,
-      newMask.store,
-      this.depth
+  expandBorderMask (borderSize = 1, fillValue = 0) {
+    const newWidth = this.width + 2 * borderSize
+    const newHeight = this.height + 2 * borderSize
+
+    // Use store's expand method with symmetric offsets
+    const expandedBits = this.store.expandToWidthWithXYOffset(
+      this.width,
+      this.height,
+      this.bits,
+      newWidth,
+      borderSize,
+      borderSize
     )
+
+    return new Mask(newWidth, newHeight, expandedBits, null, this.depth)
   }
-    */
+
+  /**
+   * Flatten and expand mask border.
+   * Expands the mask while collapsing color layers to single bit (depth 1).
+   * Creates new mask with expanded dimensions and flattened bit representation.
+   *
+   * @param {number} borderSize - Number of cells to expand on each side
+   * @returns {Mask} New flattened mask with expanded dimensions
+   */
+  flattenExpandMask (borderSize = 1) {
+    const newWidth = this.width + 2 * borderSize
+    const newHeight = this.height + 2 * borderSize
+
+    // Create flattened version (all colors collapsed to 1-bit representation)
+    const flattenedBits = this.store.expandToWidthWithXYOffset(
+      this.width,
+      this.height,
+      this.bits,
+      newWidth,
+      borderSize,
+      borderSize
+    )
+
+    // Return with depth 1 to indicate single-bit representation
+    return new Mask(newWidth, newHeight, flattenedBits, null, 1)
+  }
+
+  /**
+   * Get edge masks for morph operations on rectangular grid
+   * Returns {left, right, top, bottom, notLeft, notRight, notTop, notBottom}
+   * @returns {Object} Edge mask object
+   */
+  edgeMasks () {
+    const empty = this.store.empty
+    let left = this.store.createEmptyBitboard(empty)
+    let right = this.store.createEmptyBitboard(empty)
+    let top = this.store.createEmptyBitboard(empty)
+    let bottom = this.store.createEmptyBitboard(empty)
+
+    for (let x = 0; x < this.width; x++) {
+      top = this.store.setIdx(top, this.index(x, 0), this.one)
+      bottom = this.store.setIdx(
+        bottom,
+        this.index(x, this.height - 1),
+        this.one
+      )
+    }
+
+    for (let y = 0; y < this.height; y++) {
+      left = this.store.setIdx(left, this.index(0, y), this.one)
+      right = this.store.setIdx(right, this.index(this.width - 1, y), this.one)
+    }
+
+    const notLeft = this.store.invertedBits(left)
+    const notRight = this.store.invertedBits(right)
+    const notTop = this.store.invertedBits(top)
+    const notBottom = this.store.invertedBits(bottom)
+
+    return { left, right, top, bottom, notRight, notLeft, notTop, notBottom }
+  }
 
   // ============================================================================
   // Factory Methods

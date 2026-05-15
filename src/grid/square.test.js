@@ -87,7 +87,7 @@ describe('MaskBase square getter', () => {
       const mask = Mask.empty(4, 2)
       const squared = mask.square
 
-      expect(squared.depth).toBe(1)
+      expect(squared.depth).toBe(mask.depth)
     })
 
     it('should preserve depth for multi-depth masks', () => {

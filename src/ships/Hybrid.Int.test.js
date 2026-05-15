@@ -274,7 +274,7 @@ describe('Hybrid shape', () => {
     expect(sb.store.height).toBe(2)
     expect(sb.store.bitsPerCell).toBe(1)
     expect(sb.store.size).toBe(6n)
-    expect(sb.store.depth).toBe(1) // 2
+    expect(sb.store.depth).toBe(2)
     expect(sb.toAsciiWith()).toBe('..1\n..1')
 
     const spb = special.board
