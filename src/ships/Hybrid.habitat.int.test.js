@@ -1,8 +1,6 @@
 /* eslint-env jest */
 
-/* global describe, expect, it, beforeEach, jest */
-
-import { describe, expect, it, beforeEach, jest } from '@jest/globals'
+import { describe, expect, it, beforeEach } from '@jest/globals'
 import { Installation, SpaceVessel } from '../terrains/space/js/spaceShapes.js'
 import { space, asteroid } from '../terrains/space/js/space.js'
 import { Hybrid } from './Hybrid.js'
@@ -10,6 +8,7 @@ import { SpecialCells, StandardCells } from './SubShape.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { Variant3 } from '../variants/Variant3.js'
 
+/** @type {[number, number][]} */
 const occupancyCoords = [
   [0, 0],
   [1, 0],
@@ -28,12 +27,12 @@ describe('Hybrid shape', () => {
       [[0, 0]],
       Installation.validator,
       Installation.zoneDetail,
-      asteroid
+      /** @type {any} */ (asteroid)
     )
     towerCells = new StandardCells(
       SpaceVessel.validator,
       SpaceVessel.zoneDetail,
-      space
+      /** @type {any} */ (space)
     )
     habitat = new Hybrid(
       'Habitat',

@@ -1,7 +1,5 @@
 /* eslint-env jest */
 
-/* global describe, it, expect, beforeEach */
-
 import { describe, it, expect, beforeEach } from '@jest/globals'
 import { Building, SeaVessel } from '../terrains/sea/js/SeaShape.js'
 
@@ -10,6 +8,7 @@ import { SpecialCells, StandardCells } from './SubShape.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { Variant3 } from '../variants/Variant3.js'
 import { Placeable3 } from '../variants/Placeable3.js'
+/** @type {[number, number][]} */
 const occupancyCoords = [
   [0, 0],
   [1, 0],
@@ -33,13 +32,13 @@ describe('Hybrid shape', () => {
       ],
       SeaVessel.validator,
       SeaVessel.zoneDetail,
-      SeaVessel.subterrain
+      /** @type {any} */ (SeaVessel.subterrain)
     )
 
     navalDockCells = new StandardCells(
       Building.validator,
       Building.zoneDetail,
-      Building.subterrain
+      /** @type {any} */ (Building.subterrain)
     )
     navalBase = new Hybrid(
       'Naval Base',

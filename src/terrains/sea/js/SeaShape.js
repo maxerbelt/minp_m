@@ -1,4 +1,5 @@
 import { all } from '../../all/js/terrain.js'
+/** @typedef {import('../../all/js/SubTerrain.js').SubTerrain} SubTerrain */
 import {
   seaAndLand,
   land,
@@ -9,7 +10,6 @@ import {
   littoral
 } from './seaAndLand.js'
 import { Shape } from '../../../ships/Shape.js'
-import { SubTerrain } from '../../all/js/SubTerrain.js'
 
 /**
  * Base class for all sea and land terrain shapes.
@@ -218,7 +218,6 @@ export class Plane extends SeaShape {
     this.subterrain = all
     this.immune = ['Z', '+']
     this.vulnerable = ['F']
-    this.canBeOn = Plane.canBe
   }
 
   /**

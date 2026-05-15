@@ -5,8 +5,6 @@ import { Orbit4F } from '../variants/Orbit4F.js'
 
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
-/* global describe, expect, it, beforeEach, jest */
-
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 
 // DraggedShip will be imported after mocks are configured
@@ -30,16 +28,23 @@ jest.unstable_mockModule('./PlacedShips.js', () => ({
   }
 }))
 
-const aircraftCarrierShape = new SeaVessel('Aircraft Carrier', 'A', 'A', [
-  [0, 0],
-  [0, 1],
-  [0, 2],
-  [0, 3],
-  [1, 1],
-  [1, 2],
-  [1, 3],
-  [1, 4]
-])
+const aircraftCarrierShape = new SeaVessel(
+  'Aircraft Carrier',
+  'A',
+  'A',
+  [
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [1, 1],
+    [1, 2],
+    [1, 3],
+    [1, 4]
+  ],
+  'place Aircraft Carrier in the sea',
+  []
+)
 const aircraftCarrier = Ship.createFromShape(aircraftCarrierShape)
 aircraftCarrier.shape = () => aircraftCarrierShape
 
@@ -228,7 +233,7 @@ describe('DraggedShip integration', () => {
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(true)
 
-      const result = draggedShip.placeCells(2, 3, shipCellGrid)
+      draggedShip.placeCells(2, 3, shipCellGrid)
       //   expect(aircraftCarrier.placeVariant).toHaveBeenCalled()
       //  expect(result).toEqual(aircraftCarrier.cells)
     })
@@ -257,8 +262,7 @@ describe('DraggedShip integration', () => {
 
   describe('place', () => {
     it('should push ship to placedShipsInstance when valid', async () => {
-      const mod = await import('./PlacedShips.js')
-      const { placedShipsInstance } = mod
+      await import('./PlacedShips.js')
       const shipCellGrid = { grid: 'data' }
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(true)
@@ -272,7 +276,7 @@ describe('DraggedShip integration', () => {
 
     it.skip('should return result from placedShipsInstance.push', async () => {
       const mod = await import('./PlacedShips.js')
-      const { placedShipsInstance } = mod
+      const placedShipsInstance = /** @type {any} */ (mod.placedShipsInstance)
       const shipCellGrid = { grid: 'data' }
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(true)
