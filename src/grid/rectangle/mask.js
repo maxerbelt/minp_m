@@ -114,10 +114,6 @@ export class Mask extends RectMaskBase {
    * Get all occupied cells as [x, y] coordinate array
    * @returns {Array<Array<number>>} Array of [x, y] coordinates
    */
-  /**
-   * Get all occupied cells as [x, y] coordinate array
-   * @returns {Array<Array<number>>} Array of [x, y] coordinates
-   */
   get toCoords () {
     return this._coords.bitsToCoordinates().map(a => a.slice(0, 2))
   }
@@ -250,12 +246,6 @@ export class Mask extends RectMaskBase {
    * @param {number} [width=null] - Optional width
    * @returns {Mask} New mask instance
    */
-  /**
-   * Create mask from [r, c] coordinate array (row/column) with optional width
-   * @param {Array<Array<number>>} coords - Array of [r, c] coordinates
-   * @param {number} [width=null] - Optional width
-   * @returns {Mask} New mask instance
-   */
   static fromRCcoords (coords, width = null) {
     return Mask.fromCoords(RectMaskBase.invertCoords(coords), width)
   }
@@ -374,45 +364,9 @@ export class Mask extends RectMaskBase {
     this._blit.blit(src, srcX, srcY, width, height, dstX, dstY, mode)
   }
 
-  /**
-   * Apply blit operation for a single row
-   * @param {bigint} currentBits - Current bits value
-   * @param {bigint} rowBits - Row bits to apply
-   * @param {number} dstStart - Destination start position
-   * @param {number} width - Row width
-   * @param {string} mode - Blit mode
-   * @returns {bigint} Updated bits value
-   * @private
-   */
-  applyBlitOperationForRow (currentBits, rowBits, dstStart, width, mode) {
-    return this._blit.applyRowBlitOperationForBitPosition(
-      currentBits,
-      rowBits,
-      dstStart,
-      width,
-      mode
-    )
-  }
-
   // ============================================================================
   // Flood Fill Utilities
   // ============================================================================
-
-  /**
-   * Find horizontal span boundaries from (x, y)
-   * Returns [leftBound, rightBound] of continuous unset cells
-   * @param {number} x - Starting X coordinate
-   * @param {number} y - Y coordinate
-   * @returns {Array<number>} [leftBound, rightBound]
-   * @private
-   */
-  findSpanBorders (x, y) {
-    let left = x
-    let right = x
-    while (left > 0 && !this.at(left - 1, y)) left--
-    while (right + 1 < this.width && !this.at(right + 1, y)) right++
-    return [left, right]
-  }
 
   // ============================================================================
   // Dimension Manipulation
@@ -435,78 +389,6 @@ export class Mask extends RectMaskBase {
     */
 
   // ============================================================================
-  // Edge Masks & Boundary Detection
-  // ============================================================================
-  expandBorderBits (borderSize, fillValue = 0) {
-    return this.expandBorderUsingBits(this.bits, borderSize, fillValue)
-  }
-  expandBorderUsingBits (bb, borderSize, fillValue = 0) {
-    return this.store.expandToWidthWithXYOffset(
-      this.width,
-      this.height,
-      bb,
-      this.width + 2 * borderSize,
-      borderSize,
-      borderSize,
-      fillValue
-    )
-  }
-  flattenExpandMask (borderSize = 1) {
-    const flatBits = this.store.occupancyLayer(this.bits)
-    const expBits = this.expandBorderUsingBits(flatBits, borderSize, 0)
-
-    return new Mask(
-      this.width + 2 * borderSize,
-      this.height + 2 * borderSize,
-      expBits,
-      null,
-      2
-    )
-  }
-
-  expandBorderMask (borderSize = 1, fillValue = 0) {
-    const newBits = this.expandBorderBits(borderSize, fillValue)
-    return new Mask(
-      this.width + 2 * borderSize,
-      this.height + 2 * borderSize,
-      newBits,
-      null,
-      this.depth
-    )
-  }
-
-  /**
-   * Get edge masks for morph operations
-   * Returns {left, right, top, bottom, notLeft, notRight, notTop, notBottom}
-   * @private
-   */
-  edgeMasks () {
-    const e = this.store.empty
-    let left = e,
-      right = e,
-      top = e,
-      bottom = e
-
-    // top & bottom rows
-    for (let x = 0; x < this.width; x++) {
-      top = this.store.setIdx(top, this.index(x, 0), 1n)
-      bottom = this.store.setIdx(bottom, this.index(x, this.height - 1), 1n)
-    }
-
-    // left & right columns
-    for (let y = 0; y < this.height; y++) {
-      left = this.store.setIdx(left, this.index(0, y), 1n)
-      right = this.store.setIdx(right, this.index(this.width - 1, y), 1n)
-    }
-
-    const notLeft = this.store.invertedBits(left)
-    const notRight = this.store.invertedBits(right)
-    const notTop = this.store.invertedBits(top)
-    const notBottom = this.store.invertedBits(bottom)
-    return { left, right, top, bottom, notRight, notLeft, notTop, notBottom }
-  }
-
-  // ============================================================================
   // Factory Methods
   // ============================================================================
 
@@ -517,7 +399,7 @@ export class Mask extends RectMaskBase {
    * @returns {Mask} New empty mask instance
    */
   static empty (width, height) {
-    return new Mask(width, height, 0n)
+    return new Mask(width, height, 0n, null, 2)
   }
 
   /**
@@ -541,23 +423,12 @@ export class Mask extends RectMaskBase {
   }
 
   /**
-   * Type checking for mask operations
-   * @param {Mask} bb - Mask instance to check
-   * @private
-   */
-  checkType (bb) {
-    if (!(bb instanceof Mask)) {
-      throw new Error('union requires a Mask instance')
-    }
-  }
-
-  /**
    * Assemble color layers into bit arrays
    * @param {Array} colorLayers - Color layer data
    * @param {number} gridWidth - Grid width
    * @param {number} gridHeight - Grid height
    * @param {number} depth - Color depth
-   * @returns {Array<bigint>} Array of assembled bit arrays
+   * @returns {*} Array of assembled bit arrays
    */
   static assembleColorLayersBits (colorLayers, gridWidth, gridHeight, depth) {
     const store = new StoreBig(
@@ -584,6 +455,6 @@ export class Mask extends RectMaskBase {
       gridWidth,
       gridHeight,
       depth
-    ).map(bits => new Mask(gridWidth, gridHeight, bits))
+    ).map(bits => new Mask(gridWidth, gridHeight, bits, null, depth))
   }
 }
