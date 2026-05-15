@@ -195,7 +195,7 @@ export class CellClassManager {
    * @param {HTMLDivElement} cell - DOM element to update
    * @returns {boolean} True if semi state was successfully applied, false if cell was in incompatible state
    */
-  applySemiRevealState (cell) {
+  static applySemiRevealState (cell) {
     if (CellClassManager.hasAny(cell, ['placed', 'miss', 'hit'])) {
       return false
     }
@@ -212,7 +212,7 @@ export class CellClassManager {
    * @param {HTMLDivElement} cell - DOM element to update
    * @returns {boolean} True if hint state was successfully applied, false if cell was in incompatible state
    */
-  applyHintState (cell) {
+  static applyHintState (cell) {
     if (CellClassManager.hasAny(cell, ['placed', 'miss', 'hit', 'semi'])) {
       return false
     }
