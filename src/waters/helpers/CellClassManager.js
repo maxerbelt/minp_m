@@ -404,9 +404,26 @@ export class CellClassManager {
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────
-  // PRIVATE HELPERS - Transient Class Cleanup
-  // ──────────────────────────────────────────────────────────────────
+/**
+   * Gets all weapon-related CSS class names, including weapon tags and cursor tags.
+   * Used for bulk operations on weapon-related classes.
+   *
+   * @returns {string[]} Array of all weapon and cursor class names
+   */
+  static #getAllWeaponRelatedClasses () {
+    return [...this.#weaponTags(), ...this.#cursorTags()]
+  }
+
+  /**
+   * Clears all weapon-related classes from a cell.
+   * Removes both weapon tags and cursor tags.
+   *
+   * @param {HTMLElement} cell - The cell element to clear weapon classes from
+   * @returns {void}
+   */
+  static clearWeaponRelatedClasses (cell) {
+    this.#removeClassesFromCell(cell, this.#getAllWeaponRelatedClasses())
+  }
 
   /**
    * Gets CSS classes to clear during hit cell state reset.
@@ -415,26 +432,29 @@ export class CellClassManager {
    *
    * @returns {string[]} Array of class names to remove from hit cells
    */
-  static #hitCleanupClasses () {
+  static #getTransientClassesForHit () {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this.#weaponTags()]
   }
-
+   *
+   * @param {HTMLElement} cell - The cell element to clear
+   * @returns {void}
+   */
   static clearShadowWeaponClasses (cell) {
-    const shadowWeaponClasses = new Set([
-      ...this.#weaponTags(),
-      ...this.#cursorTags()
-    ])
-    this.#removeClassesFromCell(cell, [...shadowWeaponClasses])
+    this.clearWeaponRelatedClasses(cell)
     this.clearCellClasses(cell, [this.CELL_CLASSES.display])
   }
 
+  /**
+   * Deactivates weapon state on a cell.
+   * If cell has 'contrast' class, clears weapon-related classes and weapon/orientation groups.
+   * Otherwise, removes only the 'active' class.
+   *
+   * @param {HTMLElement} cell - The cell element to deactivate
+   * @returns {void}
+   */
   static deactivateWeapon (cell) {
     if (cell.classList.contains('contrast')) {
-      const shadowWeaponClasses = new Set([
-        ...this.#weaponTags(),
-        ...this.#cursorTags()
-      ])
-      this.#removeClassesFromCell(cell, [...shadowWeaponClasses])
+      this.clearWeaponRelatedClasses(cell)
       this.clearCellClasses(cell, [
         this.CELL_CLASSES.weapon,
         this.CELL_CLASSES.orientation
@@ -444,6 +464,13 @@ export class CellClassManager {
     }
   }
 
+  /**
+   * Deactivates temporary hint state on a cell.
+   * Removes the 'temp-hint' class.
+   *
+   * @param {HTMLElement} cell - The cell element to update
+   * @returns {void}
+   */
   static deactivateTempHint (cell) {
     cell.classList.remove('temp-hint')
   }
@@ -456,12 +483,11 @@ export class CellClassManager {
    * @returns {void}
    */
   static #removeWeaponAndAnimationClasses (cell) {
-    this.#removeClassesFromCell(cell, this.#hitCleanupClasses())
+    this.#removeClassesFromCell(cell, this.#getTransientClassesForHit())
   }
 
   /**
    * Removes cursor-related classes from a cell.
-   * Part of splitting resetHitCellState into semantic concerns.
    * Clears cursor indicators added during targeting/preview.
    *
    * @param {HTMLElement} cell - The cell element to update
@@ -469,18 +495,6 @@ export class CellClassManager {
    */
   static #removeCursorClasses (cell) {
     this.#removeClassesFromCell(cell, this.#cursorTags())
-  }
-
-  /**
-   * Removes weapon-related classes from a cell.
-   * Part of splitting resetHitCellState into semantic concerns.
-   * Clears cursor indicators added during targeting/preview.
-   *
-   * @param {HTMLElement} cell - The cell element to update
-   * @returns {void}
-   */
-  static #removeWeaponClasses (cell) {
-    this.#removeClassesFromCell(cell, this.#weaponTags())
   }
   // ──────────────────────────────────────────────────────────────────
   // PRIVATE HELPERS - State Application (Hit & Sunk)
@@ -548,9 +562,15 @@ export class CellClassManager {
     this.clearWeaponClasses(cell)
   }
 
+  /**
+   * Clears weapon-related classes from a cell.
+   * Alias for clearWeaponRelatedClasses for backward compatibility.
+   *
+   * @param {HTMLElement} cell - The cell element to clear
+   * @returns {void}
+   */
   static clearWeaponClasses (cell) {
-    this.#removeWeaponClasses(cell)
-    this.#removeCursorClasses(cell)
+    this.clearWeaponRelatedClasses(cell)
   }
 
   /**

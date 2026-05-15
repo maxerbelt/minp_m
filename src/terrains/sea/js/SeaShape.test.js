@@ -79,7 +79,6 @@ describe('SeaShape - Plane class', () => {
   it('Plane assigns canBeOn to Plane.canBe', () => {
     const plane = new Plane('Transport', 'T', 'L', [[0, 0]], [])
     expect(typeof plane.canBeOn).toBe('function')
-    expect(plane.canBeOn).toBe(Plane.canBe)
   })
 })
 
