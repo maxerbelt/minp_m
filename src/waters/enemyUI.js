@@ -277,6 +277,21 @@ class EnemyUI extends WatersUI {
   }
 
   /**
+   * Toggles the 'hidden' class on an element.
+   * @param {HTMLElement|null} element - The element to toggle.
+   * @param {boolean} shouldHide - Whether to hide the element.
+   * @private
+   */
+  _toggleElementHidden (element, shouldHide) {
+    if (!element) return
+    if (shouldHide) {
+      element.classList.add('hidden')
+    } else {
+      element.classList.remove('hidden')
+    }
+  }
+
+  /**
    * Enables all buttons.
    * @returns {void}
    */
