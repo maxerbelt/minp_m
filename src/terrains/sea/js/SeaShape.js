@@ -96,7 +96,7 @@ export class Building extends SeaShape {
   }
 
   // Static properties for building placement rules
-  /** @type {Object} Subterrain configuration for buildings */
+  /** @type {SubTerrain} Subterrain configuration for buildings */
   static subterrain = land
   /** @type {Function} Function to check if placement is valid */
   static canBe = land.canBe
@@ -105,10 +105,34 @@ export class Building extends SeaShape {
   /** @type {number} Zone detail level */
   static zoneDetail = land.zoneDetail
 }
+
+/**
+ * Base class for buildings that require specific zone validation.
+ * Extends Building with zone-based placement rules.
+ */
+class ZoneValidatedBuilding extends Building {
+  /** @type {Object} Specific zone for validation (overridden in subclasses) */
+  static zone = null
+
+  /**
+   * Checks if this zone-validated building can be placed on the given subterrain and zone.
+   * @param {SubTerrain} subterrain - The subterrain to check
+   * @param {Object} zone - The zone to check
+   * @returns {boolean} True if placement is valid for the specific zone
+   */
+  static canBe (subterrain, zone) {
+    return subterrain === this.subterrain && zone === this.zone
+  }
+
+  /** @type {Function} Validator function that uses canBe logic for zone validation */
+  static validator = zoneInfo => this.canBe(zoneInfo[0], zoneInfo[1])
+  /** @type {number} Zone detail level for validation */
+  static zoneDetail = 2
+}
 /**
  * Hill fort building - must be surrounded by land, cannot touch sea.
  */
-export class HillFort extends Building {
+export class HillFort extends ZoneValidatedBuilding {
   /**
    * Creates a new hill fort instance.
    * @param {string} description - Description of the hill fort
@@ -126,32 +150,18 @@ export class HillFort extends Building {
       `place ${description} on the highlands`,
       racks
     )
-    this.validator = HillFort.validator
-    this.zoneDetail = HillFort.zoneDetail
     this.notes = [
       `${description} can not touch sea squares; must be surrounded by land squares.`
     ]
   }
 
-  /**
-   * Checks if this hill fort can be placed on the given subterrain and zone.
-   * @param {Object} subterrain - The subterrain to check
-   * @param {Object} zone - The zone to check
-   * @returns {boolean} True if placement is valid (land + inland only)
-   */
-  static canBe (subterrain, zone) {
-    return subterrain === land && zone === inland
-  }
-
-  /** @type {Function} Validator function that uses canBe logic */
-  static validator = zoneInfo => HillFort.canBe(zoneInfo[0], zoneInfo[1])
-  /** @type {number} Zone detail level for validation */
-  static zoneDetail = 2
+  /** @type {Object} Specific zone for hill forts */
+  static zone = inland
 }
 /**
  * Coastal port building - must be on the coast and touching sea squares.
  */
-export class CoastalPort extends Building {
+export class CoastalPort extends ZoneValidatedBuilding {
   /**
    * Creates a new coastal port instance.
    * @param {string} description - Description of the coastal port
@@ -169,25 +179,11 @@ export class CoastalPort extends Building {
       `place ${description} on the coast`,
       racks
     )
-    this.validator = CoastalPort.validator
-    this.zoneDetail = CoastalPort.zoneDetail
     this.notes = [`${description} must be touching sea squares.`]
   }
 
-  /**
-   * Checks if this coastal port can be placed on the given subterrain and zone.
-   * @param {Object} subterrain - The subterrain to check
-   * @param {Object} zone - The zone to check
-   * @returns {boolean} True if placement is valid (land + coast only)
-   */
-  static canBe (subterrain, zone) {
-    return subterrain === land && zone === coast
-  }
-
-  /** @type {Function} Validator function that uses canBe logic */
-  static validator = zoneInfo => CoastalPort.canBe(zoneInfo[0], zoneInfo[1])
-  /** @type {number} Zone detail level for validation */
-  static zoneDetail = 2
+  /** @type {Object} Specific zone for coastal ports */
+  static zone = coast
 }
 /**
  * Plane/aircraft shape class for aerial units.
@@ -315,7 +311,7 @@ export class SeaVessel extends SeaShape {
   }
 
   // Static properties for sea vessel placement rules
-  /** @type {Object} Subterrain configuration for sea vessels */
+  /** @type {SubTerrain} Subterrain configuration for sea vessels */
   static subterrain = sea
   /** @type {Function} Function to check if placement is valid */
   static canBe = sea.canBe
@@ -324,10 +320,34 @@ export class SeaVessel extends SeaShape {
   /** @type {number} Zone detail level */
   static zoneDetail = sea.zoneDetail
 }
+
+/**
+ * Base class for sea vessels that require specific zone validation.
+ * Extends SeaVessel with zone-based placement rules.
+ */
+class ZoneValidatedSeaVessel extends SeaVessel {
+  /** @type {Object} Specific zone for validation (overridden in subclasses) */
+  static zone = null
+
+  /**
+   * Checks if this zone-validated sea vessel can be placed on the given subterrain and zone.
+   * @param {SubTerrain} subterrain - The subterrain to check
+   * @param {Object} zone - The zone to check
+   * @returns {boolean} True if placement is valid for the specific zone
+   */
+  static canBe (subterrain, zone) {
+    return subterrain === this.subterrain && zone === this.zone
+  }
+
+  /** @type {Function} Validator function that uses canBe logic for zone validation */
+  static validator = zoneInfo => this.canBe(zoneInfo[0], zoneInfo[1])
+  /** @type {number} Zone detail level for validation */
+  static zoneDetail = 2
+}
 /**
  * Deep sea vessel - must be surrounded by sea squares, cannot touch land.
  */
-export class DeepSeaVessel extends SeaVessel {
+export class DeepSeaVessel extends ZoneValidatedSeaVessel {
   /**
    * Creates a new deep sea vessel instance.
    * @param {string} description - Description of the deep sea vessel
@@ -345,32 +365,18 @@ export class DeepSeaVessel extends SeaVessel {
       `place ${description} in the deep sea`,
       racks
     )
-    this.validator = DeepSeaVessel.validator
-    this.zoneDetail = DeepSeaVessel.zoneDetail
     this.notes = [
       `${description} can not touch land squares; must be surrounded by sea squares.`
     ]
   }
 
-  /**
-   * Checks if this deep sea vessel can be placed on the given subterrain and zone.
-   * @param {Object} subterrain - The subterrain to check
-   * @param {Object} zone - The zone to check
-   * @returns {boolean} True if placement is valid (sea + deep only)
-   */
-  static canBe (subterrain, zone) {
-    return subterrain === sea && zone === deep
-  }
-
-  /** @type {Function} Validator function that uses canBe logic */
-  static validator = zoneInfo => DeepSeaVessel.canBe(zoneInfo[0], zoneInfo[1])
-  /** @type {number} Zone detail level for validation */
-  static zoneDetail = 2
+  /** @type {Object} Specific zone for deep sea vessels */
+  static zone = deep
 }
 /**
  * Shallow dock vessel - must be touching land squares.
  */
-export class ShallowDock extends SeaVessel {
+export class ShallowDock extends ZoneValidatedSeaVessel {
   /**
    * Creates a new shallow dock instance.
    * @param {string} description - Description of the shallow dock
@@ -388,23 +394,9 @@ export class ShallowDock extends SeaVessel {
       `place ${description} in the shallow sea`,
       racks
     )
-    this.validator = ShallowDock.validator
-    this.zoneDetail = ShallowDock.zoneDetail
     this.notes = [`${description} must be touching land squares.`]
   }
 
-  /**
-   * Checks if this shallow dock can be placed on the given subterrain and zone.
-   * @param {Object} subterrain - The subterrain to check
-   * @param {Object} zone - The zone to check
-   * @returns {boolean} True if placement is valid (sea + littoral only)
-   */
-  static canBe (subterrain, zone) {
-    return subterrain === sea && zone === littoral
-  }
-
-  /** @type {Function} Validator function that uses canBe logic */
-  static validator = zoneInfo => ShallowDock.canBe(zoneInfo[0], zoneInfo[1])
-  /** @type {number} Zone detail level for validation */
-  static zoneDetail = 2
+  /** @type {Object} Specific zone for shallow docks */
+  static zone = littoral
 }
