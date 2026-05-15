@@ -510,7 +510,6 @@ export class Waters {
 
   /**
    * Selects a loaded weapon system by cell key values.
-   * @param {HTMLElement} cell - Cell element used for selection
    * @param {Array<string>} keyIds - Candidate key identifiers
    * @param {number} hintR - Hint row coordinate
    * @param {number} hintC - Hint column coordinate
@@ -519,7 +518,7 @@ export class Waters {
    * @returns {WeaponSelection} Weapon selection payload
    * @private
    */
-  selectWeaponFromCell (cell, keyIds, hintR, hintC, random, viewModel) {
+  selectWeaponFromCell (keyIds, hintR, hintC, random, viewModel) {
     const availableKeys = this.determineAvailableSelectionKeys(
       keyIds,
       hintR,
@@ -1224,14 +1223,7 @@ export class Waters {
       return this.createDefaultWeaponSelection(hintR, hintC)
     }
 
-    return this.selectWeaponFromCell(
-      cell,
-      keys,
-      hintR,
-      hintC,
-      random,
-      viewModel
-    )
+    return this.selectWeaponFromCell(keys, hintR, hintC, random, viewModel)
   }
 
   hasTargettedRandomWeaponForWps (autoSelectWarning = !bh.seekingMode) {
@@ -1245,7 +1237,7 @@ export class Waters {
       this.displayAutoSelectWarning(weaponName, currentShip)
     }
 
-    this.loadOut.launch = (coords, weapon, wps) => {
+    this.loadOut.launch = (coords, _weapon, wps) => {
       return this.launchWeapon(wps, coords)
     }
     return true
@@ -1335,19 +1327,44 @@ export class Waters {
     )
       return
 
+    this._removeAttachedAimListeners(oppo)
+    this._addAttachedAimListeners(oppo)
+  }
+
+  /**
+   * Removes all previously attached aim listeners from opponent cells.
+   * @private
+   * @param {Object} oppo - The opponent instance.
+   */
+  _removeAttachedAimListeners (oppo) {
     const armedShips = this.loadOut.ships
     for (const ship of armedShips) {
       const cells = oppo.shipCells(ship.id)
       const surround = oppo.UI.surroundCellElement(cells)
       for (const cell of surround) {
-        if (!cell.dataset.listen) {
-          const [r, c] = coordsFromCell(cell)
-          cell.addEventListener('click', this.onClickOppoCell.bind(this, r, c))
-          cell.dataset.listen = true
-          //     const w = ship.getPrimaryWeapon()
-          //    const cursor = w?.launchCursor
-          //    if (cursor) cell.classList.add(cursor)
+        if (cell._clickOppoHandler) {
+          cell.removeEventListener('click', cell._clickOppoHandler)
+          delete cell._clickOppoHandler
         }
+      }
+    }
+  }
+
+  /**
+   * Adds click listeners to opponent surrounding cells.
+   * @private
+   * @param {Object} oppo - The opponent instance.
+   */
+  _addAttachedAimListeners (oppo) {
+    const armedShips = this.loadOut.ships
+    for (const ship of armedShips) {
+      const cells = oppo.shipCells(ship.id)
+      const surround = oppo.UI.surroundCellElement(cells)
+      for (const cell of surround) {
+        const [r, c] = coordsFromCell(cell)
+        const handler = this.onClickOppoCell.bind(this, r, c)
+        cell.addEventListener('click', handler)
+        cell._clickOppoHandler = handler
       }
     }
   }
