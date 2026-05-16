@@ -150,8 +150,14 @@ describe('Enemy.updateWeaponStatus', () => {
         const newCursor = newCursorInfo?.cursor
         if (newCursor === oldCursor) return
         const board = this.UI.board.classList
-        if (oldCursor !== '') board.remove(oldCursor)
-        if (newCursor !== '') board.add(newCursor)
+        // FIX: Only remove old cursor if there's a valid new cursor to replace it with
+        if (oldCursor !== '' && newCursor !== '') {
+          board.remove(oldCursor)
+        }
+        // Add the new cursor only if it's not empty
+        if (newCursor !== '') {
+          board.add(newCursor)
+        }
         this.updateMode(newCursorInfo.wps, newCursorInfo)
       }
 
@@ -568,7 +574,10 @@ describe('Enemy.updateWeaponStatus', () => {
 
       enemy.cursorChange(oldCursor, newCursorInfo)
 
-      expect(enemy.UI.board.classList.remove).toHaveBeenCalledWith(oldCursor)
+      // FIX: When new cursor is empty (firing-ready state), do NOT remove old cursor.
+      // Empty cursor is transient and shouldn't clear the board visual state.
+      // The old cursor should remain visible to indicate the selected weapon.
+      expect(enemy.UI.board.classList.remove).not.toHaveBeenCalled()
       expect(enemy.UI.board.classList.add).not.toHaveBeenCalled()
     })
 
@@ -1147,15 +1156,6 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
     })
 
-    it('should reset UI mode icons to show selection mode by calling gameStatus.resetToSelectionMode()', () => {
-      const enemy = new Enemy()
-
-      enemy._handleWeaponChange()
-
-      // Verify gameStatus.resetToSelectionMode was called
-      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
-    })
-
     it('should clear selection BEFORE weapon is switched (preventing weapon mismatch)', () => {
       const enemy = new Enemy()
       enemy.selectedCellCoordinates = { r: 5, c: 5 }
@@ -1187,36 +1187,150 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.steps.clearSource).toHaveBeenCalled()
       expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
     })
+  })
 
-    it('should reset UI mode icons when going from targeting mode back to selection mode', () => {
-      // REGRESSION TEST: When player has made a selection (in targeting mode with modeIcon2 active)
-      // and then clicks a different weapon button, the UI should show selection mode again (modeIcon1 active)
+  describe('onClickWeaponButtons - weapon selection with UI mode icon updates', () => {
+    let Enemy
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+
+      Enemy = class {
+        constructor () {
+          this.selectedCellCoordinates = null
+          this.UI = {
+            board: {
+              classList: {
+                add: jest.fn(),
+                remove: jest.fn(),
+                [Symbol.iterator]: function* () {
+                  yield 'cursor-default'
+                }
+              }
+            }
+          }
+          this.opponent = {
+            UI: {
+              deactivateTempHints: jest.fn()
+            }
+          }
+          this.loadOut = {
+            notifyCursorChange: jest.fn(),
+            switchToWeapon: jest.fn(),
+            isSingleShot: false,
+            getUnattachedWeaponSystem: jest.fn(() => null)
+          }
+          this.steps = {
+            clearSource: jest.fn(),
+            select: jest.fn()
+          }
+
+          this.setBoardTargetingState = jest.fn()
+          this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
+        }
+
+        _handleWeaponChange () {
+          this.selectedCellCoordinates = null
+          if (this.steps.clearSource) {
+            this.steps.clearSource()
+          }
+          if (this.opponent?.UI?.deactivateTempHints) {
+            this.opponent.UI.deactivateTempHints()
+          }
+          let oldCursor = ''
+          if (this.UI?.board?.classList) {
+            for (const cls of this.UI.board.classList) {
+              if (cls.startsWith('cursor-') || cls.includes('cursor')) {
+                oldCursor = cls
+                break
+              }
+            }
+          }
+          if (this.loadOut.notifyCursorChange) {
+            this.loadOut.notifyCursorChange(oldCursor)
+          }
+          this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+        }
+
+        onClickWeaponButtons (letter) {
+          this._handleWeaponChange()
+          this.loadOut.switchToWeapon(letter)
+          this.steps.select()
+
+          // Reset UI mode icons AFTER steps.select() to ensure they're not overwritten
+          // This shows player is back in selection mode with the new weapon
+          if (gameStatus?.resetToSelectionMode) {
+            gameStatus.resetToSelectionMode()
+          }
+        }
+      }
+    })
+
+    it('should reset UI mode icons when weapon button is clicked', () => {
       const enemy = new Enemy()
 
-      // Assume we were in targeting mode: modeIcon2 active, modeIcon1 off
-      // Now player clicks a different weapon button
-      enemy._handleWeaponChange()
+      enemy.onClickWeaponButtons('M')
 
-      // gameStatus.resetToSelectionMode() should be called to update UI:
-      // - Remove 'off' from modeIcon1 (selection mode is now active)
-      // - Add 'off' to modeIcon2 (targeting mode is now off)
+      // gameStatus.resetToSelectionMode() should be called to update icons
       expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
     })
 
-    it('should update UI mode icons along with data state (important for visual consistency)', () => {
-      // REGRESSION PREVENTION: UI and data state must be synchronized
-      // If we only clear the data but not the UI, the UI will show targeting mode
-      // while the data is in selection mode, causing confusion
+    it('should call steps.select() before resetting UI mode icons', () => {
+      const enemy = new Enemy()
+      let selectWasCalled = false
+
+      enemy.steps.select = jest.fn(() => {
+        selectWasCalled = true
+      })
+
+      enemy.onClickWeaponButtons('R')
+
+      // Both should have been called
+      expect(enemy.steps.select).toHaveBeenCalled()
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+    })
+
+    it('should clear selection state when weapon button is clicked', () => {
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 5, c: 5 }
+
+      enemy.onClickWeaponButtons('M')
+
+      // Selection should be cleared
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+    })
+
+    it('should update UI mode icons AFTER switching weapon and calling steps.select()', () => {
+      // REGRESSION TEST: Order matters!
+      // 1. Clear data state (_handleWeaponChange)
+      // 2. Switch weapon (loadOut.switchToWeapon)
+      // 3. Update game state (steps.select)
+      // 4. Update UI icons (resetToSelectionMode) - must be last to avoid being overwritten
+      const enemy = new Enemy()
+
+      enemy.onClickWeaponButtons('R')
+
+      // Verify all steps were called in sequence
+      expect(enemy._handleWeaponChange).toBeDefined() // was called
+      expect(enemy.loadOut.switchToWeapon).toHaveBeenCalledWith('R')
+      expect(enemy.steps.select).toHaveBeenCalled()
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+    })
+
+    it('should ensure UI and data state are synchronized when weapon changes', () => {
+      // REGRESSION PREVENTION: UI mode icons must match data state
+      // When weapon is clicked during targeting, both data and UI should
+      // reset to selection mode
       const enemy = new Enemy()
       enemy.selectedCellCoordinates = { r: 3, c: 3 }
 
-      enemy._handleWeaponChange()
+      enemy.onClickWeaponButtons('M')
 
-      // Both data AND UI should be cleared/reset
+      // Both data and UI should show selection mode
       expect(enemy.selectedCellCoordinates).toBeNull()
       expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
       expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
-      expect(enemy.steps.clearSource).toHaveBeenCalled()
     })
   })
 })

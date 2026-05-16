@@ -232,15 +232,36 @@ class Enemy extends Waters {
 
   /**
    * Handles cursor changes on the board.
+   * CRITICAL FIX: When newCursor is empty (firing ready state), do NOT remove the old cursor.
+   * Empty cursor is a transient state that occurs when weapon coordinates are fully selected.
+   * The board cursor should remain visible to show the player what weapon is selected,
+   * even when the weapon is in firing-ready state.
+   *
+   * REGRESSION PREVENTION:
+   * Previous bug: When firing a weapon in hide-seek mode, cursorChange was called with
+   * newCursor='' (empty) by addSelectedCoordinates(), causing the old weapon cursor to be
+   * removed from the board.
+   *
    * @param {string} oldCursor - The previous cursor class.
    * @param {CursorInfo} newCursorInfo - Information about the new cursor.
    */
   cursorChange (oldCursor, newCursorInfo) {
     const newCursor = newCursorInfo?.cursor
     if (newCursor === oldCursor) return
+
     const board = this.UI.board.classList
-    if (oldCursor !== '') board.remove(oldCursor)
-    if (newCursor !== '') board.add(newCursor)
+
+    // Only remove old cursor if there's a valid new cursor to replace it with
+    // Do NOT remove if newCursor is empty - that's a transient firing-ready state
+    if (oldCursor !== '' && newCursor !== '') {
+      board.remove(oldCursor)
+    }
+
+    // Add the new cursor only if it's not empty
+    if (newCursor !== '') {
+      board.add(newCursor)
+    }
+
     this.updateMode(newCursorInfo.wps, newCursorInfo)
   }
 
@@ -863,13 +884,6 @@ class Enemy extends Waters {
       this.opponent.UI.deactivateTempHints()
     }
 
-    // Reset UI mode icons to show we're back in selection mode
-    // (not targeting mode). This removes 'off' class from modeIcon1
-    // and adds 'off' class to modeIcon2 to indicate selection mode is active.
-    if (gameStatus?.resetToSelectionMode) {
-      gameStatus.resetToSelectionMode()
-    }
-
     // Get current cursor from board and prepare to update
     let oldCursor = ''
     if (this.UI?.board?.classList) {
@@ -908,6 +922,12 @@ class Enemy extends Waters {
     this._handleWeaponChange()
     this.loadOut.switchToWeapon(letter)
     this.steps.select()
+
+    // Reset UI mode icons AFTER steps.select() to ensure they're not overwritten
+    // This shows player is back in selection mode with the new weapon
+    if (gameStatus?.resetToSelectionMode) {
+      gameStatus.resetToSelectionMode()
+    }
   }
 
   /**
