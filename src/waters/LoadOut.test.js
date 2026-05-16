@@ -13,11 +13,16 @@ if (globalThis.structuredClone == null) {
 }
 
 import { LoadOut } from './LoadOut.js'
+import { bh } from '../terrains/all/js/bh.js'
+import { terrains } from '../terrains/all/js/terrains.js'
 
 describe('LoadOut', () => {
   let loadOut, mockWeapon, mockShip, mockViewModel, mockSteps
 
   beforeEach(() => {
+    // Initialize bh state for tests
+    bh.seekingMode = false
+    terrains.current = { hasAttachedWeapons: false }
     mockWeapon = {
       letter: 'A',
       points: 2,
@@ -163,6 +168,107 @@ describe('LoadOut', () => {
     loadOut.onDestroyOneOfMany(mockWeapon, ['affected'], { id: 1 })
     expect(loadOut.onDestroy).toHaveBeenCalledWith(mockWeapon, ['affected'], {
       id: 1
+    })
+  })
+
+  describe('isArmed - Hide & Seek weapon selection fix (regression tests)', () => {
+    beforeEach(() => {
+      // Reset bh state for each test
+      bh.seekingMode = false
+      terrains.current = { hasAttachedWeapons: false }
+    })
+
+    it('isArmed returns false in hide mode when weapon not selected', () => {
+      bh.seekingMode = false
+      loadOut.selectedWeapon = null
+      loadOut.selectedCoordinates = [
+        [1, 2],
+        [3, 4]
+      ]
+      expect(loadOut.isArmed()).toBe(false)
+    })
+
+    it('isArmed returns false in hide mode with insufficient selection', () => {
+      bh.seekingMode = false
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 3 } }
+      loadOut.selectedCoordinates = [[1, 2]]
+      expect(loadOut.isArmed()).toBe(false)
+    })
+
+    it('isArmed returns true in hide mode with weapon selected and sufficient selection', () => {
+      bh.seekingMode = false
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 2 } }
+      loadOut.selectedCoordinates = [
+        [1, 2],
+        [3, 4]
+      ]
+      expect(loadOut.isArmed()).toBe(true)
+    })
+
+    it('isArmed returns false in seeking mode when no terrain with attached weapons', () => {
+      bh.seekingMode = true
+      terrains.current = { hasAttachedWeapons: false }
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 0 } }
+      expect(loadOut.isArmed()).toBe(false)
+    })
+
+    it('isArmed returns false in seeking mode with attached weapons but no weapon selected', () => {
+      bh.seekingMode = true
+      terrains.current = { hasAttachedWeapons: true }
+      loadOut.selectedWeapon = null
+      expect(loadOut.isArmed()).toBe(false)
+    })
+
+    it('isArmed returns true in seeking mode with attached weapons and weapon selected (FIX: allows attached weapons in seeking)', () => {
+      bh.seekingMode = true
+      terrains.current = { hasAttachedWeapons: true }
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 0 } }
+      // Note: no need for selectedCoordinates in seeking mode with attached weapons
+      expect(loadOut.isArmed()).toBe(true)
+    })
+
+    it('isArmed respects weapon selection for firing in seeking mode with attached weapons', () => {
+      bh.seekingMode = true
+      terrains.current = { hasAttachedWeapons: true }
+
+      // Select a weapon
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 0 } }
+      expect(loadOut.isArmed()).toBe(true)
+
+      // Clear weapon selection
+      loadOut.selectedWeapon = null
+      expect(loadOut.isArmed()).toBe(false)
+
+      // Select again
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 0 } }
+      expect(loadOut.isArmed()).toBe(true)
+    })
+
+    it('isArmed reverts to hide mode logic when terrain lacks attached weapons', () => {
+      bh.seekingMode = true
+      terrains.current = { hasAttachedWeapons: false }
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 0 } }
+      loadOut.selectedCoordinates = []
+
+      // Should return false because terrain doesn't have attached weapons
+      // and we're not in hide mode
+      expect(loadOut.isArmed()).toBe(false)
+    })
+
+    it('isArmed allows transition from hide to seeking mode with same weapon state', () => {
+      // In hide mode: requires sufficient selection
+      bh.seekingMode = false
+      terrains.current = { hasAttachedWeapons: true }
+      loadOut.selectedWeapon = { weapon: { postSelectCursor: 2 } }
+      loadOut.selectedCoordinates = [
+        [1, 2],
+        [3, 4]
+      ]
+      expect(loadOut.isArmed()).toBe(true)
+
+      // Switch to seeking mode: weapon selected is sufficient
+      bh.seekingMode = true
+      expect(loadOut.isArmed()).toBe(true)
     })
   })
 })
