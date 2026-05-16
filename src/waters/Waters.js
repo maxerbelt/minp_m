@@ -311,6 +311,16 @@ export class Waters {
   }
 
   /**
+   * Displays all ships on the board in their current placed positions.
+   * Reveals ship cells for visual representation without modifying ship state.
+   */
+  resetShipCells () {
+    if (this.ships && this.UI?.revealShips) {
+      this.UI.revealShips(this.ships)
+    }
+  }
+
+  /**
    * Loads ships for edit mode from map example or auto-places.
    * @param {Object} [map] - The map to load from
    */
@@ -1604,10 +1614,10 @@ export class Waters {
    * Consolidates ship filtering operations into unified helpers.
    * CONSOLIDATED: reduces duplication in ship selection patterns.
    */
-  
+
   /**
    * Gets all ships that are sunk.
-   * 
+   *
    * @returns {Ship[]} Array of sunk ships
    */
   shipsSunk () {
@@ -1616,7 +1626,7 @@ export class Waters {
 
   /**
    * Gets all ships that are NOT sunk.
-   * 
+   *
    * @returns {Ship[]} Array of unsunk ships
    */
   shipsUnsunk () {
@@ -1625,7 +1635,7 @@ export class Waters {
 
   /**
    * Gets all unique unsunk ship shapes.
-   * 
+   *
    * @returns {Set<Shape>} Unique shapes of unsunk ships
    */
   shapesUnsunk () {
@@ -1634,7 +1644,7 @@ export class Waters {
 
   /**
    * Gets unsunk ship shapes that can be placed on subterrain in zone.
-   * 
+   *
    * @param {Object} subterrain - The subterrain type
    * @param {Object} zone - The zone constraints
    * @returns {Shape[]} Shapes that satisfy constraints
@@ -1645,7 +1655,7 @@ export class Waters {
 
   /**
    * Gets armed ship cells (cells with ammo > 0).
-   * 
+   *
    * @returns {HTMLElement[]} Array of armed cell elements
    */
   armedCells () {
@@ -1654,7 +1664,7 @@ export class Waters {
 
   /**
    * Gets armed ship cells for a specific weapon letter.
-   * 
+   *
    * @param {string} letter - Weapon letter identifier
    * @returns {HTMLElement[]} Array of armed cells with weapon letter
    */
@@ -1666,7 +1676,7 @@ export class Waters {
 
   /**
    * Gets all cells on the game board.
-   * 
+   *
    * @returns {HTMLElement[]} Array of board cell elements
    */
   cellList () {
@@ -1675,7 +1685,7 @@ export class Waters {
 
   /**
    * Gets direct children elements of board (cell references).
-   * 
+   *
    * @returns {HTMLCollection} Collection of board cell children
    */
   cellsOnBoard () {
@@ -1684,7 +1694,7 @@ export class Waters {
 
   /**
    * Gets all cells on board belonging to a specific ship.
-   * 
+   *
    * @param {number} id - Ship ID
    * @returns {HTMLElement[]} Array of ship's cells
    */
@@ -1939,7 +1949,7 @@ export class Waters {
    * Builds message for firing results based on hit/miss/sunk counts.
    * UNIFIED: single point for all result message construction.
    * Routes to appropriate display method based on result composition.
-   * 
+   *
    * @param {Object} weapon - The weapon used
    * @param {number} hits - Number of hits
    * @param {Array} sunks - Array of sunk ship letters
@@ -1977,7 +1987,7 @@ export class Waters {
   /**
    * Builds miss message accounting for reveals and weapon type.
    * CONSOLIDATED: unified miss message construction.
-   * 
+   *
    * @param {Object} weapon - The weapon that missed
    * @param {number} [reveals] - Number of reveals
    * @returns {string} Miss message
@@ -2006,7 +2016,7 @@ export class Waters {
   /**
    * Displays a firing result message.
    * UNIFIED: single entry point for all result display.
-   * 
+   *
    * @param {Object} weapon - The weapon used
    * @param {number} hits - Number of hits
    * @param {Array} sunks - Array of sunk ship letters
@@ -2015,7 +2025,13 @@ export class Waters {
    * @private
    */
   _displayResult (weapon, hits, sunks, reveals = 0, messageInfo = '') {
-    const message = this._buildResultMessage(weapon, hits, sunks, reveals, messageInfo)
+    const message = this._buildResultMessage(
+      weapon,
+      hits,
+      sunks,
+      reveals,
+      messageInfo
+    )
     if (message) {
       this.displayInfo(message)
     }
@@ -2087,7 +2103,7 @@ export class Waters {
    * Updates firing result display based on hits and sunk ships.
    * CONSOLIDATED: unified result handling with single routing logic.
    * Delegates to _displayResult for all message formatting.
-   * 
+   *
    * @param {Object} weapon - The weapon used
    * @param {number} hits - Number of hits
    * @param {number} dtaps - Double tap count (unused in display)
@@ -2102,7 +2118,7 @@ export class Waters {
     }
 
     // Convert string sunk to array for unified handling
-    const sunkArray = Array.isArray(sunks) ? sunks : (sunks ? [sunks] : [])
+    const sunkArray = Array.isArray(sunks) ? sunks : sunks ? [sunks] : []
     this._displayResult(weapon, hits, sunkArray, reveals, messageInfo)
   }
 

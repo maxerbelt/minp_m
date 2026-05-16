@@ -54,9 +54,25 @@ jest.unstable_mockModule('../selection/dragndrop.js', () => ({
 describe('ScoreUI', () => {
   let scoreUI
   let mockElements
+  let bh
 
   beforeEach(async () => {
     jest.clearAllMocks()
+
+    // Re-import to get fresh mock instances after clearing
+    const bhModule = await import('../terrains/all/js/bh.js')
+    bh = bhModule.bh
+
+    // Restore the mocks to their expected state after jest.clearAllMocks()
+    bh.map.subterrainTrackers.setupZoneInfo.mockReturnValue([])
+    bh.map.subterrainTrackers.displayDisplacedArea.mockImplementation(
+      (map, callback) => {
+        callback(
+          { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
+          1000
+        )
+      }
+    )
 
     // import the class after mocks so it uses our fake modules
     const module = await import('./ScoreUI.js')
@@ -327,19 +343,13 @@ describe('ScoreUI', () => {
           expect(scoreUI.zone.innerHTML).toBe('')
         })
 
-        it('should call setupZoneInfo on subterrain trackers', async () => {
-          // pull in the mocked bh module to inspect the spy
-          const bhModule = await import('../terrains/all/js/bh.js')
-          const { bh } = bhModule
+        it('should call setupZoneInfo on subterrain trackers', () => {
           scoreUI.setupZoneInfo()
           expect(bh.map.subterrainTrackers.setupZoneInfo).toHaveBeenCalled()
         })
 
-        it('should set zoneSync to result', async () => {
+        it('should set zoneSync to result', () => {
           const mockResult = [{ zone: 1 }, { zone: 2 }]
-          // get the mocked bh module instead of terrain.js
-          const bhModule = await import('../terrains/all/js/bh.js')
-          const { bh } = bhModule
           bh.map.subterrainTrackers.setupZoneInfo.mockReturnValue(mockResult)
           scoreUI.setupZoneInfo()
           expect(scoreUI.zoneSync).toEqual(mockResult)

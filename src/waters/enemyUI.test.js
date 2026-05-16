@@ -4,10 +4,9 @@
 
 /* eslint-env jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
-import { EnemyUI } from './enemyUI.js'
 
 // Mock the parent WatersUI class to avoid dependencies
-jest.mock('./WatersUI.js', () => {
+jest.unstable_mockModule('./WatersUI.js', () => {
   return {
     WatersUI: class {
       constructor (waterType, displayName) {
@@ -23,7 +22,7 @@ jest.mock('./WatersUI.js', () => {
 })
 
 // Mock gameStatus
-jest.mock('./StatusUI.js', () => {
+jest.unstable_mockModule('./StatusUI.js', () => {
   return {
     gameStatus: {
       showMode: jest.fn(),
@@ -33,25 +32,28 @@ jest.mock('./StatusUI.js', () => {
 })
 
 // Mock bh
-jest.mock('../terrains/all/js/bh.js', () => {
+jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
   return {
     bh: {}
   }
 })
 
 // Mock ShipCellDisplayer
-jest.mock('./helpers/ShipCellDisplayer.js', () => {
+jest.unstable_mockModule('./helpers/ShipCellDisplayer.js', () => {
   return {
     ShipCellDisplayer: class {}
   }
 })
 
 // Mock gtag
-jest.mock('../navbar/gtag.js', () => {
+jest.unstable_mockModule('../navbar/gtag.js', () => {
   return {
     trackLevelEnd: jest.fn()
   }
 })
+
+// Now import after mocks are set up
+import { EnemyUI } from './enemyUI.js'
 
 describe('EnemyUI', () => {
   beforeEach(() => {
