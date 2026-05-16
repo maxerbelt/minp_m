@@ -268,6 +268,7 @@ class EnemyUI extends WatersUI {
   _setButtonsProperty (buttonKeys, property, value) {
     buttonKeys.forEach(key => {
       const button = this.buttons[key]
+      if (!button) return
       if (property === 'hidden') {
         this._toggleElementHidden(button, value)
       } else if (property === 'disabled') {

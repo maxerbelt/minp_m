@@ -76,18 +76,6 @@ class Enemy extends Waters {
     /** @type {boolean} Indicates this is an enemy waters instance. */
     this.enemyWaters = true
 
-    /** @type {string|null} Previous cursor class for board. */
-    this._oldCursor = null
-
-    /** @type {number|null} Previous cursor index for weapon status. */
-    this._oldCursorIdx = null
-
-    /** @type {boolean|null} Previous attached weapon state. */
-    this._oldAttachedState = null
-
-    /** @type {string|null} Previous weapon letter. */
-    this._oldWeaponLetter = null
-
     this._initializeSteps()
   }
 
@@ -625,109 +613,22 @@ class Enemy extends Waters {
 
   /**
    * Updates the weapon status display.
-   * @param {*} rack - The weapon rack.
-   * @param {CursorInfo} cursorInfo - Cursor information.
+   * Displays the current weapon name, ammo count, and mode icons in game status.
+   * @param {*} _rack - The weapon rack (unused, uses current weapon system)
+   * @param {Object} _cursorInfo - Cursor information (unused)
    */
-  updateWeaponStatus (rack, cursorInfo) {
-    const coordLength = this.loadOut.selectedCoordinates.length
-    const weaponSystem =
-      cursorInfo?.wps || this.loadOut.getCurrentWeaponSystem()
+  updateWeaponStatus (_rack, _cursorInfo) {
+    const weaponSystem = this.loadOut.getCurrentWeaponSystem()
     const weapon = weaponSystem?.weapon
-    const weaponLetter = weapon?.letter || ''
-    const hasUnattached = this._hasUnattachedForCurrentWeapon()
-    const cursorIndex = this._normalizeCursorIndex(
-      cursorInfo?.idx,
-      weapon?.cursors?.length,
-      coordLength
-    )
 
-    if (
-      this._shouldRefreshWeaponStatus(weaponLetter, coordLength, hasUnattached)
-    ) {
-      this._oldWeaponLetter = weaponLetter
-      this._oldCursorIdx = coordLength
-      this._oldAttachedState = hasUnattached
-      this._updateCursorAndAmmo(
-        rack,
-        cursorInfo,
+    if (weapon) {
+      gameStatus.displayAmmoStatus(
         weaponSystem,
-        cursorIndex,
-        hasUnattached
+        bh.maps,
+        this.loadOut.selectedCoordinates.length,
+        null,
+        this._hasUnattachedForCurrentWeapon?.()
       )
-    } else {
-      gameStatus.displayAmmo(weaponSystem)
-    }
-  }
-
-  /**
-   * Normalizes the cursor index for the current weapon.
-   * @private
-   * @param {number|undefined} requestedIdx
-   * @param {number|undefined} cursorCount
-   * @param {number} coordLength
-   * @returns {number}
-   */
-  _normalizeCursorIndex (requestedIdx, cursorCount, coordLength) {
-    const maxCursorIndex = Math.max((cursorCount || 1) - 1, 0)
-    const initialIdx = requestedIdx ?? coordLength
-    return Math.min(maxCursorIndex, initialIdx)
-  }
-
-  /**
-   * Determines whether the weapon status display should refresh.
-   * @private
-   * @param {string} weaponLetter
-   * @param {number} coordLength
-   * @param {boolean} hasUnattached
-   * @returns {boolean}
-   */
-  _shouldRefreshWeaponStatus (weaponLetter, coordLength, hasUnattached) {
-    return (
-      weaponLetter !== this._oldWeaponLetter ||
-      (weaponLetter !== '-' && coordLength !== this._oldCursorIdx) ||
-      hasUnattached !== (this._oldAttachedState || false)
-    )
-  }
-
-  /**
-   * Updates the cursor and ammo display for the current weapon state.
-   * @private
-   * @param {*} rack
-   * @param {CursorInfo} cursorInfo
-   * @param {*} weaponSystem
-   * @param {number} cursorIndex
-   * @param {boolean} hasUnattached
-   */
-  _updateCursorAndAmmo (
-    rack,
-    cursorInfo,
-    weaponSystem,
-    cursorIndex,
-    hasUnattached
-  ) {
-    const newCursor =
-      weaponSystem?.weapon?.cursors?.[cursorIndex] || cursorInfo?.cursor || ''
-    this.updateCursor(newCursor)
-    gameStatus.displayAmmoStatus(
-      weaponSystem,
-      bh.maps,
-      this.loadOut.selectedCoordinates.length,
-      rack,
-      hasUnattached
-    )
-  }
-
-  /**
-   * Updates the cursor on the board.
-   * @param {string} newCursor - The new cursor class.
-   */
-  updateCursor (newCursor) {
-    const oldCursor = this._oldCursor || ''
-    if (newCursor !== oldCursor) {
-      this._oldCursor = newCursor
-      const board = this.UI.board.classList
-      if (oldCursor !== '') board.remove(oldCursor)
-      if (newCursor !== '') board.add(newCursor)
     }
   }
 
@@ -790,8 +691,6 @@ class Enemy extends Waters {
     this.score.reset()
     this.resetMap()
     this.UI.playMode()
-    this._oldCursor = null
-    this._oldWeaponLetter = null
     this.loadOut.onOutOfAllAmmo = () => {
       if (this.UI?.weaponBtn) {
         this.UI.weaponBtn.disabled = true

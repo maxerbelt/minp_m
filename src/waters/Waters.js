@@ -1062,7 +1062,7 @@ export class Waters {
       } else {
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
-      this.updateWeaponStatus(rack, undefined)
+      this.updateMode(rack, undefined)
       this.steps?.targetting()
       this.loadOut.launch = async coords => {
         return await this.launchTo(coords, hintR, hintC, rack)

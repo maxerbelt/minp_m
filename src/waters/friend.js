@@ -115,6 +115,40 @@ export class Friend extends Waters {
     return !this.testContinue
   }
 
+  /**
+   * Updates the weapon status display for the player.
+   * Displays the current weapon name, ammo count, and mode icons in game status.
+   * @param {*} _rack - The weapon rack (unused, uses current weapon system)
+   * @param {Object} _cursorInfo - Cursor information (unused)
+   */
+  updateWeaponStatus (_rack, _cursorInfo) {
+    const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+    const weapon = weaponSystem?.weapon
+
+    if (weapon) {
+      gameStatus.displayAmmoStatus(
+        weaponSystem,
+        bh.maps,
+        this.loadOut.selectedCoordinates.length,
+        null,
+        this._hasUnattachedForCurrentWeapon?.()
+      )
+    }
+  }
+
+  /**
+   * Checks if the current weapon has unattached variants.
+   * @private
+   * @returns {boolean}
+   */
+  _hasUnattachedForCurrentWeapon () {
+    return (
+      bh.seekingMode ||
+      this.loadOut.isSingleShot ||
+      this.loadOut.getUnattachedWeaponSystem() != null
+    )
+  }
+
   // ============ Location Selection ============
 
   /**
@@ -783,10 +817,24 @@ export class Friend extends Waters {
   }
 
   /**
+   * Handles cell click for friendly board weapon selection.
+   * Selects an attached weapon when clicking on a friendly cell in hide/seek mode.
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   */
+  onClickCell (r, c) {
+    if (!bh.seekingMode || !bh.terrain.hasAttachedWeapons) {
+      return
+    }
+    const cell = this.UI.gridCellAt(r, c)
+    this.selectAttachedWeapon(cell, r, c, this.opponent)
+  }
+
+  /**
    * Builds the board UI.
    */
   buildBoard () {
-    this.UI.buildBoard()
+    this.UI.buildBoard(this.onClickCell, this)
     this.resetShipCells()
     this.UI.makeDroppable(this)
     setupDragHandlers(this.UI)
@@ -804,11 +852,4 @@ export class Friend extends Waters {
     this.UI.buildTrays(ships, this.shipCellGrid)
     this.updateUI(ships)
   }
-
-  /**
-   * Updates the weapon mode (placeholder for compatibility).
-   * @param {*} _wps1 - Unused parameter
-   * @param {*} _cursorInfo - Unused parameter
-   */
-  updateMode (_wps1, _cursorInfo) {}
 }
