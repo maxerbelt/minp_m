@@ -1060,10 +1060,18 @@ describe('Enemy.updateWeaponStatus', () => {
               }
             }
           }
+          this.opponent = {
+            UI: {
+              deactivateTempHints: jest.fn()
+            }
+          }
           this.loadOut = {
             notifyCursorChange: jest.fn(),
             isSingleShot: false,
             getUnattachedWeaponSystem: jest.fn(() => null)
+          }
+          this.steps = {
+            clearSource: jest.fn()
           }
 
           this.setBoardTargetingState = jest.fn()
@@ -1071,8 +1079,22 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         _handleWeaponChange () {
+          // CRITICAL: Reset two-click weapon selection before weapon is changed
+          // This prevents firing the old weapon on the next click
           this.selectedCellCoordinates = null
 
+          // Clear all visual state from the first click selection
+          // This ensures: deselected ship, weapon rack removed, and hint location cleared
+          if (this.steps.clearSource) {
+            this.steps.clearSource()
+          }
+
+          // Remove the temporary hint location from the opponent board
+          if (this.opponent?.UI?.deactivateTempHints) {
+            this.opponent.UI.deactivateTempHints()
+          }
+
+          // Get current cursor from board and prepare to update
           let oldCursor = ''
           if (this.UI?.board?.classList) {
             for (const cls of this.UI.board.classList) {
@@ -1101,6 +1123,22 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.selectedCellCoordinates).toBeNull()
     })
 
+    it('should deselect the ship by calling steps.clearSource()', () => {
+      const enemy = new Enemy()
+
+      enemy._handleWeaponChange()
+
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+    })
+
+    it('should remove the hint location by calling opponent.UI.deactivateTempHints()', () => {
+      const enemy = new Enemy()
+
+      enemy._handleWeaponChange()
+
+      expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
+    })
+
     it('should clear selection BEFORE weapon is switched (preventing weapon mismatch)', () => {
       const enemy = new Enemy()
       enemy.selectedCellCoordinates = { r: 5, c: 5 }
@@ -1110,6 +1148,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       // Now next click won't fire with old weapon because selection is cleared
       expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
     })
 
     it('should call setBoardTargetingState to update board visual state', () => {
@@ -1118,6 +1157,18 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy._handleWeaponChange()
 
       expect(enemy.setBoardTargetingState).toHaveBeenCalled()
+    })
+
+    it('should clear all three components: selection, ship, and hint', () => {
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 1, c: 1 }
+
+      enemy._handleWeaponChange()
+
+      // All three should be cleared
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+      expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
     })
   })
 })

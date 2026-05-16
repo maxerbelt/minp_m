@@ -32,23 +32,65 @@ import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 let cleanupOpponentBoard = null
 
 /**
+ * CRITICAL: bh.seekingMode semantic documentation
+ * ================================================
+ * bh.seekingMode indicates which PLAYER is in the hidden position:
+ *
+ * bh.seekingMode = true:
+ *   - PLAYER (you) is SEEKING/HUNTING
+ *   - OPPONENT (enemy) is HIDING with no visible ships
+ *   - Click behavior: single-click targeting on empty board, reveal opponent ships as you hit
+ *
+ * bh.seekingMode = false:
+ *   - PLAYER (you) are HIDING with visible ships
+ *   - OPPONENT (friend) is SEEKING/HUNTING
+ *   - Click behavior: two-click targeting on opponent board with visible ships
+ *
+ * REGRESSION PREVENTION:
+ * A previous weapon selection bug occurred because code checked:
+ *   bh.seekingMode && opponent?.hasAttachedWeapons
+ * This was WRONG because in Hide mode (seekingMode=false), opponent.hasAttachedWeapons=true,
+ * making the && condition impossible in Hide mode and breaking two-click targeting.
+ *
+ * CORRECT APPROACH: Always check opponent?.hasAttachedWeapons INDEPENDENTLY.
+ * Do NOT couple weapon selection behavior to bh.seekingMode.
+ * The mode only affects WHAT SHIPS ARE VISIBLE, not HOW TARGETING WORKS.
+ *
+ * LESSON: Game state flags should be checked for their specific meaning,
+ * not combined with other flags in ways that create impossible conditions.
+ */
+
+/**
  * Start a new enemy game with optional opponent board setup.
- * @param {string} seek
- * @param {function(): void|null} opponentBoard
- * @param {Object|null} friendUI
+ * Initializes game mode flag (seeking vs hiding) and sets up board state.
+ *
+ * @param {string} seek - Game mode indicator: 'seek' for seeking mode, anything else for hiding mode
+ * @param {function(): void|null} opponentBoard - Cleanup function for previous board state
+ * @param {Object|null} friendUI - Friend player UI (if available)
  */
 export function newGame (seek, opponentBoard, friendUI) {
+  // Set game mode flag: true if player is seeking, false if player is hiding
+  // This determines what's visible and click behavior, but NOT weapon selection logic
   bh.seekingMode = seek === 'seek'
 
+  // In seeking mode, enemy ships are hidden (player hasn't discovered them yet)
+  // Clear the ships array so opponent board starts empty
   if (bh.seekingMode) {
     enemy.ships = []
   }
 
+  // Reset enemy state machine and UI to initial game state
   enemy.resetModel()
   _updateEnemyTitle()
   _initializeOpponentBoard(opponentBoard, friendUI)
   _initializeEnemyBoardHover()
+
+  // Configure board targeting for current game mode
+  // (Does NOT affect weapon selection - that's determined by opponent?.hasAttachedWeapons)
   enemy.setBoardTargetingState(bh.seekingMode)
+
+  // Initialize weapon button click handlers
+  // This MUST happen regardless of bh.seekingMode value
   enemy.setupWeaponButtonHandlers()
 }
 

@@ -830,11 +830,59 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles weapon change: resets two-click selection and updates board state.
-   * Called when weapon changes via buttons or when running out of ammo.
+   * Clears the weapon selection when player switches weapons.
+   * Must be called BEFORE the weapon change is processed.
+   *
+   * WHY THIS IS CRITICAL:
+   * In two-click mode, if player clicks Rail Bolt, then clicks enemy board (storing first selection),
+   * then switches to Missile... the selectedCell should be cleared so the next click doesn't fire
+   * the wrong weapon type.
+   *
+   * CALL ORDER:
+   * 1. Player clicks new weapon button
+   * 2. onClickWeaponButtons() calls _handleWeaponChange() FIRST
+   * 3. _handleWeaponChange() clears selectedCellCoordinates
+   * 4. Then weapon is switched
+   *
    * @private
+   * @returns {void}
    */
-  /**\n   * Clears the weapon selection when player switches weapons.\n   * Must be called BEFORE the weapon change is processed.\n   *\n   * WHY THIS IS CRITICAL:\n   * In two-click mode, if player clicks Rail Bolt, then clicks enemy board (storing first selection),\n   * then switches to Missile... the selectedCell should be cleared so the next click doesn't fire\n   * the wrong weapon type.\n   *\n   * CALL ORDER:\n   * 1. Player clicks new weapon button\n   * 2. onClickWeaponButtons() calls _handleWeaponChange() FIRST\n   * 3. _handleWeaponChange() clears selectedCellCoordinates\n   * 4. Then weapon is switched\n   *\n   * @private\n   * @returns {void}\n   */\n  _handleWeaponChange () {\n    // CRITICAL: Reset two-click weapon selection before weapon is changed\n    // This prevents firing the old weapon on the next click\n    this.selectedCellCoordinates = null\n\n    // Get current cursor from board and prepare to update\n    let oldCursor = ''\n    if (this.UI?.board?.classList) {\n      // Find and extract any cursor class from board\n      for (const cls of this.UI.board.classList) {\n        if (cls.startsWith('cursor-') || cls.includes('cursor')) {\n          oldCursor = cls\n          break\n        }\n      }\n    }\n\n    // Notify of cursor change to update board\n    if (this.loadOut.notifyCursorChange) {\n      this.loadOut.notifyCursorChange(oldCursor)\n    }\n\n    // Update board targeting state for new weapon\n    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())\n  }
+  _handleWeaponChange () {
+    // CRITICAL: Reset two-click weapon selection before weapon is changed
+    // This prevents firing the old weapon on the next click
+    this.selectedCellCoordinates = null
+
+    // Clear all visual state from the first click selection
+    // This ensures: deselected ship, weapon rack removed, and hint location cleared
+    if (this.steps.clearSource) {
+      this.steps.clearSource()
+    }
+
+    // Remove the temporary hint location from the opponent board
+    if (this.opponent?.UI?.deactivateTempHints) {
+      this.opponent.UI.deactivateTempHints()
+    }
+
+    // Get current cursor from board and prepare to update
+    let oldCursor = ''
+    if (this.UI?.board?.classList) {
+      // Find and extract any cursor class from board
+      for (const cls of this.UI.board.classList) {
+        if (cls.startsWith('cursor-') || cls.includes('cursor')) {
+          oldCursor = cls
+          break
+        }
+      }
+    }
+
+    // Notify of cursor change to update board
+    if (this.loadOut.notifyCursorChange) {
+      this.loadOut.notifyCursorChange(oldCursor)
+    }
+
+    // Update board targeting state for new weapon
+    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+  }
 
   /**
    * Handles click on single shot button.
