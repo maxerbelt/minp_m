@@ -43,6 +43,23 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   }
 }))
 
+// Mock enemyUI BEFORE importing Enemy
+jest.unstable_mockModule('./enemyUI.js', () => ({
+  enemyUI: {
+    board: { classList: { add: jest.fn(), remove: jest.fn() } },
+    playMode: jest.fn(),
+    buildBoard: jest.fn(),
+    reset: jest.fn(),
+    cellWeaponActive: jest.fn(),
+    removeHighlightAoE: jest.fn(),
+    weaponButtons: jest.fn(),
+    buildBoardHover: jest.fn(),
+    clearClasses: jest.fn(),
+    revealAll: jest.fn(),
+    enableBtns: jest.fn()
+  }
+}))
+
 describe('Enemy.updateWeaponStatus', () => {
   let Enemy, gameStatus, bh, mockLoadOut
 
@@ -54,6 +71,8 @@ describe('Enemy.updateWeaponStatus', () => {
     ])
     gameStatus = modules[0].gameStatus
     bh = modules[1].bh
+    bh.seekingMode = false
+    bh.terrain.hasAttachedWeapons = false
 
     // Reset all mocks
     jest.clearAllMocks()
@@ -118,7 +137,44 @@ describe('Enemy.updateWeaponStatus', () => {
           )
         }
       }
+
+      updateMode () {
+        // Mock implementation
+      }
+
+      cursorChange (oldCursor, newCursorInfo) {
+        const newCursor = newCursorInfo?.cursor
+        if (newCursor === oldCursor) return
+        const board = this.UI.board.classList
+        if (oldCursor !== '') board.remove(oldCursor)
+        if (newCursor !== '') board.add(newCursor)
+        this.updateMode(newCursorInfo.wps, newCursorInfo)
+      }
     }
+  })
+
+  describe('_hasUnattachedForCurrentWeapon', () => {
+    it('should return false when seek mode has attached weapons and no unattached weapon', () => {
+      bh.seekingMode = true
+      bh.terrain.hasAttachedWeapons = true
+
+      const enemy = new Enemy()
+      enemy.loadOut.isSingleShot = false
+      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+
+      expect(enemy._hasUnattachedForCurrentWeapon()).toBe(false)
+    })
+
+    it('should return true when seek mode has no attached weapons', () => {
+      bh.seekingMode = true
+      bh.terrain.hasAttachedWeapons = false
+
+      const enemy = new Enemy()
+      enemy.loadOut.isSingleShot = false
+      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+
+      expect(enemy._hasUnattachedForCurrentWeapon()).toBe(true)
+    })
   })
 
   describe('basic weapon status update', () => {
@@ -451,6 +507,74 @@ describe('Enemy.updateWeaponStatus', () => {
 
       expect(gameStatus.displayAmmoStatus).toHaveBeenCalledTimes(2)
       expect(gameStatus.displayAmmo).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('cursor class handling', () => {
+    it('should add new cursor class to board when cursor changes', () => {
+      const enemy = new Enemy()
+      enemy.updateMode = jest.fn()
+
+      const oldCursor = 'cross'
+      const newCursor = 'square'
+      const newCursorInfo = {
+        cursor: newCursor,
+        wps: { weapon: { letter: 'M' } }
+      }
+
+      enemy.cursorChange(oldCursor, newCursorInfo)
+
+      expect(enemy.UI.board.classList.remove).toHaveBeenCalledWith(oldCursor)
+      expect(enemy.UI.board.classList.add).toHaveBeenCalledWith(newCursor)
+      expect(enemy.updateMode).toHaveBeenCalled()
+    })
+
+    it('should not add empty cursor class to board', () => {
+      const enemy = new Enemy()
+      enemy.updateMode = jest.fn()
+
+      const oldCursor = 'cross'
+      const newCursorInfo = {
+        cursor: '',
+        wps: { weapon: { letter: 'M' } }
+      }
+
+      enemy.cursorChange(oldCursor, newCursorInfo)
+
+      expect(enemy.UI.board.classList.remove).toHaveBeenCalledWith(oldCursor)
+      expect(enemy.UI.board.classList.add).not.toHaveBeenCalled()
+    })
+
+    it('should not remove empty old cursor from board', () => {
+      const enemy = new Enemy()
+      enemy.updateMode = jest.fn()
+
+      const newCursor = 'cross'
+      const newCursorInfo = {
+        cursor: newCursor,
+        wps: { weapon: { letter: 'M' } }
+      }
+
+      enemy.cursorChange('', newCursorInfo)
+
+      expect(enemy.UI.board.classList.remove).not.toHaveBeenCalled()
+      expect(enemy.UI.board.classList.add).toHaveBeenCalledWith(newCursor)
+    })
+
+    it('should not change classes when cursor does not change', () => {
+      const enemy = new Enemy()
+      enemy.updateMode = jest.fn()
+
+      const cursor = 'cross'
+      const newCursorInfo = {
+        cursor,
+        wps: { weapon: { letter: 'M' } }
+      }
+
+      enemy.cursorChange(cursor, newCursorInfo)
+
+      expect(enemy.UI.board.classList.remove).not.toHaveBeenCalled()
+      expect(enemy.UI.board.classList.add).not.toHaveBeenCalled()
     })
   })
 })

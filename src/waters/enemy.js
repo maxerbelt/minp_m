@@ -234,6 +234,7 @@ class Enemy extends Waters {
     if (newCursor === oldCursor) return
     const board = this.UI.board.classList
     if (oldCursor !== '') board.remove(oldCursor)
+    if (newCursor !== '') board.add(newCursor)
     this.updateMode(newCursorInfo.wps, newCursorInfo)
   }
 
