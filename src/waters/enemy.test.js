@@ -98,9 +98,9 @@ describe('Enemy.updateWeaponStatus', () => {
 
       _hasUnattachedForCurrentWeapon () {
         return (
-          bh.seekingMode ||
           this.loadOut.isSingleShot ||
-          this.loadOut.getUnattachedWeaponSystem() != null
+          this.loadOut.getUnattachedWeaponSystem() != null ||
+          (bh.seekingMode && !bh.terrain?.hasAttachedWeapons)
         )
       }
 
@@ -228,8 +228,8 @@ describe('Enemy.updateWeaponStatus', () => {
         railGunSystem,
         expect.anything(),
         expect.anything(),
-        expect.anything(),
-        expect.anything()
+        null,
+        false
       )
 
       const callArgs = gameStatus.displayAmmoStatus.mock.calls[0]
@@ -319,11 +319,11 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.updateWeaponStatus(null, undefined)
 
       expect(gameStatus.displayAmmoStatus).toHaveBeenCalledWith(
-        expect.anything(),
+        mockWeaponSystem,
         bh.maps,
-        expect.anything(),
-        expect.anything(),
-        expect.anything()
+        0,
+        null,
+        false
       )
     })
 

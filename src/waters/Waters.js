@@ -799,10 +799,13 @@ export class Waters {
    * @returns {Array} Array of ships with weapons
    */
   determineWeaponShips (map) {
+    if (!this.ships) {
+      this.ships = []
+    }
     let weaponShips = this.ships.filter(ship => ship.hasWeapon)
     this.hasAttachedWeapons = weaponShips.length > 0
     if (bh.seekingMode && this.hasAttachedWeapons) {
-      weaponShips = map.extraArmedFleetForMap
+      weaponShips = map.extraArmedFleetForMap || weaponShips
     }
     this.weaponShips = weaponShips
     return weaponShips
@@ -849,8 +852,9 @@ export class Waters {
    * @returns {LoadOut} The created load out
    */
   createLoadOut (map, ships) {
-    ships = ships || this.weaponShips
-    return new LoadOut(map.weapons, ships, this.UI, this.steps)
+    ships = ships || this.weaponShips || []
+    const weapons = map?.weapons || []
+    return new LoadOut(weapons, ships, this.UI, this.steps)
   }
   /**
    * Displays auto-selection warning for weapons.
@@ -1165,6 +1169,9 @@ export class Waters {
    */
   prepareTargetedRandomWeaponSelection (autoSelectWarning = !bh.seekingMode) {
     const current = this.loadOut.getCurrentWeaponSystem()
+    if (!current) {
+      return false
+    }
     const attached = current.hasAmmo()
     if (attached) {
       return this.hasTargettedRandomWeaponForWps(autoSelectWarning)
@@ -1294,7 +1301,8 @@ export class Waters {
 
   getUnattachedWeaponSystem () {
     if (this.opponent == null || bh.seekingMode) {
-      return this.loadOut.getCurrentWeaponSystem().getLoadedWeapon()
+      const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+      return weaponSystem?.getLoadedWeapon()
     } else {
       return this.loadOut.getUnattachedWeaponSystem()
     }

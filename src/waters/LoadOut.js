@@ -128,14 +128,14 @@ export class LoadOut {
     this.selectableWeapon = null
 
     // Data sources
-    this.unattachedWeapons = weapons
-    this.ships = ships
+    this.unattachedWeapons = weapons || []
+    this.ships = ships || []
 
     // Capability flags
-    const hasAttachedWeapons = ships.length > 0
+    const hasAttachedWeapons = this.ships.length > 0
     this.hasAttachedWeapons = hasAttachedWeapons
     this.isRackSelectable = !bh.seekingMode && hasAttachedWeapons
-    this.hasUnattachedWeapons = weapons.length > 0
+    this.hasUnattachedWeapons = this.unattachedWeapons.length > 0
 
     // Firing mechanism binding
     this.launch = LoadOut.launchDefault.bind(this, this.viewModel)
@@ -207,6 +207,9 @@ export class LoadOut {
    * @private
    */
   _resolveFiringState (wps, unattachedWeaponSystem, map) {
+    if (!wps?.weapon) {
+      return null
+    }
     const hasUnattached = unattachedWeaponSystem != null
 
     // Selection complete - build firing info
@@ -234,6 +237,9 @@ export class LoadOut {
    * @privates
    */
   _isSelectionComplete (weaponSystem, hasUnattached) {
+    if (!weaponSystem?.weapon) {
+      return false
+    }
     const neededPoints = weaponSystem.weapon.points
     const totalPoints =
       this.selectedCoordinates.length +
@@ -702,7 +708,8 @@ export class LoadOut {
    * @private
    */
   _canWeaponFire (weaponSystem) {
-    if (!weaponSystem?.weapon.isLimited) return true
+    if (!weaponSystem?.weapon) return false
+    if (!weaponSystem.weapon.isLimited) return true
     return weaponSystem.hasAmmoRemaining()
   }
 
@@ -740,7 +747,7 @@ export class LoadOut {
    * @returns {WeaponsSystem} Current weapon system
    */
   getCurrentWeaponSystem () {
-    return this.weaponSystems[this.currentWeaponIndex]
+    return this.weaponSystems?.[this.currentWeaponIndex]
   }
 
   /**
@@ -750,7 +757,8 @@ export class LoadOut {
    * @returns {Weapon} Current weapon
    */
   getCurrentWeapon () {
-    return this.getCurrentWeaponSystem().weapon
+    const weaponSystem = this.getCurrentWeaponSystem()
+    return weaponSystem?.weapon
   }
 
   /**
@@ -962,6 +970,9 @@ export class LoadOut {
    */
   getCurrentCursorInfo () {
     const weaponSystem = this.getCurrentWeaponSystem()
+    if (!weaponSystem) {
+      return null
+    }
     const weapon = weaponSystem.weapon
     const currentIndex = this.selectedCoordinates.length
 
@@ -1023,7 +1034,8 @@ export class LoadOut {
    * @returns {string} Cursor identifier
    */
   getCurrentCursor () {
-    return this.getCurrentCursorInfo().cursor
+    const cursorInfo = this.getCurrentCursorInfo()
+    return cursorInfo?.cursor
   }
 
   /**
@@ -1032,7 +1044,10 @@ export class LoadOut {
    * @param {string} oldCursor - Previous cursor value
    */
   notifyCursorChange (oldCursor) {
-    this.onCursorChangeCallback(oldCursor, this.getCurrentCursorInfo())
+    const cursorInfo = this.getCurrentCursorInfo()
+    if (cursorInfo) {
+      this.onCursorChangeCallback(oldCursor, cursorInfo)
+    }
   }
 
   /**

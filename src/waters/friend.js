@@ -143,9 +143,9 @@ export class Friend extends Waters {
    */
   _hasUnattachedForCurrentWeapon () {
     return (
-      bh.seekingMode ||
       this.loadOut.isSingleShot ||
-      this.loadOut.getUnattachedWeaponSystem() != null
+      this.loadOut.getUnattachedWeaponSystem() != null ||
+      (bh.seekingMode && !bh.terrain?.hasAttachedWeapons)
     )
   }
 

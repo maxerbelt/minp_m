@@ -128,9 +128,9 @@ class Enemy extends Waters {
   }
   _hasUnattachedForCurrentWeapon () {
     return (
-      bh.seekingMode ||
       this.loadOut.isSingleShot ||
-      this.loadOut.getUnattachedWeaponSystem() != null
+      this.loadOut.getUnattachedWeaponSystem() != null ||
+      (bh.seekingMode && !bh.terrain?.hasAttachedWeapons)
     )
   }
   /**
@@ -721,7 +721,7 @@ class Enemy extends Waters {
    */
   resetModel () {
     this.score.reset()
-    this.resetMap(true)
+    this.resetMap()
     this.UI.playMode()
     this.loadOut.onOutOfAllAmmo = () => {
       if (this.UI?.weaponBtn) {
