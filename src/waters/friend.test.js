@@ -5,6 +5,7 @@
 /* eslint-env jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
+/* global it, describe, expect, beforeEach, jest */
 
 let Friend
 let jest // Explicitly declare jest to ensure it's available globally
