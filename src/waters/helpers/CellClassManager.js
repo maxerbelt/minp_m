@@ -410,6 +410,7 @@ export class CellClassManager {
    * @param {HTMLElement} cell - DOM element to remove classes from
    * @param {string[]} classNames - Array of class names to remove
    * @returns {void}
+   * @private
    */
   static #removeClassNames (cell, classNames) {
     if (classNames.length) {
@@ -418,10 +419,11 @@ export class CellClassManager {
   }
 
   /**
-   * Gets all weapon-related CSS class names, including weapon tags and cursor tags.
+   * Gets all weapon-related CSS class names (both weapon tags and cursor tags).
    * Used for bulk operations on weapon-related classes.
    *
    * @returns {string[]} Array of all weapon and cursor class names
+   * @private
    */
   static #getAllWeaponRelatedClasses () {
     return [...this.#weaponTags(), ...this.#cursorTags()]
@@ -444,6 +446,7 @@ export class CellClassManager {
    * Used to remove transient animation and weapon-related classes.
    *
    * @returns {string[]} Array of class names to remove from hit cells
+   * @private
    */
   static #getHitResetClasses () {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this.#weaponTags()]
@@ -499,6 +502,7 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The cell element to update
    * @returns {void}
+   * @private
    */
   static #removeHitTransientClasses (cell) {
     this.#removeClassNames(cell, this.#getHitResetClasses())
@@ -506,10 +510,11 @@ export class CellClassManager {
 
   /**
    * Removes cursor-related classes from a cell.
-   * Clears cursor indicators added during targeting/preview.
+   * Clears cursor indicators added during weapon targeting preview.
    *
    * @param {HTMLElement} cell - The cell element to update
    * @returns {void}
+   * @private
    */
   static #removeCursorClasses (cell) {
     this.#removeClassNames(cell, this.#cursorTags())
@@ -520,17 +525,18 @@ export class CellClassManager {
   // ──────────────────────────────────────────────────────────────────
 
   /**
-   * Generic hit state application helper.
-   * Consolidates common logic for both friendly and enemy hit states.
-   * Pattern:
+   * Generic hit state application helper consolidating common logic.
+   * Both friendly and enemy hit states follow same pattern:
    * 1. Reset transient weapon/animation classes
-   * 2. Add hit state indicator class (friendly vs enemy)
+   * 2. Add hit state indicator class (parameterized)
    * 3. Apply optional damage type
+   * Eliminates code duplication between applyFriendlyHitCellState and applyEnemyHitCellState.
    *
    * @param {HTMLElement} cell - The cell element to update
-   * @param {string} stateClass - CSS class indicating hit state ('hit' or 'frd-hit')
+   * @param {string} stateClass - CSS class indicating hit state (e.g., 'hit' or 'frd-hit')
    * @param {string} [damageType] - Optional damage indicator class (burnt, damaged, skull)
    * @returns {void}
+   * @private
    */
   static #applyHitState (cell, stateClass, damageType) {
     this.resetHitCellState(cell)
@@ -541,16 +547,17 @@ export class CellClassManager {
   }
 
   /**
-   * Generic sunk state application helper.
-   * Consolidates common logic for both friendly and enemy sunk states.
-   * Pattern:
+   * Generic sunk state application helper consolidating common logic.
+   * Both friendly and enemy sunk states follow same pattern:
    * 1. Clear previous display states
    * 2. Reset animation/weapon effects
-   * 3. Apply sunk state class (friendly vs enemy)
+   * 3. Apply sunk state class (parameterized)
+   * Eliminates code duplication between applyFriendlySunkCellState and applyEnemySunkCellState.
    *
    * @param {HTMLElement} cell - The cell element to update
-   * @param {string} sunkClass - CSS class indicating sunk state ('enm-sunk' or 'frd-sunk')
+   * @param {string} sunkClass - CSS class indicating sunk state (e.g., 'enm-sunk' or 'frd-sunk')
    * @returns {void}
+   * @private
    */
   static #applySunkState (cell, sunkClass) {
     this.clearDisplayCell(cell)
@@ -565,9 +572,11 @@ export class CellClassManager {
   /**
    * Clears all class groups used during ship placement phase.
    * Removes weapon markers, damage indicators, placement hints, display states, and orientation.
+   * Also clears terrain-specific weapon-related classes.
    *
    * @param {HTMLElement} cell - The placement cell to clear
    * @returns {void}
+   * @private
    */
   static #clearPlacementClasses (cell) {
     this.clearCellClasses(cell, [
@@ -582,33 +591,36 @@ export class CellClassManager {
 
   /**
    * Clears weapon-related classes from a cell.
-   * Alias for clearWeaponRelatedClasses for backward compatibility.
+   * Alias for clearWeaponRelatedClasses maintained for backward compatibility.
    *
    * @param {HTMLElement} cell - The cell element to clear
    * @returns {void}
+   * @deprecated Use clearWeaponRelatedClasses instead
    */
   static clearWeaponClasses (cell) {
     this.clearWeaponRelatedClasses(cell)
   }
 
   /**
-   * Checks whether the cell is eligible for transient state application.
+   * Checks whether a cell is eligible for transient state application.
    * Prevents overlapping state classes such as hits, misses, and hints.
    *
    * @param {HTMLElement} cell - The cell element to check
    * @param {string[]} forbiddenClasses - Classes that disallow the transient state
    * @returns {boolean} True if the state may be applied safely
+   * @private
    */
   static #isEligibleForTransientState (cell, forbiddenClasses) {
     return !this.hasAny(cell, forbiddenClasses)
   }
 
   /**
-   * Extracts class names from group definitions.
-   * Filters out empty group objects.
+   * Extracts class names from class group definitions, filtering empty groups.
+   * Utility for converting class group definitions to flat class name arrays.
    *
-   * @param {CellClassGroup[]} classGroups - Class groups to extract
-   * @returns {string[]} Flattened array of class names
+   * @param {CellClassGroup[]} classGroups - Class groups to extract from
+   * @returns {string[]} Flattened array of all class names from all groups
+   * @private
    */
   static #extractClassNames (classGroups) {
     return classGroups.flatMap(group => Object.values(group))

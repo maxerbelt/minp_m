@@ -113,6 +113,9 @@ describe('Enemy.updateWeaponStatus', () => {
         this.steps = mockSteps
         this.loadOut = mockLoadOut
         this.opponent = null
+        this.timeoutId = null
+        this.boardDestroyed = false
+        this.isRevealed = false
       }
 
       _hasUnattachedForCurrentWeapon () {
@@ -149,6 +152,29 @@ describe('Enemy.updateWeaponStatus', () => {
         if (oldCursor !== '') board.remove(oldCursor)
         if (newCursor !== '') board.add(newCursor)
         this.updateMode(newCursorInfo.wps, newCursorInfo)
+      }
+
+      hasNoAmmo () {
+        return this.loadOut.isOutOfAmmo()
+      }
+
+      isGameOver () {
+        return this.boardDestroyed || this.isRevealed
+      }
+
+      canTakeTurn () {
+        if (this.isGameOver() || this.hasNoAmmo()) {
+          return false
+        }
+        if (this.timeoutId) {
+          gameStatus.addToQueue('Wait For Enemy To Finish Their Turn', false)
+          return false
+        }
+        if (this.opponent?.boardDestroyed) {
+          gameStatus.addToQueue('Game Over - No More Shots Allowed', true)
+          return false
+        }
+        return true
       }
     }
   })
@@ -575,6 +601,99 @@ describe('Enemy.updateWeaponStatus', () => {
 
       expect(enemy.UI.board.classList.remove).not.toHaveBeenCalled()
       expect(enemy.UI.board.classList.add).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('canTakeTurn', () => {
+    it('should return false when game is over', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = true
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+
+      expect(enemy.canTakeTurn()).toBe(false)
+    })
+
+    it('should return false when no ammo is available', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = false
+      enemy.isRevealed = false
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => true)
+
+      expect(enemy.canTakeTurn()).toBe(false)
+    })
+
+    it('should return false when timeoutId is set', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = false
+      enemy.isRevealed = false
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.timeoutId = 123
+
+      expect(enemy.canTakeTurn()).toBe(false)
+      expect(gameStatus.addToQueue).toHaveBeenCalledWith(
+        'Wait For Enemy To Finish Their Turn',
+        false
+      )
+    })
+
+    it('should return false when opponent board is destroyed', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = false
+      enemy.isRevealed = false
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.timeoutId = null
+      enemy.opponent = {
+        boardDestroyed: true
+      }
+
+      expect(enemy.canTakeTurn()).toBe(false)
+      expect(gameStatus.addToQueue).toHaveBeenCalledWith(
+        'Game Over - No More Shots Allowed',
+        true
+      )
+    })
+
+    it('should return true when all conditions allow a turn', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = false
+      enemy.isRevealed = false
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.timeoutId = null
+      enemy.opponent = {
+        boardDestroyed: false
+      }
+
+      expect(enemy.canTakeTurn()).toBe(true)
+    })
+
+    it('should use hasNoAmmo wrapper method to check ammo status', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = false
+      enemy.isRevealed = false
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.timeoutId = null
+      enemy.opponent = { boardDestroyed: false }
+
+      enemy.canTakeTurn()
+
+      // Verify that isOutOfAmmo is called via hasNoAmmo (regression test for checkNoAmmo bug)
+      expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalled()
+    })
+
+    it('should handle multiple consecutive calls correctly', () => {
+      const enemy = new Enemy()
+      enemy.boardDestroyed = false
+      enemy.isRevealed = false
+      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.timeoutId = null
+      enemy.opponent = { boardDestroyed: false }
+
+      expect(enemy.canTakeTurn()).toBe(true)
+      expect(enemy.canTakeTurn()).toBe(true)
+      expect(enemy.canTakeTurn()).toBe(true)
+
+      // Verify isOutOfAmmo is called each time
+      expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalledTimes(3)
     })
   })
 })

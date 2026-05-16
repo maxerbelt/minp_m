@@ -5,7 +5,6 @@
 /* eslint-env jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
-/* global   it, describe, expect, beforeEach, jest */
 let Friend
 
 // Mocks
@@ -105,6 +104,9 @@ jest.unstable_mockModule('./Waters.js', () => ({
         return this.getDisplacementRatio() < 0.35
       }
       return true
+    }
+    getDisplacementRatio () {
+      return 0.1
     }
   }
 }))
