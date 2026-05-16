@@ -4,7 +4,8 @@ export default {
       '@babel/preset-env',
       {
         targets: { node: 'current' },
-        modules: false // keep ESM output
+        // Transform modules to CommonJS for Jest, keep ESM for production builds
+        modules: process.env.NODE_ENV === 'test' ? 'commonjs' : false
       }
     ]
   ]

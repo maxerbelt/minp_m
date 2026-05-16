@@ -5,10 +5,12 @@
 /* eslint-env jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
+
 let Friend
+let jest // Explicitly declare jest to ensure it's available globally
 
 // Mocks
-const mockUI = {
+const getMockUI = () => ({
   showNotice: jest.fn(),
   clearVisuals: jest.fn(),
   clearFriendVisuals: jest.fn(),
@@ -55,7 +57,7 @@ const mockUI = {
     hintsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
     placedLabel: { classList: { add: jest.fn(), remove: jest.fn() } }
   }
-}
+})
 
 // Minimal mocks for bh and dependencies
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
@@ -130,7 +132,9 @@ describe('Friend', () => {
   let friend
   let gameStatus
   let bh
+  let mockUI
   beforeEach(async () => {
+    mockUI = getMockUI()
     // require Friend after bh mock is in place
     jest.resetModules()
     const bhModule = await import('../terrains/all/js/bh.js')
@@ -152,7 +156,6 @@ describe('Friend', () => {
         getWeaponBySystemId: jest.fn()
       }
     ]
-    friend.UI = mockUI
     friend.score = {
       shot: { sub: jest.fn(() => ({ toCoords: ['0,0'], length: 1 })) },
       hint: [],

@@ -384,4 +384,5 @@ class EnemyUI extends WatersUI {
   }
 }
 
+export { EnemyUI }
 export const enemyUI = new EnemyUI()
