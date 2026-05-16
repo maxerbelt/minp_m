@@ -431,7 +431,7 @@ class Enemy extends Waters {
 
     // In Hide and Seek mode with all attached weapons, do not fall back to random selection
     // This ensures the player's weapon choice is respected and allows multi-coordinate weapons to work
-    if (bh.seekingMode && bh.terrain?.hasAttachedWeapons) {
+    if (!bh.seekingMode && bh.terrain?.hasAttachedWeapons) {
       // Return the current result (null for incomplete selection, allowing next click to continue)
       return result
     }
@@ -721,4 +721,5 @@ class Enemy extends Waters {
   }
 }
 
+export { Enemy }
 export const enemy = new Enemy(enemyUI)
