@@ -1,5 +1,4 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { Random } from '../core/Random.js'
 import { gameStatus } from './StatusUI.js'
 import { enemyUI } from './enemyUI.js'
 import { LoadOut } from './LoadOut.js'
@@ -111,8 +110,6 @@ class Enemy extends Waters {
    * @private
    */
   _handleAim () {
-    // const cursorInfo = this.loadOut.getCurrentCursorInfo()
-    // this.updateWeaponStatus(cursorInfo?.wps, cursorInfo)
     this.setBoardTargetingState(true)
   }
 
