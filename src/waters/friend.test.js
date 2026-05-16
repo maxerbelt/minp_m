@@ -104,11 +104,32 @@ jest.unstable_mockModule('./Waters.js', () => ({
   }
 }))
 
+// Mock drag handlers to avoid DOM setup errors in tests
+jest.unstable_mockModule('../selection/dragndrop.js', () => ({
+  setupDragHandlers: jest.fn()
+}))
+
+// Mock gameStatus to track UI update calls
+jest.unstable_mockModule('./StatusUI.js', () => ({
+  gameStatus: {
+    _setWeaponMode: jest.fn(),
+    _resetAmmoIcons: jest.fn(),
+    displayAmmoStatus: jest.fn(),
+    showMode: jest.fn()
+  }
+}))
+
 describe('Friend', () => {
   let friend
+  let gameStatus
+  let bh
   beforeEach(async () => {
     // require Friend after bh mock is in place
     jest.resetModules()
+    const bhModule = await import('../terrains/all/js/bh.js')
+    bh = bhModule.bh
+    const statusUIModule = await import('./StatusUI.js')
+    gameStatus = statusUIModule.gameStatus
     const friendModule = await import('./friend.js')
     Friend = friendModule.Friend
     friend = new Friend(mockUI)
@@ -189,5 +210,231 @@ describe('Friend', () => {
     expect(friend.resetBase).toHaveBeenCalled()
     expect(friend.UI.clearFriendVisuals).toHaveBeenCalled()
     expect(friend.armWeapons).toHaveBeenCalled()
+  })
+
+  // ============ Weapon Status UI Update Tests ============
+  // Prevents regressions in weapon name, ammo counter, and mode icon updates
+
+  describe('updateWeaponStatus', () => {
+    beforeEach(() => {
+      // Mock gameStatus methods to verify they are called
+      gameStatus._setWeaponMode = jest.fn()
+      gameStatus._resetAmmoIcons = jest.fn()
+      gameStatus.displayAmmoStatus = jest.fn()
+
+      // Mock loadOut
+      friend.loadOut = {
+        getCurrentWeaponSystem: jest.fn(() => ({
+          weapon: { name: 'RailGun', letter: 'R' }
+        })),
+        selectedCoordinates: [{ r: 1, c: 1 }],
+        isSingleShot: false,
+        getUnattachedWeaponSystem: jest.fn(() => null)
+      }
+    })
+
+    it('calls gameStatus._setWeaponMode with current weapon', () => {
+      friend.updateWeaponStatus()
+      expect(gameStatus._setWeaponMode).toHaveBeenCalledWith({
+        name: 'RailGun',
+        letter: 'R'
+      })
+    })
+
+    it('calls gameStatus._resetAmmoIcons to prepare icon display', () => {
+      friend.updateWeaponStatus()
+      expect(gameStatus._resetAmmoIcons).toHaveBeenCalled()
+    })
+
+    it('calls gameStatus.displayAmmoStatus with correct parameters', () => {
+      friend.updateWeaponStatus()
+      expect(gameStatus.displayAmmoStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ weapon: { name: 'RailGun', letter: 'R' } }),
+        bh.maps,
+        1,
+        null,
+        expect.any(Boolean)
+      )
+    })
+
+    it('does not call UI methods if no weapon is available', () => {
+      friend.loadOut.getCurrentWeaponSystem = jest.fn(() => null)
+      friend.updateWeaponStatus()
+      expect(gameStatus._setWeaponMode).not.toHaveBeenCalled()
+      expect(gameStatus._resetAmmoIcons).not.toHaveBeenCalled()
+      expect(gameStatus.displayAmmoStatus).not.toHaveBeenCalled()
+    })
+
+    it('handles optional parameters gracefully', () => {
+      const _rack = {}
+      const _cursorInfo = { x: 10, y: 20 }
+      friend.updateWeaponStatus(_rack, _cursorInfo)
+      expect(gameStatus._setWeaponMode).toHaveBeenCalled()
+    })
+
+    it('includes unattached weapon status in displayAmmoStatus call', () => {
+      friend.loadOut.isSingleShot = true
+      friend.updateWeaponStatus()
+      expect(gameStatus.displayAmmoStatus).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+        expect.any(Number),
+        expect.any(Object),
+        true // unattached should be true when isSingleShot is true
+      )
+    })
+  })
+
+  // ============ Unattached Weapon Check Tests ============
+  // Prevents regressions in weapon variant detection
+
+  describe('_hasUnattachedForCurrentWeapon', () => {
+    beforeEach(() => {
+      friend.loadOut = {
+        isSingleShot: false,
+        getUnattachedWeaponSystem: jest.fn(() => null)
+      }
+    })
+
+    it('returns true when in seeking mode', () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = true
+      try {
+        expect(friend._hasUnattachedForCurrentWeapon()).toBe(true)
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+
+    it('returns true when current weapon is single shot', () => {
+      friend.loadOut.isSingleShot = true
+      expect(friend._hasUnattachedForCurrentWeapon()).toBe(true)
+    })
+
+    it('returns true when weapon has unattached variants', () => {
+      friend.loadOut.getUnattachedWeaponSystem = jest.fn(() => ({
+        weapon: { name: 'MissileBoat' }
+      }))
+      expect(friend._hasUnattachedForCurrentWeapon()).toBe(true)
+    })
+
+    it('returns false when no unattached weapons or seeking mode', () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = false
+      friend.loadOut.isSingleShot = false
+      friend.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      try {
+        expect(friend._hasUnattachedForCurrentWeapon()).toBe(false)
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+  })
+
+  // ============ Board Click Handler Tests ============
+  // Prevents regressions in weapon selection click handling
+
+  describe('onClickCell', () => {
+    beforeEach(() => {
+      friend.opponent = { name: 'Enemy' }
+      friend.selectAttachedWeapon = jest.fn()
+      friend.UI.gridCellAt = jest.fn(() => ({ element: 'cell' }))
+    })
+
+    it('only processes clicks when in seeking mode', () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = false
+      try {
+        friend.onClickCell(5, 5)
+        expect(friend.selectAttachedWeapon).not.toHaveBeenCalled()
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+
+    it('only processes clicks when terrain has attached weapons', () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = true
+      bh.terrain = { hasAttachedWeapons: false }
+      try {
+        friend.onClickCell(5, 5)
+        expect(friend.selectAttachedWeapon).not.toHaveBeenCalled()
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+
+    it('calls selectAttachedWeapon with correct parameters in seeking mode', () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = true
+      bh.terrain = { hasAttachedWeapons: true }
+      try {
+        friend.onClickCell(3, 7)
+        expect(friend.UI.gridCellAt).toHaveBeenCalledWith(3, 7)
+        expect(friend.selectAttachedWeapon).toHaveBeenCalledWith(
+          { element: 'cell' },
+          3,
+          7,
+          friend.opponent
+        )
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+
+    it('returns early if seeking mode is false and hasAttachedWeapons is true', () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = false
+      bh.terrain = { hasAttachedWeapons: true }
+      try {
+        friend.onClickCell(5, 5)
+        expect(friend.selectAttachedWeapon).not.toHaveBeenCalled()
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+  })
+
+  // ============ Board UI Initialization Tests ============
+  // Prevents regressions in board setup and click handler registration
+
+  describe('buildBoard', () => {
+    beforeEach(() => {
+      friend.resetShipCells = jest.fn()
+      friend.UI.makeDroppable = jest.fn()
+    })
+
+    it('calls UI.buildBoard with onClickCell handler bound to this', () => {
+      friend.buildBoard()
+      expect(friend.UI.buildBoard).toHaveBeenCalledWith(
+        friend.onClickCell,
+        friend
+      )
+    })
+
+    it('calls resetShipCells to initialize ship display', () => {
+      friend.buildBoard()
+      expect(friend.resetShipCells).toHaveBeenCalled()
+    })
+
+    it('calls UI.makeDroppable to enable drag operations', () => {
+      friend.buildBoard()
+      expect(friend.UI.makeDroppable).toHaveBeenCalledWith(friend)
+    })
+
+    it('calls all setup methods in correct sequence', () => {
+      const callOrder = []
+      friend.UI.buildBoard = jest.fn(() => callOrder.push('buildBoard'))
+      friend.resetShipCells = jest.fn(() => callOrder.push('resetShipCells'))
+      friend.UI.makeDroppable = jest.fn(() => callOrder.push('makeDroppable'))
+
+      friend.buildBoard()
+
+      expect(callOrder).toEqual([
+        'buildBoard',
+        'resetShipCells',
+        'makeDroppable'
+      ])
+    })
   })
 })

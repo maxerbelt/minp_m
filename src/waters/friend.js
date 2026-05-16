@@ -118,6 +118,17 @@ export class Friend extends Waters {
   /**
    * Updates the weapon status display for the player.
    * Displays the current weapon name, ammo count, and mode icons in game status.
+   *
+   * This method is called whenever the selected weapon changes to refresh the UI.
+   * It ensures all UI elements are updated consistently:
+   * - Sets the weapon name/mode in game-status
+   * - Resets icon classes to prepare for new weapon display
+   * - Displays ammo counter and weapon step indicators
+   *
+   * The method always explicitly sets the weapon mode and resets icons before
+   * calling displayAmmoStatus to prevent UI inconsistencies on weapon switches.
+   * This is critical for Hide & Seek mode where players select weapons by clicking cells.
+   *
    * @param {*} _rack - The weapon rack (unused, uses current weapon system)
    * @param {Object} _cursorInfo - Cursor information (unused)
    */
@@ -126,6 +137,9 @@ export class Friend extends Waters {
     const weapon = weaponSystem?.weapon
 
     if (weapon) {
+      // Always set the weapon mode and reset icons to ensure UI updates on weapon change
+      gameStatus._setWeaponMode(weapon)
+      gameStatus._resetAmmoIcons()
       gameStatus.displayAmmoStatus(
         weaponSystem,
         bh.maps,
@@ -137,15 +151,24 @@ export class Friend extends Waters {
   }
 
   /**
-   * Checks if the current weapon has unattached variants.
+   * Checks if the current weapon has unattached variants available.
+   *
+   * Returns true if:
+   * - We're in seeking mode (some weapons have unattached variants in seek mode)
+   * - The current weapon is single shot (simpler ammo state)
+   * - The weapon system has unattached variant weapons available
+   *
+   * This information is passed to displayAmmoStatus to determine how to render
+   * the ammo counter display (limited ammo vs step indicators).
+   *
    * @private
-   * @returns {boolean}
+   * @returns {boolean} True if current weapon has unattached variants or is single shot
    */
   _hasUnattachedForCurrentWeapon () {
     return (
+      bh.seekingMode ||
       this.loadOut.isSingleShot ||
-      this.loadOut.getUnattachedWeaponSystem() != null ||
-      (bh.seekingMode && !bh.terrain?.hasAttachedWeapons)
+      this.loadOut.getUnattachedWeaponSystem() != null
     )
   }
 
@@ -817,12 +840,22 @@ export class Friend extends Waters {
   }
 
   /**
-   * Handles cell click for friendly board weapon selection.
-   * Selects an attached weapon when clicking on a friendly cell in hide/seek mode.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * Handles cell click for friendly board weapon selection in Hide & Seek mode.
+   *
+   * This method is registered as the click handler for the friendly board.
+   * When a player clicks a cell in Hide & Seek mode with attached weapons enabled,
+   * it triggers weapon selection for that cell location.
+   *
+   * Validation:
+   * - Only processes clicks if in seeking mode (hide & seek)
+   * - Only processes clicks if terrain has attached weapons feature enabled
+   * - Returns early if conditions not met (prevents errors in other modes)
+   *
+   * @param {number} r - Row coordinate of clicked cell
+   * @param {number} c - Column coordinate of clicked cell
    */
   onClickCell (r, c) {
+    // Only allow weapon selection in hide/seek mode with attached weapons
     if (!bh.seekingMode || !bh.terrain.hasAttachedWeapons) {
       return
     }
@@ -831,9 +864,21 @@ export class Friend extends Waters {
   }
 
   /**
-   * Builds the board UI.
+   * Builds and initializes the friendly player's board UI.
+   *
+   * This method sets up the interactive friendly board by:
+   * 1. Building the board grid with click handlers (onClickCell for weapon selection)
+   * 2. Resetting ship cell styling/state
+   * 3. Making the board droppable for ship placement/dragging
+   * 4. Setting up drag and drop event handlers
+   *
+   * The click handler (onClickCell) is bound to this Friend instance so it can
+   * access weapon selection methods and UI state.
+   *
+   * Called during game initialization and board reset operations.
    */
   buildBoard () {
+    // Register the onClickCell handler with 'this' context for method access
     this.UI.buildBoard(this.onClickCell, this)
     this.resetShipCells()
     this.UI.makeDroppable(this)
