@@ -24,13 +24,17 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     seekingMode: false,
     terrain: { hasAttachedWeapons: false },
-    maps: { shipColors: { M1: 'red', M2: 'darkred', R1: 'blue', R2: 'darkblue' } },
+    maps: {
+      shipColors: { M1: 'red', M2: 'darkred', R1: 'blue', R2: 'darkblue' }
+    },
     map: {
       rows: 10,
       cols: 10,
       blankMask: {
         toCoords: ['0,0', '1,1'],
-        sub: function () { return this },
+        sub: function () {
+          return this
+        },
         length: 2
       },
       blankGrid: [],
@@ -121,7 +125,10 @@ describe('Enemy.updateWeaponStatus', () => {
     it('should call displayAmmoStatus with current weapon system', () => {
       const enemy = new Enemy()
       const mockWeapon = { letter: 'M', name: 'Missile' }
-      const mockWeaponSystem = { weapon: mockWeapon, ammoCapacity: jest.fn(() => 10) }
+      const mockWeaponSystem = {
+        weapon: mockWeapon,
+        ammoCapacity: jest.fn(() => 10)
+      }
 
       enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
       enemy.loadOut.selectedCoordinates = []
@@ -154,7 +161,11 @@ describe('Enemy.updateWeaponStatus', () => {
       const mockWeaponSystem = { weapon: mockWeapon }
 
       enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
-      enemy.loadOut.selectedCoordinates = [[1, 2], [3, 4], [5, 6]]
+      enemy.loadOut.selectedCoordinates = [
+        [1, 2],
+        [3, 4],
+        [5, 6]
+      ]
       enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
       enemy.loadOut.isSingleShot = false
 
@@ -355,10 +366,10 @@ describe('Enemy.updateWeaponStatus', () => {
 
       expect(gameStatus.displayAmmoStatus).toHaveBeenCalledWith(
         mockWeaponSystem,
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything()
+        bh.maps,
+        0,
+        null,
+        false
       )
     })
   })

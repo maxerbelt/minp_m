@@ -12,9 +12,10 @@ const ATTEMPTS_PER_RETRY = 25
 
 /**
  * @typedef {Object} WeaponLaunchResult
- * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used.
- * @property {Object} [weapon] - The weapon object used.
- * @property {Object} [score] - The score result from the launch.
+ * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used
+ * @property {boolean} [hasUnattached] - Indicates if unattached weapon needs target selection
+ * @property {Object} [weapon] - The weapon object used
+ * @property {Object} [score] - The score result from the launch
  */
 
 /**
@@ -39,19 +40,20 @@ const ATTEMPTS_PER_RETRY = 25
  * @property {HTMLButtonElement} [weaponBtn]
  * @property {HTMLButtonElement} [revealBtn]
  * @property {Array<HTMLElement>} [weaponBtns]
- * @property {function(number, number): void} [cellWeaponActive]
- * @property {function(number, number): void} [cellWeaponDeactivate]
- * @property {function(number, number): void} [cellHintDeactivate]
- * @property {function(): void} [clearClasses]
- * @property {function(Array): void} [revealAll]
- * @property {function(): void} [playMode]
- * @property {function(): void} [reset]
+ * @property {(row: number, col: number) => void} [cellWeaponActive]
+ * @property {(row: number, col: number, force?: boolean) => void} [cellWeaponDeactivate]
+ * @property {(row: number, col: number) => void} [cellHintDeactivate]
+ * @property {() => void} [clearClasses]
+ * @property {(ships: Array) => void} [revealAll]
+ * @property {() => void} [playMode]
+ * @property {() => void} [reset]
  */
 
 /**
  * Represents the enemy player in the Waters game, handling AI behavior, ship placement, and weapon management.
  * Extends the Waters class to provide enemy-specific logic.
  */
+// @ts-ignore - Intentionally overrides parent's private destroy method with public implementation
 class Enemy extends Waters {
   /**
    * @param {Object} enemyUI - The UI instance for the enemy.
@@ -85,10 +87,44 @@ class Enemy extends Waters {
   _initializeSteps () {
     this.steps.onBeginTurn = this._handleBeginTurn.bind(this)
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
-    this.steps.onActivate = this._handleActivate.bind(this)
+    // @ts-ignore - steps.js onActivate callback requires 9 parameters for interface compatibility
+    this.steps.onActivate = this._createActivationHandler()
     this.steps.onSelect = this._handleSelect.bind(this)
     this.steps.onAim = this._handleAim.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
+  }
+
+  /**
+   * Creates a handler that adapts the steps.js parameter format to our object-based approach.
+   * Converts multiple parameters into a single activation data object.
+   * @private
+   * @returns {Function} Activation handler adapted for steps.js interface
+   */
+  _createActivationHandler () {
+    // Return a function that matches steps.js callback signature (9 parameters)
+    // but adapts it to our internal object-based approach
+    // @ts-ignore - steps.js interface requires 9 parameters
+    return function activationHandler (
+      _rack,
+      weapon,
+      _wletter,
+      _weaponId,
+      r,
+      c,
+      _cell,
+      shadowR,
+      shadowC
+    ) {
+      // Construct activation data from parameters
+      const activationData = {
+        weapon,
+        targetRow: r,
+        targetCol: c,
+        shadowRow: shadowR,
+        shadowCol: shadowC
+      }
+      return this._handleActivate(activationData)
+    }.bind(this)
   }
   _hasUnattachedForCurrentWeapon () {
     return (
@@ -114,34 +150,24 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles the activation event for a weapon rack.
+   * Handles activation of a weapon at specified coordinates.
+   * Displays weapon activation UI on both player and opponent boards.
    * @private
-   * @param {*} rack - The weapon rack.
-   * @param {*} weapon - The weapon object.
-   * @param {string} _wletter - Weapon letter (unused).
-   * @param {number} _weaponId - Weapon ID (unused).
-   * @param {number} r - Row coordinate.
-   * @param {number} c - Column coordinate.
-   * @param {HTMLElement} _cell - Cell element (unused).
-   * @param {number} shadowR - Shadow row.
-   * @param {number} shadowC - Shadow column.
+   * @param {Object} activationData - Activation context information
+   * @param {*} activationData.weapon - The weapon object being activated
+   * @param {number} activationData.targetRow - Target row coordinate
+   * @param {number} activationData.targetCol - Target column coordinate
+   * @param {number} activationData.shadowRow - Shadow row coordinate for post-select shadow
+   * @param {number} activationData.shadowCol - Shadow column coordinate for post-select shadow
    */
-  _handleActivate (
-    rack,
-    weapon,
-    _wletter,
-    _weaponId,
-    r,
-    c,
-    _cell,
-    shadowR,
-    shadowC
-  ) {
-    this.opponent?.UI?.cellWeaponActive?.(r, c)
+  // @ts-ignore - Called from _createActivationHandler() return function
+  _handleActivate (activationData) {
+    const { weapon, targetRow, targetCol, shadowRow, shadowCol } =
+      activationData
+    this.opponent?.UI?.cellWeaponActive?.(targetRow, targetCol)
     if (weapon.postSelectShadow) {
-      this.UI.cellWeaponActive(shadowR, shadowC, '', weapon.tag)
+      this.UI.cellWeaponActive(shadowRow, shadowCol, '', weapon.tag)
     }
-    // this.updateMode(rack)
   }
 
   /**
@@ -155,51 +181,47 @@ class Enemy extends Waters {
 
   /**
    * Transitions the UI to the opponent's turn.
-   *
+   * Called by friend.js when opponent (enemy) should have their turn.
+   * @private
    */
+  // @ts-ignore - Used by friend.js opponent._transitionToOpponentTurn()
   _transitionToOpponentTurn () {
-    this._updateSpinner(true, "Enemy's Turn")
+    this._setSpinnerState(true, "Enemy's Turn")
     this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
     this.steps.clearSource()
   }
 
   /**
-   * Handles the begin turn event.
-   */
-  async _handleBeginTurn () {
-    this._hideWaiting()
-    if (this.isGameOver()) {
-      this.steps.select()
-    } else {
-      gameStatus.showMode('Your Turn')
-    }
-  }
-
-  /**
-   * Hides the waiting state.
+   * Updates the spinner display state and game status.
    * @private
+   * @param {boolean} show - Whether to show the spinner
+   * @param {string} mode - The mode text to display
    */
-  _hideWaiting () {
-    this._updateSpinner(false, '')
-    if (this.loadOut.isSingleShot && !bh.terrain.hasAttachedWeapons) {
-      this.steps.select()
-    }
-  }
-
-  /**
-   * Updates the spinner display.
-   * @private
-   * @param {boolean} show - Whether to show the spinner.
-   * @param {string} mode - The mode text to display.
-   */
-  _updateSpinner (show, mode) {
+  _setSpinnerState (show, mode) {
     const spinner = document.getElementById('spinner')
-    if (spinner) {
+    if (spinner instanceof HTMLImageElement) {
       spinner.classList.toggle('waiting', show)
       spinner.classList.toggle('hidden', !show)
       if (show) spinner.src = './images/loading.gif'
     }
     gameStatus.showMode(mode)
+  }
+
+  /**
+   * Handles the begin turn event.
+   * Displays game status and manages single-shot weapon logic.
+   * @private
+   */
+  async _handleBeginTurn () {
+    this._setSpinnerState(false, '')
+    if (this.isGameOver()) {
+      this.steps.select()
+    } else {
+      gameStatus.showMode('Your Turn')
+    }
+    if (this.loadOut.isSingleShot && !bh.terrain.hasAttachedWeapons) {
+      this.steps.select()
+    }
   }
 
   /**
@@ -250,10 +272,10 @@ class Enemy extends Waters {
 
   /**
    * Attempts to place ships with retry logic.
+   * Repeatedly tries to place all ships until all are successfully placed.
    * @private
-   * @param {Array} ships - The ships to place.
-   * @param {number} attempt - The current attempt number.
-   * @returns {boolean} True if placement succeeded.
+   * @param {Array} ships - The ships to place
+   * @returns {boolean} True if placement succeeded
    */
   _attemptShipPlacement (ships) {
     for (let trial = 0; trial < MAX_PLACEMENT_ATTEMPTS; trial++) {
@@ -265,14 +287,14 @@ class Enemy extends Waters {
   }
 
   /**
-   * Handles placement failure and retries if possible.
+   * Handles placement failure and retries with exponential attempt counts.
    * @private
-   * @param {Array} ships - The ships to place.
-   * @param {number} attempt - The current attempt number.
-   * @returns {Promise<undefined|boolean>}
+   * @param {Array} ships - The ships to place
+   * @param {number} attempt - Current retry attempt (0-indexed)
+   * @returns {Promise<boolean>} True if placement succeeded after retry
    */
   async _handlePlacementFailure (ships, attempt) {
-    const totalAttempts = this._placementAttemptCount(attempt)
+    const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
     gameStatus.addToQueue(
       `Having difficulty placing all ships (${totalAttempts} attempts)`,
       true
@@ -280,31 +302,21 @@ class Enemy extends Waters {
 
     if (attempt < MAX_PLACEMENT_RETRIES) {
       await Delay.yield()
-      return this._attemptShipPlacementWithRetry(ships, attempt + 1)
+      return this._attemptShipPlacementWithRetry(ships)
     }
 
     this._finalizePlacementFailure()
+    return false
   }
 
   /**
-   * Attempts placement with retry.
+   * Attempts to place ships and returns the result.
    * @private
    * @param {Array} ships - The ships to place.
-   * @param {number} attempt - Retry attempt index.
-   * @returns {boolean} True if succeeded.
+   * @returns {boolean} True if all ships placed successfully.
    */
-  _attemptShipPlacementWithRetry (ships, attempt) {
+  _attemptShipPlacementWithRetry (ships) {
     return this._attemptShipPlacement(ships)
-  }
-
-  /**
-   * Computes the number of placement attempts for the current retry cycle.
-   * @private
-   * @param {number} attempt - Retry attempt index.
-   * @returns {number}
-   */
-  _placementAttemptCount (attempt) {
-    return (attempt + 1) * ATTEMPTS_PER_RETRY
   }
 
   /**
@@ -326,7 +338,7 @@ class Enemy extends Waters {
   async placeAll (ships = this.ships) {
     this.UI.enableBtns()
     await Delay.yield()
-    if (this._attemptShipPlacement(ships, 0)) {
+    if (this._attemptShipPlacement(ships)) {
       gameStatus.setTips(['Click On Square To Fire'])
       this.UI.enableBtns()
     } else {
@@ -348,13 +360,36 @@ class Enemy extends Waters {
 
   /**
    * Updates all UI components.
+   * Refreshes weapon UI, tally, and button availability based on game state.
    */
   updateUI () {
-    this._updateButtons()
+    this._updateButtonStates()
     super.updateUI(this.ships)
     this.updateMode()
   }
 
+  /**
+   * Updates the state of buttons based on game status.
+   * Disables buttons when game is over or out of ammo.
+   * @private
+   */
+  _updateButtonStates () {
+    const isGameOver = this.isGameOver()
+    const isOutOfAmmo = this.hasNoAmmo()
+    const shouldDisableWeapon = isGameOver || isOutOfAmmo
+
+    if (this.UI?.weaponBtn) {
+      this.UI.weaponBtn.disabled = shouldDisableWeapon
+    }
+    if (this.UI?.revealBtn) {
+      this.UI.revealBtn.disabled = isGameOver
+    }
+  }
+
+  /**
+   * Initializes weapon button event handlers.
+   * Creates buttons for each available weapon system.
+   */
   setupWeaponButtonHandlers () {
     if (this.UI?.weaponBtn == null) return
 
@@ -363,21 +398,6 @@ class Enemy extends Waters {
       this.loadOut?.getLimitedWeaponSystems(),
       this.onClickWeaponButtons.bind(this)
     )
-  }
-
-  /**
-   * Updates the state of buttons based on game status.
-   * @private
-   */
-  _updateButtons () {
-    const over = this.isGameOver()
-    const disabled = over || this.hasNoAmmo()
-    if (this.UI?.weaponBtn) {
-      this.UI.weaponBtn.disabled = disabled
-    }
-    if (this.UI?.revealBtn) {
-      this.UI.revealBtn.disabled = over
-    }
   }
 
   /**
@@ -433,6 +453,7 @@ class Enemy extends Waters {
       return result
     }
 
+    // @ts-ignore - Parent class launchRandomWeapon return type compatibility
     result = await this.launchRandomWeapon(r, c, !bh.seekingMode)
     if (this._isFinalLaunchResult(result)) {
       return result
@@ -472,8 +493,9 @@ class Enemy extends Waters {
 
   /**
    * Handles cell click for enemy turn.
-   * @param {number} r - Row coordinate.
-   * @param {number} c - Column coordinate.
+   * Validates turn legality and launches weapon at target.
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
    * @returns {Promise<void>}
    */
   async onClickCell (r, c) {
@@ -482,11 +504,19 @@ class Enemy extends Waters {
     const result = await this.setupWeapon(r, c)
     if (this._shouldWaitForWeaponResult(result)) return
 
+    this._processWeaponResult(result)
+    this._finalizeTurn()
+  }
+
+  /**
+   * Processes weapon launch result and applies effects if successful.
+   * @private
+   * @param {WeaponLaunchResult|null} result - The weapon launch result
+   */
+  _processWeaponResult (result) {
     if (result?.score) {
       this.updateResultsOfBomb(result.weapon, result.score)
     }
-
-    this._finalizeTurn()
   }
 
   /**
@@ -512,25 +542,21 @@ class Enemy extends Waters {
 
   /**
    * Handles click on opponent's cell for hint placement.
-   * @param {number} hintR - Hint row.
-   * @param {number} hintC - Hint column.
+   * Prepares UI and arms attached weapon if ready.
+   * @param {number} hintR - Hint row coordinate
+   * @param {number} hintC - Hint column coordinate
    */
   onClickOppoCell (hintR, hintC) {
     if (!this.opponent) return
-    this._prepareOpponentHintSelection(hintR, hintC)
-  }
 
-  /**
-   * Prepares opponent hint selection before arming the attached weapon.
-   * @private
-   * @param {number} hintR - Hint row coordinate.
-   * @param {number} hintC - Hint column coordinate.
-   */
-  _prepareOpponentHintSelection (hintR, hintC) {
+    // Deactivate temporary hints on opponent board
     this.opponent.UI.deactivateTempHints()
+    // Clear area-of-effect highlight
     this.UI.removeHighlightAoE()
+
     if (this.loadOut.isNotArming()) return
 
+    // Clear previous coordinate selections and setup new target
     this.loadOut.clearSelectedCoordinates()
     const cell = this.opponent.UI.gridCellAt(hintR, hintC)
     this.steps.addHint(this.opponent.UI, hintR, hintC, cell)
@@ -540,11 +566,15 @@ class Enemy extends Waters {
 
   /**
    * Destroys targets with the given weapon and effect.
-   * @param {*} weapon - The weapon.
-   * @param {Array} effect - The effect coordinates.
-   * @param {Object} options - Additional options.
-   * @returns {*} The result of the application.
+   * Validates shot legality and applies weapon effects to target cells.
+   * Overrides parent's private destroy() with public API for enemy-specific logic.
+   * @param {Object} weapon - The weapon object
+   * @param {Array} effect - Array of effect coordinates
+   * @param {Object} [options] - Additional options for application
+   * @param {boolean} [options.isSplash] - If true, skips shot validity checks
+   * @returns {*} The result of applying weapon effect
    */
+  // @ts-ignore - Intentionally overrides parent's private destroy with public implementation
   destroy (weapon, effect, options) {
     if (!options?.isSplash) {
       if (this._isInvalidShot(effect)) {
@@ -572,39 +602,44 @@ class Enemy extends Waters {
   }
 
   /**
-   * Deactivates the weapon at the specified locations.
-   * @param {number} ro - Opponent row.
-   * @param {number} co - Opponent column.
-   * @param {number} shadowR - Shadow row.
-   * @param {number} shadowC - Shadow column.
+   * Deactivates weapon and hint cells at specified locations.
+   * Clears activation UI from both player and opponent boards.
+   * @param {number} opponentRow - Opponent board row (nullable)
+   * @param {number} opponentCol - Opponent board column (nullable)
+   * @param {number} shadowRow - Shadow cell row (nullable)
+   * @param {number} shadowCol - Shadow cell column (nullable)
    */
-  deactivateWeapon (ro, co, shadowR, shadowC) {
-    this._deactivateOpponentWeapon(ro, co)
-    this._deactivateOwnShadow(shadowR, shadowC)
-  }
-
-  /**
-   * Deactivates the opponent's weapon cell.
-   * @private
-   * @param {number} ro - Opponent row coordinate.
-   * @param {number} co - Opponent column coordinate.
-   */
-  _deactivateOpponentWeapon (ro, co) {
-    if (ro != null && co != null) {
-      this.opponent?.UI?.cellWeaponDeactivate?.(ro, co, true)
+  deactivateWeapon (opponentRow, opponentCol, shadowRow, shadowCol) {
+    this._safelyDeactivateUICell(
+      this.opponent?.UI,
+      'cellWeaponDeactivate',
+      opponentRow,
+      opponentCol,
+      true
+    )
+    if (shadowRow != null && shadowCol != null) {
+      this.UI.cellWeaponDeactivate(shadowRow, shadowCol)
+      this._safelyDeactivateUICell(
+        this.opponent?.UI,
+        'cellHintDeactivate',
+        shadowRow,
+        shadowCol
+      )
     }
   }
 
   /**
-   * Deactivates the local shadow cell and opponent hint.
+   * Safely calls a UI deactivation method if the cell exists.
    * @private
-   * @param {number} shadowR - Shadow row coordinate.
-   * @param {number} shadowC - Shadow column coordinate.
+   * @param {EnemyUI} ui - The UI instance to deactivate on
+   * @param {string} methodName - The deactivation method name
+   * @param {number} row - Row coordinate
+   * @param {number} col - Column coordinate
+   * @param {boolean} [force] - Force flag for deactivation
    */
-  _deactivateOwnShadow (shadowR, shadowC) {
-    if (shadowR != null && shadowC != null) {
-      this.UI.cellWeaponDeactivate(shadowR, shadowC)
-      this.opponent?.UI?.cellHintDeactivate?.(shadowR, shadowC)
+  _safelyDeactivateUICell (ui, methodName, row, col, force = false) {
+    if (row != null && col != null && ui?.[methodName]) {
+      ui[methodName](row, col, force)
     }
   }
 
@@ -686,7 +721,7 @@ class Enemy extends Waters {
    */
   resetModel () {
     this.score.reset()
-    this.resetMap()
+    this.resetMap(true)
     this.UI.playMode()
     this.loadOut.onOutOfAllAmmo = () => {
       if (this.UI?.weaponBtn) {
