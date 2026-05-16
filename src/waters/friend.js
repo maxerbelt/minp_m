@@ -89,6 +89,8 @@ export class Friend extends Waters {
     this.friendlyWaters = true
     /** @type {Bitmask|null} Untried location mask for seeking */
     this.untried = null
+    /** @type {Object|null} Tracks the selected target cell for two-click weapon firing in hide/seek mode. */
+    this.selectedCellCoordinates = null
   }
 
   /**
@@ -415,6 +417,8 @@ export class Friend extends Waters {
     return this.map.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
   async _handleBeginTurn () {
+    // Reset selected cell coordinates for two-click mode
+    this.selectedCellCoordinates = null
     this.opponent._transitionToOpponentTurn()
     await Delay.wait(ENEMY_TURN_DELAY)
     this.testContinue = true
@@ -840,11 +844,42 @@ export class Friend extends Waters {
   }
 
   /**
+   * Handles the first click in hide/seek mode: selects a random weapon, ship, and hint location.
+   * @private
+   * @returns {void}
+   */
+  _onFirstClickSelection () {
+    this.randomAttachedWeapon(this.opponent)
+    gameStatus.addToQueue('Click again to fire', true)
+  }
+
+  /**
+   * Handles the second click in hide/seek mode: fires the selected weapon at the target.
+   * @private
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @returns {Promise<void>}
+   */
+  async _onSecondClickFire (r, c) {
+    this.selectedCellCoordinates = null
+    const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
+    if (result?.score) {
+      this.opponent.updateResultsOfBomb(result.weapon, result.score)
+    }
+    this.opponent?.updateUI()
+    this.updateUI(this.ships)
+    this.steps.endTurn()
+  }
+
+  /**
    * Handles cell click for friendly board weapon selection in Hide & Seek mode.
    *
    * This method is registered as the click handler for the friendly board.
    * When a player clicks a cell in Hide & Seek mode with attached weapons enabled,
    * it triggers weapon selection for that cell location.
+   *
+   * In hide/seek mode: implements two-click behavior (first click selects, second fires).
+   * In other modes: not applicable.
    *
    * Validation:
    * - Only processes clicks if in seeking mode (hide & seek)
@@ -859,8 +894,18 @@ export class Friend extends Waters {
     if (!bh.seekingMode || !bh.terrain.hasAttachedWeapons) {
       return
     }
-    const cell = this.UI.gridCellAt(r, c)
-    this.selectAttachedWeapon(cell, r, c, this.opponent)
+
+    // Implement two-click behavior
+    if (this.selectedCellCoordinates === null) {
+      // First click: select weapon and ship
+      this._onFirstClickSelection()
+      this.selectedCellCoordinates = { r, c }
+      return
+    } else {
+      // Second click: fire at target
+      this._onSecondClickFire(r, c)
+      return
+    }
   }
 
   /**

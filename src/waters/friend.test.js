@@ -121,7 +121,8 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
     _setWeaponMode: jest.fn(),
     _resetAmmoIcons: jest.fn(),
     displayAmmoStatus: jest.fn(),
-    showMode: jest.fn()
+    showMode: jest.fn(),
+    addToQueue: jest.fn()
   }
 }))
 
@@ -340,12 +341,20 @@ describe('Friend', () => {
 
   // ============ Board Click Handler Tests ============
   // Prevents regressions in weapon selection click handling
+  // Implements two-click behavior: first click selects weapon, second click fires
 
   describe('onClickCell', () => {
     beforeEach(() => {
-      friend.opponent = { name: 'Enemy' }
-      friend.selectAttachedWeapon = jest.fn()
-      friend.UI.gridCellAt = jest.fn(() => ({ element: 'cell' }))
+      friend.opponent = {
+        name: 'Enemy',
+        updateUI: jest.fn(),
+        updateResultsOfBomb: jest.fn()
+      }
+      friend.randomAttachedWeapon = jest.fn()
+      friend.fireWeaponAt = jest.fn(() => Promise.resolve({ score: null }))
+      friend.steps.endTurn = jest.fn()
+      friend.loadOut.selectedWeapon = { letter: 'A' }
+      friend.updateUI = jest.fn()
     })
 
     it('only processes clicks when in seeking mode', () => {
@@ -353,7 +362,7 @@ describe('Friend', () => {
       bh.seekingMode = false
       try {
         friend.onClickCell(5, 5)
-        expect(friend.selectAttachedWeapon).not.toHaveBeenCalled()
+        expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
       } finally {
         bh.seekingMode = originalSeekingMode
       }
@@ -365,25 +374,44 @@ describe('Friend', () => {
       bh.terrain = { hasAttachedWeapons: false }
       try {
         friend.onClickCell(5, 5)
-        expect(friend.selectAttachedWeapon).not.toHaveBeenCalled()
+        expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
       } finally {
         bh.seekingMode = originalSeekingMode
       }
     })
 
-    it('calls selectAttachedWeapon with correct parameters in seeking mode', () => {
+    it('first click calls randomAttachedWeapon in seeking mode', () => {
       const originalSeekingMode = bh.seekingMode
       bh.seekingMode = true
       bh.terrain = { hasAttachedWeapons: true }
       try {
         friend.onClickCell(3, 7)
-        expect(friend.UI.gridCellAt).toHaveBeenCalledWith(3, 7)
-        expect(friend.selectAttachedWeapon).toHaveBeenCalledWith(
-          { element: 'cell' },
-          3,
-          7,
+        expect(friend.randomAttachedWeapon).toHaveBeenCalledWith(
           friend.opponent
         )
+        expect(friend.selectedCellCoordinates).toEqual({ r: 3, c: 7 })
+      } finally {
+        bh.seekingMode = originalSeekingMode
+      }
+    })
+
+    it('second click fires weapon at target', async () => {
+      const originalSeekingMode = bh.seekingMode
+      bh.seekingMode = true
+      bh.terrain = { hasAttachedWeapons: true }
+      try {
+        // First click: select weapon
+        friend.onClickCell(3, 7)
+        expect(friend.selectedCellCoordinates).not.toBeNull()
+
+        // Second click: fire weapon
+        await friend.onClickCell(5, 5)
+        expect(friend.fireWeaponAt).toHaveBeenCalledWith(
+          5,
+          5,
+          friend.loadOut.selectedWeapon
+        )
+        expect(friend.steps.endTurn).toHaveBeenCalled()
       } finally {
         bh.seekingMode = originalSeekingMode
       }
@@ -395,7 +423,7 @@ describe('Friend', () => {
       bh.terrain = { hasAttachedWeapons: true }
       try {
         friend.onClickCell(5, 5)
-        expect(friend.selectAttachedWeapon).not.toHaveBeenCalled()
+        expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
       } finally {
         bh.seekingMode = originalSeekingMode
       }

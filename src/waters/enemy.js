@@ -77,6 +77,9 @@ class Enemy extends Waters {
     /** @type {boolean} Indicates this is an enemy waters instance. */
     this.enemyWaters = true
 
+    /** @type {Object|null} Tracks the selected target cell for two-click weapon firing in hide/seek mode. */
+    this.selectedCellCoordinates = null
+
     this._initializeSteps()
   }
 
@@ -130,7 +133,7 @@ class Enemy extends Waters {
     return (
       this.loadOut.isSingleShot ||
       this.loadOut.getUnattachedWeaponSystem() != null ||
-      (bh.seekingMode && !bh.terrain?.hasAttachedWeapons)
+      (bh.seekingMode && !this.hasAttachedWeapons)
     )
   }
   /**
@@ -214,12 +217,14 @@ class Enemy extends Waters {
    */
   async _handleBeginTurn () {
     this._setSpinnerState(false, '')
+    // Reset selected cell coordinates for two-click mode
+    this.selectedCellCoordinates = null
     if (this.isGameOver()) {
       this.steps.select()
     } else {
       gameStatus.showMode('Your Turn')
     }
-    if (this.loadOut.isSingleShot && !bh.terrain.hasAttachedWeapons) {
+    if (this.loadOut.isSingleShot && !this.hasAttachedWeapons) {
       this.steps.select()
     }
   }
@@ -449,7 +454,7 @@ class Enemy extends Waters {
 
     // In Hide and Seek mode with all attached weapons, do not fall back to random selection
     // This ensures the player's weapon choice is respected and allows multi-coordinate weapons to work
-    if (!bh.seekingMode && bh.terrain?.hasAttachedWeapons) {
+    if (bh.seekingMode && this.hasAttachedWeapons) {
       // Return the current result (null for incomplete selection, allowing next click to continue)
       return result
     }
@@ -493,8 +498,75 @@ class Enemy extends Waters {
   }
 
   /**
+   * Selects a random armed ship with the current weapon.
+   * Ensures the selected weapon matches the current loadOut weapon.
+   * @private
+   * @returns {void}
+   */
+  _selectWeaponMatchingCurrent () {
+    const currentWeaponSystem = this.loadOut.getCurrentWeaponSystem()
+    if (!currentWeaponSystem) {
+      // Fall back to random if no current weapon
+      this.randomAttachedWeapon(this.opponent)
+      return
+    }
+
+    // Get all armed ships with the current weapon
+    const armedShips = this.loadOut.getArmedShips()
+    const matchingShips = armedShips.filter(ship =>
+      ship.getRack(currentWeaponSystem.weaponId)
+    )
+
+    if (matchingShips.length === 0) {
+      // If no ships have current weapon, fall back to random
+      this.randomAttachedWeapon(this.opponent)
+      return
+    }
+
+    // Pick a random ship from those with the current weapon
+    const selectedShip =
+      matchingShips[Math.floor(Math.random() * matchingShips.length)]
+    this.steps.addShip(selectedShip)
+
+    // Generate and arm the selection
+    const selection = this.generateWeaponSelectionForShip(selectedShip)
+    this._armSelectedWeapon(selection, this.opponent)
+  }
+
+  /**
+   * Handles the first click in hide/seek mode: selects a random weapon, ship, and hint location.
+   * @private
+   * @returns {void}
+   */
+  _onFirstClickSelection () {
+    this._selectWeaponMatchingCurrent()
+    gameStatus.addToQueue('Enemy selecting target...', true)
+  }
+
+  /**
+   * Handles the second click in hide/seek mode: fires the selected weapon at the target.
+   * @private
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @returns {Promise<void>}
+   */
+  async _onSecondClickFire (r, c) {
+    this.selectedCellCoordinates = null
+    const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
+    // @ts-ignore - fireWeaponAt return type includes score property
+    if (result?.score) {
+      // @ts-ignore - fireWeaponAt return type includes score property
+      this.opponent.updateResultsOfBomb(result.weapon, result.score)
+    }
+    this.opponent?.updateUI()
+    this.updateUI()
+    this._finalizeTurn()
+  }
+
+  /**
    * Handles cell click for enemy turn.
    * Validates turn legality and launches weapon at target.
+   * In hide/seek mode with attached weapons, implements two-click behavior.
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Promise<void>}
@@ -502,9 +574,24 @@ class Enemy extends Waters {
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
 
+    // Only implement two-click behavior in hide/seek mode with attached weapons
+    if (bh.seekingMode && this.hasAttachedWeapons) {
+      // Implement two-click behavior
+      if (this.selectedCellCoordinates === null) {
+        // First click: select weapon and ship
+        this._onFirstClickSelection()
+        this.selectedCellCoordinates = { r, c }
+        return
+      } else {
+        // Second click: fire at target
+        await this._onSecondClickFire(r, c)
+        return
+      }
+    }
+
+    // Default single-click behavior for other modes
     const result = await this.setupWeapon(r, c)
     if (this._shouldWaitForWeaponResult(result)) return
-
     this._processWeaponResult(result)
     this._finalizeTurn()
   }
@@ -673,9 +760,40 @@ class Enemy extends Waters {
   }
 
   /**
+   * Handles weapon change: resets two-click selection and updates board state.
+   * Called when weapon changes via buttons or when running out of ammo.
+   * @private
+   */
+  _handleWeaponChange () {
+    // Reset two-click weapon selection
+    this.selectedCellCoordinates = null
+
+    // Get current cursor from board and prepare to update
+    let oldCursor = ''
+    if (this.UI?.board?.classList) {
+      // Find and extract any cursor class from board
+      for (const cls of this.UI.board.classList) {
+        if (cls.startsWith('cursor-') || cls.includes('cursor')) {
+          oldCursor = cls
+          break
+        }
+      }
+    }
+
+    // Notify of cursor change to update board
+    if (this.loadOut.notifyCursorChange) {
+      this.loadOut.notifyCursorChange(oldCursor)
+    }
+
+    // Update board targeting state for new weapon
+    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+  }
+
+  /**
    * Handles click on single shot button.
    */
   onClickSingleShotButton () {
+    this._handleWeaponChange()
     this.loadOut.switchToSingleShot()
     //  this.steps.select()
   }
@@ -685,6 +803,7 @@ class Enemy extends Waters {
    * @param {string} letter - The weapon letter.
    */
   onClickWeaponButtons (letter) {
+    this._handleWeaponChange()
     this.loadOut.switchToWeapon(letter)
     this.steps.select()
   }
@@ -730,7 +849,11 @@ class Enemy extends Waters {
         this.UI.weaponBtn.textContent = 'single shot'
       }
     }
-    this.loadOut.onOutOfAmmo = this.updateMode.bind(this)
+    // Handle weapon change when running out of ammo
+    this.loadOut.onOutOfAmmo = () => {
+      this._handleWeaponChange()
+      this.updateMode()
+    }
     this.resetUI(this.ships)
   }
 
