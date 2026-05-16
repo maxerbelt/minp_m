@@ -1600,42 +1600,94 @@ export class Waters {
     this.animateStrikeSplash(targetCoords, weapon)
     return weapon?.crashSplash(bh.map, targetCoords, effect, options)
   }
+  /**
+   * Consolidates ship filtering operations into unified helpers.
+   * CONSOLIDATED: reduces duplication in ship selection patterns.
+   */
+  
+  /**
+   * Gets all ships that are sunk.
+   * 
+   * @returns {Ship[]} Array of sunk ships
+   */
   shipsSunk () {
     return this.ships.filter(s => s.sunk)
   }
+
+  /**
+   * Gets all ships that are NOT sunk.
+   * 
+   * @returns {Ship[]} Array of unsunk ships
+   */
   shipsUnsunk () {
     return this.ships.filter(s => !s.sunk)
   }
+
+  /**
+   * Gets all unique unsunk ship shapes.
+   * 
+   * @returns {Set<Shape>} Unique shapes of unsunk ships
+   */
   shapesUnsunk () {
     return [...new Set(this.shipsUnsunk().map(s => s.shape()))]
   }
+
+  /**
+   * Gets unsunk ship shapes that can be placed on subterrain in zone.
+   * 
+   * @param {Object} subterrain - The subterrain type
+   * @param {Object} zone - The zone constraints
+   * @returns {Shape[]} Shapes that satisfy constraints
+   */
   shapesCanBeOn (subterrain, zone) {
     return this.shapesUnsunk().filter(s => s.canBeOn(subterrain, zone))
   }
 
-  createCandidateWeapons () {
-    const candidates = bh.map.terrain.weapons.weapons
-
-    return candidates
-  }
-  createCandidateShips () {
-    const maps = bh.maps
-
-    const baseShapes = maps.baseShapes
-    const ships = Ship.createShipsFromShapes(baseShapes)
-    return ships
-  }
-  resetShipCells () {
-    this.shipCellGrid.reset()
-  }
+  /**
+   * Gets armed ship cells (cells with ammo > 0).
+   * 
+   * @returns {HTMLElement[]} Array of armed cell elements
+   */
   armedCells () {
     return this.cellList().filter(c => c.dataset.ammo > 0)
   }
+
+  /**
+   * Gets armed ship cells for a specific weapon letter.
+   * 
+   * @param {string} letter - Weapon letter identifier
+   * @returns {HTMLElement[]} Array of armed cells with weapon letter
+   */
   armedCellsWithWeapon (letter) {
     return this.cellList().filter(
       c => c.dataset.ammo > 0 && c.dataset.wletter === letter
     )
   }
+
+  /**
+   * Gets all cells on the game board.
+   * 
+   * @returns {HTMLElement[]} Array of board cell elements
+   */
+  cellList () {
+    return [...this.cellsOnBoard()]
+  }
+
+  /**
+   * Gets direct children elements of board (cell references).
+   * 
+   * @returns {HTMLCollection} Collection of board cell children
+   */
+  cellsOnBoard () {
+    return this.UI.board.children
+  }
+
+  /**
+   * Gets all cells on board belonging to a specific ship.
+   * 
+   * @param {number} id - Ship ID
+   * @returns {HTMLElement[]} Array of ship's cells
+   */
   shipCells (id) {
     let list = []
     for (const cell of this.cellsOnBoard()) {
@@ -1644,12 +1696,6 @@ export class Waters {
       }
     }
     return list
-  }
-  cellList () {
-    return [...this.cellsOnBoard()]
-  }
-  cellsOnBoard () {
-    return this.UI.board.children
   }
 
   recordAutoMiss (r, c) {
@@ -1890,11 +1936,98 @@ export class Waters {
     this.updateResultsOfTurn(weapon, hits, dtaps, sunk, reveals, info, shots)
   }
   /**
+   * Builds message for firing results based on hit/miss/sunk counts.
+   * UNIFIED: single point for all result message construction.
+   * Routes to appropriate display method based on result composition.
+   * 
+   * @param {Object} weapon - The weapon used
+   * @param {number} hits - Number of hits
+   * @param {Array} sunks - Array of sunk ship letters
+   * @param {number} [reveals] - Number of reveals (default 0)
+   * @param {string} [messageInfo] - Prefix for message
+   * @returns {string} Formatted result message
+   * @private
+   */
+  _buildResultMessage (weapon, hits, sunks, reveals = 0, messageInfo = '') {
+    // No hits - report miss
+    if (hits === 0) {
+      return messageInfo + this._buildMissMessage(weapon, reveals)
+    }
+
+    // Hits but no sunk ships
+    if (sunks.length === 0) {
+      let message = this.hitDescription(hits)
+      if (reveals > 0) {
+        message += ` and ${this.revealDescription(reveals)}`
+      }
+      return messageInfo + message
+    }
+
+    // Hits with sunk ships - single or multiple
+    let message = this.hitDescription(hits) + ','
+    for (const sunk of sunks) {
+      message += ' and ' + this.sunkLetterDescription(sunk)
+    }
+    if (sunks.length > 1) {
+      message += ' Destroyed'
+    }
+    return messageInfo + message
+  }
+
+  /**
+   * Builds miss message accounting for reveals and weapon type.
+   * CONSOLIDATED: unified miss message construction.
+   * 
+   * @param {Object} weapon - The weapon that missed
+   * @param {number} [reveals] - Number of reveals
+   * @returns {string} Miss message
+   * @private
+   */
+  _buildMissMessage (weapon, reveals = 0) {
+    if (reveals > 0) {
+      return this.revealDescription(reveals)
+    }
+
+    if (this.opponent) {
+      const preamble1 = this.opponent.preamble1
+      if (weapon.letter === '-') {
+        return `${preamble1}${weapon.name} missed`
+      }
+      return `${preamble1}${weapon.name} missed ${this.preamble0} ships`
+    }
+
+    if (weapon.letter === '-') {
+      return null
+    }
+
+    return `The ${weapon.name} missed everything!`
+  }
+
+  /**
+   * Displays a firing result message.
+   * UNIFIED: single entry point for all result display.
+   * 
+   * @param {Object} weapon - The weapon used
+   * @param {number} hits - Number of hits
+   * @param {Array} sunks - Array of sunk ship letters
+   * @param {number} [reveals] - Number of reveals (default 0)
+   * @param {string} [messageInfo] - Prefix for message (default '')
+   * @private
+   */
+  _displayResult (weapon, hits, sunks, reveals = 0, messageInfo = '') {
+    const message = this._buildResultMessage(weapon, hits, sunks, reveals, messageInfo)
+    if (message) {
+      this.displayInfo(message)
+    }
+  }
+
+  /**
    * Builds and displays message for a complete miss.
    * @param {Object} weapon - The weapon used
    * @param {number} reveals - Number of reveals
    * @param {string} messageInfo - Additional message info
    * @private
+   * @deprecated Use _displayResult() instead
    */
   displayMissResult (weapon, reveals, messageInfo) {
     this.displayMisses(weapon, reveals, messageInfo)
@@ -1906,6 +2039,7 @@ export class Waters {
    * @param {number} reveals - Number of reveals
    * @param {string} messageInfo - Additional message info
    * @private
+   * @deprecated Use _displayResult() instead
    */
   displayHitResult (hits, reveals, messageInfo) {
     let message = this.hitDescription(hits)
@@ -1921,6 +2055,7 @@ export class Waters {
    * @param {Array} sunks - Array of sunk ship letters
    * @param {string} messageInfo - Additional message info
    * @private
+   * @deprecated Use _displayResult() instead
    */
   displaySingleSunkResult (hits, sunks, messageInfo) {
     this.displayInfo(
@@ -1937,6 +2072,7 @@ export class Waters {
    * @param {Array} sunks - Array of sunk ship letters
    * @param {string} messageInfo - Additional message info
    * @private
+   * @deprecated Use _displayResult() instead
    */
   displayMultipleSunkResult (hits, sunks, messageInfo) {
     let message = this.hitDescription(hits) + ','
@@ -1947,28 +2083,27 @@ export class Waters {
     this.displayInfo(messageInfo + message)
   }
 
+  /**
+   * Updates firing result display based on hits and sunk ships.
+   * CONSOLIDATED: unified result handling with single routing logic.
+   * Delegates to _displayResult for all message formatting.
+   * 
+   * @param {Object} weapon - The weapon used
+   * @param {number} hits - Number of hits
+   * @param {number} dtaps - Double tap count (unused in display)
+   * @param {Array} sunks - Array of sunk ship letters
+   * @param {number} [reveals] - Number of reveals (default 0)
+   * @param {string} [info] - Additional message info (default '')
+   */
   updateResultsOfTurn (weapon, hits, dtaps, sunks, reveals = 0, info = '') {
     const messageInfo = info ? info + ' ' : ''
     if (this.boardDestroyed) {
       return
     }
 
-    if (hits === 0) {
-      this.displayMissResult(weapon, reveals, messageInfo)
-      return
-    }
-
-    if (sunks.length === 0) {
-      this.displayHitResult(hits, reveals, messageInfo)
-      return
-    }
-
-    if (sunks.length === 1) {
-      this.displaySingleSunkResult(hits, sunks, messageInfo)
-      return
-    }
-
-    this.displayMultipleSunkResult(hits, sunks, messageInfo)
+    // Convert string sunk to array for unified handling
+    const sunkArray = Array.isArray(sunks) ? sunks : (sunks ? [sunks] : [])
+    this._displayResult(weapon, hits, sunkArray, reveals, messageInfo)
   }
 
   flash (long) {
