@@ -863,6 +863,13 @@ class Enemy extends Waters {
       this.opponent.UI.deactivateTempHints()
     }
 
+    // Reset UI mode icons to show we're back in selection mode
+    // (not targeting mode). This removes 'off' class from modeIcon1
+    // and adds 'off' class to modeIcon2 to indicate selection mode is active.
+    if (gameStatus?.resetToSelectionMode) {
+      gameStatus.resetToSelectionMode()
+    }
+
     // Get current cursor from board and prepare to update
     let oldCursor = ''
     if (this.UI?.board?.classList) {

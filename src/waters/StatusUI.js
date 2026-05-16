@@ -253,6 +253,24 @@ class StatusUI {
   }
 
   /**
+   * Resets mode icons to show selection mode (modeIcon1 active, modeIcon2 off).
+   * Called when a weapon is changed to return player to selection state.
+   *
+   * REGRESSION PREVENTION:
+   * When a weapon button is clicked during a two-click targeting sequence,
+   * we must clear the selected coordinate AND reset the UI to show we're
+   * back in selection mode (not targeting mode). This method handles that.
+   *
+   * @public
+   */
+  resetToSelectionMode () {
+    // stepIndex=0 shows selection mode:
+    // - modeIcon1: remove 'off' class (selection mode is active)
+    // - modeIcon2: add 'off' class (targeting mode is inactive)
+    this._displayWhichLaunchStep(0)
+  }
+
+  /**
    * Shows an item in the status display.
    * @param {string} newItem - The item to show
    * @param {boolean} [isImportant=false] - Whether this is important

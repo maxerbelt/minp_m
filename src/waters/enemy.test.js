@@ -15,7 +15,8 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
     showMode: jest.fn(),
     addToQueue: jest.fn(),
     setTips: jest.fn(),
-    clearQueue: jest.fn()
+    clearQueue: jest.fn(),
+    resetToSelectionMode: jest.fn()
   }
 }))
 
@@ -1094,6 +1095,13 @@ describe('Enemy.updateWeaponStatus', () => {
             this.opponent.UI.deactivateTempHints()
           }
 
+          // Reset UI mode icons to show we're back in selection mode
+          // (not targeting mode). This removes 'off' class from modeIcon1
+          // and adds 'off' class to modeIcon2 to indicate selection mode is active.
+          if (gameStatus?.resetToSelectionMode) {
+            gameStatus.resetToSelectionMode()
+          }
+
           // Get current cursor from board and prepare to update
           let oldCursor = ''
           if (this.UI?.board?.classList) {
@@ -1139,6 +1147,15 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
     })
 
+    it('should reset UI mode icons to show selection mode by calling gameStatus.resetToSelectionMode()', () => {
+      const enemy = new Enemy()
+
+      enemy._handleWeaponChange()
+
+      // Verify gameStatus.resetToSelectionMode was called
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+    })
+
     it('should clear selection BEFORE weapon is switched (preventing weapon mismatch)', () => {
       const enemy = new Enemy()
       enemy.selectedCellCoordinates = { r: 5, c: 5 }
@@ -1169,6 +1186,37 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.selectedCellCoordinates).toBeNull()
       expect(enemy.steps.clearSource).toHaveBeenCalled()
       expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
+    })
+
+    it('should reset UI mode icons when going from targeting mode back to selection mode', () => {
+      // REGRESSION TEST: When player has made a selection (in targeting mode with modeIcon2 active)
+      // and then clicks a different weapon button, the UI should show selection mode again (modeIcon1 active)
+      const enemy = new Enemy()
+
+      // Assume we were in targeting mode: modeIcon2 active, modeIcon1 off
+      // Now player clicks a different weapon button
+      enemy._handleWeaponChange()
+
+      // gameStatus.resetToSelectionMode() should be called to update UI:
+      // - Remove 'off' from modeIcon1 (selection mode is now active)
+      // - Add 'off' to modeIcon2 (targeting mode is now off)
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+    })
+
+    it('should update UI mode icons along with data state (important for visual consistency)', () => {
+      // REGRESSION PREVENTION: UI and data state must be synchronized
+      // If we only clear the data but not the UI, the UI will show targeting mode
+      // while the data is in selection mode, causing confusion
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 3, c: 3 }
+
+      enemy._handleWeaponChange()
+
+      // Both data AND UI should be cleared/reset
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+      expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
     })
   })
 })
