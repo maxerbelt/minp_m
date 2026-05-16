@@ -5,6 +5,7 @@ import { LoadOut } from './LoadOut.js'
 import { Waters } from './Waters.js'
 import { Player } from './steps.js'
 import { Delay } from '../core/Delay.js'
+import { randomElement, parsePair } from '../core/utilities.js'
 
 const MAX_PLACEMENT_ATTEMPTS = 50
 const MAX_PLACEMENT_RETRIES = 10
@@ -440,7 +441,7 @@ class Enemy extends Waters {
 
   /**
    * Launches the weapon sequence, trying selected, random, and default launch flows.
-   * In Hide and Seek mode with all attached weapons, respects the currently selected weapon.
+   * In Hide and Seek mode with opponent having attached weapons, respects the currently selected weapon.
    * @private
    * @param {number} r - Target row.
    * @param {number} c - Target column.
@@ -452,9 +453,9 @@ class Enemy extends Waters {
       return result
     }
 
-    // In Hide and Seek mode with all attached weapons, do not fall back to random selection
+    // When opponent has attached weapons, do not fall back to random selection
     // This ensures the player's weapon choice is respected and allows multi-coordinate weapons to work
-    if (bh.seekingMode && this.hasAttachedWeapons) {
+    if (this.opponent?.hasAttachedWeapons) {
       // Return the current result (null for incomplete selection, allowing next click to continue)
       return result
     }
@@ -498,48 +499,104 @@ class Enemy extends Waters {
   }
 
   /**
-   * Selects a random armed ship with the current weapon.
-   * Ensures the selected weapon matches the current loadOut weapon.
+   * Selects the currently selected weapon (e.g., Rail Bolt) on a random opponent ship.
+   * Falls back to random weapon if the current weapon is not available on any opponent ship.
+   *
+   * CRITICAL: This method ensures that when a player clicks a weapon button (e.g., Rail Bolt)
+   * and then clicks the enemy board, the first click selects a RAIL BOLT RACK on a RAILGUN SHIP.
+   * NOT a random weapon on a random ship.
+   *
+   * REGRESSION HISTORY:
+   * - v1: Used randomAttachedWeapon() directly, selected wrong weapon types
+   * - FIX: Filter opponent ships to only those with the selected weapon loaded
+   *
    * @private
    * @returns {void}
    */
-  _selectWeaponMatchingCurrent () {
-    const currentWeaponSystem = this.loadOut.getCurrentWeaponSystem()
-    if (!currentWeaponSystem) {
-      // Fall back to random if no current weapon
+  _selectCurrentWeaponOnRandomShip () {
+    // Get the weapon the player currently has selected (via weapon button click)
+    const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+
+    if (!currentWeapon?.weapon?.letter) {
+      // Fallback to random weapon if player hasn't selected one
       this.randomAttachedWeapon(this.opponent)
       return
     }
 
-    // Get all armed ships with the current weapon
-    const armedShips = this.loadOut.getArmedShips()
-    const matchingShips = armedShips.filter(ship =>
-      ship.getRack(currentWeaponSystem.weaponId)
-    )
+    const targetLetter = currentWeapon.weapon.letter
 
-    if (matchingShips.length === 0) {
-      // If no ships have current weapon, fall back to random
+    // CRITICAL: Filter to only ships that have THIS SPECIFIC WEAPON loaded
+    // This prevents selecting a MissileBoat when Rail Bolt is selected
+    const shipsWithWeapon = this.opponent.ships.filter(ship => {
+      const entries = ship.getLoadedWeaponEntries()
+      return entries.some(
+        ([_key, weapon]) => weapon.weapon?.letter === targetLetter
+      )
+    })
+
+    if (shipsWithWeapon.length === 0) {
+      // Fallback to random weapon if no ship has the current weapon
+      // This is a valid edge case, not an error
       this.randomAttachedWeapon(this.opponent)
       return
     }
 
-    // Pick a random ship from those with the current weapon
-    const selectedShip =
-      matchingShips[Math.floor(Math.random() * matchingShips.length)]
+    // Select a random ship from the filtered list
+    const selectedShip = randomElement(shipsWithWeapon)
+
     this.steps.addShip(selectedShip)
 
-    // Generate and arm the selection
-    const selection = this.generateWeaponSelectionForShip(selectedShip)
+    // Find and select the target weapon from the ship
+    const entries = selectedShip.getLoadedWeaponEntries()
+    const [key, weapon] = entries.find(
+      ([_k, w]) => w.weapon?.letter === targetLetter
+    )
+
+    if (!key || !weapon) {
+      // Fallback if weapon not found (should rarely happen after filtering)
+      this.randomAttachedWeapon(this.opponent)
+      return
+    }
+
+    const [launchC, launchR] = parsePair(key)
+    const viewModel = this.opponent?.UI || this.UI
+    const selectedCell = viewModel.gridCellAt(launchR, launchC)
+
+    // Generate hint coordinates for targeting
+    const hintCoords = this.generateSourceHint(selectedShip, this.opponent)
+
+    this.steps.addSource(viewModel, launchR, launchC, selectedCell)
+
+    // Create weapon selection for the current weapon
+    const selection = this.createWeaponSelection(
+      launchR,
+      launchC,
+      weapon.id,
+      hintCoords[0],
+      hintCoords[1]
+    )
     this._armSelectedWeapon(selection, this.opponent)
   }
 
   /**
-   * Handles the first click in hide/seek mode: selects a random weapon, ship, and hint location.
+   * Handles the first click in hide/seek mode: selects the current weapon and a random compatible ship.
+   *
+   * TWO-CLICK FLOW:
+   * First click (this method):
+   *   - Player clicks weapon button (e.g., "Rail Bolt") to select weapon
+   *   - Player clicks enemy board (triggers onClickCell → _onFirstClickSelection)
+   *   - This method selects a random RAILGUN SHIP with Rail Bolt loaded
+   *   - Message shown: "Enemy selecting target..."
+   *
+   * Second click:
+   *   - Player clicks enemy board again (triggered from stored selectedCellCoordinates)
+   *   - Fire is executed at the new target location
+   *
    * @private
    * @returns {void}
    */
   _onFirstClickSelection () {
-    this._selectWeaponMatchingCurrent()
+    this._selectCurrentWeaponOnRandomShip()
     gameStatus.addToQueue('Enemy selecting target...', true)
   }
 
@@ -566,7 +623,19 @@ class Enemy extends Waters {
   /**
    * Handles cell click for enemy turn.
    * Validates turn legality and launches weapon at target.
-   * In hide/seek mode with attached weapons, implements two-click behavior.
+   *
+   * HIDE & SEEK TWO-CLICK BEHAVIOR:
+   * When opponent has attached weapons (opponent?.hasAttachedWeapons = true):
+   *   - First click on empty board: Calls _onFirstClickSelection(), stores selectedCellCoordinates
+   *   - Second click on any board cell: Fires the pre-selected weapon at that cell
+   *
+   * IMPORTANT CONDITIONS:
+   * - Check is based on opponent?.hasAttachedWeapons (works for both Hide & Seek and pure Seek modes)
+   * - NOT based on bh.seekingMode flag (which is false in Hide & Seek mode)
+   * - In Hide & Seek: opponent has preset ships with weapons → hasAttachedWeapons = true
+   * - In pure Seek: opponent generates ships with weapons → hasAttachedWeapons = true
+   * - In modes without attached weapons: hasAttachedWeapons = false → single-click fires
+   *
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Promise<void>}
@@ -574,8 +643,9 @@ class Enemy extends Waters {
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
 
-    // Only implement two-click behavior in hide/seek mode with attached weapons
-    if (bh.seekingMode && this.hasAttachedWeapons) {
+    // Two-click behavior: Check opponent has attached weapons, NOT seekingMode flag
+    // This allows Hide & Seek mode to work correctly while seekingMode = false
+    if (this.opponent?.hasAttachedWeapons) {
       // Implement two-click behavior
       if (this.selectedCellCoordinates === null) {
         // First click: select weapon and ship
@@ -764,30 +834,7 @@ class Enemy extends Waters {
    * Called when weapon changes via buttons or when running out of ammo.
    * @private
    */
-  _handleWeaponChange () {
-    // Reset two-click weapon selection
-    this.selectedCellCoordinates = null
-
-    // Get current cursor from board and prepare to update
-    let oldCursor = ''
-    if (this.UI?.board?.classList) {
-      // Find and extract any cursor class from board
-      for (const cls of this.UI.board.classList) {
-        if (cls.startsWith('cursor-') || cls.includes('cursor')) {
-          oldCursor = cls
-          break
-        }
-      }
-    }
-
-    // Notify of cursor change to update board
-    if (this.loadOut.notifyCursorChange) {
-      this.loadOut.notifyCursorChange(oldCursor)
-    }
-
-    // Update board targeting state for new weapon
-    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
-  }
+  /**\n   * Clears the weapon selection when player switches weapons.\n   * Must be called BEFORE the weapon change is processed.\n   *\n   * WHY THIS IS CRITICAL:\n   * In two-click mode, if player clicks Rail Bolt, then clicks enemy board (storing first selection),\n   * then switches to Missile... the selectedCell should be cleared so the next click doesn't fire\n   * the wrong weapon type.\n   *\n   * CALL ORDER:\n   * 1. Player clicks new weapon button\n   * 2. onClickWeaponButtons() calls _handleWeaponChange() FIRST\n   * 3. _handleWeaponChange() clears selectedCellCoordinates\n   * 4. Then weapon is switched\n   *\n   * @private\n   * @returns {void}\n   */\n  _handleWeaponChange () {\n    // CRITICAL: Reset two-click weapon selection before weapon is changed\n    // This prevents firing the old weapon on the next click\n    this.selectedCellCoordinates = null\n\n    // Get current cursor from board and prepare to update\n    let oldCursor = ''\n    if (this.UI?.board?.classList) {\n      // Find and extract any cursor class from board\n      for (const cls of this.UI.board.classList) {\n        if (cls.startsWith('cursor-') || cls.includes('cursor')) {\n          oldCursor = cls\n          break\n        }\n      }\n    }\n\n    // Notify of cursor change to update board\n    if (this.loadOut.notifyCursorChange) {\n      this.loadOut.notifyCursorChange(oldCursor)\n    }\n\n    // Update board targeting state for new weapon\n    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())\n  }
 
   /**
    * Handles click on single shot button.

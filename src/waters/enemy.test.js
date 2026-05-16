@@ -696,4 +696,428 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalledTimes(3)
     })
   })
+
+  /**
+   * REGRESSION TEST SUITE: Weapon Selection in Two-Click Mode
+   *
+   * Issue: When player clicks Rail Bolt button then clicks enemy board,
+   *        first click should select a RAIL BOLT RACK on a RAILGUN SHIP.
+   *        BUG: Was selecting a MISSILE RACK on a MISSILEBOAT instead.
+   *
+   * Root Cause: randomAttachedWeapon() picks random weapon, not filtered by selected weapon type.
+   *
+   * Solution: _selectCurrentWeaponOnRandomShip() filters opponent ships by weapon letter
+   *           before selecting a random ship.
+   */
+  describe('_selectCurrentWeaponOnRandomShip - weapon selection respects player choice', () => {
+    let Enemy,
+      gameStatus,
+      bh,
+      mockOpponent,
+      mockWeaponSystemR,
+      mockWeaponSystemM
+
+    beforeEach(async () => {
+      const modules = await Promise.all([
+        import('./StatusUI.js'),
+        import('../terrains/all/js/bh.js')
+      ])
+      gameStatus = modules[0].gameStatus
+      bh = modules[1].bh
+
+      jest.clearAllMocks()
+
+      // Mock opponent with ships that have different weapons
+      mockWeaponSystemR = {
+        id: 'R1',
+        weapon: { letter: 'R', name: 'Rail Bolt' }
+      }
+      mockWeaponSystemM = {
+        id: 'M1',
+        weapon: { letter: 'M', name: 'Missile' }
+      }
+
+      mockOpponent = {
+        ships: [
+          {
+            id: 'railgun1',
+            name: 'Railgun',
+            getLoadedWeaponEntries: jest.fn(() => [
+              ['0,0', mockWeaponSystemR],
+              ['1,0', mockWeaponSystemR]
+            ])
+          },
+          {
+            id: 'missile1',
+            name: 'MissileBoat',
+            getLoadedWeaponEntries: jest.fn(() => [
+              ['2,0', mockWeaponSystemM],
+              ['3,0', mockWeaponSystemM]
+            ])
+          },
+          {
+            id: 'railgun2',
+            name: 'Railgun2',
+            getLoadedWeaponEntries: jest.fn(() => [['4,0', mockWeaponSystemR]])
+          }
+        ],
+        UI: {
+          gridCellAt: jest.fn(() => ({ classList: { add: jest.fn() } }))
+        }
+      }
+
+      Enemy = class {
+        constructor () {
+          this.opponent = mockOpponent
+          this.loadOut = {
+            getCurrentWeaponSystem: jest.fn(),
+            selectedCoordinates: []
+          }
+          this.UI = { board: { classList: {} } }
+          this.steps = {
+            addShip: jest.fn(),
+            addSource: jest.fn()
+          }
+
+          // Mock inherited methods from Waters
+          this.generateSourceHint = jest.fn(() => [5, 5])
+          this.createWeaponSelection = jest.fn((r, c, id, hr, hc) => ({
+            launchR: r,
+            launchC: c,
+            weaponId: id,
+            hintR: hr,
+            hintC: hc
+          }))
+          this._armSelectedWeapon = jest.fn()
+          this.randomAttachedWeapon = jest.fn()
+        }
+
+        _selectCurrentWeaponOnRandomShip () {
+          const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+
+          if (!currentWeapon?.weapon?.letter) {
+            this.randomAttachedWeapon(this.opponent)
+            return
+          }
+
+          const targetLetter = currentWeapon.weapon.letter
+          const shipsWithWeapon = this.opponent.ships.filter(ship => {
+            const entries = ship.getLoadedWeaponEntries()
+            return entries.some(
+              ([_key, weapon]) => weapon.weapon?.letter === targetLetter
+            )
+          })
+
+          if (shipsWithWeapon.length === 0) {
+            this.randomAttachedWeapon(this.opponent)
+            return
+          }
+
+          // Select randomly from the filtered ships
+          const selectedShip =
+            shipsWithWeapon[Math.floor(Math.random() * shipsWithWeapon.length)]
+          this.steps.addShip(selectedShip)
+
+          const entries = selectedShip.getLoadedWeaponEntries()
+          const [key, weapon] = entries.find(
+            ([_k, w]) => w.weapon?.letter === targetLetter
+          )
+
+          if (!key || !weapon) {
+            this.randomAttachedWeapon(this.opponent)
+            return
+          }
+
+          const [launchC, launchR] = key.split(',')
+          const viewModel = this.opponent?.UI || this.UI
+          const selectedCell = viewModel.gridCellAt(launchR, launchC)
+
+          const hintCoords = this.generateSourceHint(
+            selectedShip,
+            this.opponent
+          )
+          this.steps.addSource(viewModel, launchR, launchC, selectedCell)
+
+          const selection = this.createWeaponSelection(
+            launchR,
+            launchC,
+            weapon.id,
+            hintCoords[0],
+            hintCoords[1]
+          )
+          this._armSelectedWeapon(selection, this.opponent)
+        }
+      }
+    })
+
+    it('should select a Railgun when Rail Bolt is selected, NOT a MissileBoat', () => {
+      const enemy = new Enemy()
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      // Verify _armSelectedWeapon was called (weapon was selected)
+      expect(enemy._armSelectedWeapon).toHaveBeenCalled()
+
+      // Get the selected ship
+      const selectedShip = enemy.steps.addShip.mock.calls[0][0]
+
+      // CRITICAL: Selected ship must have Rail Bolt (letter 'R')
+      expect(['railgun1', 'railgun2']).toContain(selectedShip.id)
+      expect(selectedShip.id).not.toBe('missile1')
+    })
+
+    it('should select a MissileBoat when Missile is selected, NOT a Railgun', () => {
+      const enemy = new Enemy()
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemM)
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      expect(enemy._armSelectedWeapon).toHaveBeenCalled()
+
+      const selectedShip = enemy.steps.addShip.mock.calls[0][0]
+
+      // CRITICAL: Selected ship must have Missile (letter 'M')
+      expect(selectedShip.id).toBe('missile1')
+    })
+
+    it('should fall back to randomAttachedWeapon when no current weapon selected', () => {
+      const enemy = new Enemy()
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => null)
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      expect(enemy.randomAttachedWeapon).toHaveBeenCalledWith(mockOpponent)
+      expect(enemy._armSelectedWeapon).not.toHaveBeenCalled()
+    })
+
+    it('should fall back to randomAttachedWeapon when weapon letter is undefined', () => {
+      const enemy = new Enemy()
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => ({
+        id: 'X1',
+        weapon: { name: 'Unknown' }
+        // NO letter property
+      }))
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      expect(enemy.randomAttachedWeapon).toHaveBeenCalled()
+      expect(enemy._armSelectedWeapon).not.toHaveBeenCalled()
+    })
+
+    it('should fall back to randomAttachedWeapon when no opponent ships have the selected weapon', () => {
+      const enemy = new Enemy()
+      const unknownWeapon = {
+        id: 'X1',
+        weapon: { letter: 'X', name: 'Unknown Weapon' }
+      }
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => unknownWeapon)
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      expect(enemy.randomAttachedWeapon).toHaveBeenCalledWith(mockOpponent)
+      expect(enemy._armSelectedWeapon).not.toHaveBeenCalled()
+    })
+
+    it('should only select from ships with the target weapon, never all ships', () => {
+      const enemy = new Enemy()
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+
+      // Call multiple times to verify consistent filtering
+      for (let i = 0; i < 5; i++) {
+        enemy._selectCurrentWeaponOnRandomShip()
+      }
+
+      // Every call should select a Railgun (ID ends with 'gun')
+      for (const call of enemy.steps.addShip.mock.calls) {
+        const selectedShip = call[0]
+        expect(selectedShip.id).toMatch(/railgun/)
+        expect(selectedShip.id).not.toBe('missile1')
+      }
+    })
+
+    it('should arm the selected weapon with correct parameters', () => {
+      const enemy = new Enemy()
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      expect(enemy._armSelectedWeapon).toHaveBeenCalled()
+
+      const [selection, opponent] = enemy._armSelectedWeapon.mock.calls[0]
+
+      // Verify selection has correct structure
+      expect(selection).toHaveProperty('launchR')
+      expect(selection).toHaveProperty('launchC')
+      expect(selection).toHaveProperty('weaponId')
+      expect(selection.weaponId).toBe('R1')
+
+      // Verify opponent is passed correctly
+      expect(opponent).toBe(mockOpponent)
+    })
+  })
+
+  describe('onClickCell - two-click mode respects opponent hasAttachedWeapons', () => {
+    let Enemy, mockOpponent
+
+    beforeEach(async () => {
+      jest.clearAllMocks()
+
+      mockOpponent = {
+        hasAttachedWeapons: true,
+        ships: []
+      }
+
+      Enemy = class {
+        constructor () {
+          this.selectedCellCoordinates = null
+          this.opponent = mockOpponent
+          this.loadOut = { getCurrentWeaponSystem: jest.fn() }
+          this.timeoutId = null
+
+          this._onFirstClickSelection = jest.fn()
+          this._onSecondClickFire = jest.fn()
+        }
+
+        canTakeTurn () {
+          return !this.timeoutId
+        }
+
+        async onClickCell (r, c) {
+          if (!this.canTakeTurn()) return
+
+          if (this.opponent?.hasAttachedWeapons) {
+            if (this.selectedCellCoordinates === null) {
+              this._onFirstClickSelection()
+              this.selectedCellCoordinates = { r, c }
+              return
+            } else {
+              await this._onSecondClickFire(r, c)
+              return
+            }
+          }
+        }
+      }
+    })
+
+    it('should implement two-click behavior when opponent has attached weapons', async () => {
+      const enemy = new Enemy()
+      enemy.opponent.hasAttachedWeapons = true
+
+      await enemy.onClickCell(0, 0)
+
+      // First click should select weapon
+      expect(enemy._onFirstClickSelection).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
+
+      // Second click should fire
+      await enemy.onClickCell(1, 1)
+      expect(enemy._onSecondClickFire).toHaveBeenCalledWith(1, 1)
+    })
+
+    it('should NOT use two-click behavior when opponent has NO attached weapons', async () => {
+      const enemy = new Enemy()
+      enemy.opponent.hasAttachedWeapons = false
+
+      await enemy.onClickCell(0, 0)
+
+      expect(enemy._onFirstClickSelection).not.toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toBeNull()
+    })
+
+    it('should respect opponent.hasAttachedWeapons check (NOT bh.seekingMode)', async () => {
+      const enemy = new Enemy()
+
+      // Even if this was in seeking mode, should check opponent property
+      enemy.opponent.hasAttachedWeapons = true
+
+      await enemy.onClickCell(0, 0)
+
+      // Should still use two-click because opponent has attached weapons
+      expect(enemy._onFirstClickSelection).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
+    })
+  })
+
+  describe('_handleWeaponChange - clears selection when weapon changes', () => {
+    let Enemy
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+
+      Enemy = class {
+        constructor () {
+          this.selectedCellCoordinates = null
+          this.UI = {
+            board: {
+              classList: {
+                add: jest.fn(),
+                remove: jest.fn(),
+                [Symbol.iterator]: function* () {
+                  // Make classList iterable for the for...of loop
+                  yield 'cursor-default'
+                }
+              }
+            }
+          }
+          this.loadOut = {
+            notifyCursorChange: jest.fn(),
+            isSingleShot: false,
+            getUnattachedWeaponSystem: jest.fn(() => null)
+          }
+
+          this.setBoardTargetingState = jest.fn()
+          this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
+        }
+
+        _handleWeaponChange () {
+          this.selectedCellCoordinates = null
+
+          let oldCursor = ''
+          if (this.UI?.board?.classList) {
+            for (const cls of this.UI.board.classList) {
+              if (cls.startsWith('cursor-') || cls.includes('cursor')) {
+                oldCursor = cls
+                break
+              }
+            }
+          }
+
+          if (this.loadOut.notifyCursorChange) {
+            this.loadOut.notifyCursorChange(oldCursor)
+          }
+
+          this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+        }
+      }
+    })
+
+    it('should clear selectedCellCoordinates when weapon changes', () => {
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 2, c: 3 }
+
+      enemy._handleWeaponChange()
+
+      expect(enemy.selectedCellCoordinates).toBeNull()
+    })
+
+    it('should clear selection BEFORE weapon is switched (preventing weapon mismatch)', () => {
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 5, c: 5 }
+
+      // Simulate: player selected Rail Bolt target, then clicks Missile button
+      enemy._handleWeaponChange()
+
+      // Now next click won't fire with old weapon because selection is cleared
+      expect(enemy.selectedCellCoordinates).toBeNull()
+    })
+
+    it('should call setBoardTargetingState to update board visual state', () => {
+      const enemy = new Enemy()
+
+      enemy._handleWeaponChange()
+
+      expect(enemy.setBoardTargetingState).toHaveBeenCalled()
+    })
+  })
 })
