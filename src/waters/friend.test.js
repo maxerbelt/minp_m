@@ -3,9 +3,9 @@
  */
 
 /* eslint-env jest */
-import { jest } from '@jest/globals'
+import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
-/* global   it, describe,   expect, beforeEach, jest */
+/* global   it, describe, expect, beforeEach, jest */
 let Friend
 
 // Mocks
@@ -74,6 +74,11 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
       blankGrid: [],
       inBounds: () => true
     },
+    maps: {
+      customMapList: jest.fn(() => []),
+      maps: jest.fn(() => []),
+      preGenMapList: jest.fn(() => [])
+    },
     seekingMode: false,
     it: true,
     getTerrainByTag: tag => ({ tag }),
@@ -96,8 +101,8 @@ jest.unstable_mockModule('./Waters.js', () => ({
       return !!(this.ships && this.ships.length > 0)
     }
     hasPlayableShips () {
-      if (typeof this.displacementRatio === 'function') {
-        return this.displacementRatio() < 0.35
+      if (typeof this.getDisplacementRatio === 'function') {
+        return this.getDisplacementRatio() < 0.35
       }
       return true
     }
@@ -185,12 +190,12 @@ describe('Friend', () => {
   })
 
   it('hasFewShips returns boolean', () => {
-    friend.displacementRatio = jest.fn(() => 0.1)
+    friend.getDisplacementRatio = jest.fn(() => 0.1)
     expect(typeof friend.hasFewShips()).toBe('boolean')
   })
 
   it('hasPlayableShips returns boolean', () => {
-    friend.displacementRatio = jest.fn(() => 0.1)
+    friend.getDisplacementRatio = jest.fn(() => 0.1)
     expect(typeof friend.hasPlayableShips()).toBe('boolean')
   })
 
