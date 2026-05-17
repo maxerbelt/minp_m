@@ -319,6 +319,11 @@ class Enemy extends Waters {
    * @private
    */
   // @ts-ignore - Used by friend.js opponent._transitionToOpponentTurn()
+  _transitionToOpponentTurn () {
+    this.UI?.deactivateWeapons?.()
+    this._setSpinnerState(true, MESSAGES.ENEMY_TURN)
+  }
+
   /**
    * Updates the spinner display state and game status.
    * @private
