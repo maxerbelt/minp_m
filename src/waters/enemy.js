@@ -916,6 +916,33 @@ class Enemy extends Waters {
 
   /**
    * Handles click on weapon buttons.
+   * CRITICAL EXECUTION ORDER - UI STATE FIX
+   * ======================================
+   * This method has a specific call sequence to ensure UI mode icons update correctly.
+   * The issue: steps.select() updates internal state and was overwriting UI changes if called after.
+   *
+   * REGRESSION HISTORY:
+   * When weapon button clicked during targeting, selectedCellCoordinates cleared but UI icons
+   * didn't update because steps.select() was called AFTER resetToSelectionMode() and overwrote
+   * the icon class changes. Result: UI showed targeting mode while data was in selection mode.
+   *
+   * SOLUTION: Call resetToSelectionMode() AFTER steps.select() to ensure icons persist.
+   *
+   * EXECUTION SEQUENCE (MUST NOT CHANGE):
+   * 1. _handleWeaponChange() ........... Clear data state (selectedCellCoordinates, hints)
+   * 2. switchToWeapon() ................ Switch weapon in loadout
+   * 3. steps.select() .................. Update game state machine
+   * 4. resetToSelectionMode() ......... Update UI mode icons (LAST - won't be overwritten)
+   *
+   * WHY THIS ORDER MATTERS:
+   * - Step 1-2 must come before 3 so game state knows the new weapon is selected
+   * - Step 3 processes pending state changes and may modify internal flags
+   * - Step 4 MUST come after 3 because it updates DOM elements that reflect state
+   * - If 4 came before 3, the icon updates would be valid but then 3 might
+   *   change internal state that steps.select() uses to decide icon state
+   *
+   * If you change this order, UI mode icons will become desynchronized from game state.
+   *
    * @param {string} letter - The weapon letter.
    */
   onClickWeaponButtons (letter) {
@@ -925,6 +952,7 @@ class Enemy extends Waters {
 
     // Reset UI mode icons AFTER steps.select() to ensure they're not overwritten
     // This shows player is back in selection mode with the new weapon
+    // CRITICAL: This must be the last operation to prevent being overwritten
     if (gameStatus?.resetToSelectionMode) {
       gameStatus.resetToSelectionMode()
     }

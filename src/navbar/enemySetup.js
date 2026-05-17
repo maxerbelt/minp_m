@@ -64,13 +64,33 @@ let cleanupOpponentBoard = null
  * Start a new enemy game with optional opponent board setup.
  * Initializes game mode flag (seeking vs hiding) and sets up board state.
  *
+ * CRITICAL EXECUTION ORDER AND STATE MANAGEMENT
+ * ============================================
+ * This function initializes multiple state systems in a specific order.
+ * Order matters to ensure consistent state across game mode, UI, and weapons.
+ *
+ * INITIALIZATION SEQUENCE:
+ * 1. Set bh.seekingMode ..................... Game visibility flag
+ * 2. Clear ships if seeking ................. Opponent starts hidden
+ * 3. Reset game state machine ............... Clear all state
+ * 4. Update UI title ....................... Show current terrain
+ * 5. Initialize opponent board .............. Set up opponent display
+ * 6. Configure board hover .................. Set up visual feedback
+ * 7. Configure board targeting state ....... Set click behavior
+ * 8. Setup weapon button handlers ........... Wire up weapon UI
+ *
+ * WHY ORDER MATTERS:
+ * - resetModel() MUST come before board initialization to clear old state
+ * - setBoardTargetingState() uses bh.seekingMode, which must be set first
+ * - setupWeaponButtonHandlers() MUST happen regardless of mode (not mode-dependent)
+ *
  * @param {string} seek - Game mode indicator: 'seek' for seeking mode, anything else for hiding mode
  * @param {function(): void|null} opponentBoard - Cleanup function for previous board state
  * @param {Object|null} friendUI - Friend player UI (if available)
  */
 export function newGame (seek, opponentBoard, friendUI) {
   // Set game mode flag: true if player is seeking, false if player is hiding
-  // This determines what's visible and click behavior, but NOT weapon selection logic
+  // This determines what's VISIBLE and overall CLICK BEHAVIOR, but NOT weapon selection logic
   bh.seekingMode = seek === 'seek'
 
   // In seeking mode, enemy ships are hidden (player hasn't discovered them yet)
@@ -80,17 +100,21 @@ export function newGame (seek, opponentBoard, friendUI) {
   }
 
   // Reset enemy state machine and UI to initial game state
+  // MUST happen before board initialization to ensure clean slate
   enemy.resetModel()
   _updateEnemyTitle()
   _initializeOpponentBoard(opponentBoard, friendUI)
   _initializeEnemyBoardHover()
 
-  // Configure board targeting for current game mode
-  // (Does NOT affect weapon selection - that's determined by opponent?.hasAttachedWeapons)
+  // Configure board targeting for current game mode (based on seekingMode)
+  // This only affects board appearance/state, NOT weapon selection behavior
+  // WEAPON SELECTION should ALWAYS check opponent?.hasAttachedWeapons independently
+  // Do NOT couple weapon behavior to bh.seekingMode (see regression note above)
   enemy.setBoardTargetingState(bh.seekingMode)
 
   // Initialize weapon button click handlers
-  // This MUST happen regardless of bh.seekingMode value
+  // This MUST happen AFTER resetModel() but REGARDLESS of bh.seekingMode value
+  // Weapon button handlers must work in all game modes
   enemy.setupWeaponButtonHandlers()
 }
 
@@ -107,6 +131,12 @@ function _updateEnemyTitle () {
 
 /**
  * Initialize the opponent board cleanup or arm weapons for a friend UI.
+ *
+ * REGRESSION PREVENTION NOTE:
+ * This handles the Friend (hiding player) board initialization.
+ * The opponent in Hide mode is the Friend, who has visible ships and attached weapons.
+ * This must arm their weapons so two-click targeting works correctly.
+ *
  * @private
  */
 function _initializeOpponentBoard (opponentBoard, friendUI) {
@@ -118,12 +148,19 @@ function _initializeOpponentBoard (opponentBoard, friendUI) {
   if (opponentBoard && friendUI) {
     cleanupOpponentBoard = opponentBoard
     friendUI.clearFriendClasses()
+    // CRITICAL: Arm opponent weapons so two-click targeting can work
+    // This makes opponent?.hasAttachedWeapons = true
     enemy.opponent?.armWeapons()
   }
 }
 
 /**
  * Configure enemy board hover behavior.
+ *
+ * Must be called AFTER resetModel() to ensure clean state,
+ * but BEFORE any user interaction with the board.
+ * This pattern is critical for execution order safety.
+ *
  * @private
  */
 function _initializeEnemyBoardHover () {

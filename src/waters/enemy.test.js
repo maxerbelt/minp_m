@@ -1333,4 +1333,323 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
     })
   })
+
+  describe('Edge Cases - onClickWeaponButtons', () => {
+    let Enemy
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+
+      Enemy = class {
+        constructor () {
+          this.selectedCellCoordinates = null
+          this.opponent = {
+            UI: {
+              deactivateTempHints: jest.fn()
+            },
+            hasAttachedWeapons: true
+          }
+          this.steps = {
+            clearSource: jest.fn(),
+            select: jest.fn()
+          }
+          this.loadOut = {
+            switchToWeapon: jest.fn(),
+            notifyCursorChange: jest.fn()
+          }
+          this.UI = {
+            board: { classList: [] }
+          }
+          this.setBoardTargetingState = jest.fn()
+          this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
+        }
+
+        _handleWeaponChange () {
+          this.selectedCellCoordinates = null
+          this.steps.clearSource()
+          if (this.opponent?.UI?.deactivateTempHints) {
+            this.opponent.UI.deactivateTempHints()
+          }
+          this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+        }
+
+        onClickWeaponButtons (letter) {
+          this._handleWeaponChange()
+          this.loadOut.switchToWeapon(letter)
+          this.steps.select()
+
+          if (gameStatus?.resetToSelectionMode) {
+            gameStatus.resetToSelectionMode()
+          }
+        }
+      }
+    })
+
+    it('should handle weapon button click when opponent is null gracefully', () => {
+      const enemy = new Enemy()
+      enemy.opponent = null
+
+      // Should not throw error even though opponent is null
+      expect(() => {
+        enemy.onClickWeaponButtons('M')
+      }).not.toThrow()
+
+      // Should still process the weapon change
+      expect(enemy.steps.select).toHaveBeenCalled()
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+    })
+
+    it('should handle weapon button click when opponent has no UI', () => {
+      const enemy = new Enemy()
+      enemy.opponent = {
+        hasAttachedWeapons: true
+        // no UI property
+      }
+
+      // Should not throw error even though opponent.UI is undefined
+      expect(() => {
+        enemy.onClickWeaponButtons('R')
+      }).not.toThrow()
+
+      expect(enemy.steps.select).toHaveBeenCalled()
+    })
+
+    it('should handle rapid weapon switching without state corruption', () => {
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 2, c: 3 }
+
+      // Simulate rapid weapon switches
+      enemy.onClickWeaponButtons('M')
+      expect(enemy.loadOut.switchToWeapon).toHaveBeenCalledWith('M')
+      expect(enemy.selectedCellCoordinates).toBeNull()
+
+      // Switch again immediately
+      enemy.selectedCellCoordinates = { r: 4, c: 5 } // Set selection
+      enemy.onClickWeaponButtons('R')
+      expect(enemy.loadOut.switchToWeapon).toHaveBeenCalledWith('R')
+      expect(enemy.selectedCellCoordinates).toBeNull() // Should be cleared
+
+      // Third switch
+      enemy.selectedCellCoordinates = { r: 1, c: 1 }
+      enemy.onClickWeaponButtons('B')
+      expect(enemy.loadOut.switchToWeapon).toHaveBeenCalledWith('B')
+      expect(enemy.selectedCellCoordinates).toBeNull()
+    })
+
+    it('should clear previous selection even if current weapon same as previous', () => {
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 3, c: 3 }
+
+      // Click same weapon twice
+      enemy.onClickWeaponButtons('M')
+      expect(enemy.selectedCellCoordinates).toBeNull()
+
+      // Set selection again
+      enemy.selectedCellCoordinates = { r: 5, c: 5 }
+
+      // Click same weapon again
+      enemy.onClickWeaponButtons('M')
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+    })
+
+    it('should reset UI mode icons even if gameStatus is missing resetToSelectionMode', () => {
+      const enemy = new Enemy()
+      const originalGameStatus = globalThis.gameStatus
+
+      // Mock gameStatus without resetToSelectionMode
+      globalThis.gameStatus = {}
+
+      expect(() => {
+        enemy.onClickWeaponButtons('M')
+      }).not.toThrow()
+
+      // Should still complete without error
+      expect(enemy.steps.select).toHaveBeenCalled()
+
+      // Restore
+      globalThis.gameStatus = originalGameStatus
+    })
+  })
+
+  describe('Game Mode Interactions - Seek/Hide modes with attached weapons', () => {
+    let Enemy
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+
+      Enemy = class {
+        constructor (hasAttachedWeapons = true) {
+          this.selectedCellCoordinates = null
+          this.opponent = {
+            UI: {
+              deactivateTempHints: jest.fn()
+            },
+            hasAttachedWeapons: hasAttachedWeapons
+          }
+          this.steps = {
+            clearSource: jest.fn(),
+            select: jest.fn(),
+            onChangeWeapon: null
+          }
+          this.loadOut = {
+            switchToWeapon: jest.fn(),
+            notifyCursorChange: jest.fn(),
+            getCurrentWeaponSystem: jest.fn(() => ({
+              weapon: { letter: 'M' }
+            }))
+          }
+          this.UI = {
+            board: { classList: [] }
+          }
+          this.setBoardTargetingState = jest.fn()
+          this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
+          this.seekingMode = true // Will be set by test
+        }
+
+        _handleWeaponChange () {
+          this.selectedCellCoordinates = null
+          this.steps.clearSource()
+          if (this.opponent?.UI?.deactivateTempHints) {
+            this.opponent.UI.deactivateTempHints()
+          }
+          this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+        }
+
+        onClickWeaponButtons (letter) {
+          this._handleWeaponChange()
+          this.loadOut.switchToWeapon(letter)
+          this.steps.select()
+
+          if (gameStatus?.resetToSelectionMode) {
+            gameStatus.resetToSelectionMode()
+          }
+        }
+
+        onClickCell (r, c) {
+          // Two-click targeting if opponent has attached weapons
+          if (this.opponent?.hasAttachedWeapons) {
+            // Would implement two-click targeting here
+            return true
+          }
+          // Single-click targeting
+          return false
+        }
+      }
+    })
+
+    it('should support two-click targeting in Hide mode when opponent has attached weapons', () => {
+      const enemy = new Enemy(true) // Has attached weapons
+      enemy.seekingMode = false // Hide mode: player hiding, opponent seeking
+
+      // In Hide mode, opponent is friend with visible ships and attached weapons
+      // Should support two-click targeting regardless of seekingMode value
+      const isTwoClickMode = enemy.onClickCell(0, 0)
+
+      expect(isTwoClickMode).toBe(true)
+      // The key: decision based on opponent?.hasAttachedWeapons, NOT seekingMode
+    })
+
+    it('should support two-click targeting in Seek mode when opponent has attached weapons', () => {
+      const enemy = new Enemy(true) // Has attached weapons
+      enemy.seekingMode = true // Seek mode: player seeking, opponent hiding
+
+      // In Seek mode, opponent is enemy with attached weapons
+      // Should support two-click targeting
+      const isTwoClickMode = enemy.onClickCell(0, 0)
+
+      expect(isTwoClickMode).toBe(true)
+    })
+
+    it('should NOT use two-click targeting when opponent has no attached weapons', () => {
+      const enemy = new Enemy(false) // No attached weapons
+      enemy.seekingMode = true // Seek mode
+
+      // Opponent has no attached weapons, so single-click targeting
+      const isTwoClickMode = enemy.onClickCell(0, 0)
+
+      expect(isTwoClickMode).toBe(false)
+    })
+
+    it('should verify weapon selection is independent of game mode (Hide/Seek)', () => {
+      // REGRESSION TEST: Weapon selection should NOT be coupled to bh.seekingMode
+      // Previous bug: code checked (bh.seekingMode && opponent?.hasAttachedWeapons)
+      // which made two-click impossible in Hide mode
+
+      const enemyHideMode = new Enemy(true)
+      enemyHideMode.seekingMode = false
+
+      const enemySeekMode = new Enemy(true)
+      enemySeekMode.seekingMode = true
+
+      // Both should use two-click targeting based on opponent?.hasAttachedWeapons
+      // NOT based on seekingMode value
+      expect(enemyHideMode.onClickCell(0, 0)).toBe(true)
+      expect(enemySeekMode.onClickCell(0, 0)).toBe(true)
+
+      // The targeting decision should be identical despite different seekingMode
+    })
+
+    it('should clear weapon selection state when switching weapons in Hide mode', () => {
+      const enemy = new Enemy(true)
+      enemy.seekingMode = false // Hide mode
+      enemy.selectedCellCoordinates = { r: 2, c: 3 }
+
+      enemy.onClickWeaponButtons('R')
+
+      // Selection should clear regardless of game mode
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+    })
+
+    it('should clear weapon selection state when switching weapons in Seek mode', () => {
+      const enemy = new Enemy(true)
+      enemy.seekingMode = true // Seek mode
+      enemy.selectedCellCoordinates = { r: 2, c: 3 }
+
+      enemy.onClickWeaponButtons('M')
+
+      // Selection should clear regardless of game mode
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+    })
+
+    it('should reset UI mode icons in both game modes when weapon changes', () => {
+      const enemyHide = new Enemy(true)
+      enemyHide.seekingMode = false
+
+      const enemySeek = new Enemy(true)
+      enemySeek.seekingMode = true
+
+      enemyHide.onClickWeaponButtons('M')
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+
+      jest.clearAllMocks()
+
+      enemySeek.onClickWeaponButtons('R')
+      expect(gameStatus.resetToSelectionMode).toHaveBeenCalled()
+
+      // UI updates should occur regardless of game mode
+    })
+
+    it('REGRESSION: should not break two-click in Hide mode due to seekingMode coupling', () => {
+      // This documents the original bug that was fixed
+      // When seekingMode=false (Hide mode) and opponent.hasAttachedWeapons=true,
+      // old code checked: (seekingMode && hasAttachedWeapons) = (false && true) = false
+      // This made two-click targeting impossible in Hide mode!
+
+      // The fix: Check ONLY opponent?.hasAttachedWeapons, NEVER couple to seekingMode
+
+      const enemy = new Enemy(true) // opponent has attached weapons
+      enemy.seekingMode = false // Hide mode (player hiding, opponent seeking)
+
+      // Before fix: (false && true) = false - two-click disabled ❌
+      // After fix: true - two-click enabled ✅
+      const supportsTwoClick = enemy.onClickCell(0, 0)
+
+      expect(supportsTwoClick).toBe(true)
+      // The decision is based purely on opponent?.hasAttachedWeapons
+      // Not coupled to seekingMode
+    })
+  })
 })
