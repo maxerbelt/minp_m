@@ -37,13 +37,13 @@ export class FormStateManager {
 
     /** @type {Object<string, ChangeHandlerFn>} Field change notification handlers. */
     this.changeHandlers = {}
-    this.onChange = this.changeHandlers
   }
 
   /**
    * Register a validation function for a field.
    * @param {string} field - Field name to validate.
-   * @param {ValidatorFn} validator - Validator function.
+   * @param {ValidatorFn} validator - Validator function that transforms/validates value.
+   * @returns {void}
    * @throws {TypeError} If validator is not a function.
    */
   registerValidator (field, validator) {
@@ -53,8 +53,10 @@ export class FormStateManager {
 
   /**
    * Register a change handler callback for a field.
+   * Handlers are invoked after successful field updates.
    * @param {string} field - Field name to monitor.
-   * @param {ChangeHandlerFn} handler - Handler function.
+   * @param {ChangeHandlerFn} handler - Handler function invoked when field changes.
+   * @returns {void}
    * @throws {TypeError} If handler is not a function.
    */
   registerChangeHandler (field, handler) {
@@ -65,7 +67,7 @@ export class FormStateManager {
   /**
    * Retrieve current value of a field.
    * @param {string} field - Field name.
-   * @returns {*} Current field value.
+   * @returns {*} Current field value, or undefined if field not set.
    */
   get (field) {
     return this.state[field]
@@ -73,13 +75,14 @@ export class FormStateManager {
 
   /**
    * Set field value with validation and change notification.
+   * Rejects null/undefined values. Validators transform values before setting.
    * @param {string} field - Field name.
    * @param {*} value - New field value.
-   * @returns {boolean} True if value was set successfully, false if validation failed.
+   * @returns {boolean} True if value was set successfully, false if validation rejected value.
    */
   set (field, value) {
     const validated = this._validateField(field, value)
-    if (!this._isAcceptableValue(validated)) {
+    if (!this._isValidValue(validated)) {
       return false
     }
 
@@ -142,16 +145,19 @@ export class FormStateManager {
 
   /**
    * Remove all registered change handlers.
+   * @returns {void}
    */
   clearHandlers () {
     this.changeHandlers = {}
-    this.onChange = this.changeHandlers
   }
 
   /**
+   * Validate that a value is a function.
    * @private
-   * @param {*} func
-   * @param {string} label
+   * @param {*} func - Value to validate.
+   * @param {string} label - Descriptive label for error messages.
+   * @returns {void}
+   * @throws {TypeError} If func is not a function.
    */
   _validateFunction (func, label) {
     if (typeof func !== 'function') {
@@ -160,10 +166,11 @@ export class FormStateManager {
   }
 
   /**
+   * Apply field validator if registered, otherwise return value unchanged.
    * @private
-   * @param {string} field
-   * @param {*} value
-   * @returns {*}
+   * @param {string} field - Field name.
+   * @param {*} value - Value to validate/transform.
+   * @returns {*} Validated/transformed value, or original value if no validator.
    */
   _validateField (field, value) {
     const validator = this.validators[field]
@@ -171,18 +178,23 @@ export class FormStateManager {
   }
 
   /**
+   * Check if value is valid for storage (not null or undefined).
    * @private
-   * @param {*} value
-   * @returns {boolean}
+   * @param {*} value - Value to check.
+   * @returns {boolean} True if value is non-null and non-undefined.
    */
-  _isAcceptableValue (value) {
+  _isValidValue (value) {
     return value !== undefined && value !== null
   }
 
   /**
+   * Invoke change handler for field with error isolation.
+   * Handlers are called asynchronously after value is set.
+   * Errors in handlers are logged but do not affect state update.
    * @private
-   * @param {string} field
-   * @param {*} value
+   * @param {string} field - Field name.
+   * @param {*} value - New field value.
+   * @returns {void}
    */
   _notifyChange (field, value) {
     const handler = this.changeHandlers[field]
@@ -198,19 +210,22 @@ export class FormStateManager {
   }
 
   /**
+   * Create shallow copy of state object.
    * @private
-   * @param {FormState} state
-   * @returns {FormState}
+   * @param {FormState} state - State object to clone.
+   * @returns {FormState} Shallow copy of state.
    */
   _cloneState (state) {
     return { ...state }
   }
 
   /**
+   * Compare two state objects for equality.
+   * Uses JSON.stringify for deep comparison; works for plain objects.
    * @private
-   * @param {FormState} left
-   * @param {FormState} right
-   * @returns {boolean}
+   * @param {FormState} left - First state object.
+   * @param {FormState} right - Second state object.
+   * @returns {boolean} True if states differ, false if identical.
    */
   _statesAreDifferent (left, right) {
     return JSON.stringify(left) !== JSON.stringify(right)
@@ -257,11 +272,12 @@ export class GameBoardStateManager extends FormStateManager {
   }
 
   /**
-   * Set board dimensions with validation.
-   * @param {number} height - Board height in cells (must be positive integer).
-   * @param {number} width - Board width in cells (must be positive integer).
-   * @returns {FormState} Successfully updated dimensions.
-   * @throws {Error} If dimensions validation fails.
+   * Set board dimensions with strict validation.
+   * Both dimensions must be positive integers.
+   * @param {number} height - Board height in cells.
+   * @param {number} width - Board width in cells.
+   * @returns {FormState} Updated state object with new dimensions.
+   * @throws {Error} If dimensions are not positive integers.
    */
   setDimensions (height, width) {
     if (!this._validateDimensions(height, width)) {
@@ -311,11 +327,11 @@ export class GameBoardStateManager extends FormStateManager {
   }
 
   /**
-   * Validate board dimensions are numeric and positive.
+   * Check that dimensions are valid (positive integers).
    * @private
    * @param {number} height - Height to validate.
    * @param {number} width - Width to validate.
-   * @returns {boolean} True if dimensions are valid.
+   * @returns {boolean} True if both height and width are positive integers.
    */
   _validateDimensions (height, width) {
     return (

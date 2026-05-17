@@ -193,7 +193,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} size - The new size value.
    */
   publishSizeChanged (size) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.SIZE_CHANGED, size)
+    this.publish(NavbarEventAggregator.EVENTS.SIZE_CHANGED, size)
   }
 
   /**
@@ -202,10 +202,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onSizeChanged (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.SIZE_CHANGED,
-      handler
-    )
+    return this.subscribe(NavbarEventAggregator.EVENTS.SIZE_CHANGED, handler)
   }
 
   /**
@@ -213,7 +210,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} mapName - The name of the selected map.
    */
   publishMapSelected (mapName) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.MAP_SELECTED, mapName)
+    this.publish(NavbarEventAggregator.EVENTS.MAP_SELECTED, mapName)
   }
 
   /**
@@ -222,10 +219,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onMapSelected (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.MAP_SELECTED,
-      handler
-    )
+    return this.subscribe(NavbarEventAggregator.EVENTS.MAP_SELECTED, handler)
   }
 
   /**
@@ -233,7 +227,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} terrain - The new terrain configuration.
    */
   publishTerrainChanged (terrain) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.TERRAIN_CHANGED, terrain)
+    this.publish(NavbarEventAggregator.EVENTS.TERRAIN_CHANGED, terrain)
   }
 
   /**
@@ -242,17 +236,14 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onTerrainChanged (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.TERRAIN_CHANGED,
-      handler
-    )
+    return this.subscribe(NavbarEventAggregator.EVENTS.TERRAIN_CHANGED, handler)
   }
 
   /**
    * Publish a board setup event.
    */
   publishBoardSetup () {
-    this._publishEvent(NavbarEventAggregator.EVENTS.BOARD_SETUP)
+    this.publish(NavbarEventAggregator.EVENTS.BOARD_SETUP)
   }
 
   /**
@@ -261,17 +252,14 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onBoardSetup (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.BOARD_SETUP,
-      handler
-    )
+    return this.subscribe(NavbarEventAggregator.EVENTS.BOARD_SETUP, handler)
   }
 
   /**
    * Publish a refresh requested event.
    */
   publishRefreshRequested () {
-    this._publishEvent(NavbarEventAggregator.EVENTS.REFRESH_REQUESTED)
+    this.publish(NavbarEventAggregator.EVENTS.REFRESH_REQUESTED)
   }
 
   /**
@@ -280,7 +268,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onRefreshRequested (handler) {
-    return this._subscribeToEvent(
+    return this.subscribe(
       NavbarEventAggregator.EVENTS.REFRESH_REQUESTED,
       handler
     )
@@ -291,7 +279,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} params - Updated parameters.
    */
   publishParamsUpdated (params) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.PARAMS_UPDATED, params)
+    this.publish(NavbarEventAggregator.EVENTS.PARAMS_UPDATED, params)
   }
 
   /**
@@ -300,10 +288,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onParamsUpdated (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.PARAMS_UPDATED,
-      handler
-    )
+    return this.subscribe(NavbarEventAggregator.EVENTS.PARAMS_UPDATED, handler)
   }
 
   /**
@@ -311,7 +296,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} mapType - The new map type.
    */
   publishMapTypeChanged (mapType) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.MAP_TYPE_CHANGED, mapType)
+    this.publish(NavbarEventAggregator.EVENTS.MAP_TYPE_CHANGED, mapType)
   }
 
   /**
@@ -320,7 +305,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onMapTypeChanged (handler) {
-    return this._subscribeToEvent(
+    return this.subscribe(
       NavbarEventAggregator.EVENTS.MAP_TYPE_CHANGED,
       handler
     )
@@ -331,7 +316,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} water - The new water configuration.
    */
   publishWaterChanged (water) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.WATER_CHANGED, water)
+    this.publish(NavbarEventAggregator.EVENTS.WATER_CHANGED, water)
   }
 
   /**
@@ -340,10 +325,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onWaterChanged (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.WATER_CHANGED,
-      handler
-    )
+    return this.subscribe(NavbarEventAggregator.EVENTS.WATER_CHANGED, handler)
   }
 
   /**
@@ -351,7 +333,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @param {EventPayload} mode - The new mode value.
    */
   publishModeChanged (mode) {
-    this._publishEvent(NavbarEventAggregator.EVENTS.MODE_CHANGED, mode)
+    this.publish(NavbarEventAggregator.EVENTS.MODE_CHANGED, mode)
   }
 
   /**
@@ -360,31 +342,7 @@ export class NavbarEventAggregator extends EventAggregator {
    * @returns {Function} Unsubscribe function.
    */
   onModeChanged (handler) {
-    return this._subscribeToEvent(
-      NavbarEventAggregator.EVENTS.MODE_CHANGED,
-      handler
-    )
-  }
-
-  /**
-   * Internal publish helper to reduce duplication.
-   * @private
-   * @param {EventName} eventName
-   * @param {EventPayload} [data]
-   */
-  _publishEvent (eventName, data) {
-    this.publish(eventName, data)
-  }
-
-  /**
-   * Internal subscribe helper to reduce duplication.
-   * @private
-   * @param {EventName} eventName
-   * @param {EventHandler} handler
-   * @returns {Function} Unsubscribe function.
-   */
-  _subscribeToEvent (eventName, handler) {
-    return this.subscribe(eventName, handler)
+    return this.subscribe(NavbarEventAggregator.EVENTS.MODE_CHANGED, handler)
   }
 }
 
