@@ -13,6 +13,15 @@ import { placedShipsInstance } from './PlacedShips.js'
  * @typedef {Object} ShipCellGrid
  * @typedef {Object} Placeable
  * @property {Function} canPlace
+ * @typedef {Object} Ship
+ * @property {string} id
+ * @property {string} letter
+ * @property {Function} shape
+ * @property {Function} placeVariant
+ * @property {Function} addToGrid
+ * @property {Function} placeAtCells
+ * @property {Function} removeFromPlacement
+ * @property {Array} cells
  */
 
 /**
@@ -152,8 +161,8 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   resetOffset () {
-    this.offset = [0, 0]
-    this.cursor = [0, 0]
+    this.offset = /** @type {OffsetVector} */ ([0, 0])
+    this.cursor = /** @type {CursorPosition} */ ([0, 0])
   }
 
   /**
@@ -183,9 +192,7 @@ export class DraggedShip extends SelectedShip {
    */
   canPlaceRaw (row, col, shipCellGrid) {
     const placeable = this._currentPlaceable()
-    return Boolean(
-      this.ghost && placeable && placeable.canPlace(row, col, shipCellGrid)
-    )
+    return Boolean(this.ghost && placeable?.canPlace(row, col, shipCellGrid))
   }
 
   /**
@@ -195,7 +202,10 @@ export class DraggedShip extends SelectedShip {
    * @returns {CursorPosition}
    */
   offsetCell (row, col) {
-    return [row - this.cursor[0], col - this.cursor[1]]
+    return /** @type {CursorPosition} */ ([
+      row - this.cursor[0],
+      col - this.cursor[1]
+    ])
   }
 
   /**

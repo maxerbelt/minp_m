@@ -59,11 +59,13 @@ import { CustomMap } from '../terrains/all/js/map.js'
  */
 
 /**
- * @typedef {Object} ShipElement
- * Ship element interface
- * @property {string} dataset.id - Ship ID in dataset
- * @property {string} dataset.variant - Variant index
- * @property {string} style.opacity - Element opacity
+ * @typedef {HTMLElement} ShipElement
+ * Ship element interface extending HTMLElement
+ * @property {DOMStringMap} dataset - HTML dataset
+ * @property {CSSStyleDeclaration} style - Element styles
+ * @property {Function} addEventListener - Add event listener
+ * @property {Function} getBoundingClientRect - Get bounding rect
+ * @property {Function} classList - Get classList
  */
 
 /**
@@ -72,37 +74,35 @@ import { CustomMap } from '../terrains/all/js/map.js'
  * @class DragDropState
  */
 class DragDropState {
-  constructor () {
-    /**
-     * Currently selected item being dragged (DraggedShip, DraggedWeapon, or Brush)
-     * @type {Object|null}
-     */
-    this.selection = null
+  /**
+   * Currently selected item being dragged (DraggedShip, DraggedWeapon, or Brush)
+   * @type {Object|null}
+   */
+  selection = null
 
-    /**
-     * Last entered cell coordinates [row, col]
-     * @type {[number, number]}
-     */
-    this.lastEntered = [-1, -1]
+  /**
+   * Last entered cell coordinates [row, col]
+   * @type {[number, number]}
+   */
+  lastEntered = [-1, -1]
 
-    /**
-     * Currently clicked ship for keyboard/UI interaction
-     * @type {Object|null}
-     */
-    this.clickedShip = null
+  /**
+   * Currently clicked ship for keyboard/UI interaction
+   * @type {Object|null}
+   */
+  clickedShip = null
 
-    /**
-     * Last modifier key effect ('link', 'copy', 'move', 'none', or '')
-     * @type {string}
-     */
-    this.lastModifier = ''
+  /**
+   * Last modifier key effect ('link', 'copy', 'move', 'none', or '')
+   * @type {string}
+   */
+  lastModifier = ''
 
-    /**
-     * Counter for nested dragenter/dragleave events
-     * @type {number}
-     */
-    this.dragCounter = 0
-  }
+  /**
+   * Counter for nested dragenter/dragleave events
+   * @type {number}
+   */
+  dragCounter = 0
 
   /**
    * Resets modifier and drag counter
@@ -235,9 +235,13 @@ export function onClickTransform () {
  * @returns {void}
  */
 export function setupDragHandlers (viewModel) {
-  dragNDrop.dragEnd(document, viewModel, () => {
-    state.resetModifierAndCounter()
-  })
+  dragNDrop.dragEnd(
+    /** @type {HTMLElement} */ (/** @type {unknown} */ (document)),
+    viewModel,
+    () => {
+      state.resetModifierAndCounter()
+    }
+  )
 
   viewModel.board.addEventListener('dragenter', e => {
     const isShip = e.dataTransfer.types.includes('ship')
@@ -270,9 +274,13 @@ export function setupDragHandlers (viewModel) {
  * @returns {void}
  */
 export function setupDragBrushHandlers (viewModel) {
-  dragNDrop.dragBrushEnd(document, viewModel, () => {
-    state.resetModifier()
-  })
+  dragNDrop.dragBrushEnd(
+    /** @type {HTMLElement} */ (/** @type {unknown} */ (document)),
+    viewModel,
+    () => {
+      state.resetModifier()
+    }
+  )
 }
 
 // ============================================================================
@@ -549,7 +557,7 @@ class DragNDrop {
    * @returns {Object} Object with shipId, shipElement, and isNotShipElement
    */
   getShip (event) {
-    const shipElement = event.currentTarget
+    const shipElement = /** @type {HTMLElement} */ (event.currentTarget)
     const shipId = getShipIdFromElement(shipElement)
     const isNotShipElement = !shipId && event.target !== shipElement
 
@@ -676,11 +684,11 @@ class DragNDrop {
   /**
    * Handles weapon drop operation.
    * @param {Object} model - The model
-   * @param {Object} viewModel - The view model
+   * @param {Object} _viewModel - The view model (unused)
    * @returns {void}
    * @private
    */
-  _handleWeaponDrop (model, viewModel) {
+  _handleWeaponDrop (model, _viewModel) {
     if (!state.selection) return
     if (!(state.selection instanceof DraggedWeapon)) return
 
@@ -835,16 +843,21 @@ class DragNDrop {
    * Applies highlight classes to cells.
    * @param {ViewModel} viewModel - The view model
    * @param {Array} cells - Occupied cells
-   * @param {boolean} canPlace - Whether placement is valid
+   * @param {boolean} isPlacementValid - Whether placement is valid
    * @param {Object} placing - The placement object
    * @returns {void}
    * @private
    */
-  _applyHighlights (viewModel, cells, canPlace, placing) {
+  _applyHighlights (viewModel, cells, isPlacementValid, placing) {
     for (const [cc, rr] of cells) {
       if (bh.map.inBounds(rr, cc)) {
         const cell = viewModel.gridCellAt(rr, cc)
-        const cellClass = this._getHighlightClass(canPlace, placing, cc, rr)
+        const cellClass = this._getHighlightClass(
+          isPlacementValid,
+          placing,
+          cc,
+          rr
+        )
         cell.classList.add(cellClass)
       }
     }
@@ -852,15 +865,15 @@ class DragNDrop {
 
   /**
    * Determines CSS class for highlighted cell based on placement validity.
-   * @param {boolean} canPlace - Whether placement is valid
+   * @param {boolean} isPlacementValid - Whether placement is valid
    * @param {Object} placing - The placement object
    * @param {number} c - Column coordinate
    * @param {number} r - Row coordinate
    * @returns {string} CSS class name ('good', 'notgood', or 'bad')
    * @private
    */
-  _getHighlightClass (canPlace, placing, c, r) {
-    if (canPlace) {
+  _getHighlightClass (isPlacementValid, placing, c, r) {
+    if (isPlacementValid) {
       return 'good'
     } else if (placing.notGood.at(c, r) > 0) {
       return 'notgood'
@@ -881,18 +894,17 @@ class DragNDrop {
    * @returns {void}
    */
   dragEnter (cell, model, viewModel) {
-    const context = this
     cell.addEventListener('dragenter', e => {
       e.preventDefault()
       const isShip = e.dataTransfer.types.includes('ship')
       if (!isShip) return
 
-      const el = e.target
+      const el = /** @type {HTMLElement} */ (e.target)
       const [r, c] = coordsFromCell(el)
       if (state.lastEntered[0] === r && state.lastEntered[1] === c) return
 
       state.lastEntered = [r, c]
-      context.highlight(viewModel, model.shipCellGrid, r, c)
+      this.highlight(viewModel, model.shipCellGrid, r, c)
     })
   }
 
@@ -1250,7 +1262,8 @@ class DragNDrop {
 
       cursor.isDragging = true
       state.selection = new Brush(size, subterrain)
-      e.currentTarget.style.opacity = '0.6'
+      const el = /** @type {HTMLElement} */ (e.currentTarget)
+      el.style.opacity = '0.6'
     })
   }
 
@@ -1264,7 +1277,7 @@ class DragNDrop {
    * @returns {Object} { shipId, shipElement, isNotShipElement }
    */
   _getShip (event) {
-    const shipElement = event.currentTarget
+    const shipElement = /** @type {HTMLElement} */ (event.currentTarget)
     const shipId = getShipIdFromElement(shipElement)
     const isNotShipElement = event.target !== shipElement && !shipId
 
@@ -1319,8 +1332,8 @@ class DragNDrop {
    */
   _setupShipClickHandler (viewModel, dragShip, ships) {
     dragShip.addEventListener('click', e => {
-      const shipElement = e.currentTarget
-      const shipId = parseInt(shipElement.dataset.id)
+      const shipElement = /** @type {HTMLElement} */ (e.currentTarget)
+      const shipId = Number.parseInt(shipElement.dataset.id)
       if (e.target !== shipElement && !shipId) return
 
       const ship = ships.find(s => s.id === shipId)
@@ -1338,7 +1351,7 @@ class DragNDrop {
    */
   _setupWeaponClickHandler (viewModel, dragShip, weapon) {
     dragShip.addEventListener('click', e => {
-      const shipElement = e.currentTarget
+      const shipElement = /** @type {HTMLElement} */ (e.currentTarget)
       const letter = shipElement.dataset.letter
       if (e.target !== shipElement && !letter) return
 

@@ -84,7 +84,7 @@ class EnemyUI extends WatersUI {
    * @private
    */
   _getButtonById (id) {
-    return /** @type {HTMLButtonElement|null} */ document.getElementById(id)
+    return /** @type {HTMLButtonElement|null} */ (document.getElementById(id))
   }
 
   /**
@@ -246,16 +246,6 @@ class EnemyUI extends WatersUI {
    */
   _setButtonHidden (buttonKeys, hidden) {
     this._setButtonsProperty(buttonKeys, 'hidden', hidden)
-  }
-
-  /**
-   * Disables or enables buttons by key.
-   * @param {string[]} buttonKeys
-   * @param {boolean} disabled
-   * @private
-   */
-  _setButtonsDisabled (buttonKeys, disabled) {
-    this._setButtonsProperty(buttonKeys, 'disabled', disabled)
   }
 
   /**

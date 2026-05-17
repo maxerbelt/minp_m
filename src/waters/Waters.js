@@ -87,6 +87,7 @@ import { Random } from '../core/Random.js'
  * - Hit/miss/sunk detection and display
  * - Turn management and game status
  */
+
 export class Waters {
   /**
    * Initializes the Waters game instance with UI and basic setup.
