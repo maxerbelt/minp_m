@@ -517,9 +517,13 @@ export class Weapon {
    * @returns {number[][]} Processed coordinate pair with candidate flag
    */
   processCoords (map, [rr, cc], coords, model) {
-    const effect = this.aoe(map, coords)
+    const normalizedCoords =
+      Array.isArray(coords) && coords.length > 0 && !Array.isArray(coords[0])
+        ? [coords]
+        : coords
+    const effect = this.aoe(map, normalizedCoords)
     const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], coords)
+    const list = this.redoCoords(map, [rr, cc], normalizedCoords)
     if (t) {
       const source = furtherestFrom(t[0], t[1], list)
       return [source, t, true]
@@ -589,10 +593,14 @@ export class Weapon {
     processCoords
   ) {
     processCoords = processCoords || this.redoCoords.bind(this)
+    const normalizedCoords =
+      Array.isArray(coords) && coords.length > 0 && !Array.isArray(coords[0])
+        ? [coords]
+        : coords
     const [[r, c], target, hasCandidates] = processCoords(
       map,
       [rr, cc],
-      coords,
+      normalizedCoords,
       model
     )
     const sourceCell = this.#getSourceCell(r, c, viewModel, opposingViewModel)

@@ -5,6 +5,9 @@
     --rail4-cursor-image: url('../images/rail32_4.png');
     --bolt-cursor-image: url('../images/bolt32.png');
     --bolt-grey-cursor-image: url('../images/boltol32.png');
+    --recticule-cursor-image: url('../images/reticule32.png');
+    --reticule-grey-cursor-image: url('../images/reticuleol32.png');
+    --llaunch-grey-cursor-image: url('../images/llaunchol32.png');
     --round-cursor-image: url('../images/round32.png');
     --round-grey-cursor-image: url('../images/roundol32.png');
     --rlaunch-grey-cursor-image: url('../images/rlaunchol32.png');
@@ -14,10 +17,15 @@
     --black-rail-image: url('../images/blackrail26.png');
     --white-round-image: url('../images/whiteround26.png');
     --black-round-image: url('../images/blackround26.png');
+    --white-reticule-image: url('../images/whitereticule26.png');
+    --black-reticule-image: url('../images/blackreticule26.png');
+    --white-llaunch-image: url('../images/whitellaunch26.png');
+    --black-llaunch-image: url('../images/blackllaunch26.png');
     --flying-missile-image: url('../images/flyingmissile40.png');
     --flying-gauss-image: url('../images/flyinground40.png');
     --flying-bolt-image: url('../images/flyingbolt40.png');
     --flying-round-image: url('../images/flyinground40.png');
+    --flying-laser-image: url('../images/flyinglaser40.png');
     --asteroid-explode-image: url('../images/asteroid-explosion.png');
     --space-explode-image: url('../images/space-explosion.png');
     --plasma-explode-image: url('../images/plasma-explosion.png');
@@ -57,6 +65,10 @@
 
 
 .board.rlaunch.not-step {
+    cursor: var(--rlaunch-grey-cursor-image) 26 26, pointer;
+}
+
+.board.llaunch.not-step {
     cursor: var(--rlaunch-grey-cursor-image) 26 26, pointer;
 }
 
@@ -139,6 +151,11 @@
 .cell.rlaunch,
 .board.rlaunch {
     cursor: var(--rlaunch-cursor-image) 24 24, pointer;
+}
+
+.cell.llaunch,
+.board.llaunch {
+    cursor: var(--llaunch-cursor-image) 24 24, pointer;
 }
 
 .cell.rlaunch.turn2 {
@@ -254,6 +271,13 @@
     background-image: var(--black-round-image);
 }
 
+.cell.weapon.contrast.llaunch.active::before,
+.cell.weapon.contrast.recticule.active::before {
+    background-image: var(--black-llaunch-image);
+}
+
+
+
 .cell.weapon.rail.active::before {
     content: '';
     width: 26px;
@@ -289,6 +313,16 @@
     height: 26px;
     z-index: 3;
     background-image: var(--white-round-image);
+    transition: opacity 0.4s ease-in-out;
+}
+
+.cell.weapon.llaunch.active::before,
+.cell.weapon.recticule.active::before {
+    content: '';
+    width: 26px;
+    height: 26px;
+    z-index: 3;
+    background-image: var(--white-llaunch-image);
     transition: opacity 0.4s ease-in-out;
 }
 

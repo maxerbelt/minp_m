@@ -178,6 +178,14 @@ describe('Weapon', () => {
     ])
   })
 
+  it('processCoords normalizes flat coordinate arrays', () => {
+    const weapon = new StandardShot()
+    const map = {}
+    const model = { getTarget: () => null }
+    const result = weapon.processCoords(map, [1, 2], [3, 4], model)
+    expect(result).toEqual([[1, 2], [3, 4]])
+  })
+
   it('centerOf returns center point of element', () => {
     const weapon = new StandardShot()
     const el = {

@@ -70,6 +70,16 @@ describe('spaceWeapons basic behavior', () => {
     expect(Scan.prototype.clone).toBeInstanceOf(Function)
   })
 
+  it('GaussRound.processCoords normalizes flat coordinate arrays', () => {
+    const g = new GaussRound(1)
+    const map = { isLand: () => false }
+    const model = { getTarget: () => null }
+    const result = g.processCoords(map, [0, 0], [3, 4], model)
+    expect(Array.isArray(result)).toBe(true)
+    expect(result[0]).toEqual([0, 0])
+    expect(result[1]).toEqual(expect.any(Array))
+  })
+
   it('spaceWeaponsCatalogue contains Missile and RailBolt entries', () => {
     const letters = spaceWeaponsCatalogue.weapons.map(w => w.tag)
     expect(letters).toContain('missile')
