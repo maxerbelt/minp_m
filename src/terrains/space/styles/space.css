@@ -6,6 +6,10 @@
     --bolt-cursor-image: url('../images/bolt32.png');
     --bolt-grey-cursor-image: url('../images/boltol32.png');
     --recticule-cursor-image: url('../images/reticule32.png');
+    --llaunch-cursor-image: url('../images/llaunch32.png');
+    --llaunch2-cursor-image: url('../images/llaunch32_2.png');
+    --llaunch3-cursor-image: url('../images/llaunch32_3.png');
+    --llaunch4-cursor-image: url('../images/llaunch32_4.png');
     --reticule-grey-cursor-image: url('../images/reticuleol32.png');
     --llaunch-grey-cursor-image: url('../images/llaunchol32.png');
     --round-cursor-image: url('../images/round32.png');
@@ -69,7 +73,7 @@
 }
 
 .board.llaunch.not-step {
-    cursor: var(--rlaunch-grey-cursor-image) 26 26, pointer;
+    cursor: var(--llaunch-grey-cursor-image) 26 26, pointer;
 }
 
 .board.bolt {
@@ -155,7 +159,19 @@
 
 .cell.llaunch,
 .board.llaunch {
-    cursor: var(--llaunch-cursor-image) 24 24, pointer;
+    cursor: var(--llaunch-cursor-image) 16 6, pointer;
+}
+
+.cell.llaunch.turn2 {
+    cursor: var(--llaunch2-cursor-image) 6 16, pointer;
+}
+
+.cell.llaunch.turn3 {
+    cursor: var(--llaunch3-cursor-image) 16 24, pointer;
+}
+
+.cell.llaunch.turn4 {
+    cursor: var(--llaunch4-cursor-image) 24 16, pointer;
 }
 
 .cell.rlaunch.turn2 {
