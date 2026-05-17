@@ -241,6 +241,14 @@ export class StoreBig extends StoreBase {
   // ============================================================================
   // Edge Mask Preparation (using base class helpers)
   // ============================================================================
+  /**
+   * Fast 4-neighbor dilation (no wrapping) for 1-bit bitboards.
+   * Applies left/right/up/down expansion while respecting edge masks.
+   * @param {bigint} bitboard - Source 1-bit bitboard
+   * @param {number} gridWidth - Grid width used for vertical shifts
+   * @param {Object} [edgeMasks] - Optional edge masks: { notLeft, notRight }
+   * @returns {bigint} Dilated bitboard
+   */
   dilateCrossFast (bitboard, gridWidth, edgeMasks) {
     const notLeft = edgeMasks?.notLeft ?? this.fullBits
     const notRight = edgeMasks?.notRight ?? this.fullBits
@@ -680,7 +688,7 @@ export class StoreBig extends StoreBase {
   extractRowOccupancy (bitboard, rowIndex, gridWidth) {
     // Extract the contiguous row bits for the given row index using a row mask
     gridWidth = gridWidth || this.width
-    const rowMaskForWidth = this.all.rowMask(gridWidth)
+    const rowMaskForWidth = this.rowMaskForWidth(gridWidth)
     return this.extractRowAtIndex(
       bitboard,
       rowIndex,
