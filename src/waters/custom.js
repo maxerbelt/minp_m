@@ -15,7 +15,7 @@ import { customUI } from './customUI.js'
 /**
  * @typedef {Object} Ship
  * @property {Array<*>} cells
- * @property {function(): ShipShape} shape
+ * @property {() => ShipShape} shape
  * @property {number} [variant]
  */
 

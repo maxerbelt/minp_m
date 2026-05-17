@@ -83,7 +83,7 @@ export class Mask extends RectMaskBase {
    * @returns {*} Cell value at the coordinates
    */
   at (x, y) {
-    return this.for(x, y).at()
+    return this.for(x, y).readCellValue()
   }
 
   /**
@@ -94,7 +94,7 @@ export class Mask extends RectMaskBase {
    * @returns {boolean} True if cell matches the color
    */
   test (x, y, color = 1) {
-    return this.for(x, y).test(color)
+    return this.for(x, y).hasColor(color)
   }
 
   // ============================================================================
@@ -378,10 +378,9 @@ export class Mask extends RectMaskBase {
    * at the specified offset with fillValue padding around it.
    *
    * @param {number} borderSize - Number of cells to expand on each side
-   * @param {number} [fillValue=0] - Value to use for padding
    * @returns {Mask} New mask with expanded dimensions
    */
-  expandBorderMask (borderSize = 1, fillValue = 0) {
+  expandBorderMask (borderSize = 1) {
     const newWidth = this.width + 2 * borderSize
     const newHeight = this.height + 2 * borderSize
 

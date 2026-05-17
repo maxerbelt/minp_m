@@ -67,7 +67,7 @@ let keyboardManager = null
 
 /**
  * @private
- * @param {Array<HTMLElement>} elements
+ * @param {Array<HTMLButtonElement>} elements
  * @param {boolean} disabled
  */
 function _setButtonsDisabled (elements, disabled) {
