@@ -8,9 +8,14 @@ import { customUI } from './customUI.js'
  */
 
 /**
+ * @typedef {Object} ShipShape
+ * @property {number} displacement
+ */
+
+/**
  * @typedef {Object} Ship
  * @property {Array<*>} cells
- * @property {function(): { displacement: number }} shape
+ * @property {function(): ShipShape} shape
  * @property {number} [variant]
  */
 
@@ -142,7 +147,6 @@ class Custom extends Waters {
    * Computes the available placement area for the active map.
    *
    * @returns {number}
-   * @private
    */
   #getAvailablePlacementArea () {
     const map = bh.map
@@ -154,7 +158,6 @@ class Custom extends Waters {
    *
    * @param {Ship} ship
    * @returns {number}
-   * @private
    */
   #getShipDisplacement (ship) {
     return ship?.shape?.()?.displacement || 0
@@ -165,7 +168,6 @@ class Custom extends Waters {
    *
    * @param {number} threshold
    * @returns {boolean}
-   * @private
    */
   #isDisplacementBelowThreshold (threshold) {
     return this.getDisplacementRatio() < threshold
