@@ -119,7 +119,7 @@ export class BhMap {
     const baseShapes = terrain.ships.baseShapes
     const shipNum = this.shipNum
     const repeatShapes = baseShapes.flatMap(
-      s => Array(shipNum[s.letter] || 0).fill(s) || []
+      s => new Array(shipNum[s.letter] || 0).fill(s) || []
     )
     return repeatShapes
   }
