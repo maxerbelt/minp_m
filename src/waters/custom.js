@@ -44,6 +44,16 @@ class Custom extends Waters {
   }
 
   /**
+   * Creates candidate ships from the currently placed ships.
+   * Retrieves all ships that have been placed on the grid.
+   *
+   * @returns {Array<Ship>} Array of placed ships from the placement manager
+   */
+  createCandidateShips () {
+    return bh.terrain.newFleetForTerrain
+  }
+
+  /**
    * Calculates the total area available for ship placement based on map dimensions.
    * Formula: (rows + 1) × (cols + 1) + 1
    *
