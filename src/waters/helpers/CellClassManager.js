@@ -551,7 +551,6 @@ export class CellClassManager {
    * @param {HTMLElement} cell - The cell element to update
    * @param {string} sunkClass - CSS class indicating sunk state (e.g., 'enm-sunk' or 'frd-sunk')
    * @returns {void}
-   * @private
    */
   static #applySunkState (cell, sunkClass) {
     this.clearDisplayCell(cell)
@@ -570,7 +569,6 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The placement cell to clear
    * @returns {void}
-   * @private
    */
   static #clearPlacementClasses (cell) {
     this.clearCellClasses(cell, [
@@ -602,7 +600,6 @@ export class CellClassManager {
    * @param {HTMLElement} cell - The cell element to check
    * @param {string[]} forbiddenClasses - Classes that disallow the transient state
    * @returns {boolean} True if the state may be applied safely
-   * @private
    */
   static #isEligibleForTransientState (cell, forbiddenClasses) {
     return !this.hasAny(cell, forbiddenClasses)
@@ -614,7 +611,6 @@ export class CellClassManager {
    *
    * @param {CellClassGroup[]} classGroups - Class groups to extract from
    * @returns {string[]} Flattened array of all class names from all groups
-   * @private
    */
   static #extractClassNames (classGroups) {
     return classGroups.flatMap(group => Object.values(group))
