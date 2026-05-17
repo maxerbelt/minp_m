@@ -412,6 +412,34 @@ export class Weapon {
   }
 
   /**
+   * Normalize coordinate input for weapon launch operations.
+   * Accepts flat coordinate arrays like [r, c] and nested targets like [[r, c]].
+   * @param {any} coords - Coordinate input from firing logic
+   * @returns {number[][]} Normalized coordinate list
+   */
+  normalizeCoords (coords) {
+    if (!Array.isArray(coords)) {
+      throw new TypeError(`Invalid weapon coordinates: ${coords}`)
+    }
+    if (coords.length === 0) {
+      return []
+    }
+    if (!Array.isArray(coords[0])) {
+      if (
+        coords.length === 2 &&
+        typeof coords[0] === 'number' &&
+        typeof coords[1] === 'number'
+      ) {
+        return [coords]
+      }
+      throw new TypeError(
+        `Invalid weapon coordinate pair: ${JSON.stringify(coords)}`
+      )
+    }
+    return coords
+  }
+
+  /**
    * Launch weapon with cursor animation sequence for seeking mode.
    * Combines cursor flight animation with ripple effect before actual launch.
    *
@@ -517,9 +545,10 @@ export class Weapon {
    * @returns {number[][]} Processed coordinate pair with candidate flag
    */
   processCoords (map, [rr, cc], coords, model) {
-    const effect = this.aoe(map, coords)
+    const normalizedCoords = this.normalizeCoords(coords)
+    const effect = this.aoe(map, normalizedCoords)
     const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], coords)
+    const list = this.redoCoords(map, [rr, cc], normalizedCoords)
     if (t) {
       const source = furtherestFrom(t[0], t[1], list)
       return [source, t, true]
@@ -589,10 +618,11 @@ export class Weapon {
     processCoords
   ) {
     processCoords = processCoords || this.redoCoords.bind(this)
+    const normalizedCoords = this.normalizeCoords(coords)
     const [[r, c], target, hasCandidates] = processCoords(
       map,
       [rr, cc],
-      coords,
+      normalizedCoords,
       model
     )
     const sourceCell = this.#getSourceCell(r, c, viewModel, opposingViewModel)

@@ -762,9 +762,12 @@ export class GaussRound extends Fish {
    * @returns {number[][]} Processed coordinate pair with candidate flag
    */
   processCoords (map, [rr, cc], coords, model) {
-    const effect = this.aoe(map, coords)
+    const normalizedCoords = this.normalizeCoords(coords)
+    const targetCoords = normalizedCoords[0]
+    const lineCoords = [[rr, cc], targetCoords]
+    const effect = this.aoe(map, lineCoords)
     const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], coords)
+    const list = this.redoCoords(map, [rr, cc], lineCoords)
     if (t) {
       const source = list[0]
       return [source, t, true]
