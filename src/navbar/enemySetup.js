@@ -113,12 +113,10 @@ function _getTargetingCoordinates (model) {
 function _getActiveWeapon (model) {
   if (!model.loadOut) return undefined
 
-  const { selectedWeapon, getCurrentWeaponSystem } = model.loadOut
-  if (selectedWeapon) {
-    return selectedWeapon
-  }
+  const selectedWeapon = model.loadOut.selectedWeapon
+  if (selectedWeapon) return selectedWeapon
 
-  const weaponSystem = getCurrentWeaponSystem?.()
+  const weaponSystem = model.loadOut.getCurrentWeaponSystem?.()
   return weaponSystem?.weapon
 }
 

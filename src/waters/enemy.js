@@ -6,6 +6,7 @@ import { Waters } from './Waters.js'
 import { Player } from './steps.js'
 import { Delay } from '../core/Delay.js'
 import { randomElement, parsePair } from '../core/utilities.js'
+import { CellClassManager } from './helpers/CellClassManager.js'
 
 // ============================================================================
 // Constants
@@ -199,6 +200,29 @@ class Enemy extends Waters {
    */
   _updateBoardTargetingState () {
     this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+  }
+
+  /**
+   * Remove cursor classes from all cells inside the UI board element.
+   * Uses `CellClassManager.removeCursorClasses` to clear terrain-specific cursor tags.
+   * @private
+   */
+  _clearBoardCursorClasses () {
+    const board = this.UI?.board
+    if (!board) return
+
+    // Assume direct children are cell elements; fall back to querySelectorAll if needed
+    const cells =
+      board.children && board.children.length
+        ? board.children
+        : board.querySelectorAll('*')
+    for (const cell of cells) {
+      try {
+        CellClassManager.removeCursorClasses(cell)
+      } catch (err) {
+        // ignore non-element nodes or unexpected structure
+      }
+    }
   }
 
   /**
@@ -1037,6 +1061,9 @@ class Enemy extends Waters {
   onClickSingleShotButton () {
     this._handleWeaponChange()
     this.loadOut.switchToSingleShot()
+    // Clear any cursor classes applied to board cells when switching to single-shot
+    // Single-shot mode should show no cursor previews on the opponent board
+    this._clearBoardCursorClasses()
     //  this.steps.select()
   }
 

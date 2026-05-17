@@ -138,7 +138,7 @@ export class CellClassManager {
    */
   static resetHitCellState (cell) {
     this.#removeHitTransientClasses(cell)
-    this.#removeCursorClasses(cell)
+    this.removeCursorClasses(cell)
   }
 
   /**
@@ -410,7 +410,6 @@ export class CellClassManager {
    * @param {HTMLElement} cell - DOM element to remove classes from
    * @param {string[]} classNames - Array of class names to remove
    * @returns {void}
-   * @private
    */
   static #removeClassNames (cell, classNames) {
     if (classNames.length) {
@@ -423,7 +422,6 @@ export class CellClassManager {
    * Used for bulk operations on weapon-related classes.
    *
    * @returns {string[]} Array of all weapon and cursor class names
-   * @private
    */
   static #getAllWeaponRelatedClasses () {
     return [...this.#weaponTags(), ...this.#cursorTags()]
@@ -446,7 +444,6 @@ export class CellClassManager {
    * Used to remove transient animation and weapon-related classes.
    *
    * @returns {string[]} Array of class names to remove from hit cells
-   * @private
    */
   static #getHitResetClasses () {
     return [...DEFAULT_CELL_CLEAN_CLASSES, ...this.#weaponTags()]
@@ -514,9 +511,8 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The cell element to update
    * @returns {void}
-   * @private
    */
-  static #removeCursorClasses (cell) {
+  static removeCursorClasses (cell) {
     this.#removeClassNames(cell, this.#cursorTags())
   }
 
