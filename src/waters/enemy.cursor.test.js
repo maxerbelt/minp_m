@@ -15,7 +15,8 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
     addToQueue: jest.fn(),
     setTips: jest.fn(),
     clearQueue: jest.fn(),
-    resetToSelectionMode: jest.fn()
+    resetToSelectionMode: jest.fn(),
+    info2: jest.fn()
   }
 }))
 
@@ -33,11 +34,26 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
     updateCustomMaps: jest.fn()
   })
 
+  const blankMaskMock = {
+    bits: new Uint8Array(100),
+    test: () => false,
+    toCoords: [],
+    setRanges: jest.fn(),
+    length: 0
+  }
+
   return {
     bh: {
       seekingMode: false,
       terrain: createTerrainMock(),
       maps: {},
+      map: {
+        rows: 10,
+        cols: 10,
+        blankMask: blankMaskMock,
+        blankGrid: [],
+        inBounds: () => true
+      },
       getTerrainByTag: () => createTerrainMock(),
       extraFleetBuilder: () => [],
       fleetBuilder: () => []
@@ -101,6 +117,9 @@ describe('Enemy cursor cleanup on single-shot switch', () => {
 
     // Expect loadOut to have been told to switch modes
     expect(enemy.loadOut.switchToSingleShot).toHaveBeenCalled()
+
+    // removeCursorClasses should be called on the board element itself
+    expect(spy).toHaveBeenCalledWith(board)
 
     // removeCursorClasses should be called for each board cell
     expect(spy).toHaveBeenCalledWith(cellA)

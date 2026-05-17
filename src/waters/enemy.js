@@ -203,13 +203,17 @@ class Enemy extends Waters {
   }
 
   /**
-   * Remove cursor classes from all cells inside the UI board element.
+   * Remove cursor classes from the board element and all its child cells.
    * Uses `CellClassManager.removeCursorClasses` to clear terrain-specific cursor tags.
+   * Cursor classes are attached both to the board element itself and to individual cells.
    * @private
    */
   _clearBoardCursorClasses () {
     const board = this.UI?.board
     if (!board) return
+
+    // Remove cursor classes from the board element itself
+    CellClassManager.removeCursorClasses(board)
 
     // Assume direct children are cell elements; fall back to querySelectorAll if needed
     const cells = board.children?.length
