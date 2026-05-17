@@ -1,8 +1,9 @@
-(node:91393) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+
+> hiddenbattle@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand
+
+(node:7492) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
-PASS src/grid/rectangle/RedelmeierGenerator.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
 PASS src/rectcolor.test.js
   ● Console
 
@@ -318,24 +319,8 @@ PASS src/rectcolor.test.js
       at Object.log (src/rectcolor.test.js:777:13)
 
 CustomEnvironment: setup running
-PASS src/terrains/all/js/gameMaps.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+CustomEnvironment: setup running
+PASS src/grid/rectangle/RedelmeierGenerator.test.js
 CustomEnvironment: setup running
 PASS src/rect.test.js
   ● Console
@@ -460,73 +445,216 @@ PASS src/rect.test.js
 
       at Object.log (src/rect.test.js:609:13)
 
-PASS src/waters/friend.test.js
-PASS src/terrains/sea/js/seaAndLandMaps.test.js
+PASS src/navbar/chooseUI.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/hexagon/cubeIndexLine.test.js
+CustomEnvironment: setup running
+PASS src/terrains/all/js/gameMaps.test.js
+PASS src/terrains/space/js/spaceVessels.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ships/subshape.clone.test.js
+PASS src/terrains/all/js/map.test.js
   ● Console
 
-    console.debug
-      Terrain module not available, using default terrain
+    console.log
+      Can't Load Map :  saved-map-1
 
-      at debug (src/terrains/all/js/bh.js:11:11)
+      at Function.log [as load] (src/terrains/all/js/map.js:658:13)
 
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/tri.test.js
-PASS src/waters/Waters.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/ui/triangle/triDraw.test.js
+PASS src/grid/rectangle/action.mask.test.js
+PASS src/variants/Diagonal.test.js
 CustomEnvironment: setup running
-PASS src/selection/dragndrop.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+CustomEnvironment: setup running
+PASS src/grid/rectangle/RectIndex.test.js
+PASS src/grid/bitStore/store32.color.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
 PASS src/waters/saveCustomMap.test.js
+PASS src/variants/placeable.int.test.js
 CustomEnvironment: setup running
-PASS src/waters/enemyUI.test.js
+PASS src/waters/Waters.test.js
+PASS src/grid/bitStore/storeBig.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/validSize.test.js
+PASS src/terrains/all/js/maps.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/hexagon/hexdraw.test.js
+PASS src/terrains/sea/js/seaAndLandMaps.test.js
+CustomEnvironment: setup running
+PASS src/waters/friend.test.js
+CustomEnvironment: setup running
+PASS src/ships/Shape.test.js
+PASS src/ships/subshape.special.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/mask.getset.test.js
+PASS src/grid/rectangle/mask.test.js
   ● Console
 
-    console.debug
-      Terrain module not available, using default terrain
+    console.log
+      .111
+      1111
+      1111
+      1111
 
-      at debug (src/terrains/all/js/bh.js:11:11)
+      at Object.log (src/grid/rectangle/mask.test.js:499:17)
 
-PASS src/weapon/Weapon.test.js
+    console.log
+      1111111111111110
+
+      at Object.log (src/grid/rectangle/mask.test.js:500:17)
+
+    console.log
+      Left:
+      1...
+      1...
+      1...
+      1...
+
+      at Object.log (src/grid/rectangle/mask.test.js:520:17)
+
+    console.log
+      Right:
+      ...1
+      ...1
+      ...1
+      ...1
+
+      at Object.log (src/grid/rectangle/mask.test.js:521:17)
+
+    console.log
+      Top:
+      1111
+      ....
+      ....
+      ....
+
+      at Object.log (src/grid/rectangle/mask.test.js:522:17)
+
+    console.log
+      Bottom:
+      ....
+      ....
+      ....
+      1111
+
+      at Object.log (src/grid/rectangle/mask.test.js:523:17)
+
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/terrains/sea/js/seaShipsCatalogue.test.js
-PASS src/ships/subshape.int.test.js
+PASS src/grid/bitStore/store32.assemble.test.js
+PASS src/grid/bitStore/storebig.bounds.test.js
 CustomEnvironment: setup running
 PASS src/waters/ScoreUI.test.js
-PASS src/ships/Hybrid.habitat.int.test.js
+CustomEnvironment: setup running
+PASS src/tri.test.js
+CustomEnvironment: setup running
+PASS src/ui/rectangle/polyominoGrid.test.js
+PASS src/selection/SelectedShip.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/asymmetric.test.js
+PASS src/grid/bitStore/storebig.norm.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/action.store32.test.js
+PASS src/ships/ShipGroups.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ships/Hybrid.test.js
+PASS src/selection/dragndrop.test.js
+PASS src/weapon/animateExplode.test.js
   ● Console
 
-    console.debug
-      Terrain module not available, using default terrain
+    console.warn
+      No sounds defined for current terrain
 
-      at debug (src/terrains/all/js/bh.js:11:11)
+      34 |       const sounds = this.sounds
+      35 |       if (!sounds) {
+    > 36 |         console.warn('No sounds defined for current terrain')
+         |                 ^
+      37 |         return
+      38 |       }
+      39 |       const soundUrl = this.sounds?.[type]
 
+      at Object.warn [as playBoom] (src/terrains/all/js/bh.js:36:17)
+      at StandardShot.playBoom [as animateExplode] (src/weapon/Weapon.js:729:8)
+      at Object.animateExplode (src/weapon/animateExplode.test.js:37:18)
+
+PASS src/terrains/sea/js/seaShipsCatalogue.test.js
 CustomEnvironment: setup running
-PASS src/waters/enemy.test.js
-PASS src/grid/operations/bitsToCoords.test.js
 CustomEnvironment: setup running
+PASS src/grid/square.test.js
+CustomEnvironment: setup running
+PASS src/ui/rectangle/rectdrawcolor.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/packed.test.js
+PASS src/ships/Hybrid.Int.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/selection/draggedship.int.test.js
+CustomEnvironment: setup running
+PASS src/grid/SubBoard.test.js
+PASS src/ui/hexagon/packedHexDraw.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/ui/rectangle/packeddraw.test.js
+PASS src/terrains/space/js/shuttles.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/Blinker.test.js
+CustomEnvironment: setup running
+PASS src/ui/rectangle/rectdraw.test.js
+PASS src/waters/enemyUI.test.js
+PASS src/selection/PlacedShips.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.bitops.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/MaskInterface.test.js
+PASS src/grid/operations/BitOperationsWindowed.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/weapon/Weapon.test.js
+PASS src/grid/maskShape.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/terrains/all/js/zone.minimal.test.js
+PASS src/grid/operations/CoordinateConversion.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/actions.test.js
+PASS src/terrains/sea/js/SeaShape.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/hex.test.js
+PASS src/grid/rectangle/maskConvert.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/Orbit4F.test.js
+CustomEnvironment: setup running
+PASS src/terrains/space/js/spaceFleet.test.js
+PASS src/terrains/all/js/TerrainMaps.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/SubMask.test.js
+PASS src/terrains/space/js/spaceShips.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/triangle/triIndex.test.js
+PASS src/grid/hexagon/cubeIndex.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/CellsToBePlaced.test.js
 CustomEnvironment: setup running
 PASS src/navbar/setupTabs.test.js
   ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
 
     console.warn
       Could not mock location; its may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
@@ -810,39 +938,43 @@ PASS src/navbar/setupTabs.test.js
 
       at Object.warn (src/navbar/setupTabs.test.js:205:21)
 
-PASS src/waters/LoadOut.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/terrains/grids/indexerManager.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/hexagon/cubeIndex.test.js
-PASS src/selection/draggedship.int.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/terrains/sea/js/SeaMaps.test.js
+PASS src/grid/triangle/actiontri.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/ships/ShipGroups.test.js
-PASS src/hex.test.js
+PASS src/core/Random.test.js
 CustomEnvironment: setup running
+PASS src/variants/variants.test.js
+PASS src/selection/Ghost.test.js
+CustomEnvironment: setup running
+PASS src/terrains/sea/js/SeaShips.test.js
+CustomEnvironment: setup running
+PASS src/grid/hexagon/actionshex.test.js
+CustomEnvironment: setup running
+PASS src/ui/rectangle/RectCanvasColor.test.js
+CustomEnvironment: setup running
+PASS src/grid/operations/coordsValid.test.js
+PASS src/terrains/space/js/space.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/asciigrid.test.js
+CustomEnvironment: setup running
+PASS src/grid/bitStore/store32.test.js
+PASS src/grid/shapeEnum.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/rectangle/mask.draw.test.js
+PASS src/variants/RotatableVariant.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/variants/Orbit4R.test.js
 CustomEnvironment: setup running
 PASS src/navbar/setupOptions.test.js
   ● Console
 
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
     console.warn
       Could not mock location.reload/assign; tests may cause navigation TypeError: Cannot assign to read only property 'reload' of object '[object Location]'
           at Object.<anonymous> (/Users/aurelie/Documents/github/minp_m/src/navbar/setupOptions.test.js:76:37)
@@ -973,393 +1105,55 @@ PASS src/navbar/setupOptions.test.js
 
       at Object.warn (src/navbar/setupOptions.test.js:94:15)
 
-PASS src/terrains/all/js/validSize.test.js
+CustomEnvironment: setup running
+PASS src/grid/canvasGrid.test.js
+PASS src/grid/bitStore/storebig.erode.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/hexagon/actionshex.test.js
-PASS src/ui/rectangle/RectCanvasColor.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/ui/hexagon/hexdraw.test.js
-PASS src/variants/CellWsToBePlaced.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/SubMask.test.js
-PASS src/maplist.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/variants/Orbit4F.test.js
-CustomEnvironment: setup running
-PASS src/ships/Shape.test.js
-CustomEnvironment: setup running
-PASS src/ui/rectangle/polyominoGrid.test.js
-PASS src/grid/SubBoard.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/rectangle/MaskInterface.test.js
-PASS src/terrains/sea/js/SeaMaps.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/ships/Ship.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/grid/rectangle/mask.test.js
-  ● Console
-
-    console.log
-      .111
-      1111
-      1111
-      1111
-
-      at Object.log (src/grid/rectangle/mask.test.js:499:17)
-
-    console.log
-      1111111111111110
-
-      at Object.log (src/grid/rectangle/mask.test.js:500:17)
-
-    console.log
-      Left:
-      1...
-      1...
-      1...
-      1...
-
-      at Object.log (src/grid/rectangle/mask.test.js:520:17)
-
-    console.log
-      Right:
-      ...1
-      ...1
-      ...1
-      ...1
-
-      at Object.log (src/grid/rectangle/mask.test.js:521:17)
-
-    console.log
-      Top:
-      1111
-      ....
-      ....
-      ....
-
-      at Object.log (src/grid/rectangle/mask.test.js:522:17)
-
-    console.log
-      Bottom:
-      ....
-      ....
-      ....
-      1111
-
-      at Object.log (src/grid/rectangle/mask.test.js:523:17)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/ui/rectangle/rectdrawcolor.test.js
-PASS src/ui/rectangle/packeddraw.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/space/js/armedshapeIntegration.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/terrains/space/js/spaceShapes.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/ui/hexagon/packedHexDraw.test.js
-CustomEnvironment: setup running
-PASS src/grid/rectangle/RectIndex.test.js
-PASS src/ui/rectangle/rectdraw.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/hexagon/buildTransformHexMaps.test.js
-PASS src/variants/variants.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/bitStore/store32.test.js
-PASS src/grid/rectangle/actions.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/space/js/spaceFleet.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/terrains/space/js/spaceMaps.test.js
 PASS src/grid/hexagon/packedHex.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/variants/RotatableVariant.test.js
-PASS src/ships/Hybrid.Int.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/grid/bitStore/store32_regressions.test.js
+PASS src/waters/LoadOut.test.js
 CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/maplist.test.js
+PASS src/terrains/space/js/spaceShapes.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.color.test.js
 CustomEnvironment: setup running
 PASS src/waters/Score.test.js
-PASS src/terrains/sea/js/SeaShips.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/ships/Ship.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/terrains/all/js/TerrainMaps.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/grid/listCanvas2.test.js
+PASS src/terrains/sea/js/SeaWeapons.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/listCanvas.test.js
+PASS src/terrains/space/js/spaceWeapons.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
 PASS src/grid/rectangle/mask.morph.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.bounds.test.js
-PASS src/terrains/grids/canvasManager.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/bitStore/store32.color.test.js
-PASS src/variants/asymmetric.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/space/js/spaceVessels.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/ui/rectangle/colorpackeddraw.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/triangle/masktri.test.js
-PASS src/terrains/space/js/installations.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/operations/BitOperationsWindowed.test.js
-PASS src/grid/rectangle/packed.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.expand.test.js
-PASS src/variants/Orbit4R.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/variants/CellsToBePlaced.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/terrains/all/js/map.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.log
-      Can't Load Map :  saved-map-1
-
-      at Function.log [as load] (src/terrains/all/js/map.js:658:13)
-
+PASS src/grid/rectangle/RectSuperCover.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
 PASS src/grid/rectangle/packed.extra.test.js
-CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.offset2.test.js
-CustomEnvironment: setup running
-PASS src/variants/Diagonal.test.js
-CustomEnvironment: setup running
-PASS src/ships/Hybrid.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-PASS src/terrains/space/js/spaceShips.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/terrains/space/js/shuttles.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
+PASS src/grid/rectangle/buildTransformMaps.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/rectangle/mask.getset.test.js
+PASS src/ships/Hybrid.habitat.int.test.js
 CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.bitops.test.js
+PASS src/terrains/space/js/armedshapeIntegration.test.js
 CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.assemble.test.js
-CustomEnvironment: setup running
-PASS src/terrains/sea/js/seashape.int.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-PASS src/terrains/sea/js/SeaShape.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/grid/bitStore/storebig.offset.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/operations/coordsFromTo.test.js
-PASS src/grid/rectangle/action.test.js
-  ● Console
-
-    console.log
-      map: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-
-      at Object.log (src/grid/rectangle/action.test.js:96:15)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/rectangle/asciigrid.test.js
-PASS src/grid/rectangle/mask.draw.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.norm.test.js
-PASS src/ships/subshape.clone.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/space/js/spaceWeapons.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/grid/rectangle/rectListCanvas.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/variants/placeable.int.test.js
-PASS src/terrains/space/js/spaceMaps.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/all/js/terrainUI.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Could not update history: DOMException {}
-
-      at debug (src/terrains/all/js/terrainUI.js:119:13)
-
-PASS src/variants/Cell3sToBePlaced.test.js
+PASS src/grid/triangle/masktri.test.js
+PASS src/ships/subshape.standard.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
 PASS src/network/SetParams.test.js
   ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
 
     console.warn
       No terrain map found for terrain tag setSizeParams
@@ -1376,11 +1170,6 @@ PASS src/network/SetParams.test.js
       at getCurrentBodyTag (src/network/SetParams.js:100:19)
       at Object.setSizeParams (src/network/SetParams.test.js:157:5)
 
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
     console.warn
       No terrain map found for terrain tag setMapParams
 
@@ -1396,142 +1185,86 @@ PASS src/network/SetParams.test.js
       at getCurrentBodyTag (src/network/SetParams.js:141:19)
       at Object.setMapParams (src/network/SetParams.test.js:166:5)
 
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/grid/triangle/actiontri.test.js
+PASS src/terrains/sea/js/seashape.int.test.js
 CustomEnvironment: setup running
-PASS src/weapon/animateExplode.test.js
+CustomEnvironment: setup running
+PASS src/selection/DraggedShip.test.js
+PASS src/grid/triRectIndex.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/operations/coordsFromTo.test.js
+CustomEnvironment: setup running
+PASS src/variants/Invariant.test.js
+PASS src/waters/enemy.test.js
+CustomEnvironment: setup running
+PASS src/ships/Tranformer.test.js
+PASS src/terrains/all/js/bh.test.js
+CustomEnvironment: setup running
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.offset2.test.js
+CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.expand.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/action.test.js
   ● Console
 
-    console.debug
-      Terrain module not available, using default terrain
+    console.log
+      map: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
-      at debug (src/terrains/all/js/bh.js:11:11)
+      at Object.log (src/grid/rectangle/action.test.js:96:15)
 
-    console.warn
-      No sounds defined for current terrain
-
-      35 |       const sounds = this.sounds
-      36 |       if (!sounds) {
-    > 37 |         console.warn('No sounds defined for current terrain')
-         |                 ^
-      38 |         return
-      39 |       }
-      40 |       const soundUrl = this.sounds?.[type]
-
-      at Object.warn [as playBoom] (src/terrains/all/js/bh.js:37:17)
-      at StandardShot.playBoom [as animateExplode] (src/weapon/Weapon.js:729:8)
-      at Object.<anonymous> (src/weapon/animateExplode.test.js:34:18)
-
-PASS src/ships/subshape.standard.test.js
+PASS src/variants/CellWsToBePlaced.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/shapeEnum.test.js
+PASS src/ships/subshape.int.test.js
 PASS src/waters/helpers/ElementCache.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/operations/coordsToBits.test.js
-PASS src/grid/operations/CoordinateConversion.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/hexagon/erodehex.test.js
-PASS src/grid/triangle/triIndex.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/grids/indexerManager.test.js
-PASS src/grid/rectangle/action.mask.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/square.test.js
-PASS src/grid/erode.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/ships/Tranformer.test.js
-PASS src/grid/listCanvas.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.color.test.js
-PASS src/ships/SubShape.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/rectangle/action.store32.test.js
+PASS src/grid/triangle/triIndexLine.test.js
 PASS src/variants/Placeable.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/variants/Blinker.test.js
-PASS src/terrains/sea/js/SeaWeapons.test.js
+PASS src/terrains/all/js/terrainUI.test.js
   ● Console
 
     console.debug
-      Terrain module not available, using default terrain
+      Could not update history: DOMException {}
 
-      at debug (src/terrains/all/js/bh.js:11:11)
+      at debug (src/terrains/all/js/terrainUI.js:119:13)
 
+PASS src/ui/triangle/triDraw.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/triRectIndex.test.js
-PASS src/grid/triangle/triIndexLine.test.js
+PASS src/grid/hexagon/erodehex.test.js
+PASS src/terrains/space/js/installations.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/bitStore/storebig.erode.test.js
-PASS src/grid/bitStore/store32.assemble.test.js
+PASS src/grid/hexagon/buildTransformHexMaps.test.js
+PASS src/grid/ForLocation.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/canvasGrid.test.js
-PASS src/grid/bitStore/store32_regressions.test.js
+PASS src/variants/Cell3sToBePlaced.test.js
+PASS src/core/utilities.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/navbar/enemySetup.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/grid/rectangle/RectSuperCover.test.js
+PASS src/core/Zip.test.js
+PASS src/selection/selection.test.js
+CustomEnvironment: setup running
+PASS src/grid/erode.test.js
+CustomEnvironment: setup running
+PASS src/grid/rectangle/rectListCanvas.test.js
+PASS src/grid/bitStore/storebig.offset.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/variants/Invariant.test.js
-PASS src/navbar/chooseUI.test.js
+PASS src/ui/rectangle/colorpackeddraw.test.js
+PASS src/weapon/WeaponCatelogue.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/ActionsBase.test.js
-PASS src/ships/subshape.special.test.js
+PASS src/terrains/sea/js/seaAndLandGroups.test.js
+PASS src/hello.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/terrains/all/js/maps.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-PASS src/grid/operations/coordsValid.test.js
-CustomEnvironment: setup running
-PASS src/grid/bitStore/storeBig.test.js
-PASS src/terrains/sea/js/seaAndLand.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/selection/PlacedShips.test.js
-PASS src/selection/DraggedShip.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/selection/selection2.test.js
-PASS src/grid/rectangle/maskConvert.test.js
-CustomEnvironment: setup running
+PASS src/ships/SubShape.test.js
 CustomEnvironment: setup running
 PASS src/navbar/setupMapSelection.test.js
   ● Console
@@ -1620,48 +1353,14 @@ PASS src/navbar/setupMapSelection.test.js
       at warn (src/navbar/setupMapSelection.test.js:184:13)
       at Object.installLocationSpies (src/navbar/setupMapSelection.test.js:213:5)
 
-PASS src/terrains/all/js/bh.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
 CustomEnvironment: setup running
+PASS src/grid/bitStore/storebig.assemble.test.js
 CustomEnvironment: setup running
-PASS src/ui/triangle/triDrawHelper.test.js
-PASS src/grid/maskShape.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/terrains/space/js/space.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/core/utilities.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
+PASS src/grid/operations/coordsToBits.test.js
 PASS src/terrains/all/js/terrain.test.js
-  ● Console
-
-    console.debug
-      Terrain module not available, using default terrain
-
-      at debug (src/terrains/all/js/bh.js:11:11)
-
-PASS src/grid/rectangle/buildTransformMaps.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/hello.test.js
-PASS src/terrains/sea/js/seaAndLandGroups.test.js
-CustomEnvironment: setup running
-CustomEnvironment: setup running
-PASS src/grid/listCanvas2.test.js
-CustomEnvironment: setup running
+PASS src/grid/operations/bitsToCoords.test.js
 PASS src/ships/ShapeCallTests.test.js
   ● Console
 
@@ -1670,27 +1369,23 @@ PASS src/ships/ShapeCallTests.test.js
 
       at log (src/ships/ShapeCallTests.test.js:178:19)
 
-PASS src/core/Zip.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/hexagon/cubeIndexLine.test.js
-PASS src/selection/selection.test.js
-PASS src/selection/SelectedShip.test.js
+PASS src/selection/selection2.test.js
+PASS src/terrains/sea/js/seaAndLand.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/grid/ForLocation.test.js
-PASS src/selection/Ghost.test.js
-PASS src/weapon/WeaponCatelogue.test.js
+PASS src/terrains/grids/canvasManager.test.js
+PASS src/ui/triangle/triDrawHelper.test.js
 CustomEnvironment: setup running
 CustomEnvironment: setup running
-PASS src/core/Random.test.js
-PASS src/terrains/all/js/zone.minimal.test.js
-CustomEnvironment: setup running
+PASS src/grid/ActionsBase.test.js
 CustomEnvironment: setup running
 
-Test Suites: 2 skipped, 161 passed, 161 of 163 total
-Tests:       25 skipped, 2901 passed, 2926 total
+Test Suites: 2 skipped, 160 passed, 160 of 162 total
+Tests:       25 skipped, 2851 passed, 2876 total
 Snapshots:   0 total
-Time:        18.048 s, estimated 29 s
+Time:        19.13 s, estimated 21 s
 Ran all test suites.
 CustomEnvironment: setup running
+Exit code: 0
