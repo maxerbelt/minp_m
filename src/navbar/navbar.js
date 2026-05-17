@@ -134,7 +134,7 @@ function _buildNavigationUrl (targetPage, params) {
  * @returns {Promise<void>}
  */
 function _loadNavbarComponent () {
-  return componentLoader.loadComponentCached(
+  return componentLoader.loadComponent(
     NAVBAR_CONTAINER_ID,
     NAVBAR_COMPONENT_PATH
   )
