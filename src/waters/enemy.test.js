@@ -1334,6 +1334,176 @@ describe('Enemy.updateWeaponStatus', () => {
     })
   })
 
+  describe('REGRESSION: Mode Icon Bug - clearSelectedCoordinates on weapon change', () => {
+    let Enemy
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+
+      Enemy = class {
+        constructor () {
+          this.selectedCellCoordinates = null
+          this.UI = {
+            board: {
+              classList: {
+                add: jest.fn(),
+                remove: jest.fn(),
+                [Symbol.iterator]: function* () {
+                  yield 'cursor-default'
+                }
+              }
+            }
+          }
+          this.opponent = {
+            UI: {
+              deactivateTempHints: jest.fn()
+            }
+          }
+          this.loadOut = {
+            selectedCoordinates: [],
+            notifyCursorChange: jest.fn(),
+            clearSelectedCoordinates: jest.fn(),
+            isSingleShot: false,
+            getUnattachedWeaponSystem: jest.fn(() => null)
+          }
+          this.steps = {
+            clearSource: jest.fn()
+          }
+          this.setBoardTargetingState = jest.fn()
+          this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
+        }
+
+        _handleWeaponChange () {
+          this.selectedCellCoordinates = null
+
+          // BUG FIX: Clear targeting coordinates to reset mode icon state
+          if (this.loadOut.clearSelectedCoordinates) {
+            this.loadOut.clearSelectedCoordinates()
+          }
+
+          if (this.steps.clearSource) {
+            this.steps.clearSource()
+          }
+
+          if (this.opponent?.UI?.deactivateTempHints) {
+            this.opponent.UI.deactivateTempHints()
+          }
+
+          let oldCursor = ''
+          if (this.UI?.board?.classList) {
+            for (const cls of this.UI.board.classList) {
+              if (cls.startsWith('cursor-') || cls.includes('cursor')) {
+                oldCursor = cls
+                break
+              }
+            }
+          }
+
+          if (this.loadOut.notifyCursorChange) {
+            this.loadOut.notifyCursorChange(oldCursor)
+          }
+
+          this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+        }
+      }
+    })
+
+    it('CRITICAL: should call clearSelectedCoordinates() when weapon changes', () => {
+      // REGRESSION: Mode icons showed wrong state because loadOut.selectedCoordinates
+      // was not cleared on weapon change, causing stale coordinate count in updateWeaponStatus()
+      const enemy = new Enemy()
+      enemy.loadOut.selectedCoordinates = [
+        [1, 2],
+        [3, 4]
+      ] // Simulating targeting state
+
+      enemy._handleWeaponChange()
+
+      // MUST clear selectedCoordinates so updateWeaponStatus() gets correct (empty) count
+      expect(enemy.loadOut.clearSelectedCoordinates).toHaveBeenCalled()
+    })
+
+    it('should prevent stale coordinates from affecting mode icon calculation', () => {
+      // Bug sequence:
+      // 1. Rail Bolt targeted, selectedCoordinates = [...]
+      // 2. Click Missile button (should clear selectedCoordinates)
+      // 3. updateWeaponStatus() called with new weapon but OLD coordinate count
+      // Result: Wrong stepIdx → wrong mode icons
+      const enemy = new Enemy()
+
+      // Simulate targeting state from first weapon
+      enemy.loadOut.selectedCoordinates = [
+        [0, 0],
+        [1, 1]
+      ]
+      expect(enemy.loadOut.selectedCoordinates.length).toBe(2)
+
+      // Player switches weapons
+      enemy._handleWeaponChange()
+
+      // clearSelectedCoordinates should have been called to prevent stale data
+      expect(enemy.loadOut.clearSelectedCoordinates).toHaveBeenCalled()
+    })
+
+    it('should clear coordinates BEFORE updateWeaponStatus is called', () => {
+      // CRITICAL ORDERING: clearSelectedCoordinates() must be called in _handleWeaponChange()
+      // BEFORE updateWeaponStatus() is later called in onClickWeaponButtons()
+      const enemy = new Enemy()
+      const callOrder = []
+
+      enemy.loadOut.clearSelectedCoordinates = jest.fn(() => {
+        callOrder.push('clearSelectedCoordinates')
+      })
+
+      enemy._handleWeaponChange()
+
+      // clearSelectedCoordinates should be called during _handleWeaponChange
+      expect(callOrder).toContain('clearSelectedCoordinates')
+    })
+
+    it('should complete full cleanup: two-click state, game state, and visual state', () => {
+      // Bug fix requires clearing THREE independent state systems:
+      // 1. selectedCellCoordinates (two-click targeting flag)
+      // 2. loadOut.selectedCoordinates (coordinate selection)
+      // 3. Visual state (hints, source, cursor)
+      const enemy = new Enemy()
+      enemy.selectedCellCoordinates = { r: 5, c: 5 }
+
+      enemy._handleWeaponChange()
+
+      // ALL three should be cleared
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.loadOut.clearSelectedCoordinates).toHaveBeenCalled()
+      expect(enemy.steps.clearSource).toHaveBeenCalled()
+    })
+
+    it('SCENARIO: Should fix mode icon bug for Rail Bolt → Board Click → Missile → Board Click', () => {
+      // EXACT BUG SCENARIO:
+      // 1. Click Rail Bolt button
+      // 2. Click enemy board (first click, stores state)
+      // 3. Click Missile button ← _handleWeaponChange() called here
+      // 4. Click enemy board (second click)
+      // Bug: Mode icons show wrong state in step 4
+      // Fix: _handleWeaponChange() clears selectedCoordinates so icons display correctly
+      const enemy = new Enemy()
+
+      // Step 1-2: Player selects Rail Bolt and starts targeting
+      enemy.loadOut.selectedCoordinates = [[0, 0]] // Simulating "first click" state
+      expect(enemy.loadOut.selectedCoordinates.length).toBe(1)
+
+      // Step 3: Player clicks Missile button - this should clear everything
+      enemy._handleWeaponChange()
+
+      // The bug was that selectedCoordinates stayed populated, causing updateWeaponStatus()
+      // to calculate wrong mode index. Now it's cleared.
+      expect(enemy.loadOut.clearSelectedCoordinates).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toBeNull()
+
+      // Step 4: Next board click will use correct (empty) coordinate count
+      // updateWeaponStatus() will see numCoords=0 → correct stepIdx → correct icons
+    })
+  })
+
   describe('Edge Cases - onClickWeaponButtons', () => {
     let Enemy
 

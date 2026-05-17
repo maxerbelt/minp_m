@@ -854,6 +854,32 @@ class Enemy extends Waters {
    * Clears the weapon selection when player switches weapons.
    * Must be called BEFORE the weapon change is processed.
    *
+   * REGRESSION PREVENTION: MODE ICON STATE BUG
+   * ==========================================
+   * Bug: When alternating weapon selections in two-click mode (Hide & Seek):
+   *   1. Click Rail Bolt → click enemy board (selectedCellCoordinates stored)
+   *   2. Click Missile button
+   *   3. Click enemy board
+   * Result: Mode icons (modeIcon1, modeIcon2) don't grey out correctly
+   *
+   * Root Cause Analysis:
+   * - loadOut.selectedCoordinates is NOT cleared when weapon changes
+   * - switchToWeapon() only changes weapon index, doesn't clear coordinates
+   * - resetToSelectionMode() only updates UI display, not game state
+   * - When updateWeaponStatus() called, it uses STALE selectedCoordinates.length
+   * - Stale coordinate count → wrong stepIdx calculation → wrong mode icon state
+   *
+   * Example: After switching weapons, if selectedCoordinates still has [0,0]:
+   *   updateWeaponStatus() passes numCoords=1 → stepIdx(1,...) → 1 → targeting mode
+   *   But UI should show selection mode (stepIdx 0) for new weapon
+   *
+   * Solution:
+   * Clear ALL selection-related state on weapon change:
+   *   1. selectedCellCoordinates (two-click flag)
+   *   2. loadOut.selectedCoordinates (targeting coordinates)
+   *   3. steps state (ship and source)
+   *   4. opponent hints (visual feedback)
+   *
    * WHY THIS IS CRITICAL:
    * In two-click mode, if player clicks Rail Bolt, then clicks enemy board (storing first selection),
    * then switches to Missile... the selectedCell should be cleared so the next click doesn't fire
@@ -862,8 +888,9 @@ class Enemy extends Waters {
    * CALL ORDER:
    * 1. Player clicks new weapon button
    * 2. onClickWeaponButtons() calls _handleWeaponChange() FIRST
-   * 3. _handleWeaponChange() clears selectedCellCoordinates
+   * 3. _handleWeaponChange() clears selectedCellCoordinates AND selectedCoordinates
    * 4. Then weapon is switched
+   * 5. Mode icons display correctly because updateWeaponStatus() sees clean state
    *
    * @private
    * @returns {void}
@@ -873,10 +900,18 @@ class Enemy extends Waters {
     // This prevents firing the old weapon on the next click
     this.selectedCellCoordinates = null
 
-    // Clear targeting coordinates to reset mode icon state
-    // When switching weapons, the loadOut.selectedCoordinates must be cleared
+    // CRITICAL: Clear targeting coordinates to reset mode icon state
+    // When switching weapons, loadOut.selectedCoordinates must be cleared
     // so that updateWeaponStatus() calculates the correct mode index (0 for selection, 1 for targeting)
-    // Bug fix: Without this, stale coordinates from the previous weapon would cause incorrect icon display
+    //
+    // Bug fix: Without this, stale coordinates from the previous weapon's targeting phase
+    // would persist into the new weapon's updateWeaponStatus() call, causing incorrect mode icon display
+    //
+    // Example bug sequence:
+    // 1. Rail Bolt selected, player clicks board, then clicks away → selectedCoordinates = [...]
+    // 2. Player clicks Missile button without clearing selectedCoordinates
+    // 3. Player clicks board, updateWeaponStatus() called with Missile but old coordinate count
+    // 4. Mode index calculated wrong → icons display wrong state
     if (this.loadOut.clearSelectedCoordinates) {
       this.loadOut.clearSelectedCoordinates()
     }
