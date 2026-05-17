@@ -68,6 +68,7 @@ export class Shape {
     this.zoneDetail = 0
     this.tip = tip
     this.tallyGroup = tallyGroup
+    this.notes = []
     const area = cells.length
     this.area = area
     this.footBoard = this._board.dilateExpand()

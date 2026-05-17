@@ -105,9 +105,9 @@ export class Building extends SeaShape {
   // Static properties for building placement rules
   /** @type {SubTerrain} Subterrain configuration for buildings */
   static subterrain = land
-  /** @type {Function} Function to check if placement is valid */
+  /** @type {(subterrain: SubTerrain) => boolean} Function to check if placement is valid */
   static canBe = land.canBe.bind(land)
-  /** @type {Function} Validator function for zone checking */
+  /** @type {(zoneInfo: Array<any>) => boolean} Validator function for zone checking */
   static validator = land.validator.bind(land)
   /** @type {number} Zone detail level */
   static zoneDetail = land.zoneDetail
@@ -258,7 +258,7 @@ export class Plane extends SeaShape {
   static subterrain = all
   /** @type {Function} Function to check if placement is valid */
   static canBe = all.canBe.bind(all)
-  /** @type {Function} Validator function for zone checking */
+  /** @type {(zoneInfo: Array<any>) => boolean} Validator function for zone checking */
   static validator = all.canBe.bind(all)
   /** @type {number} Zone detail level */
   static zoneDetail = all.zoneDetail
@@ -335,9 +335,9 @@ export class SeaVessel extends SeaShape {
   // Static properties for sea vessel placement rules
   /** @type {SubTerrain} Subterrain configuration for sea vessels */
   static subterrain = sea
-  /** @type {Function} Function to check if placement is valid */
+  /** @type {(subterrain: SubTerrain) => boolean} Function to check if placement is valid */
   static canBe = sea.canBe.bind(sea)
-  /** @type {Function} Validator function for zone checking */
+  /** @type {(zoneInfo: Array<any>) => boolean} Validator function for zone checking */
   static validator = sea.validator.bind(sea)
   /** @type {number} Zone detail level */
   static zoneDetail = sea.zoneDetail

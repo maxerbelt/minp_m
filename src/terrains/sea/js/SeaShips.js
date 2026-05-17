@@ -289,4 +289,4 @@ const seaFleet = [
 
 seaAndLandShipsCatalogue.addShapes(seaFleet)
 
-export const seaShipsCatalogue = seaAndLandShipsCatalogue
+export { seaAndLandShipsCatalogue as seaShipsCatalogue } from './seaShipsCatalogue.js'
