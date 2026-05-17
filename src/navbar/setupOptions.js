@@ -322,10 +322,14 @@ export function setupMapListOptions (refresh) {
 
   const listUI = new ChooseFromListUI(mapTypes, 'chooseList')
 
-  listUI.setup(function (index, text) {
-    mapTypeIncludes = index.toString()
-    mapTypeStrategy.selectValue(text)
-  }, mapTypeIdx)
+  listUI.setup(
+    function (index, text) {
+      mapTypeIncludes = index.toString()
+      mapTypeStrategy.selectValue(text)
+    },
+    mapTypeIdx,
+    undefined
+  )
 
   mapTypeIncludes = mapTypeIdx.toString()
   terrainSelect()
