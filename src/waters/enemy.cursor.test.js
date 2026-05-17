@@ -94,7 +94,7 @@ describe('Enemy cursor cleanup on single-shot switch', () => {
     // Prepare board with mock cell elements
     const board = enemy.UI.board
     // Ensure starting clean
-    while (board.firstChild) board.removeChild(board.firstChild)
+    while (board.firstChild) board.firstChild.remove()
 
     const cellA = document.createElement('div')
     const cellB = document.createElement('div')
