@@ -8,6 +8,10 @@
  */
 
 /**
+ * @typedef {import('./ParameterManager.js').ParameterManager} ParameterManager
+ */
+
+/**
  * PageRefreshStrategy - Strategy for managing page refresh operations.
  * Handles different types of page refreshes and state preservation.
  *

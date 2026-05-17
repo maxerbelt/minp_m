@@ -19,23 +19,20 @@ import { MapValueStrategy } from './MapValueStrategy.js'
  */
 
 /**
- * @typedef {Object} DimensionValues
- * @property {number} mapWidth - Initial map width.
- * @property {number} mapHeight - Initial map height.
- */
-
-/**
  * @typedef {Function} BoardSetupCallback
+ * Callback for setting up the game board.
  * @returns {void}
  */
 
 /**
  * @typedef {Function} RefreshCallback
+ * Callback for refreshing the display.
  * @returns {void}
  */
 
 /**
  * @typedef {Function} EditHandlerCallback
+ * Callback when editing an existing map.
  * @param {Object} targetMap - The map being edited.
  * @returns {void}
  */
@@ -51,6 +48,18 @@ import { MapValueStrategy } from './MapValueStrategy.js'
  * @property {Function} storeLastWidth - Store last width.
  * @property {Function} storeLastHeight - Store last height.
  * @property {Function} onChange - Change handler.
+ */
+
+/**
+ * @typedef {Object} DimensionSetupConfig
+ * Configuration for setting up dimension controls.
+ * @property {BoardSetupCallback} boardSetup - Board setup callback.
+ * @property {RefreshCallback} refresh - Refresh callback.
+ * @property {string} huntMode - Hunt mode identifier.
+ * @property {ParameterManager} paramManager - Parameter manager instance.
+ * @property {MapsInstance} maps - Maps instance.
+ * @property {number} mapWidth - Current map width.
+ * @property {number} mapHeight - Current map height.
  */
 
 /**
@@ -77,9 +86,17 @@ function _createDimensionControl (fieldName) {
 }
 
 /**
+ * @typedef {Object} DimensionValues
+ * Dimension measurements for a map.
+ * @property {number} mapWidth - Map width in columns.
+ * @property {number} mapHeight - Map height in rows.
+ */
+
+/**
  * Get initial map and template from parameters.
+ * Resolves target map for editing or template map for defaults.
  * @private
- * @param {ParameterManager} paramManager - Parameter manager.
+ * @param {ParameterManager} paramManager - Parameter manager instance.
  * @param {MapsInstance} maps - Maps instance.
  * @returns {MapContext} Object with targetMap and templateMap.
  */
@@ -97,12 +114,13 @@ function _getMapContext (paramManager, maps) {
 
 /**
  * Determine initial dimensions with fallback chain.
+ * Resolves dimensions from parameters, target map, template map, or defaults.
  * @private
- * @param {number|undefined} paramHeight - Height from parameters.
- * @param {number|undefined} paramWidth - Width from parameters.
+ * @param {number|undefined} paramHeight - Height from URL parameters.
+ * @param {number|undefined} paramWidth - Width from URL parameters.
  * @param {Object|null} targetMap - Target map if editing.
  * @param {Object|null} templateMap - Template map for defaults.
- * @param {MapsInstance} maps - Maps instance.
+ * @param {MapsInstance} maps - Maps instance for fallback values.
  * @returns {DimensionValues} Object with mapWidth and mapHeight.
  */
 function _getInitialDimensions (
@@ -121,60 +139,75 @@ function _getInitialDimensions (
 }
 
 /**
- * Setup dimension control with change handler.
+ * Create dimension change handler.
+ * Handler updates map state, stores dimensions, and triggers callbacks.
  * @private
  * @param {string} dimensionField - 'width' or 'height'.
- * @param {number} currentWidth - Current map width.
- * @param {number} currentHeight - Current map height.
- * @param {BoardSetupCallback} boardSetup - Board setup callback.
- * @param {RefreshCallback} refresh - Refresh callback.
- * @param {string} huntMode - Hunt mode ('build', etc.).
- * @param {ParameterManager} paramManager - Parameter manager.
- * @param {MapsInstance} maps - Maps instance.
- * @returns {void}
+ * @param {DimensionSetupConfig} config - Setup configuration.
+ * @returns {Function} Handler function for dimension change.
  */
-function _setupDimensionControl (
-  dimensionField,
-  currentWidth,
-  currentHeight,
-  boardSetup,
-  refresh,
-  huntMode,
-  paramManager,
-  maps
-) {
-  const ui = dimensionField === 'width' ? bh.widthUI : bh.heightUI
-  const initialValue = dimensionField === 'width' ? currentWidth : currentHeight
-
-  ui.setup(function (_index) {
+function _createDimensionChangeHandler (dimensionField, config) {
+  return function (_index) {
     const newWidth = validateWidth()
     const newHeight = validateHeight()
-    maps.setToBlank(newHeight, newWidth)
+    config.maps.setToBlank(newHeight, newWidth)
 
     // Store the changed dimension
     if (dimensionField === 'width') {
-      maps.storeLastWidth(newWidth)
+      config.maps.storeLastWidth(newWidth)
     } else {
-      maps.storeLastHeight(newHeight)
+      config.maps.storeLastHeight(newHeight)
     }
 
-    boardSetup()
-    refresh()
-    _updateSizeParameters(newHeight, newWidth, huntMode, paramManager)
-  }, initialValue)
+    config.boardSetup()
+    config.refresh()
+    _updateSizeParameters(
+      newHeight,
+      newWidth,
+      config.huntMode,
+      config.paramManager
+    )
+  }
+}
+
+/**
+ * Setup a single dimension control (width or height).
+ * Attaches event handler and sets initial value.
+ * @private
+ * @param {string} dimensionField - 'width' or 'height'.
+ * @param {DimensionSetupConfig} config - Setup configuration.
+ * @returns {void}
+ */
+function _setupDimensionControl (dimensionField, config) {
+  const ui = dimensionField === 'width' ? bh.widthUI : bh.heightUI
+  const initialValue =
+    dimensionField === 'width' ? config.mapWidth : config.mapHeight
+
+  ui.setup(_createDimensionChangeHandler(dimensionField, config), initialValue)
+}
+
+/**
+ * Check if hunt mode is build mode.
+ * @private
+ * @param {string} huntMode - Hunt mode identifier.
+ * @returns {boolean} True if mode is 'build'.
+ */
+function _isBuildMode (huntMode) {
+  return huntMode === 'build'
 }
 
 /**
  * Update size parameters in URL if in build mode.
+ * Persists dimension changes to browser history.
  * @private
  * @param {number} height - Map height.
  * @param {number} width - Map width.
  * @param {string} huntMode - Hunt mode identifier.
- * @param {ParameterManager} paramManager - Parameter manager.
+ * @param {ParameterManager} paramManager - Parameter manager instance.
  * @returns {void}
  */
 function _updateSizeParameters (height, width, huntMode, paramManager) {
-  if (huntMode === 'build') {
+  if (_isBuildMode(huntMode)) {
     paramManager.setSize(height, width)
     paramManager.updateHistoryState()
   }
@@ -182,6 +215,7 @@ function _updateSizeParameters (height, width, huntMode, paramManager) {
 
 /**
  * Initialize dimension UI controls.
+ * Creates and registers width and height UI controls globally.
  * @private
  * @returns {void}
  */
@@ -191,11 +225,24 @@ function _initializeDimensionControls () {
 }
 
 /**
- * Apply initial map state.
+ * Setup both dimension controls (width and height).
+ * Reduces duplication by handling both dimensions in one call.
  * @private
- * @param {Object|null} targetMap - Target map if editing.
- * @param {number} mapHeight - Map height.
- * @param {number} mapWidth - Map width.
+ * @param {DimensionSetupConfig} config - Setup configuration.
+ * @returns {void}
+ */
+function _setupAllDimensionControls (config) {
+  _setupDimensionControl('width', config)
+  _setupDimensionControl('height', config)
+}
+
+/**
+ * Apply initial map state.
+ * Loads target map if editing, otherwise creates blank map.
+ * @private
+ * @param {Object|null} targetMap - Target map if editing, null otherwise.
+ * @param {number} mapHeight - Map height for blank map.
+ * @param {number} mapWidth - Map width for blank map.
  * @param {BoardSetupCallback} boardSetup - Board setup callback.
  * @param {RefreshCallback} refresh - Refresh callback.
  * @param {MapsInstance} maps - Maps instance.
@@ -220,6 +267,7 @@ function _applyInitialMapState (
 
 /**
  * Setup map options (custom/blank maps).
+ * Orchestrates initialization of UI controls, parameter management, and map state.
  * @private
  * @param {BoardSetupCallback} boardSetup - Board setup callback.
  * @param {RefreshCallback} refresh - Refresh callback.
@@ -245,26 +293,17 @@ function setupMapOptions (boardSetup, refresh, huntMode = 'build') {
 
   setupTabs(huntMode)
 
-  _setupDimensionControl(
-    'width',
-    mapWidth,
-    mapHeight,
+  // Setup dimension controls with configuration
+  const dimensionConfig = {
     boardSetup,
     refresh,
     huntMode,
     paramManager,
-    maps
-  )
-  _setupDimensionControl(
-    'height',
+    maps,
     mapWidth,
-    mapHeight,
-    boardSetup,
-    refresh,
-    huntMode,
-    paramManager,
-    maps
-  )
+    mapHeight
+  }
+  _setupAllDimensionControls(dimensionConfig)
 
   _applyInitialMapState(
     targetMap,
@@ -284,27 +323,47 @@ const mapTypes = ['Custom Maps Only', 'All Maps', 'Pre-Defined Maps Only']
 
 /**
  * Get map type index from map type string.
+ * Searches for matching map type by first word.
  * @private
- * @param {string} mapType - Map type string.
+ * @param {string} mapType - Map type string to find.
  * @returns {number} Index in mapTypes array, or 0 if not found.
  */
-function _mapTypeIndex (mapType) {
+function _getMapTypeIndex (mapType) {
   const mapTypeIdx = mapTypes.findIndex(m => m.split(' ', 1)[0] === mapType)
-  return mapTypeIdx >= 0 ? mapTypeIdx : 0
+  return Math.max(mapTypeIdx, 0)
 }
 
 /** @type {string} Current map type filter as string index */
 let mapTypeIncludes = '0'
 
 /**
- * Setup map list options (Custom/Pre-Defined/All maps filter).
+ * Create map type change handler.
+ * Handles map type selection and parameter updates.
+ * @private
+ * @param {ParameterManager} paramManager - Parameter manager instance.
  * @param {RefreshCallback} refresh - Callback when filter changes.
- * @returns {string} Current mapTypeIncludes as string.
+ * @returns {(value: string) => void} Handler function for map type changes.
+ */
+function _createMapTypeChangeHandler (paramManager, refresh) {
+  return selectedType => {
+    const selectedIndex = mapTypes.indexOf(selectedType)
+    mapTypeIncludes = selectedIndex.toString()
+    paramManager.setMapType(selectedType)
+    paramManager.updateHistoryState()
+    refresh(selectedIndex, selectedType)
+  }
+}
+
+/**
+ * Setup map list options (Custom/Pre-Defined/All maps filter).
+ * Creates and configures map type filter UI with strategy pattern.
+ * @param {RefreshCallback} refresh - Callback when filter changes.
+ * @returns {string} Current mapTypeIncludes as string index.
  */
 export function setupMapListOptions (refresh) {
   const paramManager = _createParameterManager()
   const mapType = paramManager.getMapType()
-  const mapTypeIdx = _mapTypeIndex(mapType)
+  const mapTypeIdx = _getMapTypeIndex(mapType)
 
   const mapTypeStrategy = new MapValueStrategy({
     valueMap: {
@@ -312,12 +371,7 @@ export function setupMapListOptions (refresh) {
       'All Maps': mapTypes[1],
       'Pre-Defined Maps Only': mapTypes[2]
     },
-    onValueChange: selectedType => {
-      mapTypeIncludes = mapTypes.indexOf(selectedType).toString()
-      paramManager.setMapType(selectedType)
-      paramManager.updateHistoryState()
-      refresh(mapTypes.indexOf(selectedType), selectedType)
-    }
+    onValueChange: _createMapTypeChangeHandler(paramManager, refresh)
   })
 
   const listUI = new ChooseFromListUI(mapTypes, 'chooseList')
@@ -339,6 +393,7 @@ export function setupMapListOptions (refresh) {
 
 /**
  * Setup game options (map selection with board setup).
+ * Initializes map selection and applies initial board state.
  * @param {BoardSetupCallback} boardSetup - Board setup callback.
  * @param {RefreshCallback} refresh - Refresh callback.
  * @returns {boolean} True if placedShips parameter exists.
@@ -351,12 +406,13 @@ export function setupGameOptions (boardSetup, refresh) {
 
 /**
  * Setup print options (map selection for printing).
+ * Initializes map selection for print mode with terrain parameters.
  * @param {BoardSetupCallback} boardSetup - Board setup callback.
  * @param {RefreshCallback} refresh - Refresh callback.
- * @returns {Object|null} Target map if found.
+ * @returns {Object|null} Target map if found, null otherwise.
  */
 export function setupPrintOptions (boardSetup, refresh) {
-  const targetMap = setupMapSelectionPrint(boardSetup, refresh)
+  const targetMap = _setupMapSelectionForPrint(boardSetup, refresh)
   boardSetup()
   setTerrainParams(bh.maps)
   return targetMap
@@ -364,23 +420,25 @@ export function setupPrintOptions (boardSetup, refresh) {
 
 /**
  * Setup map selection for print mode.
+ * Configures map control UI with URL parameters for print preview.
  * @private
  * @param {BoardSetupCallback} boardSetup - Board setup callback.
  * @param {RefreshCallback} refresh - Refresh callback.
- * @returns {Object|null} Target map if found.
+ * @returns {Object|null} Target map if found, null otherwise.
  */
-function setupMapSelectionPrint (boardSetup, refresh) {
+function _setupMapSelectionForPrint (boardSetup, refresh) {
   const urlParams = new URLSearchParams(globalThis.location.search)
   return setupMapControl(urlParams, boardSetup, refresh)
 }
 
 /**
  * Setup build options (map and dimension controls).
+ * Initializes map options, configures change handlers, and applies edit handler.
  * @param {BoardSetupCallback} boardSetup - Board setup callback.
  * @param {RefreshCallback} refresh - Refresh callback.
  * @param {string} [huntMode='build'] - Hunt mode identifier.
  * @param {EditHandlerCallback} [editHandler] - Optional callback when editing existing map.
- * @returns {Object|null} Target map if editing.
+ * @returns {Object|null} Target map if editing, null otherwise.
  */
 export function setupBuildOptions (boardSetup, refresh, huntMode, editHandler) {
   const targetMap = setupMapOptions(boardSetup, refresh, huntMode)
@@ -396,6 +454,7 @@ export function setupBuildOptions (boardSetup, refresh, huntMode, editHandler) {
 
 /**
  * Reset custom map to blank state and save.
+ * Persists current map to storage and clears the board.
  * @returns {void}
  */
 export function resetCustomMap () {

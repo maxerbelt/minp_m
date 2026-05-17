@@ -149,37 +149,6 @@ export class TerrainStrategy extends MapValueStrategy {
     /** @type {Array<string>} */
     this.terrainTypes = options.terrainTypes || []
   }
-
-  /**
-   * Get terrain types valid for a specific map size.
-   * @param {*} mapSize - Map size constraint.
-   * @returns {Array<string>} Valid terrains for given size.
-   */
-  getValidTerrains (mapSize) {
-    return this.terrainTypes.filter(terrain =>
-      this._isTerrainValidForSize(terrain, mapSize)
-    )
-  }
-
-  /**
-   * Check if terrain is valid for given map size.
-   * @private
-   * @param {string} terrain - Terrain identifier.
-   * @param {*} mapSize - Map size constraint.
-   * @returns {boolean} True if terrain is valid for size.
-   */
-  _isTerrainValidForSize (terrain, mapSize) {
-    if (typeof this.validator !== 'function') {
-      return true
-    }
-
-    try {
-      return this.validator(terrain, mapSize)
-    } catch (error) {
-      console.error('Error in terrain validator:', error)
-      return false
-    }
-  }
 }
 
 /**
@@ -277,7 +246,7 @@ export class MapEditStrategy {
    * @returns {Object|undefined} Map if found.
    */
   _findMapByName (name) {
-    return this.maps.find(map => map && map.name === name)
+    return this.maps.find(map => map?.name === name)
   }
 
   /**
