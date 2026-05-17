@@ -413,7 +413,7 @@ export class ShipCellGrid extends GridBase {
    * @returns {ShipCellGridData} Serialized 2D grid array
    */
   toJSON () {
-    return JSON.parse(JSON.stringify(this._grid))
+    return structuredClone(this._grid)
   }
 
   /**

@@ -223,7 +223,9 @@ export class Waters {
   accumulateResult (result, accumulator) {
     if (result?.hits) accumulator.hits += result.hits
     if (result?.dtaps) accumulator.dtaps += result.dtaps
-    if (result?.sunk) accumulator.sunk += result.sunk
+    // Type cast for accumulation - sunk can be string or number
+    if (result?.sunk)
+      accumulator.sunk += typeof result.sunk === 'number' ? result.sunk : 0
     if (result?.reveals) accumulator.reveals += result.reveals
     if (result?.shots) accumulator.shots += result.shots
     if (result?.info) accumulator.info += result.info + ' '
@@ -300,12 +302,12 @@ export class Waters {
   }
 
   /**
-   * Ensures ships are initialized from base shapes if needed.
+   * Ensures ships are initialized from map if needed.
    * @returns {Array} The ships array
    */
   ensureShipsInitialized () {
     if (!this.ships || this.ships.length === 0) {
-      this.ships = this.createCandidateShips()
+      this.setMap(bh.map)
     }
     return this.ships
   }
@@ -371,7 +373,11 @@ export class Waters {
   _normalizePlacedShips (placed, map) {
     const placedShips = placed || map.example
     if (Array.isArray(placedShips)) {
-      return { ships: placedShips, map: map.title }
+      return {
+        ships: placedShips,
+        map: map.title,
+        shipCellGrid: placedShips.shipCellGrid
+      }
     }
     return placedShips || null
   }
@@ -972,7 +978,6 @@ export class Waters {
    * @param {Object} ship - The ship to generate hint for
    * @param {Object} opponent - The opponent instance
    * @returns {Array} [r, c] coordinates for hint
-   * @private
    */
   generateSourceHint (ship, opponent) {
     if (this.steps.sourceHint) {
@@ -1110,10 +1115,9 @@ export class Waters {
   }
 
   /**
-   * Arms the selected weapon and updates the opponent view state.
-   * @param {WeaponSelection} selection - Weapon selection payload
-   * @param {Object} oppo - Opponent instance
-   * @private
+   * Prepares a weapon selection by adding the weapon to the UI and updating targeting state.
+   * @param {WeaponSelection} selection - The weapon selection object
+   * @param {Object} oppo - The opponent instance
    */
   _armSelectedWeapon (selection, oppo) {
     const cell = oppo?.UI?.gridCellAt(selection.hintR, selection.hintC)
@@ -2118,7 +2122,14 @@ export class Waters {
     }
 
     // Convert string sunk to array for unified handling
-    const sunkArray = Array.isArray(sunks) ? sunks : sunks ? [sunks] : []
+    let sunkArray
+    if (Array.isArray(sunks)) {
+      sunkArray = sunks
+    } else if (sunks) {
+      sunkArray = [sunks]
+    } else {
+      sunkArray = []
+    }
     this._displayResult(weapon, hits, sunkArray, reveals, messageInfo)
   }
 

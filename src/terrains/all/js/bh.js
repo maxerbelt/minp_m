@@ -7,7 +7,7 @@ try {
   const terrainModule = require('./terrain.js')
   if (terrainModule?.bh) bhLocal = terrainModule.bh
 } catch (e) {
-  // ignore
+  // Intentionally ignore exceptions during theme initialization
 }
 
 if (!bhLocal)

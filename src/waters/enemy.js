@@ -7,9 +7,39 @@ import { Player } from './steps.js'
 import { Delay } from '../core/Delay.js'
 import { randomElement, parsePair } from '../core/utilities.js'
 
+// ============================================================================
+// Constants
+// ============================================================================
+
 const MAX_PLACEMENT_ATTEMPTS = 50
 const MAX_PLACEMENT_RETRIES = 10
 const ATTEMPTS_PER_RETRY = 25
+
+// CSS class names for board state
+const CSS_CLASSES = {
+  DESTROYED: 'destroyed',
+  WAITING: 'waiting',
+  HIDDEN: 'hidden',
+  CURSOR_PREFIX: 'cursor-',
+  OFF: 'off',
+  ON: 'on'
+}
+
+// Message templates
+const MESSAGES = {
+  PLACEMENT_DIFFICULTY: attempts =>
+    `Having difficulty placing all ships (${attempts} attempts)`,
+  PLACEMENT_FAILED: 'Failed to place all ships after many attempts',
+  CLICK_TO_FIRE: 'Click On Square To Fire',
+  ALREADY_SHOT: 'Already Shot Here - Try Again',
+  NO_EFFECT: 'Has no effect - Try Again',
+  WAIT_FOR_ENEMY: 'Wait For Enemy To Finish Their Turn',
+  GAME_OVER: 'Game Over - No More Shots Allowed',
+  ENEMY_SELECTING_TARGET: 'Enemy selecting target...',
+  ENEMY_TURN: "Enemy's Turn",
+  YOUR_TURN: 'Your Turn',
+  SINGLE_SHOT_LABEL: 'single shot'
+}
 
 /**
  * @typedef {Object} WeaponLaunchResult
@@ -96,6 +126,79 @@ class Enemy extends Waters {
     this.steps.onSelect = this._handleSelect.bind(this)
     this.steps.onAim = this._handleAim.bind(this)
     this.steps.onChangeWeapon = this._handleChangeWeapon.bind(this)
+  }
+
+  /**
+   * Extracts the cursor class name from the board's classList.
+   * Searches for classes starting with 'cursor-' prefix.
+   *
+   * @private
+   * @returns {string} The cursor class name or empty string if not found
+   */
+  _extractCursorClass () {
+    if (!this.UI?.board?.classList) {
+      return ''
+    }
+
+    for (const cls of this.UI.board.classList) {
+      if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
+        return cls
+      }
+    }
+
+    return ''
+  }
+
+  /**
+   * Clears targeting coordinate state to reset mode icons.
+   * Ensures updateWeaponStatus() calculates correct mode index after weapon change.
+   *
+   * @private
+   * @see _handleWeaponChange for full context on why this is critical
+   */
+  _clearCoordinateState () {
+    if (this.loadOut.clearSelectedCoordinates) {
+      this.loadOut.clearSelectedCoordinates()
+    }
+  }
+
+  /**
+   * Clears visual state from the previous weapon selection.
+   * Deselects ship, removes weapon rack, and clears hint location.
+   *
+   * @private
+   */
+  _clearSelectionVisualState () {
+    if (this.steps.clearSource) {
+      this.steps.clearSource()
+    }
+
+    if (this.opponent?.UI?.deactivateTempHints) {
+      this.opponent.UI.deactivateTempHints()
+    }
+  }
+
+  /**
+   * Updates board cursor display when weapon changes.
+   *
+   * @private
+   * @param {string} oldCursor - Current cursor class to remove
+   */
+  _updateBoardCursor (oldCursor) {
+    const oldCursorClass = oldCursor || this._extractCursorClass()
+
+    if (this.loadOut.notifyCursorChange) {
+      this.loadOut.notifyCursorChange(oldCursorClass)
+    }
+  }
+
+  /**
+   * Updates board targeting state based on current weapon configuration.
+   *
+   * @private
+   */
+  _updateBoardTargetingState () {
+    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
   }
 
   /**
@@ -189,12 +292,6 @@ class Enemy extends Waters {
    * @private
    */
   // @ts-ignore - Used by friend.js opponent._transitionToOpponentTurn()
-  _transitionToOpponentTurn () {
-    this._setSpinnerState(true, "Enemy's Turn")
-    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
-    this.steps.clearSource()
-  }
-
   /**
    * Updates the spinner display state and game status.
    * @private
@@ -204,8 +301,8 @@ class Enemy extends Waters {
   _setSpinnerState (show, mode) {
     const spinner = document.getElementById('spinner')
     if (spinner instanceof HTMLImageElement) {
-      spinner.classList.toggle('waiting', show)
-      spinner.classList.toggle('hidden', !show)
+      spinner.classList.toggle(CSS_CLASSES.WAITING, show)
+      spinner.classList.toggle(CSS_CLASSES.HIDDEN, !show)
       if (show) spinner.src = './images/loading.gif'
     }
     gameStatus.showMode(mode)
@@ -223,7 +320,7 @@ class Enemy extends Waters {
     if (this.isGameOver()) {
       this.steps.select()
     } else {
-      gameStatus.showMode('Your Turn')
+      gameStatus.showMode(MESSAGES.YOUR_TURN)
     }
     if (this.loadOut.isSingleShot && !this.hasAttachedWeapons) {
       this.steps.select()
@@ -323,10 +420,7 @@ class Enemy extends Waters {
    */
   async _handlePlacementFailure (ships, attempt) {
     const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
-    gameStatus.addToQueue(
-      `Having difficulty placing all ships (${totalAttempts} attempts)`,
-      true
-    )
+    gameStatus.addToQueue(MESSAGES.PLACEMENT_DIFFICULTY(totalAttempts), true)
 
     if (attempt < MAX_PLACEMENT_RETRIES) {
       await Delay.yield()
@@ -353,9 +447,9 @@ class Enemy extends Waters {
    */
   _finalizePlacementFailure () {
     this.UI.enableBtns()
-    gameStatus.addToQueue('Failed to place all ships after many attempts', true)
+    gameStatus.addToQueue(MESSAGES.PLACEMENT_FAILED, true)
     this.boardDestroyed = true
-    throw new Error('Failed to place all ships after many attempts')
+    throw new Error(MESSAGES.PLACEMENT_FAILED)
   }
 
   /**
@@ -367,7 +461,7 @@ class Enemy extends Waters {
     this.UI.enableBtns()
     await Delay.yield()
     if (this._attemptShipPlacement(ships)) {
-      gameStatus.setTips(['Click On Square To Fire'])
+      gameStatus.setTips([MESSAGES.CLICK_TO_FIRE])
       this.UI.enableBtns()
     } else {
       await this._handlePlacementFailure(ships, 0)
@@ -437,11 +531,11 @@ class Enemy extends Waters {
       return false
     }
     if (this.timeoutId) {
-      gameStatus.addToQueue('Wait For Enemy To Finish Their Turn', false)
+      gameStatus.addToQueue(MESSAGES.WAIT_FOR_ENEMY, false)
       return false
     }
     if (this.opponent?.boardDestroyed) {
-      gameStatus.addToQueue('Game Over - No More Shots Allowed', true)
+      gameStatus.addToQueue(MESSAGES.GAME_OVER, true)
       return false
     }
     return true
@@ -618,7 +712,7 @@ class Enemy extends Waters {
    */
   _onFirstClickSelection () {
     this._selectCurrentWeaponOnRandomShip()
-    gameStatus.addToQueue('Enemy selecting target...', true)
+    gameStatus.addToQueue(MESSAGES.ENEMY_SELECTING_TARGET, true)
   }
 
   /**
@@ -757,11 +851,11 @@ class Enemy extends Waters {
   destroy (weapon, effect, options) {
     if (!options?.isSplash) {
       if (this._isInvalidShot(effect)) {
-        gameStatus.addToQueue('Already Shot Here - Try Again', false)
+        gameStatus.addToQueue(MESSAGES.ALREADY_SHOT, false)
         return LoadOut.noResult
       }
       if (effect.length === 0) {
-        gameStatus.addToQueue('Has no effect - Try Again', false)
+        gameStatus.addToQueue(MESSAGES.NO_EFFECT, false)
         return LoadOut.noResult
       }
     }
@@ -783,42 +877,83 @@ class Enemy extends Waters {
   /**
    * Deactivates weapon and hint cells at specified locations.
    * Clears activation UI from both player and opponent boards.
-   * @param {number} opponentRow - Opponent board row (nullable)
-   * @param {number} opponentCol - Opponent board column (nullable)
-   * @param {number} shadowRow - Shadow cell row (nullable)
-   * @param {number} shadowCol - Shadow cell column (nullable)
+   *
+   * Separates concerns:
+   * 1. Opponent weapon cell deactivation
+   * 2. Own board shadow cell deactivation
+   * 3. Opponent hint cell deactivation
+   *
+   * @param {number|null} opponentRow - Opponent board row (nullable)
+   * @param {number|null} opponentCol - Opponent board column (nullable)
+   * @param {number|null} shadowRow - Shadow cell row (nullable)
+   * @param {number|null} shadowCol - Shadow cell column (nullable)
    */
   deactivateWeapon (opponentRow, opponentCol, shadowRow, shadowCol) {
-    this._safelyDeactivateUICell(
-      this.opponent?.UI,
-      'cellWeaponDeactivate',
-      opponentRow,
-      opponentCol,
-      true
-    )
+    this._deactivateOpponentWeapon(opponentRow, opponentCol)
+
     if (shadowRow != null && shadowCol != null) {
-      this.UI.cellWeaponDeactivate(shadowRow, shadowCol)
-      this._safelyDeactivateUICell(
-        this.opponent?.UI,
-        'cellHintDeactivate',
-        shadowRow,
-        shadowCol
-      )
+      this._deactivateShadowCell(shadowRow, shadowCol)
+      this._deactivateOpponentHint(shadowRow, shadowCol)
     }
   }
 
   /**
-   * Safely calls a UI deactivation method if the cell exists.
+   * Deactivates weapon display on opponent board.
+   *
    * @private
-   * @param {EnemyUI} ui - The UI instance to deactivate on
-   * @param {string} methodName - The deactivation method name
+   * @param {number|null} row - Row coordinate
+   * @param {number|null} col - Column coordinate
+   */
+  _deactivateOpponentWeapon (row, col) {
+    this._callUIMethod(
+      this.opponent?.UI,
+      'cellWeaponDeactivate',
+      row,
+      col,
+      true
+    )
+  }
+
+  /**
+   * Deactivates shadow cell display on own board.
+   *
+   * @private
    * @param {number} row - Row coordinate
    * @param {number} col - Column coordinate
-   * @param {boolean} [force] - Force flag for deactivation
    */
-  _safelyDeactivateUICell (ui, methodName, row, col, force = false) {
+  _deactivateShadowCell (row, col) {
+    if (this.UI?.cellWeaponDeactivate) {
+      this.UI.cellWeaponDeactivate(row, col)
+    }
+  }
+
+  /**
+   * Deactivates hint display on opponent board.
+   *
+   * @private
+   * @param {number|null} row - Row coordinate
+   * @param {number|null} col - Column coordinate
+   */
+  _deactivateOpponentHint (row, col) {
+    this._callUIMethod(this.opponent?.UI, 'cellHintDeactivate', row, col)
+  }
+
+  /**
+   * Safely calls a UI method if the UI exists and method is available.
+   * Generic helper to reduce duplication in UI method invocation.
+   *
+   * @private
+   * @param {EnemyUI|undefined} ui - The UI instance (may be undefined)
+   * @param {string} methodName - The method name to call
+   * @param {number|null} row - Row coordinate (may be null)
+   * @param {number|null} col - Column coordinate (may be null)
+   * @param {boolean} [force] - Optional force flag for method
+   */
+  _callUIMethod (ui, methodName, row, col, force) {
     if (row != null && col != null && ui?.[methodName]) {
-      ui[methodName](row, col, force)
+      force === undefined
+        ? ui[methodName](row, col)
+        : ui[methodName](row, col, force)
     }
   }
 
@@ -869,83 +1004,31 @@ class Enemy extends Waters {
    * - When updateWeaponStatus() called, it uses STALE selectedCoordinates.length
    * - Stale coordinate count → wrong stepIdx calculation → wrong mode icon state
    *
-   * Example: After switching weapons, if selectedCoordinates still has [0,0]:
-   *   updateWeaponStatus() passes numCoords=1 → stepIdx(1,...) → 1 → targeting mode
-   *   But UI should show selection mode (stepIdx 0) for new weapon
-   *
-   * Solution:
-   * Clear ALL selection-related state on weapon change:
+   * Solution: Clear ALL selection-related state on weapon change
    *   1. selectedCellCoordinates (two-click flag)
    *   2. loadOut.selectedCoordinates (targeting coordinates)
    *   3. steps state (ship and source)
    *   4. opponent hints (visual feedback)
    *
-   * WHY THIS IS CRITICAL:
-   * In two-click mode, if player clicks Rail Bolt, then clicks enemy board (storing first selection),
-   * then switches to Missile... the selectedCell should be cleared so the next click doesn't fire
-   * the wrong weapon type.
-   *
    * CALL ORDER:
    * 1. Player clicks new weapon button
    * 2. onClickWeaponButtons() calls _handleWeaponChange() FIRST
-   * 3. _handleWeaponChange() clears selectedCellCoordinates AND selectedCoordinates
+   * 3. _handleWeaponChange() clears all state
    * 4. Then weapon is switched
    * 5. Mode icons display correctly because updateWeaponStatus() sees clean state
    *
    * @private
-   * @returns {void}
    */
   _handleWeaponChange () {
     // CRITICAL: Reset two-click weapon selection before weapon is changed
     // This prevents firing the old weapon on the next click
     this.selectedCellCoordinates = null
 
-    // CRITICAL: Clear targeting coordinates to reset mode icon state
-    // When switching weapons, loadOut.selectedCoordinates must be cleared
-    // so that updateWeaponStatus() calculates the correct mode index (0 for selection, 1 for targeting)
-    //
-    // Bug fix: Without this, stale coordinates from the previous weapon's targeting phase
-    // would persist into the new weapon's updateWeaponStatus() call, causing incorrect mode icon display
-    //
-    // Example bug sequence:
-    // 1. Rail Bolt selected, player clicks board, then clicks away → selectedCoordinates = [...]
-    // 2. Player clicks Missile button without clearing selectedCoordinates
-    // 3. Player clicks board, updateWeaponStatus() called with Missile but old coordinate count
-    // 4. Mode index calculated wrong → icons display wrong state
-    if (this.loadOut.clearSelectedCoordinates) {
-      this.loadOut.clearSelectedCoordinates()
-    }
-
-    // Clear all visual state from the first click selection
-    // This ensures: deselected ship, weapon rack removed, and hint location cleared
-    if (this.steps.clearSource) {
-      this.steps.clearSource()
-    }
-
-    // Remove the temporary hint location from the opponent board
-    if (this.opponent?.UI?.deactivateTempHints) {
-      this.opponent.UI.deactivateTempHints()
-    }
-
-    // Get current cursor from board and prepare to update
-    let oldCursor = ''
-    if (this.UI?.board?.classList) {
-      // Find and extract any cursor class from board
-      for (const cls of this.UI.board.classList) {
-        if (cls.startsWith('cursor-') || cls.includes('cursor')) {
-          oldCursor = cls
-          break
-        }
-      }
-    }
-
-    // Notify of cursor change to update board
-    if (this.loadOut.notifyCursorChange) {
-      this.loadOut.notifyCursorChange(oldCursor)
-    }
-
-    // Update board targeting state for new weapon
-    this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
+    // Clear all state systems in logical order
+    this._clearCoordinateState()
+    this._clearSelectionVisualState()
+    this._updateBoardCursor(null)
+    this._updateBoardTargetingState()
   }
 
   /**
@@ -1034,12 +1117,12 @@ class Enemy extends Waters {
    */
   resetModel () {
     this.score.reset()
-    this.resetMap()
+    this.resetMap(bh.map)
     this.UI.playMode()
     this.loadOut.onOutOfAllAmmo = () => {
       if (this.UI?.weaponBtn) {
         this.UI.weaponBtn.disabled = true
-        this.UI.weaponBtn.textContent = 'single shot'
+        this.UI.weaponBtn.textContent = MESSAGES.SINGLE_SHOT_LABEL
       }
     }
     // Handle weapon change when running out of ammo
@@ -1053,9 +1136,14 @@ class Enemy extends Waters {
   /**
    * Builds the board UI.
    */
+  /**
+   * Builds the board UI and applies destruction state.
+   *
+   * @private
+   */
   buildBoard () {
     this.UI.buildBoard(this.onClickCell, this)
-    this.UI.board.classList.toggle('destroyed', this.boardDestroyed)
+    this.UI.board.classList.toggle(CSS_CLASSES.DESTROYED, this.boardDestroyed)
   }
 
   /**

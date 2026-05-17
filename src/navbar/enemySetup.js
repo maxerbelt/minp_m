@@ -4,11 +4,11 @@ import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 
 /**
  * @typedef {Object} EnemyUI
- * @property {function(): void} refreshButtons
+ * @property {() => void} refreshButtons
  * @property {Object<string, HTMLElement>} buttons
  * @property {Object<string, HTMLElement>} weaponBtns
- * @property {function(function, function, Object, Object): void} buildBoardHover
- * @property {function(): void} removeHighlightAoE
+ * @property {(placer: Function, remover: Function, opponent: Object, placement: Object) => void} buildBoardHover
+ * @property {() => void} removeHighlightAoE
  */
 
 /**
@@ -21,12 +21,12 @@ import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
  * @property {Array<Array<number>>} [selectedCoordinates]
  * @property {Array<Array<number>>} [coordinates]
  * @property {Object} [selectedWeapon]
- * @property {function(): WeaponSystem} getCurrentWeaponSystem
+ * @property {() => WeaponSystem} getCurrentWeaponSystem
  */
 
 /**
  * @typedef {Object} BoardMap
- * @property {function(number, number): boolean} inBounds
+ * @property {(row: number, col: number) => boolean} inBounds
  */
 
 let cleanupOpponentBoard = null
@@ -85,8 +85,8 @@ let cleanupOpponentBoard = null
  * - setupWeaponButtonHandlers() MUST happen regardless of mode (not mode-dependent)
  *
  * @param {string} seek - Game mode indicator: 'seek' for seeking mode, anything else for hiding mode
- * @param {function(): void|null} opponentBoard - Cleanup function for previous board state
- * @param {Object|null} friendUI - Friend player UI (if available)
+ * @param {(() => void) | null} opponentBoard - Cleanup function for previous board state
+ * @param {Object | null} friendUI - Friend player UI (if available)
  */
 export function newGame (seek, opponentBoard, friendUI) {
   // Set game mode flag: true if player is seeking, false if player is hiding
@@ -259,7 +259,7 @@ function _buildSeekShortcuts (placementHandler, testHandler) {
   const shortcuts = {
     p: () => placementHandler?.(),
     t: () => testHandler?.(),
-    r: () => newGame(),
+    r: () => newGame('seek', () => {}, null),
     q: () => enemy.onClickReveal(),
     s: () => enemy.onClickSingleShotButton()
   }
