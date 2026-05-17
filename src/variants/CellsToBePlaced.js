@@ -1,6 +1,11 @@
 import { placingTarget } from './makeCell3.js'
 
 /**
+ * @typedef {[import('../terrains/all/js/SubTerrain.js').SubTerrain, any]} ZoneInfo
+ * @typedef {{ boundsChecker: (r:number,c:number)=>boolean, getZone: (r:number,c:number,zoneDetail?:number)=>ZoneInfo }} PlacementTarget
+ */
+
+/**
  * Represents cells to be placed on the grid with validation.
  */
 export class CellsToBePlaced {
@@ -9,9 +14,9 @@ export class CellsToBePlaced {
    * @param {any} board - The board.
    * @param {number} r0 - The row offset.
    * @param {number} c0 - The column offset.
-   * @param {Function} validator - The validation function.
-   * @param {any} zoneDetail - The zone details.
-   * @param {any} target - The placement target.
+   * @param {(zoneInfo:ZoneInfo)=>boolean} validator - The validation function.
+   * @param {number} [zoneDetail] - The zone details.
+   * @param {PlacementTarget} [target] - The placement target.
    */
   constructor (board, r0, c0, validator, zoneDetail, target) {
     board = board.embed(r0, c0)

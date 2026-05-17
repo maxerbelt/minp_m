@@ -62,7 +62,14 @@ export class Building extends SeaShape {
    * @param {string} tip - Placement tip (optional)
    * @param {Array} racks - Rack configuration
    */
-  constructor (description, letter, symmetry, cells, tip, racks) {
+  constructor (
+    description,
+    letter,
+    symmetry,
+    cells,
+    tip = undefined,
+    racks = undefined
+  ) {
     super(
       description,
       letter,
@@ -73,7 +80,7 @@ export class Building extends SeaShape {
       racks
     )
     this.subterrain = Building.subterrain
-    this.validator = Building.validator
+    this.validator = Building.validator.bind(Building)
     this.zoneDetail = Building.zoneDetail
     this.immune = ['Z', '+']
   }
@@ -92,16 +99,16 @@ export class Building extends SeaShape {
    * @returns {boolean} True if placement is valid (land only)
    */
   canBeOn (subterrain) {
-    return subterrain == land
+    return subterrain === land
   }
 
   // Static properties for building placement rules
   /** @type {SubTerrain} Subterrain configuration for buildings */
   static subterrain = land
   /** @type {Function} Function to check if placement is valid */
-  static canBe = land.canBe
+  static canBe = land.canBe.bind(land)
   /** @type {Function} Validator function for zone checking */
-  static validator = land.validator
+  static validator = land.validator.bind(land)
   /** @type {number} Zone detail level */
   static zoneDetail = land.zoneDetail
 }
@@ -132,7 +139,6 @@ class ZoneValidatedBuilding extends Building {
   static validator (zoneInfo) {
     return this.canBe(zoneInfo[0], zoneInfo[1])
   }
-
   /** @type {number} Zone detail level for validation */
   static zoneDetail = 2
 }
@@ -148,7 +154,7 @@ export class HillFort extends ZoneValidatedBuilding {
    * @param {Array} cells - Cell configuration
    * @param {Array} racks - Rack configuration
    */
-  constructor (description, letter, symmetry, cells, racks) {
+  constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
       letter,
@@ -165,6 +171,7 @@ export class HillFort extends ZoneValidatedBuilding {
   /** @type {Object} Specific zone for hill forts */
   static zone = inland
 }
+HillFort.validator = HillFort.validator.bind(HillFort)
 /**
  * Coastal port building - must be on the coast and touching sea squares.
  */
@@ -177,7 +184,7 @@ export class CoastalPort extends ZoneValidatedBuilding {
    * @param {Array} cells - Cell configuration
    * @param {Array} racks - Rack configuration
    */
-  constructor (description, letter, symmetry, cells, racks) {
+  constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
       letter,
@@ -192,6 +199,7 @@ export class CoastalPort extends ZoneValidatedBuilding {
   /** @type {Object} Specific zone for coastal ports */
   static zone = coast
 }
+CoastalPort.validator = CoastalPort.validator.bind(CoastalPort)
 /**
  * Plane/aircraft shape class for aerial units.
  * Can be placed anywhere on the map.
@@ -205,7 +213,7 @@ export class Plane extends SeaShape {
    * @param {Array} cells - Cell configuration
    * @param {Array} racks - Rack configuration
    */
-  constructor (description, letter, symmetry, cells, racks) {
+  constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
       letter,
@@ -249,9 +257,9 @@ export class Plane extends SeaShape {
   /** @type {Object} Subterrain configuration for planes */
   static subterrain = all
   /** @type {Function} Function to check if placement is valid */
-  static canBe = all.canBe
+  static canBe = all.canBe.bind(all)
   /** @type {Function} Validator function for zone checking */
-  static validator = all.canBe
+  static validator = all.canBe.bind(all)
   /** @type {number} Zone detail level */
   static zoneDetail = all.zoneDetail
 }
@@ -269,7 +277,14 @@ export class SeaVessel extends SeaShape {
    * @param {string} tip - Placement tip (optional)
    * @param {Array} racks - Rack configuration
    */
-  constructor (description, letter, symmetry, cells, tip, racks) {
+  constructor (
+    description,
+    letter,
+    symmetry,
+    cells,
+    tip = undefined,
+    racks = undefined
+  ) {
     super(
       description,
       letter,
@@ -280,7 +295,7 @@ export class SeaVessel extends SeaShape {
       racks
     )
     this.subterrain = sea
-    this.validator = SeaVessel.validator
+    this.validator = SeaVessel.validator.bind(SeaVessel)
     this.zoneDetail = SeaVessel.zoneDetail
   }
 
@@ -314,16 +329,16 @@ export class SeaVessel extends SeaShape {
    * @returns {boolean} True if placement is valid (sea only)
    */
   canBeOn (subterrain) {
-    return subterrain == sea
+    return subterrain === sea
   }
 
   // Static properties for sea vessel placement rules
   /** @type {SubTerrain} Subterrain configuration for sea vessels */
   static subterrain = sea
   /** @type {Function} Function to check if placement is valid */
-  static canBe = sea.canBe
+  static canBe = sea.canBe.bind(sea)
   /** @type {Function} Validator function for zone checking */
-  static validator = sea.validator
+  static validator = sea.validator.bind(sea)
   /** @type {number} Zone detail level */
   static zoneDetail = sea.zoneDetail
 }
@@ -354,7 +369,6 @@ class ZoneValidatedSeaVessel extends SeaVessel {
   static validator (zoneInfo) {
     return this.canBe(zoneInfo[0], zoneInfo[1])
   }
-
   /** @type {number} Zone detail level for validation */
   static zoneDetail = 2
 }
@@ -370,7 +384,7 @@ export class DeepSeaVessel extends ZoneValidatedSeaVessel {
    * @param {Array} cells - Cell configuration
    * @param {Array} racks - Rack configuration
    */
-  constructor (description, letter, symmetry, cells, racks) {
+  constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
       letter,
@@ -383,10 +397,10 @@ export class DeepSeaVessel extends ZoneValidatedSeaVessel {
       `${description} can not touch land squares; must be surrounded by sea squares.`
     ]
   }
-
   /** @type {Object} Specific zone for deep sea vessels */
   static zone = deep
 }
+DeepSeaVessel.validator = DeepSeaVessel.validator.bind(DeepSeaVessel)
 /**
  * Shallow dock vessel - must be touching land squares.
  */
@@ -414,3 +428,4 @@ export class ShallowDock extends ZoneValidatedSeaVessel {
   /** @type {Object} Specific zone for shallow docks */
   static zone = littoral
 }
+ShallowDock.validator = ShallowDock.validator.bind(ShallowDock)

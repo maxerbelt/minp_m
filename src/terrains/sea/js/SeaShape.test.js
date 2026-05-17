@@ -9,8 +9,10 @@ import {
   SeaVessel,
   DeepSeaVessel,
   ShallowDock
-} from './SeaShape'
-import { land, sea, coast, inland, deep, littoral } from './seaAndLand'
+} from './SeaShape.js'
+import { land, sea, coast, inland, deep, littoral } from './seaAndLand.js'
+import { Mask } from '../../../grid/rectangle/mask.js'
+import { CellsToBePlaced } from '../../../variants/CellsToBePlaced.js'
 // Jest it suite
 describe('SeaShape - Building class', () => {
   it('Building constructor sets properties', () => {
@@ -120,5 +122,51 @@ describe('SeaShape - SeaVessel class', () => {
     expect(Array.isArray(shallowDock.notes)).toBe(true)
     expect(deepVessel.notes[0]).toMatch(/SubmarineX/)
     expect(shallowDock.notes[0]).toMatch(/Frigate/)
+  })
+})
+
+/**
+ * Regression tests: ensure static `validator` functions are safe to pass
+ * around as bare functions and that `CellsToBePlaced` delegates to them
+ * correctly. This prevents regressions where `this` would be lost and
+ * `this.canBe` would be undefined when the validator is invoked.
+ */
+describe('SeaShape validator integration with CellsToBePlaced', () => {
+  it('CoastalPort.validator works when used as a bare function inside CellsToBePlaced', () => {
+    const board = Mask.fromCoords([[0, 0]])
+    const validator = CoastalPort.validator
+    const target = {
+      boundsChecker: () => true,
+      getZone: () => [Building.subterrain, CoastalPort.zone]
+    }
+
+    const placing = new CellsToBePlaced(
+      board,
+      0,
+      0,
+      validator,
+      CoastalPort.zoneDetail,
+      target
+    )
+    expect(placing.isInMatchingZone(0, 0)).toBe(true)
+  })
+
+  it('ShallowDock.validator works when used as a bare function inside CellsToBePlaced', () => {
+    const board = Mask.fromCoords([[0, 0]])
+    const validator = ShallowDock.validator
+    const target = {
+      boundsChecker: () => true,
+      getZone: () => [SeaVessel.subterrain, ShallowDock.zone]
+    }
+
+    const placing = new CellsToBePlaced(
+      board,
+      0,
+      0,
+      validator,
+      ShallowDock.zoneDetail,
+      target
+    )
+    expect(placing.isInMatchingZone(0, 0)).toBe(true)
   })
 })

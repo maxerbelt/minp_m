@@ -1,5 +1,7 @@
 import { Mask } from '../grid/rectangle/mask.js'
 
+/** @typedef {import('../terrains/all/js/SubTerrain.js').SubTerrain} SubTerrain */
+
 /**
  * Base class for sub-shapes with terrain-specific properties
  * Represents a portion of a hybrid ship with specific terrain requirements
@@ -9,7 +11,7 @@ export class SubShape {
    * Creates a sub-shape with validation and terrain properties
    * @param {Function} validator - Validation function for this sub-shape
    * @param {number} zoneDetail - Zone detail level
-   * @param {string} subterrain - Terrain type this sub-shape requires
+   * @param {SubTerrain} subterrain - Terrain object this sub-shape requires
    */
   constructor (validator, zoneDetail, subterrain) {
     this.validator = validator
@@ -37,7 +39,7 @@ export class StandardCells extends SubShape {
    * Creates a standard cells sub-shape with empty initial board
    * @param {Function} validator - Validation function
    * @param {number} zoneDetail - Zone detail level
-   * @param {string} subterrain - Required terrain type
+   * @param {SubTerrain} subterrain - Required terrain type
    */
   constructor (validator, zoneDetail, subterrain) {
     super(validator, zoneDetail, subterrain)
@@ -128,7 +130,7 @@ export class SpecialCells extends SubShape {
    * @param {Array<[number, number]>} cells - Cell coordinates defining the shape
    * @param {Function} validator - Validation function
    * @param {number} zoneDetail - Zone detail level
-   * @param {string} subterrain - Required terrain type
+   * @param {SubTerrain} subterrain - Required terrain type
    */
   constructor (cells, validator, zoneDetail, subterrain) {
     super(validator, zoneDetail, subterrain)

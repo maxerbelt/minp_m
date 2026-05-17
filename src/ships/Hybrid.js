@@ -1,8 +1,10 @@
 import { errorMsg } from '../core/errorMsg.js'
 import { mixed } from '../terrains/all/js/terrain.js'
 import { Variant3 } from '../variants/Variant3.js'
-import { Mask } from '../grid/rectangle/mask.js'
 import { Shape } from './Shape.js'
+
+/** @typedef {import('../terrains/all/js/SubTerrain.js').SubTerrain} SubTerrain */
+/** @typedef {import('../grid/rectangle/mask.js').Mask} Mask */
 
 /**
  * @typedef {[number, number]} CoordinatePair
@@ -11,7 +13,7 @@ import { Shape } from './Shape.js'
 /**
  * @typedef {Object} SubShape
  * @property {Mask} board - Board representing the sub-shape occupancy
- * @property {string} subterrain - Terrain type for this sub-shape
+ * @property {SubTerrain} subterrain - Terrain type object for this sub-shape
  * @property {number} [faction] - Fractional area contribution after dimension fix
  * @property {Function} [setBoardFromSecondary] - Method to attach secondary board into primary shape
  * @property {Function} [expand] - Optional board expand method when resizing is required
@@ -50,6 +52,7 @@ export class Hybrid extends Shape {
     this._initializeSubGroups(subGroups)
     this.descriptionText = description
     this.subterrain = mixed
+    this.notes = []
   }
 
   /**
@@ -173,7 +176,7 @@ export class Hybrid extends Shape {
 
   /**
    * Calculates displacement contribution for a specific subterrain type
-   * @param {string} subterrain - Subterrain type to calculate displacement for
+   * @param {Object} subterrain - Subterrain type to calculate displacement for
    * @returns {number} Displacement contribution from matching sub-groups
    */
   displacementFor (subterrain) {
@@ -199,7 +202,7 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * @param {string} _subterrain - Subterrain to match (ignored for hybrid)
+   * @param {SubTerrain} _subterrain - Subterrain to match (ignored for hybrid)
    * @returns {boolean} True for all subterrain types in hybrid ships
    */
   canBeOn (_subterrain) {
