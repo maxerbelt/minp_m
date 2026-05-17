@@ -86,6 +86,9 @@
      gap: 2px;
      margin-bottom: 2px;
      font-size: 50%;
+     width: 14px;
+     height: 11px;
+     border-radius: 2px;
  }
 
  .board-wrap.map-list {
@@ -102,11 +105,7 @@
      gap: 3px;
  }
 
- .tally-box-container.map-list .tally-box {
-     width: 14px;
-     height: 11px;
-     border-radius: 2px;
- }
+
 
  .tally-group-container {
      display: flex;
