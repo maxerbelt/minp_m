@@ -53,6 +53,10 @@
      flex-wrap: wrap;
  }
 
+ .battleship.print-preview .tally-row {
+     justify-content: flex-end;
+ }
+
  .tally-col {
      display: flex;
      flex-direction: column;
