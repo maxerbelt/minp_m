@@ -1702,7 +1702,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
         onClickCell (_r, _c) {
           // Two-click targeting if opponent has attached weapons
-          return !this.opponent?.hasAttachedWeapons
+          return this.opponent?.hasAttachedWeapons
         }
       }
     })
