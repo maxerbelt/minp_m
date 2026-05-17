@@ -1,14 +1,6 @@
 /**
- * @typedef {Object} Ship
- * @property {string} id
- * @property {string} letter
- * @property {function(): Shape} shape
- */
-
-/**
- * @typedef {Object} Shape
- * @property {function(): Variants} variants
- * @property {function(): string} type
+ * @typedef {Object} Board
+ * @property {function(): Array<Object>} occupiedLocations
  */
 
 /**
@@ -28,12 +20,20 @@
  */
 
 /**
- * @typedef {function(Element, Board, string): void} ContentBuilder
+ * @typedef {Object} Shape
+ * @property {function(): Variants} variants
+ * @property {function(): string} type
  */
 
 /**
- * @typedef {Object} Board
- * @property {function(): Array<Object>} occupiedLocations
+ * @typedef {Object} Ship
+ * @property {string} id
+ * @property {string} letter
+ * @property {function(): Shape} shape
+ */
+
+/**
+ * @typedef {function(Element, Board, string): void} ContentBuilder
  */
 
 /**
