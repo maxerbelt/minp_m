@@ -224,8 +224,12 @@ export class Waters {
     if (result?.hits) accumulator.hits += result.hits
     if (result?.dtaps) accumulator.dtaps += result.dtaps
     // Type cast for accumulation - sunk can be string or number
-    if (result?.sunk)
-      accumulator.sunk += typeof result.sunk === 'number' ? result.sunk : 0
+    if (result?.sunk) {
+      const sunkValue = typeof result.sunk === 'number' ? result.sunk : 0
+      accumulator.sunk =
+        (typeof accumulator.sunk === 'number' ? accumulator.sunk : 0) +
+        sunkValue
+    }
     if (result?.reveals) accumulator.reveals += result.reveals
     if (result?.shots) accumulator.shots += result.shots
     if (result?.info) accumulator.info += result.info + ' '
@@ -517,7 +521,7 @@ export class Waters {
     const ship = this.loadOut.getShipByWeaponId(weaponId)
     if (ship) {
       this.steps.addShip(ship)
-      const [sourceR, sourceC] = this.generateSourceHint(ship)
+      const [sourceR, sourceC] = this.generateSourceHint(ship, this.opponent)
       this.createShadowSource(sourceR, sourceC)
     }
 

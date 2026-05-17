@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <link rel="preload" href="./terrains/sea/styles/sea-boot.css" as="style" />
-    <link rel="preload" href="./terrains/space/styles/space-boot.css" as="style" />
+    <link
+      rel="preload"
+      href="./terrains/space/styles/space-boot.css"
+      as="style"
+    />
     <script src="./terrains/all/js/terrain-bootstrap.js"></script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,7 +17,12 @@
       name="description"
       content="Play a challenging version of Battleship with no-touch placement rules and special ships."
     />
-    <link id="favicon" rel="icon" type="image/png" href="./terrains/sea/images/favicons/favicon-48x48.png" />
+    <link
+      id="favicon"
+      rel="icon"
+      type="image/png"
+      href="./terrains/sea/images/favicons/favicon-48x48.png"
+    />
     <link rel="stylesheet" href="./styles/default.css" id="terrainTheme" />
     <link rel="stylesheet" href="./styles/animation.css" />
     <link rel="stylesheet" href="./styles/tab.css" />
@@ -42,7 +51,11 @@
               <div class="info-wrap" id="statusLine-wrap">
                 <details class="chevron-box">
                   <summary>
-                    <div class="status medium" id="statusLine" aria-live="polite">
+                    <div
+                      class="status medium"
+                      id="statusLine"
+                      aria-live="polite"
+                    >
                       <div id="gameStatus" class="game-status"></div>
                       <div id="statusRight" class="status right">
                         <div id="modeStatus" class="mode-status"></div>
@@ -71,7 +84,8 @@
                       <span class="shortcut" aria-hidden="true">R</span>estart
                     </button>
                     <button class="seek-control" id="weaponBtn" type="button">
-                      <span class="shortcut" aria-hidden="true">S</span>ingle Shot
+                      <span class="shortcut" aria-hidden="true">S</span>ingle
+                      Shot
                     </button>
                   </div>
                   <div class="tally-box-container">
@@ -103,7 +117,7 @@
                     <div class="info" id="enemy-sunk-label">
                       Sunk: <span class="no-wrap" id="enemy-sunk">0 / 8</span>
                     </div>
-                    <div class="info" id="enemy-placed-label" style="display: none">
+                    <div class="info hidden" id="enemy-placed-label">
                       Placed: <span class="no-wrap" id="enemy-placed">0</span>
                     </div>
                   </div>

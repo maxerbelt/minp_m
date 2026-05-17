@@ -4,7 +4,6 @@
 
 /* eslint-env jest */
 
-/* global it, describe, expect, beforeEach, jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // Mock gameStatus BEFORE importing Enemy
@@ -142,8 +141,8 @@ describe('Enemy.updateWeaponStatus', () => {
         }
       }
 
-      updateMode () {
-        // Mock implementation
+      updateMode (_wps, _cursorInfo) {
+        // Mock implementation - accepts parameters from cursorChange
       }
 
       cursorChange (oldCursor, newCursorInfo) {
@@ -720,20 +719,14 @@ describe('Enemy.updateWeaponStatus', () => {
    *           before selecting a random ship.
    */
   describe('_selectCurrentWeaponOnRandomShip - weapon selection respects player choice', () => {
-    let Enemy,
-      gameStatus,
-      bh,
-      mockOpponent,
-      mockWeaponSystemR,
-      mockWeaponSystemM
+    let Enemy, mockOpponent, mockWeaponSystemR, mockWeaponSystemM
 
     beforeEach(async () => {
-      const modules = await Promise.all([
+      // Note: StatusUI and bh are mocked at the top but not used directly in this test block
+      await Promise.all([
         import('./StatusUI.js'),
         import('../terrains/all/js/bh.js')
       ])
-      gameStatus = modules[0].gameStatus
-      bh = modules[1].bh
 
       jest.clearAllMocks()
 
@@ -772,7 +765,7 @@ describe('Enemy.updateWeaponStatus', () => {
           }
         ],
         UI: {
-          gridCellAt: jest.fn(() => ({ classList: { add: jest.fn() } }))
+          gridCellAt: jest.fn((_r, _c) => ({ classList: { add: jest.fn() } }))
         }
       }
 
@@ -790,7 +783,7 @@ describe('Enemy.updateWeaponStatus', () => {
           }
 
           // Mock inherited methods from Waters
-          this.generateSourceHint = jest.fn(() => [5, 5])
+          this.generateSourceHint = jest.fn((_ship, _opponent) => [5, 5])
           this.createWeaponSelection = jest.fn((r, c, id, hr, hc) => ({
             launchR: r,
             launchC: c,
@@ -803,18 +796,21 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         _selectCurrentWeaponOnRandomShip () {
+          // @ts-ignore - currentWeapon type is unknown from mock, but structure is known from mockWeaponSystemR/M
           const currentWeapon = this.loadOut.getCurrentWeaponSystem()
 
+          // @ts-ignore - weapon property exists on mock weapon system
           if (!currentWeapon?.weapon?.letter) {
             this.randomAttachedWeapon(this.opponent)
             return
           }
 
-          const targetLetter = currentWeapon.weapon.letter
+          // @ts-ignore - weapon property exists on mock weapon system
+          const targetLetter = currentWeapon?.weapon?.letter
           const shipsWithWeapon = this.opponent.ships.filter(ship => {
             const entries = ship.getLoadedWeaponEntries()
             return entries.some(
-              ([_key, weapon]) => weapon.weapon?.letter === targetLetter
+              ([_key, weapon]) => weapon?.weapon?.letter === targetLetter
             )
           })
 
@@ -980,6 +976,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       Enemy = class {
         constructor () {
+          // NOSONAR - Test mock class
           this.selectedCellCoordinates = null
           this.opponent = mockOpponent
           this.loadOut = { getCurrentWeaponSystem: jest.fn() }
@@ -1057,6 +1054,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       Enemy = class {
         constructor () {
+          // NOSONAR - Test mock class
           this.selectedCellCoordinates = null
           this.UI = {
             board: {
@@ -1197,6 +1195,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       Enemy = class {
         constructor () {
+          // NOSONAR - Test mock class
           this.selectedCellCoordinates = null
           this.UI = {
             board: {
@@ -1253,6 +1252,7 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         onClickWeaponButtons (letter) {
+          // NOSONAR - Test mock method
           this._handleWeaponChange()
           this.loadOut.switchToWeapon(letter)
           this.steps.select()
@@ -1277,11 +1277,8 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should call steps.select() before resetting UI mode icons', () => {
       const enemy = new Enemy()
-      let selectWasCalled = false
 
-      enemy.steps.select = jest.fn(() => {
-        selectWasCalled = true
-      })
+      enemy.steps.select = jest.fn()
 
       enemy.onClickWeaponButtons('R')
 
@@ -1342,6 +1339,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       Enemy = class {
         constructor () {
+          // NOSONAR - Test mock class
           this.selectedCellCoordinates = null
           this.UI = {
             board: {
@@ -1512,6 +1510,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       Enemy = class {
         constructor () {
+          // NOSONAR - Test mock class
           this.selectedCellCoordinates = null
           this.opponent = {
             UI: {
@@ -1535,6 +1534,7 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         _handleWeaponChange () {
+          // NOSONAR - Test mock method
           this.selectedCellCoordinates = null
           this.steps.clearSource()
           if (this.opponent?.UI?.deactivateTempHints) {
@@ -1544,6 +1544,7 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         onClickWeaponButtons (letter) {
+          // NOSONAR - Test mock method
           this._handleWeaponChange()
           this.loadOut.switchToWeapon(letter)
           this.steps.select()
@@ -1650,6 +1651,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       Enemy = class {
         constructor (hasAttachedWeapons = true) {
+          // NOSONAR - Test mock class
           this.selectedCellCoordinates = null
           this.opponent = {
             UI: {
@@ -1678,6 +1680,7 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         _handleWeaponChange () {
+          // NOSONAR - Test mock method
           this.selectedCellCoordinates = null
           this.steps.clearSource()
           if (this.opponent?.UI?.deactivateTempHints) {
@@ -1687,6 +1690,7 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         onClickWeaponButtons (letter) {
+          // NOSONAR - Test mock method
           this._handleWeaponChange()
           this.loadOut.switchToWeapon(letter)
           this.steps.select()
@@ -1696,14 +1700,9 @@ describe('Enemy.updateWeaponStatus', () => {
           }
         }
 
-        onClickCell (r, c) {
+        onClickCell (_r, _c) {
           // Two-click targeting if opponent has attached weapons
-          if (this.opponent?.hasAttachedWeapons) {
-            // Would implement two-click targeting here
-            return true
-          }
-          // Single-click targeting
-          return false
+          return !this.opponent?.hasAttachedWeapons
         }
       }
     })

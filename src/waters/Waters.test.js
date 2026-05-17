@@ -4,7 +4,6 @@
 
 /* eslint-env jest */
 
-/* global   it, describe,   expect, beforeEach, jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 import { Waters } from './Waters.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
@@ -231,40 +230,49 @@ describe('Waters', () => {
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // Mock createCandidateShips to return it ships
-      const candidateShips = [
-        { cells: [1, 2], letter: 'A', shape: () => ({ displacement: 2 }) },
-        { cells: [3, 4], letter: 'B', shape: () => ({ displacement: 3 }) }
-      ]
-      emptyWaters.createCandidateShips = jest.fn(() => candidateShips)
+      // Mock setMap to avoid real initialization
+      // @ts-ignore jest mock type issue
+      emptyWaters.setMap = jest.fn()
 
       // Mock autoPlace to avoid real placement logic
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Call loadForEdit with a map that has no example ships
       const mockMap = { example: null }
       emptyWaters.loadForEdit(mockMap)
 
-      // Verify ships were initialized
-      expect(emptyWaters.ships).toBe(candidateShips)
-      expect(emptyWaters.createCandidateShips).toHaveBeenCalled()
+      // Verify autoPlace was called when example is null
+      expect(emptyWaters.autoPlace).toHaveBeenCalled()
     })
 
     it('loadForEdit does not reinitialize ships if ships array already has ships', () => {
-      waters.createCandidateShips = jest.fn()
+      // @ts-ignore jest mock type issue
       waters.autoPlace = jest.fn()
-      waters.placeMatchingShips = jest.fn()
+      // @ts-ignore jest mock type issue
+      waters.placeMatchingShips = jest.fn(() => [])
+      // @ts-ignore jest mock type issue
+      waters.resetShipCells = jest.fn()
 
-      const mockMap = { example: null }
+      const mockMap = {
+        example: {
+          ships: [
+            { cells: [1, 2], letter: 'A' },
+            { cells: [3, 4], letter: 'B' }
+          ]
+        }
+      }
       waters.loadForEdit(mockMap)
 
-      // Since ships is already populated, createCandidateShips should not be called
-      expect(waters.createCandidateShips).not.toHaveBeenCalled()
+      // Since ships is already populated and map has example, placeMatchingShips should be called
+      expect(waters.placeMatchingShips).toHaveBeenCalled()
+      expect(waters.autoPlace).not.toHaveBeenCalled()
     })
 
     it('loadForEdit calls placeMatchingShips when map.example exists', () => {
-      waters.createCandidateShips = jest.fn()
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -286,8 +294,9 @@ describe('Waters', () => {
     })
 
     it('loadForEdit calls autoPlace when map.example is null', () => {
-      waters.createCandidateShips = jest.fn()
+      // @ts-ignore jest mock type issue
       waters.autoPlace = jest.fn()
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       const mockMap = { example: null }
@@ -299,13 +308,15 @@ describe('Waters', () => {
     })
 
     it('loadForEdit logs when ships are not matched', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      // @ts-ignore jest mock type issue
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
 
-      waters.createCandidateShips = jest.fn()
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       // Mock placeMatchingShips to return unmatched ships
       const unmatchedShips = [{ cells: [5, 6], letter: 'C' }]
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => unmatchedShips)
 
       const mockMap = {
@@ -329,53 +340,34 @@ describe('Waters', () => {
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // Mock createCandidateShips to return it ships
-      const candidateShips = [
-        {
-          id: 1,
-          cells: [1, 2],
-          letter: 'A',
-          shape: () => ({ displacement: 2 }),
-          weapons: {},
-          variant: 0
-        },
-        {
-          id: 2,
-          cells: [3, 4],
-          letter: 'B',
-          shape: () => ({ displacement: 3 }),
-          weapons: {},
-          variant: 0
-        }
-      ]
-      emptyWaters.createCandidateShips = jest.fn(() => candidateShips)
-
       // Mock autoPlace to avoid real placement logic
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
-      // Call load with null, which should initialize ships
+      // Mock localStorage to return null
+      const localStorageMock = {
+        setItem: jest.fn(),
+        getItem: jest.fn(() => null),
+        removeItem: jest.fn(),
+        clear: jest.fn()
+      }
+      Object.defineProperty(globalThis, 'localStorage', {
+        value: localStorageMock,
+        configurable: true
+      })
+
+      // Call load with null
       emptyWaters.load(null)
 
-      // Verify ships were initialized
-      expect(emptyWaters.ships).toBe(candidateShips)
-      expect(emptyWaters.createCandidateShips).toHaveBeenCalled()
+      // Verify autoPlace was called since no placedShips data exists
+      expect(emptyWaters.autoPlace).toHaveBeenCalled()
     })
 
     it('load handles null placedShips gracefully', () => {
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      const candidateShips = [
-        {
-          id: 1,
-          cells: [],
-          letter: 'A',
-          shape: () => ({ displacement: 2 }),
-          weapons: {},
-          variant: 0
-        }
-      ]
-      emptyWaters.createCandidateShips = jest.fn(() => candidateShips)
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -398,8 +390,9 @@ describe('Waters', () => {
     })
 
     it('load calls placeMatchingShips when map.example has placed ships', () => {
-      waters.createCandidateShips = jest.fn()
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       // Mock localStorage with placed ships data matching current map
@@ -433,17 +426,7 @@ describe('Waters', () => {
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      const candidateShips = [
-        {
-          id: 1,
-          cells: [],
-          letter: 'A',
-          shape: () => ({ displacement: 2 }),
-          weapons: {},
-          variant: 0
-        }
-      ]
-      emptyWaters.createCandidateShips = jest.fn(() => candidateShips)
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage with different map data

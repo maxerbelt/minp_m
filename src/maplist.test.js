@@ -17,9 +17,15 @@ jest.unstable_mockModule('../src/ui/ButtonManager.js', () => ({
 
 jest.unstable_mockModule('../src/waters/WatersUI.js', () => ({
   WatersUI: class {
-    resetBoardSize () {}
-    buildBoard () {}
-    showMapTitle () {}
+    resetBoardSize () {
+      // Mock implementation
+    }
+    buildBoard () {
+      // Mock implementation
+    }
+    showMapTitle () {
+      // Mock implementation
+    }
     cellSizeStringList () {
       return []
     }
@@ -28,7 +34,9 @@ jest.unstable_mockModule('../src/waters/WatersUI.js', () => ({
 
 jest.unstable_mockModule('../src/waters/Waters.js', () => ({
   Waters: class {
-    setMap () {}
+    setMap () {
+      // Mock implementation
+    }
     get ships () {
       return []
     }
@@ -40,8 +48,12 @@ jest.unstable_mockModule('../src/waters/Waters.js', () => ({
 
 jest.unstable_mockModule('../src/waters/ScoreUI.js', () => ({
   ScoreUI: class {
-    constructor () {}
-    buildTally () {}
+    constructor () {
+      // Mock implementation
+    }
+    buildTally () {
+      // Mock implementation
+    }
   }
 }))
 

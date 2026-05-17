@@ -7,7 +7,8 @@ try {
   const terrainModule = require('./terrain.js')
   if (terrainModule?.bh) bhLocal = terrainModule.bh
 } catch (e) {
-  // Intentionally ignore exceptions during theme initialization
+  // Fallback when terrain module is not available (common in test environments)
+  console.debug('Terrain module not available, using default terrain')
 }
 
 if (!bhLocal)
