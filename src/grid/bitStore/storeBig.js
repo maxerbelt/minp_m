@@ -7,7 +7,13 @@ const one = 1n
 const zero = 0n
 
 export class StoreBig extends StoreBase {
-  constructor (numOfColors = 2, size = 0, bitLength = null, width, height) {
+  constructor (
+    numOfColors = 2,
+    size = 0,
+    bitLength = null,
+    width = 0,
+    height = 0
+  ) {
     super(one, zero, BigInt, numOfColors, size, bitLength, width, height)
 
     this.bitsPerCell = this.bitsPerCell || 1
@@ -196,6 +202,33 @@ export class StoreBig extends StoreBase {
     return src >> BigInt(-shift)
   }
 
+  /**
+   * Apply a mask to a bitboard then shift the result right by a number of bits.
+   * Keeps types consistent and centralizes the masked-right-shift pattern.
+   * @param {bigint|number} bitboard - Source bitboard
+   * @param {bigint|number} mask - Mask to apply before shifting
+   * @param {number} shift - Number of bits to shift right (positive integer)
+   * @returns {bigint} Masked and shifted bitboard
+   */
+  maskedShiftRight (bitboard, mask, shift) {
+    const bb = typeof bitboard === 'bigint' ? bitboard : BigInt(bitboard)
+    const m = typeof mask === 'bigint' ? mask : BigInt(mask)
+    return (bb & m) >> BigInt(shift)
+  }
+
+  /**
+   * Apply a mask to a bitboard then shift the result left by a number of bits.
+   * @param {bigint|number} bitboard - Source bitboard
+   * @param {bigint|number} mask - Mask to apply before shifting
+   * @param {number} shift - Number of bits to shift left (positive integer)
+   * @returns {bigint} Masked and shifted bitboard
+   */
+  maskedShiftLeft (bitboard, mask, shift) {
+    const bb = typeof bitboard === 'bigint' ? bitboard : BigInt(bitboard)
+    const m = typeof mask === 'bigint' ? mask : BigInt(mask)
+    return (bb & m) << BigInt(shift)
+  }
+
   // Template method implementations
   createEmptyBitboard (_template) {
     return 0n
@@ -212,11 +245,11 @@ export class StoreBig extends StoreBase {
     const notLeft = edgeMasks?.notLeft ?? this.fullBits
     const notRight = edgeMasks?.notRight ?? this.fullBits
 
-    const left = (bitboard & notLeft) >> 1n
-    const right = (bitboard & notRight) << 1n
+    const left = this.maskedShiftRight(bitboard, notLeft, 1)
+    const right = this.maskedShiftLeft(bitboard, notRight, 1)
 
-    const up = bitboard >> BigInt(gridWidth)
-    const down = bitboard << BigInt(gridWidth)
+    const up = this.shiftBits(bitboard, -gridWidth)
+    const down = this.shiftBits(bitboard, gridWidth)
 
     return this.combineMasked(bitboard, left, right, up, down)
   }

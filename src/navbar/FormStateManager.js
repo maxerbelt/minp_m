@@ -161,7 +161,9 @@ export class FormStateManager {
    */
   _validateFunction (func, label) {
     if (typeof func !== 'function') {
-      throw new TypeError(`${label} must be a function, received ${typeof func}`)
+      throw new TypeError(
+        `${label} must be a function, received ${typeof func}`
+      )
     }
   }
 

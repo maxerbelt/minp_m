@@ -9,9 +9,9 @@ import { trackTab, trackClick } from './gtag.js'
 
 /**
  * @typedef {Object} MapProvider
- * @property {function(): Object|null} getCurrentMap
- * @property {function(): Object} getMaps
- * @property {function(string): Object|null} getCustomMap
+ * @property {() => (Object|null)} getCurrentMap - Returns current map or null.
+ * @property {() => Object} getMaps - Returns maps collection.
+ * @property {(string) => (Object|null)} getCustomMap - Returns custom map by name or null.
  */
 
 /**
@@ -125,7 +125,7 @@ export class NavigationService {
   /**
    * Handle importing a map from JSON file.
    * Prompts user to select JSON file, validates format, and saves map.
-   * @param {Function} SavedCustomMapClass - Constructor for custom map class.
+   * @param {*} SavedCustomMapClass - Constructor for custom map class.
    * @param {MapProvider} mapProvider - Map provider for storing imported map.
    * @returns {void}
    */
@@ -276,7 +276,7 @@ export class NavigationService {
    * Store game state and navigate to new page.
    * @private
    * @param {URLSearchParams} params - URL parameters.
-   * @param {boolean} huntMode - Hunt mode flag.
+   * @param {boolean|string} huntMode - Hunt mode flag or mode identifier.
    * @param {string} targetPage - Target page identifier.
    * @returns {void}
    */
@@ -308,7 +308,7 @@ export class NavigationService {
    * Handle map file import with validation and storage.
    * @private
    * @param {Event} event - File input change event.
-   * @param {Function} SavedCustomMapClass - Custom map constructor.
+   * @param {*} SavedCustomMapClass - Custom map constructor class.
    * @param {MapProvider} mapProvider - Map provider for storage.
    * @returns {Promise<void>}
    */
@@ -332,7 +332,7 @@ export class NavigationService {
    * @returns {File|null} Selected file or null.
    */
   _getSelectedFile (event) {
-    const target = event.target
+    const target = /** @type {HTMLInputElement} */ (event.target)
     return target?.files?.[0] || null
   }
 
@@ -340,7 +340,7 @@ export class NavigationService {
    * Parse and validate JSON file contents as map object.
    * @private
    * @param {File} file - JSON file to parse.
-   * @param {Function} SavedCustomMapClass - Map class constructor.
+   * @param {*} SavedCustomMapClass - Map class constructor.
    * @returns {Promise<Object|null>} Parsed map or null if invalid.
    */
   async _parseMapFromFile (file, SavedCustomMapClass) {

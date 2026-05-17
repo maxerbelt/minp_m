@@ -178,7 +178,7 @@ export class MapListProvider extends MapProviderStrategy {
    * @returns {boolean} True if collection exists.
    */
   hasMapList (listName) {
-    return Object.prototype.hasOwnProperty.call(this.mapLists, listName)
+    return Object.hasOwn(this.mapLists, listName)
   }
 }
 
@@ -348,9 +348,10 @@ export class MapSearchProvider extends MapProviderStrategy {
   _matchesSearchQuery (map, queryLower) {
     if (!map) return false
 
-    const nameMatches = map.name && map.name.toLowerCase().includes(queryLower)
-    const displayNameMatches =
-      map.displayName && map.displayName.toLowerCase().includes(queryLower)
+    const nameMatches = map?.name?.toLowerCase().includes(queryLower)
+    const displayNameMatches = map?.displayName
+      ?.toLowerCase()
+      .includes(queryLower)
 
     return Boolean(nameMatches || displayNameMatches)
   }
@@ -362,7 +363,7 @@ export class MapSearchProvider extends MapProviderStrategy {
    */
   _buildSearchIndex () {
     return this.maps.reduce((index, map) => {
-      if (map && map.name) {
+      if (map?.name) {
         index[map.name.toLowerCase()] = map
       }
       return index
