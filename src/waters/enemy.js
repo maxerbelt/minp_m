@@ -212,10 +212,9 @@ class Enemy extends Waters {
     if (!board) return
 
     // Assume direct children are cell elements; fall back to querySelectorAll if needed
-    const cells =
-      board.children && board.children.length
-        ? board.children
-        : board.querySelectorAll('*')
+    const cells = board.children?.length
+      ? board.children
+      : board.querySelectorAll('*')
     for (const cell of cells) {
       try {
         CellClassManager.removeCursorClasses(cell)
@@ -1057,6 +1056,17 @@ class Enemy extends Waters {
 
   /**
    * Handles click on single shot button.
+   *
+   * IMPORTANT: When switching to single-shot mode we MUST remove any cursor
+   * preview classes from the opponent board cells. Cursor classes are added
+   * dynamically during multi-cell weapon targeting to show preview cursors on
+   * individual cells. Single-shot mode does not use per-cell cursor previews,
+   * so leaving those classes behind leads to stale UI state.
+   *
+   * Regression prevention: this method clears board cursor classes via
+   * `_clearBoardCursorClasses()` after calling `switchToSingleShot()`. Do not
+   * remove that cleanup or move it before `_handleWeaponChange()` — order is
+   * intentional to ensure selection state is reset first.
    */
   onClickSingleShotButton () {
     this._handleWeaponChange()

@@ -499,7 +499,6 @@ export class CellClassManager {
    *
    * @param {HTMLElement} cell - The cell element to update
    * @returns {void}
-   * @private
    */
   static #removeHitTransientClasses (cell) {
     this.#removeClassNames(cell, this.#getHitResetClasses())
@@ -532,7 +531,6 @@ export class CellClassManager {
    * @param {string} stateClass - CSS class indicating hit state (e.g., 'hit' or 'frd-hit')
    * @param {string} [damageType] - Optional damage indicator class (burnt, damaged, skull)
    * @returns {void}
-   * @private
    */
   static #applyHitState (cell, stateClass, damageType) {
     this.resetHitCellState(cell)
