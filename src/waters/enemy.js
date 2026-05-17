@@ -873,6 +873,14 @@ class Enemy extends Waters {
     // This prevents firing the old weapon on the next click
     this.selectedCellCoordinates = null
 
+    // Clear targeting coordinates to reset mode icon state
+    // When switching weapons, the loadOut.selectedCoordinates must be cleared
+    // so that updateWeaponStatus() calculates the correct mode index (0 for selection, 1 for targeting)
+    // Bug fix: Without this, stale coordinates from the previous weapon would cause incorrect icon display
+    if (this.loadOut.clearSelectedCoordinates) {
+      this.loadOut.clearSelectedCoordinates()
+    }
+
     // Clear all visual state from the first click selection
     // This ensures: deselected ship, weapon rack removed, and hint location cleared
     if (this.steps.clearSource) {
