@@ -1,14 +1,14 @@
 /**
  * @typedef {Object} TabConfig
  * @property {string[]} [current=[]] - Tab names to mark as current.
- * @property {Object.<string, Function>} [handlers={}] - Map of tab names to handler functions.
+ * @property {Object.<string, EventListener>} [handlers={}] - Map of tab names to handler functions.
  */
 
 /**
  * @typedef {Object} TabInstance
  * @property {string} name - Tab name identifier.
  * @property {HTMLElement|null} element - DOM element for this tab.
- * @property {Set<Function>} handlers - Set of registered event handlers.
+ * @property {Set<EventListener>} handlers - Set of registered event handlers.
  * @property {Function} addClickListener - Add click listener.
  * @property {Function} overrideClickListener - Replace click listener.
  * @property {Function} markAsCurrent - Mark as current tab.
@@ -46,18 +46,21 @@ class Tab {
     this.name = name
     /** @type {HTMLElement|null} DOM element for this tab */
     this.element = document.getElementById(`tab-${this.name}`)
-    /** @type {Set<Function>} Set of registered event handlers */
+    /** @type {Set<EventListener>} Set of registered event handlers */
     this.handlers = new Set()
   }
 
   /**
    * Add click listener while tracking it for later removal.
-   * @param {Function} handler - Click event handler function.
+   * @param {EventListener} handler - Click event handler function.
    * @returns {void}
    */
   addClickListener (handler) {
     if (this.element) {
-      this.element.addEventListener('click', handler)
+      this.element.addEventListener(
+        'click',
+        /** @type {EventListener} */ (handler)
+      )
     }
     this.handlers.add(handler)
   }
@@ -65,7 +68,7 @@ class Tab {
   /**
    * Replace all listeners with a single new one.
    * Clears existing handlers and adds the new one.
-   * @param {Function} handler - New click event handler function.
+   * @param {EventListener} handler - New click event handler function.
    * @returns {void}
    */
   overrideClickListener (handler) {
@@ -92,7 +95,10 @@ class Tab {
   _clearListeners () {
     for (const handler of this.handlers) {
       if (this.element) {
-        this.element.removeEventListener('click', handler)
+        this.element.removeEventListener(
+          'click',
+          /** @type {EventListener} */ (handler)
+        )
       }
     }
     this.handlers.clear()
@@ -174,11 +180,11 @@ class TabManager {
   /**
    * Configure tab behavior for a specific mode.
    * Marks current tabs and adds event listeners to others.
-   * @param {string} mode - Mode identifier.
+   * @param {string} _mode - Mode identifier.
    * @param {TabConfig} tabConfig - Configuration with current tabs and handlers.
    * @returns {void}
    */
-  configureForMode (mode, tabConfig) {
+  configureForMode (_mode, tabConfig) {
     const { current = [], handlers = {} } = tabConfig
 
     // Mark current tabs
@@ -195,7 +201,7 @@ class TabManager {
   /**
    * Add event listener to tab if it exists.
    * @param {string} tabName - Name of tab to add listener to.
-   * @param {Function} handler - Click event handler function.
+   * @param {EventListener} handler - Click event handler function.
    * @returns {void}
    */
   addListener (tabName, handler) {
@@ -209,7 +215,7 @@ class TabManager {
    * Replace event listener for tab.
    * Removes existing listeners and adds a new one.
    * @param {string} tabName - Name of tab to replace listener for.
-   * @param {Function} handler - New click event handler function.
+   * @param {EventListener} handler - New click event handler function.
    * @returns {void}
    */
   replaceListener (tabName, handler) {
@@ -238,7 +244,7 @@ class TabManager {
    * Avoids adding listeners to the currently active tab.
    * @private
    * @param {string} tabName - Name of tab to potentially add handler to.
-   * @param {Function} handler - Click event handler function.
+   * @param {EventListener} handler - Click event handler function.
    * @returns {void}
    */
   _addHandlerIfNotCurrent (tabName, handler) {

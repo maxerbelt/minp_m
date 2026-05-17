@@ -1,6 +1,6 @@
 /**
  * @typedef {Object} Board
- * @property {function(): Array<Object>} occupiedLocations
+ * @property {Function} occupiedLocations
  */
 
 /**
@@ -9,31 +9,31 @@
  * @property {boolean} canRotate
  * @property {boolean} canTransform
  * @property {number} index
- * @property {function(): Object} placeable
- * @property {function(): Object} variant
- * @property {function(): Board} boardFor
- * @property {function(): Object} rotate
- * @property {function(): Object} leftRotate
- * @property {function(): Object} flip
- * @property {function(): Object} nextForm
- * @property {function(): void} [onChange]
+ * @property {Function} placeable
+ * @property {Function} variant
+ * @property {Function} boardFor
+ * @property {Function} rotate
+ * @property {Function} leftRotate
+ * @property {Function} flip
+ * @property {Function} nextForm
+ * @property {Function} [onChange]
  */
 
 /**
  * @typedef {Object} Shape
- * @property {function(): Variants} variants
- * @property {function(): string} type
+ * @property {Function} variants
+ * @property {Function} type
  */
 
 /**
  * @typedef {Object} Ship
  * @property {string} id
  * @property {string} letter
- * @property {function(): Shape} shape
+ * @property {Function} shape
  */
 
 /**
- * @typedef {function(Element, Board, string): void} ContentBuilder
+ * @typedef {Function} ContentBuilder
  */
 
 /**
@@ -46,7 +46,7 @@ export class SelectedShip {
    * Creates a SelectedShip instance.
    * @param {Ship} ship - The ship object with id, letter, shape() method.
    * @param {number} variantIndex - Index of the current variant.
-   * @param {function(Element, Board, string): void} contentBuilder - Function to render the ship.
+   * @param {ContentBuilder} contentBuilder - Function to render the ship.
    */
   constructor (ship, variantIndex, contentBuilder) {
     this._ship = ship

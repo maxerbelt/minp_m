@@ -1,5 +1,3 @@
-import { ParameterManager } from './ParameterManager.js'
-
 /**
  * @typedef {Function} SetupCallback
  * @returns {void}
@@ -14,6 +12,10 @@ import { ParameterManager } from './ParameterManager.js'
  * @typedef {Object} StrategyOptions
  * @property {Object.<string, *>} [stateDefaults={}] - Default state values.
  * @property {Object.<string, Function>} [validators={}] - Validation functions by key.
+ */
+
+/**
+ * @typedef {import('./ParameterManager.js').ParameterManager} ParameterManager
  */
 
 /**

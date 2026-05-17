@@ -873,13 +873,25 @@ class DragNDrop {
    * @private
    */
   _getHighlightClass (isPlacementValid, placing, c, r) {
-    if (isPlacementValid) {
-      return 'good'
-    } else if (placing.notGood.at(c, r) > 0) {
-      return 'notgood'
-    } else {
-      return 'bad'
+    if (!isPlacementValid) {
+      return this._getInvalidHighlightClass(placing, c, r)
     }
+    return 'good'
+  }
+
+  /**
+   * Gets the highlight class for invalid placement.
+   * @param {Object} placing - The placement object
+   * @param {number} c - Column coordinate
+   * @param {number} r - Row coordinate
+   * @returns {string} CSS class name ('notgood' or 'bad')
+   * @private
+   */
+  _getInvalidHighlightClass (placing, c, r) {
+    if (placing.notGood.at(c, r) > 0) {
+      return 'notgood'
+    }
+    return 'bad'
   }
 
   // ============================================================================

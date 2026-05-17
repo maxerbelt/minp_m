@@ -2,18 +2,18 @@ import { SelectedShip } from './SelectedShip.js'
 
 /**
  * @typedef {Object} Board
- * @property {function(): Array<Object>} occupiedLocations
+ * @property {Function} occupiedLocations
  */
 
 /**
  * @typedef {Object} VariantManager
- * @property {function(): Board} boardFor
+ * @property {Function} boardFor
  * @property {number} index
- * @property {function(): void} [onChange]
+ * @property {Function} onChange
  */
 
 /**
- * @typedef {function(Element, Board, string): void} ShipContentBuilder
+ * @typedef {Function} ShipContentBuilder
  */
 
 /**
