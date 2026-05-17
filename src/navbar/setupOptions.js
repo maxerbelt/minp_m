@@ -347,10 +347,11 @@ let mapTypeIncludes = '0'
 function _createMapTypeChangeHandler (paramManager, refresh) {
   return selectedType => {
     const selectedIndex = mapTypes.indexOf(selectedType)
-    mapTypeIncludes = selectedIndex.toString()
+    const selectedIndexStr = selectedIndex.toString()
+    mapTypeIncludes = selectedIndexStr
     paramManager.setMapType(selectedType)
     paramManager.updateHistoryState()
-    refresh(selectedIndex, selectedType)
+    refresh(selectedIndexStr)
   }
 }
 
