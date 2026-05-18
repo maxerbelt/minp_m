@@ -27,6 +27,10 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
     maps: {
       shipColors: { M1: 'red', M2: 'darkred', R1: 'blue', R2: 'darkblue' }
     },
+    getTerrainByTag: jest.fn(() => ({
+      tag: 'demo',
+      allSubterrainTag: () => ''
+    })),
     map: {
       rows: 10,
       cols: 10,

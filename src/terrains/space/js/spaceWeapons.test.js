@@ -5,7 +5,49 @@ import {
   Scan,
   spaceWeaponsCatalogue
 } from './spaceWeapons.js'
-import { describe, expect, it, jest } from '@jest/globals'
+import { Weapon } from '../../../weapon/Weapon.js'
+import { jest } from '@jest/globals'
+
+describe('Space Weapons regression', () => {
+  afterEach(() => {
+    // restore possible mocks
+    if (
+      Weapon.prototype.animateFlyingOnVM &&
+      Weapon.prototype.animateFlyingOnVM.mockRestore
+    ) {
+      Weapon.prototype.animateFlyingOnVM.mockRestore()
+    }
+  })
+
+  test('Missile.launchTo returns resolved target when animating across boards', async () => {
+    const missile = new Missile(1)
+
+    // Mock animateFlyingOnVM to avoid DOM operations
+    jest
+      .spyOn(Weapon.prototype, 'animateFlyingOnVM')
+      .mockImplementation(async () => {})
+
+    const viewModel = {
+      gridCellAt: () => ({}),
+      cellSize: () => 10
+    }
+    const opposingViewModel = {
+      gridCellAt: () => ({})
+    }
+
+    const coords = [[7, 8]]
+    const result = await missile.launchTo(
+      coords,
+      3,
+      4,
+      null,
+      viewModel,
+      opposingViewModel
+    )
+
+    expect(result).toEqual({ target: coords[0] })
+  })
+})
 
 describe('spaceWeapons basic behavior', () => {
   it('Missile constructor sets properties and single/clone', () => {

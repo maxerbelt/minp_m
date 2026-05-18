@@ -199,8 +199,17 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
       gameModel
     )
   }
+  // Resolve candidate target via weapon.processCoords so callers
+  // receive the same target the weapon used for animation.
+  const [[startRow, startCol], targetCoord, hasCandidates] =
+    weapon.processCoords(map, [sourceRow, sourceCol], coords, gameModel)
 
-  const cells = resolvePortalCells(weapon, coords, context, map)
+  const cells = {
+    sourceCell1: opposingViewModel.gridCellAt(startRow, startCol),
+    targetCell1: opposingViewModel.gridCellAt(targetCoord[0], targetCoord[1]),
+    sourceCell2: viewModel.gridCellAt(startRow, startCol),
+    targetCell2: viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+  }
   addPortalClasses(cells)
 
   try {
@@ -219,6 +228,8 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
   } finally {
     removePortalClasses(cells)
   }
+
+  return hasCandidates ? { target: targetCoord } : {}
 }
 
 // ============================================================================
@@ -338,17 +349,27 @@ export class Missile extends Bomb {
         opposingViewModel
       )
     }
+    // Resolve the normalized start and target coordinates so callers
+    // receive the same target information this weapon used for animation.
+    const [[startRow, startCol], targetCoord] = this.redoCoords(
+      map,
+      [row, col],
+      coords
+    )
 
-    const targetCoord = coords[0]
-    const sourceCell = opposingViewModel.gridCellAt(row, col)
+    const sourceCell = opposingViewModel.gridCellAt(startRow, startCol)
     const targetCell = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
 
-    return await Weapon.prototype.animateFlyingOnVM.call(
+    // Perform the animation (does not return target info), then
+    // return the resolved target so upstream callers can use it
+    // to determine hits/reveals consistently.
+    await Weapon.prototype.animateFlyingOnVM.call(
       this,
       sourceCell,
       targetCell,
       viewModel
     )
+    return { target: targetCoord }
   }
 
   /**

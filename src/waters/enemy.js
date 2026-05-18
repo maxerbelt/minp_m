@@ -784,6 +784,7 @@ class Enemy extends Waters {
    * @returns {Promise<void>}
    */
   async _onSecondClickFire (r, c) {
+    this.setWeaponFireHandlers()
     this.selectedCellCoordinates = null
     const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
     // @ts-ignore - fireWeaponAt return type includes score property
