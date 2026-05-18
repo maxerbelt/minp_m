@@ -383,6 +383,16 @@ function calculateLineAreaOfEffect (
   terrainFilter = null,
   penetration = 0
 ) {
+  // Defensive: ensure coords is a pair of coordinates
+  if (!coords || !Array.isArray(coords) || coords.length < 2) {
+    // log and return empty effect when called with invalid input
+    // callers should pass [[r1,c1],[r2,c2]]; avoid throwing in UI runtime
+    // to prevent breaking animations
+    // eslint-disable-next-line no-console
+    console.warn('calculateLineAreaOfEffect called with invalid coords', coords)
+    return []
+  }
+
   const [row1, col1] = coords[0]
   const [row2, col2] = coords[1]
   let line = lineFunction(row1, col1, row2, col2, power)

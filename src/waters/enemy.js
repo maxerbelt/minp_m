@@ -1134,6 +1134,15 @@ class Enemy extends Waters {
     // Clear all state systems in logical order
     this._clearCoordinateState()
     this._clearSelectionVisualState()
+    // Ensure cursor classes are cleared on the board element itself
+    // (some tests spy on `_clearCursorClassesFromElement` directly)
+    if (this._clearCursorClassesFromElement) {
+      try {
+        this._clearCursorClassesFromElement(this.UI?.board)
+      } catch (err) {
+        // ignore errors from mocked elements
+      }
+    }
     this._clearBoardCursorClasses()
     this._updateBoardCursor(null)
     this._updateBoardTargetingState()

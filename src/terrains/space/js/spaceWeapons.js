@@ -13,8 +13,22 @@ import { coordToKey } from '../../../core/utilities.js'
  * @typedef {[number, number]} Coord
  * @typedef {[number, number, number]} AoeCell
  * @typedef {AoeCell[]} AoePattern
+ * @typedef {Record<string, AoeCell>} CoordBracket
+ *
  * @typedef {Object} ViewModel
+ * @property {(row: number, col: number) => HTMLElement} gridCellAt
+ * @property {() => number} cellSize
+ *
+ * @typedef {ViewModel} OpposingViewModel
+ *
  * @typedef {Object} GameModel
+ * @property {() => any} getTarget
+ *
+ * @typedef {Object} TerrainMap
+ * @property {number} rows
+ * @property {number} cols
+ * @property {(row: number, col: number) => boolean} [isLand]
+ *
  * @typedef {Object} DualBoardCells
  * @property {HTMLElement} sourceCell1
  * @property {HTMLElement} targetCell1
@@ -130,34 +144,15 @@ async function launchWithDualBoardAnimation (
 }
 
 /**
- * Builds source and target cell references for portal-style animation.
- * @param {Object} weapon - The weapon instance used for coordinate normalization.
- * @param {number[][]} coords - Target coordinates.
- * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {Object} map - Game map object for coordinate normalization.
- * @returns {DualBoardCells} Portal animation cell references.
- */
-function resolvePortalCells (weapon, coords, context, map) {
-  const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
-  const [[startRow, startCol], targetCoord] = weapon.redoCoords(
-    map,
-    [sourceRow, sourceCol],
-    coords
-  )
-  return {
-    sourceCell1: opposingViewModel.gridCellAt(startRow, startCol),
-    targetCell1: opposingViewModel.gridCellAt(targetCoord[0], targetCoord[1]),
-    sourceCell2: viewModel.gridCellAt(startRow, startCol),
-    targetCell2: viewModel.gridCellAt(targetCoord[0], targetCoord[1])
-  }
-}
-
 /**
  * Adds portal CSS classes to cells for dual-board animation.
  * @param {DualBoardCells} cells - Source and target cell references.
  * @returns {void}
  */
 function addPortalClasses (cells) {
+  // Apply the visual portal/marker classes symmetrically to both boards.
+  // These classes are used only for animation decoration and must be removed
+  // when the animation completes to avoid stale hover/cursor state.
   cells.sourceCell1.classList.add(CSS_CLASSES.MARKER)
   cells.targetCell1.classList.add(CSS_CLASSES.PORTAL)
   cells.sourceCell2.classList.add(CSS_CLASSES.PORTAL)
@@ -199,16 +194,29 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
       gameModel
     )
   }
-  // Resolve candidate target via weapon.processCoords so callers
-  // receive the same target the weapon used for animation.
-  const [[startRow, startCol], targetCoord, hasCandidates] =
-    weapon.processCoords(map, [sourceRow, sourceCol], coords, gameModel)
+
+  // Resolve the full infinite line endpoints for portal/marker placement.
+  // RailBolt visuals should mark the full line across the board, not only the
+  // selected rack-to-target segment. `redoCoords()` on Strike-derived weapons
+  // normalizes the line to map intercepts, which is the intended portal path.
+  const [[lineStartRow, lineStartCol], [lineEndRow, lineEndCol]] =
+    weapon.redoCoords(map, [sourceRow, sourceCol], coords)
+
+  // Resolve the actual hit target separately so launch semantics remain correct.
+  // The portal markers are purely decorative: they do not affect whether the
+  // weapon hits the selected target coordinate.
+  const [, targetCoord, hasCandidates] = weapon.processCoords(
+    map,
+    [sourceRow, sourceCol],
+    coords,
+    gameModel
+  )
 
   const cells = {
-    sourceCell1: opposingViewModel.gridCellAt(startRow, startCol),
-    targetCell1: opposingViewModel.gridCellAt(targetCoord[0], targetCoord[1]),
-    sourceCell2: viewModel.gridCellAt(startRow, startCol),
-    targetCell2: viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+    sourceCell1: opposingViewModel.gridCellAt(lineStartRow, lineStartCol),
+    targetCell1: opposingViewModel.gridCellAt(lineEndRow, lineEndCol),
+    sourceCell2: viewModel.gridCellAt(lineStartRow, lineStartCol),
+    targetCell2: viewModel.gridCellAt(lineEndRow, lineEndCol)
   }
   addPortalClasses(cells)
 
@@ -739,16 +747,17 @@ export class GaussRound extends Fish {
         this.processCoords.bind(this)
       )
     }
-    const [[startRow, startCol], targetCoord, hasCandidates] =
-      this.processCoords(map, [sourceRow, sourceCol], coords, gameModel)
-    //const [[startRow, startCol], targetCoord] = weapon.redoCoords(
-    //  map,
-    //  [sourceRow, sourceCol],
-    // coords
-    //)
-
-    const sourceCell1 = opposingViewModel.gridCellAt(startRow, startCol)
-    const sourceCell2 = viewModel.gridCellAt(startRow, startCol)
+    const [, targetCoord, hasCandidates] = this.processCoords(
+      map,
+      [sourceRow, sourceCol],
+      coords,
+      gameModel
+    )
+    // Use the hint/source coordinates for portal decoration on both boards.
+    // GaussRound portals should appear at the hinted launch source, not at a
+    // normalized line origin if the path is adjusted separately for impact.
+    const sourceCell1 = opposingViewModel.gridCellAt(sourceRow, sourceCol)
+    const sourceCell2 = viewModel.gridCellAt(sourceRow, sourceCol)
     const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
 
     const oldClassName1 = sourceCell1.className
@@ -891,11 +900,14 @@ export class GaussRound extends Fish {
     const isSecond = idx === 1
     const isEnd = idx === last
 
-    const prev = isStart
-      ? fullLine[2]
-      : isSecond
-      ? fullLine[0]
-      : fullLine[idx - 1]
+    let prev
+    if (isStart) {
+      prev = fullLine[2]
+    } else if (isSecond) {
+      prev = fullLine[0]
+    } else {
+      prev = fullLine[idx - 1]
+    }
     const next = isEnd ? fullLine[idx - 1] : fullLine[idx + 1]
     const next2 = isEnd ? fullLine[idx + 1] : fullLine[idx + 2]
 
@@ -1054,9 +1066,25 @@ export const spaceWeaponsCatalogue = new WeaponCatalogue([
   new RailBolt(1),
   new GaussRound(1)
 ])
+
+/**
+ * Adds a coordinate tuple into an indexed bracket for fast lookup.
+ * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID.
+ * @param {Coord} coord - Coordinate tuple [row, col, power].
+ * @returns {void}
+ */
 function addCoord (bracket, coord) {
   bracket[coordToKey(...coord)] = coord
 }
+
+/**
+ * Adds or upgrades a coordinate in a bracket using an offset and power value.
+ * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID.
+ * @param {Coord} coord - Base coordinate tuple [row, col, power].
+ * @param {[number, number]} offset - Offset to apply to the base coordinate.
+ * @param {number} power - Power value for the new coordinate.
+ * @returns {void}
+ */
 function addOffset (bracket, coord, offset, power) {
   const newCoord = [coord[0] + offset[0], coord[1] + offset[1], power]
   const newKey = coordToKey(...newCoord)

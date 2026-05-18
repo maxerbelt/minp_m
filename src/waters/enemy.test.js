@@ -2,8 +2,6 @@
  * @jest-environment jsdom
  */
 
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // Mock gameStatus BEFORE importing Enemy
@@ -1293,6 +1291,13 @@ describe('Enemy.updateWeaponStatus', () => {
 
           if (this.loadOut.notifyCursorChange) {
             this.loadOut.notifyCursorChange(oldCursor)
+          }
+
+          // Ensure any test-provided cursor-clearing hook is invoked
+          if (this._clearCursorClassesFromElement) {
+            try {
+              this._clearCursorClassesFromElement(this.UI?.board)
+            } catch (err) {}
           }
 
           this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())

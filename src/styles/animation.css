@@ -143,9 +143,12 @@
 }
 
 .cell.marker::after {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    display: block;
+    pointer-events: none;
     content: '';
     width: 26px;
     height: 26px;
@@ -153,14 +156,16 @@
     border-radius: 50%;
     border: 3px solid #e4b62d;
     background-color: rgb(255, 253, 253);
-    transform: translate(-50%, -50%);
     animation: pulse 1.2s ease-in-out forwards;
 }
 
 .cell.portal::after {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    display: block;
+    pointer-events: none;
     content: '';
     width: 26px;
     height: 26px;
@@ -168,7 +173,6 @@
     border-radius: 50%;
     border: 3px solid #2d33e4;
     background-color: black;
-    transform: translate(-50%, -50%);
     animation: pulse 1.2s ease-in-out forwards;
 }
 
