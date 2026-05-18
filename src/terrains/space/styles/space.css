@@ -54,13 +54,20 @@
     background-image: var(--plasma-explode-image);
 }
 
-
-.board.rail.not-step {
+seeking-mode .board.rail.not-step {
     cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
+}
+
+.board.rail.not-step.seeking-mode {
+    cursor: var(--rail2-cursor-image) 26 26, pointer;
 }
 
 .board.round.not-step {
     cursor: var(--round-grey-cursor-image) 26 26, pointer;
+}
+
+.board.round.not-step.seeking-mode {
+    cursor: var(--rlaunch-cursor-image) 26 26, pointer;
 }
 
 .board.round {
@@ -76,6 +83,10 @@
     cursor: var(--llaunch-grey-cursor-image) 26 26, pointer;
 }
 
+.board.llaunch.not-step.seeking-mode {
+    cursor: var(--llaunch-cursor-image) 26 16, pointer;
+}
+
 .board.bolt {
     cursor: var(--bolt-cursor-image) 26 26, pointer;
 }
@@ -84,7 +95,7 @@
     cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
 }
 
-.board.missile {
+.board.missile.not-step.seeking-mode .board.missile {
     cursor: var(--missile-cursor-image) 6 6, pointer;
 }
 
@@ -92,7 +103,9 @@
     cursor: var(--missile-grey-cursor-image) 6 6, pointer;
 }
 
-
+.board.missile.seeking-mode {
+    cursor: var(--missile-cursor-image) 6 6, pointer;
+}
 
 .flying-weapon.cursor.missile {
     background-image: var(--missile-cursor-image);

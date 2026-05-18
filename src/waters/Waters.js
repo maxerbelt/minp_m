@@ -830,9 +830,9 @@ export class Waters {
     }
     let weaponShips = this.ships.filter(ship => ship.hasWeapon)
     this.hasAttachedWeapons = weaponShips.length > 0
-    if (bh.seekingMode && this.hasAttachedWeapons) {
-      weaponShips = map.extraArmedFleetForMap || weaponShips
-    }
+    //if (bh.seekingMode && this.hasAttachedWeapons) {
+    //  weaponShips = map.extraArmedFleetForMap || weaponShips
+    //}
     this.weaponShips = weaponShips
     return weaponShips
   }
@@ -1056,6 +1056,9 @@ export class Waters {
    */
   setBoardTargetingState (isTargeting) {
     const boardClasses = this.UI.board.classList
+    if (bh.seekingMode) {
+      boardClasses.add('seeking-mode')
+    }
     if (isTargeting) {
       boardClasses.add('targetting')
       boardClasses.remove('not-step')
@@ -1426,6 +1429,23 @@ export class Waters {
   setMap (map) {
     map = map || bh.map
     if (!this.ships || this.ships.length === 0) {
+      // Debug: log map and fleet composition to diagnose missing attached weapons
+      try {
+        console.debug('Waters.setMap: setting map', map?.title)
+        const newFleet = map.newFleetForMap || []
+        console.debug(
+          'Waters.setMap: map.newFleetForMap letters',
+          newFleet.map(s => s.letter)
+        )
+        const extra = map.extraArmedFleetForMap || []
+        console.debug(
+          'Waters.setMap: map.extraArmedFleetForMap letters',
+          extra.map(s => s.letter)
+        )
+      } catch (e) {
+        console.debug('Waters.setMap: debug failed', e)
+      }
+
       this.ships = map.newFleetForMap
       this.armWeapons(map)
     }

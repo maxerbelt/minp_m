@@ -130,7 +130,24 @@
     </div>
     <script type="module" src="./navbar/navbar.js"></script>
     <script type="module" src="./terrains/all/js/gameMaps.js"></script>
-    <script type="module" src="./navbar/enemySetup.js"></script>
     <script type="module" src="./battleseek.js"></script>
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          console.debug(
+            'battleseek debug - weaponBtn:',
+            document.getElementById('weaponBtn')
+          )
+          console.debug(
+            'battleseek debug - enemy-tallyBox:',
+            document.getElementById('enemy-tallyBox')
+          )
+          console.debug(
+            'battleseek debug - weapon clones count:',
+            document.querySelectorAll('.weapon-button-clone').length
+          )
+        }, 0)
+      })
+    </script>
   </body>
 </html>

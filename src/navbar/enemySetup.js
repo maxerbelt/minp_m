@@ -114,7 +114,9 @@ function _getActiveWeapon (model) {
   if (!model.loadOut) return undefined
 
   const selectedWeapon = model.loadOut.selectedWeapon
-  if (selectedWeapon) return selectedWeapon
+  if (selectedWeapon) {
+    return selectedWeapon.weapon || selectedWeapon
+  }
 
   const weaponSystem = model.loadOut.getCurrentWeaponSystem?.()
   return weaponSystem?.weapon
@@ -145,7 +147,7 @@ function _getSplashCellsInBounds (weapon, boardMap, targetCoordinates) {
  * @returns {boolean} True if weapon has sufficient targeting points
  */
 function _canApplyWeapon (weapon, targetCoordinates) {
-  return weapon && weapon.points <= targetCoordinates.length
+  return !!weapon && weapon.points <= targetCoordinates.length
 }
 
 // ============================================================================
@@ -383,7 +385,19 @@ export function newGame (seek, opponentBoard, friendUI) {
 
   // Configure interaction model and weapon system
   _configureBoardTargeting(isSeekingMode)
+  console.debug(
+    'newGame - about to setup weapon button handlers; weaponBtn in UI:',
+    !!enemy.UI?.weaponBtn,
+    'weaponBtn id:',
+    enemy.UI?.weaponBtn?.id
+  )
   _setupWeaponButtonHandlers()
+  console.debug(
+    'newGame - setupWeaponButtonHandlers completed; weapon button clones:',
+    Object.keys(enemy.UI?.weaponBtns || {}),
+    'weaponBtn element present after setup:',
+    !!document.getElementById('weaponBtn')
+  )
 }
 
 /**
@@ -529,4 +543,8 @@ export function setupEnemy (placementHandler, testHandler) {
 
   // Initialize keyboard shortcuts and return cleanup handler
   return _initializeSeekModeShortcuts(placementHandler, testHandler)
+}
+
+export const __test = {
+  _getActiveWeapon
 }

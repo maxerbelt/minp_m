@@ -57,7 +57,18 @@ export async function fetchNavBar (tab, title) {
   bh.setTheme()
   bh.setTest(urlParams)
 
+  console.debug('fetchNavBar - loading navbar component...')
   await _loadNavbarComponent()
+  console.debug('fetchNavBar - navbar component loaded; checking DOM wiring')
+  try {
+    const weaponBtn = document.getElementById('weaponBtn')
+    const tallyBox = document.getElementById('enemy-tallyBox')
+    console.debug('fetchNavBar - weaponBtn present:', !!weaponBtn)
+    console.debug('fetchNavBar - enemy-tallyBox present:', !!tallyBox)
+  } catch (err) {
+    console.debug('fetchNavBar - DOM check failed', err)
+  }
+
   _setPrintTitle(title)
   setupTabs(tab)
 }

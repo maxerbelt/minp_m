@@ -1,6 +1,7 @@
 import { standardShot } from '../../../weapon/Weapon.js'
 import { BhMap } from '../../all/js/map.js'
 import { spaceAndAsteroids } from './space.js'
+import { spaceWeaponsCatalogue } from './spaceWeapons.js'
 
 /**
  * Creates a space terrain battle map.
@@ -20,6 +21,6 @@ export function spaceMap (title, size, shipNum, landArea, name) {
     name,
     spaceAndAsteroids
   )
-  spaceMap.weapons = [standardShot]
+  spaceMap.weapons = [standardShot, ...spaceWeaponsCatalogue.weapons]
   return spaceMap
 }

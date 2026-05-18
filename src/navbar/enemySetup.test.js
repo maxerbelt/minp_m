@@ -174,6 +174,25 @@ describe('enemySetup.js - Regression Prevention Documentation', () => {
     })
   })
 
+  describe('private helpers', () => {
+    it('resolve active weapon from selectedWeapon wrapper object', async () => {
+      const module = await import('./enemySetup.js')
+      const activeWeapon = module.__test._getActiveWeapon({
+        loadOut: {
+          selectedWeapon: {
+            weapon: { points: 1, letter: 'S', splashAoe: jest.fn() }
+          }
+        }
+      })
+
+      expect(activeWeapon).toEqual({
+        points: 1,
+        letter: 'S',
+        splashAoe: expect.any(Function)
+      })
+    })
+  })
+
   describe('enemySetup.newGame() function structure', () => {
     it('documents: correct order of operations in newGame()', () => {
       // Required sequence for correct game initialization:

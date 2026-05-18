@@ -547,6 +547,36 @@ class Enemy extends Waters {
   setupWeaponButtonHandlers () {
     if (this.UI?.weaponBtn == null) return
 
+    // Debug: inspect weapon systems available when wiring buttons
+    try {
+      const all = (this.loadOut && this.loadOut.weaponSystems) || []
+      const limited =
+        (this.loadOut && this.loadOut.getLimitedWeaponSystems()) || []
+      const allInfo = all.map(wps => ({
+        letter: wps.weapon?.letter,
+        tag: wps.weapon?.tag,
+        isLimited: !!wps.weapon?.isLimited,
+        ammoCapacity:
+          typeof wps.ammoCapacity === 'function' ? wps.ammoCapacity() : null
+      }))
+      const limitedInfo = limited.map(wps => ({
+        letter: wps.weapon?.letter,
+        tag: wps.weapon?.tag,
+        ammoCapacity:
+          typeof wps.ammoCapacity === 'function' ? wps.ammoCapacity() : null
+      }))
+      console.debug(
+        'Enemy.setupWeaponButtonHandlers - allWeaponSystems:',
+        allInfo
+      )
+      console.debug(
+        'Enemy.setupWeaponButtonHandlers - limitedWeaponSystems:',
+        limitedInfo
+      )
+    } catch (err) {
+      console.debug('Enemy.setupWeaponButtonHandlers - debug failed', err)
+    }
+
     this.UI.weaponBtns = this.UI?.weaponButtons(
       this.UI?.weaponBtn,
       this.loadOut?.getLimitedWeaponSystems(),
