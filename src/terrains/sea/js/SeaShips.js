@@ -12,8 +12,9 @@ import { seaAndLandShipsCatalogue } from './seaShipsCatalogue.js'
 import { Hybrid } from '../../../ships/Hybrid.js'
 import { SpecialCells, StandardCells } from '../../../ships/SubShape.js'
 
-/** @typedef {import('../../all/js/SubTerrain.js').SubTerrain} SubTerrain */
-/** @typedef {import('../../../grid/rectangle/mask.js').Mask} Mask */
+/**
+ * @typedef {Building | HillFort | CoastalPort | SeaVessel | ShallowDock | Plane | DeepSeaVessel | Hybrid} SeaShip
+ */
 
 const undergroundBunker = new Building('Underground Bunker', 'U', 'H', [
   [0, 0],
@@ -265,6 +266,7 @@ submarine.notes = [
   `The ${submarine.descriptionText} is hardened against Mega bombs.`,
   `Only the center square of the bomb will destroy the ${submarine.descriptionText} the surrounding squares will only reveal the ${submarine.descriptionText}.`
 ]
+/** @type {SeaShip[]} */
 const seaFleet = [
   undergroundBunker,
   antiAircraftGun,

@@ -244,8 +244,9 @@ export function addCellToEffect (
  * @param {number} power - Damage power for added cells
  * @param {AoePattern} effectPattern - Pattern to accumulate into
  * @param {Array<Array<number>>} directions - Direction offsets
- * @param {TerrainCheck|null} [terrainCheck] - Optional terrain validation function
- * @param {number} [radius=1] - Offset multiplier for direction vectors
+ * @param {Object} [options] - Optional configuration
+ * @param {TerrainCheck|null} [options.terrainCheck=null] - Optional terrain validation function
+ * @param {number} [options.radius=1] - Offset multiplier for direction vectors
  * @returns {AoePattern} Updated effect pattern
  */
 function addDirectionalCells (
@@ -255,9 +256,9 @@ function addDirectionalCells (
   power,
   effectPattern,
   directions,
-  terrainCheck = null,
-  radius = 1
+  options = {}
 ) {
+  const { terrainCheck = null, radius = 1 } = options
   directions.forEach(([rowOffset, colOffset]) => {
     addCellToEffect(
       map,
@@ -287,8 +288,7 @@ export function addOrthogonalNeighbors (
     power,
     effectPattern,
     CARDINAL_OFFSETS,
-    terrainCheck,
-    radius
+    { terrainCheck, radius }
   )
 }
 
@@ -307,7 +307,7 @@ export function addDiagonalNeighbors (
     power,
     effectPattern,
     DIAGONAL_OFFSETS,
-    terrainCheck
+    { terrainCheck }
   )
 }
 
@@ -614,16 +614,8 @@ export class Strike extends Weapon {
    * @param {Object} model - Game model
    * @returns {Promise} Launch animation promise
    */
-  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return await this.launchRightTo(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model
-    )
+  async launchTo () {
+    return await this.launchRightTo(...arguments)
   }
 }
 export class Fish extends Weapon {
@@ -725,16 +717,8 @@ export class Fish extends Weapon {
    * @param {Object} model - Game model
    * @returns {Promise} Launch animation promise
    */
-  async launchTo (coords, rr, cc, map, viewModel, opposingViewModel, model) {
-    return await this.launchRightTo(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model
-    )
+  async launchTo (...args) {
+    return await this.launchRightTo(...args)
   }
 }
 

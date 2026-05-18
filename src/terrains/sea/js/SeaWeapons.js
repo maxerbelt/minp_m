@@ -10,6 +10,9 @@ import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
  * @typedef {[number, number]} Coord
  * @typedef {[number, number, number]} AoeCell
  * @typedef {AoeCell[]} AoePattern
+ * @typedef {[HTMLElement, number, number, number]} CellEffect
+ * @typedef {Object} SeaViewModel
+ * @property {(aoe: AoePattern) => Iterable<CellEffect>} cellsAndCoords
  */
 
 // ============================================================================
@@ -285,7 +288,7 @@ export class Flack extends Weapon {
    * @param {number|null} [power=null] - Effect power level
    * @param {number} [cellSize=30] - Cell size in pixels
    * @param {string|null} [id=null] - Unique effect identifier
-   * @returns {Promise} Promise resolving when effect completes
+   * @returns {Promise<void>} Promise resolving when effect completes
    */
   async delayAsyncEffect (
     cell,
@@ -296,7 +299,7 @@ export class Flack extends Weapon {
     id = null
   ) {
     await Delay.randomWait(mindelay, maxdelay)
-    return await this.asyncEffect(cell, power, cellSize, id)
+    return this.asyncEffect(cell, power, cellSize, id)
   }
 
   /**
@@ -305,10 +308,10 @@ export class Flack extends Weapon {
    * @param {number|null} power - Effect power level
    * @param {number} cellSize - Cell size in pixels
    * @param {string|null} id - Unique effect identifier
-   * @returns {Promise} Promise resolving when effect completes
+   * @returns {Promise<void>} Promise resolving when effect completes
    */
   async asyncEffect (cell, power, cellSize, id) {
-    return await super.animateExplode(
+    return super.animateExplode(
       cell,
       null,
       null,
@@ -324,11 +327,11 @@ export class Flack extends Weapon {
 
   /**
    * Applies delayed async effects to multiple cells
-   * @param {Array} cells - Array of [cell, row, col, power] tuples
+   * @param {CellEffect[]} cells - Array of [cell, row, col, power] tuples
    * @param {number} [mindelay=380] - Minimum delay in milliseconds
    * @param {number} [maxdelay=730] - Maximum delay in milliseconds
    * @param {number} [cellSize=30] - Cell size in pixels
-   * @returns {Promise} Promise resolving when all effects complete
+   * @returns {Promise<PromiseSettledResult<unknown>[]>} Promise resolving when all effects complete
    */
   async delayAsyncEffects (
     cells,
@@ -346,46 +349,31 @@ export class Flack extends Weapon {
         `${r}-${c}`
       )
     )
-    return await Promise.allSettled(promises)
+    return Promise.allSettled(promises)
   }
 
   /**
-   * Animates flack explosion with delayed cluster effects
+   * Animates flack explosion with delayed cluster effects.
    * @param {HTMLElement} target - Target cell element
-   * @param {any} _container - Animation container (unused)
-   * @param {any} _end - End coordinates (unused)
-   * @param {number} cellSize - Cell size in pixels
-   * @param {string} _type - Effect type (unused)
-   * @param {number} _power - Effect power (unused)
-   * @param {any} _shake - Shake effect (unused)
-   * @param {any} _animator - Animator instance (unused)
-   * @param {Object} viewModel - View model for cell access
-   * @returns {Promise} Promise resolving when animation completes
+   * @param {...any} _args - Remaining animation parameters passed by Weapon base
+   * @returns {Promise<PromiseSettledResult<unknown>[]>} Promise resolving when animation completes
    */
-  async animateExplode (
-    target,
-    _container,
-    _end,
-    cellSize,
-    _type,
-    _power,
-    _shake,
-    _animator,
-    viewModel = null
-  ) {
+  async animateExplode (target, ..._args) {
+    const cellSize = _args[3]
+    const viewModel = _args[8] || null
     const coord = coordsFromCell(target)
     const aoe = this.aoe(bh.map, [coord]).filter(([, , power]) => power > 0)
-    const cells = [...viewModel.cellsAndCoords(aoe)]
+    const cells = viewModel ? [...viewModel.cellsAndCoords(aoe)] : []
 
-    return await this.delayAsyncEffects(cells, 0, 500, cellSize)
+    return this.delayAsyncEffects(cells, 0, 500, cellSize)
   }
 
   /**
    * Calculates area-of-effect for flack burst pattern
    * Creates randomized cluster pattern with high-power center bursts
-   * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * @param {{ inBounds: (row: number, col: number) => boolean }} map - Game map for bounds checking
+   * @param {Coord[]} coords - Source and Target coordinates
+   * @returns {AoePattern} Damage cells with power levels
    */
   aoe (map, coords) {
     const r = coords[0][0]

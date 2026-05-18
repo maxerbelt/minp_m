@@ -5,18 +5,18 @@ import { bh } from './bh.js'
  * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
  * @typedef {Object} Weapon
  * @property {string} letter
- * @property {Function} clone
+ * @property {(ammo?: unknown) => Weapon} clone
  * @typedef {Object<string, string>} TerrainSoundConfig
  * @typedef {Object} TerrainShipCatalogue
- * @property {*} baseShapes
+ * @property {unknown} baseShapes
  * @property {(letter: string, middle: string) => string} sunkDescription
- * @property {Function} [addShapes]
+ * @property {(shapes: unknown) => void} [addShapes]
  * @property {Object<string, string>} [descriptions]
- * @property {Object<string, any>} [types]
+ * @property {Object<string, unknown>} [types]
  * @typedef {Object} WeaponCatalogue
- * @property {Function} addWeapons
+ * @property {(weapons: unknown) => void} addWeapons
  * @property {Weapon[]} weapons
- * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string} TextContentRenderer
+ * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string | null} TextContentRenderer
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string} InnerHTMLRenderer
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string, className: string) => boolean} ClassPredicate
  * @typedef {{ title: string }} CustomMap
@@ -275,7 +275,7 @@ export class Terrain {
   getCustomMaps (builder) {
     return [...this._getCustomMapSet()]
       .map(title => builder(title))
-      .filter(m => m !== null)
+      .filter(m => m != null)
   }
 
   /**
@@ -309,7 +309,9 @@ export class Terrain {
    * @param {*} weapons - The weapons to add
    */
   addWeapons (weapons) {
-    this.weapons.addWeapons(weapons)
+    if (this.weapons) {
+      this.weapons.addWeapons(weapons)
+    }
   }
 }
 export const MIN_CUSTOM_WIDTH = 16

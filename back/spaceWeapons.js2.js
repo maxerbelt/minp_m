@@ -14,7 +14,14 @@ import { coordToKey } from '../../../core/utilities.js'
  * @typedef {[number, number, number]} AoeCell
  * @typedef {AoeCell[]} AoePattern
  * @typedef {Object} ViewModel
+ * @property {(row: number, col: number) => HTMLElement} gridCellAt
+ * @property {() => number} [cellSize]
+ * @typedef {Object} GameMap
+ * @property {(row: number, col: number) => [number, number]} randomEdge
+ * @property {(row: number, col: number) => boolean} [isLand]
  * @typedef {Object} GameModel
+ * @property {(effect: AoePattern, weapon: Weapon) => unknown} [getTarget]
+ * @typedef {(this: unknown, ...args: any[]) => unknown} AnimationCallback
  * @typedef {Object} DualBoardCells
  * @property {HTMLElement} sourceCell1
  * @property {HTMLElement} targetCell1
@@ -99,13 +106,13 @@ function createSquareExplosion (
 
 /**
  * Handles launch animation for weapons with dual-board effects
- * @param {Object} weapon - The weapon instance
+ * @param {Weapon} weapon - The weapon instance
  * @param {number[][]} coords - Target coordinates
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {Object} map - Game map object
- * @param {Object} gameModel - Game model object
- * @param {Function} [animationCallback] - Optional custom animation callback
- * @returns {Promise} Launch promise
+ * @param {GameMap} map - Game map object
+ * @param {GameModel} gameModel - Game model object
+ * @param {AnimationCallback} [animationCallback] - Optional custom animation callback
+ * @returns {Promise<unknown>} Launch promise
  */
 async function launchWithDualBoardAnimation (
   weapon,
@@ -131,10 +138,10 @@ async function launchWithDualBoardAnimation (
 
 /**
  * Builds source and target cell references for portal-style animation.
- * @param {Object} weapon - The weapon instance used for coordinate normalization.
+ * @param {Weapon} weapon - The weapon instance used for coordinate normalization.
  * @param {number[][]} coords - Target coordinates.
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {Object} map - Game map object for coordinate normalization.
+ * @param {GameMap} map - Game map object for coordinate normalization.
  * @returns {DualBoardCells} Portal animation cell references.
  */
 function resolvePortalCells (weapon, coords, context, map) {
@@ -178,12 +185,12 @@ function removePortalClasses (cells) {
 
 /**
  * Performs portal-style dual-board animation for weapons
- * @param {Object} weapon - The weapon instance
+ * @param {Weapon} weapon - The weapon instance
  * @param {number[][]} coords - Target coordinates
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {Object} map - Game map object
- * @param {Object} gameModel - Game model object
- * @returns {Promise} Animation promise
+ * @param {GameMap} map - Game map object
+ * @param {GameModel} gameModel - Game model object
+ * @returns {Promise<unknown>} Animation promise
  */
 async function performPortalAnimation (weapon, coords, context, map, gameModel) {
   const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
@@ -293,7 +300,7 @@ export class Missile extends Bomb {
   /**
    * Normalizes launch coordinates for missile targeting
    * Maps source and first target coordinate to launch pair format
-   * @param {Object} _map - Game map (unused for missile)
+   * @param {GameMap} _map - Game map (unused for missile)
    * @param {number[]} baseCoords - Source coordinates [row, col]
    * @param {number[][]} targetCoords - Array of target coordinates
    * @returns {number[][]} Transformed coordinate pair [baseCoords, targetCoords[0]]
@@ -305,9 +312,9 @@ export class Missile extends Bomb {
   /**
    * Calculates area-of-effect damage pattern from target coordinates
    * Delegates to inherited boom() method for standard explosion pattern
-   * @param {Object} _map - Game map (unused for missile)
+   * @param {GameMap} _map - Game map (unused for missile)
    * @param {number[][]} coords - Target coordinates [[row, col]]
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * @returns {AoePattern} Damage cells with power levels
    */
   aoe (_map, coords) {
     if (coords.length < 1) return []
@@ -322,10 +329,10 @@ export class Missile extends Bomb {
    * @param {number[][]} coords - Target coordinates [[row, col]]
    * @param {number} row - Source row coordinate
    * @param {number} col - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @returns {Promise<Object>} Animation completion result
+   * @param {GameMap} map - Game map object
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {ViewModel} [opposingViewModel] - Optional opposing player view model
+   * @returns {Promise<unknown>} Animation completion result
    */
   async launchTo (coords, row, col, map, viewModel, opposingViewModel) {
     if (!opposingViewModel) {
@@ -551,11 +558,11 @@ export class RailBolt extends Strike {
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
    * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model for coordinate transformation
-   * @returns {Promise<Object>} Animation completion result
+   * @param {GameMap} map - Game map object
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {ViewModel} [opposingViewModel] - Optional opposing player view model
+   * @param {GameModel} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<unknown>} Animation completion result
    */
   async launchTo (
     coords,
@@ -691,11 +698,11 @@ export class GaussRound extends Fish {
    * @param {number[][]} coords - Target coordinates
    * @param {number} sourceRow - Source row
    * @param {number} sourceCol - Source column
-   * @param {Object} map - Game map
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} opposingViewModel - Opposing view model
-   * @param {Object} gameModel - Game model
-   * @returns {Promise} Animation promise
+   * @param {GameMap} map - Game map
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {ViewModel} opposingViewModel - Opposing view model
+   * @param {GameModel} gameModel - Game model
+   * @returns {Promise<unknown>} Animation promise
    */
   async performGaussRoundAnimation (
     coords,
@@ -908,11 +915,11 @@ export class GaussRound extends Fish {
   /**
    * Calculates crash splash damage pattern around a terminal point when no hits are registered
  
-   * @param {Object} map - Game map
-   * @param {Array} target - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates
+   * @param {GameMap} map - Game map
+   * @param {AoeCell} target - Impact coordinate [row, col, power]
+   * @param {AoePattern} _effect - Damage effect coordinates
    * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
+   * @returns {AoePattern} Splash pattern
    */
   crashSplash (map, target, _effect, _options) {
     let pattern = []
@@ -943,11 +950,11 @@ export class GaussRound extends Fish {
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
    * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model for coordinate transformation
-   * @returns {Promise<void>} Resolves when animations complete
+   * @param {GameMap} map - Game map object
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {ViewModel} [opposingViewModel] - Optional opposing player view model
+   * @param {GameModel} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<unknown>} Resolves when animations complete
    */
   async launchTo (
     coords,

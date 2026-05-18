@@ -1,6 +1,9 @@
 import { Mask } from '../grid/rectangle/mask.js'
 
 /** @typedef {import('../terrains/all/js/SubTerrain.js').SubTerrain} SubTerrain */
+/** @typedef {import('../grid/rectangle/mask.js').Mask} MaskType */
+/** @typedef {[number, number]} CoordPair */
+/** @typedef {(...args: any[]) => any} SubShapeValidator */
 
 /**
  * Base class for sub-shapes with terrain-specific properties
@@ -9,7 +12,7 @@ import { Mask } from '../grid/rectangle/mask.js'
 export class SubShape {
   /**
    * Creates a sub-shape with validation and terrain properties
-   * @param {Function} validator - Validation function for this sub-shape
+   * @param {SubShapeValidator} validator - Validation function for this sub-shape
    * @param {number} zoneDetail - Zone detail level
    * @param {SubTerrain} subterrain - Terrain object this sub-shape requires
    */
@@ -37,19 +40,21 @@ export class SubShape {
 export class StandardCells extends SubShape {
   /**
    * Creates a standard cells sub-shape with empty initial board
-   * @param {Function} validator - Validation function
+   * @param {SubShapeValidator} validator - Validation function
    * @param {number} zoneDetail - Zone detail level
    * @param {SubTerrain} subterrain - Required terrain type
    */
   constructor (validator, zoneDetail, subterrain) {
     super(validator, zoneDetail, subterrain)
+    /** @type {MaskType} */
     this.board = Mask.empty(0, 0)
+    /** @type {number} */
     this.size = 0
   }
 
   /**
    * Gets cell coordinates from the board
-   * @returns {Array<[number, number]>} Array of [row, col] coordinate pairs
+   * @returns {number[][]} Array of row/column coordinate pairs
    */
   get cells () {
     return this.board.toCoords
@@ -58,8 +63,8 @@ export class StandardCells extends SubShape {
   /**
    * Sets board from occupancy and secondary boards
    * Handles both single-board and dual-board scenarios
-   * @param {Mask} occupancyBoard - Primary occupancy board
-   * @param {Mask} [secondaryBoard] - Optional secondary board to subtract
+   * @param {MaskType} occupancyBoard - Primary occupancy board
+   * @param {MaskType} [secondaryBoard] - Optional secondary board to subtract
    */
   setBoardFromSecondary (occupancyBoard, secondaryBoard) {
     if (secondaryBoard == null) {
@@ -74,9 +79,9 @@ export class StandardCells extends SubShape {
 
   /**
    * Combines occupancy and secondary boards by taking their intersection
-   * @param {Mask} occupancyBoard - Primary board with occupied cells
-   * @param {Mask} secondaryBoard - Secondary board to intersect with
-   * @returns {Mask} Combined board mask
+   * @param {MaskType} occupancyBoard - Primary board with occupied cells
+   * @param {MaskType} secondaryBoard - Secondary board to intersect with
+   * @returns {MaskType} Combined board mask
    * @private
    */
   _combineBoards (occupancyBoard, secondaryBoard) {
@@ -90,10 +95,10 @@ export class StandardCells extends SubShape {
 
   /**
    * Expands secondary board to match occupancy board dimensions if needed
-   * @param {Mask} secondaryBoard - Board to potentially expand
+   * @param {MaskType} secondaryBoard - Board to potentially expand
    * @param {number} targetWidth - Required width
    * @param {number} targetHeight - Required height
-   * @returns {Mask} Expanded board or original if already correct size
+   * @returns {MaskType} Expanded board or original if already correct size
    * @private
    */
   _expandBoardIfNeeded (secondaryBoard, targetWidth, targetHeight) {
@@ -128,7 +133,7 @@ export class SpecialCells extends SubShape {
   /**
    * Creates a special cells sub-shape with fixed board
    * @param {Array<[number, number]>} cells - Cell coordinates defining the shape
-   * @param {Function} validator - Validation function
+   * @param {SubShapeValidator} validator - Validation function
    * @param {number} zoneDetail - Zone detail level
    * @param {SubTerrain} subterrain - Required terrain type
    */

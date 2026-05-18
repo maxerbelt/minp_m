@@ -848,57 +848,47 @@ export class GaussRound extends Fish {
   /**
    * Calculates splash/secondary damage pattern around a point
    * @param {Object} _map - Game map
-   * @param {Array} resolvedTarget - Impact coordinate [row, col]
-   * @param {Array} effect - Damage effect coordinates
-   * @param {Object} options - Additional options
-   * @returns {Array} Splash pattern
+   * @param {Coord} resolvedTarget - Impact coordinate [row, col]
+   * @param {AoePattern} effect - Damage effect coordinates
+   * @param {{fullLine?: Coord[]}} options - Additional options
+   * @returns {AoePattern} Splash pattern
    */
   splash (_map, resolvedTarget, effect, options) {
     const last = (effect?.length || 1) - 1
     const { fullLine } = options
     resolvedTarget[2] = 2
-    let bracket = [resolvedTarget]
-    let next2
-    let prev
-    let next
-    if (fullLine) {
-      const idx = fullLine.findIndex(
-        ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
-      )
-      if (idx !== undefined) {
-        // Determine offset trajectory points based on position in line
-        if (idx === 0) {
-          next2 = fullLine[idx + 3]
-          prev = fullLine[idx + 2]
-          next = fullLine[idx + 1]
-        } else if (idx === 1) {
-          next2 = fullLine[idx + 2]
-          prev = fullLine[idx - 1]
-          next = fullLine[idx + 1]
-        } else if (idx === last) {
-          next2 = fullLine[idx + 1]
-          prev = fullLine[idx - 2]
-          next = fullLine[idx - 1]
-        } else {
-          next2 = fullLine[idx + 2]
-          prev = fullLine[idx - 1]
-          next = fullLine[idx + 1]
-        }
+    const bracket = [resolvedTarget]
 
-        if (prev) {
-          prev[2] = 0
-          bracket.push(prev)
-        }
-        if (next) {
-          next[2] = 1
-          bracket.push(next)
-        }
-        if (next2) {
-          next2[2] = 0
-          bracket.push(next2)
-        }
+    if (!fullLine) return bracket
+
+    const idx = fullLine.findIndex(
+      ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
+    )
+    if (idx < 0) return bracket
+
+    const isStart = idx === 0
+    const isSecond = idx === 1
+    const isEnd = idx === last
+
+    const prev = isStart
+      ? fullLine[2]
+      : isSecond
+      ? fullLine[0]
+      : fullLine[idx - 1]
+    const next = isEnd ? fullLine[idx - 1] : fullLine[idx + 1]
+    const next2 = isEnd ? fullLine[idx + 1] : fullLine[idx + 2]
+
+    const pushSplash = (cell, power) => {
+      if (cell) {
+        cell[2] = power
+        bracket.push(cell)
       }
     }
+
+    pushSplash(prev, 0)
+    pushSplash(next, 1)
+    pushSplash(next2, 0)
+
     return bracket
   }
 

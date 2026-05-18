@@ -333,7 +333,8 @@ export class SubMask {
 
   /**
    * Get all occupied cells as [x, y] coordinate array
-   * Returns window-relative coordinates (0 to width-1, 0 to height-1)
+   * @returns {Array<Array<number>>} Array of [windowX, windowY] or [windowX, windowY, value]
+   *  window-relative coordinates (0 to width-1, 0 to height-1)
    */
   get toCoords () {
     return Array.from(this.occupiedLocations())

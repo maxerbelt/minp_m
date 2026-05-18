@@ -1,5 +1,30 @@
 import { standardShot } from './Weapon.js'
 
+/**
+ * @typedef {Object} Weapon
+ * @property {string} letter - Single-character identifier for the weapon
+ * @property {string} [tag] - Weapon tag shown in UI and save data
+ * @property {string[]} [cursors] - Cursor graphics for targeting steps
+ * @property {string} [launchCursor] - Cursor graphic shown during launch
+ * @property {string} [name] - Weapon display name
+ * @property {string} [plural] - Pluralized weapon name
+ * @property {string} [classname] - CSS class name for the weapon
+ * @property {string} [tip] - Tooltip text for the weapon
+ * @property {boolean} [hasFlash] - Whether the weapon shows a flash effect
+ * @property {number} [totalCursors] - Total number of selection cursors
+ * @property {boolean} [isLimited] - Whether the weapon has limited ammo
+ * @property {boolean} [destroys] - Whether the weapon destroys targets
+ * @property {number} [points] - Points awarded for a hit
+ * @property {string} [buttonHtml] - Custom weapon button HTML
+ * @property {string[]} [hints] - Hint text shown for weapon use
+ * @property {boolean} [animateOnTarget] - Whether to animate on target
+ * @property {boolean} [explodeOnTarget] - Whether to explode on target
+ */
+
+/**
+ * @typedef {{ [letter: string]: Weapon }} WeaponByLetterMap
+ */
+
 // ============================================================================
 // WeaponCatalogue - Weapon Collection Repository
 // ============================================================================
@@ -18,15 +43,22 @@ export class WeaponCatelogue {
   constructor (weapons) {
     /**
      * Array of available weapon instances
-     * @type {Array<Object>}
+     * @type {Weapon[]}
      * @private
      */
-    this.weapons = weapons
+    this.weapons = Array.isArray(weapons) ? weapons : []
+
+    /**
+     * Lookup map for weapons by their letter identifier
+     * @type {WeaponByLetterMap}
+     * @private
+     */
+    this.weaponsByLetter = {}
 
     /**
      * Default weapon used when no other weapon available
      * Typically represents "standard shot" with no special effects
-     * @type {Object}
+     * @type {Weapon}
      * @private
      */
     this.defaultWeapon = standardShot
@@ -41,7 +73,9 @@ export class WeaponCatelogue {
    * @returns {Array<string>} Array of weapon tag strings
    */
   get tags () {
-    return this.weapons.map(weapon => weapon.tag)
+    return this.weapons
+      .map(weapon => weapon.tag)
+      .filter(tag => typeof tag === 'string')
   }
 
   /**
@@ -52,8 +86,10 @@ export class WeaponCatelogue {
    */
   get cursors () {
     return this.weapons.flatMap(weapon => {
-      const cursorList = [...weapon.cursors]
-      if (weapon.launchCursor) {
+      const cursorList = Array.isArray(weapon.cursors)
+        ? weapon.cursors.filter(cursor => typeof cursor === 'string')
+        : []
+      if (typeof weapon.launchCursor === 'string' && weapon.launchCursor) {
         cursorList.push(weapon.launchCursor)
       }
       return cursorList
@@ -67,7 +103,11 @@ export class WeaponCatelogue {
    * @returns {Object|undefined} Matching weapon or undefined if not found
    */
   getWeaponByLetter (letter) {
-    return this.weaponsByLetter?.[letter]
+    if (typeof letter !== 'string') {
+      return undefined
+    }
+
+    return this.weaponsByLetter[letter]
   }
 
   /**
@@ -76,7 +116,11 @@ export class WeaponCatelogue {
    * @returns {boolean} True if weapon exists in catalogue
    */
   hasWeaponLetter (letter) {
-    return letter in (this.weaponsByLetter || {})
+    return (
+      typeof letter === 'string' &&
+      this.weaponsByLetter &&
+      letter in this.weaponsByLetter
+    )
   }
 
   /**
@@ -124,6 +168,10 @@ export class WeaponCatelogue {
    * @returns {void}
    */
   addWeapons (weapons) {
+    if (!Array.isArray(weapons)) {
+      return
+    }
+
     this.weapons = weapons
     this._indexWeaponsByLetter()
   }
