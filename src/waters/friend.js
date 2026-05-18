@@ -2,10 +2,10 @@ import { bh } from '../terrains/all/js/bh.js'
 import { Random } from '../core/Random.js'
 import { gameStatus } from './StatusUI.js'
 import { setupDragHandlers } from '../selection/dragndrop.js'
-import { Waters } from './Waters.js'
 import { Player } from './steps.js'
 import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
+import { Placement } from './placement.js'
 
 const ENEMY_TURN_DELAY = 50
 
@@ -69,14 +69,14 @@ const SEEK_CONSTANTS = {
 }
 
 /**
- * Friendly player AI that extends Waters with autonomous seeking and targeting.
+ * Friendly player AI that extends Placement with autonomous seeking and targeting.
  * Provides test mode automation and friendly AI for validation scenarios.
  * Implements multi-strategy shot selection with preference for damaged ships.
  *
  * @class Friend
- * @extends Waters
+ * @extends Placement
  */
-export class Friend extends Waters {
+export class Friend extends Placement {
   /**
    * Creates a Friend AI player instance.
    * @param {Object} friendUI - The friend player UI instance
@@ -363,24 +363,19 @@ export class Friend extends Waters {
    * @private
    */
   async randomBomb () {
-    for (
-      let impact = SEEK_CONSTANTS.IMPACT_START;
-      impact > SEEK_CONSTANTS.IMPACT_MIN;
-      impact--
-    ) {
-      const result = await this._attemptBombAtImpactLevel(impact)
-      if (result) return result
-    }
+    const result = await this._attemptBombAtImpactLevel()
+    if (result) return result
+
     return LoadOut.noResult
   }
 
   /**
-   * Attempts bomb launches at a specific impact level.
-   * @param {number} impact - Impact level to try
+   * Attempts bomb launches 
+
    * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null otherwise
    * @private
    */
-  async _attemptBombAtImpactLevel (impact) {
+  async _attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
       if (this.isCancelled()) return this.noResult
       const { r, c } = this.randomLocation(this.map)

@@ -1,6 +1,7 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { Waters } from './Waters.js'
+import { Placement } from './Placement.js'
 import { customUI } from './customUI.js'
+import { placedShipsInstance } from '../selection/PlacedShips.js'
 
 /**
  * @typedef {Object} Weapon
@@ -24,13 +25,13 @@ import { customUI } from './customUI.js'
  */
 
 /**
- * Custom game mode that extends Waters with additional ship displacement calculations.
+ * Custom game mode that extends Placement with additional ship displacement calculations.
  * Provides metrics for evaluating fleet composition and playability.
  *
  * @class Custom
- * @extends Waters
+ * @extends Placement
  */
-class Custom extends Waters {
+class Custom extends Placement {
   static #THRESHOLDS = {
     playable: 0.35,
     sparse: 0.15
@@ -66,6 +67,75 @@ class Custom extends Waters {
    */
   calculateDisplacedArea () {
     return this.#getAvailablePlacementArea()
+  }
+  /**
+   * Resets ship placement state (cells, visuals, score).
+   * @param {boolean} [showNotice=false] - Whether to show user notice
+   * @private
+   */
+  _resetPlacementState (showNotice = false) {
+    if (showNotice) {
+      this.UI.showNotice('ships removed')
+    }
+    this.resetShipCells()
+    this.UI.clearVisuals()
+    this.score.reset()
+  }
+  /**
+   * Clears all ships from the board and resets placement.
+   * Removes all ships, resets state, and shows notification.
+   */
+  removeAllPlacedShips () {
+    this._resetPlacementState(true)
+    this.UI.removeAllPlacedShips(this)
+    custom.ships = []
+  }
+  /**
+   * Initialize new placement state
+   * Setup board, UI, and brush controls for ship placement
+   */
+  initializePlacement () {
+    this.UI.resetAdd(this)
+    this.UI.initializePlacement()
+  }
+
+  /**
+   * Reinitializes placement mode after clearing ships.
+   * Restores UI state for fresh ship placement.
+   * @private
+   */
+  _restartPlacementAfterClear () {
+    this.removeAllPlacedShips()
+    this.UI.trayManager.setTrays()
+    this.initializePlacement()
+    this.UI.displayShipTrackingInfo(this)
+  }
+  /**
+   * Handles clear button click - clears ships or maps depending on mode.
+   */
+  handleClear () {
+    if (this.UI.placingShips) {
+      this._restartPlacementAfterClear()
+      return
+    }
+    this.UI.clearMapAndRefresh()
+  }
+
+  /**
+   * Undoes the last ship placement action.
+   * Reverts state and removes the most recent ship from grid.
+   */
+  handleUndo () {
+    this._resetPlacementState()
+    placedShipsInstance.popAndRefresh(
+      this.shipCellGrid.grid,
+      ship => {
+        this.UI.markPlaced(ship.cells, ship)
+      },
+      ship => {
+        this.UI.subtraction(this, ship)
+      }
+    )
   }
 
   /**

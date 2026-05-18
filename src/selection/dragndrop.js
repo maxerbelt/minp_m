@@ -67,6 +67,11 @@ import { CustomMap } from '../terrains/all/js/map.js'
  * @property {Function} getBoundingClientRect - Get bounding rect
  * @property {Function} classList - Get classList
  */
+/**
+ * Singleton instance of DragNDrop manager.
+ * @type {DragNDrop}
+ */
+export const dragNDrop = new DragNDrop()
 
 /**
  * Manages drag-and-drop state for ships and weapons.
@@ -1371,9 +1376,3 @@ class DragNDrop {
     })
   }
 }
-
-/**
- * Singleton instance of DragNDrop manager.
- * @type {DragNDrop}
- */
-export const dragNDrop = new DragNDrop()

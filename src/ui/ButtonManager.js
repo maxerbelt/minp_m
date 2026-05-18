@@ -16,7 +16,18 @@ export class ButtonManager {
     this.uiObject = uiObject
     this.buttonHandlers = new Map()
   }
+  /**
+   * @param {Array<HTMLButtonElement>} elements
+   * @param {boolean} disabled
+   */
 
+  static setButtonsDisabled (elements, disabled) {
+    elements.forEach(element => {
+      if (element) {
+        element.disabled = disabled
+      }
+    })
+  }
   /**
    * Register a single button with its handler
    * @param {string} buttonPropertyName - Property name on uiObject (e.g., 'acceptBtn')

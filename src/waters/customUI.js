@@ -1,7 +1,12 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
-
+import {
+  hasMapOfCurrentSize,
+  setNewMapToCorrectSize
+} from '../terrains/all/js/validSize.js'
+import { ButtonManager } from '../ui/ButtonManager.js'
+import { placedShipsInstance } from '../selection/PlacedShips.js'
 // Constants for UI strings to reduce duplication
 /** @returns {string} */
 const LAND_STRING = () =>
@@ -25,7 +30,7 @@ const SHIP_TIPS = [
 /**
  * UI class for custom map and ship placement mode.
  */
-class CustomUI extends PlacementUI {
+export class CustomUI extends PlacementUI {
   /**
    * Initializes the custom UI with cached elements and initial tips.
    */
@@ -172,7 +177,98 @@ class CustomUI extends PlacementUI {
       cell.classList.remove('hit', 'placed')
     }
   }
+  /**
+   * Refreshes build mode button and score controls.
+   * @private
+   */
+  _refreshBuildControls () {
+    this.score.displayZoneInfo()
+    this.updateChangeClearButton()
+  }
 
+  /**
+   * Refreshes build mode display and controls.
+   * Updates colors and button states.
+   * @private
+   */
+  _refreshBuildUI () {
+    this.refreshAllColor()
+    this._refreshBuildControls()
+  }
+  /**
+   * Clears map and refreshes display.
+   * Removes blank maps and updates visual state.
+   * @private
+   */
+  _clearMapAndRefresh () {
+    bh.maps.clearBlank()
+    this._refreshBuildUI()
+  }
+  /**
+   * Update reuse button state based on available maps
+   * @private
+   */
+  _setReuseButtonState () {
+    this.reuseBtn.disabled = !hasMapOfCurrentSize()
+  }
+
+  /**
+   * Initialize new placement state
+   * Setup board, UI, and brush controls for ship placement
+   */
+  initializePlacement () {
+    this.buildBoard((_r, _c) => {})
+    this.trayManager.showBrushTrays()
+    this.makeBrushable()
+    this.buildBrushTray(bh.terrain)
+    this.brushMode()
+    this.acceptBtn.disabled = false
+    this._setReuseButtonState()
+    this.score.setupZoneInfo()
+    this._disableBuildTransformButtons()
+  }
+  /**
+   * Disable transform buttons during ship placement
+   * @private
+   */
+  _disableBuildTransformButtons () {
+    ButtonManager.setButtonsDisabled(
+      [
+        this.rotateBtn,
+        this.flipBtn,
+        this.rotateLeftBtn,
+        this.undoBtn,
+        this.resetBtn
+      ],
+      true
+    )
+  }
+  /**
+   * Clears all ships from the board and resets placement.
+   * Removes all ships, resets state, and shows notification.
+   */
+
+  removeAllPlacedShips (model) {
+    placedShipsInstance.popAll(ship => {
+      customUI.subtraction(model, ship)
+    })
+  }
+  /**
+   * Clears map and refreshes display.
+   * Removes blank maps and updates visual state.
+   */
+  clearMapAndRefresh () {
+    bh.maps.clearBlank()
+    this._refreshBuildUI()
+  }
+
+  /**
+   * Resets map to correct size and refreshes display.
+   */
+  handleReuse () {
+    setNewMapToCorrectSize()
+    this._refreshBuildUI()
+  }
   /**
    * Sets panels to standard state.
    * @private

@@ -1111,7 +1111,6 @@ export class PlacementUI extends WatersUI {
    *
    * @param {Object[]} ships - Array of ships to partition
    * @returns {Object<string, Object[]>} Map of unit type to ship group
-   * @private
    */
   #partitionShipsByType (ships) {
     return ships.reduce((acc, ship) => {

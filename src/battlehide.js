@@ -12,7 +12,7 @@ import {
   tabCursor,
   enterCursor
 } from './selection/dragndrop.js'
-import { moveCursorBase } from './waters/placementUI.js'
+
 import { enemy } from './waters/enemy.js'
 import { setupEnemy, newGame } from './navbar/enemySetup.js'
 import { makeFriend } from './navbar/headerUtils.js'
@@ -21,7 +21,6 @@ import { KeyboardShortcutManager } from './navbar/KeyboardShortcutManager.js'
 import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
 import { AudioManager } from './core/AudioManager.js'
-
 /**
  * @typedef {Object} FriendPlayer
  * @property {Object} UI - Friend UI interface
@@ -329,15 +328,6 @@ function _setupHideButtons () {
 }
 
 /**
- * Wraps cursor movement with friend UI context.
- * @param {KeyboardEvent} event - Keyboard event triggering cursor move
- * @private
- */
-function _moveCursor (event) {
-  moveCursorBase(event, friendUI, friend)
-}
-
-/**
  * Builds keyboard shortcut handlers for placement/hide mode.
  * Maps keys to placement control functions.
  * @returns {ShortcutHandlers} Key to handler map
@@ -353,10 +343,10 @@ function _getPlacementShortcutHandlers () {
     t: handleStartTestMode,
     s: handleStopTest,
     u: onClickUndo,
-    ArrowUp: event => _moveCursor(event),
-    ArrowDown: event => _moveCursor(event),
-    ArrowLeft: event => _moveCursor(event),
-    ArrowRight: event => _moveCursor(event),
+    ArrowUp: friend.moveCursor.bind(friend),
+    ArrowDown: friend.moveCursor.bind(friend),
+    ArrowLeft: friend.moveCursor.bind(friend),
+    ArrowRight: friend.moveCursor.bind(friend),
     Tab: event => tabCursor(event, friendUI, friend),
     Enter: event => enterCursor(event, friendUI, friend)
   }

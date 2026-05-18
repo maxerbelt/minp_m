@@ -1,7 +1,7 @@
 import { bh } from './terrains/all/js/bh.js'
 import { customUI } from './waters/customUI.js'
-import { moveCursorBase } from './waters/placementUI.js'
 
+////** @typedef {import('./waters/customUI.js').CustomUI} CustomUI */
 /**
  * @typedef {Object} CustomUI
  * @property {Function} resetBoardSize - Resets board size display
@@ -43,10 +43,6 @@ import { placedShipsInstance } from './selection/PlacedShips.js'
 import { custom } from './waters/custom.js'
 import { switchToEdit, fetchNavBar } from './navbar/navbar.js'
 import { setupBuildOptions } from './navbar/setupOptions.js'
-import {
-  hasMapOfCurrentSize,
-  setNewMapToCorrectSize
-} from './terrains/all/js/validSize.js'
 import { tabs, switchTo } from './navbar/setupTabs.js'
 import { trackLevelEnd } from './navbar/gtag.js'
 import { show2ndBar } from './navbar/headerUtils.js'
@@ -55,7 +51,7 @@ import { KeyboardShortcutManager } from './navbar/KeyboardShortcutManager.js'
 import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
 
-customUI.resetBoardSize()
+customUI.resetBoardSize(undefined, undefined)
 
 placedShipsInstance.registerUndo(customUI.undoBtn, customUI.resetBtn)
 
@@ -64,51 +60,6 @@ const stateManager = new GameStateManager('build')
 const uiManager = new UIVisibilityManager()
 let buttonManager = null
 let keyboardManager = null
-
-/**
- * @private
- * @param {Array<HTMLButtonElement>} elements
- * @param {boolean} disabled
- */
-function _setButtonsDisabled (elements, disabled) {
-  elements.forEach(element => {
-    if (element) {
-      element.disabled = disabled
-    }
-  })
-}
-
-/**
- * Resets ship placement state (cells, visuals, score).
- * @param {boolean} [showNotice=false] - Whether to show user notice
- * @private
- */
-function _resetPlacementState (showNotice = false) {
-  if (showNotice) {
-    customUI.showNotice('ships removed')
-  }
-  custom.resetShipCells()
-  customUI.clearVisuals()
-  custom.score.reset()
-}
-
-/**
- * Undoes the last ship placement action.
- * Reverts state and removes the most recent ship from grid.
- * @private
- */
-function _handleUndo () {
-  _resetPlacementState()
-  placedShipsInstance.popAndRefresh(
-    custom.shipCellGrid.grid,
-    ship => {
-      customUI.markPlaced(ship.cells, ship)
-    },
-    ship => {
-      customUI.subtraction(custom, ship)
-    }
-  )
-}
 
 /**
  * Creates and validates candidate ships from current placement.
@@ -167,71 +118,6 @@ function _handleAccept (editingMap) {
   _saveMapIfEditing(editingMap)
   _setupShipAdditionMode(ships)
   _setupShipAdditionDragHandlers()
-}
-/**
- * Resets map to correct size and refreshes display.
- * @private
- */
-function _handleReuse () {
-  setNewMapToCorrectSize()
-  _refreshBuildUI()
-}
-
-/**
- * Clears all ships from the board and resets placement.
- * Removes all ships, resets state, and shows notification.
- * @private
- */
-function _removeAllPlacedShips () {
-  _resetPlacementState(true)
-  placedShipsInstance.popAll(ship => {
-    customUI.subtraction(custom, ship)
-  })
-  custom.ships = []
-}
-
-/**
- * Reinitializes placement mode after clearing ships.
- * Restores UI state for fresh ship placement.
- * @private
- */
-function _restartPlacementAfterClear () {
-  _removeAllPlacedShips()
-  customUI.trayManager.setTrays()
-  _initializePlacement()
-  customUI.displayShipTrackingInfo(custom)
-}
-
-/**
- * Clears map and refreshes display.
- * Removes blank maps and updates visual state.
- * @private
- */
-function _clearMapAndRefresh () {
-  bh.maps.clearBlank()
-  _refreshBuildUI()
-}
-
-/**
- * Handles clear button click - clears ships or maps depending on mode.
- * @private
- */
-function _handleClear () {
-  if (customUI.placingShips) {
-    _restartPlacementAfterClear()
-    return
-  }
-  _clearMapAndRefresh()
-}
-
-/**
- * Refreshes build mode display and controls.
- * Updates colors and button states.
- * @private
- */
-function _refreshBuildUI () {
-  customUI.refreshAllColor()
-  _refreshBuildControls()
 }
 
 /**
@@ -292,26 +178,18 @@ function _setupBuildButtons () {
  */
 function _createBuildButtonHandlers () {
   return {
-    newPlacementBtn: _handleClear,
+    newPlacementBtn: custom.handleClear.bind(custom),
     acceptBtn: () => _handleAccept(false),
-    reuseBtn: _handleReuse,
-    resetBtn: _removeAllPlacedShips,
+    reuseBtn: customUI.handleReuse.bind(customUI),
+    resetBtn: custom.removeAllPlacedShips.bind(custom),
     publishBtn: _handlePlayMap,
     saveBtn: _handleSaveMap,
     rotateBtn: onClickRotate,
     rotateLeftBtn: onClickRotateLeft,
     flipBtn: onClickFlip,
     transformBtn: onClickTransform,
-    undoBtn: _handleUndo
+    undoBtn: custom.handleUndo.bind(custom)
   }
-}
-
-/**
- * Moves the cursor inside build mode.
- * @param {Event} event - The keyboard event.
- */
-function moveCursor (event) {
-  moveCursorBase(event, customUI, custom)
 }
 
 /**
@@ -335,65 +213,23 @@ function _setupBuildKeyboardShortcuts () {
 function _createBuildKeyboardShortcuts () {
   return {
     a: () => _handleAccept(false),
-    c: _handleClear,
-    d: _handleReuse,
+    c: custom.handleClear.bind(custom),
+    d: customUI.handleReuse.bind(customUI),
     r: onClickRotate,
-    s: _removeAllPlacedShips,
+    s: custom.removeAllPlacedShips.bind(custom),
     l: onClickRotateLeft,
     f: onClickFlip,
     x: onClickTransform,
-    u: _handleUndo,
+    u: custom.handleUndo.bind(custom),
     p: _handlePlayMap,
     v: _handleSaveMap,
-    ArrowUp: moveCursor,
-    ArrowDown: moveCursor,
-    ArrowLeft: moveCursor,
-    ArrowRight: moveCursor,
+    ArrowUp: custom.moveCursor.bind(custom),
+    ArrowDown: custom.moveCursor.bind(custom),
+    ArrowLeft: custom.moveCursor.bind(custom),
+    ArrowRight: custom.moveCursor.bind(custom),
     Tab: event => tabCursor(event, customUI, custom),
     Enter: event => enterCursor(event, customUI, custom)
   }
-}
-
-/**
- * Initialize new placement state
- * Setup board, UI, and brush controls for ship placement
- */
-function _initializePlacement () {
-  customUI.resetAdd(custom)
-  customUI.buildBoard((_r, _c) => {})
-  customUI.trayManager.showBrushTrays()
-  customUI.makeBrushable()
-  customUI.buildBrushTray(bh.terrain)
-  customUI.brushMode()
-  customUI.acceptBtn.disabled = false
-  _setReuseButtonState()
-  customUI.score.setupZoneInfo(custom, customUI)
-  _disableBuildTransformButtons()
-}
-
-/**
- * Disable transform buttons during ship placement
- * @private
- */
-function _disableBuildTransformButtons () {
-  _setButtonsDisabled(
-    [
-      customUI.rotateBtn,
-      customUI.flipBtn,
-      customUI.rotateLeftBtn,
-      customUI.undoBtn,
-      customUI.resetBtn
-    ],
-    true
-  )
-}
-
-/**
- * Update reuse button state based on available maps
- * @private
- */
-function _setReuseButtonState () {
-  customUI.reuseBtn.disabled = !hasMapOfCurrentSize()
 }
 
 // Register mode callbacks with GameStateManager
@@ -421,7 +257,7 @@ stateManager.applyUIVisibility(uiManager, 'build')
 
 const editing = setupBuildOptions(
   customUI.resetBoardSize.bind(customUI),
-  _initializePlacement,
+  custom.initializePlacement.bind(custom),
   'build',
   () => _handleAccept(true)
 )
@@ -434,7 +270,7 @@ if (editing) {
   custom.loadForEdit(editing)
 } else {
   setupDragBrushHandlers(customUI)
-  _initializePlacement()
+  custom.initializePlacement()
 }
 
 tabs.hide?.overrideClickListener(_handlePlayMap)
