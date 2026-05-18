@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 /* global describe, jest, it, expect, beforeEach, afterEach */
 
 import { HexDraw } from './hexDraw.js'

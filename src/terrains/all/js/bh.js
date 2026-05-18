@@ -4,7 +4,7 @@ let bhLocal = null
 try {
   // prefer an already-mocked terrain module (tests mock ../terrain/terrain.js)
   // eslint-disable-next-line global-require, no-undef
-  const terrainModule = require('./terrain.js')
+  const terrainModule = /** @type {any} */ (require('./terrain.js'))
   if (terrainModule?.bh) bhLocal = terrainModule.bh
 } catch (e) {
   // Fallback when terrain module is not available (common in test environments)
@@ -127,12 +127,18 @@ if (!bhLocal)
     shipBuilder: Function.prototype,
     fleetBuilder: Function.prototype,
     setTheme () {
-      const terrainTheme = document.getElementById('terrainTheme')
-      const terrainBoot = document.getElementById('boot-trn')
-      const favicon = document.getElementById('favicon')
+      const terrainTheme = /** @type {HTMLLinkElement|null} */ (
+        document.getElementById('terrainTheme')
+      )
+      const terrainBoot = /** @type {HTMLLinkElement|null} */ (
+        document.getElementById('boot-trn')
+      )
+      const favicon = /** @type {HTMLLinkElement|null} */ (
+        document.getElementById('favicon')
+      )
 
       const body = document.getElementsByTagName('body')[0]
-      if (terrainTheme) {
+      if (terrainTheme && terrainBoot && favicon) {
         const bodyTag = terrains?.current.bodyTag || 'default'
 
         if (body.classList.contains(bodyTag)) return

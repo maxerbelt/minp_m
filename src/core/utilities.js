@@ -180,7 +180,7 @@ export function listFromCell (cell) {
   const retrievedJson = cell.dataset.numbers
   if (!retrievedJson) return null
   const stringArray = JSON.parse(retrievedJson) || []
-  return stringArray.map(numStr => parseInt(numStr, 10))
+  return stringArray.map(numStr => Number.parseInt(numStr, 10))
 }
 
 /**
@@ -196,18 +196,6 @@ export function keyListFromCell (cell, key) {
 }
 
 /**
- * Retrieves a list of key-IDs from a cell's dataset.
- * @param {HTMLElement} cell - Cell element
- * @param {string} key - Dataset key
- * @returns {Array<string>|null} List of key-IDs or null
- */
-export function keyIdsListFromCell (cell, key) {
-  const retrieved = cell.dataset[key]
-  if (!retrieved) return null
-  return retrieved.split('|') || []
-}
-
-/**
  * Adds a key to a cell's dataset, deduplicating values.
  * @param {HTMLElement} cell - Cell element
  * @param {string} key - Dataset key
@@ -216,10 +204,10 @@ export function keyIdsListFromCell (cell, key) {
 export function addKeyToCell (cell, key, addon) {
   const retrieved = cell.dataset[key]
   let result = ''
-  if (!retrieved) {
-    result = addon
-  } else {
+  if (retrieved) {
     result = retrieved + '|' + addon
+  } else {
+    result = addon
   }
   cell.dataset[key] = dedupCSV(result, '|')
 }
@@ -233,10 +221,10 @@ export function addKeyToCell (cell, key, addon) {
 export function addKeysToCell (cell, key, addons) {
   const retrieved = cell.dataset[key]
   let result = ''
-  if (!retrieved) {
-    result = addons.join('|')
-  } else {
+  if (retrieved) {
     result = retrieved + '|' + addons.join('|')
+  } else {
+    result = addons.join('|')
   }
   cell.dataset[key] = dedupCSV(result, '|')
 }
@@ -248,8 +236,8 @@ export function addKeysToCell (cell, key, addons) {
  * @param {number} col - Column coordinate
  */
 export function setCellCoords (cell, row, col) {
-  cell.dataset.r = row
-  cell.dataset.c = col
+  cell.dataset.r = String(row)
+  cell.dataset.c = String(col)
 }
 
 /**
@@ -326,9 +314,9 @@ export function lazy (obj, prop, fn) {
 }
 
 /**
- * Calculates min/max coordinates and depth from an array of points.
- * @param {Array<Array<number>>} arr - Array of [x, y, z?] points
- * @returns {Object} Min/max bounds and depth info
+ * Normalizes numeric coordinate values for arrays that may contain bigints.
+ * @param {number|bigint} value - Numeric coordinate value
+ * @returns {number} Normalized coordinate value
  */
 function _coerceCoordinate (value) {
   if (typeof value === 'bigint') {
@@ -373,15 +361,19 @@ export function minMaxXY (arr) {
 }
 
 /**
- * Clones a node multiple times with numeric suffixes.
- * @param {Node} node - Node to clone
+ * Clones an element multiple times with numeric suffixes.
+ * @param {HTMLElement} node - Element to clone
  * @param {number} count - Number of clones
  */
 export function cloneWithSuffix (node, count) {
-  const parent = node.parentNode
+  const parent = node.parentElement
+
+  if (!parent) {
+    return
+  }
 
   for (let i = 1; i <= count; i++) {
-    const clone = node.cloneNode(true)
+    const clone = /** @type {HTMLElement} */ (node.cloneNode(true))
 
     if (clone.id) {
       clone.id = `${node.id}-${i}`
@@ -392,22 +384,32 @@ export function cloneWithSuffix (node, count) {
 }
 
 /**
- * Clones a node deeply multiple times with numeric suffixes on all IDs.
- * @param {Node} node - Node to clone
+ * Clones an element deeply multiple times with numeric suffixes on all IDs.
+ * @param {HTMLElement} node - Element to clone
  * @param {number} count - Number of clones
  */
 export function cloneWithSuffixDeep (node, count) {
-  const parent = node.parentNode
+  const parent = node.parentElement
+
+  if (!parent) {
+    return
+  }
 
   for (let i = 1; i <= count; i++) {
-    const clone = node.cloneNode(true)
+    const cloneNode = node.cloneNode(true)
+    if (!(cloneNode instanceof HTMLElement)) {
+      continue
+    }
+    const clone = cloneNode
 
     if (clone.id) {
       clone.id = `${node.id}-${i}`
     }
 
     clone.querySelectorAll('[id]').forEach(el => {
-      el.id = `${el.id}-${i}`
+      if (el instanceof HTMLElement) {
+        el.id = `${el.id}-${i}`
+      }
     })
 
     parent.insertBefore(clone, node.nextSibling)
@@ -415,12 +417,15 @@ export function cloneWithSuffixDeep (node, count) {
 }
 
 /**
- * Clones a node with lifecycle management (removes old clones first).
- * @param {Node} node - Node to clone
+ * Clones an element with lifecycle management (removes old clones first).
+ * @param {HTMLElement} node - Element to clone
  * @param {number} count - Number of clones
  */
 export function cloneWithLifecycle (node, count) {
-  const parent = node.parentNode
+  const parent = node.parentElement
+  if (!parent) {
+    return
+  }
   const cloneClass = `${node.id}-clone`
 
   // Remove existing clones
@@ -430,7 +435,11 @@ export function cloneWithLifecycle (node, count) {
   let last = node
 
   for (let i = 1; i <= count; i++) {
-    const clone = node.cloneNode(true)
+    const cloneNode = node.cloneNode(true)
+    if (!(cloneNode instanceof HTMLElement)) {
+      continue
+    }
+    const clone = cloneNode
 
     clone.classList.add(cloneClass)
 
@@ -439,7 +448,9 @@ export function cloneWithLifecycle (node, count) {
     }
 
     clone.querySelectorAll('[id]').forEach(el => {
-      el.id = `${el.id}-${i}`
+      if (el instanceof HTMLElement) {
+        el.id = `${el.id}-${i}`
+      }
     })
 
     parent.insertBefore(clone, last.nextSibling)

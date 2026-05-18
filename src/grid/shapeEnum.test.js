@@ -1,5 +1,5 @@
 // src/grid/Shape.test.js
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { ShapeEnum } from './shapeEnum.js'
 import { TriIndex } from './triangle/TriIndex.js'
 import { RectIndex } from './rectangle/RectIndex.js'

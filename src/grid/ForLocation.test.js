@@ -1,5 +1,5 @@
 // src/grid/ForLocation.test.js
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, it, expect, jest } from '@jest/globals'
 /* global describe, it, expect */
 import { ForLocation } from './ForLocation'

@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
 /* global describe, beforeAll, jest, it, expect, beforeEach, afterEach */
 import { Ghost } from './Ghost.js'

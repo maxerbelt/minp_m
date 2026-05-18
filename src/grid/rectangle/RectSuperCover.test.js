@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 /* global describe, it, expect, beforeEach, afterEach */
 import { expect, jest } from '@jest/globals'
 import { RectIndex } from './RectIndex.js'

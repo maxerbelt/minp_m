@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
 /* global describe, jest, it, expect */
 import { jest } from '@jest/globals'

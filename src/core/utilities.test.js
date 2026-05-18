@@ -1,6 +1,3 @@
-/* eslint-env jest */
-
-/* global describe, it, expect, beforeEach */
 import { describe, it, expect, beforeEach } from '@jest/globals'
 import {
   randomElement,
@@ -18,7 +15,6 @@ import {
   coordsFromCell,
   listFromCell,
   keyListFromCell,
-  keyIdsListFromCell,
   addKeyToCell,
   addKeysToCell,
   setCellCoords,
@@ -237,7 +233,9 @@ describe('utilities', () => {
       const arr = [1, 2, 3, 4, 5]
       const shuffled = shuffleArray([...arr])
       expect(shuffled).toHaveLength(5)
-      expect(shuffled.sort((a, b) => a - b)).toEqual(arr.sort((a, b) => a - b))
+      expect(shuffled.toSorted((a, b) => a - b)).toEqual(
+        arr.toSorted((a, b) => a - b)
+      )
     })
 
     it('should handle single element', () => {
@@ -322,8 +320,8 @@ describe('utilities', () => {
     describe('setCellCoords', () => {
       it('should set r and c in cell dataset', () => {
         setCellCoords(mockCell, 5, 10)
-        expect(mockCell.dataset.r).toBe(5)
-        expect(mockCell.dataset.c).toBe(10)
+        expect(mockCell.dataset.r).toBe('5')
+        expect(mockCell.dataset.c).toBe('10')
       })
     })
 
@@ -342,24 +340,6 @@ describe('utilities', () => {
       it('should handle empty list', () => {
         setCellList(mockCell, [])
         expect(listFromCell(mockCell)).toEqual([])
-      })
-    })
-
-    describe('keyListFromCell and keyIdsListFromCell', () => {
-      it('should retrieve pipe-delimited key list', () => {
-        mockCell.dataset.myKeys = 'key1|key2|key3'
-        const result = keyListFromCell(mockCell, 'myKeys')
-        expect(result).toEqual(['key1', 'key2', 'key3'])
-      })
-
-      it('should return null if key not in dataset', () => {
-        expect(keyListFromCell(mockCell, 'missing')).toBe(null)
-      })
-
-      it('should work with keyIdsListFromCell', () => {
-        mockCell.dataset.ids = '1|2|3'
-        const result = keyIdsListFromCell(mockCell, 'ids')
-        expect(result).toEqual(['1', '2', '3'])
       })
     })
 

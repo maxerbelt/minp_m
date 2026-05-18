@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 import { Waters } from './Waters.js'

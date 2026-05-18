@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 /* global describe, it, expect, beforeEach, afterEach, jest */
 
 import { ColorPackedDraw } from './colorpackeddraw.js'

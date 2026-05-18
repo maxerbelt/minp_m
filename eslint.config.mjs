@@ -11,5 +11,19 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
     }
+  },
+  {
+    files: ['**/*.test.{js,mjs,cjs}'],
+    plugins: { js },
+    extends: ['js/recommended'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.jest
+      }
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+    }
   }
 ])

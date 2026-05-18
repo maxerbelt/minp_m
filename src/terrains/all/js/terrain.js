@@ -2,17 +2,38 @@ import { SubTerrainBase } from './SubTerrainBase.js'
 import { bh } from './bh.js'
 
 /**
+ * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
+ * @typedef {Object} Weapon
+ * @property {string} letter
+ * @property {Function} clone
+ * @typedef {Object<string, string>} TerrainSoundConfig
+ * @typedef {Object} TerrainShipCatalogue
+ * @property {*} baseShapes
+ * @property {(letter: string, middle: string) => string} sunkDescription
+ * @property {Function} [addShapes]
+ * @property {Object<string, string>} [descriptions]
+ * @property {Object<string, any>} [types]
+ * @typedef {Object} WeaponCatalogue
+ * @property {Function} addWeapons
+ * @property {Weapon[]} weapons
+ * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string} TextContentRenderer
+ * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string} InnerHTMLRenderer
+ * @typedef {(letter: string, description: string, el: HTMLElement, key: string, className: string) => boolean} ClassPredicate
+ * @typedef {{ title: string }} CustomMap
+ */
+
+/**
  * Represents a terrain with ships, subterrains, and custom maps management.
  */
 export class Terrain {
   /**
    * @param {string} title - The title of the terrain
-   * @param {Object} shipCatalogue - The ship catalogue
+   * @param {TerrainShipCatalogue} shipCatalogue - The ship catalogue
    * @param {SubTerrain[]} subterrains - Array of subterrains
    * @param {string} tag - The tag for the terrain
    * @param {string} [mapHeading='Waters'] - Heading for the map
    * @param {string} [fleetHeading='Fleet'] - Heading for the fleet
-   * @param {Object} sounds - Sound configuration
+   * @param {TerrainSoundConfig} [sounds] - Sound configuration
    */
   constructor (
     title,
@@ -21,17 +42,17 @@ export class Terrain {
     tag,
     mapHeading,
     fleetHeading,
-    sounds
+    sounds = {}
   ) {
     /** @type {string} */
     this.title = title || 'Unknown'
     /** @type {string} */
     this.key = title.toLowerCase().replaceAll(/\s+/g, '-')
-    /** @type {Object} */
+    /** @type {TerrainShipCatalogue} */
     this.ships = shipCatalogue
-    /** @type {Object|null} */
+    /** @type {WeaponCatalogue|null} */
     this.weapons = null //weaponsCatalogue
-    /** @type {Object} */
+    /** @type {TerrainSoundConfig} */
     this.sounds = sounds
     /** @type {number} */
     this.minWidth = MIN_CUSTOM_WIDTH
@@ -67,40 +88,35 @@ export class Terrain {
   /**
    * Customizes unit descriptions for a given element tag.
    * @param {string} elementTag - The element tag to customize
-   * @param {Function} [textContent] - Function to set text content
-   * @param {Function} [innerHTML] - Function to set inner HTML
+   * @param {TextContentRenderer} [textContent] - Function to set text content
+   * @param {InnerHTMLRenderer} [innerHTML] - Function to set inner HTML
    */
-  static customizeUnitDescriptions (
-    elementTag,
-    textContent = Function.prototype,
-    innerHTML = Function.prototype
-  ) {
+  static customizeUnitDescriptions (elementTag, textContent, innerHTML) {
     bh.customizeUnits(elementTag, (letter, description, el, key) => {
-      if (textContent !== Function.prototype)
+      if (typeof textContent === 'function') {
         el.textContent = textContent(letter, description, el, key)
-      if (innerHTML !== Function.prototype)
+      }
+      if (typeof innerHTML === 'function') {
         el.innerHTML = innerHTML(letter, description, el, key)
+      }
     })
   }
 
   /**
    * Shows or hides units based on a condition.
    * @param {string} elementTag - The element tag
-   * @param {Function} [hasClass] - Function to determine if class should be added
+   * @param {ClassPredicate} [hasClass] - Function to determine if class should be added
    * @param {string} [className='hidden'] - The class name to toggle
    */
-  static showsUnits (
-    elementTag,
-    hasClass = Function.prototype,
-    className = 'hidden'
-  ) {
+  static showsUnits (elementTag, hasClass, className = 'hidden') {
     bh.customizeUnits(elementTag, (letter, description, el, key) => {
-      if (hasClass !== Function.prototype)
+      if (typeof hasClass === 'function') {
         if (hasClass(letter, description, el, key, className)) {
           el.classList.remove(className)
         } else {
           el.classList.add(className)
         }
+      }
     })
   }
 
@@ -132,7 +148,7 @@ export class Terrain {
   /**
    * Gets a weapon by letter.
    * @param {string} letter - The weapon letter
-   * @returns {Object|null} The weapon or null
+   * @returns {Weapon|null} The weapon or null
    */
   getWeapon (letter) {
     return this.weapons?.weapons.find(w => w.letter === letter) || null
@@ -240,7 +256,7 @@ export class Terrain {
 
   /**
    * Renames a custom map.
-   * @param {Object} oldMap - The old map object
+   * @param {CustomMap} oldMap - The old map object
    * @param {string} newTitle - The new title
    */
   renameCustomMaps (oldMap, newTitle) {
@@ -253,8 +269,8 @@ export class Terrain {
 
   /**
    * Gets custom maps using a builder function.
-   * @param {Function} builder - The builder function
-   * @returns {Array} Array of built maps
+   * @param {(title: string) => unknown} builder - The builder function
+   * @returns {Array<unknown>} Array of built maps
    */
   getCustomMaps (builder) {
     return [...this._getCustomMapSet()]

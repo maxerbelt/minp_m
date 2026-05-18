@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, jest, it, expect, beforeEach } from '@jest/globals'
 
 /* global describe, jest, it, expect, beforeEach */

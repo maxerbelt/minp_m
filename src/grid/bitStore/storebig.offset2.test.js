@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 /* global describe, it, expect */
 import { StoreBig } from './storeBig.js'
 import { Mask } from '../rectangle/mask.js'

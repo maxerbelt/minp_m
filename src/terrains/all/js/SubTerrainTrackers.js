@@ -2,6 +2,11 @@ import { bh } from './bh.js'
 import { makeKey, parsePair, addCellToFootPrint } from './terrain.js'
 
 /**
+ * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
+ * @typedef {import('./SubTerrainBase.js').SubTerrainZone} Zone
+ */
+
+/**
  * Manages tracking of multiple subterrains on a map.
  */
 export class SubTerrainTrackers {

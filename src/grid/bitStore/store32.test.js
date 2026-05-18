@@ -1,5 +1,5 @@
 // src/grid/store32.test.js
-/* eslint-env jest */
+/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 /* global describe, it, expect, beforeEach */
 import { describe, it, expect, beforeEach } from '@jest/globals'
 import { Store32 } from './store32.js'
