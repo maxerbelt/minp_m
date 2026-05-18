@@ -1062,7 +1062,6 @@ describe('Enemy.updateWeaponStatus', () => {
       Enemy = class {
         constructor () {
           // NOSONAR - Test mock class
-          this.selectedCellCoordinates = null
           this.opponent = mockOpponent
           this.loadOut = { getCurrentWeaponSystem: jest.fn() }
           this.timeoutId = null
@@ -1089,6 +1088,8 @@ describe('Enemy.updateWeaponStatus', () => {
             }
           }
         }
+
+        selectedCellCoordinates = null
       }
     })
 

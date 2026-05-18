@@ -1103,7 +1103,10 @@ export class LoadOut {
     this.selectedCoordinates = []
 
     const unattachedWeaponSystem = this._resolveUnattachedWeaponForClear()
-    if (!unattachedWeaponSystem) return
+    if (!unattachedWeaponSystem) {
+      this.notifyCursorChange(oldCursor)
+      return
+    }
 
     this._handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
   }

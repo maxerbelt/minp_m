@@ -143,6 +143,16 @@ describe('LoadOut', () => {
     expect(loadOut.selectedCoordinates).toEqual([])
   })
 
+  it('clearSelectedCoordinates notifies cursor change when no unattached weapon exists', () => {
+    loadOut.selectedCoordinates = [[1, 2]]
+    loadOut.onCursorChangeCallback = jest.fn()
+    loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+
+    loadOut.clearSelectedCoordinates()
+
+    expect(loadOut.onCursorChangeCallback).toHaveBeenCalled()
+  })
+
   it('fireWeapon calls onDestroy or onReveal', () => {
     const map = {}
     const coords = [[1, 2]]
