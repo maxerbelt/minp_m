@@ -221,16 +221,14 @@ export class Weapon {
    * Get hint text for weapon step.\n   *
    * @param {number} idx - Step index (0 for initial, 1+ for targeting)\n   * @returns {string} Help text describing the action for this step\n   */
   stepHint (idx) {
-    switch (idx) {
-      case 0:
-        return this.launchCursor
-          ? 'Click on square in Friendly ' + bh.mapHeading + ' to select weapon'
-          : 'Click on square in Enemy ' +
-              bh.mapHeading +
-              ' to select launch point'
-      default:
-        return 'Click on square in Enemy ' + bh.mapHeading + ' to aim and fire'
+    if (idx === 0) {
+      return this.launchCursor
+        ? 'Click on square in Friendly ' + bh.mapHeading + ' to select weapon'
+        : 'Click on square in Enemy ' +
+            bh.mapHeading +
+            ' to select launch point'
     }
+    return 'Click on square in Enemy ' + bh.mapHeading + ' to aim and fire'
   }
   /**
    * Get total number of steps for weapon targeting sequence.

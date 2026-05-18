@@ -549,9 +549,8 @@ class Enemy extends Waters {
 
     // Debug: inspect weapon systems available when wiring buttons
     try {
-      const all = (this.loadOut && this.loadOut.weaponSystems) || []
-      const limited =
-        (this.loadOut && this.loadOut.getLimitedWeaponSystems()) || []
+      const all = this.loadOut?.weaponSystems || []
+      const limited = this.loadOut?.getLimitedWeaponSystems() || []
       const allInfo = all.map(wps => ({
         letter: wps.weapon?.letter,
         tag: wps.weapon?.tag,

@@ -356,7 +356,7 @@ export class Friend extends Placement {
    * @private
    */
   async randomBomb () {
-    const result = await this._attemptBombAtImpactLevel()
+    const result = await this._attemptBomb()
     if (result) return result
 
     return LoadOut.noResult
