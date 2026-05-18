@@ -997,17 +997,13 @@ class Enemy extends Waters {
    */
   updateWeaponStatus (_rack, _cursorInfo) {
     const weaponSystem = this.loadOut.getCurrentWeaponSystem()
-    const weapon = weaponSystem?.weapon
+    gameStatus.updateWeaponStatus(
+      weaponSystem,
+      bh.maps,
+      this.loadOut.selectedCoordinates.length,
 
-    if (weapon) {
-      gameStatus.displayAmmoStatus(
-        weaponSystem,
-        bh.maps,
-        this.loadOut.selectedCoordinates.length,
-        null,
-        this._hasUnattachedForCurrentWeapon?.()
-      )
-    }
+      this._hasUnattachedForCurrentWeapon?.()
+    )
   }
 
   /**

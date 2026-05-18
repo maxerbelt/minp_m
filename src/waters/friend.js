@@ -5,7 +5,7 @@ import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Player } from './steps.js'
 import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
-import { Placement } from './placement.js'
+import { Placement } from './Placement.js'
 
 const ENEMY_TURN_DELAY = 50
 
@@ -136,20 +136,13 @@ export class Friend extends Placement {
    */
   updateWeaponStatus (_rack, _cursorInfo) {
     const weaponSystem = this.loadOut.getCurrentWeaponSystem()
-    const weapon = weaponSystem?.weapon
+    gameStatus.updateWeaponStatus(
+      weaponSystem,
+      bh.maps,
+      this.loadOut.selectedCoordinates.length,
 
-    if (weapon) {
-      // Always set the weapon mode and reset icons to ensure UI updates on weapon change
-      gameStatus._setWeaponMode(weapon)
-      gameStatus._resetAmmoIcons()
-      gameStatus.displayAmmoStatus(
-        weaponSystem,
-        bh.maps,
-        this.loadOut.selectedCoordinates.length,
-        null,
-        this._hasUnattachedForCurrentWeapon?.()
-      )
-    }
+      this._hasUnattachedForCurrentWeapon?.()
+    )
   }
 
   /**
@@ -896,11 +889,9 @@ export class Friend extends Placement {
       this._onFirstClickSelection()
       this.selectedCellCoordinates = { r, c }
       return
-    } else {
-      // Second click: fire at target
-      this._onSecondClickFire(r, c)
-      return
     }
+    // Second click: fire at target
+    this._onSecondClickFire(r, c)
   }
 
   /**

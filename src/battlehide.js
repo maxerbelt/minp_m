@@ -538,4 +538,4 @@ async function _initializeHideGameMode () {
 }
 
 // Start game initialization
-_initializeHideGameMode()
+await _initializeHideGameMode()

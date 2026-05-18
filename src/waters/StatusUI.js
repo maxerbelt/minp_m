@@ -359,7 +359,16 @@ class StatusUI {
       this.addToQueue(game, false)
     }
   }
+  updateWeaponStatus (weaponSystem, maps, numCoords, unattached) {
+    const weapon = weaponSystem?.weapon
 
+    if (weapon) {
+      // Always set the weapon mode and reset icons to ensure UI updates on weapon change
+      this._setWeaponMode(weapon)
+      this._resetAmmoIcons()
+      this.displayAmmoStatus(weaponSystem, maps, numCoords, null, unattached)
+    }
+  }
   /**
    * Displays ammo status for a weapon system.
    * @param {Object} wps - The weapon system

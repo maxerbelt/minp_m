@@ -20,20 +20,6 @@ export const gameHost = {
 }
 const startCharCode = 65
 
-const DEFAULT_CELL_CLEAN_CLASSES = [
-  'semi',
-  'semi-miss',
-  'wake',
-  'weapon',
-  'portal',
-  'marker',
-  'turn2',
-  'turn3',
-  'turn4',
-  'empty',
-  'active'
-]
-
 /**
  * Retrieves all child elements from a board element.
  * @param {HTMLElement|null} board - The board element
