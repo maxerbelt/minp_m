@@ -40,6 +40,7 @@ const mockUI = {
   showStatus: jest.fn(),
   showTips: jest.fn(),
   hideTips: jest.fn(),
+  displayInfo: jest.fn(),
 
   showTransformBtns: jest.fn(),
   hideTransformBtns: jest.fn(),
@@ -222,6 +223,31 @@ describe('Waters', () => {
   it('autoPlace returns true if placement successful', () => {
     waters.attemptToPlaceShips = jest.fn(() => true)
     expect(waters.autoPlace()).toBe(true)
+  })
+
+  describe('displayAutoSelectWarning', () => {
+    it('displays a warning using ship description when currentShip exists', () => {
+      waters.displayInfo = jest.fn()
+      const currentShip = {
+        shape: () => ({ descriptionText: 'the enemy ship' })
+      }
+
+      waters.displayAutoSelectWarning('Torpedo', currentShip)
+
+      expect(waters.displayInfo).toHaveBeenCalledWith(
+        'Auto-selected Torpedo, Click near the enemy ship to select a different Torpedo'
+      )
+    })
+
+    it('falls back when currentShip is undefined', () => {
+      waters.displayInfo = jest.fn()
+
+      waters.displayAutoSelectWarning('Depth Charge', undefined)
+
+      expect(waters.displayInfo).toHaveBeenCalledWith(
+        'Auto-selected Depth Charge, Click near the ship to select a different Depth Charge'
+      )
+    })
   })
 
   describe('loadForEdit', () => {

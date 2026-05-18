@@ -884,13 +884,15 @@ export class Waters {
   /**
    * Displays auto-selection warning for weapons.
    * @param {string} weaponName - Name of the weapon
-   * @param {Object} currentShip - The ship with the weapon
+   * @param {Object|undefined} currentShip - The ship with the weapon
+   *
+   * currentShip may be undefined in some auto-selection flows, so this method
+   * must safely handle a missing ship shape instead of throwing.
    */
   displayAutoSelectWarning (weaponName, currentShip) {
+    const shipDescription = currentShip?.shape?.().descriptionText || 'the ship'
     this.displayInfo(
-      `Auto-selected ${weaponName}, Click near ${
-        currentShip.shape().descriptionText
-      } to select a different ${weaponName}`
+      `Auto-selected ${weaponName}, Click near ${shipDescription} to select a different ${weaponName}`
     )
   }
 
