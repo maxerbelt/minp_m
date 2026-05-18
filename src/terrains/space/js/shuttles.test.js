@@ -1,7 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-
-/* global describe, it, expect  */
-
 import {
   corvette,
   lifter,
@@ -11,6 +7,7 @@ import {
   scoutShip
 } from './shuttles'
 import { Shuttle, ArmedShuttle } from './spaceShapes'
+import { asteroid, space } from './space'
 import { describe, it, expect } from '@jest/globals'
 
 // Jest it suite
@@ -34,10 +31,18 @@ describe('shuttles exports basic', () => {
 
     // weapon factory may be lazy; ensure attachWeapon was called
     // missileBoat.attachWeapon()
-    const w = missileBoat.attachedWeapons?.[0]
-    //   expect(w).toBeDefined()
+    //const w =
+    // missileBoat.attachedWeapons?.[0]
+    //expect(w).toBeDefined()
 
     expect(missileBoat.description()).toBe('Missile Boat')
+  })
+
+  it('missileBoat shuttle placement remains universal across space/asteroid terrain', () => {
+    expect(missileBoat.canBeOn).toBeInstanceOf(Function)
+    expect(missileBoat.canBeOn(space)).toBe(true)
+    expect(missileBoat.canBeOn(asteroid)).toBe(true)
+    expect(missileBoat.zoneDetail).toBe(0)
   })
 
   it('other shuttles exported', () => {

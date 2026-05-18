@@ -56,10 +56,12 @@ describe('space.js subterrains', () => {
     expect(asteroid.zones).toContain(core)
   })
 
-  it('all subterrain has no zones', () => {
+  it('all subterrain has no zones and accepts all placements', () => {
     expect(all).toBeInstanceOf(SubTerrainBase)
     expect(all.title).toBe('Shuttle')
     expect(all.zones.length).toBe(0)
+    expect(all.canBe(space)).toBe(true)
+    expect(all.validator([])).toBe(true)
   })
 })
 

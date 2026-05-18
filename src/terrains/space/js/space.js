@@ -73,6 +73,13 @@ export const all = new SubTerrainBase(
   []
 )
 
+// The shuttle terrain is intentionally universal so that shuttle shapes are
+// not restricted by specific subterrain or zone validation. This is required
+// for space/asteroid hide-and-seek placement where shuttles can occupy any
+// map location.
+all.canBe = () => true
+all.validator = () => true
+
 /**
  * Complete space and asteroids terrain configuration.
  * Combines space and asteroid sub-terrains with weapon sounds and terrain properties.

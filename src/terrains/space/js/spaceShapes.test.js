@@ -56,6 +56,10 @@ describe('Validators and canBe static methods', () => {
 
   test('Shuttle accepts all via static canBe', () => {
     expect(Shuttle.canBe).toBe(all.canBe)
+    expect(Shuttle.canBe(space, deep)).toBe(true)
+    expect(Shuttle.validator([asteroid, surface])).toBe(true)
+    expect(Shuttle.zoneDetail).toBe(0)
+    expect(all.zoneDetail).toBe(0)
   })
 })
 

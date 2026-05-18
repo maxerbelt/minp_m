@@ -1,6 +1,20 @@
 import { Random } from './Random.js'
 
 /**
+ * @typedef {[number|bigint, number|bigint, number?]} Coordinate
+ */
+
+/**
+ * @typedef {Object} MinMaxBounds
+ * @property {number} minX
+ * @property {number} maxX
+ * @property {number} minY
+ * @property {number} maxY
+ * @property {number} depth
+ * @property {boolean} hasColor
+ */
+
+/**
  * Shuffles the elements of an array in place using Fisher-Yates algorithm.
  * @param {Array} array - The array to shuffle
  * @returns {Array} The shuffled array
@@ -108,10 +122,17 @@ export function dedupCSV (str, delimiter) {
 export function makeKey (row, col) {
   return `${row},${col}`
 }
+
+/**
+ * Converts a coordinate tuple into a key string.
+ * @param {Coordinate} coord - Coordinate tuple [row, col]
+ * @returns {string} Key string
+ */
 export function coordToKey (...coord) {
   const [row, col] = coord
   return `${row},${col}`
 }
+
 /**
  * Parses a key string into row and column coordinates.
  * @param {string} key - Key string
@@ -318,6 +339,11 @@ export function lazy (obj, prop, fn) {
  * @param {number|bigint} value - Numeric coordinate value
  * @returns {number} Normalized coordinate value
  */
+/**
+ * Normalizes numeric coordinate values for arrays that may contain bigints.
+ * @param {number|bigint} value - Numeric coordinate value
+ * @returns {number} Normalized coordinate value
+ */
 function _coerceCoordinate (value) {
   if (typeof value === 'bigint') {
     return Number(value)
@@ -325,39 +351,48 @@ function _coerceCoordinate (value) {
   return value
 }
 
+/**
+ * Computes min/max bounds over a list of 2D or 3D coordinates.
+ * @param {Array<Coordinate>} arr - Array of coordinate tuples
+ * @returns {MinMaxBounds} Bounding values and depth metadata
+ */
 export function minMaxXY (arr) {
+  if (!arr || arr.length === 0) {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0, depth: 2, hasColor: false }
+  }
+
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
   let depth = -Infinity
-  let hasColor = false
-
-  if (!arr || arr.length === 0) {
-    return { minX: 0, maxX: 0, minY: 0, maxY: 0, depth: 2, hasColor: false }
-  }
 
   for (const element of arr) {
     const x = _coerceCoordinate(element[0])
     const y = _coerceCoordinate(element[1])
-    const z = element.at(2)
-    const zValue = z == null ? z : _coerceCoordinate(z)
+    const z = element.length > 2 ? element[2] : undefined
+    const zValue = z == null ? undefined : _coerceCoordinate(z)
 
-    if (x < minX) minX = x
-    if (x > maxX) maxX = x
+    minX = Math.min(minX, x)
+    maxX = Math.max(maxX, x)
+    minY = Math.min(minY, y)
+    maxY = Math.max(maxY, y)
 
-    if (y < minY) minY = y
-    if (y > maxY) maxY = y
-
-    if (zValue && zValue > depth) depth = zValue
+    // Only update depth for truthy z values larger than current depth
+    if (zValue && zValue > depth) {
+      depth = zValue
+    }
   }
-  if (depth === -Infinity) {
-    depth = 2
-  } else {
-    hasColor = true
-    depth += 1
+
+  const hasColor = depth !== -Infinity
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    depth: hasColor ? depth + 1 : 2,
+    hasColor
   }
-  return { minX, maxX, minY, maxY, depth, hasColor }
 }
 
 /**

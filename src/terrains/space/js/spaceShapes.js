@@ -201,6 +201,8 @@ export class Shuttle extends SpaceShape {
   }
 
   static subterrain = all
+  // `all` represents the universal shuttle terrain and must accept every
+  // placement location regardless of underlying space or asteroid zone.
   static canBe = all.canBe
   static validator = all.canBe
   static zoneDetail = all.zoneDetail

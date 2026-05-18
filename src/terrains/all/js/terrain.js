@@ -330,6 +330,12 @@ export const all = new SubTerrainBase(
   []
 )
 
+// The generic Air subterrain must accept any placement location for shapes
+// that are not constrained to land or sea. This prevents arbitrary zone
+// validation from rejecting universal placement shapes.
+all.canBe = () => true
+all.validator = () => true
+
 export const mixed = new SubTerrainBase(
   'Mixed',
   '#888',
