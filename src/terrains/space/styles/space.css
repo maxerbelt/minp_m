@@ -95,7 +95,8 @@ seeking-mode .board.rail.not-step {
     cursor: var(--bolt-grey-cursor-image) 26 26, pointer;
 }
 
-.board.missile.not-step.seeking-mode .board.missile {
+.board.missile.not-step.seeking-mode,
+.board.missile {
     cursor: var(--missile-cursor-image) 6 6, pointer;
 }
 
