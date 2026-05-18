@@ -31,6 +31,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
       tag: 'demo',
       allSubterrainTag: () => ''
     })),
+    terrainByTitle: title => ({ title }),
     map: {
       rows: 10,
       cols: 10,
@@ -43,6 +44,29 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
       },
       blankGrid: [],
       inBounds: () => true
+    }
+  }
+}))
+
+// Mock Waters base class before importing Enemy so the module load does not execute
+// the full game engine initialization path or terrain assembly.
+jest.unstable_mockModule('./Waters.js', () => ({
+  Waters: class {
+    constructor (ui) {
+      this.UI = ui
+      this.steps = {
+        onBeginTurn: null,
+        onDeactivate: null,
+        onActivate: null,
+        onSelect: null,
+        onAim: null,
+        onChangeWeapon: null,
+        clearSource: jest.fn(),
+        addSource: jest.fn()
+      }
+      this.loadOut = {}
+      this.opponent = null
+      this.boardDestroyed = false
     }
   }
 }))
@@ -103,7 +127,13 @@ describe('Enemy.updateWeaponStatus', () => {
 
     // Create a basic mock UI
     const mockUI = {
-      board: { classList: { add: jest.fn(), remove: jest.fn() } },
+      board: {
+        classList: {
+          add: jest.fn(),
+          remove: jest.fn(),
+          [Symbol.iterator]: function* () {}
+        }
+      },
       buildBoard: jest.fn(),
       enableBtns: jest.fn(),
       cellWeaponActive: jest.fn(),
@@ -153,14 +183,30 @@ describe('Enemy.updateWeaponStatus', () => {
         const newCursor = newCursorInfo?.cursor
         if (newCursor === oldCursor) return
         const board = this.UI.board.classList
-        // FIX: Only remove old cursor if there's a valid new cursor to replace it with
-        if (oldCursor !== '' && newCursor !== '') {
-          board.remove(oldCursor)
-        }
-        // Add the new cursor only if it's not empty
+
         if (newCursor !== '') {
+          if (oldCursor) {
+            board.remove(oldCursor)
+          }
+          const staleCursorClasses = []
+          for (const cls of board) {
+            if (cls.startsWith('cursor-') || cls.includes('cursor')) {
+              staleCursorClasses.push(cls)
+            }
+          }
+          const uniqueStaleClasses = [...new Set(staleCursorClasses)].filter(
+            Boolean
+          )
+          if (uniqueStaleClasses.length) {
+            board.remove(...uniqueStaleClasses)
+          }
           board.add(newCursor)
+        } else if (oldCursor !== '') {
+          // Do not remove the old cursor when transitioning into an empty cursor state.
+          // Empty cursor is a transient firing-ready state and should leave the
+          // prior weapon cursor visible.
         }
+
         this.updateMode(newCursorInfo.wps, newCursorInfo)
       }
 
@@ -550,6 +596,13 @@ describe('Enemy.updateWeaponStatus', () => {
     it('should add new cursor class to board when cursor changes', () => {
       const enemy = new Enemy()
       enemy.updateMode = jest.fn()
+      enemy.UI.board.classList = {
+        add: jest.fn(),
+        remove: jest.fn(),
+        [Symbol.iterator]: function* () {
+          yield 'cross'
+        }
+      }
 
       const oldCursor = 'cross'
       const newCursor = 'square'
@@ -562,6 +615,36 @@ describe('Enemy.updateWeaponStatus', () => {
 
       expect(enemy.UI.board.classList.remove).toHaveBeenCalledWith(oldCursor)
       expect(enemy.UI.board.classList.add).toHaveBeenCalledWith(newCursor)
+      expect(enemy.updateMode).toHaveBeenCalled()
+    })
+
+    it('should clear stale board cursor classes when switching to a new cursor', () => {
+      const enemy = new Enemy()
+      enemy.updateMode = jest.fn()
+
+      const boardClassList = {
+        add: jest.fn(),
+        remove: jest.fn(),
+        [Symbol.iterator]: function* () {
+          yield 'cursor-old'
+          yield 'cursor-stale'
+          yield 'other-class'
+        }
+      }
+      enemy.UI.board.classList = boardClassList
+
+      const newCursorInfo = {
+        cursor: 'cursor-new',
+        wps: { weapon: { letter: 'M' } }
+      }
+
+      enemy.cursorChange('', newCursorInfo)
+
+      expect(boardClassList.remove).toHaveBeenCalledWith(
+        'cursor-old',
+        'cursor-stale'
+      )
+      expect(boardClassList.add).toHaveBeenCalledWith('cursor-new')
       expect(enemy.updateMode).toHaveBeenCalled()
     })
 
@@ -1036,6 +1119,44 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.selectedCellCoordinates).toBeNull()
     })
 
+    it('should bypass two-click behavior for single shot weapons even when opponent has attached weapons', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const enemy = {
+        opponent: { hasAttachedWeapons: true },
+        loadOut: {
+          isSingleShot: true,
+          getCurrentWeaponSystem: jest.fn(() => ({ weapon: {} }))
+        },
+        selectedCellCoordinates: { r: 0, c: 0 },
+        canTakeTurn: jest.fn(() => true),
+        fireWeaponAt: jest.fn(async () => ({
+          weapon: 'single-shot',
+          score: { hits: 0 }
+        })),
+        _shouldWaitForWeaponResult: jest.fn(() => false),
+        _processWeaponResult: jest.fn(),
+        _finalizeTurn: jest.fn(),
+        _onFirstClickSelection: jest.fn(),
+        _onSecondClickFire: jest.fn()
+      }
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 1, 2)
+
+      expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
+        1,
+        2,
+        enemy.loadOut.getCurrentWeaponSystem()
+      )
+      expect(enemy._processWeaponResult).toHaveBeenCalledWith({
+        weapon: 'single-shot',
+        score: { hits: 0 }
+      })
+      expect(enemy._finalizeTurn).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy._onFirstClickSelection).not.toHaveBeenCalled()
+      expect(enemy._onSecondClickFire).not.toHaveBeenCalled()
+    })
+
     it('should respect opponent.hasAttachedWeapons check (NOT bh.seekingMode)', async () => {
       const enemy = new Enemy()
 
@@ -1047,6 +1168,52 @@ describe('Enemy.updateWeaponStatus', () => {
       // Should still use two-click because opponent has attached weapons
       expect(enemy._onFirstClickSelection).toHaveBeenCalled()
       expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
+    })
+  })
+
+  describe('_onSecondClickFire regression', () => {
+    let EnemyClass
+
+    beforeAll(async () => {
+      const module = await import('./enemy.js')
+      EnemyClass = module.Enemy
+    })
+
+    it('should initialize weapon fire handlers and clear selectedCellCoordinates', async () => {
+      const enemy = {
+        selectedCellCoordinates: { r: 2, c: 3 },
+        loadOut: { selectedWeapon: { id: 'mock-weapon' } },
+        setWeaponFireHandlers: jest.fn(),
+        fireWeaponAt: jest.fn(async () => ({
+          weapon: 'mock-weapon',
+          score: { hits: 1, shots: 1 }
+        })),
+        opponent: {
+          updateResultsOfBomb: jest.fn(),
+          updateUI: jest.fn()
+        },
+        updateUI: jest.fn(),
+        _finalizeTurn: jest.fn()
+      }
+
+      await EnemyClass.prototype._onSecondClickFire.call(enemy, 4, 5)
+
+      expect(enemy.setWeaponFireHandlers).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
+        4,
+        5,
+        enemy.loadOut.selectedWeapon
+      )
+      expect(enemy.opponent.updateResultsOfBomb).toHaveBeenCalledWith(
+        'mock-weapon',
+        {
+          hits: 1,
+          shots: 1
+        }
+      )
+      expect(enemy.updateUI).toHaveBeenCalled()
+      expect(enemy._finalizeTurn).toHaveBeenCalled()
     })
   })
 
@@ -1176,6 +1343,39 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy._handleWeaponChange()
 
       expect(enemy.setBoardTargetingState).toHaveBeenCalled()
+    })
+
+    it('should clear stale board cursor classes when weapon changes', () => {
+      const enemy = new Enemy()
+      enemy.UI.board.classList = {
+        add: jest.fn(),
+        remove: jest.fn(),
+        [Symbol.iterator]: function* () {
+          yield 'cursor-rail-bolt'
+          yield 'other-class'
+        }
+      }
+      enemy.UI.board.children = [
+        {
+          classList: {
+            add: jest.fn(),
+            remove: jest.fn(),
+            [Symbol.iterator]: function* () {
+              yield 'cursor-missile'
+            }
+          }
+        }
+      ]
+      enemy._clearCursorClassesFromElement = jest.fn(function (element) {
+        if (element && element.classList?.remove) {
+          element.classList.remove('cursor-rail-bolt')
+          element.classList.remove('cursor-missile')
+        }
+      })
+
+      enemy._handleWeaponChange()
+
+      expect(enemy._clearCursorClassesFromElement).toHaveBeenCalled()
     })
 
     it('should clear all three components: selection, ship, and hint', () => {

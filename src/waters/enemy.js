@@ -208,20 +208,33 @@ class Enemy extends Waters {
    * Cursor classes are attached both to the board element itself and to individual cells.
    * @private
    */
+  _clearCursorClassesFromElement (element) {
+    if (!element?.classList) return
+
+    const staleCursorClasses = []
+    for (const cls of Array.from(element.classList)) {
+      if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
+        staleCursorClasses.push(cls)
+      }
+    }
+    if (staleCursorClasses.length) {
+      element.classList.remove(...new Set(staleCursorClasses))
+    }
+    CellClassManager.removeCursorClasses(element)
+  }
+
   _clearBoardCursorClasses () {
     const board = this.UI?.board
     if (!board) return
 
-    // Remove cursor classes from the board element itself
-    CellClassManager.removeCursorClasses(board)
+    this._clearCursorClassesFromElement(board)
 
-    // Assume direct children are cell elements; fall back to querySelectorAll if needed
     const cells = board.children?.length
       ? board.children
       : board.querySelectorAll('*')
     for (const cell of cells) {
       try {
-        CellClassManager.removeCursorClasses(cell)
+        this._clearCursorClassesFromElement(cell)
       } catch (err) {
         // ignore non-element nodes or unexpected structure
       }
@@ -380,15 +393,33 @@ class Enemy extends Waters {
 
     const board = this.UI.board.classList
 
-    // Only remove old cursor if there's a valid new cursor to replace it with
-    // Do NOT remove if newCursor is empty - that's a transient firing-ready state
-    if (oldCursor !== '' && newCursor !== '') {
-      board.remove(oldCursor)
-    }
-
-    // Add the new cursor only if it's not empty
+    // When switching to a new non-empty cursor, remove any stale cursor classes
+    // from the board before adding the new one. This prevents multiple cursor
+    // classes from accumulating during weapon/step changes.
     if (newCursor !== '') {
+      if (oldCursor) {
+        board.remove(oldCursor)
+      }
+      const staleCursorClasses = []
+      for (const cls of board) {
+        if (
+          cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) ||
+          cls.includes('cursor')
+        ) {
+          staleCursorClasses.push(cls)
+        }
+      }
+      const uniqueStaleClasses = [...new Set(staleCursorClasses)].filter(
+        Boolean
+      )
+      if (uniqueStaleClasses.length) {
+        board.remove(...uniqueStaleClasses)
+      }
       board.add(newCursor)
+    } else if (oldCursor !== '') {
+      // Do NOT remove the old cursor when transitioning into an empty cursor
+      // state; empty cursor is a transient firing-ready state and should leave
+      // the previous weapon cursor visible.
     }
 
     this.updateMode(newCursorInfo.wps, newCursorInfo)
@@ -784,6 +815,11 @@ class Enemy extends Waters {
    * @returns {Promise<void>}
    */
   async _onSecondClickFire (r, c) {
+    // Ensure fire handlers are attached before firing.
+    // This is required for the two-click Hide/Seek path because the selected
+    // weapon may be armed earlier on the first click, but the actual fire
+    // callbacks are only finalized here.
+    // Without this call, the shot can animate but never deliver hit/miss results.
     this.setWeaponFireHandlers()
     this.selectedCellCoordinates = null
     const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
@@ -819,6 +855,19 @@ class Enemy extends Waters {
    */
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
+
+    if (this.loadOut?.isSingleShot) {
+      this.selectedCellCoordinates = null
+      const result = await this.fireWeaponAt(
+        r,
+        c,
+        this.loadOut.getCurrentWeaponSystem()
+      )
+      if (this._shouldWaitForWeaponResult(result)) return
+      this._processWeaponResult(result)
+      this._finalizeTurn()
+      return
+    }
 
     // Two-click behavior: Check opponent has attached weapons, NOT seekingMode flag
     // This allows Hide & Seek mode to work correctly while seekingMode = false
@@ -1085,6 +1134,7 @@ class Enemy extends Waters {
     // Clear all state systems in logical order
     this._clearCoordinateState()
     this._clearSelectionVisualState()
+    this._clearBoardCursorClasses()
     this._updateBoardCursor(null)
     this._updateBoardTargetingState()
   }
