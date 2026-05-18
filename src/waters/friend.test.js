@@ -111,13 +111,41 @@ jest.unstable_mockModule('./Waters.js', () => ({
 }))
 
 // Mock drag handlers to avoid DOM setup errors in tests
-jest.unstable_mockModule('../selection/dragndrop.js', () => ({
-  setupDragHandlers: jest.fn()
-}))
+// Mock drag handlers to avoid DOM setup errors in tests
+// Export both the local and parent-relative specifiers used across modules
+const mockDragModule = {
+  setupDragHandlers: jest.fn(),
+  setupDragBrushHandlers: jest.fn(),
+  getShipIdFromElement: jest.fn(el => Number.parseInt(el?.dataset?.id || '')),
+  dragNDrop: {
+    getClickedShip: jest.fn(() => null),
+    setClickedShip: jest.fn(),
+    dragEnd: jest.fn(),
+    dragBrushEnd: jest.fn(),
+    highlight: jest.fn(),
+    handleDropEvent: jest.fn(),
+    drop: jest.fn(),
+    dragEnter: jest.fn(),
+    addWeaponDrop: jest.fn(),
+    addDrop: jest.fn(),
+    dragBrushEnter: jest.fn()
+  }
+}
+jest.unstable_mockModule('../selection/dragndrop.js', () => mockDragModule)
 
 // Mock gameStatus to track UI update calls
 jest.unstable_mockModule('./StatusUI.js', () => ({
   gameStatus: {
+    updateWeaponStatus: function (weaponSystem, maps, numCoords, unattached) {
+      const weapon = weaponSystem?.weapon
+
+      if (weapon) {
+        // Always set the weapon mode and reset icons to ensure UI updates on weapon change
+        this._setWeaponMode(weapon)
+        this._resetAmmoIcons()
+        this.displayAmmoStatus(weaponSystem, maps, numCoords, null, unattached)
+      }
+    },
     _setWeaponMode: jest.fn(),
     _resetAmmoIcons: jest.fn(),
     displayAmmoStatus: jest.fn(),
