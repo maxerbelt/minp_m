@@ -899,6 +899,12 @@ class Enemy extends Waters {
     if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
       // Implement two-click behavior
       if (this.selectedCellCoordinates === null) {
+        // If a weapon is already selected, this is the targeting click, not
+        // a new rack selection.
+        if (this.loadOut?.selectedWeapon) {
+          await this._onSecondClickFire(r, c)
+          return
+        }
         // First click: select weapon and ship
         this._onFirstClickSelection()
         this.selectedCellCoordinates = { r, c }

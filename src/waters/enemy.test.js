@@ -1170,6 +1170,25 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
     })
 
+    it('should fire immediately when selectedWeapon already exists on first enemy click', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const enemy = {
+        opponent: { hasAttachedWeapons: true },
+        loadOut: { selectedWeapon: { id: 'mock-weapon' }, isSingleShot: false },
+        timeoutId: null,
+        canTakeTurn: jest.fn(() => true),
+        _onFirstClickSelection: jest.fn(),
+        _onSecondClickFire: jest.fn(async (_r, _c) => {}),
+        selectedCellCoordinates: null
+      }
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
+
+      expect(enemy._onFirstClickSelection).not.toHaveBeenCalled()
+      expect(enemy._onSecondClickFire).toHaveBeenCalledWith(0, 0)
+      expect(enemy.selectedCellCoordinates).toBeNull()
+    })
+
     it('should support two-click targeting in pure Seek mode when attached weapons exist and opponent reference is absent', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const enemy = new EnemyClass({
