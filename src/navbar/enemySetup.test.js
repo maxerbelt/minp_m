@@ -192,7 +192,7 @@ describe('enemySetup.js - Regression Prevention Documentation', () => {
       })
     })
 
-    it('includes selectedCellCoordinates when building preview targeting coordinates', async () => {
+    it('builds preview coordinates from selectedCoordinates when available', async () => {
       const module = await import('./enemySetup.js')
       const preview = module.__test._getPreviewTargetingCoordinates(
         {
@@ -206,8 +206,26 @@ describe('enemySetup.js - Regression Prevention Documentation', () => {
       )
 
       expect(preview).toEqual([
-        [2, 3],
         [1, 1],
+        [4, 5]
+      ])
+    })
+
+    it('falls back to selectedCellCoordinates when no selectedCoordinates are present', async () => {
+      const module = await import('./enemySetup.js')
+      const preview = module.__test._getPreviewTargetingCoordinates(
+        {
+          loadOut: {
+            selectedCoordinates: []
+          },
+          selectedCellCoordinates: { r: 2, c: 3 }
+        },
+        4,
+        5
+      )
+
+      expect(preview).toEqual([
+        [2, 3],
         [4, 5]
       ])
     })

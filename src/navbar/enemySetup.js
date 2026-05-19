@@ -412,11 +412,19 @@ export function newGame (seek, opponentBoard, friendUI) {
 function _getPreviewTargetingCoordinates (model, cellRow, cellCol) {
   const targetingCoordinates = _getTargetingCoordinates(model)
   const selectedCell = model?.selectedCellCoordinates
-  const sourceCoordinates = selectedCell
-    ? [[selectedCell.r, selectedCell.c]]
-    : []
 
-  return [...sourceCoordinates, ...targetingCoordinates, [cellRow, cellCol]]
+  if (targetingCoordinates.length > 0) {
+    return [...targetingCoordinates, [cellRow, cellCol]]
+  }
+
+  if (selectedCell) {
+    return [
+      [selectedCell.r, selectedCell.c],
+      [cellRow, cellCol]
+    ]
+  }
+
+  return [[cellRow, cellCol]]
 }
 
 function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {

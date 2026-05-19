@@ -1168,6 +1168,27 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy._onFirstClickSelection).toHaveBeenCalled()
       expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
     })
+
+    it('should support two-click targeting in pure Seek mode when attached weapons exist and opponent reference is absent', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const enemy = new EnemyClass()
+
+      enemy.canTakeTurn = jest.fn(() => true)
+      enemy.opponent = null
+      enemy.hasAttachedWeapons = true
+      enemy.loadOut = { isSingleShot: false, getCurrentWeaponSystem: jest.fn() }
+      enemy._onFirstClickSelection = jest.fn()
+      enemy._onSecondClickFire = jest.fn()
+      enemy.selectedCellCoordinates = null
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
+
+      expect(enemy._onFirstClickSelection).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 1, 1)
+      expect(enemy._onSecondClickFire).toHaveBeenCalledWith(1, 1)
+    })
   })
 
   describe('_onSecondClickFire regression', () => {
@@ -1210,6 +1231,35 @@ describe('Enemy.updateWeaponStatus', () => {
           hits: 1,
           shots: 1
         }
+      )
+      expect(enemy.updateUI).toHaveBeenCalled()
+      expect(enemy._finalizeTurn).toHaveBeenCalled()
+    })
+
+    it('should not crash when opponent is null during _onSecondClickFire', async () => {
+      const enemy = {
+        selectedCellCoordinates: { r: 2, c: 3 },
+        loadOut: { selectedWeapon: { id: 'mock-weapon' } },
+        setWeaponFireHandlers: jest.fn(),
+        fireWeaponAt: jest.fn(async () => ({
+          weapon: 'mock-weapon',
+          score: { hits: 1, shots: 1 }
+        })),
+        opponent: null,
+        updateUI: jest.fn(),
+        _finalizeTurn: jest.fn()
+      }
+
+      await expect(
+        EnemyClass.prototype._onSecondClickFire.call(enemy, 4, 5)
+      ).resolves.not.toThrow()
+
+      expect(enemy.setWeaponFireHandlers).toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toBeNull()
+      expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
+        4,
+        5,
+        enemy.loadOut.selectedWeapon
       )
       expect(enemy.updateUI).toHaveBeenCalled()
       expect(enemy._finalizeTurn).toHaveBeenCalled()

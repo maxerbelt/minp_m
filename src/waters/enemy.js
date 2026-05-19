@@ -660,9 +660,10 @@ class Enemy extends Waters {
       return result
     }
 
-    // When opponent has attached weapons, do not fall back to random selection
-    // This ensures the player's weapon choice is respected and allows multi-coordinate weapons to work
-    if (this.opponent?.hasAttachedWeapons) {
+    // When attached weapons are active, do not fall back to random selection.
+    // This ensures the player's weapon choice is respected and allows multi-coordinate
+    // weapons to continue across the two-click flow.
+    if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
       // Return the current result (null for incomplete selection, allowing next click to continue)
       return result
     }
@@ -731,10 +732,11 @@ class Enemy extends Waters {
     }
 
     const targetLetter = currentWeapon.weapon.letter
+    const shipCandidates = this.opponent?.ships || this.ships
 
     // CRITICAL: Filter to only ships that have THIS SPECIFIC WEAPON loaded
     // This prevents selecting a MissileBoat when Rail Bolt is selected
-    const shipsWithWeapon = this.opponent.ships.filter(ship => {
+    const shipsWithWeapon = shipCandidates.filter(ship => {
       const entries = ship.getLoadedWeaponEntries()
       return entries.some(
         ([_key, weapon]) => weapon.weapon?.letter === targetLetter
@@ -826,7 +828,7 @@ class Enemy extends Waters {
     // @ts-ignore - fireWeaponAt return type includes score property
     if (result?.score) {
       // @ts-ignore - fireWeaponAt return type includes score property
-      this.opponent.updateResultsOfBomb(result.weapon, result.score)
+      this.opponent?.updateResultsOfBomb(result.weapon, result.score)
     }
     this.opponent?.updateUI()
     this.updateUI()
@@ -869,9 +871,10 @@ class Enemy extends Waters {
       return
     }
 
-    // Two-click behavior: Check opponent has attached weapons, NOT seekingMode flag
-    // This allows Hide & Seek mode to work correctly while seekingMode = false
-    if (this.opponent?.hasAttachedWeapons) {
+    // Two-click behavior: Check for attached weapons, NOT the seekingMode flag.
+    // This allows Hide & Seek mode to work correctly while seekingMode = false,
+    // and also supports pure Seek mode when no opponent model exists.
+    if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
       // Implement two-click behavior
       if (this.selectedCellCoordinates === null) {
         // First click: select weapon and ship
