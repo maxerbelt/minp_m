@@ -24,7 +24,7 @@ export class RotatableVariant extends Variants {
 
   /**
    * Configures rotation behavior for a rotatable variant.
-   * @param {Function} VariantClass - The variant class.
+   * @param {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number}} VariantClass - The variant class.
    * @param {RotatableVariant} instance - The instance to configure.
    */
   static setBehaviour (VariantClass, instance) {

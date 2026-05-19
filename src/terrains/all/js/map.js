@@ -7,6 +7,11 @@ import { standardShot } from '../../../weapon/Weapon.js'
 import { Mask } from '../../../grid/rectangle/mask.js'
 import { getCopyNumKey, makeTitle } from './makeTitle.js'
 
+/**
+ * @typedef {import('../../../weapon/Weapon.js').Weapon} Weapon
+ * @typedef {new (...args: any[]) => any} Constructor
+ */
+
 // geometry helper
 /**
  * Creates a function to check if an element is within a range.
@@ -22,15 +27,46 @@ export const inRange = (r, c) => element =>
  * Handles map geometry, terrain tracking, and basic operations.
  */
 export class BhMap {
+  /** @type {string} */
+  title
+  /** @type {string} */
+  name
+  /** @type {number} */
+  rows
+  /** @type {number} */
+  cols
+  /** @type {number|Object<string, number>} */
+  shipNum
+  /** @type {Array<Array<number>>} */
+  landArea
+  /** @type {Set<string>} */
+  land
+  /** @type {Object} */
+  terrain
+  /** @type {*|bigint} */
+  landBits
+  /** @type {*|bigint} */
+  defaultTerrainBits
+  /** @type {Mask} */
+  defaultTerrainMask
+  /** @type {Mask} */
+  landMask
+  /** @type {import('./SubTerrainTrackers.js').SubTerrainTrackers} */
+  subterrainTrackers
+  /** @type {boolean} */
+  isPreGenerated
+  /** @type {Array<Weapon>} */
+  weapons
+
   /**
    * Creates a new BhMap instance.
-   * @param {string} title - The map title
-   * @param {Array<number>} size - Array [rows, cols] defining map dimensions
-   * @param {Object} shipNum - Object mapping ship letters to quantities
-   * @param {Array} landArea - Array of land area ranges
-   * @param {string} name - The map name
-   * @param {Object} mapTerrain - The terrain configuration
-   * @param {Set} land - Set of land coordinates
+   * @param {string} title - The map title.
+   * @param {Array<number>} size - Array [rows, cols] defining map dimensions.
+   * @param {number|Object<string, number>} shipNum - Number of ships or ship-type count map.
+   * @param {Array<Array<number>>} landArea - Array of land area ranges.
+   * @param {string} name - The map name.
+   * @param {Object} mapTerrain - The terrain configuration.
+   * @param {Set<string>} [land] - Optional set of land coordinates.
    */
   constructor (title, size, shipNum, landArea, name, mapTerrain, land) {
     this.title = title
@@ -49,7 +85,7 @@ export class BhMap {
     })
 
     lazy(this, 'defaultTerrainBits', () => {
-      return this.landMask.invertBits
+      return this.landMask.invertedBits
     })
 
     lazy(this, 'defaultTerrainMask', () => {
@@ -72,6 +108,7 @@ export class BhMap {
     this.subterrainTrackers = new SubTerrainTrackers(this?.terrain?.subterrains)
     this.subterrainTrackers.calc(this)
     this.isPreGenerated = true
+    /** @type {Array<import('../../../weapon/Weapon.js').Weapon>} */
     this.weapons = [standardShot]
   }
   /**
@@ -412,8 +449,8 @@ export class CustomMap extends BhMap {
    * Creates a new CustomMap instance.
    * @param {string} title - The map title
    * @param {Array<number>} size - Array [rows, cols] defining map dimensions
-   * @param {Object} shipNum - Object mapping ship letters to quantities
-   * @param {Set} land - Set of land coordinates
+   * @param {number|Object<string, number>} shipNum - Number of ships or ship-type count map
+   * @param {Set<string>} land - Set of land coordinates
    * @param {Object} mapTerrain - The terrain configuration
    * @param {Object} [example] - Optional example data
    */
@@ -470,7 +507,7 @@ export class CustomMap extends BhMap {
     const data = this.jsonObj()
     return JSON.stringify(
       data,
-      (key, value) => (typeof value === 'bigint' ? undefined : value),
+      (_key, value) => (typeof value === 'bigint' ? undefined : value),
       2
     )
   }
@@ -502,19 +539,11 @@ export class CustomMap extends BhMap {
 
 /**
  * Mixin that adds land modification capabilities to map classes.
- * @param {Function} Base - The base class to extend
- * @returns {Function} The extended class with modification methods
+ * @param {Constructor} Base - The base class to extend
+ * @returns {Constructor} The extended class with modification methods
  */
 const withModifyable = Base =>
   class extends Base {
-    /**
-     * Creates a new instance with modification capabilities.
-     * @param {...*} args - Arguments to pass to the base constructor
-     */
-    constructor (...args) {
-      super(...args) // REQUIRED
-    }
-
     /**
      * Adds land at the specified coordinates.
      * @param {number} r - Row coordinate
@@ -706,6 +735,8 @@ export class SavedCustomMap extends CustomMap {
     if (!check) {
       throw new Error('Failed to copy map with key ' + key)
     }
+
+    return new EditedCustomMap(this)
   }
 }
 
@@ -714,14 +745,6 @@ export class SavedCustomMap extends CustomMap {
  * Extends SavedCustomMap with the withModifyable mixin.
  */
 export class EditedCustomMap extends withModifyable(SavedCustomMap) {
-  /**
-   * Creates a new EditedCustomMap instance.
-   * @param {...*} args - Arguments to pass to the base constructor
-   */
-  constructor (...args) {
-    super(...args) // REQUIRED
-  }
-
   /**
    * Loads an edited custom map from localStorage.
    * @param {string} title - The map title

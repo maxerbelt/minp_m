@@ -27,7 +27,7 @@ export class SpecialVariant extends RotatableVariant {
       board = Mask.fromCoordsSquare(board)
     }
     if (!(board instanceof Mask)) {
-      throw new Error(
+      throw new TypeError(
         'Board must be a Mask instance or an array of coordinates'
       )
     }
@@ -87,7 +87,7 @@ export class SpecialVariant extends RotatableVariant {
 
   /**
    * Configures behavior for special variants.
-   * @param {Function} v3 - The variant class.
+   * @param {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number, setBehaviour:(VariantClass:any, instance:any)=>void}} v3 - The variant class.
    * @param {SpecialVariant} symmetry - The instance.
    */
   static setBehaviourTo (v3, symmetry) {

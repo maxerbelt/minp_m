@@ -3,9 +3,25 @@ import { spaceFleet } from './spaceFleet.js'
 import { spaceGroups } from './spaceGroups.js'
 
 /**
+ * @typedef {Record<string, string>} ShipColorMap
+ */
+
+/**
+ * @typedef {Record<string, string>} ShipNameMap
+ */
+
+/**
+ * @typedef {Record<string, string>} ShipTallyGroupMap
+ */
+
+/**
+ * @typedef {Record<string, string>} ShipBackgroundMap
+ */
+
+/**
  * Color mapping for space ship types.
  * Maps ship letter identifiers to their display colors.
- * @type {Object<string, string>}
+ * @type {ShipColorMap}
  */
 const SHIP_COLORS = {
   A: '#ff6666', // coral red
@@ -39,6 +55,7 @@ const SHIP_COLORS = {
   4: '#fff',
   '+': '#000',
   '|': '#000',
+  '!': '#000',
   '#': '#000',
   '^': '#000',
   '@': '#000',
@@ -49,7 +66,7 @@ const SHIP_COLORS = {
 /**
  * Display names for space ship types.
  * Maps ship letter identifiers to their human-readable names.
- * @type {Object<string, string>}
+ * @type {ShipNameMap}
  */
 const SHIP_NAMES = {
   A: 'Attack Craft',
@@ -87,7 +104,7 @@ const SHIP_NAMES = {
 /**
  * Symmetry types for space ship types.
  * Maps ship letter identifiers to their symmetry classifications.
- * @type {Object<string, string>}
+ * @type {ShipTallyGroupMap}
  */
 const SHIP_TALLYGROUPS = {
   A: 'S',
@@ -129,7 +146,7 @@ const SHIP_TALLYGROUPS = {
 /**
  * Background styling for space ship types.
  * Maps ship letter identifiers to their background colors/styles.
- * @type {Object<string, string>}
+ * @type {ShipBackgroundMap}
  */
 const SHIP_BACKGROUNDS = {
   A: 'rgba(255,102,102,0.3)',
@@ -168,6 +185,9 @@ const SHIP_BACKGROUNDS = {
   '|': '#cc3333',
   '|1': '#5a2b2f', // #5a2b2f   // #3f5a2a. // #243a5e
   '|2': '#cc3333',
+  '!': '#339933',
+  '!1': '#abcc33',
+  '!2': '#339933',
   '^': '#cc3388',
   '^1': '#33abcc',
   '^2': '#cc3388',

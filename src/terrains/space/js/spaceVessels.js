@@ -2,9 +2,21 @@ import { SpaceVessel, DeepSpaceVessel, ArmedVessel } from './spaceShapes.js'
 import { GaussRound } from './spaceWeapons.js'
 
 /**
+ * @typedef {[number, number]} VesselCell
+ */
+
+/**
+ * @typedef {Record<string, VesselCell[]>} VesselCellMap
+ */
+
+/**
+ * @typedef {Record<string, VesselCell[]>} VesselRackMap
+ */
+
+/**
  * Cell configurations for space vessels.
  * Each constant defines the grid coordinates occupied by a vessel type.
- * @type {Object<string, Array<[number, number]>>}
+ * @type {VesselCellMap}
  */
 const VESSEL_CELLS = {
   ATTACK_CRAFT: [
@@ -133,7 +145,7 @@ const VESSEL_CELLS = {
 
 /**
  * Weapon rack configurations for armed shuttles.
- * @type {Object<string, Array<[number, number]>>}
+ * @type {VesselRackMap}
  */
 const VESSEL_RACKS = {
   GUN_BOAT: [[0, 0]]

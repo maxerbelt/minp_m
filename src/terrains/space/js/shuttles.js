@@ -2,9 +2,21 @@ import { Shuttle, ArmedShuttle } from './spaceShapes.js'
 import { Missile } from './spaceWeapons.js'
 
 /**
+ * @typedef {[number, number]} ShuttleCell
+ */
+
+/**
+ * @typedef {Record<string, ShuttleCell[]>} ShuttleCellMap
+ */
+
+/**
+ * @typedef {Record<string, ShuttleCell[]>} ShuttleRackMap
+ */
+
+/**
  * Cell configurations for space shuttles.
  * Each constant defines the grid coordinates occupied by a shuttle type.
- * @type {Object<string, Array<[number, number]>>}
+ * @type {ShuttleCellMap}
  */
 const SHUTTLE_CELLS = {
   CORVETTE: [
@@ -45,7 +57,7 @@ const SHUTTLE_CELLS = {
 
 /**
  * Weapon rack configurations for armed shuttles.
- * @type {Object<string, Array<[number, number]>>}
+ * @type {ShuttleRackMap}
  */
 const SHUTTLE_RACKS = {
   MISSILE_BOAT: [

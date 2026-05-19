@@ -1,12 +1,22 @@
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 
 /**
+ * @typedef {{
+ *   board: any,
+ *   validator: (zoneInfo:any)=>boolean,
+ *   zoneDetail:any,
+ *   target:any,
+ *   subGroups:Array<{placeAt:(r:number,c:number)=>any, isCandidate:(c:number,r:number)=>boolean, validator:(zoneInfo:any)=>boolean}>
+ * }} Placeable3Type
+ */
+
+/**
  * Represents 3D cells to be placed with subgroups.
  */
 export class Cell3sToBePlaced extends CellsToBePlaced {
   /**
    * Creates 3D cells to be placed.
-   * @param {any} placeable3 - The placeable3 instance.
+   * @param {Placeable3Type} placeable3 - The placeable3 instance.
    * @param {number} row - The row.
    * @param {number} col - The column.
    */

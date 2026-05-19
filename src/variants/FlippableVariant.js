@@ -35,7 +35,7 @@ export class FlippableVariant extends RotatableVariant {
 
   /**
    * Configures rotation and flip transition functions for a flippable variant.
-   * @param {Function} VariantClass - The variant class.
+   * @param {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number}} VariantClass - The variant class.
    * @param {FlippableVariant} instance - The instance to configure.
    */
   static setBehaviour (VariantClass, instance) {

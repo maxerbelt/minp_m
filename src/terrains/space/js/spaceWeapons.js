@@ -832,7 +832,7 @@ export class GaussRound extends Fish {
    * @returns {URL} URL to Gauss round flight sound asset
    */
   get flightSound () {
-    return new URL('../sounds/guass-flight.mp3', import.meta.url)
+    return new URL('../sounds/gauss-flight.mp3', import.meta.url)
   }
 
   /**
@@ -999,12 +999,400 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Creates a single-Gauss-round instance for quick access
+   * Creates a single-Laser instance for quick access
    * @static
-   * @returns {GaussRound} GaussRound instance with 1 ammo
+   * @returns {Laser} Laser instance with 1 ammo
    */
   static get single () {
-    return new GaussRound(1)
+    return new Laser(1)
+  }
+}
+
+/**
+ * Laser - A projectile weapon that stops at terrain boundaries
+ * Extends Fish with land-detection trajectory and dual-animation launch
+ * @extends Fish
+ */
+export class Laser extends Fish {
+  /**
+   * Initializes Laser with configuration
+   * @param {number} ammo - Number of Laser Blasts available
+   */
+  constructor (ammo) {
+    super(ammo, 'Laser Blast', '!')
+
+    // Cursor configuration for targeting sequence
+    this.cursors = ['llaunch', 'round']
+    this.launchCursor = 'llaunch'
+    this.isOneAndDone = true
+    this.postSelectCursor = 1
+    this.postSelectCoords = 1
+    this.postSelectShadow = true
+    this.totalCursors = 2
+
+    // Display and scoring configuration
+    this.plural = 'Laser Blasts'
+    this.givesHint = true
+    this.hasShadowAtHint = true
+    this.crashOverSplash = false
+    this.canCrash = true
+    this.hasWake = false
+    this.splashType = undefined
+
+    // Weapon behavior configuration
+    this._applyWeaponConfig({
+      hints: [
+        'Click on square to start laser blast',
+        'Click on square aim laser blast'
+      ],
+      buttonHtml: '<span class="shortcut">L</span>aser Blast',
+      tip: 'drag a laser blast on to the map to increase the number of times you can strike',
+      tag: 'blast',
+      hasFlash: false
+    })
+
+    // Drag-and-drop placement shape
+    this.dragShape = [
+      [1, 0, 1],
+      [1, 1, 0],
+      [1, 2, 0],
+      [0, 3, 0],
+      [2, 3, 0]
+    ]
+    this.splashCoords = addNeighborList(
+      null,
+      0,
+      0,
+      [[3, 3, 2]],
+      [
+        [0, 0, 20],
+        [1, 1, 20],
+        [2, 2, 30],
+        [4, 4, 31],
+        [5, 5, 30]
+      ]
+    )
+
+    this.crashCoords = addNeighborList(
+      null,
+      30,
+      0,
+      [],
+      [
+        [0, 0, 20],
+        [1, 1, 20],
+        [2, 2, 30],
+        [1, 3, 0],
+        [2, 3, 1],
+        [2, 4, 0],
+        [3, 1, 0],
+        [3, 2, 1],
+        [3, 3, 2],
+        [3, 4, 1],
+        [3, 5, 0],
+        [4, 2, 0],
+        [4, 3, 1],
+        [4, 4, 0],
+        [5, 3, 0]
+      ]
+    )
+    // Tracks crash location when round hits land
+    this.crashLoc = null
+  }
+  /**
+   * Performs Gauss round dual-board animation with portal effect on sources
+   * Animates from source on opposing board to target on primary board
+   * Then animates from source on primary board to target on primary board
+   * @async
+   
+   * @param {number[][]} coords - Target coordinates
+   * @param {number} sourceRow - Source row
+   * @param {number} sourceCol - Source column
+   * @param {Object} map - Game map
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} opposingViewModel - Opposing view model
+   * @param {Object} gameModel - Game model
+   * @returns {Promise} Animation promise
+   */
+  async performLaserBlastAnimation (
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel
+  ) {
+    if (!opposingViewModel) {
+      return await this.launchRightTo(
+        coords,
+        sourceRow,
+        sourceCol,
+        map,
+        viewModel,
+        opposingViewModel,
+        gameModel,
+        this.processCoords.bind(this)
+      )
+    }
+    const [, targetCoord, hasCandidates] = this.processCoords(
+      map,
+      [sourceRow, sourceCol],
+      coords,
+      gameModel
+    )
+    // Use the hint/source coordinates for portal decoration on both boards.
+    // GaussRound portals should appear at the hinted launch source, not at a
+    // normalized line origin if the path is adjusted separately for impact.
+    const sourceCell1 = opposingViewModel.gridCellAt(sourceRow, sourceCol)
+    const sourceCell2 = viewModel.gridCellAt(sourceRow, sourceCol)
+    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+
+    const oldClassName1 = sourceCell1.className
+    const oldClassName2 = sourceCell2.className
+
+    CellClassManager.clearFriendCell(sourceCell1)
+    CellClassManager.clearFriendCell(sourceCell2)
+    // Apply portal CSS classes to sources
+    sourceCell1.classList.add(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
+
+    // Perform animations
+    await this.animateFlyingOnVM(sourceCell2, targetCell2, viewModel)
+
+    sourceCell1.className = oldClassName1
+    sourceCell2.className = oldClassName2
+
+    // Remove CSS classes
+    sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
+    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
+    return hasCandidates ? { target: targetCoord } : {}
+  }
+
+  /**
+   * Process launch coordinates through game model targeting logic.
+   * Allows model to transform target location based on game state.
+   *
+   * @param {any} map - Game map object
+   * @param {number[]} base - Base/source coordinates [row, col]
+   * @param {number[]} coords - Target coordinates [row, col]
+   * @param {any} model - Game model for target lookup
+   * @returns {number[][]} Processed coordinate pair with candidate flag
+   */
+  processCoords (map, [rr, cc], coords, model) {
+    const effect = this.aoe(map, coords)
+    const t = model.getTarget(effect, this)
+    const list = this.redoCoords(map, [rr, cc], coords)
+    if (t) {
+      const source = list[0]
+      return [source, t, true]
+    }
+    return list
+  }
+  /**
+   * Determines turn phase for Gauss round variant
+   * Maps variant ID to turn duration classes for animation pacing
+   * @param {number} variant - Weapon variant identifier (1, 3)
+   * @param {number} _r - Row coordinate (unused for Gauss round)
+   * @param {number} _c - Column coordinate (unused for Gauss round)
+   * @returns {string} CSS turn class name ('turn2') or empty string
+   */
+  getTurn (variant, _r, _c) {
+    const turnMap = {
+      1: 'turn2',
+      3: 'turn2'
+    }
+    return turnMap[variant] || ''
+  }
+
+  /**
+   * Creates a clone of this Gauss round with optional new ammo count
+   * Implements weapon cloning protocol
+   * @param {number} [ammo] - Ammo count for cloned instance
+   * @returns {Laser} New Laser instance
+   */
+  clone (ammo) {
+    return this.createClone(Laser, ammo)
+  }
+
+  /**
+   * Gets the audio file for Laser blast flight sound
+   * @returns {URL} URL to Laser blast flight sound asset
+   */
+  get flightSound () {
+    return new URL('../sounds/laser-flight.mp3', import.meta.url)
+  }
+
+  /**
+   * Computes blast radius pattern from explosion center
+   * Creates expanding square pattern: center → 3×3 → 5×5 → cardinal distance
+   * @param {number} centerRow - Explosion center row
+   * @param {number} centerCol - Explosion center column
+   * @returns {Array<[number, number, number]>} Damage pattern as [row, col, power] tuples
+   */
+  boom (centerRow, centerCol) {
+    return createSquareExplosion(centerRow, centerCol, 2)
+  }
+
+  /**
+   * Calculates trajectory path along ray line until land boundary
+   * Stops at first land cell if detected; records crash location
+   * @param {Object} map - Game map for terrain checking
+   * @param {number[][]} coords - Start and end coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} [power=1] - Power level for trajectory cells
+   * @returns {Array<[number, number, number]>} Cells along trajectory with power levels
+   */
+  /**
+   * Calculates area-of-effect along the fish's water path
+   * Stops at land boundaries (map.isLand check)
+   * @param {Object} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates
+   * @returns {Array} Cells along water path with damage power
+   */
+  aoe (map, coords) {
+    const effect = this.aoeRaw(map, coords, 2, 1)
+    //     this.crashLoc =
+    //  landCollisionIndex >= 0 ? trajectoryLine[landCollisionIndex] : null
+
+    return effect
+  }
+  aoePlus (map, coords) {
+    const affectedArea = this.aoe(map, coords)
+    const crashLoc = affectedArea.length > 0 ? affectedArea.at(-1) : null
+    const fullLine = this.aoeFull(coords)
+    return { affectedArea, options: { crashLoc, fullLine } }
+  }
+
+  /**
+   * Calculates splash/secondary damage pattern around a point
+   * @param {Object} _map - Game map
+   * @param {Coord} resolvedTarget - Impact coordinate [row, col]
+   * @param {AoePattern} effect - Damage effect coordinates
+   * @param {{fullLine?: Coord[]}} options - Additional options
+   * @returns {AoePattern} Splash pattern
+   */
+  splash (_map, resolvedTarget, effect, options) {
+    const last = (effect?.length || 1) - 1
+    const { fullLine } = options
+    resolvedTarget[2] = 2
+    const bracket = [resolvedTarget]
+
+    if (!fullLine) return bracket
+
+    const idx = fullLine.findIndex(
+      ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
+    )
+    if (idx < 0) return bracket
+
+    const isStart = idx === 0
+    const isSecond = idx === 1
+    const isEnd = idx === last
+
+    let prev
+    if (isStart) {
+      prev = fullLine[2]
+    } else if (isSecond) {
+      prev = fullLine[0]
+    } else {
+      prev = fullLine[idx - 1]
+    }
+    const next = isEnd ? fullLine[idx - 1] : fullLine[idx + 1]
+    const next2 = isEnd ? fullLine[idx + 1] : fullLine[idx + 2]
+
+    const pushSplash = (cell, power) => {
+      if (cell) {
+        cell[2] = power
+        bracket.push(cell)
+      }
+    }
+
+    pushSplash(prev, 0)
+    pushSplash(next, 1)
+    pushSplash(next2, 0)
+
+    return bracket
+  }
+
+  /**
+   * Calculates crash splash damage pattern around a terminal point when no hits are registered
+ 
+   * @param {Object} map - Game map
+   * @param {Array} target - Impact coordinate [row, col]
+   * @param {Array} _effect - Damage effect coordinates
+   * @param {Object} _options - Additional options
+   * @returns {Array} Splash pattern
+   */
+  crashSplash (map, target, _effect, _options) {
+    let pattern = []
+
+    const [r, c] = target
+    addNeighborList(map, r, c, pattern, [
+      [-1, 0, 1],
+      [1, 0, 1],
+      [0, -1, 1],
+      [0, 1, 1],
+      [-1, -1, 0],
+      [-1, 1, 0],
+      [1, -1, 0],
+      [1, 1, 0],
+      [-2, 0, 0],
+      [2, 0, 0],
+      [0, -2, 0],
+      [0, 2, 0]
+    ])
+
+    return pattern
+  }
+
+  /**
+   * Initiates Gauss round launch with coordinate transformation
+   * Routes to launchRightTo for coordinate processing before dual-animation launch
+   * @async
+   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
+   * @param {number} sourceRow - Source row coordinate
+   * @param {number} sourceCol - Source column coordinate
+   * @param {Object} map - Game map object
+   * @param {Object} viewModel - Primary view model
+   * @param {Object} [opposingViewModel] - Optional opposing player view model
+   * @param {Object} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<void>} Resolves when animations complete
+   */
+  async launchTo (
+    coords,
+    sourceRow,
+    sourceCol,
+    map,
+    viewModel,
+    opposingViewModel,
+    gameModel
+  ) {
+    const context = { sourceRow, sourceCol, viewModel, opposingViewModel }
+    return await launchWithDualBoardAnimation(
+      this,
+      coords,
+      context,
+      map,
+      gameModel,
+      this.performGaussRoundAnimation.bind(
+        this,
+        coords,
+        sourceRow,
+        sourceCol,
+        map,
+        viewModel,
+        opposingViewModel,
+        gameModel
+      )
+    )
+  }
+
+  /**
+   * Creates a single-Laser-blast instance for quick access
+   * @static
+   * @returns {Laser} GaussRound instance with 1 ammo
+   */
+  static get single () {
+    return new Laser(1)
   }
 }
 

@@ -1,4 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, jest, beforeEach, it, expect } from '@jest/globals'
 import { Mask } from '../grid/rectangle/mask.js'
 import { Asymmetric } from './asymmetric.js'

@@ -3,6 +3,10 @@ import { FlippableVariant } from './FlippableVariant.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**
+ * @typedef {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number}} VariantTransitionClass
+ */
+
+/**
  * Diagonal variant that supports flipping and limited rotation.
  */
 export class Diagonal extends FlippableVariant {
@@ -32,7 +36,7 @@ export class Diagonal extends FlippableVariant {
 
   /**
    * Configures behavior for diagonal variants.
-   * @param {Function} VariantClass - The variant class.
+   * @param {VariantTransitionClass} VariantClass - The variant class.
    * @param {Diagonal} instance - The instance to configure.
    */
   static setBehaviour (VariantClass, instance) {

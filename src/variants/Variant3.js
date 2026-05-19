@@ -21,7 +21,7 @@ export class Variant3 extends SpecialVariant {
 
   /**
    * Configures behavior for variant3.
-   * @param {Function} v3 - The variant class.
+   * @param {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number, setBehaviour:(VariantClass:any, instance:any)=>void}} v3 - The variant class.
    * @param {Variant3} symmetry - The instance.
    */
   static setBehaviour = SpecialVariant.setBehaviourTo

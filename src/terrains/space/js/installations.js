@@ -1,9 +1,17 @@
 import { Installation, CoreInstallation } from './spaceShapes.js'
 
 /**
+ * @typedef {[number, number]} InstallationCell
+ */
+
+/**
+ * @typedef {Record<string, InstallationCell[]>} InstallationCellMap
+ */
+
+/**
  * Cell configurations for space installations.
  * Each constant defines the grid coordinates occupied by an installation type.
- * @type {Object<string, Array<[number, number]>>}
+ * @type {InstallationCellMap}
  */
 const INSTALLATION_CELLS = {
   SHELTER: [
