@@ -29,6 +29,29 @@ export function bitsChanged (a, b) {
 }
 
 /**
+ * Helper to make a safe, detached copy of bits for comparison or mutation.
+ * Tries known clone helpers on the mask/store, otherwise falls back to
+ * sensible shallow-copy strategies for arrays, typed arrays, BigInts and
+ * numbers.
+ * @param {*} bits - Bits value to clone
+ * @param {object} [mask] - Optional mask/packed instance that may provide clone helpers
+ * @returns {*} Detached copy of `bits`
+ */
+function cloneBitsValue (bits, mask) {
+  if (mask?.cloneBits !== undefined) {
+    return mask.cloneBits
+  }
+  if (mask?.store?.clone === 'function') {
+    return mask.store.clone(bits)
+  }
+  if (typeof bits === 'bigint' || typeof bits === 'number') return bits
+  if (Array.isArray(bits)) return bits.slice()
+  if (ArrayBuffer.isView(bits)) return new bits.constructor(bits)
+  if (bits && typeof bits.length === 'number') return Array.from(bits)
+  return bits
+}
+
+/**
  * Check if a bitboard is completely full
  */
 export function isBitboardFull (bits, fullBits) {
@@ -134,23 +157,38 @@ export function createOccupancyGrid (packed, Packed) {
  * Check if morphology operation would change the mask bits
  * Returns true if operation changes the bits, false if no change
  */
+/**
+ * Check if a morphology operation will change a mask's bits without
+ * mutating the original mask.
+ * @param {any} mask - Mask/packed object with `bits`, `clone` and optional clone helpers
+ * @param {'dilate'|'erode'|'cross'} operation - Morphology operation to test
+ * @returns {boolean} True when the operation would change the bits
+ */
 export function checkMorphologyState (mask, operation) {
-  const original = mask.bits
+  const original = cloneBitsValue(mask.bits, mask)
   const clone = mask.clone
-  clone.bits = original
+  clone.bits = cloneBitsValue(original, mask)
 
   applyOperation(operation, clone)
 
-  return clone.bits !== original
+  return !areBitsEqual(original, clone.bits)
 }
 
 /**
  * Check if morphology operation would change occupancy grid
  * Returns true if operation changes the bits, false if no change
  */
+/**
+ * Check if a morphology operation will change an occupancy grid without
+ * mutating the original.
+ * @param {any} occupancy - Packed/occupancy object with `bits` and `clone`
+ * @param {'dilate'|'erode'|'cross'} operation - Morphology operation to test
+ * @returns {boolean} True when the operation would change the occupancy bits
+ */
 export function checkMorphologyChange (occupancy, operation) {
-  const before = Array.from(occupancy.bits)
+  const before = cloneBitsValue(occupancy.bits, occupancy)
   const clone = occupancy.clone
+  clone.bits = cloneBitsValue(before, occupancy)
 
   applyOperation(operation, clone)
 
@@ -167,9 +205,17 @@ function applyOperation (operation, clone) {
  * Check if morphology operation would change a masked object
  * Uses provided comparison function
  */
+/**
+ * Compute whether an operation changes a masked object using a custom comparer.
+ * @param {any} maskObj - Mask or packed object
+ * @param {'dilate'|'erode'|'cross'} operation - Operation to apply
+ * @param {(a: any, b: any) => boolean} bitsComparer - Comparison function
+ * @returns {boolean} Result of `bitsComparer(original, after)`
+ */
 export function computeMorphologyState (maskObj, operation, bitsComparer) {
-  const original = maskObj.bits
+  const original = cloneBitsValue(maskObj.bits, maskObj)
   const clone = maskObj.clone
+  clone.bits = cloneBitsValue(original, maskObj)
   applyOperation(operation, clone)
   return bitsComparer(original, clone.bits)
 }
@@ -179,8 +225,9 @@ export function computeMorphologyState (maskObj, operation, bitsComparer) {
  * Returns {added, removed, after} where after is the modified clone
  */
 export function getMorphologyDifferences (occupancy, operation) {
-  const before = Array.from(occupancy.bits)
+  const before = cloneBitsValue(occupancy.bits, occupancy)
   const clone = occupancy.clone
+  clone.bits = cloneBitsValue(before, occupancy)
 
   applyOperation(operation, clone)
 
@@ -188,6 +235,17 @@ export function getMorphologyDifferences (occupancy, operation) {
   const removed = clone.store.bitSub(before, clone.bits)
 
   return { added, removed, after: clone }
+}
+
+/**
+ * Small helper to test bit equality using existing helpers.
+ * @param {*} a
+ * @param {*} b
+ * @returns {boolean}
+ */
+function areBitsEqual (a, b) {
+  if (a === b) return true
+  return !bitsChanged(a, b)
 }
 
 // ============================================================================

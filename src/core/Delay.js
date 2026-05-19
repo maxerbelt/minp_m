@@ -1,23 +1,23 @@
 import { Random } from './Random.js'
 
 /**
- * @typedef {Function} CancellationCheck
+ * @callback CancellationCheck
  * @returns {boolean} True if loop should cancel
  */
 
 /**
- * @typedef {Function} CancellationCallback
+ * @callback CancellationCallback
  * @returns {void}
  */
 
 /**
- * @typedef {Function} ErrorCallback
+ * @callback ErrorCallback
  * @param {Error} error - The caught error
  * @returns {void}
  */
 
 /**
- * @typedef {Function} CompletionCallback
+ * @callback CompletionCallback
  * @returns {void}
  */
 
@@ -36,7 +36,16 @@ export class Delay {
    * @param {number} delayMs - Default delay in milliseconds for runLoop
    */
   constructor (delayMs) {
+    /** @type {number} */
     this.delayMs = delayMs
+    /** @type {CancellationCheck|undefined} */
+    this.isCancelled = undefined
+    /** @type {CancellationCallback|undefined} */
+    this.onCancel = undefined
+    /** @type {ErrorCallback|undefined} */
+    this.onError = undefined
+    /** @type {CompletionCallback|undefined} */
+    this.onComplete = undefined
   }
 
   /**
@@ -97,6 +106,12 @@ export class Delay {
    * looper.onError = (err) => console.error(err)
    * looper.onComplete = () => console.log('Done')
    * await looper.runLoop(async () => { console.log('tick') })
+   */
+  /**
+   * Execute an async loop until cancelled or error occurs.
+   * @param {() => Promise<void>} [iterationTask] - Async function to execute each iteration.
+   * @param {number} [intervalMs=this.delayMs] - Milliseconds between iterations.
+   * @returns {Promise<void>}
    */
   async runLoop (iterationTask = async () => {}, intervalMs = this.delayMs) {
     try {

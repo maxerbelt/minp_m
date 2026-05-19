@@ -29,10 +29,15 @@ export class Animator {
     if (removeExisting) {
       this._removeExistingElements(className)
     }
+    /** @type {HTMLDivElement} */
     this.el = this._createElement(className)
+    /** @type {HTMLElement|null} */
     this.container = container || document.getElementById(containerId)
+    /** @type {HTMLDivElement|null} */
     this.innerEl = this._createInnerElement(innerDivClassNames)
+    /** @type {boolean} */
     this.running = false
+    /** @type {number|null} */
     this.innerDelay = null
   }
 
@@ -168,8 +173,6 @@ export class Animator {
     this.running = true
     this._startAnimation(...animationClasses)
     await this._waitForAnimation()
-    // await this._handleInnerDelay()
-    // this.innerEl?.remove()
     await Delay.wait(5)
     this.el.remove()
     this.running = false
@@ -198,22 +201,6 @@ export class Animator {
    * @private
    * @returns {Promise<void>}
    */
-  async _handleInnerDelay () {
-    if (this.innerEl && this.innerDelay) {
-      await Delay.wait(this.innerDelay)
-    }
-  }
-
-  /**
-   * Cleans up animation elements.
-   * @private
-   */
-  _cleanupElements () {
-    this.innerEl?.remove()
-    // Small delay before removing main element
-    setTimeout(() => this.el.remove(), 5)
-  }
-
   /**
    * Plays the animation by adding classes and forcing recalculation.
    * @param {...string} animationClasses - Classes to add for animation
@@ -332,7 +319,7 @@ export class Animator {
   static play (el, ...animationClasses) {
     el.classList.remove(...animationClasses)
     // Force style recalculation to restart animation
-    void el.offsetWidth
+    el.getBoundingClientRect()
     el.classList.add(...animationClasses)
   }
 

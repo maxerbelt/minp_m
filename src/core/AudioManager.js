@@ -19,7 +19,9 @@ export class AudioManager {
    * @constructs
    */
   constructor () {
+    /** @type {AudioContext} */
     this.ctx = new AudioContext()
+    /** @type {Map<string, AudioBuffer>} */
     this.buffers = new Map()
   }
 
