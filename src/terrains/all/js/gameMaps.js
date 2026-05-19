@@ -3,8 +3,13 @@ import { seaAndLandMaps } from '../../sea/js/seaAndLandMaps.js'
 import { spaceAndAsteroidsMaps } from '../../space/js/spaceAndAsteroidsMaps.js'
 
 /**
+ * @typedef {import('./TerrainMaps.js').TerrainMaps} TerrainMapsType
+ * @typedef {Object} TerrainMapType
+ */
+
+/**
  * Default terrain map configurations available in the system.
- * @type {Object<string, Object>}
+ * @type {Record<string, TerrainMapsType>}
  */
 const DEFAULT_TERRAIN_MAPS = {
   seaAndLand: seaAndLandMaps,
@@ -34,7 +39,7 @@ function _ensureTerrainsAssembled () {
 /**
  * Gets the current terrain maps configuration, ensuring terrains are assembled first.
  * @private
- * @returns {Object} The current terrain maps configuration
+ * @returns {TerrainMapsType} The current terrain maps configuration
  */
 function _getCurrentTerrainMaps () {
   _ensureTerrainsAssembled()
@@ -44,8 +49,8 @@ function _getCurrentTerrainMaps () {
 /**
  * Sets default terrain maps if none are currently set.
  * @private
- * @param {Object} currentMaps - The current terrain maps configuration
- * @returns {Object} The terrain maps configuration (current or default)
+ * @param {TerrainMapsType|null} currentMaps - The current terrain maps configuration
+ * @returns {TerrainMapsType} The terrain maps configuration (current or default)
  */
 function _ensureDefaultMaps (currentMaps) {
   if (currentMaps === null) {
@@ -57,8 +62,8 @@ function _ensureDefaultMaps (currentMaps) {
 
 /**
  * Gets or sets the current terrain maps configuration.
- * @param {Object} [maps] - Optional terrain maps to set as current
- * @returns {Object} The current terrain maps configuration
+ * @param {TerrainMapsType} [maps] - Optional terrain maps to set as current
+ * @returns {TerrainMapsType} The current terrain maps configuration
  */
 export function gameMaps (maps) {
   const currentMaps = _getCurrentTerrainMaps()
@@ -73,8 +78,8 @@ export function gameMaps (maps) {
 
 /**
  * Gets or sets the current map within the current terrain maps.
- * @param {Object} [map] - Optional map to set as current
- * @returns {Object} The current map
+ * @param {TerrainMapType} [map] - Optional map to set as current
+ * @returns {TerrainMapType} The current map
  */
 export function gameMap (map) {
   const terrainMaps = _getCurrentTerrainMaps()

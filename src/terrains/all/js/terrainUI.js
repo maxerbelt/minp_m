@@ -2,7 +2,12 @@ import { bh } from './bh.js'
 import { ChooseFromListUI } from '../../../navbar/chooseUI.js'
 import { ParameterManager } from '../../../navbar/ParameterManager.js'
 
+/**
+ * Show the terrain selection UI.
+ * @returns {void}
+ */
 export function terrainSelect () {
+  /** @type {string[]} */
   const terrainTitles = (() => {
     try {
       const t = bh.terrainTitleList
@@ -36,6 +41,11 @@ export function terrainSelect () {
   )
 }
 
+/**
+ * Configure terrain selection from URL search parameters.
+ * @param {URLSearchParams} urlParams
+ * @returns {void}
+ */
 export function setupTerrain (urlParams) {
   const paramManager = new ParameterManager(urlParams)
   const terrainTag = paramManager.getTerrain()
@@ -46,11 +56,16 @@ export function setupTerrain (urlParams) {
   }
 }
 
+/**
+ * Update URL parameters to reflect the selected terrain and map.
+ * @param {Object|null} newTerrainMap
+ * @returns {void}
+ */
 export function setTerrainParams (newTerrainMap) {
   const paramManager = new ParameterManager(
     new URLSearchParams(globalThis.location.search)
   )
-  const url = new URL(globalThis.location)
+  const url = new URL(globalThis.location.href)
 
   if (!newTerrainMap?.terrain?.bodyTag) {
     console.warn('No terrain map found for terrain tag', 'setTerrainParams')
@@ -80,6 +95,13 @@ export function setTerrainParams (newTerrainMap) {
   bh.setTheme()
 }
 
+/**
+ * Determine final height/width values for URL parameters.
+ * @param {number|null|undefined} height
+ * @param {number|null|undefined} width
+ * @param {string} mapName
+ * @returns {{height:string,width:string,x:string}}
+ */
 function getFinalDimensions (height, width, mapName) {
   let finalHeight = height
   let finalWidth = width
@@ -106,12 +128,23 @@ function getFinalDimensions (height, width, mapName) {
   return { height: '', width: '', x: '' }
 }
 
+/**
+ * Set multiple query parameters on the current URL.
+ * @param {URLSearchParams} urlParams
+ * @param {Record<string,string>} params
+ * @returns {void}
+ */
 function updateUrlParameters (urlParams, params) {
   Object.entries(params).forEach(([key, value]) => {
     urlParams.set(key, value)
   })
 }
 
+/**
+ * Replace current history state without forcing a reload.
+ * @param {URL} url
+ * @returns {void}
+ */
 function updateBrowserHistory (url) {
   try {
     globalThis.history.replaceState(null, '', url.href)

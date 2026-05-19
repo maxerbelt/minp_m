@@ -38,7 +38,7 @@ export class WeaponCatelogue {
   /**
    * Initializes weapon catalogue with collection of weapon instances
    * Builds internal indices for efficient lookups
-   * @param {Array<Object>} weapons - Array of weapon instances to catalog
+   * @param {Weapon[]} weapons - Array of weapon instances to catalog
    */
   constructor (weapons) {
     /**
@@ -100,7 +100,7 @@ export class WeaponCatelogue {
    * Gets weapon by single-character letter identifier
    * Useful for keyboard shortcuts and save files
    * @param {string} letter - Single character weapon identifier
-   * @returns {Object|undefined} Matching weapon or undefined if not found
+   * @returns {Weapon|undefined} Matching weapon or undefined if not found
    */
   getWeaponByLetter (letter) {
     if (typeof letter !== 'string') {
@@ -134,7 +134,7 @@ export class WeaponCatelogue {
   /**
    * Gets weapon at specified index
    * @param {number} index - Array index
-   * @returns {Object|undefined} Weapon at index or undefined
+   * @returns {Weapon|undefined} Weapon at index or undefined
    */
   getWeaponAt (index) {
     return this.weapons[index]
@@ -143,7 +143,7 @@ export class WeaponCatelogue {
   /**
    * Gets all weapons as array
    * Useful for iteration in UI or selection loops
-   * @returns {Array<Object>} Copy of weapons array
+   * @returns {Weapon[]} Copy of weapons array
    */
   getAllWeapons () {
     return [...this.weapons]
@@ -162,9 +162,8 @@ export class WeaponCatelogue {
   }
 
   /**
-   * Deprecated: Updates weapons in catalogue (use constructor instead)
-   * @deprecated Create new WeaponCatalogue instance instead
-   * @param {Array<Object>} weapons - New weapon collection
+   * Updates weapons in catalogue.
+   * @param {Weapon[]} weapons - New weapon collection
    * @returns {void}
    */
   addWeapons (weapons) {

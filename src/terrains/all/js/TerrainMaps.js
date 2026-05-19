@@ -4,6 +4,29 @@ import { token } from '../../../ships/Shape.js'
 import { oldToken } from './terrain.js'
 
 /**
+ * @typedef {Object} TerrainShipCatalogue
+ * @property {Array<{letter: string}>} baseShapes
+ * @property {Object<string,string>} sunkDescriptions
+ * @property {Object<string,string>} letterColors
+ * @property {string} description
+ * @property {Object<string,unknown>} types
+ * @property {Object<string,unknown>} colors
+ * @property {Object<string,unknown>} shapesByLetter
+ */
+
+/**
+ * @typedef {Object} WeaponCatalogue
+ * @property {Object} defaultWeapon
+ * @property {Array<Object>} weapons
+ */
+
+/**
+ * @typedef {InstanceType<typeof import('./map.js').CustomBlankMap>|
+ *     InstanceType<typeof import('./map.js').EditedCustomMap>|
+ *     InstanceType<typeof import('./map.js').SavedCustomMap>} TerrainMapItem
+ */
+
+/**
  * Constants for localStorage key prefixes and suffixes.
  */
 const STORAGE_KEYS = {
@@ -20,11 +43,11 @@ export class TerrainMaps {
   /**
    * Creates a new TerrainMaps instance.
    * @param {Object} terrain - The terrain configuration
-   * @param {Array} list - Array of predefined maps
-   * @param {Object} currentMap - The currently selected map
-   * @param {Object} weaponPreference - Weapon preferences
-   * @param {Object} [shipsCatalogue=null] - Optional ships catalogue override
-   * @param {Object} [weaponsCatalogue=null] - Optional weapons catalogue override
+   * @param {TerrainMapItem[]} list - Array of predefined maps
+   * @param {TerrainMapItem} currentMap - The currently selected map
+   * @param {Array<Array<string>>|Array<string>} weaponPreference - Weapon preferences
+   * @param {TerrainShipCatalogue|null} [shipsCatalogue=null] - Optional ships catalogue override
+   * @param {WeaponCatalogue|null} [weaponsCatalogue=null] - Optional weapons catalogue override
    */
   constructor (
     terrain,
@@ -58,10 +81,10 @@ export class TerrainMaps {
 
   /**
    * Creates a map containing all ships and weapons for testing purposes.
-   * @param {Array} mapList - The list of maps to base this on
-   * @param {Object} shipsCatalogue - The ships catalogue
-   * @param {Object} weaponsCatalogue - The weapons catalogue
-   * @returns {Object} A new map with all ships and weapons
+   * @param {TerrainMapItem[]} mapList - The list of maps to base this on
+   * @param {TerrainShipCatalogue} shipsCatalogue - The ships catalogue
+   * @param {WeaponCatalogue} weaponsCatalogue - The weapons catalogue
+   * @returns {TerrainMapItem} A new map with all ships and weapons
    */
   createAllShipsAndWeaponsMap (mapList, shipsCatalogue, weaponsCatalogue) {
     const allShipsAndWeapons = mapList
@@ -132,7 +155,7 @@ export class TerrainMaps {
 
   /**
    * Sets the current map to a specific map object.
-   * @param {Object} map - The map object to set as current
+   * @param {TerrainMapItem|null} map - The map object to set as current
    */
   setToMap (map) {
     this.current = map || this.list[0]
@@ -208,7 +231,7 @@ export class TerrainMaps {
   /**
    * Loads a custom map by name from localStorage.
    * @param {string} mapName - The name of the custom map
-   * @returns {Object|null} The loaded custom map, or null if not found
+   * @returns {TerrainMapItem|null} The loaded custom map, or null if not found
    */
   getCustomMap (mapName) {
     if (!mapName) return null
@@ -218,7 +241,7 @@ export class TerrainMaps {
   /**
    * Loads an editable custom map by name from localStorage.
    * @param {string} mapName - The name of the editable map
-   * @returns {Object|null} The loaded editable map, or null if not found
+   * @returns {TerrainMapItem|null} The loaded editable map, or null if not found
    */
   getEditableMap (mapName) {
     if (!mapName) return null
@@ -228,7 +251,7 @@ export class TerrainMaps {
   /**
    * Gets a map by name, checking both predefined and custom maps.
    * @param {string} mapName - The name of the map
-   * @returns {Object|null} The map object, or null if not found
+   * @returns {TerrainMapItem|null} The map object, or null if not found
    */
   getMap (mapName) {
     if (!mapName) return null
@@ -241,7 +264,7 @@ export class TerrainMaps {
    * Gets a map with specific dimensions.
    * @param {number} height - The height of the map
    * @param {number} width - The width of the map
-   * @returns {Object|null} The map with matching dimensions, or null
+   * @returns {TerrainMapItem|null} The map with matching dimensions, or null
    */
   getMapOfSize (height, width) {
     if (!height || !width) return null
@@ -254,7 +277,7 @@ export class TerrainMaps {
    * Gets a custom map with specific dimensions.
    * @param {number} height - The height of the map
    * @param {number} width - The width of the map
-   * @returns {Object|null} The custom map with matching dimensions, or null
+   * @returns {TerrainMapItem|null} The custom map with matching dimensions, or null
    */
   getCustomMapOfSize (height, width) {
     if (!height || !width) return null
@@ -435,8 +458,8 @@ export class TerrainMaps {
    * @param {number} height - The height to store
    */
   storeLastHeight (height) {
-    if (height) {
-      localStorage.setItem(this._getLastHeightKey(), height)
+    if (height !== undefined && height !== null) {
+      localStorage.setItem(this._getLastHeightKey(), String(height))
     }
   }
 
@@ -445,8 +468,8 @@ export class TerrainMaps {
    * @param {number} width - The width to store
    */
   storeLastWidth (width) {
-    if (width) {
-      localStorage.setItem(this._getLastWidthKey(), width)
+    if (width !== undefined && width !== null) {
+      localStorage.setItem(this._getLastWidthKey(), String(width))
     }
   }
 

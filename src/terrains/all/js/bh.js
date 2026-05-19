@@ -1,12 +1,15 @@
 import { terrains } from './terrains.js'
 
+/**
+ * @type {any|null}
+ */
 let bhLocal = null
 try {
   // prefer an already-mocked terrain module (tests mock ../terrain/terrain.js)
-  // eslint-disable-next-line global-require, no-undef
+  // eslint-disable-next-line no-undef
   const terrainModule = /** @type {any} */ (require('./terrain.js'))
   if (terrainModule?.bh) bhLocal = terrainModule.bh
-} catch (e) {
+} catch {
   // Fallback when terrain module is not available (common in test environments)
   console.debug('Terrain module not available, using default terrain')
 }

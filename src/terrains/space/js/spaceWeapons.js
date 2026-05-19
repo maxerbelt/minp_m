@@ -999,12 +999,12 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Creates a single-Laser instance for quick access
+   * Creates a single-GaussRound instance for quick access
    * @static
-   * @returns {Laser} Laser instance with 1 ammo
+   * @returns {GaussRound} GaussRound instance with 1 ammo
    */
   static get single () {
-    return new Laser(1)
+    return new GaussRound(1)
   }
 }
 

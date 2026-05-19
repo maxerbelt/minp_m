@@ -3,19 +3,13 @@ import { bh } from './bh.js'
 
 /**
  * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
- * @typedef {Object} Weapon
- * @property {string} letter
- * @property {(ammo?: unknown) => Weapon} clone
- * @typedef {Object<string, string>} TerrainSoundConfig
- * @typedef {Object} TerrainShipCatalogue
- * @property {unknown} baseShapes
- * @property {(letter: string, middle: string) => string} sunkDescription
- * @property {(shapes: unknown) => void} [addShapes]
- * @property {Object<string, string>} [descriptions]
- * @property {Object<string, unknown>} [types]
- * @typedef {Object} WeaponCatalogue
- * @property {(weapons: unknown) => void} addWeapons
- * @property {Weapon[]} weapons
+ * @typedef {import('../../../weapon/WeaponCatelogue.js').Weapon} Weapon
+ * @typedef {import('../../../weapon/WeaponCatelogue.js').WeaponCatelogue} WeaponCatalogue
+ * @typedef {import('../../../ships/ShipGroups.js').ShipCatalogue} TerrainShipCatalogue
+ * @typedef {Record<string, string>} TerrainSoundConfig
+ * @typedef {(letter: string, middle: string) => string} SunkDescriptionFn
+ * @typedef {(shapes: unknown) => void} AddShapesFn
+ * @typedef {(weapons: unknown) => void} AddWeaponsFn
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string | null} TextContentRenderer
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string} InnerHTMLRenderer
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string, className: string) => boolean} ClassPredicate
@@ -157,8 +151,8 @@ export class Terrain {
   /**
    * Gets a new weapon instance.
    * @param {string} letter - The weapon letter
-   * @param {*} ammo - The ammo
-   * @returns {Object|null} The new weapon or null
+   * @param {unknown} ammo - The ammo
+   * @returns {Weapon|null} The new weapon or null
    */
   getNewWeapon (letter, ammo) {
     const weapon = this.getWeapon(letter)
@@ -184,9 +178,10 @@ export class Terrain {
   /**
    * Sets the raw custom maps string in localStorage.
    * @param {string} csv - The CSV string
+   * @returns {void}
    */
   setCustomMapsRaw (csv) {
-    return localStorage.setItem(this.customMapsLocalStorageKey(), csv)
+    localStorage.setItem(this.customMapsLocalStorageKey(), csv)
   }
 
   /**
@@ -226,7 +221,10 @@ export class Terrain {
    */
   _setCustomMapSet (customMapSet) {
     const list = [...customMapSet].filter(
-      t => t && t.length > 0 && localStorage.getItem(this.localStorageMapKey(t))
+      t =>
+        typeof t === 'string' &&
+        t.length > 0 &&
+        localStorage.getItem(this.localStorageMapKey(t))
     )
     localStorage.setItem(this.customMapsLocalStorageKey(), list.join(','))
   }
@@ -305,12 +303,17 @@ export class Terrain {
   }
 
   /**
-   * Adds weapons.
-   * @param {*} weapons - The weapons to add
+   * Adds weapons to the terrain's weapon catalogue.
+   * @param {Weapon[]} weapons - The weapons to add
    */
   addWeapons (weapons) {
     if (this.weapons) {
-      this.weapons.addWeapons(weapons)
+      if (typeof this.weapons._indexWeaponsByLetter === 'function') {
+        this.weapons.weapons = weapons
+        this.weapons._indexWeaponsByLetter()
+      } else {
+        this.weapons.addWeapons(weapons)
+      }
     }
   }
 }
@@ -391,8 +394,8 @@ export function makeKey (r, c) {
  */
 export function parsePair (key) {
   const pair = key.split(',')
-  const r = Number.parseInt(pair[0])
-  const c = Number.parseInt(pair[1])
+  const r = Number.parseInt(pair[0], 10)
+  const c = Number.parseInt(pair[1], 10)
   return [r, c]
 }
 

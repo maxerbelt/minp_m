@@ -2,8 +2,13 @@ import { bh } from './bh.js'
 import { makeKey, parsePair, addCellToFootPrint } from './terrain.js'
 
 /**
- * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
+ * @typedef {InstanceType<typeof import('./SubTerrainBase.js').SubTerrainBase>} SubTerrain
  * @typedef {import('./SubTerrainBase.js').SubTerrainZone} Zone
+ * @typedef {Object} SubTerrainMap
+ * @property {number} rows
+ * @property {number} cols
+ * @property {(r: number, c: number) => boolean} inBounds
+ * @property {(r: number, c: number) => boolean} isLand
  */
 
 /**
@@ -20,7 +25,7 @@ export class SubTerrainTrackers {
 
   /**
    * Recalculates all trackers for the given map.
-   * @param {Object} map - The map object with rows, cols, isLand, inBounds methods
+   * @param {SubTerrainMap} map - The map object with rows, cols, isLand, inBounds methods
    */
   calc (map) {
     this.list.forEach(tracker => tracker.recalc(map))
@@ -111,8 +116,8 @@ export class SubTerrainTrackers {
 
   /**
    * Sets up zone information for display.
-   * @param {Function} createZoneTitle - Function to create zone title
-   * @param {Function} createZoneEntry - Function to create zone entry
+   * @param {(title: string, cells: Set<string>) => unknown} createZoneTitle - Function to create zone title
+   * @param {(title: string, cells: Set<string>) => unknown} createZoneEntry - Function to create zone entry
    * @returns {Array} Display data
    */
   setupZoneInfo (createZoneTitle, createZoneEntry) {
@@ -134,8 +139,8 @@ export class SubTerrainTrackers {
 
   /**
    * Displays displaced area for each tracker.
-   * @param {Object} map - The map object
-   * @param {Function} displayer - Function to display the data
+   * @param {SubTerrainMap} map - The map object
+   * @param {(subterrain: SubTerrain, displacedArea: number) => void} displayer - Function to display the data
    */
   displayDisplacedArea (map, displayer) {
     this.list.forEach(tracker => {
@@ -154,15 +159,15 @@ export class SubTerrainTracker {
    * @param {SubTerrain} subterrain - The subterrain to track
    */
   constructor (subterrain) {
-    /** @type {Object} */
+    /** @type {SubTerrain} */
     this.subterrain = subterrain
     /** @type {Set<string>} */
     this.total = new Set()
-    /** @type {Zone} */
+    /** @type {Zone|undefined} */
     this.marginalZone = subterrain.zones.find(z => z.isMarginal)
     /** @type {Set<string>} */
     this.margin = new Set()
-    /** @type {Zone} */
+    /** @type {Zone|undefined} */
     this.coreZone = subterrain.zones.find(z => !z.isMarginal)
     /** @type {Set<string>} */
     this.core = new Set()
