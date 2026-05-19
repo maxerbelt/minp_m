@@ -4,17 +4,22 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 /**
  * @typedef {Object} Weapon
  * @property {string} letter - Weapon identifier letter
- * @property {boolean} isLimited - Whether the weapon has limited ammo
- * @property {number} points - Number of points required for firing
- * @property {string[]} cursors - Cursor types for selection
- * @property {function} aoe - Area of effect function
- * @property {boolean} destroys - Whether the weapon destroys targets
- * @property {boolean} isOneAndDone - Whether the weapon is single-use
- * @property {number} unattachedCursor - Cursor value for unattached weapons
- * @property {number} postSelectCursor - Cursor value after selection
- * @property {number} postSelectCoords - Number of coordinates after post-selection
- * @property {function(Object, number[]): Object} aoePlus - Computes affected area
- * @property {function(HTMLElement, number, null, null): Promise<Object>} animateExplodeRaw - Explosion animation
+ * @property {string} [name] - Weapon display name
+ * @property {string} [tag] - Weapon tag used for styling and selection UI
+ * @property {string[]} [cursors] - Cursor types for selection
+ * @property {string} [launchCursor] - Cursor class for launch state
+ * @property {boolean} [isLimited] - Whether the weapon has limited ammo
+ * @property {number} [points] - Number of points required for firing
+ * @property {boolean} [destroys] - Whether the weapon destroys targets
+ * @property {boolean} [isOneAndDone] - Whether the weapon is single-use
+ * @property {number} [unattachedCursor] - Cursor value for unattached weapons
+ * @property {number} [postSelectCursor] - Cursor value after selection
+ * @property {number} [postSelectCoords] - Number of coordinates after post-selection
+ * @property {boolean} [postSelectShadow] - Whether the weapon displays a post-select shadow
+ * @property {boolean} [hasExtraSelectCursor] - Whether the weapon uses an extra select cursor
+ * @property {string} [classname] - CSS class name for weapon icon styling
+ * @property {function(Object, number[]): Object} [aoePlus] - Computes affected area
+ * @property {function(HTMLElement, number, null, null): Promise<Object>} [animateExplodeRaw] - Explosion animation
  */
 
 /**
@@ -1086,9 +1091,9 @@ export class LoadOut {
    *
    * @param {number} row - Row coordinate
    * @param {number} col - Column coordinate
-   * @param {Weapon} [weapon] - Weapon being selected (defaults to current)
+   * @param {Weapon} [_weapon] - Weapon being selected (defaults to current)
    */
-  addSelectedCoordinates (row, col, weapon = this.getCurrentWeapon()) {
+  addSelectedCoordinates (row, col, _weapon = this.getCurrentWeapon()) {
     const oldCursor = this.getCurrentCursor()
     this.selectedCoordinates.push([row, col])
     this.notifyCursorChange(oldCursor)

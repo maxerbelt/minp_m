@@ -1001,7 +1001,10 @@ export class Waters {
 
   /**
    * Generates a random source hint around opponent ships.
-   * When no surrounding cells are available, this method falls back to 0,0.
+   * When no surrounding cells are available, this method intentionally
+   * skips creating a visible UI hint and returns a fallback coordinate.
+   * This prevents seek-mode weapons from accidentally placing a hint at [0,0].
+   *
    * @param {Object} ship - The ship to generate hint for
    * @param {Object|null} opponent - The opponent instance
    * @returns {[number, number]} Coordinates [row, col] for hint
@@ -1011,9 +1014,8 @@ export class Waters {
     const surroundingCells = this.getSurroundingCells(ship, opponent)
     if (surroundingCells.length === 0) {
       console.warn(
-        'no surround cells found for random weapon hint, using 0,0 as hint'
+        'no surround cells found for random weapon hint, skipping hint generation'
       )
-      this.steps.addHint(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
       return [0, 0]
     }
     const hintKey = randomElement(surroundingCells)

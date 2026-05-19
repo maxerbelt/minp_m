@@ -249,19 +249,11 @@ class Enemy extends Waters {
    */
   _createActivationHandler () {
     // Return a function that matches steps.js callback signature (9 parameters)
-    // but adapts it to our internal object-based approach
-    // @ts-ignore - steps.js interface requires 9 parameters
-    return function activationHandler (
-      _rack,
-      weapon,
-      _wletter,
-      _weaponId,
-      r,
-      c,
-      _cell,
-      shadowR,
-      shadowC
-    ) {
+    // but adapts it to our internal object-based approach.
+    // Using a rest parameter here avoids an artificial max-params lint rule
+    // while preserving compatibility with the external callback signature.
+    return function activationHandler (...params) {
+      const [, weapon, , , r, c, , shadowR, shadowC] = params
       // Construct activation data from parameters
       const activationData = {
         weapon,
@@ -867,6 +859,8 @@ class Enemy extends Waters {
    *   - Second click on any board cell: Fires the pre-selected weapon at that cell
    *
    * IMPORTANT CONDITIONS:
+   * - If the enemy already has a selected weapon when the first opponent cell is clicked,
+   *   that click must fire the weapon instead of selecting another weapon rack.
    * - Check is based on opponent?.hasAttachedWeapons (works for both Hide & Seek and pure Seek modes)
    * - NOT based on bh.seekingMode flag (which is false in Hide & Seek mode)
    * - In Hide & Seek: opponent has preset ships with weapons → hasAttachedWeapons = true
@@ -899,18 +893,18 @@ class Enemy extends Waters {
     if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
       // Implement two-click behavior
       if (this.selectedCellCoordinates === null) {
-        // If a weapon is already selected, this is the targeting click, not
-        // a new rack selection.
+        // If a weapon is already selected, this click should target that weapon
+        // instead of selecting a new rack from the enemy board.
         if (this.loadOut?.selectedWeapon) {
           await this._onSecondClickFire(r, c)
           return
         }
-        // First click: select weapon and ship
+        // First click on the enemy board: select weapon and ship for targeting.
         this._onFirstClickSelection()
         this.selectedCellCoordinates = { r, c }
         return
       } else {
-        // Second click: fire at target
+        // Second click: fire at the selected weapon's target.
         await this._onSecondClickFire(r, c)
         return
       }

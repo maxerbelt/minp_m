@@ -1283,7 +1283,7 @@ describe('Enemy.updateWeaponStatus', () => {
         selectedCellCoordinates: { r: 2, c: 3 },
         loadOut: { selectedWeapon: { id: 'mock-weapon' } },
         setWeaponFireHandlers: jest.fn(),
-        fireWeaponAt: jest.fn(async () => ({
+        fireWeaponAt: jest.fn(async (_r, _c, _weapon) => ({
           weapon: 'mock-weapon',
           score: { hits: 1, shots: 1 }
         })),
@@ -1320,7 +1320,7 @@ describe('Enemy.updateWeaponStatus', () => {
         selectedCellCoordinates: { r: 2, c: 3 },
         loadOut: { selectedWeapon: { id: 'mock-weapon' } },
         setWeaponFireHandlers: jest.fn(),
-        fireWeaponAt: jest.fn(async () => ({
+        fireWeaponAt: jest.fn(async (_r, _c, _weapon) => ({
           weapon: 'mock-weapon',
           score: { hits: 1, shots: 1 }
         })),
@@ -1342,6 +1342,33 @@ describe('Enemy.updateWeaponStatus', () => {
       )
       expect(enemy.updateUI).toHaveBeenCalled()
       expect(enemy._finalizeTurn).toHaveBeenCalled()
+    })
+
+    it('should preserve existing selected weapon and fire on first board click', async () => {
+      const enemy = {
+        canTakeTurn: jest.fn(() => true),
+        selectedWeapon: { id: 'mock-weapon' },
+        selectedCellCoordinates: null,
+        loadOut: { selectedWeapon: { id: 'mock-weapon' } },
+        _onSecondClickFire: jest.fn(async () => ({
+          weapon: 'mock-weapon',
+          score: { hits: 1, shots: 1 }
+        })),
+        opponent: {
+          hasAttachedWeapons: true,
+          updateResultsOfBomb: jest.fn(),
+          updateUI: jest.fn()
+        },
+        updateUI: jest.fn(),
+        _finalizeTurn: jest.fn()
+      }
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 4, 5)
+
+      expect(enemy._onSecondClickFire).toHaveBeenCalledWith(4, 5)
+      expect(enemy.opponent.updateResultsOfBomb).not.toHaveBeenCalled()
+      expect(enemy.updateUI).not.toHaveBeenCalled()
+      expect(enemy._finalizeTurn).not.toHaveBeenCalled()
     })
   })
 

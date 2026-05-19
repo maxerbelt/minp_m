@@ -57,8 +57,8 @@ export class WeaponTallyBuilder {
     weaponSystem,
     row
   }) {
-    const hit = weaponSystem.hit
-    const damaged = weaponSystem.damaged
+    const hit = !bh.seekingMode && weaponSystem.hit
+    const damaged = !bh.seekingMode && weaponSystem.damaged
     const wid = weaponSystem.id
     const letter = weapon.letter
     const box = document.createElement('div')
@@ -105,7 +105,6 @@ export class WeaponTallyBuilder {
    * Builds a sub-row of weapon ammo boxes for a single weapon system.
    * Creates boxes for full ammo capacity, styling based on ammo state.
    *
-   * @private
    * @param {Object} weaponSystem - Weapon system with ammo data
    * @param {Object} viewModel - View model for interactions
    * @param {Object} weapon - Weapon object

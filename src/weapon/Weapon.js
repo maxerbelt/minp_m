@@ -48,6 +48,23 @@ export class Weapon {
     })
   }
   /**
+   * Gets the audio file for Warning sound
+   * @returns {URL} URL to warning sound asset
+   */
+  get warnSound () {
+    return new URL('../terrains/all/sounds/woodblock.mp3', import.meta.url)
+  }
+  /**
+   * Play the flight sound for this weapon if available.
+   * Plays sound after loading from configured URL.
+   *
+   * @returns {void}
+   */
+  playWarnSound () {
+    bh.audio.playAfterLoad(this.name + '-warn', this.warnSound)
+  }
+
+  /**
    * Create a clone of this weapon with optional ammunition override.
    * Eliminates duplicate clone() implementations in subclasses.
    *
@@ -1000,6 +1017,7 @@ export class StandardShot extends Weapon {
     const url = new URL('../terrains/all/sounds/shot.mp3', import.meta.url)
     return url
   }
+
   /**
    * Get area-of-effect pattern
    *
