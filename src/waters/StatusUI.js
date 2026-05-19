@@ -42,6 +42,7 @@ class StatusUI {
     this.tipsQueue = []
     this.currentNote = null
     this.waiting = false
+    this.currentWeapon = null
 
     // Async queue processing
     this._shouldCancelQueueLoop = false
@@ -263,10 +264,16 @@ class StatusUI {
    *
    * @public
    */
-  resetToSelectionMode () {
-    // stepIndex=0 shows selection mode:
-    // - modeIcon1: remove 'off' class (selection mode is active)
-    // - modeIcon2: add 'off' class (targeting mode is inactive)
+  resetToSelectionMode (weapon = this.currentWeapon) {
+    // If the current weapon is a one-step weapon using an extra select cursor,
+    // there is no separate selection icon to show. In that case the active
+    // mode indicator should remain on step 1 so icon2 stays active.
+    if (weapon?.numStep === 1 && weapon.hasExtraSelectCursor) {
+      this._displayWhichLaunchStep(1)
+      return
+    }
+
+    // Default selection mode for multi-step weapons
     this._displayWhichLaunchStep(0)
   }
 
@@ -363,6 +370,7 @@ class StatusUI {
     const weapon = weaponSystem?.weapon
 
     if (weapon) {
+      this.currentWeapon = weapon
       // Always set the weapon mode and reset icons to ensure UI updates on weapon change
       this._setWeaponMode(weapon)
       this._resetAmmoIcons()
@@ -391,6 +399,7 @@ class StatusUI {
       return
     }
     const weapon = wps.weapon
+    this.currentWeapon = weapon
     this._setWeaponMode(weapon)
     this._resetAmmoIcons()
     this._displayAmmoStepAndHint(wps, maps, numCoords, selectedWps, unattached)

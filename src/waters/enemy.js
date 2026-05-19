@@ -1211,7 +1211,8 @@ class Enemy extends Waters {
     // This shows player is back in selection mode with the new weapon
     // CRITICAL: This must be the last operation to prevent being overwritten
     if (gameStatus?.resetToSelectionMode) {
-      gameStatus.resetToSelectionMode()
+      const currentWeaponSystem = this.loadOut.getCurrentWeaponSystem?.()
+      gameStatus.resetToSelectionMode(currentWeaponSystem?.weapon)
     }
   }
 
