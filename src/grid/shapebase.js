@@ -3,10 +3,50 @@
  * Provides core grid metadata (width, height, size) and delegates coordinate
  * operations to an injected indexer strategy. Cannot be instantiated directly.
  *
+ * @typedef {Object} ShapeIndexer
+ * @property {(x: number, y: number) => number} index - Convert x/y coordinates to a linear index.
+ * @property {(index: number) => [number, number]} location - Convert a linear index to x/y coordinates.
+ * @property {(x: number, y: number) => boolean} isValid - Validate whether x/y coordinates are within bounds.
+ *
+ * @typedef {Object} ShapeConfig
+ * @property {ShapeIndexer} indexer - Indexing strategy implementation.
+ * @property {number} [width] - Grid width in cells.
+ * @property {number} [height] - Grid height in cells.
+ * @property {number} [size] - Total cell count.
+ *
  * @abstract
  * @class ShapeBase
  */
 export class ShapeBase {
+  /**
+   * The original shape configuration object.
+   * @type {ShapeConfig}
+   */
+  shape
+
+  /**
+   * Grid indexer implementation used for coordinate conversions.
+   * @type {ShapeIndexer}
+   */
+  indexer
+
+  /**
+   * Grid width in cells.
+   * @type {number}
+   */
+  width = 0
+
+  /**
+   * Grid height in cells.
+   * @type {number}
+   */
+  height = 0
+
+  /**
+   * Total number of cells in the grid.
+   * @type {number}
+   */
+  size = 0
   /**
    * Helper to enforce abstract base class pattern.
    * Throws if attempting to instantiate an abstract class directly.

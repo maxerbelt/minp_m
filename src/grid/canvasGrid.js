@@ -34,12 +34,12 @@ export class CanvasGrid extends ShapeBase {
    * Must be implemented by derived classes.
    *
    * @abstract
-   * @param {number} x - Column coordinate
-   * @param {number} y - Row coordinate
-   * @param {*} color - The value to set (type depends on grid implementation)
+   * @param {number} _x - Column coordinate
+   * @param {number} _y - Row coordinate
+   * @param {*} _color - The value to set (type depends on grid implementation)
    * @returns {void}
    */
-  set (x, y, color) {
+  set (_x, _y, _color) {
     throw new Error('set method in derived class must be implemented')
   }
 
@@ -94,10 +94,11 @@ export class CanvasGrid extends ShapeBase {
    * @param {number} y0 - Origin row
    * @param {number} x1 - Direction column
    * @param {number} y1 - Direction row
+   * @param {number} [color=1] - Optional cell value used to draw the ray
    * @returns {void}
    */
-  drawRay (x0, y0, x1, y1) {
-    drawRay(x0, y0, x1, y1, this)
+  drawRay (x0, y0, x1, y1, color = 1) {
+    drawRay(x0, y0, x1, y1, this, color)
   }
 
   /**
@@ -107,9 +108,10 @@ export class CanvasGrid extends ShapeBase {
    * @param {number} y0 - First point row
    * @param {number} x1 - Second point column
    * @param {number} y1 - Second point row
+   * @param {number} [color=1] - Optional cell value used to draw the line
    * @returns {void}
    */
-  drawLineInfinite (x0, y0, x1, y1) {
-    drawLineInfinite(x0, y0, x1, y1, this)
+  drawLineInfinite (x0, y0, x1, y1, color = 1) {
+    drawLineInfinite(x0, y0, x1, y1, this, color)
   }
 }

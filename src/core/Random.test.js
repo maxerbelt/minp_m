@@ -88,7 +88,7 @@ describe('Random', () => {
       const result = Random.shuffleArray(array)
       expect(result).toBe(array)
       expect(result).toEqual([2, 4, 5, 3, 1])
-      expect(result.sort((a, b) => a - b)).toEqual(source)
+      expect(result.toSorted((a, b) => a - b)).toEqual(source)
     })
 
     it('returns empty array when passed an empty array', () => {

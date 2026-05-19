@@ -187,7 +187,8 @@ describe('Enemy.updateWeaponStatus', () => {
             board.remove(oldCursor)
           }
           const staleCursorClasses = []
-          for (const cls of board) {
+          for (const cls of /** @type {Iterable<string>} */ (board)) {
+            if (typeof cls !== 'string') continue
             if (cls.startsWith('cursor-') || cls.includes('cursor')) {
               staleCursorClasses.push(cls)
             }
@@ -1128,7 +1129,7 @@ describe('Enemy.updateWeaponStatus', () => {
         },
         selectedCellCoordinates: { r: 0, c: 0 },
         canTakeTurn: jest.fn(() => true),
-        fireWeaponAt: jest.fn(async () => ({
+        fireWeaponAt: jest.fn(async (_r, _c, _weaponSystem) => ({
           weapon: 'single-shot',
           score: { hits: 0 }
         })),
@@ -1171,35 +1172,52 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should support two-click targeting in pure Seek mode when attached weapons exist and opponent reference is absent', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
-      const enemy = new EnemyClass()
+      const enemy = new EnemyClass({
+        board: {
+          classList: {
+            add: jest.fn(),
+            remove: jest.fn(),
+            [Symbol.iterator]: function* () {}
+          }
+        },
+        gridCellAt: jest.fn()
+      })
 
       enemy.canTakeTurn = jest.fn(() => true)
       enemy.opponent = null
       enemy.hasAttachedWeapons = true
-      enemy.loadOut = { isSingleShot: false, getCurrentWeaponSystem: jest.fn() }
-      enemy._onFirstClickSelection = jest.fn()
-      enemy._onSecondClickFire = jest.fn()
+      enemy.loadOut = /** @type {any} */ ({
+        isSingleShot: false,
+        getCurrentWeaponSystem: jest.fn(() => ({}))
+      })
+      enemy['_onFirstClickSelection'] = jest.fn()
+      enemy['_onSecondClickFire'] = jest.fn(async (_r, _c) => {})
       enemy.selectedCellCoordinates = null
 
       await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
 
-      expect(enemy._onFirstClickSelection).toHaveBeenCalled()
+      expect(enemy['_onFirstClickSelection']).toHaveBeenCalled()
       expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
 
       await EnemyClass.prototype.onClickCell.call(enemy, 1, 1)
-      expect(enemy._onSecondClickFire).toHaveBeenCalledWith(1, 1)
+      expect(enemy['_onSecondClickFire']).toHaveBeenCalledWith(1, 1)
     })
 
     it('should normalize invalid hint coordinates to [0, 0] on the real Enemy class', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const enemyUI = { gridCellAt: jest.fn() }
       const enemy = new EnemyClass(enemyUI)
-      const mockWeaponSystemR = { id: 'R1', weapon: { letter: 'R' } }
+      const mockWeaponSystemR = /** @type {any} */ ({
+        id: 'R1',
+        weapon: { letter: 'R' }
+      })
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+      enemy.loadOut.getCurrentWeaponSystem = /** @type {any} */ (
+        jest.fn(() => mockWeaponSystemR)
+      )
       enemy.generateSourceHint = jest.fn(() => null)
-      enemy._armSelectedWeapon = jest.fn()
-      enemy.randomAttachedWeapon = jest.fn()
+      enemy._armSelectedWeapon = /** @type {any} */ (jest.fn())
+      enemy.randomAttachedWeapon = /** @type {any} */ (jest.fn())
       enemy.steps.addShip = jest.fn()
       enemy.opponent = {
         UI: { gridCellAt: jest.fn() },
@@ -1213,18 +1231,21 @@ describe('Enemy.updateWeaponStatus', () => {
         hasAttachedWeapons: true
       }
       enemy.steps.addSource = jest.fn()
-      enemy.createWeaponSelection = jest.fn((r, c, id, hr, hc) => ({
-        launchR: r,
-        launchC: c,
-        weaponId: id,
-        hintR: hr,
-        hintC: hc
-      }))
+      enemy.createWeaponSelection = /** @type {any} */ (
+        jest.fn((r, c, id, hr, hc) => ({
+          launchR: r,
+          launchC: c,
+          weaponId: id,
+          hintR: hr,
+          hintC: hc
+        }))
+      )
 
-      enemy._selectCurrentWeaponOnRandomShip()
+      enemy['_selectCurrentWeaponOnRandomShip']()
 
-      expect(enemy._armSelectedWeapon).toHaveBeenCalled()
-      const [selection] = enemy._armSelectedWeapon.mock.calls[0]
+      expect(enemy['_armSelectedWeapon']).toHaveBeenCalled()
+      const [selection] = /** @type {any} */ (enemy['_armSelectedWeapon']).mock
+        .calls[0]
       expect(selection.hintR).toBe(0)
       expect(selection.hintC).toBe(0)
     })
@@ -1340,6 +1361,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this.steps = {
             clearSource: jest.fn()
           }
+          this._clearCursorClassesFromElement = undefined
 
           this.setBoardTargetingState = jest.fn()
           this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
@@ -1371,7 +1393,10 @@ describe('Enemy.updateWeaponStatus', () => {
           // Get current cursor from board and prepare to update
           let oldCursor = ''
           if (this.UI?.board?.classList) {
-            for (const cls of this.UI.board.classList) {
+            for (const cls of /** @type {Iterable<string>} */ (
+              this.UI.board.classList
+            )) {
+              if (typeof cls !== 'string') continue
               if (cls.startsWith('cursor-') || cls.includes('cursor')) {
                 oldCursor = cls
                 break
@@ -1464,9 +1489,13 @@ describe('Enemy.updateWeaponStatus', () => {
         }
       ]
       enemy._clearCursorClassesFromElement = jest.fn(function (element) {
-        if (element && element.classList?.remove) {
-          element.classList.remove('cursor-rail-bolt')
-          element.classList.remove('cursor-missile')
+        const el =
+          /** @type {{ classList?: { remove?: (...args: any[]) => void } } | null | undefined} */ (
+            element
+          )
+        if (el?.classList?.remove) {
+          el.classList.remove('cursor-rail-bolt')
+          el.classList.remove('cursor-missile')
         }
       })
 

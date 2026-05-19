@@ -67,4 +67,4 @@ function displayRules () {
 }
 
 // Initialize on module load
-initializeRulesPage()
+await initializeRulesPage()
