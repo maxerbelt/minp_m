@@ -235,7 +235,7 @@ class Enemy extends Waters {
     for (const cell of cells) {
       try {
         this._clearCursorClassesFromElement(cell)
-      } catch (err) {
+      } catch {
         // ignore non-element nodes or unexpected structure
       }
     }
@@ -771,14 +771,11 @@ class Enemy extends Waters {
     const viewModel = this.opponent?.UI || this.UI
     const selectedCell = viewModel.gridCellAt(launchR, launchC)
 
-    // Generate hint coordinates for targeting
-    let hintCoords = this.generateSourceHint(selectedShip, this.opponent)
-    if (!Array.isArray(hintCoords) || hintCoords.length < 2) {
-      hintCoords = [0, 0]
-    }
-    if (hintCoords[0] == null || hintCoords[1] == null) {
-      hintCoords = [0, 0]
-    }
+    // Generate hint coordinates for targeting. The hint must always be a valid
+    // `[row, col]` pair before passing into createWeaponSelection.
+    const hintCoords = this._normalizeSourceHint(
+      this.generateSourceHint(selectedShip, this.opponent)
+    )
 
     this.steps.addSource(viewModel, launchR, launchC, selectedCell)
 
@@ -791,6 +788,25 @@ class Enemy extends Waters {
       hintCoords[1]
     )
     this._armSelectedWeapon(selection, this.opponent)
+  }
+
+  /**
+   * Normalizes hint coordinates returned by generateSourceHint.
+   * Ensures the result is always a valid [row, col] tuple.
+   * @param {Array|undefined|null} hintCoords - Hint coordinates from source hint generator
+   * @returns {[number, number]} Normalized hint coordinates
+   * @private
+   */
+  _normalizeSourceHint (hintCoords) {
+    if (
+      !Array.isArray(hintCoords) ||
+      hintCoords.length < 2 ||
+      hintCoords[0] == null ||
+      hintCoords[1] == null
+    ) {
+      return [0, 0]
+    }
+    return [hintCoords[0], hintCoords[1]]
   }
 
   /**
@@ -1148,7 +1164,7 @@ class Enemy extends Waters {
     if (this._clearCursorClassesFromElement) {
       try {
         this._clearCursorClassesFromElement(this.UI?.board)
-      } catch (err) {
+      } catch {
         // ignore errors from mocked elements
       }
     }

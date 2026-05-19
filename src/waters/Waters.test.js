@@ -2,9 +2,7 @@
  * @jest-environment jsdom
  */
 
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-
-import { it, describe, expect, beforeEach, jest } from '@jest/globals'
+import { jest } from '@jest/globals'
 import { Waters } from './Waters.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 import { bh } from '../terrains/all/js/bh.js'

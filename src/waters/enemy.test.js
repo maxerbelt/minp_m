@@ -1189,6 +1189,45 @@ describe('Enemy.updateWeaponStatus', () => {
       await EnemyClass.prototype.onClickCell.call(enemy, 1, 1)
       expect(enemy._onSecondClickFire).toHaveBeenCalledWith(1, 1)
     })
+
+    it('should normalize invalid hint coordinates to [0, 0] on the real Enemy class', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const enemyUI = { gridCellAt: jest.fn() }
+      const enemy = new EnemyClass(enemyUI)
+      const mockWeaponSystemR = { id: 'R1', weapon: { letter: 'R' } }
+
+      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+      enemy.generateSourceHint = jest.fn(() => null)
+      enemy._armSelectedWeapon = jest.fn()
+      enemy.randomAttachedWeapon = jest.fn()
+      enemy.steps.addShip = jest.fn()
+      enemy.opponent = {
+        UI: { gridCellAt: jest.fn() },
+        ships: [
+          {
+            getLoadedWeaponEntries: jest.fn(() => [
+              ['0,0', { id: 'R1', weapon: { letter: 'R' } }]
+            ])
+          }
+        ],
+        hasAttachedWeapons: true
+      }
+      enemy.steps.addSource = jest.fn()
+      enemy.createWeaponSelection = jest.fn((r, c, id, hr, hc) => ({
+        launchR: r,
+        launchC: c,
+        weaponId: id,
+        hintR: hr,
+        hintC: hc
+      }))
+
+      enemy._selectCurrentWeaponOnRandomShip()
+
+      expect(enemy._armSelectedWeapon).toHaveBeenCalled()
+      const [selection] = enemy._armSelectedWeapon.mock.calls[0]
+      expect(selection.hintR).toBe(0)
+      expect(selection.hintC).toBe(0)
+    })
   })
 
   describe('_onSecondClickFire regression', () => {
@@ -1348,7 +1387,9 @@ describe('Enemy.updateWeaponStatus', () => {
           if (this._clearCursorClassesFromElement) {
             try {
               this._clearCursorClassesFromElement(this.UI?.board)
-            } catch (err) {}
+            } catch {
+              // ignore errors from mocked elements
+            }
           }
 
           this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())

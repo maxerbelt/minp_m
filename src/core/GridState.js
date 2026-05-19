@@ -168,25 +168,11 @@ export class GridState {
   }
 
   /**
-   * Get rotation capability for hex grids using map index
-   * @param {number} mapIndex - Index of rotation map in transformMaps array
-   * @returns {boolean} True if rotation would change mask
+   * Get rotation or flip capability for hex grids using map index
+   * @param {number} mapIndex - Index of rotation or flip map in transformMaps array
+   * @returns {boolean} True if transform would change mask
    */
-  canApplyRotation (mapIndex) {
-    const actions = this._getActionsWithTransformMaps()
-    if (!actions) return false
-
-    const map = actions.transformMaps[mapIndex]
-    const template = actions.template
-    return this._canApplyTransform(map, template, actions)
-  }
-
-  /**
-   * Get flip capability for hex grids using map index
-   * @param {number} mapIndex - Index of flip map in transformMaps array
-   * @returns {boolean} True if flip would change mask
-   */
-  canApplyFlip (mapIndex) {
+  canApply (mapIndex) {
     const actions = this._getActionsWithTransformMaps()
     if (!actions) return false
 
@@ -219,7 +205,7 @@ export class GridState {
    * @returns {?any} Clone of mask.bits, or null if unavailable
    */
   cloneBits () {
-    if (!this.mask || !this.mask.clone) return null
+    if (!this.mask?.clone) return null
     return this.mask.clone
   }
 
@@ -228,7 +214,7 @@ export class GridState {
    * @returns {boolean} True if mask has no bits set
    */
   isEmpty () {
-    if (!this.mask || !this.mask.bits) return true
+    if (!this.mask?.bits) return true
     // isEmpty when bits equal emptyMask (no differences), so NOT changed
     return !bitsChanged(this.mask.bits, this.mask.emptyMask?.bits ?? 0)
   }

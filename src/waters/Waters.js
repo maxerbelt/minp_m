@@ -821,17 +821,17 @@ export class Waters {
 
   /**
    * Determines which ships should have weapons based on map configuration.
-   * @param {Object} map - The map object
+   * @param {Object} _map - The map object (unused, kept for API compatibility)
    * @returns {Array} Array of ships with weapons
    */
-  determineWeaponShips (map) {
+  determineWeaponShips (_map) {
     if (!this.ships) {
       this.ships = []
     }
     let weaponShips = this.ships.filter(ship => ship.hasWeapon)
     this.hasAttachedWeapons = weaponShips.length > 0
     //if (bh.seekingMode && this.hasAttachedWeapons) {
-    //  weaponShips = map.extraArmedFleetForMap || weaponShips
+    //  weaponShips = _map.extraArmedFleetForMap || weaponShips
     //}
     this.weaponShips = weaponShips
     return weaponShips
@@ -989,8 +989,8 @@ export class Waters {
   /**
    * Generates a source hint for weapon targeting.
    * @param {Object} ship - The ship to generate hint for
-   * @param {Object} opponent - The opponent instance
-   * @returns {Array} [r, c] coordinates for hint
+   * @param {Object|null} opponent - The opponent instance
+   * @returns {[number, number]} Coordinates [row, col] for hint
    */
   generateSourceHint (ship, opponent) {
     if (this.steps.sourceHint) {
@@ -1001,9 +1001,10 @@ export class Waters {
 
   /**
    * Generates a random source hint around opponent ships.
+   * When no surrounding cells are available, this method falls back to 0,0.
    * @param {Object} ship - The ship to generate hint for
-   * @param {Object} opponent - The opponent instance
-   * @returns {Array} [r, c] coordinates for hint
+   * @param {Object|null} opponent - The opponent instance
+   * @returns {[number, number]} Coordinates [row, col] for hint
    * @private
    */
   generateRandomSourceHint (ship, opponent) {
@@ -1023,9 +1024,10 @@ export class Waters {
 
   /**
    * Gets surrounding cells for a ship relative to opponent.
+   * Returns an empty array when the opponent is missing.
    * @param {Object} ship - The ship
-   * @param {Object} opponent - The opponent instance
-   * @returns {Array} Array of surrounding cell keys
+   * @param {Object|null} opponent - The opponent instance
+   * @returns {string[]} Array of surrounding cell keys
    * @private
    */
   getSurroundingCells (ship, opponent) {
