@@ -46,7 +46,8 @@ export class ShapeBase {
    * Total number of cells in the grid.
    * @type {number}
    */
-  size = 0
+  // `size` is intentionally not initialized here when subclasses may override
+  // it with an accessor. Initialization occurs in ShapeBase constructor.
   /**
    * Helper to enforce abstract base class pattern.
    * Throws if attempting to instantiate an abstract class directly.

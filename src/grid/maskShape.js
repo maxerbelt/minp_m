@@ -6,6 +6,17 @@ const BRESENHAM_MAX_STEPS = 100
 const PIE_SPREAD_DEFAULT = 22.5
 const PIE_NARROW_SPREAD = 8
 
+/**
+ * @typedef {Object} CanvasSurface
+ * @property {number} width - Canvas width in cells.
+ * @property {number} height - Canvas height in cells.
+ * @property {(x: number, y: number, color: number) => void} set - Set a value at a cell.
+ */
+
+/**
+ * @typedef {(canvas: CanvasSurface, cosAngle: number, vLen: number, x: number, y: number) => void} PieDrawer
+ */
+
 // ============================================================================
 // BRESENHAM LINE ALGORITHM
 // ============================================================================
@@ -19,11 +30,11 @@ const PIE_NARROW_SPREAD = 8
  * @param {number} deltaY - Absolute vertical distance
  * @param {number} stepX - Step direction for x (-1, 0, or 1)
  * @param {number} stepY - Step direction for y (-1, 0, or 1)
- * @param {number} width - Canvas width boundary
- * @param {number} height - Canvas height boundary
+ * @param {CanvasSurface} bounds - Canvas boundaries for clipping.
  * @yields {Array<number>} [x, y, steps] - Coordinate and step count
  */
-function* bresenhamSteps (x0, y0, deltaX, deltaY, stepX, stepY, width, height) {
+function* bresenhamSteps (x0, y0, deltaX, deltaY, stepX, stepY, bounds) {
+  const { width, height } = bounds
   let err = deltaX - deltaY
   let steps = 1
   if (deltaX === 0 && deltaY === 0) {
@@ -133,8 +144,7 @@ function _drawRayInDirection (x0, y0, directionX, directionY, canvas, color) {
     deltaY,
     stepX,
     stepY,
-    canvas.width,
-    canvas.height
+    canvas
   )) {
     canvas.set(x, y, color)
   }
@@ -168,8 +178,7 @@ function _interceptInDirection (x0, y0, directionX, directionY, canvas) {
     deltaY,
     stepX,
     stepY,
-    canvas.width,
-    canvas.height
+    canvas
   )) {
     mx = x
     my = y
@@ -257,8 +266,7 @@ function _drawSegmentTo (x0, y0, x1, y1, canvas, color) {
     deltaY,
     stepX,
     stepY,
-    canvas.width,
-    canvas.height
+    canvas
   )) {
     canvas.set(x, y, color)
     if (x === directionX && y === directionY) break
@@ -286,8 +294,7 @@ export function drawSegmentUpTo (x0, y0, x1, y1, canvas, color) {
     deltaY,
     stepX,
     stepY,
-    canvas.width,
-    canvas.height
+    canvas
   )) {
     if (x === directionX && y === directionY) break
     canvas.set(x, y, color)
@@ -350,8 +357,7 @@ export function drawSegmentFor (x0, y0, x1, y1, distance, canvas, color) {
     deltaY,
     stepX,
     stepY,
-    canvas.width,
-    canvas.height
+    canvas
   )) {
     canvas.set(x, y, color)
 
@@ -392,26 +398,28 @@ function _convertSpreadToCosine (spreadDeg) {
 
 /**
  * Draw a pie/sector shape (internal implementation).
- * @param {number} x0 - Center x coordinate
- * @param {number} y0 - Center y coordinate
- * @param {number} x1 - Direction point x coordinate
- * @param {number} y1 - Direction point y coordinate
- * @param {number} radius - Sector radius
- * @param {Object} canvas - Canvas object
- * @param {Function} drawer - Function(canvas, cosAngle, distance, x, y) to draw pixels
- * @param {number} spreadDeg - Spread angle in degrees
+ * @param {Object} options - Pie drawing options
+ * @param {number} options.x0 - Center x coordinate
+ * @param {number} options.y0 - Center y coordinate
+ * @param {number} options.x1 - Direction point x coordinate
+ * @param {number} options.y1 - Direction point y coordinate
+ * @param {number} options.radius - Sector radius
+ * @param {CanvasSurface} options.canvas - Canvas object
+ * @param {PieDrawer} options.drawer - Function to draw pixels
+ * @param {number} [options.spreadDeg=PIE_SPREAD_DEFAULT] - Spread angle in degrees
  * @private
  */
-function _drawPieBase (
-  x0,
-  y0,
-  x1,
-  y1,
-  radius,
-  canvas,
-  drawer,
-  spreadDeg = PIE_SPREAD_DEFAULT
-) {
+function _drawPieBase (options) {
+  const {
+    x0,
+    y0,
+    x1,
+    y1,
+    radius,
+    canvas,
+    drawer,
+    spreadDeg = PIE_SPREAD_DEFAULT
+  } = options
   const ox = x0
   const oy = y0
   const dx = x1 - x0
@@ -443,79 +451,69 @@ function _drawPieBase (
 
 /**
  * Draw a pie/sector shape with a single color.
- * @param {number} x0 - Center x coordinate
- * @param {number} y0 - Center y coordinate
- * @param {number} x1 - Direction point x coordinate
- * @param {number} y1 - Direction point y coordinate
- * @param {number} radius - Sector radius
- * @param {Object} canvas - Canvas object
- * @param {number} spreadDeg - Spread angle in degrees (default: 22.5)
- * @param {number} color - Color value (default: 1)
+ * @param {Array<any>} args - Arguments for pie drawing: x0, y0, x1, y1, radius, canvas, [spreadDeg], [color]
  * @example
  * drawPie(10, 10, 15, 15, 5, canvas, 22.5, 1)
  */
-export function drawPie (
-  x0,
-  y0,
-  x1,
-  y1,
-  radius,
-  canvas,
-  spreadDeg = PIE_SPREAD_DEFAULT,
-  color = 1
-) {
-  _drawPieBase(
+export function drawPie (...args) {
+  const [x0, y0, x1, y1, radius, canvas] = args
+  let spreadDeg = PIE_SPREAD_DEFAULT
+  let color = 1
+
+  if (args.length >= 7) {
+    spreadDeg = args[6]
+  }
+  if (args.length >= 8) {
+    color = args[7]
+  }
+
+  _drawPieBase({
     x0,
     y0,
     x1,
     y1,
     radius,
     canvas,
-    (canvas, cosAngle, vLen, x, y) => {
+    drawer: (canvas, cosAngle, vLen, x, y) => {
       canvas.set(x, y, color)
     },
     spreadDeg
-  )
+  })
 }
 
 /**
  * Draw a pie/sector shape with two color zones (inner and outer).
- * @param {number} x0 - Center x coordinate
- * @param {number} y0 - Center y coordinate
- * @param {number} x1 - Direction point x coordinate
- * @param {number} y1 - Direction point y coordinate
- * @param {number} radius - Sector radius
- * @param {Object} canvas - Canvas object
- * @param {number} spread - Main spread angle in degrees (default: 22.5)
- * @param {number} narrowSpread - Inner zone spread angle in degrees (default: 8)
+ * @param {Array<any>} args - Arguments for pie drawing: x0, y0, x1, y1, radius, canvas, [spread], [narrowSpread]
  * @example
  * drawPie2(10, 10, 15, 15, 5, canvas, 22.5, 8)
  */
-export function drawPie2 (
-  x0,
-  y0,
-  x1,
-  y1,
-  radius,
-  canvas,
-  spread = PIE_SPREAD_DEFAULT,
-  narrowSpread = PIE_NARROW_SPREAD
-) {
+export function drawPie2 (...args) {
+  const [x0, y0, x1, y1, radius, canvas] = args
+  let spread = PIE_SPREAD_DEFAULT
+  let narrowSpread = PIE_NARROW_SPREAD
+
+  if (args.length >= 7) {
+    spread = args[6]
+  }
+  if (args.length >= 8) {
+    narrowSpread = args[7]
+  }
+
   const narrowLimit = _convertSpreadToCosine(narrowSpread)
-  _drawPieBase(
+  _drawPieBase({
     x0,
     y0,
     x1,
     y1,
     radius,
     canvas,
-    (canvas, cosAngle, vLen, x, y) => {
+    drawer: (canvas, cosAngle, vLen, x, y) => {
       if (cosAngle > narrowLimit) {
         canvas.set(x, y, 2)
       } else {
         canvas.set(x, y, 1)
       }
     },
-    spread
-  )
+    spreadDeg: spread
+  })
 }
