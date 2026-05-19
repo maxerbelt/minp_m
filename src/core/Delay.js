@@ -81,7 +81,10 @@ export class Delay {
     minDelay = Delay.DEFAULT_MIN_DELAY,
     maxDelay = Delay.DEFAULT_MAX_DELAY
   ) {
-    const delayMs = Random.integerWithRange(minDelay, maxDelay)
+    const min = Number.isFinite(minDelay) ? minDelay : Delay.DEFAULT_MIN_DELAY
+    const max = Number.isFinite(maxDelay) ? maxDelay : Delay.DEFAULT_MAX_DELAY
+
+    const delayMs = Random.integerWithRange(min, max)
     await Delay.wait(delayMs)
   }
 

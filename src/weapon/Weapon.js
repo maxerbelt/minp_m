@@ -493,7 +493,18 @@ export class Weapon {
     model,
     launch
   ) {
-    launch = launch || this.launchToRaw.bind(this)
+    if (!launch) {
+      return await this.launchToRaw(
+        coords,
+        rr,
+        cc,
+        map,
+        viewModel,
+        opposingViewModel,
+        model,
+        this.processCoords.bind(this)
+      )
+    }
     return await launch(
       coords,
       rr,
@@ -501,8 +512,7 @@ export class Weapon {
       map,
       viewModel,
       opposingViewModel,
-      model,
-      this.processCoords.bind(this)
+      model
     )
   }
 

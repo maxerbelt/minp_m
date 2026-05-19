@@ -95,7 +95,7 @@ export class GridState {
    */
   isDilateDisabled () {
     const mask = this.mask
-    if (!mask || !mask.fullMask) return false
+    if (!mask?.fullMask) return false
     return isBitboardFull(mask.bits, mask.fullMask.bits)
   }
 
@@ -129,7 +129,7 @@ export class GridState {
    */
   _getActionsWithTransformMaps () {
     const actions = this.getCurrentActions()
-    if (!actions || !actions.transformMaps) return null
+    if (!actions?.transformMaps) return null
     return actions
   }
 

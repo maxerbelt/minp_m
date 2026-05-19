@@ -267,8 +267,24 @@ describe('spaceWeapons basic behavior', () => {
       gameModel
     )
 
-    expect(result).toEqual({ target: [5, 5] })
+    expect(result).toEqual({})
     expect(viewModel.gridCellAt).toHaveBeenCalled()
+  })
+
+  it('GaussRound.processCoords accepts flat target coordinates without throwing', () => {
+    const gauss = new GaussRound(1)
+    const map = { cols: 10, rows: 10, isLand: () => false }
+    bh.terrainMaps.current.current = map
+    const model = { getTarget: () => null }
+
+    expect(() => {
+      const result = gauss.processCoords(map, [0, 0], [3, 4], model)
+      expect(Array.isArray(result)).toBe(true)
+      expect(Array.isArray(result[0])).toBe(true)
+      expect(Array.isArray(result[1])).toBe(true)
+      expect(result[0][0]).toBe(0)
+      expect(result[0][1]).toBe(0)
+    }).not.toThrow()
   })
 
   it('GaussRound and Scan clone/single and tags', () => {

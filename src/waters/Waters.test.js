@@ -250,6 +250,29 @@ describe('Waters', () => {
     })
   })
 
+  describe('createLoadOut', () => {
+    it('skips limited unattached weapons when terrain has no unattached weapons', () => {
+      const map = {
+        weapons: [
+          { letter: 'S', isLimited: false },
+          { letter: 'G', isLimited: true }
+        ]
+      }
+      const terrainSpy = jest.spyOn(bh, 'terrain', 'get').mockReturnValue({
+        hasUnattachedWeapons: false
+      })
+      const loadOut = waters.createLoadOut(map, [])
+
+      expect(loadOut.unattachedWeapons).toEqual([
+        { letter: 'S', isLimited: false }
+      ])
+      expect(loadOut.weaponSystems.some(wps => wps.weapon.letter === 'G')).toBe(
+        false
+      )
+      terrainSpy.mockRestore()
+    })
+  })
+
   describe('loadForEdit', () => {
     it('loadForEdit initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships

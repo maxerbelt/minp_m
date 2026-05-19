@@ -878,7 +878,9 @@ export class Waters {
    */
   createLoadOut (map, ships) {
     ships = ships || this.weaponShips || []
-    const weapons = map?.weapons || []
+    const weapons = bh.terrain?.hasUnattachedWeapons
+      ? map?.weapons || []
+      : (map?.weapons || []).filter(weapon => !weapon.isLimited)
     return new LoadOut(weapons, ships, this.UI, this.steps)
   }
   /**

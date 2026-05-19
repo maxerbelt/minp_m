@@ -38,6 +38,27 @@ import { coordToKey } from '../../../core/utilities.js'
 
 // ============================================================================
 // Helper Constants & Utility Functions
+
+function normalizeWeaponCoordinates (coords, rr, cc) {
+  if (!Array.isArray(coords)) {
+    throw new TypeError('coords must be an array')
+  }
+  if (coords.length === 2 && typeof coords[0] === 'number') {
+    return [[rr, cc], coords]
+  }
+  if (coords.length === 1 && Array.isArray(coords[0])) {
+    return [[rr, cc], coords[0]]
+  }
+  if (
+    coords.length === 2 &&
+    Array.isArray(coords[0]) &&
+    Array.isArray(coords[1])
+  ) {
+    return coords
+  }
+  throw new TypeError('invalid coords shape for launch coordinates')
+}
+
 // ============================================================================
 
 /** CSS class names for animation state management */
@@ -743,8 +764,7 @@ export class GaussRound extends Fish {
         map,
         viewModel,
         opposingViewModel,
-        gameModel,
-        this.processCoords.bind(this)
+        gameModel
       )
     }
     const [, targetCoord, hasCandidates] = this.processCoords(
@@ -792,9 +812,10 @@ export class GaussRound extends Fish {
    * @returns {number[][]} Processed coordinate pair with candidate flag
    */
   processCoords (map, [rr, cc], coords, model) {
-    const effect = this.aoe(map, coords)
+    const normalizedCoords = normalizeWeaponCoordinates(coords, rr, cc)
+    const effect = this.aoe(map, normalizedCoords)
     const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], coords)
+    const list = this.redoCoords(map, [rr, cc], normalizedCoords)
     if (t) {
       const source = list[0]
       return [source, t, true]
@@ -1180,9 +1201,10 @@ export class Laser extends Fish {
    * @returns {number[][]} Processed coordinate pair with candidate flag
    */
   processCoords (map, [rr, cc], coords, model) {
-    const effect = this.aoe(map, coords)
+    const normalizedCoords = normalizeWeaponCoordinates(coords, rr, cc)
+    const effect = this.aoe(map, normalizedCoords)
     const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], coords)
+    const list = this.redoCoords(map, [rr, cc], normalizedCoords)
     if (t) {
       const source = list[0]
       return [source, t, true]
