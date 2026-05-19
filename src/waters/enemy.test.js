@@ -22,6 +22,8 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   bh: {
     seekingMode: false,
     terrain: { hasAttachedWeapons: false },
+    subTerrainTags: ['space', 'asteroid'],
+    subTerrainTagFromCell: jest.fn(() => undefined),
     maps: {
       shipColors: { M1: 'red', M2: 'darkred', R1: 'blue', R2: 'darkblue' }
     },
@@ -1189,6 +1191,82 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.selectedCellCoordinates).toBeNull()
     })
 
+    it('should warn and ignore asteroid source clicks for Gauss Round in seek mode', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const { bh } = await import('../terrains/all/js/bh.js')
+
+      bh.seekingMode = true
+      bh.terrain = { title: 'Space and Asteroids' }
+      bh.subTerrainTagFromCell = jest.fn(() => 'asteroid')
+
+      const playWarnSound = jest.fn()
+      const enemy = {
+        opponent: { hasAttachedWeapons: true },
+        loadOut: {
+          getCurrentWeaponSystem: jest.fn(() => ({
+            weapon: { name: 'Gauss Round', letter: '^', playWarnSound }
+          }))
+        },
+        timeoutId: null,
+        canTakeTurn: jest.fn(() => true),
+        UI: {
+          gridCellAt: jest.fn(() => ({
+            classList: { contains: jest.fn(() => true) }
+          }))
+        },
+        _hasUnattachedForCurrentWeapon: jest.fn(() => false),
+        _onFirstClickSelection: jest.fn(),
+        selectedCellCoordinates: null
+      }
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 2, 3)
+
+      expect(playWarnSound).toHaveBeenCalled()
+      expect(enemy._onFirstClickSelection).not.toHaveBeenCalled()
+      expect(enemy.selectedCellCoordinates).toBeNull()
+    })
+
+    it('should fire immediately in seek mode when the current weapon can fire directly', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const enemy = {
+        opponent: { hasAttachedWeapons: true },
+        loadOut: {
+          isSingleShot: false,
+          selectedWeapon: null,
+          getUnattachedWeaponSystem: jest.fn(() => ({ id: 'M1' })),
+          getCurrentWeaponSystem: jest.fn(() => ({
+            id: 'M1',
+            weapon: { letter: 'M' }
+          }))
+        },
+        timeoutId: null,
+        canTakeTurn: jest.fn(() => true),
+        _hasUnattachedForCurrentWeapon:
+          EnemyClass.prototype._hasUnattachedForCurrentWeapon,
+        _onFirstClickSelection: jest.fn(),
+        _onSecondClickFire: jest.fn(),
+        setupWeapon: jest.fn(async () => ({
+          weapon: 'Missile',
+          score: { hits: 1 }
+        })),
+        _shouldWaitForWeaponResult: jest.fn(() => false),
+        _processWeaponResult: jest.fn(),
+        _finalizeTurn: jest.fn(),
+        selectedCellCoordinates: null
+      }
+
+      await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
+
+      expect(enemy.setupWeapon).toHaveBeenCalledWith(0, 0)
+      expect(enemy._onFirstClickSelection).not.toHaveBeenCalled()
+      expect(enemy._onSecondClickFire).not.toHaveBeenCalled()
+      expect(enemy._processWeaponResult).toHaveBeenCalledWith({
+        weapon: 'Missile',
+        score: { hits: 1 }
+      })
+      expect(enemy._finalizeTurn).toHaveBeenCalled()
+    })
+
     it('should support two-click targeting in pure Seek mode when attached weapons exist and opponent reference is absent', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const enemy = new EnemyClass({
@@ -1207,7 +1285,8 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.hasAttachedWeapons = true
       enemy.loadOut = /** @type {any} */ ({
         isSingleShot: false,
-        getCurrentWeaponSystem: jest.fn(() => ({}))
+        getCurrentWeaponSystem: jest.fn(() => ({})),
+        getUnattachedWeaponSystem: jest.fn(() => null)
       })
       enemy['_onFirstClickSelection'] = jest.fn()
       enemy['_onSecondClickFire'] = jest.fn(async (_r, _c) => {})
@@ -1267,6 +1346,62 @@ describe('Enemy.updateWeaponStatus', () => {
         .calls[0]
       expect(selection.hintR).toBe(0)
       expect(selection.hintC).toBe(0)
+    })
+
+    it('should use the clicked seek cell as the source hint for two-click attached weapons', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const { bh } = await import('../terrains/all/js/bh.js')
+      bh.seekingMode = true
+
+      const enemy = new EnemyClass({ gridCellAt: jest.fn() })
+      const mockWeaponSystemR = /** @type {any} */ ({
+        id: 'R1',
+        weapon: { letter: 'R', postSelectCoords: 1 }
+      })
+
+      enemy.loadOut.getCurrentWeaponSystem = /** @type {any} */ (
+        jest.fn(() => mockWeaponSystemR)
+      )
+      enemy.generateSourceHint = jest.fn(() => ({ row: 9, col: 9 }))
+      enemy._armSelectedWeapon = jest.fn()
+      enemy.randomAttachedWeapon = jest.fn()
+      enemy.steps.addShip = jest.fn()
+      enemy.opponent = {
+        UI: { gridCellAt: jest.fn(() => 'cell') },
+        ships: [
+          {
+            getLoadedWeaponEntries: jest.fn(() => [
+              ['0,0', { id: 'R1', weapon: { letter: 'R' } }]
+            ])
+          }
+        ],
+        hasAttachedWeapons: true
+      }
+      enemy.steps.addSource = jest.fn()
+      enemy.createWeaponSelection = /** @type {any} */ (
+        jest.fn((r, c, id, hr, hc) => ({
+          launchR: r,
+          launchC: c,
+          weaponId: id,
+          hintR: hr,
+          hintC: hc
+        }))
+      )
+
+      await enemy._onFirstClickSelection(2, 3)
+
+      expect(enemy.steps.addSource).toHaveBeenCalledWith(
+        enemy.opponent.UI,
+        2,
+        3,
+        'cell'
+      )
+      const [selection] = /** @type {any} */ (enemy._armSelectedWeapon).mock
+        .calls[0]
+      expect(selection.hintR).toBe(2)
+      expect(selection.hintC).toBe(3)
+
+      bh.seekingMode = false
     })
   })
 

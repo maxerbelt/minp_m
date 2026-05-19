@@ -272,6 +272,39 @@ class Enemy extends Waters {
       (bh.seekingMode && !this.hasAttachedWeapons)
     )
   }
+
+  /**
+   * Returns true when a Missile should be fired immediately in pure Seek mode
+   * on the Space and Asteroids terrain.
+   *
+   * In this terrain/mode combination, Missile targeting is a single-click
+   * action and should not fall through to the attached-weapon two-click
+   * selection flow.
+   *
+   * @private
+   * @param {Object} [weaponSystem=this.loadOut.getCurrentWeaponSystem()]
+   * @param {Object} [weaponSystem.weapon]
+   * @returns {boolean}
+   */
+  _shouldFireSeekModeMissileImmediately (
+    weaponSystem = this.loadOut.getCurrentWeaponSystem()
+  ) {
+    if (!bh.seekingMode || bh.terrain?.title !== 'Space and Asteroids') {
+      return false
+    }
+
+    const weapon = weaponSystem?.weapon
+    if (!weapon) {
+      return false
+    }
+
+    return (
+      weapon.letter === 'M' ||
+      weapon.name === 'Missile' ||
+      weapon.tag === 'missile'
+    )
+  }
+
   /**
    * Handles the selection event by updating the board classes.
    * @private
@@ -713,7 +746,7 @@ class Enemy extends Waters {
    * @private
    * @returns {void}
    */
-  _selectCurrentWeaponOnRandomShip () {
+  _selectCurrentWeaponOnRandomShip (r, c) {
     // Get the weapon the player currently has selected (via weapon button click)
     const currentWeapon = this.loadOut.getCurrentWeaponSystem()
 
@@ -761,17 +794,23 @@ class Enemy extends Waters {
 
     const [launchC, launchR] = parsePair(key)
     const viewModel = this.opponent?.UI || this.UI
-    const selectedCell = viewModel.gridCellAt(launchR, launchC)
 
-    // Generate hint coordinates for targeting. The hint must always be a valid
-    // `[row, col]` pair before passing into createWeaponSelection.
-    const hintCoords = this._normalizeSourceHint(
-      this.generateSourceHint(selectedShip, this.opponent)
-    )
+    const isSeekSource =
+      bh.seekingMode && currentWeapon.weapon?.postSelectCoords > 0
+    const sourceRow = isSeekSource ? r : launchR
+    const sourceCol = isSeekSource ? c : launchC
+    const sourceCell = viewModel.gridCellAt(sourceRow, sourceCol)
 
-    this.steps.addSource(viewModel, launchR, launchC, selectedCell)
+    const hintCoords = isSeekSource
+      ? [r, c]
+      : this._normalizeSourceHint(
+          this.generateSourceHint(selectedShip, this.opponent)
+        )
 
-    // Create weapon selection for the current weapon
+    this.steps.addSource(viewModel, sourceRow, sourceCol, sourceCell)
+
+    // Create weapon selection for the current weapon. In pure seek mode,
+    // the clicked location becomes the source hint for two-step weapons.
     const selection = this.createWeaponSelection(
       launchR,
       launchC,
@@ -818,8 +857,8 @@ class Enemy extends Waters {
    * @private
    * @returns {void}
    */
-  _onFirstClickSelection () {
-    this._selectCurrentWeaponOnRandomShip()
+  _onFirstClickSelection (r, c) {
+    this._selectCurrentWeaponOnRandomShip(r, c)
     gameStatus.addToQueue(MESSAGES.ENEMY_SELECTING_TARGET, true)
   }
 
@@ -887,27 +926,58 @@ class Enemy extends Waters {
       return
     }
 
-    // Two-click behavior: Check for attached weapons, NOT the seekingMode flag.
-    // This allows Hide & Seek mode to work correctly while seekingMode = false,
-    // and also supports pure Seek mode when no opponent model exists.
+    // Two-click behavior applies only when the current weapon is not already
+    // able to fire from the current seek-mode selection state.
     if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
-      // Implement two-click behavior
-      if (this.selectedCellCoordinates === null) {
-        // If a weapon is already selected, this click should target that weapon
-        // instead of selecting a new rack from the enemy board.
-        if (this.loadOut?.selectedWeapon) {
-          await this._onSecondClickFire(r, c)
-          return
-        }
-        // First click on the enemy board: select weapon and ship for targeting.
-        this._onFirstClickSelection()
-        this.selectedCellCoordinates = { r, c }
-        return
-      } else {
-        // Second click: fire at the selected weapon's target.
+      // If a weapon has already been selected for a second click, fire it.
+      if (this.loadOut?.selectedWeapon) {
         await this._onSecondClickFire(r, c)
         return
       }
+
+      if (this.selectedCellCoordinates === null) {
+        const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+
+        if (this._shouldFireSeekModeMissileImmediately(currentWeapon)) {
+          const result = await this.setupWeapon(r, c)
+          if (this._shouldWaitForWeaponResult(result)) return
+          this._processWeaponResult(result)
+          this._finalizeTurn()
+          return
+        }
+
+        const isGaussRound =
+          currentWeapon?.weapon?.name === 'Gauss Round' ||
+          currentWeapon?.weapon?.letter === '^'
+        const isSpaceAndAsteroids = bh.terrain?.title === 'Space and Asteroids'
+
+        if (bh.seekingMode && isSpaceAndAsteroids && isGaussRound) {
+          const cell = this.UI.gridCellAt(r, c)
+          if (bh.subTerrainTagFromCell(cell) === 'asteroid') {
+            currentWeapon.weapon.playWarnSound()
+            return
+          }
+        }
+
+        // In attach-capable seek mode, some weapons can fire directly from the
+        // selected weapon state without forcing a Hide & Seek-style rack pick.
+        if (this._hasUnattachedForCurrentWeapon()) {
+          const result = await this.setupWeapon(r, c)
+          if (this._shouldWaitForWeaponResult(result)) return
+          this._processWeaponResult(result)
+          this._finalizeTurn()
+          return
+        }
+
+        // First click on the enemy board: select a weapon and ship for targeting.
+        this._onFirstClickSelection(r, c)
+        this.selectedCellCoordinates = { r, c }
+        return
+      }
+
+      // Second click: fire at the selected weapon's target.
+      await this._onSecondClickFire(r, c)
+      return
     }
 
     // Default single-click behavior for other modes
