@@ -360,8 +360,30 @@ export class Mask extends RectMaskBase {
    * @param {number} dstY - Destination Y offset
    * @param {string} [mode='copy'] - Blit mode
    */
-  blit (src, srcX, srcY, width, height, dstX, dstY, mode = 'copy') {
-    this._blit.blit(src, srcX, srcY, width, height, dstX, dstY, mode)
+  /**
+   * Blit wrapper accepting an options bag to keep parameter count low.
+   * Maintains a small public surface but forwards to the BlitOperation.
+   * @param {Object} src - Source mask/grid
+   * @param {Object} [opts] - Options describing source/destination rectangle
+   * @param {number} [opts.srcX]
+   * @param {number} [opts.srcY]
+   * @param {number} [opts.width]
+   * @param {number} [opts.height]
+   * @param {number} [opts.dstX]
+   * @param {number} [opts.dstY]
+   * @param {string} [opts.mode='copy']
+   */
+  blit (src, opts = {}) {
+    const {
+      srcX = 0,
+      srcY = 0,
+      width = 0,
+      height = 0,
+      dstX = 0,
+      dstY = 0,
+      mode = 'copy'
+    } = opts
+    this._blit.blit({ src, srcX, srcY, width, height, dstX, dstY, mode })
   }
 
   // ============================================================================

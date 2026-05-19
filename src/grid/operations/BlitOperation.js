@@ -17,17 +17,19 @@ export class BlitOperation {
   /**
    * Blit a source region into the mask at given destination
    * Modifies this.mask.bits in-place by applying blend mode row-by-row
-   * @param {Object} src - Source mask/grid with sliceRow method
-   * @param {number} srcX - Source region left edge (x-coordinate)
-   * @param {number} srcY - Source region top edge (y-coordinate)
-   * @param {number} width - Region width in cells
-   * @param {number} height - Region height in cells
-   * @param {number} dstX - Destination left edge (x-coordinate)
-   * @param {number} dstY - Destination top edge (y-coordinate)
-   * @param {string} [mode='copy'] - Blend mode: 'copy'|'or'|'and'|'xor'
+   * @param {{src: Object, srcX?: number, srcY?: number, width?: number, height?: number, dstX?: number, dstY?: number, mode?: string}} options - Options object describing the blit
    * @returns {void} Updates this.mask.bits in-place
    */
-  blit (src, srcX, srcY, width, height, dstX, dstY, mode = 'copy') {
+  blit ({
+    src,
+    srcX = 0,
+    srcY = 0,
+    width = 0,
+    height = 0,
+    dstX = 0,
+    dstY = 0,
+    mode = 'copy'
+  } = {}) {
     for (let rowIndex = 0; rowIndex < height; rowIndex++) {
       const sourceRowBits = src.sliceRow(
         srcY + rowIndex,
@@ -49,19 +51,22 @@ export class BlitOperation {
    * Create a mask containing blit result (non-destructive)
    * Returns a new mask with the blitted region; original unchanged
    * @param {Object} src - Source mask/grid with sliceRow method
-   * @param {number} srcX - Source region left edge
-   * @param {number} srcY - Source region top edge
-   * @param {number} width - Region width in cells
-   * @param {number} height - Region height in cells
-   * @param {number} dstX - Destination left edge
-   * @param {number} dstY - Destination top edge
-   * @param {string} [mode='copy'] - Blend mode: 'copy'|'or'|'and'|'xor'
+   * @param {Object} [opts] - Options object with blit parameters (srcX, srcY, width, height, dstX, dstY, mode)
    * @returns {Object} New mask with blit operation applied
    */
-  blitToMask (src, srcX, srcY, width, height, dstX, dstY, mode = 'copy') {
+  blitToMask (src, opts = {}) {
+    const {
+      srcX = 0,
+      srcY = 0,
+      width = 0,
+      height = 0,
+      dstX = 0,
+      dstY = 0,
+      mode = 'copy'
+    } = opts
     const resultMask = this.mask.clone
     // Apply blit to a temporary BlitOperation instance on the cloned mask
-    new BlitOperation(resultMask).blit(
+    new BlitOperation(resultMask).blit({
       src,
       srcX,
       srcY,
@@ -70,7 +75,7 @@ export class BlitOperation {
       dstX,
       dstY,
       mode
-    )
+    })
     return resultMask
   }
 

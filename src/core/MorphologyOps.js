@@ -3,6 +3,13 @@
  * No side effects - all functions return new values
  */
 
+/**
+ * @typedef {bigint|number|Array<number>|Uint32Array|Uint16Array|Uint8Array|Int32Array} Bitboard
+ * @typedef {{ bits: Bitboard, width:number, height:number, depth?:number, store?:any, indexer?:any, clone?:any }} MaskLike
+ * @typedef {{ bits: Bitboard, width:number, height:number, store?:any, indexer?:any }} PackedLike
+ * @typedef {{ newWords: Function, clone: Function, bitSub: Function, setIdx: Function, value: Function, words?:number }} StoreLike
+ */
+
 // ============================================================================
 // BIT COMPARISON & VALIDATION
 // ============================================================================
@@ -41,7 +48,7 @@ function cloneBitsValue (bits, mask) {
   if (mask?.cloneBits !== undefined) {
     return mask.cloneBits
   }
-  if (mask?.store?.clone === 'function') {
+  if (mask?.store && typeof mask.store.clone === 'function') {
     return mask.store.clone(bits)
   }
   if (typeof bits === 'bigint' || typeof bits === 'number') return bits
