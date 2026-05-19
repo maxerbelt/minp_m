@@ -13,11 +13,11 @@ export class Animator {
 
   /**
    * Creates an Animator instance for managing animations.
-   * @param {string} className - CSS class name(s) for the animation element
-   * @param {string|null} [containerId=null] - ID of the container element
-   * @param {HTMLElement|null} [container=null] - Container element (takes precedence over containerId)
-   * @param {boolean} [removeExisting=true] - Whether to remove existing elements with the same class
-   * @param {...string} innerDivClassNames - Additional class names for inner div elements
+   * @param {string} className - CSS class name(s) for the animation element.
+   * @param {string|null|undefined} [containerId=null] - ID of the container element.
+   * @param {HTMLElement|null} [container=null] - Container element (takes precedence over containerId).
+   * @param {boolean} [removeExisting=true] - Whether to remove existing elements with the same class.
+   * @param {...string} innerDivClassNames - Additional class names for inner div elements.
    */
   constructor (
     className,
@@ -32,7 +32,11 @@ export class Animator {
     /** @type {HTMLDivElement} */
     this.el = this._createElement(className)
     /** @type {HTMLElement|null} */
-    this.container = container || document.getElementById(containerId)
+    this.container =
+      container ||
+      (typeof containerId === 'string'
+        ? document.getElementById(containerId)
+        : null)
     /** @type {HTMLDivElement|null} */
     this.innerEl = this._createInnerElement(innerDivClassNames)
     /** @type {boolean} */
@@ -138,7 +142,11 @@ export class Animator {
    * @returns {DOMRect} Container's bounding rectangle
    */
   get containerRect () {
-    return this.container.getBoundingClientRect()
+    const container = this.container || document.documentElement
+    if (!container) {
+      throw new Error('Animator container is not available')
+    }
+    return container.getBoundingClientRect()
   }
 
   /**
@@ -146,7 +154,7 @@ export class Animator {
    * @param {string} shakeClass - CSS class for shaking effect
    */
   shake (shakeClass) {
-    this.container.classList.add(shakeClass)
+    this.container?.classList.add(shakeClass)
   }
 
   /**
@@ -154,9 +162,8 @@ export class Animator {
    * @param {string} shakeClass - CSS class to remove
    */
   endShake (shakeClass) {
-    this.container.classList.remove(shakeClass)
+    this.container?.classList.remove(shakeClass)
   }
-
   /**
    * Gets the element that should be animated (inner or main element).
    * @returns {HTMLElement} The playable element
@@ -208,11 +215,15 @@ export class Animator {
   play (...animationClasses) {
     const classes = animationClasses.length ? animationClasses : ['play']
     this._resetClasses(classes)
-    this.container.appendChild(this.el)
+    const container =
+      this.container || document.body || document.documentElement
+    if (!container) {
+      return
+    }
+    container.appendChild(this.el)
     this._forceStyleRecalculation()
     this._addClasses(classes)
   }
-
   /**
    * Resets animation classes on elements.
    * @private

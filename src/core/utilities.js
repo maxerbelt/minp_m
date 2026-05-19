@@ -16,8 +16,9 @@ import { Random } from './Random.js'
 
 /**
  * Shuffles the elements of an array in place using Fisher-Yates algorithm.
- * @param {Array} array - The array to shuffle
- * @returns {Array} The shuffled array
+ * @template T
+ * @param {T[]} array - The array to shuffle.
+ * @returns {T[]} The shuffled array.
  */
 export function shuffleArray (array) {
   return Random.shuffleArray(array)
@@ -25,8 +26,9 @@ export function shuffleArray (array) {
 
 /**
  * Selects a random element from an array.
- * @param {Array} array - The array to select from
- * @returns {*} Random element from the array
+ * @template T
+ * @param {T[]} array - The array to select from.
+ * @returns {T|undefined} Random element from the array, or undefined if empty.
  */
 export function randomElement (array) {
   return Random.element(array)
@@ -125,8 +127,8 @@ export function makeKey (row, col) {
 
 /**
  * Converts a coordinate tuple into a key string.
- * @param {Coordinate} coord - Coordinate tuple [row, col]
- * @returns {string} Key string
+ * @param {...(number|bigint)} coord - Coordinate tuple [row, col].
+ * @returns {string} Key string.
  */
 export function coordToKey (...coord) {
   const [row, col] = coord
@@ -135,13 +137,13 @@ export function coordToKey (...coord) {
 
 /**
  * Parses a key string into row and column coordinates.
- * @param {string} key - Key string
- * @returns {Array<number>} [row, col]
+ * @param {string} key - Key string.
+ * @returns {[number, number]} [row, col].
  */
 export function parsePair (key) {
   const pair = key.split(',')
-  const row = Number.parseInt(pair[0])
-  const col = Number.parseInt(pair[1])
+  const row = Number.parseInt(pair[0], 10)
+  const col = Number.parseInt(pair[1], 10)
   return [row, col]
 }
 
@@ -168,16 +170,26 @@ export function makeKeyAndId (key, id) {
 
 /**
  * Parses a key-ID string into row, column, and ID.
- * @param {string} keyId - Key-ID string
- * @returns {Array<number>|null} [row, col, id] or null
+ * @param {string} keyId - Key-ID string.
+ * @returns {[number, number, number]|null} [row, col, id] or null.
  */
 export function parseTriple (keyId) {
   if (!keyId) return null
+
   const triple = keyId.split(':')
-  const pair = triple[0]?.split(',')
-  const row = Number.parseInt(pair[0])
-  const col = Number.parseInt(pair[1])
-  const id = Number.parseInt(triple[1])
+  if (triple.length < 2 || !triple[0]) return null
+
+  const pair = triple[0].split(',')
+  if (pair.length < 2) return null
+
+  const row = Number.parseInt(pair[0], 10)
+  const col = Number.parseInt(pair[1], 10)
+  const id = Number.parseInt(triple[1], 10)
+
+  if (!Number.isFinite(row) || !Number.isFinite(col) || !Number.isFinite(id)) {
+    return null
+  }
+
   return [row, col, id]
 }
 
@@ -187,20 +199,21 @@ export function parseTriple (keyId) {
  * @returns {Array<number>} [row, col]
  */
 export function coordsFromCell (cell) {
-  const row = Number.parseInt(cell.dataset.r)
-  const col = Number.parseInt(cell.dataset.c)
+  const row = Number.parseInt(cell.dataset.r ?? '0', 10)
+  const col = Number.parseInt(cell.dataset.c ?? '0', 10)
   return [row, col]
 }
 
 /**
  * Retrieves a list of numbers from a cell's dataset.
- * @param {HTMLElement} cell - Cell element
- * @returns {Array<number>|null} List of numbers or null
+ * @param {HTMLElement} cell - Cell element.
+ * @returns {number[]|null} List of numbers or null.
  */
 export function listFromCell (cell) {
   const retrievedJson = cell.dataset.numbers
   if (!retrievedJson) return null
-  const stringArray = JSON.parse(retrievedJson) || []
+
+  const stringArray = /** @type {string[]} */ (JSON.parse(retrievedJson) || [])
   return stringArray.map(numStr => Number.parseInt(numStr, 10))
 }
 
@@ -272,8 +285,9 @@ export function setCellList (cell, list) {
 
 /**
  * Returns the first element of an array.
- * @param {Array} arr - The array
- * @returns {*} First element or null
+ * @template T
+ * @param {T[]} arr - The array.
+ * @returns {T|null} First element or null.
  */
 export function first (arr) {
   if (!arr || arr.length === 0) return null
@@ -293,17 +307,22 @@ export function findClosestCoordKey (coordsList, refRow, refCol) {
 
 /**
  * Finds the closest coordinate to a reference point.
- * @param {Array} coordsList - List of coordinates
- * @param {number} refRow - Reference row
- * @param {number} refCol - Reference column
- * @param {Function} [getter] - Function to extract coordinates
- * @returns {*} Closest coordinate or null
+ * @template T
+ * @param {T[]} coordsList - List of coordinates.
+ * @param {number} refRow - Reference row.
+ * @param {number} refCol - Reference column.
+ * @param {function(T):[number, number]} [getter] - Function to extract coordinates.
+ * @returns {T|null} Closest coordinate or null.
  */
 export function findClosestCoord (coordsList, refRow, refCol, getter) {
   let closestCoord = null
   let minDistance = Infinity
   for (const coord of coordsList) {
-    const [row, col] = getter ? getter(coord) : coord
+    const point = getter
+      ? getter(coord)
+      : /** @type {[number, number]} */ (coord)
+    const row = point[0]
+    const col = point[1]
     const distance = Math.sqrt(
       Math.pow(row - refRow, 2) + Math.pow(col - refCol, 2)
     )
@@ -336,13 +355,8 @@ export function lazy (obj, prop, fn) {
 
 /**
  * Normalizes numeric coordinate values for arrays that may contain bigints.
- * @param {number|bigint} value - Numeric coordinate value
- * @returns {number} Normalized coordinate value
- */
-/**
- * Normalizes numeric coordinate values for arrays that may contain bigints.
- * @param {number|bigint} value - Numeric coordinate value
- * @returns {number} Normalized coordinate value
+ * @param {number|bigint} value - Numeric coordinate value.
+ * @returns {number} Normalized coordinate value.
  */
 function _coerceCoordinate (value) {
   if (typeof value === 'bigint') {

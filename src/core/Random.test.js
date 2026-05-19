@@ -1,6 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-
-/* global describe, it, expect,  afterEach */
 import { describe, it, expect, afterEach, jest } from '@jest/globals'
 import { Random } from './Random.js'
 
@@ -19,6 +16,12 @@ describe('Random', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0.9999999999)
       expect(Random.integerWithMax(10)).toBe(9)
     })
+
+    it('throws when max is not a positive finite number', () => {
+      expect(() => Random.integerWithMax(0)).toThrow(RangeError)
+      expect(() => Random.integerWithMax(-1)).toThrow(RangeError)
+      expect(() => Random.integerWithMax(Number.NaN)).toThrow(RangeError)
+    })
   })
 
   describe('floatWithRange', () => {
@@ -30,6 +33,11 @@ describe('Random', () => {
     it('returns max when Math.random is 1', () => {
       jest.spyOn(Math, 'random').mockReturnValue(1)
       expect(Random.floatWithRange(1.5, 4.5)).toBe(4.5)
+    })
+
+    it('throws when min is greater than max', () => {
+      expect(() => Random.floatWithRange(5, 2)).toThrow(RangeError)
+      expect(() => Random.floatWithRange(Number.NaN, 2)).toThrow(RangeError)
     })
   })
 
@@ -43,6 +51,11 @@ describe('Random', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0.9999999999)
       expect(Random.integerWithRange(5, 10)).toBe(9)
     })
+
+    it('throws when min is greater than or equal to max', () => {
+      expect(() => Random.integerWithRange(5, 5)).toThrow(RangeError)
+      expect(() => Random.integerWithRange(10, 5)).toThrow(RangeError)
+    })
   })
 
   describe('element', () => {
@@ -55,6 +68,10 @@ describe('Random', () => {
     it('returns the first element when the array length is 1', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0)
       expect(Random.element(['solo'])).toBe('solo')
+    })
+
+    it('returns undefined for an empty array', () => {
+      expect(Random.element([])).toBeUndefined()
     })
   })
 

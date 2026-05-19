@@ -5,9 +5,12 @@
 
 /**
  * @typedef {bigint|number|Array<number>|Uint32Array|Uint16Array|Uint8Array|Int32Array} Bitboard
- * @typedef {{ bits: Bitboard, width:number, height:number, depth?:number, store?:any, indexer?:any, clone?:any }} MaskLike
- * @typedef {{ bits: Bitboard, width:number, height:number, store?:any, indexer?:any }} PackedLike
- * @typedef {{ newWords: Function, clone: Function, bitSub: Function, setIdx: Function, value: Function, words?:number }} StoreLike
+ * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
+ * @typedef {{ bits: Bitboard, width:number, height:number, depth?:number, store?:StoreLike, indexer?:any, clone?:any }} MaskLike
+ * @typedef {{ bits: Bitboard, width:number, height:number, store?:StoreLike, indexer?:any, clone?:any, at?:Function, set?:Function }} PackedLike
+ * @typedef {{ newWords: Function, clone: Function, bitSub: Function, setIdx?: Function, value: Function, words?:number, set?:Function, getIdx?:Function }} StoreLike
+ * @typedef {{ bits: Bitboard, clone?:any, cloneBits?:any, store?:StoreLike }} CloneSource
+ * @typedef {{ bits: Bitboard, clone?:any, store?:StoreLike, indexer?:any }} MorphologyMask
  */
 
 // ============================================================================
@@ -17,18 +20,24 @@
 /**
  * Compare two bitboards for equality
  * Handles primitives (BigInt, number), arrays, typed arrays, and objects
+ * @param {Bitboard} a
+ * @param {Bitboard} b
+ * @returns {boolean}
  */
 export function bitsChanged (a, b) {
   if (a === b) return false
   if (typeof a !== 'object' || a === null) return true
+  const aWithLength = /** @type {{length?: number}} */ (a)
   if (
     Array.isArray(a) ||
     ArrayBuffer.isView(a) ||
-    typeof a.length === 'number'
+    typeof aWithLength.length === 'number'
   ) {
-    if (a.length !== b.length) return true
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return true
+    const arrayA = /** @type {ArrayLike<any>} */ (a)
+    const arrayB = /** @type {ArrayLike<any>} */ (b)
+    if (arrayA.length !== arrayB.length) return true
+    for (let i = 0; i < arrayA.length; i++) {
+      if (arrayA[i] !== arrayB[i]) return true
     }
     return false
   }
@@ -40,12 +49,12 @@ export function bitsChanged (a, b) {
  * Tries known clone helpers on the mask/store, otherwise falls back to
  * sensible shallow-copy strategies for arrays, typed arrays, BigInts and
  * numbers.
- * @param {*} bits - Bits value to clone
- * @param {object} [mask] - Optional mask/packed instance that may provide clone helpers
- * @returns {*} Detached copy of `bits`
+ * @param {Bitboard} bits - Bits value to clone
+ * @param {CloneSource|MaskLike|PackedLike} [mask] - Optional mask/packed instance that may provide clone helpers
+ * @returns {Bitboard} Detached copy of `bits`
  */
 function cloneBitsValue (bits, mask) {
-  if (mask?.cloneBits !== undefined) {
+  if (mask && 'cloneBits' in mask && mask.cloneBits !== undefined) {
     return mask.cloneBits
   }
   if (mask?.store && typeof mask.store.clone === 'function') {
@@ -53,13 +62,27 @@ function cloneBitsValue (bits, mask) {
   }
   if (typeof bits === 'bigint' || typeof bits === 'number') return bits
   if (Array.isArray(bits)) return bits.slice()
-  if (ArrayBuffer.isView(bits)) return new bits.constructor(bits)
-  if (bits && typeof bits.length === 'number') return Array.from(bits)
+  if (ArrayBuffer.isView(bits)) {
+    const Constructor = /** @type {new(...args:any[]) => any} */ (
+      bits.constructor
+    )
+    return new Constructor(bits)
+  }
+  if (bits && typeof bits === 'object') {
+    const maybeLength = /** @type {{ length?: unknown }} */ (bits).length
+    if (typeof maybeLength === 'number') {
+      const iterable = /** @type {{ length: number }} */ (bits)
+      return Array.from(iterable)
+    }
+  }
   return bits
 }
 
 /**
  * Check if a bitboard is completely full
+ * @param {Bitboard} bits
+ * @param {Bitboard|number} fullBits
+ * @returns {boolean}
  */
 export function isBitboardFull (bits, fullBits) {
   if (typeof bits === 'bigint' || typeof bits === 'number') {
@@ -86,6 +109,9 @@ export function isBitboardFull (bits, fullBits) {
 /**
  * Normalize bitboard to correct word count for a Packed of same size
  * Handles BigInt masks by splitting into words
+ * @param {Bitboard} bb
+ * @param {{store: StoreLike}} templatePacked
+ * @returns {Bitboard}
  */
 export function normalizeBits (bb, templatePacked) {
   if (typeof bb === 'bigint') {
@@ -102,16 +128,21 @@ export function normalizeBits (bb, templatePacked) {
     out[0] = Number(bb)
     return out
   }
-  if (bb.length !== templatePacked.store.words) {
+
+  const bitsArray =
+    /** @type {ArrayLike<number> & { subarray?: Function, slice?: Function }} */ (
+      bb
+    )
+  if (bitsArray.length !== templatePacked.store.words) {
     const out = templatePacked.store.newWords()
-    if (bb.length <= out.length) {
-      out.set(bb)
+    if (bitsArray.length <= out.length) {
+      out.set(bitsArray)
     } else {
       // Handle both typed arrays (with subarray) and regular arrays (with slice)
       const slice =
-        typeof bb.subarray === 'function'
-          ? bb.subarray(0, out.length)
-          : bb.slice(0, out.length)
+        typeof bitsArray.subarray === 'function'
+          ? bitsArray.subarray(0, out.length)
+          : /** @type {{ slice: Function }} */ (bitsArray).slice(0, out.length)
       out.set(slice)
     }
     return out
@@ -122,10 +153,20 @@ export function normalizeBits (bb, templatePacked) {
 /**
  * Copy per-cell occupancy from multi-bit Packed into 1-bit Packed
  * Avoids word-size/endianness normalization issues
+ * @param {Bitboard|PackedLike} sourcePacked
+ * @param {{store: StoreLike, indexer?:any, bits?:Bitboard}} targetPacked
+ * @returns {Bitboard}
  */
 export function copyOccupancyBitsExact (sourcePacked, targetPacked) {
-  let out = targetPacked.store.newWords()
-  if (sourcePacked?.store?.indexer) {
+  let out = /** @type {any} */ (targetPacked.store.newWords())
+  if (
+    sourcePacked &&
+    typeof sourcePacked === 'object' &&
+    'indexer' in sourcePacked &&
+    sourcePacked.indexer &&
+    sourcePacked.store?.getIdx &&
+    targetPacked.store?.setIdx
+  ) {
     const size = sourcePacked.indexer.size
     for (let i = 0; i < size; i++) {
       const v = sourcePacked.store.getIdx(sourcePacked.bits, i)
@@ -135,11 +176,16 @@ export function copyOccupancyBitsExact (sourcePacked, targetPacked) {
     }
     return out
   }
-  // If sourcePacked is a Packed but doesn't have store/indexer, use its bits
-  if (sourcePacked?.bits) {
-    return normalizeBits(sourcePacked.bits, targetPacked)
+  if (
+    sourcePacked &&
+    typeof sourcePacked === 'object' &&
+    'bits' in sourcePacked &&
+    sourcePacked.bits
+  ) {
+    const bits = /** @type {Bitboard} */ (sourcePacked.bits)
+    return normalizeBits(bits, targetPacked)
   }
-  return normalizeBits(sourcePacked, targetPacked)
+  return normalizeBits(/** @type {Bitboard} */ (sourcePacked), targetPacked)
 }
 
 // ============================================================================
@@ -148,9 +194,13 @@ export function copyOccupancyBitsExact (sourcePacked, targetPacked) {
 
 /**
  * Create an occupancy grid (1-bit) from a multi-bit packed grid
+ * @param {PackedLike} packed
+ * @param {Function} Packed
+ * @returns {any}
  */
 export function createOccupancyGrid (packed, Packed) {
-  const occ = new Packed(packed.width, packed.height, null, null, 1)
+  const Constructor = /** @type {new(...args:any[]) => any} */ (Packed)
+  const occ = new Constructor(packed.width, packed.height, null, null, 1)
   // Copy bits directly from source to occupancy grid
   occ.bits = copyOccupancyBitsExact(packed, occ)
   return occ
@@ -163,12 +213,11 @@ export function createOccupancyGrid (packed, Packed) {
 /**
  * Check if morphology operation would change the mask bits
  * Returns true if operation changes the bits, false if no change
- */
-/**
+ *
  * Check if a morphology operation will change a mask's bits without
  * mutating the original mask.
- * @param {any} mask - Mask/packed object with `bits`, `clone` and optional clone helpers
- * @param {'dilate'|'erode'|'cross'} operation - Morphology operation to test
+ * @param {MorphologyMask} mask - Mask/packed object with `bits`, `clone` and optional clone helpers
+ * @param {MorphologyOperation} operation - Morphology operation to test
  * @returns {boolean} True when the operation would change the bits
  */
 export function checkMorphologyState (mask, operation) {
@@ -184,12 +233,11 @@ export function checkMorphologyState (mask, operation) {
 /**
  * Check if morphology operation would change occupancy grid
  * Returns true if operation changes the bits, false if no change
- */
-/**
+ *
  * Check if a morphology operation will change an occupancy grid without
  * mutating the original.
- * @param {any} occupancy - Packed/occupancy object with `bits` and `clone`
- * @param {'dilate'|'erode'|'cross'} operation - Morphology operation to test
+ * @param {MorphologyMask} occupancy - Packed/occupancy object with `bits` and `clone`
+ * @param {MorphologyOperation} operation - Morphology operation to test
  * @returns {boolean} True when the operation would change the occupancy bits
  */
 export function checkMorphologyChange (occupancy, operation) {
@@ -202,6 +250,11 @@ export function checkMorphologyChange (occupancy, operation) {
   return bitsChanged(before, clone.bits)
 }
 
+/**
+ * Apply a morphology operation to a clone object.
+ * @param {MorphologyOperation} operation
+ * @param {any} clone
+ */
 function applyOperation (operation, clone) {
   if (operation === 'dilate') clone.dilate()
   else if (operation === 'erode') clone.erode()
@@ -214,9 +267,9 @@ function applyOperation (operation, clone) {
  */
 /**
  * Compute whether an operation changes a masked object using a custom comparer.
- * @param {any} maskObj - Mask or packed object
- * @param {'dilate'|'erode'|'cross'} operation - Operation to apply
- * @param {(a: any, b: any) => boolean} bitsComparer - Comparison function
+ * @param {MorphologyMask} maskObj - Mask or packed object
+ * @param {MorphologyOperation} operation - Operation to apply
+ * @param {(a: Bitboard, b: Bitboard) => boolean} bitsComparer - Comparison function
  * @returns {boolean} Result of `bitsComparer(original, after)`
  */
 export function computeMorphologyState (maskObj, operation, bitsComparer) {
@@ -230,6 +283,9 @@ export function computeMorphologyState (maskObj, operation, bitsComparer) {
 /**
  * Get bitmap differences (added/removed cells) from morphology operation
  * Returns {added, removed, after} where after is the modified clone
+ * @param {MorphologyMask} occupancy
+ * @param {MorphologyOperation} operation
+ * @returns {{added:any, removed:any, after:any}}
  */
 export function getMorphologyDifferences (occupancy, operation) {
   const before = cloneBitsValue(occupancy.bits, occupancy)
@@ -246,8 +302,8 @@ export function getMorphologyDifferences (occupancy, operation) {
 
 /**
  * Small helper to test bit equality using existing helpers.
- * @param {*} a
- * @param {*} b
+ * @param {Bitboard} a
+ * @param {Bitboard} b
  * @returns {boolean}
  */
 function areBitsEqual (a, b) {
@@ -262,6 +318,10 @@ function areBitsEqual (a, b) {
 /**
  * Find a colored neighbor for a given empty cell
  * Checks cardinal directions (up, down, left, right)
+ * @param {PackedLike} packed
+ * @param {number} x
+ * @param {number} y
+ * @returns {number}
  */
 export function findNeighborColor (packed, x, y) {
   for (const [nx, ny] of [
@@ -270,7 +330,13 @@ export function findNeighborColor (packed, x, y) {
     [x, y - 1],
     [x, y + 1]
   ]) {
-    if (nx >= 0 && nx < packed.width && ny >= 0 && ny < packed.height) {
+    if (
+      nx >= 0 &&
+      nx < packed.width &&
+      ny >= 0 &&
+      ny < packed.height &&
+      packed.at
+    ) {
       const neighborColor = packed.at(nx, ny)
       if (neighborColor !== 0) {
         return neighborColor
@@ -283,8 +349,11 @@ export function findNeighborColor (packed, x, y) {
 /**
  * Color newly added cells based on adjacent occupied cells
  * Modifies packed grid in place
+ * @param {PackedLike} packed
+ * @param {*} addedCells
  */
 export function colorAddedCells (packed, addedCells) {
+  if (!packed.indexer?.bitsToCoords || !packed.at || !packed.set) return
   for (const [x, y] of packed.indexer.bitsToCoords(addedCells)) {
     const currentColor = packed.at(x, y)
     if (currentColor === 0) {
@@ -299,8 +368,11 @@ export function colorAddedCells (packed, addedCells) {
 /**
  * Remove colors from cells that are no longer occupied
  * Modifies packed grid in place
+ * @param {PackedLike} packed
+ * @param {*} removedCells
  */
 export function clearRemovedCells (packed, removedCells) {
+  if (!packed.indexer?.bitsToCoords || !packed.set) return
   for (const [x, y] of packed.indexer.bitsToCoords(removedCells)) {
     packed.set(x, y, 0)
   }

@@ -233,6 +233,44 @@ describe('spaceWeapons basic behavior', () => {
     expect(sourceView.classList.remove).toHaveBeenCalledWith('portal')
   })
 
+  it('GaussRound launchTo works without opposing view model', async () => {
+    const gauss = new GaussRound(1)
+
+    jest
+      .spyOn(Weapon.prototype, 'animateFlyingOnVM')
+      .mockImplementation(async () => ({}))
+
+    const viewModel = {
+      gridCellAt: jest.fn(() => ({
+        classList: { add: jest.fn(), remove: jest.fn() }
+      })),
+      cellSize: () => 10
+    }
+    const map = { cols: 10, rows: 10, isLand: () => false }
+    bh.terrainMaps.current.current = map
+    const gameModel = { getTarget: () => null }
+
+    const hintR = 1
+    const hintC = 2
+    const coords = [
+      [3, 3],
+      [5, 5]
+    ]
+
+    const result = await gauss.launchTo(
+      coords,
+      hintR,
+      hintC,
+      map,
+      viewModel,
+      null,
+      gameModel
+    )
+
+    expect(result).toEqual({ target: [5, 5] })
+    expect(viewModel.gridCellAt).toHaveBeenCalled()
+  })
+
   it('GaussRound and Scan clone/single and tags', () => {
     const g = new GaussRound(1)
     expect(g.name).toMatch(/Gauss|Guass/i)

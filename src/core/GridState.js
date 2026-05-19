@@ -14,6 +14,27 @@
  */
 
 /**
+ * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
+ */
+
+/**
+ * @typedef {Object} GridMask
+ * @property {*} bits - Bitboard representing current mask state.
+ * @property {*} [fullMask] - Full mask bitboard.
+ * @property {*} [emptyMask] - Empty mask bitboard.
+ * @property {TransformActions|null} [actions] - Actions object for transforms and symmetry.
+ * @property {*} [clone] - Clone of the mask for non-mutating operations.
+ */
+
+/**
+ * @typedef {Object} TransformActions
+ * @property {Object<string, any>} transformMaps - Map keys to transformation data.
+ * @property {*} template - Template used for transform comparison.
+ * @property {Function} [applyMap] - Function that applies a transform map and returns a result.
+ * @property {Function} [classifyOrbitType] - Function that returns symmetry classification.
+ */
+
+/**
  * Single source of truth for grid state
  * Encapsulates all state queries without side effects
  */
@@ -31,8 +52,8 @@ import {
 export class GridState {
   /**
    * Initialize grid state with mask and optional indexer
-   * @param {Object} mask - The mask object with bits and clone capabilities
-   * @param {?Object} indexer - Optional indexer for grid operations
+   * @param {GridMask} mask - The mask object with bits and clone capabilities.
+   * @param {?Object} indexer - Optional indexer for grid operations.
    */
   constructor (mask, indexer = null) {
     this.mask = mask
@@ -41,15 +62,15 @@ export class GridState {
 
   /**
    * Get current actions from mask
-   * @returns {?Object} Actions object with transform maps and methods, or null if unavailable
+   * @returns {TransformActions|null} Actions object with transform maps and methods, or null if unavailable.
    */
   getCurrentActions () {
-    return this.mask.actions
+    return this.mask?.actions ?? null
   }
 
   /**
    * Check if morphology operation would change the mask
-   * @param {string} operation - Operation name: 'dilate', 'erode', or 'cross'
+   * @param {MorphologyOperation} operation - Operation name: 'dilate', 'erode', or 'cross'.
    * @returns {boolean} True if operation would change mask
    */
   canApplyMorphology (operation) {
@@ -104,7 +125,7 @@ export class GridState {
   /**
    * Helper to retrieve actions with transform maps, avoiding repetition
    * @private
-   * @returns {?Object} Actions object with transformMaps, or null if unavailable
+   * @returns {TransformActions|null} Actions object with transformMaps, or null if unavailable.
    */
   _getActionsWithTransformMaps () {
     const actions = this.getCurrentActions()
@@ -116,8 +137,8 @@ export class GridState {
    * Check if indexed transform map (rotation or flip) would change the mask
    * Consolidates logic for both canApplyRotation and canApplyFlip
    * @private
-   * @param {string} mapKey - Transform key in transformMaps (e.g. 'r90', 'fx')
-   * @param {Object} actions - Actions object from getCurrentActions
+   * @param {string} mapKey - Transform key in transformMaps (e.g. 'r90', 'fx').
+   * @param {TransformActions} actions - Actions object from getCurrentActions.
    * @returns {boolean} True if transform would change mask
    */
   _canApplyIndexedTransform (mapKey, actions) {
@@ -129,9 +150,9 @@ export class GridState {
   /**
    * Helper to check if a transform map would change the mask
    * @private
-   * @param {?Object} map - Transform map to apply
-   * @param {any} template - Original template to compare against
-   * @param {Object} actions - Actions object with applyMap method
+   * @param {?any} map - Transform map to apply
+   * @param {*} template - Original template to compare against
+   * @param {TransformActions} actions - Actions object with applyMap method
    * @returns {boolean} True if applying map changes template
    */
   _canApplyTransform (map, template, actions) {

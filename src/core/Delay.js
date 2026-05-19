@@ -125,7 +125,8 @@ export class Delay {
         await Delay.wait(intervalMs)
       }
     } catch (err) {
-      this._notifyError(err)
+      const error = err instanceof Error ? err : new Error(String(err))
+      this._notifyError(error)
     } finally {
       this._notifyComplete()
     }
