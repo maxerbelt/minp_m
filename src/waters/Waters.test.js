@@ -100,6 +100,21 @@ describe('Waters', () => {
     expect(result).toHaveProperty('map')
   })
 
+  it('generateRandomSourceHint falls back to [0,0] when no surrounding cells exist', () => {
+    waters.steps = { addHint: jest.fn() }
+    waters.UI.gridCellAt = jest.fn(() => ({ cell: 'mock' }))
+
+    const hint = waters.generateRandomSourceHint({ cells: [1, 2] }, null)
+
+    expect(hint).toEqual([0, 0])
+    expect(waters.steps.addHint).toHaveBeenCalledWith(
+      waters.UI,
+      0,
+      0,
+      expect.any(Object)
+    )
+  })
+
   it('store saves placedShips to localStorage', () => {
     // Mock localStorage
     const originalLocalStorage = globalThis.localStorage

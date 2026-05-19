@@ -1013,7 +1013,7 @@ export class Waters {
         'no surround cells found for random weapon hint, using 0,0 as hint'
       )
       this.steps.addHint(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
-      return [null, null]
+      return [0, 0]
     }
     const hintKey = randomElement(surroundingCells)
     const [r, c] = parsePair(hintKey)

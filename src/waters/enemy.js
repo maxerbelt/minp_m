@@ -772,7 +772,13 @@ class Enemy extends Waters {
     const selectedCell = viewModel.gridCellAt(launchR, launchC)
 
     // Generate hint coordinates for targeting
-    const hintCoords = this.generateSourceHint(selectedShip, this.opponent)
+    let hintCoords = this.generateSourceHint(selectedShip, this.opponent)
+    if (!Array.isArray(hintCoords) || hintCoords.length < 2) {
+      hintCoords = [0, 0]
+    }
+    if (hintCoords[0] == null || hintCoords[1] == null) {
+      hintCoords = [0, 0]
+    }
 
     this.steps.addSource(viewModel, launchR, launchC, selectedCell)
 
