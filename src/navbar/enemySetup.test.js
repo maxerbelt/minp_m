@@ -191,6 +191,26 @@ describe('enemySetup.js - Regression Prevention Documentation', () => {
         splashAoe: expect.any(Function)
       })
     })
+
+    it('includes selectedCellCoordinates when building preview targeting coordinates', async () => {
+      const module = await import('./enemySetup.js')
+      const preview = module.__test._getPreviewTargetingCoordinates(
+        {
+          loadOut: {
+            selectedCoordinates: [[1, 1]]
+          },
+          selectedCellCoordinates: { r: 2, c: 3 }
+        },
+        4,
+        5
+      )
+
+      expect(preview).toEqual([
+        [2, 3],
+        [1, 1],
+        [4, 5]
+      ])
+    })
   })
 
   describe('enemySetup.newGame() function structure', () => {

@@ -409,6 +409,16 @@ export function newGame (seek, opponentBoard, friendUI) {
  * @param {number} cellRow - Current cursor row position
  * @param {number} cellCol - Current cursor column position
  */
+function _getPreviewTargetingCoordinates (model, cellRow, cellCol) {
+  const targetingCoordinates = _getTargetingCoordinates(model)
+  const selectedCell = model?.selectedCellCoordinates
+  const sourceCoordinates = selectedCell
+    ? [[selectedCell.r, selectedCell.c]]
+    : []
+
+  return [...sourceCoordinates, ...targetingCoordinates, [cellRow, cellCol]]
+}
+
 function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
   const boardMap = bh.map
 
@@ -419,11 +429,12 @@ function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
 
   // Get targeting data from model
   const boardUI = model.UI
-  const targetingCoordinates = _getTargetingCoordinates(model)
   const activeWeapon = _getActiveWeapon(model)
-
-  // Prepare full target coordinate list including cursor position
-  const fullTargetCoordinates = [...targetingCoordinates, [cellRow, cellCol]]
+  const fullTargetCoordinates = _getPreviewTargetingCoordinates(
+    model,
+    cellRow,
+    cellCol
+  )
 
   // Use highlighter to display weapon effect preview
   const highlighter = new BoardHighlighter(boardUI, boardMap)
@@ -546,5 +557,6 @@ export function setupEnemy (placementHandler, testHandler) {
 }
 
 export const __test = {
-  _getActiveWeapon
+  _getActiveWeapon,
+  _getPreviewTargetingCoordinates
 }
