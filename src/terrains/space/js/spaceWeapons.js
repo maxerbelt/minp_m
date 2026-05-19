@@ -85,6 +85,7 @@ function createSquareExplosion (
   adjacentPower = 1,
   distancePower = 0
 ) {
+  /** @type {AoePattern} */
   const pattern = [[centerRow, centerCol, centerPower]]
 
   // Add adjacent cells (3x3 around center)
@@ -133,14 +134,14 @@ function createSquareExplosion (
  */
 
 /**
- * Handles launch animation for weapons with dual-board effects
- * @param {Object} weapon - The weapon instance
- * @param {number[][]} coords - Target coordinates
+ * Performs a dual-board weapon launch with optional animation callback.
+ * @param {Weapon} weapon - The weapon instance being launched
+ * @param {number[]|number[][]} coords - Launch coordinates
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {Object} map - Game map object
- * @param {Object} gameModel - Game model object
+ * @param {any} map - Game map object
+ * @param {any} gameModel - Game model object
  * @param {Function} [animationCallback] - Optional custom animation callback
- * @returns {Promise} Launch promise
+ * @returns {Promise<Object>} Launch promise
  */
 async function launchWithDualBoardAnimation (
   weapon,
@@ -164,7 +165,6 @@ async function launchWithDualBoardAnimation (
   )
 }
 
-/**
 /**
  * Adds portal CSS classes to cells for dual-board animation.
  * @param {DualBoardCells} cells - Source and target cell references.
@@ -194,12 +194,12 @@ function removePortalClasses (cells) {
 
 /**
  * Performs portal-style dual-board animation for weapons
- * @param {Object} weapon - The weapon instance
- * @param {number[][]} coords - Target coordinates
+ * @param {Weapon} weapon - The weapon instance
+ * @param {number[]|number[][]} coords - Target coordinates
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {Object} map - Game map object
- * @param {Object} gameModel - Game model object
- * @returns {Promise} Animation promise
+ * @param {any} map - Game map object
+ * @param {any} gameModel - Game model object
+ * @returns {Promise<Object>} Animation promise
  */
 async function performPortalAnimation (weapon, coords, context, map, gameModel) {
   const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
@@ -351,7 +351,9 @@ export class Missile extends Bomb {
    */
   aoe (_map, coords) {
     if (coords.length < 1) return []
-    const [row, col] = coords.at(-1)
+    const target = coords.at(-1)
+    if (!target) return []
+    const [row, col] = target
     return this.boom(row, col)
   }
 
@@ -359,7 +361,7 @@ export class Missile extends Bomb {
    * Animates missile launch with cross-board support
    * Routes to parent launchTo if no opposing view model exists
    * @async
-   * @param {number[][]} coords - Target coordinates [[row, col]]
+   * @param {(number[]|number[][])} coords - Target coordinates [[row, col]] or flat coordinate
    * @param {number} row - Source row coordinate
    * @param {number} col - Source column coordinate
    * @param {Object} map - Game map object
