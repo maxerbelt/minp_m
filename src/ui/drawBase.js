@@ -7,28 +7,46 @@
  * - Mouse event handling and coordinate conversion
  * - Hover state management
  * - Redraw cycle orchestration
+ *
+ * @abstract
+ * @class DrawBase
  */
 export class DrawBase {
   /**
+   * Initialize the draw base with canvas and grid data.
    * @param {string} canvasId - ID of the canvas element
-   * @param {*} gridData - Grid data structure
+   * @param {Object} gridData - Grid data structure
    * @param {number} [cellSize=25] - Size of each cell in pixels
    * @param {number} [offsetX=0] - X offset for grid positioning
    * @param {number} [offsetY=0] - Y offset for grid positioning
+   * @throws {Error} If canvas element not found
    */
   constructor (canvasId, gridData, cellSize = 25, offsetX = 0, offsetY = 0) {
-    this.canvas = document.getElementById(canvasId)
-    if (!this.canvas) {
+    const canvasElement = document.getElementById(canvasId)
+    if (!canvasElement || !(canvasElement instanceof HTMLCanvasElement)) {
       throw new Error(`Canvas element with id "${canvasId}" not found`)
     }
 
-    this.ctx = this.canvas.getContext('2d')
+    /** @type {HTMLCanvasElement} */
+    this.canvas = canvasElement
+
+    const context = this.canvas.getContext('2d')
+    if (!context) {
+      throw new Error(`Failed to get 2D context from canvas "${canvasId}"`)
+    }
+
+    /** @type {CanvasRenderingContext2D} */
+    this.ctx = context
+    /** @type {Object} */
     this.gridData = gridData
+    /** @type {number} */
     this.cellSize = cellSize
+    /** @type {number} */
     this.offsetX = offsetX
+    /** @type {number} */
     this.offsetY = offsetY
 
-    // Hover state
+    /** @type {*|null} */
     this.hoverLocation = null
 
     this._bindMouseEvents()
@@ -39,7 +57,15 @@ export class DrawBase {
   // ============================================================================
 
   /**
-   * Fill and stroke a rectangle cell
+   * Fill and stroke a rectangle cell.
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {number} width - Cell width
+   * @param {number} height - Cell height
+   * @param {string} fillColor - CSS color for fill
+   * @param {string} [strokeColor='#333'] - CSS color for stroke
+   * @param {number} [lineWidth=1] - Stroke line width
+   * @returns {void}
    * @protected
    */
   fillCell (

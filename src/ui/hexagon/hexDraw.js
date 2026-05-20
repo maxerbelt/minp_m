@@ -1,7 +1,7 @@
 import { MaskHex } from '../../grid/hexagon/maskHex.js'
 import { drawHex, hexToPixel, pixelToHex } from './hexdrawhelper.js'
 import { DrawBase } from '../drawBase.js'
-
+import { BigOne } from '../../grid/bitStore/helpers/bigbits.js'
 export class HexDraw extends DrawBase {
   /**
    * Creates a HexDraw instance for rendering hexagonal grids.
@@ -172,8 +172,7 @@ export class HexDraw extends DrawBase {
    * @private
    */
   _toggleBitAtIndex (index) {
-    const mask = 1n << BigInt(index)
-    this.bits ^= mask
+    this.bits ^= BigOne.bitMaskByPos(index)
     this.redraw()
   }
 

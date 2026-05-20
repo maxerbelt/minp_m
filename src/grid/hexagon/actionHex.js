@@ -1,7 +1,7 @@
 import { lazy } from '../../core/utilities.js'
 import { CubeIndex } from './CubeIndex.js'
 import { ActionsBase } from '../ActionsBase.js'
-
+import { BigOne } from '../bitStore/helpers/bigbits.js'
 /**
  * Hexagonal grid Actions handler with D6 symmetry.
  * Uses cube coordinates for hex normalization.
@@ -77,7 +77,7 @@ export class ActionsHex extends ActionsBase {
       const normalizedS = s - minS
       const index = this.cube.index(normalizedQ, normalizedR, normalizedS)
       if (index !== undefined) {
-        normalized |= 1n << BigInt(index)
+        normalized |= BigOne.bitMaskByPos(index)
       }
     }
     return normalized

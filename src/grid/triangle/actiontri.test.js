@@ -1,15 +1,22 @@
-
 import { ActionsTri } from './actionsTri.js'
 import { TriIndex } from './TriIndex.js'
 import { StoreBig } from '../bitStore/storeBig.js'
 
-// simple helper to make a triangular mask-like object
+/**
+ * Simple helper to create a triangular mask-like object.
+ * @param {number} side - Triangle side/pyramid height
+ * @param {[number, number][]} coords - Array of [row, col] coordinate pairs to mark as occupied
+ * @returns {{store: StoreBig, indexer: TriIndex, bits: bigint}} Triangle mask object
+ */
 function makeTriMask (side, coords) {
   const idx = new TriIndex(side)
   const store = new StoreBig(1, idx.size)
-  let bits = store.empty
+  let bits = 0n // Initialize as empty bigint
   for (const [r, c] of coords) {
-    bits = store.setIdx(bits, idx.index(r, c))
+    const cellIndex = idx.index(r, c)
+    if (cellIndex !== undefined) {
+      bits = store.setIdx(bits, cellIndex)
+    }
   }
   return { store, indexer: idx, bits }
 }
