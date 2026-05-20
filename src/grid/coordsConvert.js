@@ -1,16 +1,9 @@
 // ==================== BIT ENCODING/DECODING ====================
-
-const ONE = 1n
+import { BigBits, BigOne } from './bitStore/helpers/bigbits.js'
 
 /**
- * Convert a bit index to a BigInt bit flag
- * @private
- * @param {number} bitIndex - Position of the bit (0-based)
- * @returns {bigint} BigInt with single bit set at bitIndex position
+ * @module grid/coordsConvert
  */
-function _createBitFlag (bitIndex) {
-  return ONE << BigInt(bitIndex)
-}
 
 /**
  * Decode a linear bit index into 2D grid coordinates
@@ -41,7 +34,7 @@ function _collectBitsAsCoords (occupancyBits, width, height, valueResolver) {
   const totalCells = width * height
 
   for (let bitIndex = 0; bitIndex < totalCells; bitIndex++) {
-    if (occupancyBits & _createBitFlag(bitIndex)) {
+    if (occupancyBits & BigOne.bitMaskByPos(bitIndex)) {
       const { x, y } = _decodeBitIndexToCoords(bitIndex, width)
       const value = valueResolver(x, y, bitIndex)
       result.push([x, y, value])
@@ -64,7 +57,7 @@ export function coordsToOccBig (coordinateList, width) {
   let occupancyBits = 0n
   for (const [x, y] of coordinateList) {
     const linearIndex = y * width + x
-    occupancyBits |= _createBitFlag(linearIndex)
+    occupancyBits |= BigOne.bitMaskByPos(linearIndex)
   }
   return occupancyBits
 }

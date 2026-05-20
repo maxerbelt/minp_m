@@ -7,7 +7,7 @@ import { MorphologicalOps } from './operations/MorphologicalOps.js'
 import { MaskValidation } from './operations/MaskValidation.js'
 import { AsciiRepresentation } from './AsciiRepresentation.js'
 import { CoordinateConversion } from './operations/CoordinateConversion.js'
-
+import { BigOne } from './bitStore/helpers/bigbits.js'
 export class MaskBase extends CanvasGrid {
   constructor (shape, depth = 1, bits, store) {
     super(shape)
@@ -158,7 +158,7 @@ export class MaskBase extends CanvasGrid {
     if (this.store.bitMaskByPos) {
       return this.store.bitMaskByPos(this.store.bitPos(index))
     }
-    return 1n << BigInt(index)
+    return BigOne.bitMaskByPos(index)
   }
 
   /**

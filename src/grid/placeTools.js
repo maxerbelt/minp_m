@@ -1,3 +1,9 @@
+import { BigBits } from './bitStore/helpers/bigbits.js'
+
+/**
+ * @module grid/placeTools
+ */
+
 /**
  * @typedef {[number, number]} GridCoordinate
  */
@@ -55,7 +61,7 @@ export function findPlacementsBitmask (
 
   for (let y = 0; y <= gridHeight - shapeHeight; y++) {
     for (let x = 0; x <= gridWidth - shapeWidth; x++) {
-      const shifted = shapeMask << BigInt(y * gridWidth + x)
+      const shifted = BigBits.shiftLeft(shapeMask, BigInt(y * gridWidth + x))
 
       if (shifted & forbiddenMask) continue
       if ((shifted & mandatoryMask) !== mandatoryMask) continue
@@ -81,6 +87,11 @@ export function popcountBigInt (n) {
   }
   return count
 }
+
+// The popcount algorithm processes the BigInt in 32-bit chunks because
+// JavaScript bitwise operations work on 32-bit integers. This approach
+// allows efficient counting of bits for arbitrarily large BigInt values
+// while keeping each chunk within native JS numeric ranges.
 
 /**
  * Counts bits in the lower 32-bit chunk of a number.

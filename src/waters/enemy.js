@@ -295,6 +295,15 @@ class Enemy extends Waters {
   _shouldFireSeekModeMissileImmediately (
     weaponSystem = this.loadOut.getCurrentWeaponSystem()
   ) {
+    // NOTE (regression prevention): In the "Space and Asteroids" terrain,
+    // when the overall game mode is pure Seek (bh.seekingMode === true),
+    // Missile weapons are intended to be single-click weapons. Historically
+    // refactors accidentally re-introduced two-click selection logic for
+    // missiles in this combination of terrain+mode. This helper isolates the
+    // detection logic so unit tests can lock this behavior and prevent future
+    // regressions. Do not move or rename without updating tests in
+    // `src/waters/seekMissileRegression.test.js`.
+
     if (!bh.seekingMode || bh.terrain?.title !== 'Space and Asteroids') {
       return false
     }
@@ -930,6 +939,21 @@ class Enemy extends Waters {
       return
     }
 
+    // REGRESSION GUARD: In pure Seek mode with Space/Asteroids terrain,
+    // Missiles should fire immediately with one click, even when hasAttachedWeapons
+    // is false. Check this BEFORE the attached weapons flow.
+    const currentWeapon =
+      typeof this.loadOut?.getCurrentWeaponSystem === 'function'
+        ? this.loadOut.getCurrentWeaponSystem()
+        : undefined
+    if (
+      typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
+      this._shouldFireSeekModeMissileImmediately(currentWeapon)
+    ) {
+      await this._fireCurrentWeaponImmediately(r, c)
+      return
+    }
+
     if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
       await this._handleAttachedWeaponClick(r, c)
       return
@@ -952,15 +976,27 @@ class Enemy extends Waters {
 
   async _handleAttachedWeaponClick (r, c) {
     if (this.loadOut?.selectedWeapon) {
+      // REGRESSION GUARD: Check if selectedWeapon is a seek-mode missile before firing
+      if (
+        typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
+        this._shouldFireSeekModeMissileImmediately(this.loadOut.selectedWeapon)
+      ) {
+        await this._fireCurrentWeaponImmediately(r, c)
+        return
+      }
       await this._onSecondClickFire(r, c)
       return
     }
 
     if (this.selectedCellCoordinates === null) {
       const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+      const weaponSystemToCheck = this.loadOut.selectedWeapon || currentWeapon
 
-      if (this._shouldFireSeekModeMissileImmediately(currentWeapon)) {
-        await this._fireWeaponViaSetup(r, c)
+      if (
+        typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
+        this._shouldFireSeekModeMissileImmediately(weaponSystemToCheck)
+      ) {
+        await this._fireCurrentWeaponImmediately(r, c)
         return
       }
 
@@ -983,6 +1019,16 @@ class Enemy extends Waters {
 
   async _fireWeaponViaSetup (r, c) {
     const result = await this.setupWeapon(r, c)
+    if (this._shouldWaitForWeaponResult(result)) return
+    this._processWeaponResult(result)
+    this._finalizeTurn()
+  }
+
+  async _fireCurrentWeaponImmediately (r, c) {
+    this.UI.removeHighlightAoE()
+    this.setWeaponFireHandlers()
+    const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+    const result = await this.fireWeaponAt(r, c, weaponSystem)
     if (this._shouldWaitForWeaponResult(result)) return
     this._processWeaponResult(result)
     this._finalizeTurn()

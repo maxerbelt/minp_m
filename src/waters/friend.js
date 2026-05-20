@@ -832,6 +832,76 @@ export class Friend extends Placement {
   }
 
   /**
+   * Returns true when a Missile should be fired immediately in pure Seek mode
+   * on the Space and Asteroids terrain.
+   *
+   * In this terrain/mode combination, Missile targeting is a single-click
+   * action and should not fall through to the attached-weapon two-click
+   * selection flow.
+   *
+   * @private
+   * @param {WeaponSystem|undefined} [weaponSystem]
+   * @returns {boolean}
+   */
+  _shouldFireSeekModeMissileImmediately (weaponSystem) {
+    // NOTE (regression prevention): In the "Space and Asteroids" terrain,
+    // when the overall game mode is pure Seek (bh.seekingMode === true),
+    // Missile weapons are intended to be single-click weapons. Historically
+    // refactors accidentally re-introduced two-click selection logic for
+    // missiles in this combination of terrain+mode. This helper isolates the
+    // detection logic so unit tests can lock this behavior and prevent future
+    // regressions.
+
+    // Use current weapon system if not provided
+    if (weaponSystem === undefined) {
+      if (typeof this.loadOut?.getCurrentWeaponSystem === 'function') {
+        weaponSystem = this.loadOut.getCurrentWeaponSystem()
+      } else {
+        return false
+      }
+    }
+
+    if (!bh.seekingMode || bh.terrain?.title !== 'Space and Asteroids') {
+      return false
+    }
+
+    const weapon = /** @type {Weapon|undefined} */ (weaponSystem?.weapon)
+    if (!weapon) {
+      return false
+    }
+
+    return (
+      weapon.letter === 'M' ||
+      weapon.name === 'Missile' ||
+      weapon.tag === 'missile'
+    )
+  }
+
+  /**
+   * Fires the current weapon immediately at the specified coordinates.
+   * Used for single-click weapons in seek mode (e.g., missiles in Space & Asteroids).
+   *
+   * @private
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @returns {Promise<void>}
+   */
+  async _fireCurrentWeaponImmediately (r, c) {
+    this.setWeaponFireHandlers()
+    const weaponSystem =
+      typeof this.loadOut?.getCurrentWeaponSystem === 'function'
+        ? this.loadOut.getCurrentWeaponSystem()
+        : undefined
+    const result = await this.fireWeaponAt(r, c, weaponSystem)
+    if (result?.score) {
+      this.opponent.updateResultsOfBomb(result.weapon, result.score)
+    }
+    this.opponent?.updateUI()
+    this.updateUI(this.ships)
+    this.steps.endTurn()
+  }
+
+  /**
    * Handles the first click in hide/seek mode: selects a random weapon, ship, and hint location.
    * @private
    * @returns {void}
@@ -877,13 +947,27 @@ export class Friend extends Placement {
    * @param {number} r - Row coordinate of clicked cell
    * @param {number} c - Column coordinate of clicked cell
    */
-  onClickCell (r, c) {
+  async onClickCell (r, c) {
+    // In pure Seek mode with Space/Asteroids, Missiles are single-click weapons
+    // that should fire immediately. Check this BEFORE the attached weapons guard.
+    const currentWeaponSystem =
+      typeof this.loadOut?.getCurrentWeaponSystem === 'function'
+        ? this.loadOut.getCurrentWeaponSystem()
+        : undefined
+    if (
+      typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
+      this._shouldFireSeekModeMissileImmediately(currentWeaponSystem)
+    ) {
+      await this._fireCurrentWeaponImmediately(r, c)
+      return
+    }
+
     // Only allow weapon selection in hide/seek mode with attached weapons
     if (!bh.seekingMode || !bh.terrain.hasAttachedWeapons) {
       return
     }
 
-    // Implement two-click behavior
+    // Implement two-click behavior for other attached weapons
     if (this.selectedCellCoordinates === null) {
       // First click: select weapon and ship
       this._onFirstClickSelection()
@@ -891,7 +975,7 @@ export class Friend extends Placement {
       return
     }
     // Second click: fire at target
-    this._onSecondClickFire(r, c)
+    await this._onSecondClickFire(r, c)
   }
 
   /**

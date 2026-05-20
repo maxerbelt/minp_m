@@ -17,6 +17,7 @@
     "fan": "node staticAnalysis/depcruise/fan.js",
     "plato": "npx plato -r -d staticAnalysis/plato/report src --exclude '.*/node_modules/.*|.*/dist/.*|.*/coverage/.*",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "test:grid": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand src/grid/placeTools.test.js",
     "chat": "node utils/exporters/chat/exporter.js"
   },
   "repository": {

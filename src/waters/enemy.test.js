@@ -1274,6 +1274,12 @@ describe('Enemy.updateWeaponStatus', () => {
         _fireWeaponViaSetup: /** @type {any} */ (
           EnemyClass.prototype._fireWeaponViaSetup
         ),
+        _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
+          const result = { weapon: 'Missile', score: { hits: 1 } }
+          this._processWeaponResult(result)
+          this._finalizeTurn()
+          return result
+        }),
         _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
           EnemyClass.prototype
         )['_shouldFireSeekModeMissileImmediately'],
@@ -1289,7 +1295,76 @@ describe('Enemy.updateWeaponStatus', () => {
         bh.terrain = previousTerrain
       }
 
-      expect(enemy.setupWeapon).toHaveBeenCalledWith(0, 0)
+      expect(enemy.setupWeapon).not.toHaveBeenCalled()
+      expect(enemy._fireCurrentWeaponImmediately).toHaveBeenCalledWith(0, 0)
+      expect(enemy._processWeaponResult).toHaveBeenCalledWith({
+        weapon: 'Missile',
+        score: { hits: 1 }
+      })
+      expect(enemy._finalizeTurn).toHaveBeenCalled()
+      expect(enemy._onFirstClickSelection).not.toHaveBeenCalled()
+      expect(enemy._onSecondClickFire).not.toHaveBeenCalled()
+    })
+
+    it('should fire current missile directly when Space and Asteroids seek mode bypasses two-click selection', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const { bh } = await import('../terrains/all/js/bh.js')
+
+      const previousSeekingMode = bh.seekingMode
+      const previousTerrain = bh.terrain
+      bh.seekingMode = true
+      bh.terrain = { title: 'Space and Asteroids', hasAttachedWeapons: true }
+
+      const currentWeaponSystem = {
+        weapon: { letter: 'M', name: 'Missile', tag: 'missile' }
+      }
+
+      const enemy = {
+        opponent: { hasAttachedWeapons: true },
+        loadOut: {
+          isSingleShot: false,
+          getUnattachedWeaponSystem: jest.fn(() => null),
+          getCurrentWeaponSystem: jest.fn(() => currentWeaponSystem)
+        },
+        timeoutId: null,
+        canTakeTurn: jest.fn(() => true),
+        setupWeapon: jest.fn(async () => null),
+        fireWeaponAt: jest.fn(async () => ({
+          weapon: 'Missile',
+          score: { hits: 1 }
+        })),
+        _shouldWaitForWeaponResult: jest.fn(() => false),
+        _processWeaponResult: jest.fn(),
+        _finalizeTurn: jest.fn(),
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
+        ),
+        _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
+          const result = { weapon: 'Missile', score: { hits: 1 } }
+          await this.fireWeaponAt(r, c, this.loadOut.getCurrentWeaponSystem())
+          this._processWeaponResult(result)
+          this._finalizeTurn()
+          return result
+        }),
+        _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
+          EnemyClass.prototype
+        )['_shouldFireSeekModeMissileImmediately'],
+        _onFirstClickSelection: jest.fn(),
+        _onSecondClickFire: jest.fn(),
+        selectedCellCoordinates: null,
+        UI: { removeHighlightAoE: jest.fn() },
+        setWeaponFireHandlers: jest.fn()
+      }
+
+      try {
+        await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
+      } finally {
+        bh.seekingMode = previousSeekingMode
+        bh.terrain = previousTerrain
+      }
+
+      expect(enemy.fireWeaponAt).toHaveBeenCalledWith(0, 0, currentWeaponSystem)
+      expect(enemy.setupWeapon).not.toHaveBeenCalled()
       expect(enemy._processWeaponResult).toHaveBeenCalledWith({
         weapon: 'Missile',
         score: { hits: 1 }

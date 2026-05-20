@@ -1,6 +1,6 @@
-
 import { describe, expect, it } from '@jest/globals'
 import { ActionsBase } from './ActionsBase.js'
+import { BigOne } from './bitStore/helpers/bigbits.js'
 
 class TestActions extends ActionsBase {
   normalized (bits) {
@@ -14,15 +14,15 @@ class TestActions extends ActionsBase {
 
 describe('ActionsBase', () => {
   const store = {
-    empty: 0n,
+    empty: BigOne.empty,
     isOccupied (bitboard, index) {
-      return ((bitboard >> BigInt(index)) & 1n) === 1n
+      return BigOne.isBitSet(bitboard, index)
     },
     getIdx (bitboard, index) {
-      return this.isOccupied(bitboard, index) ? 1 : 0
+      return BigOne.getBitAtPos(bitboard, index)
     },
     setIdx (output, index, color) {
-      return color ? output | (1n << BigInt(index)) : output
+      return BigOne.setBitAtPos(output, index, color)
     },
     normalizeUpLeft (bitboard) {
       return bitboard
@@ -39,7 +39,7 @@ describe('ActionsBase', () => {
     bitsIndices (bitboard) {
       return (function* () {
         for (let i = 0; i < 4; i++) {
-          if (((bitboard >> BigInt(i)) & 1n) === 1n) {
+          if (BigOne.isBitSet(bitboard, i)) {
             yield i
           }
         }

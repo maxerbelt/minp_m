@@ -92,6 +92,17 @@ export class BigOne {
     return 1n << BigInt(pos)
   }
 
+  static isBitSet (bitboard, index) {
+    return ((bitboard >> BigInt(index)) & 1n) === 1n
+  }
+  static getBitAtPos (bitboard, pos) {
+    return (bitboard >> BigInt(pos)) & 1n
+  }
+  static setBitAtPos (bitboard, pos, value) {
+    return value
+      ? bitboard | (1n << BigInt(pos))
+      : bitboard & ~(1n << BigInt(pos))
+  }
   /**
    * Read the numeric boolean value of a single bit.
    * @param {bigint|number} bits - The source bitboard.
