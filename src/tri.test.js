@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
-
+import { BigBits, BigOne } from './grid/bitStore/helpers/bigbits.js'
 /**
  * @jest-environment jsdom
  */
@@ -27,7 +27,7 @@ jest.unstable_mockModule('./grid/triangle/maskTri.js', () => {
   class MaskTri {
     constructor (side) {
       this.side = side
-      this.bits = 0n
+      this.bits = BigBits.empty
       this.actions = {
         transformMaps: { id: null, r120: 'R', r240: 'R2', f0: 'F' },
         template: 'T',
@@ -340,7 +340,7 @@ describe('tri.js line tool handling', () => {
         }
       },
       setIndex: jest.fn((i, value) => {
-        triDraw.mask.bits |= BigInt(value) << BigInt(i)
+        triDraw.mask.bits |= BigBits.setMask(i, value)
         return triDraw.mask.bits
       }),
       dilate: jest.fn(function () {
@@ -559,7 +559,7 @@ describe('tri.js line tool handling', () => {
     const triCanvas = new TriCanvas('c', triDraw)
 
     triCanvas.grid.mask.setIndex = jest.fn((idx, value) => {
-      triCanvas.grid.mask.bits = BigInt(1) << BigInt(idx)
+      triCanvas.grid.mask.bits = BigOne.bitMaskByPos(idx)
       return triCanvas.grid.mask.bits
     })
     triCanvas.grid.setBits = jest.fn(function (bits) {

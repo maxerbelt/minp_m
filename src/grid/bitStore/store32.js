@@ -259,7 +259,7 @@ export class Store32 extends StoreBase {
    * Clear specific cells that don't meet survival criteria.
    */
   _erodeCellsWithCallback (src, out, survivalTest) {
-    this._iterateNonZeroCells(src, out, (idx, val) => {
+    this._iterateNonZeroCells(src, out, (idx, _val) => {
       if (!survivalTest(src, idx)) {
         const ref = this._calculateCellPosition(idx)
         out[ref.word] = this.setWordBits(out[ref.word], ref.mask, ref.shift, 0)
@@ -1107,16 +1107,16 @@ export class Store32 extends StoreBase {
     return result
   }
 
-  dilateHorizontalStep (bitboard, edgeMasks) {
+  dilateHorizontalStep (bitboard, _edgeMasks) {
     const src = this.normalizeBitboard(bitboard)
     return this.expandHorizontallyCellwise(src)
   }
 
-  dilateVerticalStep (bitboard, gridWidth, edgeMasks) {
+  dilateVerticalStep (bitboard, gridWidth, _edgeMasks) {
     const src = this.normalizeBitboard(bitboard)
     if (this.bitsPerCell > 1)
       return this.propagateVerticalCellwise(src, gridWidth)
-    return this.propagateVerticalShift(src, gridWidth, edgeMasks)
+    return this.propagateVerticalShift(src, gridWidth, _edgeMasks)
   }
 
   dilateHorizontalWrapStep (bitboard, gridWidth, gridHeight) {
@@ -1129,13 +1129,13 @@ export class Store32 extends StoreBase {
     return result
   }
 
-  erodeHorizontalClampStep (bitboard, edgeMasks) {
+  erodeHorizontalClampStep (bitboard, _edgeMasks) {
     const src = this.normalizeBitboard(bitboard)
     // Store32 always uses per-cell erosion to correctly respect grid boundaries
     return this.erodeHorizontalCellwise(src)
   }
 
-  erodeVerticalClampStep (bitboard, gridWidth, edgeMasks) {
+  erodeVerticalClampStep (bitboard, gridWidth, _edgeMasks) {
     const src = this.normalizeBitboard(bitboard)
     // Store32 always uses per-cell erosion to correctly respect grid boundaries
     return this.erodeVerticalCellwise(src, gridWidth)
@@ -1826,7 +1826,6 @@ export class Store32 extends StoreBase {
    * @returns {Uint32Array} Multi-bit bitboard reconstructed from color layers
    */
   assembleColorLayersWithBackground (colorLayers, gridWidth, gridHeight) {
-    const totalCells = gridWidth * gridHeight
     const resultBitboard = this.newWords()
 
     // For each color layer, merge its bits into the result at the appropriate color depth

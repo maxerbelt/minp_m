@@ -189,7 +189,7 @@ export class MultiColorMorphology {
    */
   _erodeHorizontalIterative (bitboard) {
     const width = this.store.width
-    const result = bitboard
+    let result = bitboard
     const size = width * this.store.height
 
     for (let idx = 0; idx < size; idx++) {
@@ -230,7 +230,7 @@ export class MultiColorMorphology {
    */
   _erodeVerticalIterative (bitboard, gridWidth) {
     const height = this.store.height
-    const result = bitboard
+    let result = bitboard
     const size = gridWidth * height
 
     for (let idx = 0; idx < size; idx++) {

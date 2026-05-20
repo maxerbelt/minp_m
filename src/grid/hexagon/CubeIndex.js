@@ -118,7 +118,6 @@ export class CubeIndex extends Indexer {
 
   _axisStepVector (axis, sign, currentQ, currentR, targetQ, targetR) {
     const targetS = CubeIndex.qrToS(targetQ, targetR)
-    const currentS = CubeIndex.qrToS(currentQ, currentR)
     const candidates = this._axisStepCandidates(axis, sign)
     let bestCandidate = candidates[0]
     let bestDistance = Number.POSITIVE_INFINITY

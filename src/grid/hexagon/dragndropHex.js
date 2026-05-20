@@ -1,3 +1,6 @@
+/* global canvas, pixelToHex, offsetX, offsetY, S, hex, shape, redraw, translateShape, applyTransform, transforms, forEachBit, boardMaskHas, occupiedMask, hexToPixel, drawHex */
+/* exported drawOrigin, drawGhost */
+
 const interaction = {
   dragging: false,
   rotating: false,
@@ -43,10 +46,6 @@ canvas.addEventListener('mousedown', e => {
     interaction.rotating = true
   }
 })
-canvas.addEventListener('mouseup', () => {
-  interaction.dragging = false
-  interaction.rotating = false
-})
 
 canvas.addEventListener('mousemove', e => {
   if (!interaction.dragging && !interaction.rotating) return
@@ -74,11 +73,6 @@ canvas.addEventListener('mousemove', e => {
 })
 
 canvas.addEventListener('contextmenu', e => e.preventDefault())
-
-canvas.addEventListener('mouseup', () => {
-  interaction.dragging = false
-  interaction.rotating = false
-})
 
 window.addEventListener('keydown', e => {
   if (e.key === 'r') {
@@ -111,21 +105,6 @@ function cubeRound (q, r, s) {
   return [rq, rr, rs]
 }
 
-function cubeRound (q, r, s) {
-  let rq = Math.round(q)
-  let rr = Math.round(r)
-  let rs = Math.round(s)
-
-  const dq = Math.abs(rq - q)
-  const dr = Math.abs(rr - r)
-  const ds = Math.abs(rs - s)
-
-  if (dq > dr && dq > ds) rq = -rr - rs
-  else if (dr > ds) rr = -rq - rs
-  else rs = -rq - rr
-
-  return [rq, rr, rs]
-}
 function pixelToSnappedHex (x, y, S) {
   const [q, r, s] = pixelToHex(x, y, S)
   return cubeRound(q, r, s)
@@ -139,11 +118,6 @@ function isPlacementLegal (bb) {
 
   // 2) no collision
   return (bb & occupiedMask) === 0n
-}
-
-function pixelToSnappedHex (x, y, S) {
-  const [q, r, s] = pixelToHex(x, y, S)
-  return cubeRound(q, r, s)
 }
 
 function computeGhost (px, py) {

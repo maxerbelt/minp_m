@@ -595,7 +595,7 @@ export class Ship {
    * @private
    */
   _processWeaponItem (item, weaponsById, weaponArray, preserveExisting) {
-    const [key, weaponSystem] = Array.isArray(item) ? item : [, item]
+    const [key, weaponSystem] = Array.isArray(item) ? item : [undefined, item]
 
     // Skip non-object values (test mocks, invalid data)
     if (typeof weaponSystem !== 'object' || weaponSystem === null) {

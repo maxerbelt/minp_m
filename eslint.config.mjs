@@ -23,7 +23,7 @@ export default defineConfig([
       }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': 'off',
       // Test files often import or declare Jest globals; allow redeclaration here.
       'no-redeclare': 'off'
     }

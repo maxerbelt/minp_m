@@ -70,18 +70,6 @@ export function coordsToOccBig (coordinateList, width) {
 }
 
 /**
- * Convert BigInt occupancy mask to coordinate list with constant value
- * @param {bigint} occupancyBits - Bit pattern where set bits represent occupied cells
- * @param {number} width - Grid width
- * @param {number} height - Grid height
- * @param {*} constantValue - Value to assign to all occupied cells
- * @returns {Array<[number, number, *]>} Array of [x, y, value] tuples
- */
-function occBigToCoords (occupancyBits, width, height, constantValue) {
-  return _collectBitsAsCoords(occupancyBits, width, height, () => constantValue)
-}
-
-/**
  * Convert BigInt occupancy mask to coordinate list with computed values
  * Uses a function to compute the value for each occupied cell
  * @param {bigint} occupancyBits - Bit pattern where set bits represent occupied cells

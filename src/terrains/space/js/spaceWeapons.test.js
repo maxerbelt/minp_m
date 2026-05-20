@@ -95,6 +95,15 @@ describe('spaceWeapons basic behavior', () => {
     expect(rc.ammo).toBe(5)
   })
 
+  it('RailBolt.redoCoords falls back to a degenerate line when given a single point', () => {
+    const rail = new RailBolt(1)
+    const result = rail.redoCoords(null, [0, 0], [3, 4])
+    expect(result).toEqual([
+      [3, 4],
+      [3, 4]
+    ])
+  })
+
   it('RailBolt launchTo uses full line edge endpoints for portal markers', async () => {
     const rail = new RailBolt(1)
 

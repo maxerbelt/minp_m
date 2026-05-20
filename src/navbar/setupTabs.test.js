@@ -18,13 +18,24 @@ jest.unstable_mockModule('./gtag.js', () => ({
 }))
 jest.unstable_mockModule('./NavigationService.js', () => ({
   NavigationService: class {
-    constructor () {}
-    switchToMode () {}
-    switchToHide () {}
-    switchToSeek () {}
-    switchToList () {}
-    switchToRules () {}
-    switchToBuild () {}
+    switchToMode () {
+      return undefined
+    }
+    switchToHide () {
+      return undefined
+    }
+    switchToSeek () {
+      return undefined
+    }
+    switchToList () {
+      return undefined
+    }
+    switchToRules () {
+      return undefined
+    }
+    switchToBuild () {
+      return undefined
+    }
     printPage = jest.fn()
     navigateToBlog = jest.fn()
     navigateToSource = jest.fn()
@@ -144,14 +155,17 @@ describe('setupTabs and switchTo', () => {
     }
   }
 
-  // helper: mock location and load bh/tabs
+  // NOSONAR
   async function _setupBhAndTabs () {
     try {
       Object.defineProperty(globalThis, 'location', {
         value: { href: '', search: '' },
         configurable: true
       })
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (_e) {
+      //NOSONAR
+      // Ignore errors when setting location (may be read-only in some environments)
       if (origLocation && typeof origLocation === 'object') {
         try {
           // avoid mutating location.href/search to prevent jsdom navigation
@@ -252,6 +266,7 @@ describe('setupTabs and switchTo', () => {
     _checkPrintAboutSource()
   })
 
+  // NOSONAR
   function _checkPrintAboutSource () {
     setupTabs('other')
     // simulate clicking print

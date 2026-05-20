@@ -233,10 +233,10 @@ export class RectMorphologyOps {
    * Expand the grid with a border of empty cells and dilate into them.
    * Creates a larger grid with this mask at an offset.
    * @param {number} [borderSize=1] - Border size to add
-   * @param {number} [fillValue=0] - Color to fill new border cells with
+   * @param {number} [_fillValue=0] - Color to fill new border cells with
    * @returns {MaskBase} New expanded & dilated mask
    */
-  dilateExpand (borderSize = 1, fillValue = 0) {
+  dilateExpand (borderSize = 1, _fillValue = 0) {
     const newWidth = this.width + 2 * borderSize
     const newHeight = this.height + 2 * borderSize
     const expanded = this.mask.emptyMaskOfSize(

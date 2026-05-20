@@ -626,7 +626,7 @@ export class Indexer {
    * @returns {Object} Actions instance
    * @abstract
    */
-  actions (bb) {
+  actions (_bb) {
     throw new Error('actions method must be implemented in derived class')
   }
 
@@ -637,7 +637,7 @@ export class Indexer {
    * @returns {Object} Cached or new actions instance
    * @private
    */
-  _getCachedActions (bb, factory) {
+  _getCachedActions (_bb, factory) {
     if (this._actions && this._actions?.original?.bits === bb.bits) {
       return this._actions
     }

@@ -434,35 +434,40 @@ export class StoreBase {
   }
 
   // Abstract/Template methods - must be implemented by subclasses
-  dilateHorizontalStep (bitboard, edgeMasks) {
+  dilateHorizontalStep (_bitboard, _edgeMasks) {
     throw new Error('dilateHorizontalStep must be implemented by subclass')
   }
 
-  dilateVerticalStep (bitboard, gridWidth, edgeMasks) {
+  dilateVerticalStep (_bitboard, _gridWidth, _edgeMasks) {
     throw new Error('dilateVerticalStep must be implemented by subclass')
   }
 
-  dilateHorizontalWrapStep (bitboard, gridWidth, gridHeight) {
+  dilateHorizontalWrapStep (_bitboard, _gridWidth, _gridHeight) {
     throw new Error('dilateHorizontalWrapStep must be implemented by subclass')
   }
 
-  erodeHorizontalClampStep (bitboard, edgeMasks) {
+  erodeHorizontalClampStep (_bitboard, _edgeMasks) {
     throw new Error('erodeHorizontalClampStep must be implemented by subclass')
   }
 
-  erodeVerticalClampStep (bitboard, gridWidth, edgeMasks) {
+  erodeVerticalClampStep (_bitboard, _gridWidth, _edgeMasks) {
     throw new Error('erodeVerticalClampStep must be implemented by subclass')
   }
 
-  rotateRowBitsForSingleRow (sourceBitboard, gridWidth, rowIndex, shiftAmount) {
+  rotateRowBitsForSingleRow (
+    _sourceBitboard,
+    _gridWidth,
+    _rowIndex,
+    _shiftAmount
+  ) {
     throw new Error('rotateRowBitsForSingleRow must be implemented by subclass')
   }
 
-  shiftBits (src, shift) {
+  shiftBits (_src, _shift) {
     throw new Error('shiftBits must be implemented by subclass')
   }
 
-  createEmptyBitboard (template) {
+  createEmptyBitboard (_template) {
     throw new Error('createEmptyBitboard must be implemented by subclass')
   }
 }

@@ -165,7 +165,7 @@ export class BitGrid {
    * @param {bigint} bitboard - Bitboard to check
    * @returns {boolean} True if fast path should be used for value retrieval
    */
-  #shouldUseFastPath (bitboard) {
+  #shouldUseFastPath (_bitboard) {
     return this.fast && this.store.bitsOccupied && this.store.bitWidth === 1
   }
 

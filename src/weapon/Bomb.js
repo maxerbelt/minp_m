@@ -411,8 +411,44 @@ function calculateLineAreaOfEffect (
  * @returns {Array<Coord>} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
  */
 function normalizeLineCoordinates (coords) {
-  const [row1, col1] = coords[0]
-  const [row2, col2] = coords[1]
+  if (!coords || !Array.isArray(coords) || coords.length === 0) {
+    console.warn('normalizeLineCoordinates called with invalid coords', coords)
+    return [
+      [0, 0],
+      [0, 0]
+    ]
+  }
+
+  // Accept a flat coordinate pair [row, col] as a degenerate line.
+  if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+    return [
+      [coords[0], coords[1]],
+      [coords[0], coords[1]]
+    ]
+  }
+
+  const start = coords[0]
+  const end = coords[1] || start
+  if (!Array.isArray(start) || start.length < 2) {
+    console.warn(
+      'normalizeLineCoordinates called with invalid start coord',
+      coords
+    )
+    return [
+      [0, 0],
+      [0, 0]
+    ]
+  }
+  if (!Array.isArray(end) || end.length < 2) {
+    console.warn(
+      'normalizeLineCoordinates called with invalid end coord, using start coord',
+      coords
+    )
+    return [start, start]
+  }
+
+  const [row1, col1] = start
+  const [row2, col2] = end
   const { x0, y0, x1, y1 } = getIntercepts(row1, col1, row2, col2)
   return [
     [y0, x0],
