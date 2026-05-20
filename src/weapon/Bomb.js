@@ -1,4 +1,5 @@
 import { RectListCanvas } from '../grid/rectangle/rectListCanvas.js'
+import { drawPie } from '../grid/maskShape.js'
 import { Weapon } from './Weapon.js'
 
 /**
@@ -172,14 +173,15 @@ export function getPieSegmentCells (
   spreadDeg = 22.5
 ) {
   const points = RectListCanvas.BhMapList()
-  points.drawPie(
+  drawPie(
     centerCol,
     centerRow,
     targetCol,
     targetRow,
     radius,
-    this,
-    spreadDeg
+    points,
+    spreadDeg,
+    1
   )
   return points.list.map(([x, y, p]) => [y, x, p])
 }
@@ -187,15 +189,6 @@ export function getPieSegmentCells (
 // Shared Helper Functions - Effect Pattern Calculations
 // ============================================================================
 
-/**
- * Adds a cell to an effect pattern if it passes bounds and terrain checks
- * @param {Object|null} map - Game map for bounds checking (null for no check)
- * @param {number} row - Cell row
- * @param {number} col - Cell column
- * @param {number} power - Damage power for the cell
- * @param {Array} effectPattern - Pattern array to add to
- * @param {Function} [terrainCheck] - Optional terrain validation function
- */
 /**
  * Checks whether a map cell is valid for inclusion in an effect pattern.
  * @param {MapLike|null} map - Game map for bounds checking
@@ -212,15 +205,13 @@ function isValidCell (map, row, col, terrainCheck = null) {
 }
 
 /**
- * Adds cells in a set of direction offsets to an effect pattern.
+ * Adds a single cell to an effect pattern if valid.
  * @param {MapLike|null} map - Game map for bounds checking
- * @param {number} centerRow - Center row coordinate
- * @param {number} centerCol - Center column coordinate
+ * @param {number} row - Cell row coordinate
+ * @param {number} col - Cell column coordinate
  * @param {number} power - Damage power for added cells
  * @param {AoePattern} effectPattern - Pattern to accumulate into
- * @param {Array<Array<number>>} directions - Direction offsets
- * @param {TerrainCheck|null} [terrainCheck] - Optional terrain validation function
- * @param {number} [radius=1] - Offset multiplier for direction vectors
+ * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
  * @returns {AoePattern} Updated effect pattern
  */
 export function addCellToEffect (
@@ -234,6 +225,7 @@ export function addCellToEffect (
   if (isValidCell(map, row, col, terrainCheck)) {
     effectPattern.push([row, col, power])
   }
+  return effectPattern
 }
 
 /**
@@ -356,7 +348,7 @@ export function createSplashEffect (
   terrainCheck = null
 ) {
   const [centerRow, centerCol] = centerCoords
-  const effectPattern = [centerCoords]
+  const effectPattern = [[centerRow, centerCol, power]]
   addOrthogonalNeighbors(
     map,
     centerRow,
@@ -370,7 +362,7 @@ export function createSplashEffect (
 
 /**
  * Calculates area-of-effect along a line with optional power and terrain filtering
- * @param {Array<Coord>} coords - Two-point coordinates [startCoord, endCoord]
+ * @param {number[][]} coords - Two-point coordinates [startCoord, endCoord]
  * @param {number} [power=1] - Power level for damage
  * @param {Function} [lineFunction=getExtendedLinePoints] - Function to get line points
  * @param {TerrainCheck|null} [terrainFilter] - Optional terrain filter function
@@ -407,8 +399,8 @@ function calculateLineAreaOfEffect (
 
 /**
  * Normalizes coordinates between two points using line intercepts
- * @param {Array<Coord>} coords - Two-point coordinates [startCoord, endCoord]
- * @returns {Array<Coord>} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
+ * @param {number[][]} coords - Two-point coordinates [startCoord, endCoord]
+ * @returns {number[][]} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
  */
 function normalizeLineCoordinates (coords) {
   if (!coords || !Array.isArray(coords) || coords.length === 0) {
@@ -622,7 +614,7 @@ export class Strike extends Weapon {
    * @param {Array} coords - Coordinates to normalize [start, end]
    * @returns {Array} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
    */
-  redoCoords (map, base, coords) {
+  redoCoords (_map, _base, coords) {
     return normalizeLineCoordinates(coords)
   }
 
@@ -632,7 +624,7 @@ export class Strike extends Weapon {
    * @param {number[][]} coords - Source and Target coordinates
    * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
-  aoe (map, coords) {
+  aoe (_map, coords) {
     return calculateLineAreaOfEffect(coords, 2, getExtendedLinePoints)
   }
 
@@ -649,18 +641,11 @@ export class Strike extends Weapon {
   }
 
   /**
-   * Handles strike launch animation/projectile
-   * @param {Array} coords - Strike coordinates
-   * @param {number} rr - Target row
-   * @param {number} cc - Target column
-   * @param {Object} map - Game map
-   * @param {Object} viewModel - Current player view model
-   * @param {Object} opposingViewModel - Opposing player view model
-   * @param {Object} model - Game model
+   * Handles strike launch animation/projectile.
    * @returns {Promise} Launch animation promise
    */
-  async launchTo () {
-    return await this.launchRightTo(...arguments)
+  async launchTo (...args) {
+    return await this.launchRightTo(...args)
   }
 }
 export class Fish extends Weapon {
@@ -729,8 +714,8 @@ export class Fish extends Weapon {
    * @param {Array} coords - Original coordinates
    * @returns {Array} Normalized coordinate pair [start, end]
    */
-  redoCoords (map, base, coords) {
-    const line = this.aoe(map, coords)
+  redoCoords (_map, _base, coords) {
+    const line = this.aoe(_map, coords)
     return [line[0], line.at(-1)]
   }
 
@@ -752,14 +737,7 @@ export class Fish extends Weapon {
   }
 
   /**
-   * Handles fish launch animation/projectile
-   * @param {Array} coords - Fish coordinates
-   * @param {number} rr - Target row
-   * @param {number} cc - Target column
-   * @param {Object} map - Game map
-   * @param {Object} viewModel - Current player view model
-   * @param {Object} opposingViewModel - Opposing player view model
-   * @param {Object} model - Game model
+   * Handles fish launch animation/projectile.
    * @returns {Promise} Launch animation promise
    */
   async launchTo (...args) {

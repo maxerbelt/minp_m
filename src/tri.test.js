@@ -27,6 +27,7 @@ jest.unstable_mockModule('./grid/triangle/maskTri.js', () => {
   class MaskTri {
     constructor (side) {
       this.side = side
+      /** @type {any} */
       this.bits = BigBits.empty
       this.actions = {
         transformMaps: { id: null, r120: 'R', r240: 'R2', f0: 'F' },
@@ -43,7 +44,7 @@ jest.unstable_mockModule('./grid/triangle/maskTri.js', () => {
       this.bits = 0n
     }
     get clone () {
-      const o = { bits: this.bits }
+      const o = /** @type {any} */ ({ bits: this.bits })
       o.dilate = function () {
         this.bits = 'd'
       }
@@ -77,10 +78,12 @@ jest.unstable_mockModule('./grid/triangle/actionsTri.js', () => {
 })
 
 // stub DOM helpers used by tri.js
+/** @type {Record<string, any>} */
 const elementStore = {}
 function makeButton (id) {
-  const btn = { disabled: false, listeners: {} }
-  btn.addEventListener = jest.fn((evt, cb) => {
+  /** @type {{ disabled: boolean, listeners: Record<string, any>, addEventListener: any }} */
+  const btn = { disabled: false, listeners: {}, addEventListener: null }
+  btn.addEventListener = /** @type {any} */ jest.fn((evt, cb) => {
     btn.listeners[evt] = cb
   })
   elementStore[id] = btn
@@ -88,7 +91,7 @@ function makeButton (id) {
 }
 
 function setupDOMStubs () {
-  document.createElement = jest.fn(() => {
+  document.createElement = /** @type {any} */ jest.fn(() => {
     const btn = {
       disabled: false,
       dataset: {},
@@ -98,9 +101,9 @@ function setupDOMStubs () {
     return btn
   })
 
-  document.querySelectorAll = jest.fn(() => [])
+  document.querySelectorAll = /** @type {any} */ jest.fn(() => [])
 
-  document.getElementById = jest.fn(id => {
+  document.getElementById = /** @type {any} */ jest.fn(id => {
     // c (canvas) or rotateBtn or flipButtons container
     if (id === 'c') return fakeCanvas
     if (elementStore[id]) return elementStore[id]
@@ -213,11 +216,7 @@ describe('tri.js helpers', () => {
 })
 
 describe('tri.js line tool handling', () => {
-  let triDraw,
-    computePreviewIndices,
-    drawLineBetween,
-    setTool,
-    setMorphologyButtons
+  let triDraw, setMorphologyButtons
 
   beforeEach(async () => {
     jest.resetModules()
@@ -235,7 +234,7 @@ describe('tri.js line tool handling', () => {
         value: 'single',
         checked: true,
         listeners: {},
-        addEventListener: jest.fn(function (event, cb) {
+        addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
           this.listeners[event] = cb
         })
       },
@@ -243,7 +242,7 @@ describe('tri.js line tool handling', () => {
         value: 'segment',
         checked: false,
         listeners: {},
-        addEventListener: jest.fn(function (event, cb) {
+        addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
           this.listeners[event] = cb
         })
       },
@@ -251,7 +250,7 @@ describe('tri.js line tool handling', () => {
         value: 'ray',
         checked: false,
         listeners: {},
-        addEventListener: jest.fn(function (event, cb) {
+        addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
           this.listeners[event] = cb
         })
       },
@@ -259,38 +258,39 @@ describe('tri.js line tool handling', () => {
         value: 'full',
         checked: false,
         listeners: {},
-        addEventListener: jest.fn(function (event, cb) {
+        addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
           this.listeners[event] = cb
         })
       }
     ]
 
     // Mock querySelectorAll to return fake radio buttons
-    document.querySelectorAll = jest.fn(selector => {
+    document.querySelectorAll = /** @type {any} */ jest.fn(selector => {
       if (selector === 'input[name="tri-line-tool"]') return radioButtons
       return []
     })
 
     // Create fake line action dropdown
-    const lineActionDropdown = {
+    const lineActionDropdown = /** @type {any} */ ({
       value: 'set',
       listeners: {},
-      addEventListener: jest.fn(function (event, cb) {
+      addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
         this.listeners[event] = cb
       })
-    }
+    })
 
+    /** @type {Record<string, any>} */
     const elementStore = {
       'tri-line-action': lineActionDropdown,
       rotateBtn: rotateBtn,
       dilateBtn: dilateBtn,
       erodeBtn: erodeBtn,
       crossDilateBtn: crossBtn,
-      flipButtons: { appendChild: jest.fn() },
+      flipButtons: { appendChild: /** @type {any} */ jest.fn() },
       c: fakeCanvas
     }
 
-    document.getElementById = jest.fn(id => {
+    document.getElementById = /** @type {any} */ jest.fn(id => {
       if (id === 'c') return fakeCanvas
       return elementStore[id] || null
     })
@@ -306,7 +306,6 @@ describe('tri.js line tool handling', () => {
       erode: erodeBtn,
       cross: crossBtn
     })
-
     // stub mask with required methods and indexer
     triDraw.mask = {
       actions: {
@@ -339,7 +338,7 @@ describe('tri.js line tool handling', () => {
           yield [er, ec]
         }
       },
-      setIndex: jest.fn((i, value) => {
+      setIndex: /** @type {any} */ jest.fn((i, value) => {
         triDraw.mask.bits |= BigBits.setMask(i, value)
         return triDraw.mask.bits
       }),
@@ -372,11 +371,10 @@ describe('tri.js line tool handling', () => {
 
   it('setTool changes currentTool state correctly', async () => {
     const triModule = await import('./tri.js')
-    const { triDraw: td } = triModule
 
     // Export setTool from tri.js for testing by checking radio button handlers
-    const radioButtons = document.querySelectorAll(
-      'input[name="tri-line-tool"]'
+    const radioButtons = /** @type {any} */ (
+      document.querySelectorAll('input[name="tri-line-tool"]')
     )
 
     // Activate segment tool
@@ -435,7 +433,9 @@ describe('tri.js line tool handling', () => {
   })
 
   it('tri-line-action dropdown is wired correctly', () => {
-    const dropdown = document.getElementById('tri-line-action')
+    const dropdown = /** @type {any} */ (
+      document.getElementById('tri-line-action')
+    )
     expect(dropdown).toBeDefined()
     expect(dropdown.addEventListener).toHaveBeenCalledWith(
       'change',
