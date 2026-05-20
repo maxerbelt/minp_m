@@ -942,13 +942,11 @@ class Enemy extends Waters {
     // REGRESSION GUARD: In pure Seek mode with Space/Asteroids terrain,
     // Missiles should fire immediately with one click, even when hasAttachedWeapons
     // is false. Check this BEFORE the attached weapons flow.
-    const currentWeapon =
-      typeof this.loadOut?.getCurrentWeaponSystem === 'function'
-        ? this.loadOut.getCurrentWeaponSystem()
-        : undefined
+    // IMPORTANT: Call without argument to allow method's default parameter to execute.
+    // If we pass currentWeapon directly, passing undefined would override the default.
     if (
       typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
-      this._shouldFireSeekModeMissileImmediately(currentWeapon)
+      this._shouldFireSeekModeMissileImmediately()
     ) {
       await this._fireCurrentWeaponImmediately(r, c)
       return
@@ -977,9 +975,11 @@ class Enemy extends Waters {
   async _handleAttachedWeaponClick (r, c) {
     if (this.loadOut?.selectedWeapon) {
       // REGRESSION GUARD: Check if selectedWeapon is a seek-mode missile before firing
+      // Call without argument to use default parameter (getCurrentWeaponSystem)
+      // This ensures the missile check always gets valid weapon system data
       if (
         typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
-        this._shouldFireSeekModeMissileImmediately(this.loadOut.selectedWeapon)
+        this._shouldFireSeekModeMissileImmediately()
       ) {
         await this._fireCurrentWeaponImmediately(r, c)
         return
@@ -990,11 +990,10 @@ class Enemy extends Waters {
 
     if (this.selectedCellCoordinates === null) {
       const currentWeapon = this.loadOut.getCurrentWeaponSystem()
-      const weaponSystemToCheck = this.loadOut.selectedWeapon || currentWeapon
 
       if (
         typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
-        this._shouldFireSeekModeMissileImmediately(weaponSystemToCheck)
+        this._shouldFireSeekModeMissileImmediately()
       ) {
         await this._fireCurrentWeaponImmediately(r, c)
         return

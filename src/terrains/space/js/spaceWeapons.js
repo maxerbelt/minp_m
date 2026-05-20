@@ -40,6 +40,14 @@ import { coordToKey } from '../../../core/utilities.js'
 // ============================================================================
 // Helper Constants & Utility Functions
 
+/**
+ * Normalizes weapon launch coordinates into a consistent [source, target] format
+ * @param {number[]|number[][]} coords - Raw coordinates in various formats
+ * @param {number} rr - Source row coordinate
+ * @param {number} cc - Source column coordinate
+ * @returns {number[][]} Normalized coordinate pair [[sourceRow, sourceCol], [targetRow, targetCol]]
+ * @throws {TypeError} If coords format is invalid
+ */
 function normalizeWeaponCoordinates (coords, rr, cc) {
   if (!Array.isArray(coords)) {
     throw new TypeError('coords must be an array')
@@ -130,8 +138,8 @@ function createSquareExplosion (
  * @typedef {Object} AnimationContext
  * @property {number} sourceRow - Source row coordinate
  * @property {number} sourceCol - Source column coordinate
- * @property {Object} viewModel - Primary view model
- * @property {Object} opposingViewModel - Opposing player view model
+ * @property {ViewModel} viewModel - Primary view model
+ * @property {OpposingViewModel} opposingViewModel - Opposing player view model
  */
 
 /**
@@ -139,10 +147,11 @@ function createSquareExplosion (
  * @param {Weapon} weapon - The weapon instance being launched
  * @param {number[]|number[][]} coords - Launch coordinates
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {any} map - Game map object
- * @param {any} gameModel - Game model object
- * @param {Function} [animationCallback] - Optional custom animation callback
+ * @param {TerrainMap} map - Game map object
+ * @param {GameModel} gameModel - Game model object
+ * @param {(weapon: Weapon, coords: number[]|number[][], context: AnimationContext, map: TerrainMap, gameModel: GameModel) => Promise<Object>} [animationCallback] - Optional custom animation callback
  * @returns {Promise<Object>} Launch promise
+ * @async
  */
 async function launchWithDualBoardAnimation (
   weapon,
@@ -168,7 +177,8 @@ async function launchWithDualBoardAnimation (
 
 /**
  * Adds portal CSS classes to cells for dual-board animation.
- * @param {DualBoardCells} cells - Source and target cell references.
+ * Applies marker and portal classes symmetrically across both boards for visual effect.
+ * @param {DualBoardCells} cells - Source and target cell references
  * @returns {void}
  */
 function addPortalClasses (cells) {
@@ -183,7 +193,8 @@ function addPortalClasses (cells) {
 
 /**
  * Removes portal CSS classes from cells after animation.
- * @param {DualBoardCells} cells - Source and target cell references.
+ * Cleans up animation decoration classes to restore original cell styling.
+ * @param {DualBoardCells} cells - Source and target cell references
  * @returns {void}
  */
 function removePortalClasses (cells) {
@@ -194,13 +205,15 @@ function removePortalClasses (cells) {
 }
 
 /**
- * Performs portal-style dual-board animation for weapons
+ * Performs portal-style dual-board animation for weapons.
+ * Visualizes weapon trajectory as portal markers across both boards.
  * @param {Weapon} weapon - The weapon instance
  * @param {number[]|number[][]} coords - Target coordinates
  * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {any} map - Game map object
- * @param {any} gameModel - Game model object
- * @returns {Promise<Object>} Animation promise
+ * @param {TerrainMap} map - Game map object
+ * @param {GameModel} gameModel - Game model object
+ * @returns {Promise<Object>} Animation completion result with target info
+ * @async
  */
 async function performPortalAnimation (weapon, coords, context, map, gameModel) {
   const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
@@ -359,16 +372,16 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Animates missile launch with cross-board support
-   * Routes to parent launchTo if no opposing view model exists
+   * Animates missile launch with cross-board support.
+   * Routes to parent launchTo if no opposing view model exists.
    * @async
-   * @param {(number[]|number[][])} coords - Target coordinates [[row, col]] or flat coordinate
+   * @param {number[]|number[][]} coords - Target coordinates [[row, col]] or flat coordinate
    * @param {number} row - Source row coordinate
    * @param {number} col - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @returns {Promise<Object>} Animation completion result
+   * @param {TerrainMap} map - Game map object
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {OpposingViewModel} [opposingViewModel] - Optional opposing player view model
+   * @returns {Promise<Object>} Animation completion result with target info
    */
   async launchTo (coords, row, col, map, viewModel, opposingViewModel) {
     if (!opposingViewModel) {
@@ -598,17 +611,17 @@ export class RailBolt extends Strike {
   }
 
   /**
-   * Initiates rail bolt launch with coordinate transformation
-   * Routes to launchRightTo for coordinate processing before dual-animation launch
+   * Initiates rail bolt launch with coordinate transformation.
+   * Routes to launchWithDualBoardAnimation for portal-style animation.
    * @async
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
    * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model for coordinate transformation
-   * @returns {Promise<Object>} Animation completion result
+   * @param {TerrainMap} map - Game map object
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {OpposingViewModel} [opposingViewModel] - Optional opposing player view model
+   * @param {GameModel} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<Object>} Animation completion result with target info
    */
   async launchTo (
     coords,
@@ -736,19 +749,18 @@ export class GaussRound extends Fish {
     this.crashLoc = null
   }
   /**
-   * Performs Gauss round dual-board animation with portal effect on sources
-   * Animates from source on opposing board to target on primary board
-   * Then animates from source on primary board to target on primary board
+   * Performs Gauss round dual-board animation with portal effect on sources.
+   * Animates from source on opposing board to target on primary board,
+   * then from source on primary board to target on primary board.
    * @async
-   
    * @param {number[][]} coords - Target coordinates
    * @param {number} sourceRow - Source row
    * @param {number} sourceCol - Source column
-   * @param {Object} map - Game map
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} opposingViewModel - Opposing view model
-   * @param {Object} gameModel - Game model
-   * @returns {Promise} Animation promise
+   * @param {TerrainMap} map - Game map
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {OpposingViewModel} opposingViewModel - Opposing view model
+   * @param {GameModel} gameModel - Game model
+   * @returns {Promise<Object>} Animation promise with target info
    */
   async performGaussRoundAnimation (
     coords,
@@ -1033,13 +1045,14 @@ export class GaussRound extends Fish {
 }
 
 /**
- * Laser - A projectile weapon that stops at terrain boundaries
- * Extends Fish with land-detection trajectory and dual-animation launch
+ * Laser - A projectile weapon that stops at terrain boundaries.
+ * Extends Fish with land-detection trajectory and dual-animation launch.
+ * Reuses implementation from GaussRound for equivalent behavior.
  * @extends Fish
  */
 export class Laser extends Fish {
   /**
-   * Initializes Laser with configuration
+   * Initializes Laser with configuration.
    * @param {number} ammo - Number of Laser Blasts available
    */
   constructor (ammo) {
@@ -1120,119 +1133,13 @@ export class Laser extends Fish {
         [5, 3, 0]
       ]
     )
-    // Tracks crash location when round hits land
+    // Tracks crash location when laser hits land
     this.crashLoc = null
   }
-  /**
-   * Performs Gauss round dual-board animation with portal effect on sources
-   * Animates from source on opposing board to target on primary board
-   * Then animates from source on primary board to target on primary board
-   * @async
-   
-   * @param {number[][]} coords - Target coordinates
-   * @param {number} sourceRow - Source row
-   * @param {number} sourceCol - Source column
-   * @param {Object} map - Game map
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} opposingViewModel - Opposing view model
-   * @param {Object} gameModel - Game model
-   * @returns {Promise} Animation promise
-   */
-  async performLaserBlastAnimation (
-    coords,
-    sourceRow,
-    sourceCol,
-    map,
-    viewModel,
-    opposingViewModel,
-    gameModel
-  ) {
-    if (!opposingViewModel) {
-      return await this.launchRightTo(
-        coords,
-        sourceRow,
-        sourceCol,
-        map,
-        viewModel,
-        opposingViewModel,
-        gameModel,
-        this.processCoords.bind(this)
-      )
-    }
-    const [, targetCoord, hasCandidates] = this.processCoords(
-      map,
-      [sourceRow, sourceCol],
-      coords,
-      gameModel
-    )
-    // Use the hint/source coordinates for portal decoration on both boards.
-    // GaussRound portals should appear at the hinted launch source, not at a
-    // normalized line origin if the path is adjusted separately for impact.
-    const sourceCell1 = opposingViewModel.gridCellAt(sourceRow, sourceCol)
-    const sourceCell2 = viewModel.gridCellAt(sourceRow, sourceCol)
-    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
-
-    const oldClassName1 = sourceCell1.className
-    const oldClassName2 = sourceCell2.className
-
-    CellClassManager.clearFriendCell(sourceCell1)
-    CellClassManager.clearFriendCell(sourceCell2)
-    // Apply portal CSS classes to sources
-    sourceCell1.classList.add(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.add(CSS_CLASSES.PORTAL)
-
-    // Perform animations
-    await this.animateFlyingOnVM(sourceCell2, targetCell2, viewModel)
-
-    sourceCell1.className = oldClassName1
-    sourceCell2.className = oldClassName2
-
-    // Remove CSS classes
-    sourceCell1.classList.remove(CSS_CLASSES.PORTAL)
-    sourceCell2.classList.remove(CSS_CLASSES.PORTAL)
-    return hasCandidates ? { target: targetCoord } : {}
-  }
 
   /**
-   * Process launch coordinates through game model targeting logic.
-   * Allows model to transform target location based on game state.
-   *
-   * @param {any} map - Game map object
-   * @param {number[]} base - Base/source coordinates [row, col]
-   * @param {number[]} coords - Target coordinates [row, col]
-   * @param {any} model - Game model for target lookup
-   * @returns {number[][]} Processed coordinate pair with candidate flag
-   */
-  processCoords (map, [rr, cc], coords, model) {
-    const normalizedCoords = normalizeWeaponCoordinates(coords, rr, cc)
-    const effect = this.aoe(map, normalizedCoords)
-    const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], normalizedCoords)
-    if (t) {
-      const source = list[0]
-      return [source, t, true]
-    }
-    return list
-  }
-  /**
-   * Determines turn phase for Gauss round variant
-   * Maps variant ID to turn duration classes for animation pacing
-   * @param {number} variant - Weapon variant identifier (1, 3)
-   * @param {number} _r - Row coordinate (unused for Gauss round)
-   * @param {number} _c - Column coordinate (unused for Gauss round)
-   * @returns {string} CSS turn class name ('turn2') or empty string
-   */
-  getTurn (variant, _r, _c) {
-    const turnMap = {
-      1: 'turn2',
-      3: 'turn2'
-    }
-    return turnMap[variant] || ''
-  }
-
-  /**
-   * Creates a clone of this Gauss round with optional new ammo count
-   * Implements weapon cloning protocol
+   * Creates a clone of this laser with optional new ammo count.
+   * Implements weapon cloning protocol.
    * @param {number} [ammo] - Ammo count for cloned instance
    * @returns {Laser} New Laser instance
    */
@@ -1241,7 +1148,7 @@ export class Laser extends Fish {
   }
 
   /**
-   * Gets the audio file for Laser blast flight sound
+   * Gets the audio file for Laser blast flight sound.
    * @returns {URL} URL to Laser blast flight sound asset
    */
   get flightSound () {
@@ -1249,172 +1156,9 @@ export class Laser extends Fish {
   }
 
   /**
-   * Computes blast radius pattern from explosion center
-   * Creates expanding square pattern: center → 3×3 → 5×5 → cardinal distance
-   * @param {number} centerRow - Explosion center row
-   * @param {number} centerCol - Explosion center column
-   * @returns {Array<[number, number, number]>} Damage pattern as [row, col, power] tuples
-   */
-  boom (centerRow, centerCol) {
-    return createSquareExplosion(centerRow, centerCol, 2)
-  }
-
-  /**
-   * Calculates trajectory path along ray line until land boundary
-   * Stops at first land cell if detected; records crash location
-   * @param {Object} map - Game map for terrain checking
-   * @param {number[][]} coords - Start and end coordinates [[startRow, startCol], [endRow, endCol]]
-   * @param {number} [power=1] - Power level for trajectory cells
-   * @returns {Array<[number, number, number]>} Cells along trajectory with power levels
-   */
-  /**
-   * Calculates area-of-effect along the fish's water path
-   * Stops at land boundaries (map.isLand check)
-   * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array} Cells along water path with damage power
-   */
-  aoe (map, coords) {
-    const effect = this.aoeRaw(map, coords, 2, 1)
-    //     this.crashLoc =
-    //  landCollisionIndex >= 0 ? trajectoryLine[landCollisionIndex] : null
-
-    return effect
-  }
-  aoePlus (map, coords) {
-    const affectedArea = this.aoe(map, coords)
-    const crashLoc = affectedArea.length > 0 ? affectedArea.at(-1) : null
-    const fullLine = this.aoeFull(coords)
-    return { affectedArea, options: { crashLoc, fullLine } }
-  }
-
-  /**
-   * Calculates splash/secondary damage pattern around a point
-   * @param {Object} _map - Game map
-   * @param {Coord} resolvedTarget - Impact coordinate [row, col]
-   * @param {AoePattern} effect - Damage effect coordinates
-   * @param {{fullLine?: Coord[]}} options - Additional options
-   * @returns {AoePattern} Splash pattern
-   */
-  splash (_map, resolvedTarget, effect, options) {
-    const last = (effect?.length || 1) - 1
-    const { fullLine } = options
-    resolvedTarget[2] = 2
-    const bracket = [resolvedTarget]
-
-    if (!fullLine) return bracket
-
-    const idx = fullLine.findIndex(
-      ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
-    )
-    if (idx < 0) return bracket
-
-    const isStart = idx === 0
-    const isSecond = idx === 1
-    const isEnd = idx === last
-
-    let prev
-    if (isStart) {
-      prev = fullLine[2]
-    } else if (isSecond) {
-      prev = fullLine[0]
-    } else {
-      prev = fullLine[idx - 1]
-    }
-    const next = isEnd ? fullLine[idx - 1] : fullLine[idx + 1]
-    const next2 = isEnd ? fullLine[idx + 1] : fullLine[idx + 2]
-
-    const pushSplash = (cell, power) => {
-      if (cell) {
-        cell[2] = power
-        bracket.push(cell)
-      }
-    }
-
-    pushSplash(prev, 0)
-    pushSplash(next, 1)
-    pushSplash(next2, 0)
-
-    return bracket
-  }
-
-  /**
-   * Calculates crash splash damage pattern around a terminal point when no hits are registered
- 
-   * @param {Object} map - Game map
-   * @param {Array} target - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates
-   * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
-   */
-  crashSplash (map, target, _effect, _options) {
-    let pattern = []
-
-    const [r, c] = target
-    addNeighborList(map, r, c, pattern, [
-      [-1, 0, 1],
-      [1, 0, 1],
-      [0, -1, 1],
-      [0, 1, 1],
-      [-1, -1, 0],
-      [-1, 1, 0],
-      [1, -1, 0],
-      [1, 1, 0],
-      [-2, 0, 0],
-      [2, 0, 0],
-      [0, -2, 0],
-      [0, 2, 0]
-    ])
-
-    return pattern
-  }
-
-  /**
-   * Initiates Gauss round launch with coordinate transformation
-   * Routes to launchRightTo for coordinate processing before dual-animation launch
-   * @async
-   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
-   * @param {number} sourceRow - Source row coordinate
-   * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model for coordinate transformation
-   * @returns {Promise<void>} Resolves when animations complete
-   */
-  async launchTo (
-    coords,
-    sourceRow,
-    sourceCol,
-    map,
-    viewModel,
-    opposingViewModel,
-    gameModel
-  ) {
-    const context = { sourceRow, sourceCol, viewModel, opposingViewModel }
-    return await launchWithDualBoardAnimation(
-      this,
-      coords,
-      context,
-      map,
-      gameModel,
-      this.performGaussRoundAnimation.bind(
-        this,
-        coords,
-        sourceRow,
-        sourceCol,
-        map,
-        viewModel,
-        opposingViewModel,
-        gameModel
-      )
-    )
-  }
-
-  /**
-   * Creates a single-Laser-blast instance for quick access
+   * Creates a single-Laser-blast instance for quick access.
    * @static
-   * @returns {Laser} GaussRound instance with 1 ammo
+   * @returns {Laser} Laser instance with 1 ammo
    */
   static get single () {
     return new Laser(1)
@@ -1426,13 +1170,13 @@ export class Laser extends Fish {
 // ============================================================================
 
 /**
- * Scan - A detection/scanning weapon generating pie-segment patterns
- * Extends Sensor for radar-like sweep visualization
+ * Scan - A detection/scanning weapon generating pie-segment patterns.
+ * Extends Sensor for radar-like sweep visualization.
  * @extends Sensor
  */
 export class Scan extends Sensor {
   /**
-   * Initializes radar scan with configuration
+   * Initializes radar scan with configuration.
    * @param {number} ammo - Number of scans available
    */
   constructor (ammo) {
@@ -1456,8 +1200,8 @@ export class Scan extends Sensor {
   }
 
   /**
-   * Creates a clone of this scan with optional new ammo count
-   * Implements weapon cloning protocol
+   * Creates a clone of this scan with optional new ammo count.
+   * Implements weapon cloning protocol.
    * @param {number} [ammo] - Ammo count for cloned instance
    * @returns {Scan} New scan instance
    */
@@ -1471,7 +1215,8 @@ export class Scan extends Sensor {
 // ============================================================================
 
 /**
- * Pre-configured catalogue of space terrain weapons
+ * Pre-configured catalogue of space terrain weapons.
+ * Provides standard loadout with one of each space weapon type.
  * @type {WeaponCatalogue}
  */
 export const spaceWeaponsCatalogue = new WeaponCatalogue([
@@ -1482,8 +1227,9 @@ export const spaceWeaponsCatalogue = new WeaponCatalogue([
 
 /**
  * Adds a coordinate tuple into an indexed bracket for fast lookup.
- * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID.
- * @param {Coord} coord - Coordinate tuple [row, col, power].
+ * Stores coordinate data keyed by its string representation.
+ * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID
+ * @param {Coord} coord - Coordinate tuple [row, col, power]
  * @returns {void}
  */
 function addCoord (bracket, coord) {
@@ -1492,10 +1238,11 @@ function addCoord (bracket, coord) {
 
 /**
  * Adds or upgrades a coordinate in a bracket using an offset and power value.
- * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID.
- * @param {Coord} coord - Base coordinate tuple [row, col, power].
- * @param {[number, number]} offset - Offset to apply to the base coordinate.
- * @param {number} power - Power value for the new coordinate.
+ * Updates the bracket with new coordinates, preferring higher power values.
+ * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID
+ * @param {Coord} coord - Base coordinate tuple [row, col, power]
+ * @param {[number, number]} offset - Offset to apply to the base coordinate
+ * @param {number} power - Power value for the new coordinate
  * @returns {void}
  */
 function addOffset (bracket, coord, offset, power) {

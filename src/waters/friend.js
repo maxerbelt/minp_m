@@ -950,13 +950,11 @@ export class Friend extends Placement {
   async onClickCell (r, c) {
     // In pure Seek mode with Space/Asteroids, Missiles are single-click weapons
     // that should fire immediately. Check this BEFORE the attached weapons guard.
-    const currentWeaponSystem =
-      typeof this.loadOut?.getCurrentWeaponSystem === 'function'
-        ? this.loadOut.getCurrentWeaponSystem()
-        : undefined
+    // IMPORTANT: Call without argument to allow method's default parameter to execute.
+    // If we pass currentWeaponSystem directly, passing undefined would override the default.
     if (
       typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
-      this._shouldFireSeekModeMissileImmediately(currentWeaponSystem)
+      this._shouldFireSeekModeMissileImmediately()
     ) {
       await this._fireCurrentWeaponImmediately(r, c)
       return
