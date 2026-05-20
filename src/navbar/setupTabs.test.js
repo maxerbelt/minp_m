@@ -1,5 +1,4 @@
-import { jest } from '@jest/globals'
-
+/* eslint-disable complexity */
 
 import {
   describe,
@@ -32,7 +31,6 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
   }
 }))
 let origURLSearchParams
-let switchTo
 let tabs
 let setupTabs
 
@@ -84,15 +82,15 @@ describe('setupTabs and switchTo', () => {
       'print'
     ]
     for (const id of ids) elements.set(`tab-${id}`, makeTabElement())
-    globalThis.document = {
+    globalThis.document = /** @type {Document} */ ({
       getElementById: id => elements.get(id) || null
-    }
+    })
     // preserve original location early and intercept URL constructor
     origLocation = globalThis.location
     try {
       origURL = globalThis.URL
       const savedLocation = origLocation
-      globalThis.URL = function (input) {
+      globalThis.URL = /** @type {any} */ (function (input) {
         const OrigURL = origURL
         if (input === savedLocation) {
           return new OrigURL(
@@ -100,7 +98,7 @@ describe('setupTabs and switchTo', () => {
           )
         }
         return new OrigURL(input)
-      }
+      })
     } catch (e) {
       console.warn('Could not mock URL constructor; its may be affected', e)
       origURL = undefined
@@ -110,7 +108,7 @@ describe('setupTabs and switchTo', () => {
       origURLSearchParams = globalThis.URLSearchParams
       const OrigURLSearchParams = origURLSearchParams
       const OrigURL = globalThis.URL
-      globalThis.URLSearchParams = function (input) {
+      globalThis.URLSearchParams = /** @type {any} */ (function (input) {
         if (
           input === globalThis.location.search &&
           globalThis.__itLocationString
@@ -120,8 +118,8 @@ describe('setupTabs and switchTo', () => {
           )
         }
         return new OrigURLSearchParams(input)
-      }
-    } catch (e) {
+      })
+    } catch {
       origURLSearchParams = undefined
     }
 
@@ -162,7 +160,6 @@ describe('setupTabs and switchTo', () => {
 
     // require module after document is mocked so setupTabs runs against our mock
     const mod = await import('./setupTabs.js')
-    switchTo = mod.switchTo
     tabs = mod.tabs
     setupTabs = mod.setupTabs
     // run initial setup so tabs.youAreHere() has been applied
@@ -230,8 +227,7 @@ describe('setupTabs and switchTo', () => {
     }
     delete globalThis.print
     jest.clearAllMocks()
-    if (typeof origURLSearchParams !== 'undefined')
-      globalThis.URLSearchParams = origURLSearchParams
+    if (origURLSearchParams !== undefined) globalThis.URLSearchParams = origURLSearchParams
   })
 
   it('setupTabs attaches handlers and print/about/source behaviors', () => {
@@ -284,7 +280,9 @@ describe('setupTabs and switchTo', () => {
     expect((rulesEl.listeners.click || []).length).toBeGreaterThan(0)
 
     const listEl = elements.get('tab-list')
+    expect(listEl).toBeDefined()
     const addEl = elements.get('tab-add')
+    expect(addEl).toBeDefined()
     setupTabs('list')
     setupTabs('add')
     //    expect((listEl.listeners.click || []).length).toBeGreaterThan(0)

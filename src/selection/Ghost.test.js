@@ -1,12 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-
 import { jest } from '@jest/globals'
-
-import { jest } from '@jest/globals'
-
-
 import { Ghost } from './Ghost.js'
 
 describe('Ghost', () => {
@@ -32,7 +27,9 @@ describe('Ghost', () => {
 
     // Spy on document.createElement and document.body.appendChild
     jest.spyOn(document, 'createElement').mockReturnValue(mockElement)
-    jest.spyOn(document.body, 'appendChild').mockImplementation(() => {})
+    jest
+      .spyOn(document.body, 'appendChild')
+      .mockImplementation(() => mockElement)
 
     // Mock content builder
     mockContentBuilder = jest.fn()
@@ -255,7 +252,8 @@ describe('Ghost', () => {
 
     it('should handle different variants', () => {
       const variant = { rows: 3, cols: 5 }
-      const ghostWithVariant = new Ghost(variant, 'C', mockContentBuilder)
+      const _ghostInstance = new Ghost(variant, 'C', mockContentBuilder)
+      expect(_ghostInstance).toBeDefined()
       expect(mockContentBuilder).toHaveBeenCalledWith(
         expect.any(Object),
         variant,

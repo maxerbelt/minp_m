@@ -1,8 +1,5 @@
 import { jest } from '@jest/globals'
-
-
 import { SelectedShip } from './SelectedShip.js'
-import { jest } from '@jest/globals'
 
 describe('SelectedShip', () => {
   let mockShip

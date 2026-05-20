@@ -96,15 +96,17 @@ describe('setupOptions', () => {
     try {
       origURL = globalThis.URL
       const savedLocation = origLocation
-      globalThis.URL = /** @type {any} */ (function (input) {
-        const OrigURL = origURL
-        if (input === savedLocation) {
-          return new OrigURL(
-            globalThis.__testLocationString || String(savedLocation)
-          )
+      globalThis.URL = /** @type {any} */ (
+        function (input) {
+          const OrigURL = origURL
+          if (input === savedLocation) {
+            return new OrigURL(
+              globalThis.__testLocationString || String(savedLocation)
+            )
+          }
+          return new OrigURL(input)
         }
-        return new OrigURL(input)
-      })
+      )
     } catch (e) {
       console.warn('Could not mock URL constructor; tests may be affected', e)
       origURL = undefined
@@ -114,17 +116,19 @@ describe('setupOptions', () => {
       origURLSearchParams = globalThis.URLSearchParams
       const OrigURLSearchParams = origURLSearchParams
       const OrigURL = globalThis.URL
-      globalThis.URLSearchParams = /** @type {any} */ (function (input) {
-        if (
-          input === globalThis.location.search &&
-          globalThis.__testLocationString
-        ) {
-          return new OrigURLSearchParams(
-            new OrigURL(globalThis.__testLocationString).search
-          )
+      globalThis.URLSearchParams = /** @type {any} */ (
+        function (input) {
+          if (
+            input === globalThis.location.search &&
+            globalThis.__testLocationString
+          ) {
+            return new OrigURLSearchParams(
+              new OrigURL(globalThis.__testLocationString).search
+            )
+          }
+          return new OrigURLSearchParams(input)
         }
-        return new OrigURLSearchParams(input)
-      })
+      )
     } catch (e) {
       console.warn(
         'Could not mock URLSearchParams constructor; tests may be affected',
