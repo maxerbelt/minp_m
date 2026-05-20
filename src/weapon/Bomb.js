@@ -388,7 +388,6 @@ function calculateLineAreaOfEffect (
     // log and return empty effect when called with invalid input
     // callers should pass [[r1,c1],[r2,c2]]; avoid throwing in UI runtime
     // to prevent breaking animations
-    // eslint-disable-next-line no-console
     console.warn('calculateLineAreaOfEffect called with invalid coords', coords)
     return []
   }

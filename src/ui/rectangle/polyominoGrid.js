@@ -121,7 +121,7 @@ export class PolyominoGridManager {
         this.offsetY,
         GRID_DEPTH // depth=16 gives 4 bits per cell for 16-color rendering (polyomino IDs 1-15)
       )
-    } catch (err) {
+    } catch {
       // Canvas not available in test environment
     }
   }
@@ -505,7 +505,7 @@ export class PolyominoGridManager {
           moreDiv.style.color = '#333'
         }
       }
-    } catch (e) {
+    } catch {
       // Silently fail in test environment
     }
   }
@@ -528,7 +528,7 @@ export class PolyominoGridManager {
           moreDiv.style.color = '#d00'
         }
       }
-    } catch (e) {
+    } catch {
       // Silently fail in test environment
     }
   }
@@ -547,7 +547,7 @@ export class PolyominoGridManager {
         this.polyominoSize
       } cells, ${this.connectivity}-connected)`
       moreDiv.style.color = '#333'
-    } catch (e) {
+    } catch {
       // Silently fail in test environment
     }
   }
@@ -579,7 +579,7 @@ export class PolyominoGridManager {
         prevButton.disabled = !needed
         prevButton.style.opacity = needed ? '1' : '0.5'
       }
-    } catch (e) {
+    } catch {
       // Silently fail in test environment
     }
   }

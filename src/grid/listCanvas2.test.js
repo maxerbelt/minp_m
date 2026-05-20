@@ -1,11 +1,7 @@
-import { jest } from '@jest/globals'
-
-
+import { describe, it, expect } from '@jest/globals'
 import { ListCanvas } from './listCanvas.js'
 import { errorMsg } from '../core/errorMsg.js'
 import { RectangleShape } from './rectangle/RectangleShape.js'
-import { jest } from '@jest/globals'
-
 function getLc (x = 2, y = 2) {
   return new ListCanvas(RectangleShape(x, y), [])
 }

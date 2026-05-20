@@ -1,5 +1,3 @@
-import { jest } from '@jest/globals'
-
 import { ColorPackedDraw } from './colorpackeddraw.js'
 import { jest } from '@jest/globals'
 
@@ -39,11 +37,9 @@ function makeMockCanvas () {
 
 describe('ColorPackedDraw', () => {
   let draw
-  let mockCtx
 
   beforeEach(() => {
-    const mocks = makeMockCanvas()
-    mockCtx = mocks.mockCtx
+    makeMockCanvas()
     draw = new ColorPackedDraw('test-canvas', 5, 5, 20, 0, 0, 4)
   })
 

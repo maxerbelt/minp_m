@@ -1,9 +1,7 @@
-import { jest } from '@jest/globals'
 /**
  * @jest-environment jsdom
  */
 
-import { jest } from '@jest/globals'
 import { PolyominoGridManager } from './polyominoGrid.js'
 
 describe('PolyominoGridManager', () => {

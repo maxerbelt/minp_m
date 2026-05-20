@@ -16,8 +16,8 @@ export class Packed extends RectMaskBase {
    * Create a new packed rectangular grid mask
    * @param {number} width - Grid width
    * @param {number} height - Grid height
-   * @param {*} bits - Bit representation of the mask data (optional)
-   * @param {Store32} store - Bit storage implementation (optional)
+   * @param {*} [bits] - Bit representation of the mask data (optional)
+   * @param {Store32} [store] - Bit storage implementation (optional)
    * @param {number} [depth=4] - Color depth
    */
   constructor (width, height, bits, store, depth = 4) {

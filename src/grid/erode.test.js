@@ -1,14 +1,13 @@
-import { jest } from '@jest/globals'
-
 import { Mask } from './rectangle/mask.js'
-import { beforeEach, describe, it, expect, jest } from '@jest/globals'
+import { beforeEach, describe, it, expect } from '@jest/globals'
 import { Packed } from './rectangle/packed.js'
 
+/** @type {Mask|Packed} */
 let mask
 // Jest test suite
 describe('erode vertical bug', () => {
   beforeEach(() => {
-    mask = new Mask(8, 5)
+    mask = new Mask(8, 5, 0n, undefined)
   })
 
   it('erode should shrink at the corners', () => {
@@ -39,7 +38,7 @@ describe('erode vertical bug', () => {
 
 describe('erode vertical bug packed', () => {
   beforeEach(() => {
-    mask = new Packed(8, 5)
+    mask = new Packed(8, 5, 0n, undefined)
   })
 
   it('erode should shrink at the corners', () => {
@@ -55,7 +54,6 @@ describe('erode vertical bug packed', () => {
     mask.set(4, 0)
     mask.set(5, 0)
     mask.set(6, 0)
-    ;('111.....\n111.....\n111.....\n111.....\n........')
     expect(mask.occupancy).toBe(15)
     expect(mask.toAscii.trim()).toBe(
       '111.111.\n111.....\n111.....\n111.....\n........'

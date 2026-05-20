@@ -7,6 +7,17 @@
  *
  * @template Store - The bit storage backend (e.g., StoreBig)
  */
+
+/**
+ * @typedef {object} Store
+ * @property {(color: number) => void} check
+ * @property {(bits: bigint, mask: bigint) => bigint} clearBits
+ * @property {(bits: bigint, pos: number) => bigint} value
+ * @property {(bits: bigint, pos: number) => number} numValue
+ * @property {(pos: number) => bigint} bitMaskByPos
+ * @property {(pos: number, color: number) => bigint} setMask
+ * @property {bigint} empty
+ */
 export class ForLocation {
   /**
    * Create a location accessor for a specific cell position.

@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals'
-import { jest } from '@jest/globals'
 
 // Variables for dynamically imported modules
 let drawTri, triToPixel, pixelToTri, TriDraw
@@ -180,7 +179,7 @@ describe('TriDraw', () => {
         }
       }
       expect(targetCall).toBeDefined()
-      const { x, y } = triToPixel(1, 1, S)
+      const { y } = triToPixel(1, 1, S)
       const expectedY = y - td.triHeight * 0.3 + td.offsetY
       expect(targetCall[2]).toBeCloseTo(expectedY, 5)
     })

@@ -1,5 +1,3 @@
-import { jest } from '@jest/globals'
-
 import { HexDraw } from './hexDraw.js'
 import { jest } from '@jest/globals'
 

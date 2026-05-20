@@ -1,17 +1,46 @@
 import { describe, it, expect, jest } from '@jest/globals'
-import { ForLocation } from './ForLocation'
+import { ForLocation } from './ForLocation.js'
+import { BigBits, BigOne, Bits } from './bitStore/helpers/bigbits.js'
 
-function makeMockStore (initialBits = 0n) {
+/**
+ * @typedef {object} BitStoreMock
+ * @property {(color: number) => void} check
+ * @property {(pos: number) => bigint} bitMaskByPos
+ * @property {(bits: bigint, mask: bigint) => bigint} clearBits
+ * @property {(pos: number, color: number) => bigint} setMask
+ * @property {(bits: bigint, pos: number) => number} numValue
+ * @property {(bits: bigint, pos: number) => bigint} value
+ * @property {bigint} empty
+ */
+
+/**
+ * @param {bigint} [_initialBits=0n]
+ */
+function makeMockStore (_initialBits = 0n) {
+  const bitMaskByPosFn = /** @type {(pos: number) => bigint} */ (
+    pos => BigOne.bitMaskByPos(pos)
+  )
+  const clearBitsFn = /** @type {(bits: bigint, mask: bigint) => bigint} */ (
+    (bits, mask) => Bits.clear(bits, mask)
+  )
+  const setMaskFn = /** @type {(pos: number, color: number) => bigint} */ (
+    (pos, color) => BigBits.setMask(pos, color)
+  )
+  const numValueFn = /** @type {(bits: bigint, pos: number) => number} */ (
+    (bits, pos) => BigOne.numValue(bits, pos)
+  )
+  const valueFn = /** @type {(bits: bigint, pos: number) => bigint} */ (
+    (bits, pos) => BigOne.value(bits, pos)
+  )
+
   const store = {
     check: jest.fn(),
-    bitMaskByPos: jest.fn(pos => 1n << BigInt(pos)),
-    clearBits: jest.fn((bits, mask) => bits & ~mask),
-    setMask: jest.fn((pos, color) => BigInt(color) << BigInt(pos)),
-    numValue: jest.fn((bits, pos) => Number((bits >> BigInt(pos)) & 1n)),
-    value: jest.fn((bits, pos) => (bits >> BigInt(pos)) & 1n),
-    empty: 0n,
-    // helper to initialize bits for assertions if needed
-    _initialBits: initialBits
+    bitMaskByPos: jest.fn(bitMaskByPosFn),
+    clearBits: jest.fn(clearBitsFn),
+    setMask: jest.fn(setMaskFn),
+    numValue: jest.fn(numValueFn),
+    value: jest.fn(valueFn),
+    empty: 0n
   }
   return store
 }
@@ -19,7 +48,7 @@ function makeMockStore (initialBits = 0n) {
 describe('ForLocation', () => {
   it('at returns numeric value, test and isOccupied behave correctly', () => {
     const pos = 2
-    const bits = 1n << BigInt(pos) // bit at pos = 1
+    const bits = BigOne.bitMaskByPos(pos) // bit at pos = 1
     const store = makeMockStore(bits)
     const loc = new ForLocation(pos, bits, store)
 
@@ -36,7 +65,7 @@ describe('ForLocation', () => {
   it('set sets bit, returns updated bits, and calls store methods', () => {
     const existingPos = 1
     const newPos = 3
-    const initialBits = 1n << BigInt(existingPos) // only existingPos set
+    const initialBits = BigOne.bitMaskByPos(existingPos) // only existingPos set
     const store = makeMockStore(initialBits)
     const loc = new ForLocation(newPos, initialBits, store)
 
@@ -47,13 +76,14 @@ describe('ForLocation', () => {
     // bitMaskByPos called for the location position
     expect(store.bitMaskByPos).toHaveBeenCalledWith(newPos)
     // clearMaskBits called with original bits and the mask for pos
-    const expectedMask = 1n << BigInt(newPos)
+    const expectedMask = BigOne.bitMaskByPos(newPos)
     expect(store.clearBits).toHaveBeenCalledWith(initialBits, expectedMask)
     // setMask called for pos and color
     expect(store.setMask).toHaveBeenCalledWith(newPos, 1)
 
     // result should include the previously set bit and the newly set bit
-    const expectedBits = (initialBits & ~expectedMask) | (1n << BigInt(newPos))
+    const expectedBits =
+      (initialBits & ~expectedMask) | BigOne.bitMaskByPos(newPos)
     expect(result).toBe(expectedBits)
 
     expect(loc.cellBits).toBe(expectedBits)
@@ -61,7 +91,7 @@ describe('ForLocation', () => {
 
   it('set with color 0 clears the bit at position', () => {
     const pos = 4
-    const initialBits = 1n << BigInt(pos)
+    const initialBits = BigOne.bitMaskByPos(pos)
     const store = makeMockStore(initialBits)
     const loc = new ForLocation(pos, initialBits, store)
 
@@ -69,21 +99,21 @@ describe('ForLocation', () => {
 
     expect(store.check).toHaveBeenCalledWith(0)
     // resulting bits should have that bit cleared
-    expect(result & (1n << BigInt(pos))).toBe(0n)
-    expect(loc.cellBits & (1n << BigInt(pos))).toBe(0n)
+    expect(result & BigOne.bitMaskByPos(pos)).toBe(0n)
+    expect(loc.cellBits & BigOne.bitMaskByPos(pos)).toBe(0n)
   })
 
   it('clearMaskBits delegates to store.clearBits and returns its result', () => {
     const pos = 0
-    const initialBits = (1n << 2n) | (1n << 5n)
+    const initialBits = BigOne.bitMaskByPos(2) | BigOne.bitMaskByPos(5)
     const store = makeMockStore(initialBits)
     // override clearBits to make sure return value is observed
-    store.clearBits.mockImplementation((bits, mask) => bits & ~mask)
+    store.clearBits.mockImplementation((bits, mask) => Bits.clear(bits, mask))
     const loc = new ForLocation(pos, initialBits, store)
 
-    const mask = 1n << 5n
+    const mask = BigOne.bitMaskByPos(5)
     const out = loc.clearMaskBits(mask)
     expect(store.clearBits).toHaveBeenCalledWith(initialBits, mask)
-    expect(out).toBe(initialBits & ~mask)
+    expect(out).toBe(Bits.clear(initialBits, mask))
   })
 })

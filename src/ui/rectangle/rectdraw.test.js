@@ -1,5 +1,3 @@
-import { jest } from '@jest/globals'
-
 import { RectDraw } from './rectdraw.js'
 import {
   describe,

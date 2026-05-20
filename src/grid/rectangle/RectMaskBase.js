@@ -34,8 +34,8 @@ export class RectMaskBase extends MaskBase {
    * Create a new rectangular mask base
    * @param {number} width - Width of the grid
    * @param {number} height - Height of the grid
-   * @param {BitRepresentation} bits - Bit representation of the mask data
-   * @param {Object} store - Bit storage implementation
+   * @param {BitRepresentation} [bits] - Bit representation of the mask data
+   * @param {Object} [store] - Bit storage implementation
    * @param {number} [depth=1] - Color depth (number of possible values per cell)
    */
   constructor (width, height, bits, store, depth) {

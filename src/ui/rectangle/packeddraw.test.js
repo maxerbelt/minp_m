@@ -1,7 +1,5 @@
 import { jest } from '@jest/globals'
-
 import { PackedDraw } from './packeddraw.js'
-import { jest } from '@jest/globals'
 
 describe('PackedDraw', () => {
   let packedDraw

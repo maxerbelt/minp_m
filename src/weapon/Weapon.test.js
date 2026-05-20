@@ -1,9 +1,7 @@
-import { jest } from '@jest/globals'
 import { describe, jest, it, expect, beforeEach } from '@jest/globals'
 
-
 // Weapon will be imported dynamically after mocks are set up
-let Weapon, StandardShot, bh
+let Weapon, StandardShot, bh, errorMsg
 
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
   return {
@@ -25,6 +23,9 @@ beforeEach(async () => {
 
   const bhModule = await import('../terrains/all/js/bh.js')
   bh = bhModule.bh
+
+  const errorMsgModule = await import('../core/errorMsg.js')
+  errorMsg = errorMsgModule.errorMsg
 })
 
 describe('Weapon', () => {

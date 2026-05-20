@@ -747,7 +747,7 @@ export class Weapon {
     power,
     shake = 'shake',
     animator = null,
-    viewModel = null,
+    _viewModel = null,
     id = null
   ) {
     end = end || this.centerOf(target)

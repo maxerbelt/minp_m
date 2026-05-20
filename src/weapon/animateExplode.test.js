@@ -2,8 +2,6 @@
  * @jest-environment jsdom
  */
 
-import { jest } from '@jest/globals'
-
 import { standardShot } from './Weapon.js'
 
 describe('Weapon.animateExplode', () => {
