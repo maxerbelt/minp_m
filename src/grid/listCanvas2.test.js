@@ -1,6 +1,5 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
+import { jest } from '@jest/globals'
 
-/* global describe, it, expect */
 
 import { ListCanvas } from './listCanvas.js'
 import { errorMsg } from '../core/errorMsg.js'

@@ -1,5 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect, beforeEach */
 
 import { ActionsHex } from './actionHex.js'
 import { MaskHex } from './maskHex.js'

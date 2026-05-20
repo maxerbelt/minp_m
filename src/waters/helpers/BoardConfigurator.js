@@ -2,6 +2,10 @@ import { bh } from '../../terrains/all/js/bh.js'
 import { gameHost } from '../WatersUI.js'
 
 /**
+ * @module waters/helpers/BoardConfigurator
+ */
+
+/**
  * Consolidates board configuration logic to eliminate duplication between resetBoardSize and resetBoardSizePrint.
  */
 export class BoardConfigurator {
@@ -45,9 +49,12 @@ export class BoardConfigurator {
     if (!map) map = bh.map
     if (!cellSizePrint) cellSizePrint = 600 / (map.cols + 1) + 'px'
 
-    board.style.setProperty('--cols', map.cols + 1)
-    board.style.setProperty('--rows', map.rows + 1)
-    board.style.setProperty('--boxSize', cellSizePrint)
-    board.innerHTML = ''
+    // create a transient map object with expanded grid for print layout
+    const printMap = {
+      cols: (map.cols || 18) + 1,
+      rows: (map.rows || 8) + 1
+    }
+
+    this.configureBoardGrid(board, printMap, cellSizePrint)
   }
 }

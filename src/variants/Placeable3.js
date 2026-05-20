@@ -2,13 +2,17 @@ import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
 import { Placeable } from './Placeable.js'
 
 /**
+ * @typedef {import('./Placeable.js').Placeable} PlaceableType
+ */
+
+/**
  * Represents a placeable with multiple subgroups (layers).
  */
 export class Placeable3 extends Placeable {
   /**
    * Creates a placeable3 instance.
-   * @param {Placeable} full - The full placeable.
-   * @param {Placeable[]} subGroups - The subgroups.
+   * @param {PlaceableType} full - The full placeable.
+   * @param {PlaceableType[]} [subGroups] - The subgroups.
    */
   constructor (full, subGroups) {
     let board = full.board

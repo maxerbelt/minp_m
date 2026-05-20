@@ -2,10 +2,8 @@
  * @jest-environment jsdom
  */
 
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { jest } from '@jest/globals'
 
-/* global describe, jest, beforeEach, it, expect */
 
 jest.unstable_mockModule('./SelectedShip.js', () => {
   return {

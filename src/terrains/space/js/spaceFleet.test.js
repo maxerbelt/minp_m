@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it,  expect, jest */
 import { spaceFleet } from './spaceFleet.js'
 import { Transformer } from '../../../ships/Transformer.js'
 import { Hybrid } from '../../../ships/Hybrid.js'

@@ -1,5 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect */
 import { describe, it, expect, jest } from '@jest/globals'
 
 import { CanvasGrid } from './canvasGrid.js'

@@ -1,7 +1,5 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
-/* global describe, require, it, expect, beforeEach, jest */
 
 // DraggedShip will be imported after mocks are configured
 

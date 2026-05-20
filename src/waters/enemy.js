@@ -60,10 +60,17 @@ const MESSAGES = {
 /**
  * @typedef {Object} Weapon
  * @property {string} letter
+ * @property {string} [name]
  * @property {Array<string>} [cursors]
  * @property {string} [launchCursor]
  * @property {string} [tag]
  * @property {boolean} [postSelectShadow]
+ * @property {() => void} [playWarnSound]
+ */
+
+/**
+ * @typedef {Object} WeaponSystem
+ * @property {Weapon} weapon
  */
 
 /**
@@ -282,8 +289,7 @@ class Enemy extends Waters {
    * selection flow.
    *
    * @private
-   * @param {Object} [weaponSystem=this.loadOut.getCurrentWeaponSystem()]
-   * @param {Object} [weaponSystem.weapon]
+   * @param {WeaponSystem|undefined} [weaponSystem=this.loadOut.getCurrentWeaponSystem()]
    * @returns {boolean}
    */
   _shouldFireSeekModeMissileImmediately (
@@ -293,7 +299,7 @@ class Enemy extends Waters {
       return false
     }
 
-    const weapon = weaponSystem?.weapon
+    const weapon = /** @type {Weapon|undefined} */ (weaponSystem?.weapon)
     if (!weapon) {
       return false
     }
@@ -605,21 +611,27 @@ class Enemy extends Waters {
 
     // Debug: inspect weapon systems available when wiring buttons
     try {
-      const all = this.loadOut?.weaponSystems || []
-      const limited = this.loadOut?.getLimitedWeaponSystems() || []
-      const allInfo = all.map(wps => ({
-        letter: wps.weapon?.letter,
-        tag: wps.weapon?.tag,
-        isLimited: !!wps.weapon?.isLimited,
-        ammoCapacity:
-          typeof wps.ammoCapacity === 'function' ? wps.ammoCapacity() : null
-      }))
-      const limitedInfo = limited.map(wps => ({
-        letter: wps.weapon?.letter,
-        tag: wps.weapon?.tag,
-        ammoCapacity:
-          typeof wps.ammoCapacity === 'function' ? wps.ammoCapacity() : null
-      }))
+      const all = /** @type {Array<any>} */ (this.loadOut?.weaponSystems || [])
+      const limited = /** @type {Array<any>} */ (
+        this.loadOut?.getLimitedWeaponSystems() || []
+      )
+      const allInfo = all.map(
+        /** @param {any} wps */ wps => ({
+          letter: wps.weapon?.letter,
+          tag: wps.weapon?.tag,
+          isLimited: !!wps.weapon?.isLimited,
+          ammoCapacity:
+            typeof wps.ammoCapacity === 'function' ? wps.ammoCapacity() : null
+        })
+      )
+      const limitedInfo = limited.map(
+        /** @param {any} wps */ wps => ({
+          letter: wps.weapon?.letter,
+          tag: wps.weapon?.tag,
+          ammoCapacity:
+            typeof wps.ammoCapacity === 'function' ? wps.ammoCapacity() : null
+        })
+      )
       console.debug(
         'Enemy.setupWeaponButtonHandlers - allWeaponSystems:',
         allInfo
@@ -914,77 +926,86 @@ class Enemy extends Waters {
     if (!this.canTakeTurn()) return
 
     if (this.loadOut?.isSingleShot) {
-      this.selectedCellCoordinates = null
-      const result = await this.fireWeaponAt(
-        r,
-        c,
-        this.loadOut.getCurrentWeaponSystem()
-      )
-      if (this._shouldWaitForWeaponResult(result)) return
-      this._processWeaponResult(result)
-      this._finalizeTurn()
+      await this._handleSingleShotClick(r, c)
       return
     }
 
-    // Two-click behavior applies only when the current weapon is not already
-    // able to fire from the current seek-mode selection state.
     if (this.opponent?.hasAttachedWeapons || this.hasAttachedWeapons) {
-      // If a weapon has already been selected for a second click, fire it.
-      if (this.loadOut?.selectedWeapon) {
-        await this._onSecondClickFire(r, c)
-        return
-      }
+      await this._handleAttachedWeaponClick(r, c)
+      return
+    }
 
-      if (this.selectedCellCoordinates === null) {
-        const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+    await this._fireWeaponViaSetup(r, c)
+  }
 
-        if (this._shouldFireSeekModeMissileImmediately(currentWeapon)) {
-          const result = await this.setupWeapon(r, c)
-          if (this._shouldWaitForWeaponResult(result)) return
-          this._processWeaponResult(result)
-          this._finalizeTurn()
-          return
-        }
+  async _handleSingleShotClick (r, c) {
+    this.selectedCellCoordinates = null
+    const result = await this.fireWeaponAt(
+      r,
+      c,
+      this.loadOut.getCurrentWeaponSystem()
+    )
+    if (this._shouldWaitForWeaponResult(result)) return
+    this._processWeaponResult(result)
+    this._finalizeTurn()
+  }
 
-        const isGaussRound =
-          currentWeapon?.weapon?.name === 'Gauss Round' ||
-          currentWeapon?.weapon?.letter === '^'
-        const isSpaceAndAsteroids = bh.terrain?.title === 'Space and Asteroids'
-
-        if (bh.seekingMode && isSpaceAndAsteroids && isGaussRound) {
-          const cell = this.UI.gridCellAt(r, c)
-          if (bh.subTerrainTagFromCell(cell) === 'asteroid') {
-            currentWeapon.weapon.playWarnSound()
-            return
-          }
-        }
-
-        // In attach-capable seek mode, some weapons can fire directly from the
-        // selected weapon state without forcing a Hide & Seek-style rack pick.
-        if (this._hasUnattachedForCurrentWeapon()) {
-          const result = await this.setupWeapon(r, c)
-          if (this._shouldWaitForWeaponResult(result)) return
-          this._processWeaponResult(result)
-          this._finalizeTurn()
-          return
-        }
-
-        // First click on the enemy board: select a weapon and ship for targeting.
-        this._onFirstClickSelection(r, c)
-        this.selectedCellCoordinates = { r, c }
-        return
-      }
-
-      // Second click: fire at the selected weapon's target.
+  async _handleAttachedWeaponClick (r, c) {
+    if (this.loadOut?.selectedWeapon) {
       await this._onSecondClickFire(r, c)
       return
     }
 
-    // Default single-click behavior for other modes
+    if (this.selectedCellCoordinates === null) {
+      const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+
+      if (this._shouldFireSeekModeMissileImmediately(currentWeapon)) {
+        await this._fireWeaponViaSetup(r, c)
+        return
+      }
+
+      if (this._shouldWarnOnGaussAsteroid(currentWeapon, r, c)) {
+        return
+      }
+
+      if (this._hasUnattachedForCurrentWeapon()) {
+        await this._fireWeaponViaSetup(r, c)
+        return
+      }
+
+      this._onFirstClickSelection(r, c)
+      this.selectedCellCoordinates = { r, c }
+      return
+    }
+
+    await this._onSecondClickFire(r, c)
+  }
+
+  async _fireWeaponViaSetup (r, c) {
     const result = await this.setupWeapon(r, c)
     if (this._shouldWaitForWeaponResult(result)) return
     this._processWeaponResult(result)
     this._finalizeTurn()
+  }
+
+  _shouldWarnOnGaussAsteroid (currentWeapon, r, c) {
+    const isGaussRound =
+      currentWeapon?.weapon?.name === 'Gauss Round' ||
+      currentWeapon?.weapon?.letter === '^'
+    const isSpaceAndAsteroids = bh.terrain?.title === 'Space and Asteroids'
+
+    if (!bh.seekingMode || !isSpaceAndAsteroids || !isGaussRound) {
+      return false
+    }
+
+    const cell = this.UI.gridCellAt(r, c)
+    if (bh.subTerrainTagFromCell(cell) !== 'asteroid') {
+      return false
+    }
+
+    const gaussWeapon = /** @type {any} */ (currentWeapon?.weapon)
+    gaussWeapon.playWarnSound()
+    return true
   }
 
   /**

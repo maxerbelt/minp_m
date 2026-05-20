@@ -40,32 +40,54 @@ import {
 import { shelter, mine, commandCenter } from './installations.js'
 
 /**
+ * Space fleet definitions and factory helpers for the Space terrain.
+ *
+ * This module exports `spaceFleet`, an array of ship/installation shapes used
+ * by the Space terrain. Types are intentionally broad to accommodate a mix of
+ * `SpaceVessel`, `Hybrid`, `Installation`, and transformer variants produced
+ * by the factory helpers in this file.
+ *
+ * @module terrains/space/spaceFleet
+ */
+
+/**
+ * @typedef {new (...args: any[]) => any} ShapeConstructor
+ * @typedef {() => any} WeaponFactory
+ * @typedef {{
+ *   ShapeClass: ShapeConstructor,
+ *   description: string,
+ *   letter: string,
+ *   symmetry: string,
+ *   cells: Array<[number, number]>,
+ *   tip: string|null,
+ *   racks: Array<[number, number, number]>,
+ *   weaponFactory: WeaponFactory
+ * }} ArmedShapeConfig
+ */
+
+/**
  * Factory class for creating space fleet units with improved maintainability.
  * Provides methods for creating different types of ships while reducing code duplication.
  */
 class SpaceFleetFactory {
   /**
    * Creates an armed shape (vessel or installation) with an attached weapon.
-   * @param {Function} ShapeClass - Constructor for ArmedVessel or ArmedInstallation
-   * @param {string} description - Name of the unit
-   * @param {string} letter - Letter identifier
-   * @param {string} symmetry - Symmetry type
-   * @param {Array<[number, number]>} cells - Shape cells as [row, col] pairs
-   * @param {string|null} tip - Placement tip
-   * @param {Array<[number, number, number]>} racks - Weapon rack positions as [row, col, power]
-   * @param {Function} weaponFactory - Factory function returning weapon instance
-   * @returns {Object} Armed shape instance with attached weapon
+   * Accepts a single config object to reduce parameter count and improve readability.
+   * @param {ArmedShapeConfig} cfg - Configuration object for the armed shape
+   * @returns {any} Armed shape instance with attached weapon
    */
-  static createArmedShape (
-    ShapeClass,
-    description,
-    letter,
-    symmetry,
-    cells,
-    tip,
-    racks,
-    weaponFactory
-  ) {
+  static createArmedShape (cfg) {
+    const {
+      ShapeClass,
+      description,
+      letter,
+      symmetry,
+      cells,
+      tip,
+      racks,
+      weaponFactory
+    } = cfg
+
     const shape = new ShapeClass(
       description,
       letter,
@@ -74,7 +96,9 @@ class SpaceFleetFactory {
       tip,
       racks
     )
-    shape.attachWeapon(weaponFactory)
+    if (typeof shape.attachWeapon === 'function') {
+      shape.attachWeapon(weaponFactory)
+    }
     return shape
   }
 
@@ -175,27 +199,27 @@ const RAILGUN_ASTEROID_CONFIG = {
 }
 
 // Create railgun variants using factory
-const railgunSpace = SpaceFleetFactory.createArmedShape(
-  ArmedVessel,
-  RAILGUN_SPACE_CONFIG.description,
-  RAILGUN_SPACE_CONFIG.letter,
-  RAILGUN_SPACE_CONFIG.symmetry,
-  RAILGUN_SPACE_CONFIG.cells,
-  RAILGUN_SPACE_CONFIG.tip,
-  RAILGUN_SPACE_CONFIG.racks,
-  RAILGUN_SPACE_CONFIG.weaponFactory
-)
+const railgunSpace = SpaceFleetFactory.createArmedShape({
+  ShapeClass: ArmedVessel,
+  description: RAILGUN_SPACE_CONFIG.description,
+  letter: RAILGUN_SPACE_CONFIG.letter,
+  symmetry: RAILGUN_SPACE_CONFIG.symmetry,
+  cells: RAILGUN_SPACE_CONFIG.cells,
+  tip: RAILGUN_SPACE_CONFIG.tip,
+  racks: RAILGUN_SPACE_CONFIG.racks,
+  weaponFactory: RAILGUN_SPACE_CONFIG.weaponFactory
+})
 
-const railgunAsteroid = SpaceFleetFactory.createArmedShape(
-  ArmedInstallation,
-  RAILGUN_ASTEROID_CONFIG.description,
-  RAILGUN_ASTEROID_CONFIG.letter,
-  RAILGUN_ASTEROID_CONFIG.symmetry,
-  RAILGUN_ASTEROID_CONFIG.cells,
-  RAILGUN_ASTEROID_CONFIG.tip,
-  RAILGUN_ASTEROID_CONFIG.racks,
-  RAILGUN_ASTEROID_CONFIG.weaponFactory
-)
+const railgunAsteroid = SpaceFleetFactory.createArmedShape({
+  ShapeClass: ArmedInstallation,
+  description: RAILGUN_ASTEROID_CONFIG.description,
+  letter: RAILGUN_ASTEROID_CONFIG.letter,
+  symmetry: RAILGUN_ASTEROID_CONFIG.symmetry,
+  cells: RAILGUN_ASTEROID_CONFIG.cells,
+  tip: RAILGUN_ASTEROID_CONFIG.tip,
+  racks: RAILGUN_ASTEROID_CONFIG.racks,
+  weaponFactory: RAILGUN_ASTEROID_CONFIG.weaponFactory
+})
 
 const railgun = SpaceFleetFactory.createTransformer([
   railgunSpace,

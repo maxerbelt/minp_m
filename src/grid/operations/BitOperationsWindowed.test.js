@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, expect, jest */
 import { describe, it, expect, jest } from '@jest/globals'
 import { Mask } from '../rectangle/mask.js'
 import { Packed } from '../rectangle/packed.js'

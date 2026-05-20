@@ -1,5 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, jest, it, expect, beforeEach, afterEach */
+import { jest } from '@jest/globals'
 
 import { HexDraw } from './hexDraw.js'
 import { jest } from '@jest/globals'

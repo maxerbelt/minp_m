@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, test, expect, beforeEach, afterEach, jest */
 import { addCellToFootPrint } from './terrain.js'
 import { SubTerrainTracker, SubTerrainTrackers } from './SubTerrainTrackers.js'
 import { Zone } from './Zone.js'

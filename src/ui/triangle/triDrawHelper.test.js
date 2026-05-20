@@ -1,5 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect */
+import { jest } from '@jest/globals'
 
 import { triToPixel, pixelToTri } from './triDrawHelper.js'
 

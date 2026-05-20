@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { jest } from '@jest/globals'
-/* global describe, it, expect, beforeEach */
 
 describe('validSize logic', () => {
   // Create test implementations of the validation logic

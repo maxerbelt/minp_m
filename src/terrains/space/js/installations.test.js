@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, test, expect, beforeEach, jest */
 
 import { shelter, mine, commandCenter } from './installations'
 import { Installation, CoreInstallation } from './spaceShapes'

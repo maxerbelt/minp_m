@@ -1,4 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
+import { jest } from '@jest/globals'
 import {
   describe,
   it,
@@ -8,7 +8,6 @@ import {
   jest
 } from '@jest/globals'
 
-/* global describe, it, expect, beforeEach, afterEach, jest */
 
 jest.unstable_mockModule('./chooseUI.js', () => ({
   ChooseFromListUI: class {

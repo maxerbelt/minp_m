@@ -1,6 +1,11 @@
 import { bh } from '../../terrains/all/js/bh.js'
 
 /**
+ * @module waters/helpers/CellClassManager
+ * Centralized helper for managing cell CSS classes and transient states.
+ */
+
+/**
  * @typedef {Object.<string, string>} CellClassGroup
  * Represents a group of related CSS class definitions, where keys are semantic property names
  * and values are the actual CSS class names.

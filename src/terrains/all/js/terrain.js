@@ -5,8 +5,8 @@ import { bh } from './bh.js'
  * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
  * @typedef {import('../../../weapon/WeaponCatelogue.js').Weapon} Weapon
  * @typedef {import('../../../weapon/WeaponCatelogue.js').WeaponCatelogue} WeaponCatalogue
- * @typedef {import('../../../ships/ShipGroups.js').ShipCatalogue} TerrainShipCatalogue
- * @typedef {Record<string, string>} TerrainSoundConfig
+ * @typedef {import('../../../ships/ShipGroups.js').ShipCatalogue|null} TerrainShipCatalogue
+ * @typedef {Record<string, string|URL>} TerrainSoundConfig
  * @typedef {(letter: string, middle: string) => string} SunkDescriptionFn
  * @typedef {(shapes: unknown) => void} AddShapesFn
  * @typedef {(weapons: unknown) => void} AddWeaponsFn
@@ -48,6 +48,8 @@ export class Terrain {
     this.weapons = null //weaponsCatalogue
     /** @type {TerrainSoundConfig} */
     this.sounds = sounds
+    /** @type {boolean} */
+    this.hasTransforms = false
     /** @type {number} */
     this.minWidth = MIN_CUSTOM_WIDTH
     /** @type {number} */
@@ -119,7 +121,7 @@ export class Terrain {
    * @returns {*} The new fleet
    */
   get newFleetForTerrain () {
-    return bh.fleetBuilder(this.ships.baseShapes)
+    return bh.fleetBuilder(this.ships?.baseShapes || [])
   }
 
   /**

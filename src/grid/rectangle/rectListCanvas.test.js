@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, expect, beforeEach */
 import { jest } from '@jest/globals'
 import { RectListCanvas } from './rectListCanvas.js'
 import { bh } from '../../terrains/all/js/bh.js'

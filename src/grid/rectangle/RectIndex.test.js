@@ -1,5 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect, beforeEach, afterEach */
 import { expect, jest } from '@jest/globals'
 import { RectIndex } from './RectIndex.js'
 import { Connect4 } from './Connect4.js'

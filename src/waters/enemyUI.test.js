@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // Mock the parent WatersUI class to avoid dependencies

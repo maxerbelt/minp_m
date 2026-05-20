@@ -1,4 +1,27 @@
 /**
+ * @typedef {Object} TrayManagerElementCache
+ * @property {function(): HTMLDivElement[]} getAllTrays
+ * @property {Object.<string, HTMLDivElement|null>} [trays]
+ */
+
+/**
+ * @typedef {Object} TrayStateOptions
+ * @property {boolean} [clearContent]
+ * @property {boolean} [markEmpty]
+ * @property {boolean} [unmarkEmpty]
+ * @property {boolean} [show]
+ * @property {boolean} [hide]
+ */
+
+/**
+ * @typedef {function(HTMLElement): void} TrayAction
+ */
+
+/**
+ * @typedef {function(HTMLElement, number, number, HTMLDivElement[]): *} TrayItemAdapter
+ */
+
+/**
  * Manages UI state and DOM operations for ship and brush trays.
  * Handles tray visibility, content clearing, and item iteration with
  * centralized state management to eliminate duplication.
@@ -20,7 +43,7 @@ export class TrayManager {
   /**
    * Initializes the manager with an element cache.
    *
-   * @param {Object} elementCache - Cache object with getAllTrays() method
+   * @param {TrayManagerElementCache} elementCache - Cache object with getAllTrays() method
    *   returning array of tray DOM elements
    */
   constructor (elementCache) {

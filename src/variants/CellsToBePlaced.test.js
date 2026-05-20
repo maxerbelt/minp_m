@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it,  expect, jest */
 import { describe, it, expect, jest } from '@jest/globals'
 
 import { CellsToBePlaced } from './CellsToBePlaced.js'
@@ -279,8 +277,9 @@ describe('CellsToBePlaced', () => {
     it('zoneInfo calls target.getZone with correct parameters', () => {
       const variant = [[0, 0]]
       const board = Mask.fromCoords(variant)
+      const getZone = jest.fn(() => 'ZONE_VALUE')
       const target = {
-        getZone: jest.fn(() => 'ZONE_VALUE'),
+        getZone,
         boundsChecker: () => true
       }
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 5, target)

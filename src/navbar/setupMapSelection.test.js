@@ -1,6 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import {
   describe,
   it,
@@ -9,8 +6,6 @@ import {
   afterEach,
   jest
 } from '@jest/globals'
-
-/* global describe, it, expect, beforeEach, afterEach, jest */
 
 /**
  * @typedef {{

@@ -1,10 +1,9 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
+import { jest } from '@jest/globals'
 /**
  * @jest-environment jsdom
  */
 
 import { jest } from '@jest/globals'
-/* global describe, it, expect, beforeEach, afterEach */
 
 import { ChooseFromListUI, ChooseNumberUI } from './chooseUI.js'
 

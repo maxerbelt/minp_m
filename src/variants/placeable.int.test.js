@@ -1,9 +1,7 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, it, expect, jest } from '@jest/globals'
 
 import { Mask } from '../grid/rectangle/mask.js'
 import { SubBoard } from '../grid/subBoard.js'
-/* global describe, jest, it, expect, beforeEach */
 
 import { Placeable } from './Placeable.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'

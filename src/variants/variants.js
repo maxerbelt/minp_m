@@ -5,6 +5,10 @@ import { Placeable } from './Placeable.js'
 /**
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
  * @typedef {import('./CellsToBePlaced.js').CellsToBePlaced} CellsToBePlacedType
+ * @typedef {import('./CellsToBePlaced.js').ZoneInfo} ZoneInfo
+ * @typedef {(zoneInfo: ZoneInfo) => boolean} PlacementValidator
+ * @typedef {import('../grid/rectangle/mask.js').Mask} VariantBoard
+ * @typedef {number|Record<string, any>} ZoneDetailType
  * @typedef {number} VariantIndex
  * @typedef {(index: VariantIndex) => VariantIndex} VariantTransitionFn
  */
@@ -15,8 +19,8 @@ import { Placeable } from './Placeable.js'
 export class Variants {
   /**
    * Creates a new Variants instance.
-   * @param {Function} validator - Function to validate placements.
-   * @param {object} zoneDetail - Details about the zone.
+   * @param {PlacementValidator} validator - Function to validate placements.
+   * @param {ZoneDetailType} zoneDetail - Details about the zone.
    * @param {string} symmetry - Symmetry type identifier.
    */
   constructor (validator, zoneDetail, symmetry) {
@@ -25,6 +29,7 @@ export class Variants {
         'base class cannot be instantiated directly. Please extend it.'
       )
     }
+    /** @type {VariantBoard[]} */
     this.list = []
     this.index = 0
     this.canFlip = false
@@ -33,10 +38,13 @@ export class Variants {
     this.validator = validator
     this.zoneDetail = zoneDetail
     this.symmetry = symmetry
-    this.onChange = Function.prototype
-    this.r1 = Function.prototype
-    this.f1 = Function.prototype
-    this.rf1 = Function.prototype
+    this.onChange = () => {}
+    /** @type {VariantTransitionFn} */
+    this.r1 = index => index
+    /** @type {VariantTransitionFn} */
+    this.f1 = index => index
+    /** @type {VariantTransitionFn} */
+    this.rf1 = index => index
   }
 
   /**
@@ -58,8 +66,8 @@ export class Variants {
 
   /**
    * Gets the board at the specified index or the active board.
-   * @param {number | undefined | null} [index] - The variant index.
-   * @returns {any} The board at the index.
+   * @param {VariantIndex | undefined | null} [index] - The variant index.
+   * @returns {VariantBoard} The board at the index.
    */
   board (index) {
     return this.boardFor(index)
@@ -67,8 +75,8 @@ export class Variants {
 
   /**
    * Returns the board at the requested index, or the active board when index is omitted.
-   * @param {number | undefined | null} [index] - The variant index.
-   * @returns {any} The board.
+   * @param {VariantIndex | undefined | null} [index] - The variant index.
+   * @returns {VariantBoard} The board.
    */
   boardFor (index) {
     return this.list[this.resolveIndex(index)]
@@ -76,7 +84,7 @@ export class Variants {
 
   /**
    * Gets the first board in the variant list.
-   * @returns {any} The first board.
+   * @returns {VariantBoard} The first board.
    */
   get firstBoard () {
     return this.list[0]
@@ -92,7 +100,7 @@ export class Variants {
 
   /**
    * Gets the currently active board.
-   * @returns {any} The active board.
+   * @returns {VariantBoard} The active board.
    */
   get activeBoard () {
     return this.boardFor(this.index)
@@ -129,8 +137,8 @@ export class Variants {
 
   /**
    * Returns the coordinates for a variant board.
-   * @param {number | undefined | null} index - The variant index.
-   * @returns {any} The coordinates.
+   * @param {VariantIndex | undefined | null} index - The variant index.
+   * @returns {*} The coordinates.
    */
   variant (index) {
     return this.boardFor(index).toCoords
@@ -138,8 +146,8 @@ export class Variants {
 
   /**
    * Creates a Placeable instance for the specified variant.
-   * @param {number | undefined | null} index - The variant index.
-   * @returns {Placeable} The placeable instance.
+   * @param {VariantIndex | undefined | null} index - The variant index.
+   * @returns {PlaceableType} The placeable instance.
    */
   placeable (index) {
     return new Placeable(this.boardFor(index), this.validator, this.zoneDetail)
@@ -210,7 +218,7 @@ export class Variants {
    * Creates a placement helper for the active board at the given position.
    * @param {number} r - Row position.
    * @param {number} c - Column position.
-   * @returns {CellsToBePlaced} The placement helper.
+   * @returns {CellsToBePlacedType} The placement helper.
    */
   placingAt (r, c) {
     return new CellsToBePlaced(this.board(), r, c, this.validator)

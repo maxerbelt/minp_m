@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global beforeEach, describe, it, expect */
 import { MaskHex } from './maskHex.js'
 import { beforeEach, describe, it, expect, jest } from '@jest/globals'
 

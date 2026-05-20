@@ -2,8 +2,6 @@
  * @jest-environment jsdom
  */
 
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect, beforeEach, jest */
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 import {

@@ -1,6 +1,4 @@
 // src/grid/store32.test.js
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect, beforeEach */
 import { Store32 } from './store32.js'
 import { Packed } from '../rectangle/packed.js'
 

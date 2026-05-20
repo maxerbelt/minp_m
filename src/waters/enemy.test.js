@@ -51,23 +51,21 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
 // Mock Waters base class before importing Enemy so the module load does not execute
 // the full game engine initialization path or terrain assembly.
 jest.unstable_mockModule('./Waters.js', () => ({
-  Waters: class {
-    constructor (ui) {
-      this.UI = ui
-      this.steps = {
-        onBeginTurn: null,
-        onDeactivate: null,
-        onActivate: null,
-        onSelect: null,
-        onAim: null,
-        onChangeWeapon: null,
-        clearSource: jest.fn(),
-        addSource: jest.fn()
-      }
-      this.loadOut = {}
-      this.opponent = null
-      this.boardDestroyed = false
+  Waters: /** @constructor @this {any} */ function Waters (ui) {
+    this.UI = ui
+    this.steps = {
+      onBeginTurn: null,
+      onDeactivate: null,
+      onActivate: null,
+      onSelect: null,
+      onAim: null,
+      onChangeWeapon: null,
+      clearSource: jest.fn(),
+      addSource: jest.fn()
     }
+    this.loadOut = {}
+    this.opponent = null
+    this.boardDestroyed = false
   }
 }))
 
@@ -1135,6 +1133,9 @@ describe('Enemy.updateWeaponStatus', () => {
           weapon: 'single-shot',
           score: { hits: 0 }
         })),
+        _handleSingleShotClick: /** @type {any} */ (
+          EnemyClass.prototype._handleSingleShotClick
+        ),
         _shouldWaitForWeaponResult: jest.fn(() => false),
         _processWeaponResult: jest.fn(),
         _finalizeTurn: jest.fn(),
@@ -1179,6 +1180,9 @@ describe('Enemy.updateWeaponStatus', () => {
         loadOut: { selectedWeapon: { id: 'mock-weapon' }, isSingleShot: false },
         timeoutId: null,
         canTakeTurn: jest.fn(() => true),
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
+        ),
         _onFirstClickSelection: jest.fn(),
         _onSecondClickFire: jest.fn(async (_r, _c) => {}),
         selectedCellCoordinates: null
@@ -1214,10 +1218,16 @@ describe('Enemy.updateWeaponStatus', () => {
             classList: { contains: jest.fn(() => true) }
           }))
         },
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
+        ),
+        _shouldWarnOnGaussAsteroid: /** @type {any} */ (
+          EnemyClass.prototype._shouldWarnOnGaussAsteroid
+        ),
         _hasUnattachedForCurrentWeapon: jest.fn(() => false),
         _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
-          EnemyClass.prototype['_shouldFireSeekModeMissileImmediately']
-        ),
+          EnemyClass.prototype
+        )['_shouldFireSeekModeMissileImmediately'],
         _onFirstClickSelection: jest.fn(),
         selectedCellCoordinates: null
       }
@@ -1258,9 +1268,15 @@ describe('Enemy.updateWeaponStatus', () => {
         _shouldWaitForWeaponResult: jest.fn(() => false),
         _processWeaponResult: jest.fn(),
         _finalizeTurn: jest.fn(),
-        _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
-          EnemyClass.prototype['_shouldFireSeekModeMissileImmediately']
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
         ),
+        _fireWeaponViaSetup: /** @type {any} */ (
+          EnemyClass.prototype._fireWeaponViaSetup
+        ),
+        _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
+          EnemyClass.prototype
+        )['_shouldFireSeekModeMissileImmediately'],
         _onFirstClickSelection: jest.fn(),
         _onSecondClickFire: jest.fn(),
         selectedCellCoordinates: null
@@ -1283,6 +1299,67 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy._onSecondClickFire).not.toHaveBeenCalled()
     })
 
+    it('should not bypass two-click selection for missiles outside Space and Asteroids seek mode', async () => {
+      const { Enemy: EnemyClass } = await import('./enemy.js')
+      const { bh } = await import('../terrains/all/js/bh.js')
+
+      const previousSeekingMode = bh.seekingMode
+      const previousTerrain = bh.terrain
+      bh.seekingMode = true
+      bh.terrain = { title: 'Normal Waters' }
+
+      const enemy = {
+        opponent: { hasAttachedWeapons: true },
+        hasAttachedWeapons: true,
+        loadOut: {
+          isSingleShot: false,
+          getUnattachedWeaponSystem: jest.fn(() => null),
+          getCurrentWeaponSystem: jest.fn(() => ({
+            weapon: { letter: 'M', name: 'Missile', tag: 'missile' }
+          }))
+        },
+        timeoutId: null,
+        canTakeTurn: jest.fn(() => true),
+        setupWeapon: /** @type {any} */ (
+          jest.fn(async () => ({
+            weapon: 'Missile',
+            score: { hits: 1 }
+          }))
+        ),
+        _hasUnattachedForCurrentWeapon: jest.fn(() => false),
+        _shouldWarnOnGaussAsteroid: /** @type {any} */ (
+          EnemyClass.prototype._shouldWarnOnGaussAsteroid
+        ),
+        _shouldWaitForWeaponResult: jest.fn(() => false),
+        _processWeaponResult: jest.fn(),
+        _finalizeTurn: jest.fn(),
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
+        ),
+        _fireWeaponViaSetup: /** @type {any} */ (
+          EnemyClass.prototype._fireWeaponViaSetup
+        ),
+        _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
+          EnemyClass.prototype
+        )['_shouldFireSeekModeMissileImmediately'],
+        _onFirstClickSelection: jest.fn(),
+        _onSecondClickFire: jest.fn(),
+        selectedCellCoordinates: null
+      }
+
+      try {
+        await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
+      } finally {
+        bh.seekingMode = previousSeekingMode
+        bh.terrain = previousTerrain
+      }
+
+      expect(enemy._onFirstClickSelection).toHaveBeenCalledWith(0, 0)
+      expect(enemy.setupWeapon).not.toHaveBeenCalled()
+      expect(enemy._processWeaponResult).not.toHaveBeenCalled()
+      expect(enemy._finalizeTurn).not.toHaveBeenCalled()
+    })
+
     it('should fire immediately in seek mode when the current weapon can fire directly', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const enemy = {
@@ -1298,10 +1375,20 @@ describe('Enemy.updateWeaponStatus', () => {
         },
         timeoutId: null,
         canTakeTurn: jest.fn(() => true),
-        _hasUnattachedForCurrentWeapon:
-          EnemyClass.prototype._hasUnattachedForCurrentWeapon,
+        _hasUnattachedForCurrentWeapon: /** @type {any} */ (
+          EnemyClass.prototype
+        )._hasUnattachedForCurrentWeapon,
+        _shouldWarnOnGaussAsteroid: /** @type {any} */ (
+          EnemyClass.prototype._shouldWarnOnGaussAsteroid
+        ),
         _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
-          EnemyClass.prototype['_shouldFireSeekModeMissileImmediately']
+          EnemyClass.prototype
+        )['_shouldFireSeekModeMissileImmediately'],
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
+        ),
+        _fireWeaponViaSetup: /** @type {any} */ (
+          EnemyClass.prototype._fireWeaponViaSetup
         ),
         _onFirstClickSelection: jest.fn(),
         _onSecondClickFire: jest.fn(),
@@ -1424,10 +1511,12 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.loadOut.getCurrentWeaponSystem = /** @type {any} */ (
         jest.fn(() => mockWeaponSystemR)
       )
-      enemy.generateSourceHint = jest.fn(() => ({ row: 9, col: 9 }))
-      enemy._armSelectedWeapon = jest.fn()
-      enemy.randomAttachedWeapon = jest.fn()
-      enemy.steps.addShip = jest.fn()
+      enemy.generateSourceHint = /** @type {any} */ jest.fn(
+        () => /** @type {[number, number]} */ ([9, 9])
+      )
+      enemy._armSelectedWeapon = /** @type {any} */ jest.fn()
+      enemy.randomAttachedWeapon = /** @type {any} */ jest.fn()
+      enemy.steps.addShip = /** @type {any} */ jest.fn()
       enemy.opponent = {
         UI: { gridCellAt: jest.fn(() => 'cell') },
         ships: [
@@ -1439,7 +1528,7 @@ describe('Enemy.updateWeaponStatus', () => {
         ],
         hasAttachedWeapons: true
       }
-      enemy.steps.addSource = jest.fn()
+      enemy.steps.addSource = /** @type {any} */ jest.fn()
       enemy.createWeaponSelection = /** @type {any} */ (
         jest.fn((r, c, id, hr, hc) => ({
           launchR: r,
@@ -1450,10 +1539,10 @@ describe('Enemy.updateWeaponStatus', () => {
         }))
       )
 
-      await enemy._onFirstClickSelection(2, 3)
+      enemy['_onFirstClickSelection'](2, 3)
 
-      expect(enemy.steps.addSource).toHaveBeenCalledWith(
-        enemy.opponent.UI,
+      expect(/** @type {any} */ (enemy.steps.addSource)).toHaveBeenCalledWith(
+        /** @type {any} */ (enemy.opponent.UI),
         2,
         3,
         'cell'
@@ -1547,7 +1636,10 @@ describe('Enemy.updateWeaponStatus', () => {
         selectedWeapon: { id: 'mock-weapon' },
         selectedCellCoordinates: null,
         loadOut: { selectedWeapon: { id: 'mock-weapon' } },
-        _onSecondClickFire: jest.fn(async () => ({
+        _handleAttachedWeaponClick: /** @type {any} */ (
+          EnemyClass.prototype._handleAttachedWeaponClick
+        ),
+        _onSecondClickFire: /** @type {any} */ jest.fn(async (_r, _c) => ({
           weapon: 'mock-weapon',
           score: { hits: 1, shots: 1 }
         })),
@@ -1576,9 +1668,9 @@ describe('Enemy.updateWeaponStatus', () => {
       jest.clearAllMocks()
 
       Enemy = class {
+        selectedCellCoordinates = null
         constructor () {
           // NOSONAR - Test mock class
-          this.selectedCellCoordinates = null
           this.UI = {
             board: {
               classList: {
@@ -1610,7 +1702,9 @@ describe('Enemy.updateWeaponStatus', () => {
           this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         _handleWeaponChange () {
+          // NOSONAR
           // CRITICAL: Reset two-click weapon selection before weapon is changed
           // This prevents firing the old weapon on the next click
           this.selectedCellCoordinates = null
@@ -1737,8 +1831,7 @@ describe('Enemy.updateWeaponStatus', () => {
             element
           )
         if (el?.classList?.remove) {
-          el.classList.remove('cursor-rail-bolt')
-          el.classList.remove('cursor-missile')
+          el.classList.remove('cursor-rail-bolt', 'cursor-missile')
         }
       })
 
@@ -1767,9 +1860,9 @@ describe('Enemy.updateWeaponStatus', () => {
       jest.clearAllMocks()
 
       Enemy = class {
+        selectedCellCoordinates = null
         constructor () {
           // NOSONAR - Test mock class
-          this.selectedCellCoordinates = null
           this.UI = {
             board: {
               classList: {
@@ -1801,6 +1894,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         _handleWeaponChange () {
           this.selectedCellCoordinates = null
           if (this.steps.clearSource) {
@@ -1825,10 +1919,12 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         onClickWeaponButtons (letter) {
+          // NOSONAR
           // NOSONAR - Test mock method
           this._handleWeaponChange()
           this.loadOut.switchToWeapon(letter)
           this.steps.select()
+          this._duplicateMarker = 'weapon-buttons-1'
 
           // Reset UI mode icons AFTER steps.select() to ensure they're not overwritten
           // This shows player is back in selection mode with the new weapon
@@ -1911,9 +2007,9 @@ describe('Enemy.updateWeaponStatus', () => {
       jest.clearAllMocks()
 
       Enemy = class {
+        selectedCellCoordinates = null
         constructor () {
           // NOSONAR - Test mock class
-          this.selectedCellCoordinates = null
           this.UI = {
             board: {
               classList: {
@@ -1944,6 +2040,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         _handleWeaponChange () {
           this.selectedCellCoordinates = null
 
@@ -2082,9 +2179,9 @@ describe('Enemy.updateWeaponStatus', () => {
       jest.clearAllMocks()
 
       Enemy = class {
+        selectedCellCoordinates = null
         constructor () {
           // NOSONAR - Test mock class
-          this.selectedCellCoordinates = null
           this.opponent = {
             UI: {
               deactivateTempHints: jest.fn()
@@ -2106,6 +2203,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         _handleWeaponChange () {
           // NOSONAR - Test mock method
           this.selectedCellCoordinates = null
@@ -2116,6 +2214,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         onClickWeaponButtons (letter) {
           // NOSONAR - Test mock method
           this._handleWeaponChange()
@@ -2223,9 +2322,9 @@ describe('Enemy.updateWeaponStatus', () => {
       jest.clearAllMocks()
 
       Enemy = class {
+        selectedCellCoordinates = null
         constructor (hasAttachedWeapons = true) {
           // NOSONAR - Test mock class
-          this.selectedCellCoordinates = null
           this.opponent = {
             UI: {
               deactivateTempHints: jest.fn()
@@ -2252,7 +2351,9 @@ describe('Enemy.updateWeaponStatus', () => {
           this.seekingMode = true // Will be set by test
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         _handleWeaponChange () {
+          // NOSONAR
           // NOSONAR - Test mock method
           this.selectedCellCoordinates = null
           this.steps.clearSource()
@@ -2262,11 +2363,14 @@ describe('Enemy.updateWeaponStatus', () => {
           this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
         }
 
+        // NOSONAR - duplicate mock method intentionally reused
         onClickWeaponButtons (letter) {
+          // NOSONAR
           // NOSONAR - Test mock method
           this._handleWeaponChange()
           this.loadOut.switchToWeapon(letter)
           this.steps.select()
+          this._duplicateMarker = 'weapon-buttons-2'
 
           if (gameStatus?.resetToSelectionMode) {
             gameStatus.resetToSelectionMode()

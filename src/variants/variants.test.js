@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, expect */
 import { Asymmetric } from './asymmetric.js'
 import { Orbit4R } from './Orbit4R.js' //
 import { Invariant } from './Invariant.js' //

@@ -4,6 +4,7 @@ import { spaceMapList, defaultSpaceMap } from './spaceMaps.js'
 import { spaceShipsCatalogue } from './spaceShips.js'
 import { spaceWeaponsCatalogue } from './spaceWeapons.js'
 
+// Assign late-initialized catalogues to the terrain (may be populated later)
 spaceAndAsteroids.ships = spaceShipsCatalogue
 spaceAndAsteroids.weapons = spaceWeaponsCatalogue
 
@@ -16,6 +17,9 @@ class SpaceAndAsteroidsMaps extends TerrainMaps {
    * Creates a new space and asteroids maps instance.
    */
   constructor () {
+    // Cast catalogues to any for the TerrainMaps constructor to avoid
+    // structural typing mismatches between terrain-specific catalogues
+    // and the more strict TerrainShipCatalogue typedef used by TerrainMaps.
     super(
       spaceAndAsteroids,
       spaceMapList,
@@ -25,13 +29,13 @@ class SpaceAndAsteroidsMaps extends TerrainMaps {
         ['+', 'Bomb'],
         ['^', 'DestroyOne']
       ],
-      spaceShipsCatalogue,
-      spaceWeaponsCatalogue
+      /** @type {any} */ (spaceShipsCatalogue),
+      /** @type {any} */ (spaceWeaponsCatalogue)
     )
     this.allShipsAndWeaponsMap = this.createAllShipsAndWeaponsMap(
       spaceMapList,
-      spaceShipsCatalogue,
-      spaceWeaponsCatalogue
+      /** @type {any} */ (spaceShipsCatalogue),
+      /** @type {any} */ (spaceWeaponsCatalogue)
     )
   }
 }

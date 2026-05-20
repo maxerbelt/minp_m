@@ -2,6 +2,43 @@ import { bh } from '../../terrains/all/js/bh.js'
 import { dragNDrop } from '../../selection/dragndrop.js'
 
 /**
+ * @typedef {Object} Weapon
+ * @property {string} letter
+ * @property {boolean} isLimited
+ * @property {string} classname
+ */
+
+/**
+ * @typedef {Object} WeaponSystem
+ * @property {Weapon} weapon
+ * @property {boolean} hit
+ * @property {boolean} damaged
+ * @property {string|number} id
+ * @property {function(): number} ammoCapacity
+ * @property {function(): number} ammoUsed
+ * @property {function(): number} ammoUnattached
+ * @property {function(): Weapon[]} getLeafWeapons
+ */
+
+/**
+ * @typedef {Object} WeaponMaps
+ * @property {Object<string, string>} shipColors
+ * @property {Object<string, string>} shipLetterColors
+ */
+
+/**
+ * @typedef {Object} WeaponBoxOptions
+ * @property {number} ammoUnattached
+ * @property {*} viewModel
+ * @property {Weapon} weapon
+ * @property {number} index
+ * @property {number} ammoUsed
+ * @property {WeaponMaps} maps
+ * @property {WeaponSystem} weaponSystem
+ * @property {HTMLElement} row
+ */
+
+/**
  * Builds and displays weapon tally rows with ammo indicators and state.
  * Manages weapon system display, ammo capacity visualization, and damage/hit states.
  *
@@ -37,14 +74,14 @@ export class WeaponTallyBuilder {
    * Creates a single weapon ammo box with state visualization.
    * Shows ammo availability, damage, hit status, and interactive state.
    *
-   * @param {Object} options - Configuration object
+   * @param {WeaponBoxOptions} options - Configuration object
    * @param {number} options.ammoUnattached - Count of unattached ammo
-   * @param {Object} options.viewModel - View model for interactions
-   * @param {Object} options.weapon - Weapon object with letter property
+   * @param {*} options.viewModel - View model for interactions
+   * @param {Weapon} options.weapon - Weapon object with letter property
    * @param {number} options.index - Box index in ammo capacity
    * @param {number} options.ammoUsed - Count of ammo used
-   * @param {Object} options.maps - Terrain maps with color definitions
-   * @param {Object} options.weaponSystem - Weapon system with state
+   * @param {WeaponMaps} options.maps - Terrain maps with color definitions
+   * @param {WeaponSystem} options.weaponSystem - Weapon system with state
    * @param {HTMLElement} options.row - Parent row element
    */
   static #createWeaponBox ({

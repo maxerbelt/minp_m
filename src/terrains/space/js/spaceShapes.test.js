@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, test, it, expect, beforeEach, jest */
 import { jest } from '@jest/globals'
 import {
   Installation,

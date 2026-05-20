@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, jest, it, expect, beforeEach */
 
 import { SubShape, StandardCells } from './SubShape.js'
 import { Mask } from '../grid/rectangle/mask.js'

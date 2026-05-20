@@ -1,4 +1,29 @@
 /**
+ * @typedef {Object} ElementCacheButtons
+ * @property {HTMLButtonElement|null} newPlacement
+ * @property {HTMLButtonElement|null} rotate
+ * @property {HTMLButtonElement|null} rotateLeft
+ * @property {HTMLButtonElement|null} flip
+ * @property {HTMLButtonElement|null} transform
+ * @property {HTMLButtonElement|null} test
+ * @property {HTMLButtonElement|null} seek
+ * @property {HTMLButtonElement|null} stop
+ * @property {HTMLButtonElement|null} undo
+ * @property {HTMLButtonElement|null} auto
+ */
+
+/**
+ * @typedef {Object} ElementCacheTrays
+ * @property {HTMLDivElement|null} container
+ * @property {HTMLDivElement|null} ship
+ * @property {HTMLDivElement|null} plane
+ * @property {HTMLDivElement|null} special
+ * @property {HTMLDivElement|null} brush
+ * @property {HTMLDivElement|null} weapon
+ * @property {HTMLDivElement|null} building
+ */
+
+/**
  * Caches DOM elements to reduce repetitive document.getElementById() calls and improve initialization clarity.
  */
 export class ElementCache {
@@ -6,6 +31,7 @@ export class ElementCache {
    * Initializes the cache with buttons and trays.
    */
   constructor () {
+    /** @type {ElementCacheButtons} */
     this.buttons = {
       newPlacement:
         /** @type {HTMLButtonElement} */ document.getElementById(
@@ -29,6 +55,7 @@ export class ElementCache {
       auto: /** @type {HTMLButtonElement} */ document.getElementById('autoBtn')
     }
 
+    /** @type {ElementCacheTrays} */
     this.trays = {
       container:
         /** @type {HTMLDivElement} */ document.getElementById('tray-container'),

@@ -1,23 +1,9 @@
-import { parsePair } from '../core/utilities.js'
-import { Random } from '../core/Random.js'
-import { StandardCells, SpecialCells } from '../ships/SubShape.js'
-import { Placeable } from './Placeable.js'
-import { PlaceableW } from './PlaceableW.js'
-import { SpecialVariant } from './SpecialVariant.js'
-import { Mask } from '../grid/rectangle/mask.js'
-
-/**
- * @typedef {import('./Placeable.js').Placeable} PlaceableType
- * @typedef {import('./Placeable3.js').Placeable3} Placeable3Type
- * @typedef {import('./PlaceableW.js').PlaceableW} PlaceableWType
- * @typedef {import('../ships/SubShape.js').StandardCells} StandardCellsType
- * @typedef {import('../ships/SubShape.js').SpecialCells} SpecialCellsType
- * @typedef {Object<string, any>} WeaponMap
- * @typedef {Object} VariantGroup
- * @property {(zoneInfo: any) => boolean} validator
- * @property {any} zoneDetail
- * @property {any} [parent]
- */
+import { SpecialVariant } from './src/variants/SpecialVariant.js'
+import { Mask } from './src/grid/rectangle/mask.js'
+import { parsePair } from './src/core/utilities.js'
+import { StandardCells, SpecialCells } from './src/ships/SubShape.js'
+import { Placeable } from './src/variants/Placeable.js'
+import { PlaceableW } from './src/variants/PlaceableW.js'
 
 /**
  * Variant class for weapons with special placement rules.
@@ -27,7 +13,7 @@ export class WeaponVariant extends SpecialVariant {
   /**
    * Creates a weapon variant instance.
    * @param {Mask} board - The base board.
-   * @param {WeaponMap} weapons - The weapons object.
+   * @param {Object<string, any>} weapons - The weapons object.
    * @param {string} symmetry - The symmetry type.
    * @param {(zoneInfo: any) => boolean} validator - Validation function.
    * @param {any} zoneDetail - Zone details.
@@ -71,14 +57,11 @@ export class WeaponVariant extends SpecialVariant {
 
   /**
    * Configures behavior for weapon variants.
-   * @param {*} VariantClass - The variant class constructor.
+   * @param {Function} VariantClass - The variant class constructor.
    * @param {import('./RotatableVariant.js').RotatableVariant} symmetry - The instance.
    */
   static setBehaviour (VariantClass, symmetry) {
-    return SpecialVariant.setBehaviourTo(
-      VariantClass,
-      /** @type {SpecialVariant} */ (symmetry)
-    )
+    return SpecialVariant.setBehaviourTo(VariantClass, symmetry)
   }
 
   /**
@@ -90,7 +73,7 @@ export class WeaponVariant extends SpecialVariant {
   placeable (index = this.index, fullIndex) {
     const idx = index == null ? this.index : index
     const grandparentPrototype = Object.getPrototypeOf(SpecialVariant.prototype)
-    const result = new PlaceableW(
+    return new PlaceableW(
       grandparentPrototype.placeable.call(this, idx),
       this.subGroups.map(
         (g, i) =>
@@ -100,8 +83,6 @@ export class WeaponVariant extends SpecialVariant {
       this.weapons,
       fullIndex ?? idx
     )
-
-    return result
   }
 
   /**
@@ -110,31 +91,6 @@ export class WeaponVariant extends SpecialVariant {
    */
   placeables () {
     const indices = this.list.map((_, i) => i)
-    return Random.shuffleArray(indices).map(i => this.placeable(i))
+    return indices.map(i => this.placeable(i))
   }
 }
-
-/**
- * Mixin to add weapon variants to a base class.
- * @param {new (...args: any[]) => { board: any; weaponSystem: any; symmetry: any; validator: any; zoneDetail: any; subterrain: any; _variants?: WeaponVariant }} Base - The base class constructor.
- * @returns {new (...args: any[]) => { variants(): WeaponVariant }} The extended class.
- */
-export const Armed = Base =>
-  class extends Base {
-    /**
-     * Gets the weapon variants.
-     * @returns {WeaponVariant} The variants.
-     */
-    variants () {
-      if (this._variants) return this._variants
-      this._variants = new WeaponVariant(
-        this.board,
-        this.weaponSystem,
-        this.symmetry,
-        this.validator,
-        this.zoneDetail,
-        this.subterrain
-      )
-      return this._variants
-    }
-  }

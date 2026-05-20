@@ -1,10 +1,8 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it,  expect,  jest */
 
 import { Mask } from '../grid/rectangle/mask.js'
 import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
-import { describe, it, expect, jest } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 
 describe('Cell3sToBePlaced behaviors', () => {
   it('isInMatchingZone returns true when subgroup candidate and validator match', () => {
@@ -16,8 +14,7 @@ describe('Cell3sToBePlaced behaviors', () => {
     const board = Mask.fromCoords(cells)
     // target.getZone will return 'OK' only for the middle cell
     const target = {
-      getZone: (r, c, z) => (c === 11 && z === 2 ? 'OK' : 'NO')
-    }
+        getZone: (_r, c, z) => (c === 11 && z === 2 ? 'OK' : 'NO')
 
     const placable3 = {
       board,
@@ -61,8 +58,7 @@ describe('Cell3sToBePlaced behaviors', () => {
     ]
     const board = Mask.fromCoords(cells)
     const target = {
-      getZone: (r, c, z) => (r === 21 && z === 2 ? 'YES' : 'NO')
-    }
+        getZone: (r, _c, z) => (r === 21 && z === 2 ? 'YES' : 'NO')
 
     const placable3 = {
       board,

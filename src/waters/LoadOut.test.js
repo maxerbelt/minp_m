@@ -2,9 +2,7 @@
  * @jest-environment
  */
 
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global   it, describe,   expect, beforeEach, jest */
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // polyfill structuredClone for Node environments that lack it

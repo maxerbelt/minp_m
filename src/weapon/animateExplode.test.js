@@ -1,9 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, jest, it, expect */
 import { jest } from '@jest/globals'
 
 import { standardShot } from './Weapon.js'

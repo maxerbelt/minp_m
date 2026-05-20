@@ -1,4 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
 import { describe, expect, it, beforeEach } from '@jest/globals'
 import { Installation, SpaceVessel } from '../terrains/space/js/spaceShapes.js'

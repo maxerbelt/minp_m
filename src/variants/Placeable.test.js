@@ -1,8 +1,6 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, jest, it, expect, beforeEach } from '@jest/globals'
 import { Mask } from '../grid/rectangle/mask.js'
 
-/* global describe, jest, it, expect, beforeEach */
 
 // Placeable will be imported dynamically after mocks are set up
 let Placeable

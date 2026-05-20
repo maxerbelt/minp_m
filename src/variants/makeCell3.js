@@ -29,8 +29,8 @@ export function subGroupIndex (r, c, subGroups) {
  * Default placing target with placeholder functions.
  */
 export const placingTarget = {
-  boundsChecker: Function.prototype,
-  allBoundsChecker: Function.prototype,
+  boundsChecker: (_r, _c) => false,
+  allBoundsChecker: (_r, _c, _h, _w) => false,
   getZone: () => []
 }
 

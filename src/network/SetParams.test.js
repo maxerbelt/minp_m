@@ -1,8 +1,6 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
 import { jest } from '@jest/globals'
 
-/* global describe, require, test, expect, beforeEach, afterEach */
 let replaceTokens
 let setSizeParams
 let setMapParams

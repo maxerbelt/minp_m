@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it,  expect,  jest */
 import { describe, it, expect, jest } from '@jest/globals'
 import { spaceShipsCatalogue } from './spaceShips'
 import { spaceFleet } from './spaceFleet'

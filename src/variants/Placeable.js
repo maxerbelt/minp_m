@@ -3,15 +3,21 @@ import { placingTarget } from './makeCell3.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**
+ * @typedef {import('./CellsToBePlaced.js').ZoneInfo} ZoneInfo
+ * @typedef {import('./CellsToBePlaced.js').PlacementTarget} PlacementTarget
+ * @typedef {(zoneInfo: ZoneInfo) => boolean} PlacementValidator
+ */
+
+/**
  * Represents a placeable board with validation and placement logic.
  */
 export class Placeable {
   /**
    * Creates a placeable instance.
    * @param {Mask} board - The board mask.
-   * @param {Function} validator - The validation function.
+   * @param {PlacementValidator} validator - The validation function.
    * @param {any} zoneDetail - The zone details.
-   * @param {any} target - The placement target.
+   * @param {PlacementTarget} [target] - The placement target.
    */
   constructor (board, validator, zoneDetail, target) {
     this.board = board // board.clone.shrinkToOccupied()
@@ -22,7 +28,7 @@ export class Placeable {
 
   /**
    * Gets the cells coordinates.
-   * @returns {any[]} The cell coordinates.
+   * @returns {Array<number[]>} The cell coordinates.
    */
   get cells () {
     return this.board.toCoords
@@ -30,7 +36,7 @@ export class Placeable {
 
   /**
    * Sets the cells coordinates.
-   * @param {any[]} cells - The cell coordinates.
+   * @param {Array<number[]>} cells - The cell coordinates.
    */
   set cells (cells) {
     this.board = Mask.fromCoords(cells)

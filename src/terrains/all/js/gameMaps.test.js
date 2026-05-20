@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, require, it, test, expect, beforeEach, afterEach, jest */
 
 // Delay module loading until after localStorage is mocked to avoid
 // side-effects during import (some map modules save to localStorage).

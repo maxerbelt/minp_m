@@ -6,6 +6,22 @@ import { variantType } from './variantType.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**
+ * @typedef {import('./Placeable.js').Placeable} PlaceableType
+ * @typedef {import('./Placeable3.js').Placeable3} Placeable3Type
+ * @typedef {import('../grid/rectangle/mask.js').Mask} MaskType
+ * @typedef {Object} VariantGroup
+ * @property {(zoneInfo: any) => boolean} validator
+ * @property {any} zoneDetail
+ * @property {any} [parent]
+ * @typedef {Object} VariantTypeHandler
+ * @property {Function} [variantsOf]
+ * @property {function(number): number} r
+ * @property {function(number): number} f
+ * @property {function(number): number} rf
+ * @property {function(Function, SpecialVariant): void} setBehaviour
+ */
+
+/**
  * Special variant class that handles multi-layer boards with subgroups.
  */
 export class SpecialVariant extends RotatableVariant {
@@ -15,12 +31,16 @@ export class SpecialVariant extends RotatableVariant {
    */
   constructor (symmetry) {
     super(Function.prototype, 0, symmetry)
+    /** @type {VariantGroup[]} */
+    this.specialGroups = []
+    /** @type {VariantGroup[]} */
+    this.subGroups = []
   }
 
   /**
    * Builds the board list based on symmetry.
    * @param {string} symmetry - The symmetry type.
-   * @param {any} board - The base board.
+   * @param {Mask|Array<Array<number>>} board - The base board or coordinate list.
    */
   buildBoard3 (symmetry, board) {
     if (Array.isArray(board)) {
@@ -31,15 +51,16 @@ export class SpecialVariant extends RotatableVariant {
         'Board must be a Mask instance or an array of coordinates'
       )
     }
-    const unrotated = board.square.defaultVariant
-    const VariantType = variantType(symmetry)
+    const unrotated = /** @type {MaskType} */ (board.square.defaultVariant)
+    const VariantType = /** @type {VariantTypeHandler} */ (
+      /** @type {unknown} */ (variantType(symmetry))
+    )
     let boards = []
     if (typeof VariantType.variantsOf === 'function') {
-      boards = VariantType.variantsOf(unrotated)
+      boards = /** @type {any} */ (VariantType.variantsOf)(unrotated)
     } else {
       throw new TypeError(
-        `Variant '${symmetry}' does not support variantsOf method`,
-        { VariantType }
+        `Variant '${symmetry}' does not support variantsOf method`
       )
     }
     this.list = boards
@@ -51,7 +72,7 @@ export class SpecialVariant extends RotatableVariant {
   /**
    * Gets the board at the specified index.
    * @param {number | undefined | null} index - The variant index.
-   * @returns {any} The board.
+   * @returns {Mask} The board.
    */
   boardFor (index) {
     const idx = index == null ? this.index : index
@@ -62,7 +83,7 @@ export class SpecialVariant extends RotatableVariant {
    * Gets the special board for a subgroup.
    * @param {number} index - The variant index.
    * @param {number} groupIndex - The subgroup index.
-   * @returns {any} The special board.
+   * @returns {Mask} The special board.
    */
   specialBoard (index, groupIndex) {
     const board = this.boardFor(index)
@@ -87,11 +108,17 @@ export class SpecialVariant extends RotatableVariant {
 
   /**
    * Configures behavior for special variants.
-   * @param {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number, setBehaviour:(VariantClass:any, instance:any)=>void}} v3 - The variant class.
+   * @param {Function} v3 - The variant class constructor.
+   * @param {SpecialVariant} symmetry - The instance.
+   */
+  /**
+   * @param {any} v3 - The variant class constructor.
    * @param {SpecialVariant} symmetry - The instance.
    */
   static setBehaviourTo (v3, symmetry) {
-    const VariantType = variantType(symmetry.symmetry)
+    const VariantType = /** @type {VariantTypeHandler} */ (
+      /** @type {unknown} */ (variantType(symmetry.symmetry))
+    )
     // Set static transition functions on the variant class
     v3.r = VariantType.r
     v3.f = VariantType.f

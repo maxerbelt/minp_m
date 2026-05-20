@@ -1,7 +1,5 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { jest } from '@jest/globals'
 
-/* global describe,   test, expect, beforeEach, afterEach, jest */
 
 jest.unstable_mockModule('../../../navbar/chooseUI.js', () => ({
   ChooseFromListUI: class {

@@ -1,5 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect, beforeEach */
 
 /**
  * Tests for Ship.shape() method calls, with special focus on Hybrid shapes

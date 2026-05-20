@@ -2,21 +2,25 @@ import { CellWsToBePlaced } from './CellWsToBePlaced.js'
 import { Placeable3 } from './Placeable3.js'
 
 /**
+ * @typedef {import('./Placeable.js').Placeable} PlaceableType
+ */
+
+/**
  * Represents a placeable with weapon variants.
  */
 export class PlaceableW extends Placeable3 {
   /**
    * Creates a placeableW instance.
-   * @param {Placeable} full - The full placeable.
-   * @param {Placeable[]} subGroups - The subgroups.
+   * @param {PlaceableType} full - The full placeable.
+   * @param {PlaceableType[]|undefined} subGroups - The subgroups.
    * @param {number} variantIndex - The variant index.
-   * @param {any} weapons - The weapons.
-   * @param {number} fullIndex - The full index.
+   * @param {any[]} weapons - The weapons.
+   * @param {number|undefined} fullIndex - The full index.
    */
   constructor (full, subGroups, variantIndex, weapons, fullIndex) {
     super(full, subGroups)
     this.variantIndex = variantIndex
-    this.fullIndex = fullIndex || variantIndex
+    this.fullIndex = fullIndex ?? variantIndex
     this.weapons = weapons
   }
 

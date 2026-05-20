@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe,   test, expect, beforeEach, afterEach, jest */
 
 import { terrainsMaps } from './maps.js'
 import { placingTarget } from '../../../variants/makeCell3.js'

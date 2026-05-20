@@ -1,4 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { SeaVessel } from '../terrains/sea/js/SeaShape.js'
 import { Ship } from '../ships/Ship.js'
 import { Orbit4F } from '../variants/Orbit4F.js'

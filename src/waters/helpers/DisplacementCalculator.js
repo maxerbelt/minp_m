@@ -1,4 +1,16 @@
 /**
+ * @typedef {Object} ShipShape
+ * @property {number} displacement
+ * @property {*} subterrain
+ * @property {function(*): number} displacementFor
+ */
+
+/**
+ * @typedef {Object} Ship
+ * @property {function(): ShipShape} shape
+ */
+
+/**
  * Calculates and describes displacement ratios for game board utilization.
  * Provides methods to determine ship displacement area and convert ratios to descriptive text.
  *
@@ -34,7 +46,7 @@ export class DisplacementCalculator {
   /**
    * Calculates total displacement for a set of ships.
    *
-   * @param {Array<Object>} ships - Array of ship objects
+   * @param {Ship[]} ships - Array of ship objects
    * @returns {number} Total displacement area of all ships
    */
   static calculateShipDisplacement (ships) {
@@ -47,8 +59,8 @@ export class DisplacementCalculator {
   /**
    * Calculates displacement for ships matching a specific subterrain.
    *
-   * @param {Array<Object>} ships - Array of ship objects
-   * @param {Object} subterrain - The subterrain to filter by
+   * @param {Ship[]} ships - Array of ship objects
+   * @param {*} subterrain - The subterrain to filter by
    * @returns {number} Total displacement for matching ships
    */
   static calculateSubterrainDisplacement (ships, subterrain) {
@@ -61,7 +73,7 @@ export class DisplacementCalculator {
    * Calculates mixed terrain ship displacement (ships occupying multiple terrains).
    * Multiplies by 1/4 for mixed terrain portion of the calculation.
    *
-   * @param {Array<Object>} mixedShapes - Array of mixed terrain shapes
+   * @param {ShipShape[]} mixedShapes - Array of mixed terrain shapes
    * @returns {number} Mixed terrain displacement contribution
    */
   static calculateMixedTerrainAmount (mixedShapes) {
@@ -76,8 +88,8 @@ export class DisplacementCalculator {
   /**
    * Calculates mixed terrain displacement for a specific subterrain.
    *
-   * @param {Array<Object>} mixedShapes - Array of mixed terrain shapes
-   * @param {Object} subterrain - The subterrain to calculate for
+   * @param {ShipShape[]} mixedShapes - Array of mixed terrain shapes
+   * @param {*} subterrain - The subterrain to calculate for
    * @returns {number} Mixed terrain displacement for this subterrain
    */
   static calculateMixedSubterrainAmount (mixedShapes, subterrain) {

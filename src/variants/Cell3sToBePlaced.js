@@ -1,12 +1,13 @@
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 
 /**
+ * @typedef {import('./Placeable.js').Placeable} PlaceableType
  * @typedef {{
  *   board: any,
  *   validator: (zoneInfo:any)=>boolean,
  *   zoneDetail:any,
  *   target:any,
- *   subGroups:Array<{placeAt:(r:number,c:number)=>any, isCandidate:(c:number,r:number)=>boolean, validator:(zoneInfo:any)=>boolean}>
+ *   subGroups:Array<{placeAt:(r:number,c:number)=>any}>
  * }} Placeable3Type
  */
 

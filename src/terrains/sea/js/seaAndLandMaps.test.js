@@ -1,5 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, test, expect */
 
 // Import only what we can test without localStorage issues
 import { seaAndLand } from './seaAndLand.js'

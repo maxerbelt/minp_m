@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, expect, jest */
 
 import { Orbit4F } from './Orbit4F.js'
 import { Mask } from '../grid/rectangle/mask.js'

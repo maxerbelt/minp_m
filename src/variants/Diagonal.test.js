@@ -1,7 +1,5 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { describe, jest, beforeEach, it, expect } from '@jest/globals'
 
-/* global describe, jest, beforeEach, it, expect */
 
 import { Diagonal } from './Diagonal.js'
 

@@ -1,5 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-/* global describe, it, expect, beforeEach */
 
 import { ActionsTri } from './actionsTri.js'
 import { TriIndex } from './TriIndex.js'

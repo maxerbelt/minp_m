@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, expect */
 
 import { RotatableVariant } from './RotatableVariant.js'
 import { describe, it, expect } from '@jest/globals'

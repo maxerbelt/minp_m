@@ -1,7 +1,6 @@
 // src/grid/ForLocation.test.js
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
+import { jest } from '@jest/globals'
 import { describe, it, expect, jest } from '@jest/globals'
-/* global describe, it, expect */
 import { ForLocation } from './ForLocation'
 
 function makeMockStore (initialBits = 0n) {

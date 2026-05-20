@@ -1,10 +1,8 @@
 // src/grid/Shape.test.js
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { ShapeEnum } from './shapeEnum.js'
 import { TriIndex } from './triangle/TriIndex.js'
 import { RectIndex } from './rectangle/RectIndex.js'
 import { CubeIndex } from './hexagon/CubeIndex.js'
-/* global describe, it, expect */
 
 // Jest test suite
 describe('Shape factories', () => {

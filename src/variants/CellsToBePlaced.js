@@ -1,8 +1,8 @@
 import { placingTarget } from './makeCell3.js'
 
 /**
- * @typedef {[import('../terrains/all/js/SubTerrain.js').SubTerrain, any]} ZoneInfo
- * @typedef {{ boundsChecker: (r:number,c:number)=>boolean, getZone: (r:number,c:number,zoneDetail?:number)=>ZoneInfo }} PlacementTarget
+ * @typedef {any} ZoneInfo
+ * @typedef {{ boundsChecker: (r:number,c:number)=>boolean, allBoundsChecker?: (r:number,c:number,h?:number,w?:number)=>boolean, getZone: (r:number,c:number,zoneDetail?:number)=>any }} PlacementTarget
  */
 
 /**
@@ -79,8 +79,8 @@ export class CellsToBePlaced {
 
   /**
    * Checks if no touching in 3x3 area.
-   * @param {number} r - The row.
-   * @param {number} c - The column.
+   * @param {number} x - The x coordinate.
+   * @param {number} y - The y coordinate.
    * @param {any} shipCellGrid - The ship cell grid.
    * @returns {boolean} True if no touch.
    */

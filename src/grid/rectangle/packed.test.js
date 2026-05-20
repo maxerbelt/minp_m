@@ -1,6 +1,4 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 
-/* global describe, it, expect, beforeEach */
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { Packed } from './packed.js'
 import { Store32 } from '../bitStore/store32.js'

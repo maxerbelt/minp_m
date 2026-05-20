@@ -1,6 +1,5 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
 import { jest } from '@jest/globals'
-/* global describe, it, jest, expect, beforeEach, afterEach */
+import { jest } from '@jest/globals'
 
 // Variables for dynamically imported modules
 let drawTri, triToPixel, pixelToTri, TriDraw

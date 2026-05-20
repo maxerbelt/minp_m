@@ -87,7 +87,7 @@ all.validator = () => true
  */
 export const spaceAndAsteroids = new Terrain(
   'Space and Asteroids',
-  [],
+  null,
   [space, asteroid],
   'SpaceAndAsteroid',
   'Sector',
