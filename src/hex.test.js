@@ -77,9 +77,19 @@ jest.unstable_mockModule('./grid/hexagon/actionHex.js', () => {
   }
 })
 
-// minimal canvas stub
-const fakeCanvas = {
-  getContext: () => ({
+// Save original document.createElement before mocking
+const originalCreateElement = document.createElement
+
+// Helper to create test canvas
+function createTestCanvas () {
+  // Use the original createElement to avoid mocks
+  const canvas = originalCreateElement.call(document, 'canvas')
+  canvas.id = 'c'
+  canvas.width = 600
+  canvas.height = 600
+
+  // Mock the context
+  const mockCtx = {
     clearRect: () => {},
     beginPath: () => {},
     moveTo: () => {},
@@ -90,9 +100,19 @@ const fakeCanvas = {
     fillRect: () => {},
     strokeRect: () => {},
     fillText: () => {}
-  }),
-  addEventListener: () => {},
-  getBoundingClientRect: () => ({ left: 0, top: 0, width: 600, height: 600 })
+  }
+
+  canvas.getContext = jest.fn(() => mockCtx)
+  canvas.addEventListener = jest.fn()
+  canvas.getBoundingClientRect = jest.fn(() => ({
+    left: 0,
+    top: 0,
+    width: 600,
+    height: 600
+  }))
+
+  document.body.appendChild(canvas)
+  return canvas
 }
 
 const elementStore = {}
@@ -119,10 +139,17 @@ function setupDOMStubs () {
     return btn
   })
 
+  const testCanvas = createTestCanvas()
+
   document.getElementById = jest.fn(id => {
-    if (id === 'c') return fakeCanvas
+    if (id === 'c') return testCanvas
     return elementStore[id] || null
   })
+}
+
+function cleanupDOMStubs () {
+  const canvas = document.getElementById('c')
+  if (canvas) canvas.remove()
 }
 
 let computeHexMorph, hexDraw, updateButtons, setMorphologyButtons
@@ -179,6 +206,11 @@ describe('hex.js morphology buttons', () => {
         return o
       }
     }
+  })
+
+  afterEach(() => {
+    cleanupDOMStubs()
+    jest.clearAllMocks()
   })
 
   it('computeHexMorph uses the hex morphology operations', () => {

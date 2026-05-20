@@ -1,8 +1,15 @@
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 import { ColorPackedDraw } from './colorpackeddraw.js'
-import { jest } from '@jest/globals'
 
-// minimal canvas/context stub factory
-function makeMockCanvas () {
+// Mock canvas context for jsdom environment
+function mockCanvasContext () {
   const mockCtx = {
     clearRect: jest.fn(),
     beginPath: jest.fn(),
@@ -15,35 +22,37 @@ function makeMockCanvas () {
     strokeRect: jest.fn(),
     fillText: jest.fn()
   }
-  const mockCanvas = {
-    id: 'test-canvas',
-    width: 600,
-    height: 600,
-    getContext: jest.fn(() => mockCtx),
-    addEventListener: jest.fn(),
-    getBoundingClientRect: jest.fn(() => ({
-      left: 0,
-      top: 0,
-      width: 600,
-      height: 600
-    }))
-  }
-  document.getElementById = jest.fn(id => {
-    if (id === 'test-canvas') return mockCanvas
-    return null
-  })
-  return { mockCanvas, mockCtx }
+
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx)
+  return mockCtx
+}
+
+// Helper to create test canvas
+function createTestCanvas () {
+  mockCanvasContext()
+  const canvas = document.createElement('canvas')
+  canvas.id = 'test-canvas'
+  canvas.width = 600
+  canvas.height = 600
+  document.body.appendChild(canvas)
+  return canvas
+}
+
+function removeTestCanvas () {
+  const canvas = document.getElementById('test-canvas')
+  if (canvas) canvas.remove()
 }
 
 describe('ColorPackedDraw', () => {
   let draw
 
   beforeEach(() => {
-    makeMockCanvas()
+    createTestCanvas()
     draw = new ColorPackedDraw('test-canvas', 5, 5, 20, 0, 0, 4)
   })
 
   afterEach(() => {
+    removeTestCanvas()
     jest.clearAllMocks()
   })
 

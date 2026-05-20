@@ -12,9 +12,10 @@ import { TriangleShape } from './TriangleShape.js'
 export class MaskTri extends MaskBase {
   /**
    * Create a new triangular grid mask
+   *
    * @param {number} side - The side length of the triangle grid
-   * @param {*} bits - Bit representation of the mask data (optional)
-   * @param {Object} store - Bit storage implementation (optional)
+   * @param {*} [bits] - Bit representation of the mask data (optional)
+   * @param {Object} [store] - Bit storage implementation (optional)
    */
   constructor (side, bits, store) {
     super(TriangleShape(side), 1, bits, store)

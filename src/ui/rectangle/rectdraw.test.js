@@ -13,9 +13,9 @@ describe('RectDraw', () => {
   let mockCanvas
   let mockCtx
 
-  beforeEach(() => {
-    // Mock canvas element
-    mockCtx = {
+  // Mock canvas context for jsdom environment
+  function mockCanvasContext () {
+    const ctx = {
       clearRect: jest.fn(),
       fillRect: jest.fn(),
       strokeRect: jest.fn(),
@@ -27,31 +27,42 @@ describe('RectDraw', () => {
       stroke: jest.fn()
     }
 
-    mockCanvas = {
-      id: 'test-canvas',
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ctx)
+    mockCtx = ctx
+    return ctx
+  }
+
+  // Helper to create test canvas
+  function createTestCanvas () {
+    mockCanvasContext()
+    mockCanvas = document.createElement('canvas')
+    mockCanvas.id = 'test-canvas'
+    mockCanvas.width = 300
+    mockCanvas.height = 300
+    mockCanvas.addEventListener = jest.fn()
+    mockCanvas.getBoundingClientRect = jest.fn(() => ({
+      left: 0,
+      top: 0,
       width: 300,
-      height: 300,
-      getContext: jest.fn(() => mockCtx),
-      addEventListener: jest.fn(),
-      getBoundingClientRect: jest.fn(() => ({
-        left: 0,
-        top: 0,
-        width: 300,
-        height: 300
-      }))
-    }
+      height: 300
+    }))
+    document.body.appendChild(mockCanvas)
+    return mockCanvas
+  }
 
-    // Mock document.getElementById
-    document.getElementById = jest.fn(id => {
-      if (id === 'test-canvas') return mockCanvas
-      return null
-    })
+  function removeTestCanvas () {
+    const canvas = document.getElementById('test-canvas')
+    if (canvas) canvas.remove()
+  }
 
+  beforeEach(() => {
+    createTestCanvas()
     rectDraw = new RectDraw('test-canvas', 10, 10, 25, 0, 0)
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    // Clean up canvas
+    removeTestCanvas()
   })
 
   describe('constructor', () => {
@@ -89,10 +100,12 @@ describe('RectDraw', () => {
     })
 
     it('should throw error if canvas element not found', () => {
+      const originalGetElementById = document.getElementById
       document.getElementById = jest.fn(() => null)
       expect(() => {
         new RectDraw('nonexistent-canvas')
       }).toThrow(`Canvas element with id "nonexistent-canvas" not found`)
+      document.getElementById = originalGetElementById
     })
 
     it('should bind mouse events', () => {
@@ -102,6 +115,10 @@ describe('RectDraw', () => {
       )
       expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
         'mouseleave',
+        expect.any(Function)
+      )
+      expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
+        'click',
         expect.any(Function)
       )
     })

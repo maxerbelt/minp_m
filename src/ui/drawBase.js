@@ -1,25 +1,58 @@
 /**
  * Base class for interactive grid drawing with canvas support
- * Handles common functionality like canvas setup, mouse events, and redraw cycles
  *
- * Provides:
- * - Canvas rendering utilities (cells, shapes, text)
+ * Provides a common foundation for rendering different grid shapes (rectangular,
+ * hexagonal, triangular, etc.) with interactive features like mouse hover and
+ * click handling.
+ *
+ * Features:
+ * - Canvas rendering utilities (fill cells, draw text, clear canvas)
  * - Mouse event handling and coordinate conversion
- * - Hover state management
- * - Redraw cycle orchestration
+ * - Hover state management with visual feedback
+ * - Redraw cycle orchestration (clear → draw grid → draw hover)
+ * - Coordinate transformation (grid ↔ pixel, canvas-relative mouse coords)
+ *
+ * Abstract Methods (must be implemented by subclasses):
+ * - _drawGrid(): Render the grid based on grid shape
+ * - _drawHover(): Render hover visualization for the current cell
+ * - _hitTest(): Determine which cell is at pixel coordinates
+ * - toggleCell(): Toggle the state of a cell
+ * - clear(): Reset the grid to empty state
+ *
+ * Subclass Flow:
+ * 1. Constructor calls super() with canvas ID and grid data
+ * 2. Mouse events are auto-bound in constructor
+ * 3. On mouse interaction: _hitTest() → toggleCell() or redrawWithHover()
+ * 4. Redraw cycle: clearCanvas() → _drawGrid() → _drawHover()
  *
  * @abstract
  * @class DrawBase
+ * @example
+ * // Create a subclass for rectangular grids
+ * class RectDraw extends DrawBase {
+ *   _drawGrid() { ... }
+ *   _drawHover() { ... }
+ *   _hitTest(px, py) { ... }
+ *   toggleCell(location) { ... }
+ *   clear() { ... }
+ * }
  */
 export class DrawBase {
   /**
    * Initialize the draw base with canvas and grid data.
-   * @param {string} canvasId - ID of the canvas element
-   * @param {Object} gridData - Grid data structure
+   *
+   * Sets up canvas rendering context, properties, and mouse event handlers.
+   * Validates that the canvas element exists and supports 2D rendering.
+   *
+   * Subclasses should call `super()` and then initialize their own
+   * grid-specific properties and state.
+   *
+   * @param {string} canvasId - ID of the canvas element in the DOM
+   * @param {Object} gridData - Grid data structure (mask, shape, etc.)
    * @param {number} [cellSize=25] - Size of each cell in pixels
-   * @param {number} [offsetX=0] - X offset for grid positioning
-   * @param {number} [offsetY=0] - Y offset for grid positioning
-   * @throws {Error} If canvas element not found
+   * @param {number} [offsetX=0] - X offset for grid positioning on canvas
+   * @param {number} [offsetY=0] - Y offset for grid positioning on canvas
+   * @throws {Error} If canvas element not found or 2D context unavailable
    */
   constructor (canvasId, gridData, cellSize = 25, offsetX = 0, offsetY = 0) {
     const canvasElement = document.getElementById(canvasId)
@@ -58,13 +91,16 @@ export class DrawBase {
 
   /**
    * Fill and stroke a rectangle cell.
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @param {number} width - Cell width
-   * @param {number} height - Cell height
-   * @param {string} fillColor - CSS color for fill
-   * @param {string} [strokeColor='#333'] - CSS color for stroke
-   * @param {number} [lineWidth=1] - Stroke line width
+   *
+   * Renders a filled rectangle with a stroke outline at the specified position.
+   *
+   * @param {number} x - X coordinate of top-left corner
+   * @param {number} y - Y coordinate of top-left corner
+   * @param {number} width - Width of the rectangle in pixels
+   * @param {number} height - Height of the rectangle in pixels
+   * @param {string} fillColor - CSS color string for fill (e.g., '#FF0000')
+   * @param {string} [strokeColor='#333'] - CSS color string for stroke outline
+   * @param {number} [lineWidth=1] - Width of stroke line in pixels
    * @returns {void}
    * @protected
    */
@@ -87,6 +123,17 @@ export class DrawBase {
 
   /**
    * Draw text centered in a rectangle
+   *
+   * Renders text horizontally and vertically centered within the specified bounds.
+   *
+   * @param {number} x - X coordinate of rectangle's top-left corner
+   * @param {number} y - Y coordinate of rectangle's top-left corner
+   * @param {number} width - Width of the bounding rectangle
+   * @param {number} height - Height of the bounding rectangle
+   * @param {string} text - Text content to render
+   * @param {number} [fontSize=12] - Font size in pixels
+   * @param {string} [fillColor='#fff'] - CSS color string for text fill
+   * @returns {void}
    * @protected
    */
   drawCellText (x, y, width, height, text, fontSize = 12, fillColor = '#fff') {
@@ -102,6 +149,10 @@ export class DrawBase {
 
   /**
    * Clear the entire canvas
+   *
+   * Removes all drawn content by clearing the canvas to transparency.
+   *
+   * @returns {void}
    * @protected
    */
   clearCanvas () {
@@ -110,6 +161,13 @@ export class DrawBase {
 
   /**
    * Convert grid coordinates to screen pixel coordinates
+   *
+   * Transforms logical grid coordinates (0-based) into canvas pixel positions
+   * accounting for cell size and offset positioning.
+   *
+   * @param {number} gridX - X coordinate in grid units
+   * @param {number} gridY - Y coordinate in grid units
+   * @returns {{x: number, y: number}} Pixel coordinates on the canvas
    * @protected
    */
   gridToScreenCoords (gridX, gridY) {
@@ -121,6 +179,12 @@ export class DrawBase {
 
   /**
    * Get mouse coordinates relative to canvas
+   *
+   * Calculates mouse pointer position relative to the canvas element's
+   * top-left corner, accounting for canvas position within the viewport.
+   *
+   * @param {MouseEvent} event - Mouse event with clientX and clientY properties
+   * @returns {{x: number, y: number}} Coordinates relative to canvas top-left
    * @protected
    */
   getCanvasMouseCoords (event) {
@@ -137,6 +201,16 @@ export class DrawBase {
 
   /**
    * Bind mouse events to the canvas
+   *
+   * Attaches event listeners to the canvas element for mouse interactions:
+   * - mousemove: Track pointer position for hover effects
+   * - mouseleave: Clear hover when mouse leaves the canvas
+   * - click: Handle cell selection/toggling
+   *
+   * Called during constructor initialization. Subclasses may override to add
+   * additional event handlers.
+   *
+   * @returns {void}
    * @private
    */
   _bindMouseEvents () {
@@ -147,9 +221,14 @@ export class DrawBase {
 
   /**
    * Handle mouse events that require coordinate conversion and hit testing
+   *
+   * Helper method to standardize mouse event processing: converts pixel
+   * coordinates to grid coordinates via hit test, then invokes callback.
+   *
+   * @param {MouseEvent} event - Mouse event from the canvas
+   * @param {Function} callback - Function to invoke with hit test result
+   * @returns {void}
    * @private
-   * @param {MouseEvent} event - The mouse event
-   * @param {Function} callback - Callback function to handle the hit result
    */
   _handleMouseEventWithCoords (event, callback) {
     const { x, y } = this.getCanvasMouseCoords(event)
@@ -159,6 +238,13 @@ export class DrawBase {
 
   /**
    * Handle mouse move event - update hover and redraw
+   *
+   * Called on every mouse move within the canvas. Performs hit testing
+   * to determine which cell is under the cursor and updates the visual
+   * hover indication.
+   *
+   * @param {MouseEvent} event - Mouse event from canvas
+   * @returns {void}
    * @private
    */
   _onMouseMove (event) {
@@ -167,6 +253,11 @@ export class DrawBase {
 
   /**
    * Handle mouse leave event - clear hover and redraw
+   *
+   * Called when the mouse leaves the canvas bounds. Clears any active
+   * hover visualization and redraws the canvas.
+   *
+   * @returns {void}
    * @private
    */
   _onMouseLeave () {
@@ -175,6 +266,12 @@ export class DrawBase {
 
   /**
    * Handle mouse click event - toggle cell
+   *
+   * Called on mouse click within the canvas. Performs hit testing to find
+   * the clicked cell and calls toggleCell() to update its state.
+   *
+   * @param {MouseEvent} event - Mouse event from canvas
+   * @returns {void}
    * @private
    */
   _onClick (event) {
@@ -187,6 +284,14 @@ export class DrawBase {
 
   /**
    * Complete redraw: clear → draw grid → draw hover
+   *
+   * Orchestrates the full rendering cycle:
+   * 1. Clear the canvas to remove previous content
+   * 2. Draw the grid cells with current bit state
+   * 3. Draw hover visualization if a cell is hovered
+   *
+   * @returns {void}
+   * @protected
    */
   redraw () {
     this.clearCanvas()
@@ -196,7 +301,13 @@ export class DrawBase {
 
   /**
    * Update hover location and redraw
+   *
+   * Sets the currently hovered cell location and triggers a complete redraw
+   * to update the hover visualization.
+   *
    * @param {*} [hoverLocation=null] - The location to hover or null to clear
+   * @returns {void}
+   * @protected
    */
   redrawWithHover (hoverLocation = null) {
     this.hoverLocation = hoverLocation
@@ -209,7 +320,16 @@ export class DrawBase {
 
   /**
    * Draw the grid - to be implemented by subclasses
-   * @private
+   *
+   * Renders all cells of the grid with their current state. Implementation
+   * varies depending on grid shape (rectangular, hexagonal, triangular, etc.).
+   *
+   * Subclasses MUST override this method to provide grid-specific rendering.
+   *
+   * @returns {void}
+   * @protected
+   * @abstract
+   * @throws {Error} If not implemented by subclass
    */
   _drawGrid () {
     throw new Error('_drawGrid must be implemented by subclass')
@@ -217,14 +337,35 @@ export class DrawBase {
 
   /**
    * Draw the hover cell if one is selected
-   * @private
+   *
+   * Renders visual feedback for the currently hovered cell using a distinct
+   * color or style. Called after _drawGrid() to layer on top.
+   *
+   * Subclasses MUST override this method to provide grid-specific hover
+   * visualization.
+   *
+   * @returns {void}
+   * @protected
+   * @abstract
+   * @throws {Error} If not implemented by subclass
    */
   _drawHover () {
     throw new Error('_drawHover must be implemented by subclass')
   }
 
   /**
-   * Clear all cells
+   * Clear all cells in the grid
+   *
+   * Resets the grid state by clearing all cells to an empty or default state.
+   * The implementation depends on the grid's internal representation (bits,
+   * array, etc.).
+   *
+   * Subclasses MUST override this method to provide grid-specific clearing logic.
+   *
+   * @returns {void}
+   * @protected
+   * @abstract
+   * @throws {Error} If not implemented by subclass
    */
   clear () {
     throw new Error('clear must be implemented by subclass')
@@ -232,20 +373,45 @@ export class DrawBase {
 
   /**
    * Toggle a cell on/off
-   * @param {*} location - The cell location to toggle
+   *
+   * Flips the state of the cell at the given location. The exact behavior
+   * depends on the grid's state representation (binary toggle, cycle through
+   * states, etc.).
+   *
+   * Subclasses MUST override this method to provide grid-specific toggle logic.
+   *
+   * @param {*} _location - The cell location to toggle (implementation-specific)
+   * @returns {void}
+   * @protected
+   * @abstract
+   * @throws {Error} If not implemented by subclass
    */
-  toggleCell (location) {
+  toggleCell (_location) {
     throw new Error('toggleCell must be implemented by subclass')
   }
 
   /**
    * Hit test to find which cell is at the given pixel coordinates
-   * @private
-   * @param {number} px - X pixel coordinate
-   * @param {number} py - Y pixel coordinate
-   * @returns {*} The hit test result
+   *
+   * Performs spatial lookup to determine which grid cell, if any, contains
+   * the given pixel position. Returns the cell identifier or null if no
+   * cell is at that location.
+   *
+   * Implementation varies by grid shape:
+   * - RectDraw: Array index [row, col]
+   * - HexDraw: Cube coordinates [q, r, s]
+   * - TriDraw: Triangle index number
+   *
+   * Subclasses MUST override this method with shape-specific hit test logic.
+   *
+   * @param {number} _px - X pixel coordinate relative to canvas
+   * @param {number} _py - Y pixel coordinate relative to canvas
+   * @returns {*} The hit test result (cell identifier) or null if no hit
+   * @protected
+   * @abstract
+   * @throws {Error} If not implemented by subclass
    */
-  _hitTest (px, py) {
+  _hitTest (_px, _py) {
     throw new Error('_hitTest must be implemented by subclass')
   }
 }

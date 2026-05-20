@@ -1,9 +1,15 @@
 import { MaskTri } from '../../grid/triangle/maskTri.js'
 import { drawTri, triToPixel, pixelToTri } from './triDrawHelper.js'
 import { DrawBase } from '../drawBase.js'
+import { BigOne } from '../../grid/bitStore/helpers/bigbits.js'
 
+/** @type {number} */
 const SQRT_THREE_OVER_TWO = Math.sqrt(3) / 2
 
+/**
+ * Color palette for triangle rendering
+ * @type {Object.<string, string>}
+ */
 const COLORS = {
   SET: '#4caf50',
   UNSET: '#2196F3',
@@ -11,31 +17,58 @@ const COLORS = {
   STROKE: '#333'
 }
 
+/** @type {number} */
 const TRIANGLE_OFFSET = 0.3
 
+/**
+ * TriDraw - Interactive triangular grid renderer
+ *
+ * Manages rendering and interaction for triangular grid layouts with:
+ * - Canvas-based triangle drawing
+ * - Mouse event handling (hover, click)
+ * - Bit manipulation for cell state
+ * - Real-time visual feedback
+ *
+ * @class TriDraw
+ * @extends {DrawBase}
+ */
 export class TriDraw extends DrawBase {
   /**
-   * @param {string} canvasId - Canvas element ID.
-   * @param {number} [side=3] - Number of rows in the triangle grid.
-   * @param {number} [offsetX=300] - Canvas offset X position.
-   * @param {number} [offsetY=300] - Canvas offset Y position.
-   * @param {number} [size=25] - Triangle side length.
+   * Initialize a triangular grid drawer
+   *
+   * @param {string} canvasId - ID of the canvas element to render to
+   * @param {number} [side=3] - Number of rows in the triangle grid
+   * @param {number} [offsetX=300] - X offset for grid positioning on canvas
+   * @param {number} [offsetY=300] - Y offset for grid positioning on canvas
+   * @param {number} [size=25] - Side length of each triangle in pixels
+   * @throws {Error} If canvas element not found or context unavailable
    */
   constructor (canvasId, side = 3, offsetX = 300, offsetY = 300, size = 25) {
     const mask = new MaskTri(side)
     super(canvasId, mask, size, offsetX, offsetY)
 
+    /** @type {MaskTri} */
     this.mask = mask
+    /** @type {*} */
     this.indexer = mask.indexer
+    /** @type {number} */
     this.side = side
+    /** @type {number} */
     this.triSize = size
+    /** @type {number} */
     this.triHeight = size * SQRT_THREE_OVER_TWO
+    /** @type {bigint} */
     this.bits = 0n
   }
 
   /**
-   * Set the bits to display on the triangle grid.
-   * @param {bigint} bits - Bit mask for filled triangles.
+   * Set the bits to display on the triangle grid
+   *
+   * Updates the internal bit representation and triggers a full redraw
+   * of the canvas with the new state.
+   *
+   * @param {bigint} bits - Bit mask where each bit position corresponds to a triangle cell
+   * @returns {void}
    */
   setBits (bits) {
     this.bits = bits
@@ -43,8 +76,13 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Set bits from an array of grid coordinates.
-   * @param {Array<Array<number>>} coords - List of [row, column] pairs.
+   * Set bits from an array of grid coordinates
+   *
+   * Converts grid coordinates (row, column pairs) to bit representation
+   * and updates the display. Useful for populating the grid from external data.
+   *
+   * @param {Array<Array<number>>} coords - List of [row, column] coordinate pairs
+   * @returns {void}
    */
   setBitsFromCoords (coords) {
     this.mask.fromCoords(coords)
@@ -53,7 +91,11 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Clear all triangle bits.
+   * Clear all triangle bits to zero
+   *
+   * Resets the entire grid to an empty state and redraws the canvas.
+   *
+   * @returns {void}
    */
   clear () {
     this.bits = 0n
@@ -61,7 +103,12 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Redraw the entire canvas.
+   * Redraw the entire canvas
+   *
+   * Clears the canvas, renders all grid triangles, and applies
+   * any active hover state visualization.
+   *
+   * @returns {void}
    */
   redraw () {
     this.clearCanvas()
@@ -70,8 +117,13 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Redraw with optional hover selection.
-   * @param {number|null} [hoverIndex=null] - Hovered triangle index.
+   * Redraw with optional hover selection highlight
+   *
+   * Updates the hover location state and triggers a complete redraw
+   * to show the hover visual feedback on the specified triangle.
+   *
+   * @param {number|null} [hoverIndex=null] - Index of triangle to highlight, or null to clear
+   * @returns {void}
    */
   redrawWithHover (hoverIndex = null) {
     this.hoverLocation = hoverIndex
@@ -83,11 +135,17 @@ export class TriDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Draw all triangles in the grid.
-   * @private
+   * Draw all triangles in the grid
+   *
+   * Iterates through all valid triangle positions and renders them
+   * with appropriate colors based on their bit state.
+   *
+   * @returns {void}
+   * @protected
    */
   _drawGrid () {
-    for (let index = 0; index < this.indexer.size; index++) {
+    const indexerSize = this.indexer.size ?? this.indexer.length ?? 0
+    for (let index = 0; index < indexerSize; index++) {
       const { row, column } = this._getCoordinatesForIndex(index)
       this._drawTriangleCell(
         row,
@@ -99,9 +157,13 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Convert an index to row and column coordinates.
-   * @param {number} index - Triangle index.
-   * @returns {{row:number,column:number}}
+   * Convert a triangle index to row and column coordinates
+   *
+   * Maps a linear index to 2D grid coordinates using the grid's
+   * indexer implementation.
+   *
+   * @param {number} index - Linear index of triangle in the grid
+   * @returns {{row: number, column: number}} Row and column coordinates
    * @private
    */
   _getCoordinatesForIndex (index) {
@@ -110,9 +172,13 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Get triangle orientation from column.
-   * @param {number} column - Triangle column.
-   * @returns {'up'|'down'}
+   * Determine triangle orientation based on column position
+   *
+   * In triangular grids, triangles alternate between pointing up
+   * and down based on their column index.
+   *
+   * @param {number} column - Triangle column index
+   * @returns {'up'|'down'} Triangle orientation
    * @private
    */
   _getTriangleOrientation (column) {
@@ -120,9 +186,13 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Get the vertical offset for an oriented triangle.
-   * @param {'up'|'down'} orientation - Triangle orientation.
-   * @returns {number}
+   * Calculate vertical pixel offset for an oriented triangle
+   *
+   * Applies positioning adjustments for downward-pointing triangles
+   * to maintain consistent visual alignment.
+   *
+   * @param {'up'|'down'} orientation - Triangle orientation direction
+   * @returns {number} Vertical offset in pixels
    * @private
    */
   _getVerticalOffset (orientation) {
@@ -130,10 +200,14 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Determine the fill color for a cell.
-   * @param {number} index - Triangle index.
-   * @param {boolean} [isHover=false] - Whether the cell is hovered.
-   * @returns {string} Hex color string.
+   * Determine the fill color for a triangle cell
+   *
+   * Returns hover color if cell is hovered, otherwise returns set or unset
+   * color based on bit state.
+   *
+   * @param {number} index - Triangle index
+   * @param {boolean} [isHover=false] - Whether cell is currently hovered
+   * @returns {string} Hex color string for rendering
    * @private
    */
   _getCellColor (index, isHover = false) {
@@ -142,9 +216,13 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Check whether the bit is set for a triangle index.
-   * @param {number} index - Triangle index.
-   * @returns {boolean}
+   * Check whether a bit is set for a given triangle index
+   *
+   * Tests a specific bit position in the bit field to determine
+   * if that triangle cell should appear as "filled" or "set".
+   *
+   * @param {number} index - Triangle index to test
+   * @returns {boolean} True if bit is set (1), false if unset (0)
    * @private
    */
   _isBitSet (index) {
@@ -152,11 +230,17 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Draw a single triangle cell.
-   * @param {number} row - Grid row.
-   * @param {number} column - Grid column.
-   * @param {string} color - Fill color.
-   * @param {'up'|'down'} orientation - Triangle orientation.
+   * Render a single triangle cell on the canvas
+   *
+   * Calculates pixel coordinates from grid coordinates and invokes
+   * the drawing helper to render the triangle with appropriate color
+   * and stroke styling.
+   *
+   * @param {number} row - Grid row index
+   * @param {number} column - Grid column index
+   * @param {string} color - Fill color as CSS color string
+   * @param {'up'|'down'} orientation - Triangle pointing direction
+   * @returns {void}
    * @private
    */
   _drawTriangleCell (row, column, color, orientation) {
@@ -177,8 +261,13 @@ export class TriDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Draw the hover triangle if one is active.
-   * @private
+   * Draw the hover triangle highlight if one is active
+   *
+   * Renders the hovered triangle with its special hover color to provide
+   * visual feedback to the user. Only draws if hoverLocation is set.
+   *
+   * @returns {void}
+   * @protected
    */
   _drawHover () {
     if (this.hoverLocation === null) return
@@ -197,8 +286,13 @@ export class TriDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Toggle a triangle at the given index.
-   * @param {number|null} index - Triangle index.
+   * Toggle the bit state of a triangle cell
+   *
+   * Flips the bit at the specified index (0→1 or 1→0) and redraws
+   * the canvas. If index is null, performs no operation.
+   *
+   * @param {number|null} index - Triangle index to toggle, or null for no-op
+   * @returns {void}
    */
   toggleCell (index) {
     if (index !== null) {
@@ -207,13 +301,17 @@ export class TriDraw extends DrawBase {
   }
 
   /**
-   * Toggle the bit at a specific index.
-   * @param {number} index - Triangle index.
+   * Toggle the bit at a specific index
+   *
+   * Uses XOR operation with a single-bit mask to flip the target bit,
+   * then triggers a redraw to reflect the state change.
+   *
+   * @param {number} index - Triangle index to toggle
+   * @returns {void}
    * @private
    */
   _toggleBitAtIndex (index) {
-    const mask = 1n << BigInt(index)
-    this.bits ^= mask
+    this.bits ^= BigOne.bitMaskByPos(index)
     this.redraw()
   }
 
@@ -222,44 +320,19 @@ export class TriDraw extends DrawBase {
   // ============================================================================
 
   /**
-   * Bind mouse events to the triangular canvas.
-   * @private
-   */
-  _bindMouseEvents () {
-    this.canvas.addEventListener('mousemove', event => this._onMouseMove(event))
-    this.canvas.addEventListener('mouseleave', () => this.redrawWithHover(null))
-    this.canvas.addEventListener('click', event => this._onCanvasClick(event))
-  }
-
-  /**
-   * Handle mouse move events.
-   * @param {MouseEvent} event - Mouse event.
-   * @private
-   */
-  _onMouseMove (event) {
-    const { x, y } = this.getCanvasMouseCoords(event)
-    const hit = this._hitTest(x, y)
-    this.redrawWithHover(hit)
-  }
-
-  /**
-   * Handle click events.
-   * @param {MouseEvent} event - Mouse event.
-   * @private
-   */
-  _onCanvasClick (event) {
-    const { x, y } = this.getCanvasMouseCoords(event)
-    const hit = this._hitTest(x, y)
-    if (hit == null) return
-    this.toggleCell(hit)
-  }
-
-  /**
-   * Find triangle index from pixel coordinates.
-   * @param {number} px - Pixel X coordinate.
-   * @param {number} py - Pixel Y coordinate.
-   * @returns {number|null}
-   * @private
+   * Find triangle index from pixel coordinates using hit testing
+   *
+   * Converts pixel coordinates to grid coordinates and validates
+   * that they fall within the triangular grid bounds. Returns the
+   * corresponding triangle index or null if outside grid.
+   *
+   * This method is called by the parent DrawBase class during mouse
+   * move and click events.
+   *
+   * @param {number} px - Pixel X coordinate
+   * @param {number} py - Pixel Y coordinate
+   * @returns {number|null} Triangle index if hit, null if miss
+   * @protected
    */
   _hitTest (px, py) {
     const [row, column] = pixelToTri(
@@ -269,6 +342,6 @@ export class TriDraw extends DrawBase {
     )
     if (!this.indexer.isValid(row, column)) return null
     const idx = this.indexer.index(row, column)
-    return idx !== undefined ? idx : null
+    return idx ?? null
   }
 }

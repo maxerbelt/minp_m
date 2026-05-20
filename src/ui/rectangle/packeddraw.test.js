@@ -87,7 +87,7 @@ describe('PackedDraw', () => {
     it('should throw error if canvas element not found', () => {
       document.getElementById = jest.fn(() => null)
       expect(() => {
-        new PackedDraw('nonexistent-canvas')
+        new PackedDraw('nonexistent-canvas') // NOSONAR - intentionally calling constructor that throws
       }).toThrow(`Canvas element with id "nonexistent-canvas" not found`)
     })
 
@@ -288,6 +288,7 @@ describe('PackedDraw', () => {
   describe('_hitTest', () => {
     it('should identify cell at pixel coordinate', () => {
       // cellSize = 25, so pixel 100-124 is column 4
+      // @ts-ignore - accessing private method for testing
       const result = packedDraw._hitTest(100, 50)
       expect(result).toEqual([4, 2])
     })
@@ -295,32 +296,38 @@ describe('PackedDraw', () => {
     it('should handle offset coordinates', () => {
       const draw = new PackedDraw('test-canvas', 10, 10, 25, 50, 50)
       // (100 - 50) / 25 = 2, (75 - 50) / 25 = 1
+      // @ts-ignore - accessing private method for testing
       const result = draw._hitTest(100, 75)
       expect(result).toEqual([2, 1])
     })
 
     it('should return null for out-of-bounds pixel on right', () => {
+      // @ts-ignore - accessing private method for testing
       const result = packedDraw._hitTest(300, 50)
       expect(result).toBeNull()
     })
 
     it('should return null for out-of-bounds pixel on bottom', () => {
+      // @ts-ignore - accessing private method for testing
       const result = packedDraw._hitTest(50, 300)
       expect(result).toBeNull()
     })
 
     it('should return null for negative pixel coordinates', () => {
+      // @ts-ignore - accessing private method for testing
       const result = packedDraw._hitTest(-10, 50)
       expect(result).toBeNull()
     })
 
     it('should identify top-left cell', () => {
+      // @ts-ignore - accessing private method for testing
       const result = packedDraw._hitTest(0, 0)
       expect(result).toEqual([0, 0])
     })
 
     it('should identify bottom-right valid cell', () => {
       // 9 * 25 = 225, so pixel 225-249 is column/row 9
+      // @ts-ignore - accessing private method for testing
       const result = packedDraw._hitTest(225, 225)
       expect(result).toEqual([9, 9])
     })
@@ -354,7 +361,7 @@ describe('PackedDraw', () => {
     it('should increase green with increasing value', () => {
       const extractGreen = color => {
         const match = color.match(/rgb\((\d+), (\d+), (\d+)\)/)
-        return match ? parseInt(match[2]) : 0
+        return match ? Number.parseInt(match[2], 10) : 0
       }
 
       const green1 = extractGreen(packedDraw._valueToColor(1))
@@ -371,13 +378,16 @@ describe('PackedDraw', () => {
 
     it('should draw all cells', () => {
       packedDraw.redraw = jest.fn()
+      // @ts-ignore - accessing private method for testing
       packedDraw._drawGrid()
       expect(mockCtx.fillRect).toHaveBeenCalled()
       expect(mockCtx.strokeRect).toHaveBeenCalled()
     })
 
     it('should call _drawCell for each grid cell', () => {
+      // @ts-ignore - accessing private method for testing
       const _drawCell = jest.spyOn(packedDraw, '_drawCell')
+      // @ts-ignore - accessing private method for testing
       packedDraw._drawGrid()
       expect(_drawCell).toHaveBeenCalledTimes(100) // 10x10 grid
       _drawCell.mockRestore()
@@ -387,6 +397,7 @@ describe('PackedDraw', () => {
       const draw = new PackedDraw('test-canvas', 5, 5, 15)
       draw.packed.set(0, 0, 2)
       jest.clearAllMocks()
+      // @ts-ignore - accessing private method for testing
       draw._drawGrid()
       expect(mockCtx.fillText).not.toHaveBeenCalled()
     })
@@ -394,6 +405,7 @@ describe('PackedDraw', () => {
     it('should display text for large cells with values', () => {
       packedDraw.packed.set(0, 0, 2)
       jest.clearAllMocks()
+      // @ts-ignore - accessing private method for testing
       packedDraw._drawGrid()
       expect(mockCtx.fillText).toHaveBeenCalled()
     })
@@ -403,6 +415,7 @@ describe('PackedDraw', () => {
     it('should do nothing when no hover', () => {
       packedDraw.hoverLocation = null
       jest.clearAllMocks()
+      // @ts-ignore - accessing private method for testing
       packedDraw._drawHover()
       expect(mockCtx.fillRect).not.toHaveBeenCalled()
     })
@@ -410,6 +423,7 @@ describe('PackedDraw', () => {
     it('should draw hover cell with orange color', () => {
       packedDraw.hoverLocation = [3, 4]
       jest.clearAllMocks()
+      // @ts-ignore - accessing private method for testing
       packedDraw._drawHover()
       expect(mockCtx.fillRect).toHaveBeenCalled()
     })
@@ -417,6 +431,7 @@ describe('PackedDraw', () => {
     it('should draw at correct pixel location', () => {
       packedDraw.hoverLocation = [2, 1]
       jest.clearAllMocks()
+      // @ts-ignore - accessing private method for testing
       packedDraw._drawHover()
       // x=2, y=1, cellSize=25, offset=0
       expect(mockCtx.fillRect).toHaveBeenCalledWith(50, 25, 25, 25)
@@ -430,7 +445,9 @@ describe('PackedDraw', () => {
     })
 
     it('should call _drawGrid and _drawHover', () => {
+      // @ts-ignore - accessing private method for testing
       const _drawGrid = jest.spyOn(packedDraw, '_drawGrid')
+      // @ts-ignore - accessing private method for testing
       const _drawHover = jest.spyOn(packedDraw, '_drawHover')
       packedDraw.redraw()
       expect(_drawGrid).toHaveBeenCalled()
@@ -450,6 +467,7 @@ describe('PackedDraw', () => {
       const draw = new PackedDraw('test-canvas')
       jest.clearAllMocks()
 
+      // @ts-ignore - accessing private method for testing
       const redraw = jest.spyOn(draw, 'redraw')
       const moveEvent = new MouseEvent('mousemove', {
         clientX: 50,

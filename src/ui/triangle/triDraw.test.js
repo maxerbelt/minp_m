@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 // Variables for dynamically imported modules
 let drawTri, triToPixel, pixelToTri, TriDraw
@@ -55,7 +55,8 @@ jest.unstable_mockModule('./triDrawHelper.js', () => {
   }
 })
 
-function makeMockCanvas () {
+// Mock canvas context for jsdom environment
+function mockCanvasContext () {
   const mockCtx = {
     clearRect: jest.fn(),
     beginPath: jest.fn(),
@@ -65,24 +66,32 @@ function makeMockCanvas () {
     fill: jest.fn(),
     stroke: jest.fn()
   }
-  const mockCanvas = {
-    id: 'test-canvas',
+
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx)
+  return mockCtx
+}
+
+// Helper to create test canvas
+function createTestCanvas () {
+  mockCanvasContext()
+  const canvas = document.createElement('canvas')
+  canvas.id = 'test-canvas'
+  canvas.width = 600
+  canvas.height = 600
+  canvas.addEventListener = jest.fn()
+  canvas.getBoundingClientRect = jest.fn(() => ({
+    left: 0,
+    top: 0,
     width: 600,
-    height: 600,
-    getContext: jest.fn(() => mockCtx),
-    addEventListener: jest.fn(),
-    getBoundingClientRect: jest.fn(() => ({
-      left: 0,
-      top: 0,
-      width: 600,
-      height: 600
-    }))
-  }
-  document.getElementById = jest.fn(id => {
-    if (id === 'test-canvas') return mockCanvas
-    return null
-  })
-  return { mockCanvas, mockCtx }
+    height: 600
+  }))
+  document.body.appendChild(canvas)
+  return canvas
+}
+
+function removeTestCanvas () {
+  const canvas = document.getElementById('test-canvas')
+  if (canvas) canvas.remove()
 }
 
 describe('TriDraw', () => {
@@ -99,14 +108,19 @@ describe('TriDraw', () => {
     const triDrawModule = await import('./triDraw.js')
     TriDraw = triDrawModule.TriDraw
 
-    const mocks = makeMockCanvas()
-    mockCanvas = mocks.mockCanvas
-    mockCtx = mocks.mockCtx
+    createTestCanvas()
+    mockCanvas = document.getElementById('test-canvas')
+    mockCtx = mockCanvas.getContext('2d')
     td = new TriDraw('test-canvas', 4, 100, 100, 20)
 
     // Clear the mock calls before each test
     drawTriMock.mockClear()
     expect(td.indexer).toBeDefined()
+  })
+
+  afterEach(() => {
+    removeTestCanvas()
+    jest.clearAllMocks()
   })
 
   it('binds mouse events on canvas', () => {

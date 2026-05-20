@@ -1,10 +1,17 @@
-import { jest } from '@jest/globals'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 
 import { PackedHexDraw } from './packedHexDraw.js'
 import { ColorPackedHexDraw } from './colorpackedhexdraw.js'
 
-// minimal mocks used throughout
-function makeMockCanvas () {
+// Mock canvas context for jsdom environment
+function mockCanvasContext () {
   const mockCtx = {
     clearRect: jest.fn(),
     beginPath: jest.fn(),
@@ -15,24 +22,32 @@ function makeMockCanvas () {
     stroke: jest.fn(),
     fillText: jest.fn()
   }
-  const mockCanvas = {
-    id: 'test-canvas',
+
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx)
+  return mockCtx
+}
+
+// Helper to create test canvas
+function createTestCanvas () {
+  mockCanvasContext()
+  const canvas = document.createElement('canvas')
+  canvas.id = 'test-canvas'
+  canvas.width = 600
+  canvas.height = 600
+  canvas.addEventListener = jest.fn()
+  canvas.getBoundingClientRect = jest.fn(() => ({
+    left: 0,
+    top: 0,
     width: 600,
-    height: 600,
-    getContext: jest.fn(() => mockCtx),
-    addEventListener: jest.fn(),
-    getBoundingClientRect: jest.fn(() => ({
-      left: 0,
-      top: 0,
-      width: 600,
-      height: 600
-    }))
-  }
-  document.getElementById = jest.fn(id => {
-    if (id === 'test-canvas') return mockCanvas
-    return null
-  })
-  return { mockCanvas, mockCtx }
+    height: 600
+  }))
+  document.body.appendChild(canvas)
+  return canvas
+}
+
+function removeTestCanvas () {
+  const canvas = document.getElementById('test-canvas')
+  if (canvas) canvas.remove()
 }
 
 describe('PackedHexDraw', () => {
@@ -41,13 +56,14 @@ describe('PackedHexDraw', () => {
   let mockCtx
 
   beforeEach(() => {
-    const mocks = makeMockCanvas()
-    mockCanvas = mocks.mockCanvas
-    mockCtx = mocks.mockCtx
+    createTestCanvas()
+    mockCanvas = document.getElementById('test-canvas')
+    mockCtx = mockCanvas.getContext('2d')
     phdraw = new PackedHexDraw('test-canvas')
   })
 
   afterEach(() => {
+    removeTestCanvas()
     jest.clearAllMocks()
   })
 
@@ -168,12 +184,13 @@ describe('ColorPackedHexDraw', () => {
   let cphdraw
   let mockCtx
   beforeEach(() => {
-    const mocks = makeMockCanvas()
-    mockCtx = mocks.mockCtx
+    createTestCanvas()
+    mockCtx = document.getElementById('test-canvas').getContext('2d')
     cphdraw = new ColorPackedHexDraw('test-canvas')
   })
 
   afterEach(() => {
+    removeTestCanvas()
     jest.clearAllMocks()
   })
 
