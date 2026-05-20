@@ -3,8 +3,6 @@ import { jest } from '@jest/globals'
  * @jest-environment jsdom
  */
 
-import { jest } from '@jest/globals'
-
 import { ChooseFromListUI, ChooseNumberUI } from './chooseUI.js'
 
 function createMockDocument () {
@@ -16,11 +14,11 @@ function createMockDocument () {
       options: [],
       selectedIndex: 0,
       value: '',
-      addEventListener (name, fn) {
+      addEventListener (_name, fn) {
         this._handler = fn
       },
       dispatchEvent (ev) {
-        if (this._handler) this._handler.call(this, ev)
+        if (this._handler) this._handler(ev)
       },
       appendChild (child) {
         this.options.push(child)
@@ -52,7 +50,7 @@ describe('ChooseUI subclasses', () => {
   let createdMock = false
   beforeEach(() => {
     if (typeof document === 'undefined') {
-      globalThis.document = createMockDocument()
+      globalThis.document = /** @type {Document} */ (createMockDocument())
       createdMock = true
     }
     const sel = document.createElement('select')
@@ -76,7 +74,7 @@ describe('ChooseUI subclasses', () => {
 
     expect(ui.numOptions()).toBe(3)
     // simulate selecting second option
-    const sel = document.getElementById(selectId)
+    const sel = /** @type {HTMLSelectElement} */ (document.getElementById(selectId))
     sel.selectedIndex = 1
     sel.value = '1'
     sel.dispatchEvent(new Event('change'))
@@ -87,7 +85,7 @@ describe('ChooseUI subclasses', () => {
   it('ChooseNumberUI creates numeric range and respects default', () => {
     const ui = new ChooseNumberUI(1, 3, 1, 'it-select')
     ui.setup(() => {})
-    const sel = document.getElementById('it-select')
+    const sel = /** @type {HTMLSelectElement} */ (document.getElementById('it-select'))
     expect(sel.options.length).toBe(3)
     // default selection should be first (value '1') when no default provided
     expect(String(sel.options[0].value)).toBe('1')

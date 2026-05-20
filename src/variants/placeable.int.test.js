@@ -3,6 +3,11 @@ import { describe, it, expect, jest } from '@jest/globals'
 import { Mask } from '../grid/rectangle/mask.js'
 import { SubBoard } from '../grid/subBoard.js'
 
+/**
+ * @typedef {import('./CellsToBePlaced.js').ZoneInfo} ZoneInfo
+ * @typedef {(zoneInfo: ZoneInfo) => boolean} PlacementValidator
+ */
+
 import { Placeable } from './Placeable.js'
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 
@@ -20,7 +25,7 @@ describe('Placeable integration', () => {
   })
 
   it('placeAt returns a CellsToBePlaced-like object with correct params', () => {
-    const validator = jest.fn()
+    const validator = /** @type {PlacementValidator} */ (jest.fn())
     const p = new Placeable(board, validator, 7)
     const placed = p.placeAt(2, 3)
     expect(placed).toBeInstanceOf(CellsToBePlaced)
@@ -31,7 +36,7 @@ describe('Placeable integration', () => {
   })
 
   it('placeAt returns a CellsToBePlaced-like object with aircraft carrier', () => {
-    const validator = jest.fn()
+    const validator = /** @type {PlacementValidator} */ (jest.fn())
     const occupancyCoords = [
       [0, 0],
       [0, 1],
@@ -73,7 +78,7 @@ describe('Placeable integration', () => {
     expect(locations[7]).toEqual([8, 8])
   })
   it('placeAt returns a CellsToBePlaced-like object with aircraft carrier - Square', () => {
-    const validator = jest.fn()
+    const validator = /** @type {PlacementValidator} */ (jest.fn())
     const occupancyCoords = [
       [0, 0],
       [0, 1],

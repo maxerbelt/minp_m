@@ -1,4 +1,3 @@
-
 import { describe, it, expect, jest } from '@jest/globals'
 
 import { CellsToBePlaced } from './CellsToBePlaced.js'
@@ -286,36 +285,38 @@ describe('CellsToBePlaced', () => {
 
       const result = placing.zoneInfo(2, 3, undefined)
 
-      expect(target.getZone).toHaveBeenCalledWith(2, 3, 5)
+      expect(getZone.mock.calls[0]).toEqual([2, 3, 5])
       expect(result).toBe('ZONE_VALUE')
     })
 
     it('zoneInfo uses instance zoneDetail by default', () => {
       const variant = [[0, 0]]
       const board = Mask.fromCoords(variant)
+      const getZone = jest.fn(() => 'ZONE')
       const target = {
-        getZone: jest.fn(() => 'ZONE'),
+        getZone,
         boundsChecker: () => true
       }
       const placing = new CellsToBePlaced(board, 0, 0, () => true, 7, target)
 
       placing.zoneInfo(1, 1, undefined)
 
-      expect(target.getZone).toHaveBeenCalledWith(1, 1, 7)
+      expect(getZone.mock.calls[0]).toEqual([1, 1, 7])
     })
 
     it('zoneInfo can override zoneDetail parameter', () => {
       const variant = [[0, 0]]
       const board = Mask.fromCoords(variant)
+      const getZone = jest.fn(() => 'ZONE')
       const target = {
-        getZone: jest.fn(() => 'ZONE'),
+        getZone,
         boundsChecker: () => true
       }
       const placing = new CellsToBePlaced(board, 0, 0, () => true, 7, target)
 
       placing.zoneInfo(1, 1, 9)
 
-      expect(target.getZone).toHaveBeenCalledWith(1, 1, 9)
+      expect(getZone.mock.calls[0]).toEqual([1, 1, 9])
     })
 
     it('isInMatchingZone returns true when validator accepts zone', () => {

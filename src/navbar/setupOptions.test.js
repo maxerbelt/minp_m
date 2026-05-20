@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals'
 import {
   describe,
   it,
@@ -7,7 +6,6 @@ import {
   afterEach,
   jest
 } from '@jest/globals'
-
 
 jest.unstable_mockModule('./chooseUI.js', () => ({
   ChooseFromListUI: class {
@@ -20,7 +18,6 @@ jest.unstable_mockModule('./chooseUI.js', () => ({
     }
   },
   ChooseNumberUI: class {
-    constructor () {}
     setup (cb, _default) {
       this._cb = cb
     }
@@ -99,7 +96,7 @@ describe('setupOptions', () => {
     try {
       origURL = globalThis.URL
       const savedLocation = origLocation
-      globalThis.URL = function (input) {
+      globalThis.URL = /** @type {any} */ (function (input) {
         const OrigURL = origURL
         if (input === savedLocation) {
           return new OrigURL(
@@ -107,7 +104,7 @@ describe('setupOptions', () => {
           )
         }
         return new OrigURL(input)
-      }
+      })
     } catch (e) {
       console.warn('Could not mock URL constructor; tests may be affected', e)
       origURL = undefined
@@ -117,7 +114,7 @@ describe('setupOptions', () => {
       origURLSearchParams = globalThis.URLSearchParams
       const OrigURLSearchParams = origURLSearchParams
       const OrigURL = globalThis.URL
-      globalThis.URLSearchParams = function (input) {
+      globalThis.URLSearchParams = /** @type {any} */ (function (input) {
         if (
           input === globalThis.location.search &&
           globalThis.__testLocationString
@@ -127,7 +124,7 @@ describe('setupOptions', () => {
           )
         }
         return new OrigURLSearchParams(input)
-      }
+      })
     } catch (e) {
       console.warn(
         'Could not mock URLSearchParams constructor; tests may be affected',
@@ -184,7 +181,6 @@ describe('setupOptions', () => {
     // require module after globals/document are mocked
     const mod = await import('./setupOptions.js')
     setupMapListOptions = mod.setupMapListOptions
-    setupGameOptions = mod.setupGameOptions
     resetCustomMap = mod.resetCustomMap
     setupBuildOptions = mod.setupBuildOptions
     const terrainModule = await import('../terrains/all/js/terrainUI.js')

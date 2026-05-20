@@ -101,8 +101,8 @@ class ChooseUI {
   /**
    * Initializes option state and change handling.
    * @param {ChooseUIChangeCallback} callback
-   * @param {string|number} selectedValue
-   * @param {string|number} selectedText
+   * @param {string|number} [selectedValue]
+   * @param {string|number} [selectedText]
    * @returns {void}
    */
   setup (callback, selectedValue, selectedText) {

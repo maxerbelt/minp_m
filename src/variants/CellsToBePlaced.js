@@ -14,7 +14,7 @@ export class CellsToBePlaced {
    * @param {any} board - The board.
    * @param {number} r0 - The row offset.
    * @param {number} c0 - The column offset.
-   * @param {(zoneInfo:ZoneInfo)=>boolean} validator - The validation function.
+   * @param {(zoneInfo:ZoneInfo)=>boolean} [validator] - The validation function.
    * @param {number} [zoneDetail] - The zone details.
    * @param {PlacementTarget} [target] - The placement target.
    */
@@ -22,7 +22,7 @@ export class CellsToBePlaced {
     board = board.embed(r0, c0)
     this.board = board
     this.notGood = board.emptyMask
-    this.validator = validator
+    this.validator = typeof validator === 'function' ? validator : () => true
     this.zoneDetail = zoneDetail || 0
     this.target = target || placingTarget
   }

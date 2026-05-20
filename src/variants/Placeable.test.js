@@ -1,7 +1,6 @@
 import { describe, jest, it, expect, beforeEach } from '@jest/globals'
 import { Mask } from '../grid/rectangle/mask.js'
 
-
 // Placeable will be imported dynamically after mocks are set up
 let Placeable
 
@@ -24,6 +23,15 @@ jest.unstable_mockModule('./CellsToBePlaced.js', () => {
   return {
     placingTarget: {
       allBoundsChecker: jest.fn(
+        /** @param {number} r */
+        /** @param {number} c */
+        /** @param {number} h */
+        /**
+         * @param {number} r
+         * @param {number} c
+         * @param {number} h
+         * @param {number} w
+         */
         (r, c, h, w) => r >= 0 && c >= 0 && r + h <= 10 && c + w <= 10
       )
     },

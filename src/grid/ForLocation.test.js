@@ -1,5 +1,3 @@
-// src/grid/ForLocation.test.js
-import { jest } from '@jest/globals'
 import { describe, it, expect, jest } from '@jest/globals'
 import { ForLocation } from './ForLocation'
 

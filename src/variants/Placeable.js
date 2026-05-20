@@ -15,14 +15,14 @@ export class Placeable {
   /**
    * Creates a placeable instance.
    * @param {Mask} board - The board mask.
-   * @param {PlacementValidator} validator - The validation function.
-   * @param {any} zoneDetail - The zone details.
+   * @param {PlacementValidator} [validator] - The validation function.
+   * @param {any} [zoneDetail] - The zone details.
    * @param {PlacementTarget} [target] - The placement target.
    */
   constructor (board, validator, zoneDetail, target) {
     this.board = board // board.clone.shrinkToOccupied()
-    this.validator = validator
-    this.zoneDetail = zoneDetail || 0
+    this.validator = typeof validator === 'function' ? validator : () => true
+    this.zoneDetail = zoneDetail ?? 0
     this.target = target || placingTarget
   }
 
@@ -104,7 +104,7 @@ export class Placeable {
    * @returns {boolean} True if can place.
    */
   canPlace (r, c, shipCellGrid) {
-    const placing = this.placeAt(c, r)
+    const placing = this.placeAt(r, c)
     return placing.canPlace(shipCellGrid)
   }
 }
