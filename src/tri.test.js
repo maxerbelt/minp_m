@@ -4,23 +4,43 @@ import { BigBits, BigOne } from './grid/bitStore/helpers/bigbits.js'
  * @jest-environment jsdom
  */
 
-// stub a minimal canvas
-const fakeCanvas = {
-  getContext: () => ({
-    clearRect: () => {},
-    beginPath: () => {},
-    moveTo: () => {},
-    lineTo: () => {},
-    closePath: () => {},
-    fill: () => {},
-    stroke: () => {},
-    fillRect: () => {},
-    strokeRect: () => {},
-    fillText: () => {}
-  }),
-  addEventListener: () => {},
-  getBoundingClientRect: () => ({ left: 0, top: 0, width: 600, height: 600 })
+// Create a real canvas element to pass instanceof HTMLCanvasElement check
+const realCanvas = document.createElement('canvas')
+realCanvas.width = 600
+realCanvas.height = 600
+
+// Store reference to real getContext
+const realGetContext = realCanvas.getContext.bind(realCanvas)
+
+// Override getContext to return mocked context methods
+realCanvas.getContext = contextType => {
+  if (contextType === '2d') {
+    return {
+      clearRect: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      fill: () => {},
+      stroke: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      fillText: () => {}
+    }
+  }
+  return realGetContext(contextType)
 }
+
+// Mock getBoundingClientRect
+realCanvas.getBoundingClientRect = () => ({
+  left: 0,
+  top: 0,
+  width: 600,
+  height: 600
+})
+
+// Use real canvas as fakeCanvas
+const fakeCanvas = realCanvas
 
 // Mock MaskTri and ActionsTri BEFORE importing tri.js
 jest.unstable_mockModule('./grid/triangle/maskTri.js', () => {

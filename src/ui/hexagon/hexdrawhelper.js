@@ -106,6 +106,8 @@ function cubeRound (q, r, s) {
   return [rq, rr, rs]
 }
 
+export { cubeRound }
+
 /**
  * Draw a hexagon on the canvas.
  * @param {CanvasRenderingContext2D} ctx - Canvas context.

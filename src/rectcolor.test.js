@@ -7,25 +7,50 @@ import { Packed } from './grid/rectangle/packed.js'
 const cellSize = 50
 const offsetX = 50
 const offsetY = 50
-const fakeCanvas = {
-  getContext: () => ({
-    clearRect: () => {},
-    beginPath: () => {},
-    moveTo: () => {},
-    lineTo: () => {},
-    closePath: () => {},
-    fill: () => {},
-    stroke: () => {},
-    fillRect: () => {},
-    strokeRect: () => {},
-    fillText: () => {}
-  }),
-  listeners: {},
-  addEventListener: function (event, cb) {
-    this.listeners[event] = cb
-  },
-  getBoundingClientRect: () => ({ left: 0, top: 0, width: 600, height: 600 })
+
+// Create a real canvas element to pass instanceof HTMLCanvasElement check
+const realCanvas = document.createElement('canvas')
+realCanvas.width = 600
+realCanvas.height = 600
+
+// Store reference to real getContext
+const realGetContext = realCanvas.getContext.bind(realCanvas)
+
+// Override getContext to return mocked context methods
+realCanvas.getContext = contextType => {
+  if (contextType === '2d') {
+    return {
+      clearRect: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      fill: () => {},
+      stroke: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      fillText: () => {}
+    }
+  }
+  return realGetContext(contextType)
 }
+
+// Mock getBoundingClientRect
+realCanvas.getBoundingClientRect = () => ({
+  left: 0,
+  top: 0,
+  width: 600,
+  height: 600
+})
+
+// Store listeners and mock addEventListener
+realCanvas.listeners = {}
+realCanvas.addEventListener = function (event, cb) {
+  this.listeners[event] = cb
+}
+
+// Use real canvas as fakeCanvas
+const fakeCanvas = realCanvas
 
 // simple DOM stub collection for buttons
 const buttonStore = {}

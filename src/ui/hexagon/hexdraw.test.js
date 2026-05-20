@@ -1,14 +1,22 @@
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 import { HexDraw } from './hexDraw.js'
-import { jest } from '@jest/globals'
+import { pixelToHex, cubeRound } from './hexdrawhelper.js'
 
 describe('HexDraw', () => {
   let hexDraw
   let mockCanvas
   let mockCtx
 
-  beforeEach(() => {
-    // Mock canvas element
-    mockCtx = {
+  // Mock canvas context for jsdom environment
+  function mockCanvasContext () {
+    const ctx = {
       clearRect: jest.fn(),
       beginPath: jest.fn(),
       moveTo: jest.fn(),
@@ -18,29 +26,40 @@ describe('HexDraw', () => {
       stroke: jest.fn()
     }
 
-    mockCanvas = {
-      id: 'test-canvas',
-      width: 600,
-      height: 600,
-      getContext: jest.fn(() => mockCtx),
-      addEventListener: jest.fn(),
-      getBoundingClientRect: jest.fn(() => ({
-        left: 0,
-        top: 0,
-        width: 600,
-        height: 600
-      }))
-    }
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ctx)
+    mockCtx = ctx
+    return ctx
+  }
 
-    // Mock document.getElementById
-    document.getElementById = jest.fn(id => {
-      if (id === 'test-canvas') return mockCanvas
-      return null
-    })
+  // Helper to create test canvas
+  function createTestCanvas () {
+    mockCanvasContext()
+    mockCanvas = document.createElement('canvas')
+    mockCanvas.id = 'test-canvas'
+    mockCanvas.width = 600
+    mockCanvas.height = 600
+    mockCanvas.addEventListener = jest.fn()
+    mockCanvas.getBoundingClientRect = jest.fn(() => ({
+      left: 0,
+      top: 0,
+      width: 600,
+      height: 600
+    }))
+    document.body.appendChild(mockCanvas)
+    return mockCanvas
+  }
+
+  function removeTestCanvas () {
+    const canvas = document.getElementById('test-canvas')
+    if (canvas) canvas.remove()
+  }
+
+  beforeEach(() => {
+    createTestCanvas()
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    removeTestCanvas()
   })
 
   describe('constructor', () => {
@@ -84,10 +103,12 @@ describe('HexDraw', () => {
     })
 
     it('should throw error if canvas element not found', () => {
+      const originalGetElementById = document.getElementById
       document.getElementById = jest.fn(() => null)
       expect(() => {
         new HexDraw('nonexistent-canvas')
       }).toThrow(`Canvas element with id "nonexistent-canvas" not found`)
+      document.getElementById = originalGetElementById
     })
 
     it('should bind mouse events', () => {
@@ -325,12 +346,12 @@ describe('HexDraw', () => {
     })
 
     it('should convert pixel to cube coordinates', () => {
-      const [q, r, s] = hexDraw._pixelToHex(0, 0)
+      const [q, r, s] = pixelToHex(0, 0, hexDraw.hexSize)
       expect(q + r + s).toBe(0)
     })
 
     it('should round to nearest cube coordinate', () => {
-      const [q, r, s] = hexDraw._cubeRound(0.4, 0.3, -0.7)
+      const [q, r, s] = cubeRound(0.4, 0.3, -0.7)
       expect(q + r + s).toBe(0)
       expect(
         Number.isInteger(q) && Number.isInteger(r) && Number.isInteger(s)

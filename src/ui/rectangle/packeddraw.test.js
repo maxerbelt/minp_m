@@ -1,4 +1,11 @@
-import { jest } from '@jest/globals'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest
+} from '@jest/globals'
 import { PackedDraw } from './packeddraw.js'
 
 describe('PackedDraw', () => {
@@ -6,9 +13,9 @@ describe('PackedDraw', () => {
   let mockCanvas
   let mockCtx
 
-  beforeEach(() => {
-    // Mock canvas element
-    mockCtx = {
+  // Mock canvas context for jsdom environment
+  function mockCanvasContext () {
+    const ctx = {
       clearRect: jest.fn(),
       fillRect: jest.fn(),
       strokeRect: jest.fn(),
@@ -21,31 +28,41 @@ describe('PackedDraw', () => {
       stroke: jest.fn()
     }
 
-    mockCanvas = {
-      id: 'test-canvas',
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ctx)
+    mockCtx = ctx
+    return ctx
+  }
+
+  // Helper to create test canvas
+  function createTestCanvas () {
+    mockCanvasContext()
+    mockCanvas = document.createElement('canvas')
+    mockCanvas.id = 'test-canvas'
+    mockCanvas.width = 300
+    mockCanvas.height = 300
+    mockCanvas.addEventListener = jest.fn()
+    mockCanvas.getBoundingClientRect = jest.fn(() => ({
+      left: 0,
+      top: 0,
       width: 300,
-      height: 300,
-      getContext: jest.fn(() => mockCtx),
-      addEventListener: jest.fn(),
-      getBoundingClientRect: jest.fn(() => ({
-        left: 0,
-        top: 0,
-        width: 300,
-        height: 300
-      }))
-    }
+      height: 300
+    }))
+    document.body.appendChild(mockCanvas)
+    return mockCanvas
+  }
 
-    // Mock document.getElementById
-    document.getElementById = jest.fn(id => {
-      if (id === 'test-canvas') return mockCanvas
-      return null
-    })
+  function removeTestCanvas () {
+    const canvas = document.getElementById('test-canvas')
+    if (canvas) canvas.remove()
+  }
 
+  beforeEach(() => {
+    createTestCanvas()
     packedDraw = new PackedDraw('test-canvas', 10, 10, 25, 0, 0, 4)
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    removeTestCanvas()
   })
 
   describe('constructor', () => {
@@ -85,10 +102,12 @@ describe('PackedDraw', () => {
     })
 
     it('should throw error if canvas element not found', () => {
+      const originalGetElementById = document.getElementById
       document.getElementById = jest.fn(() => null)
       expect(() => {
         new PackedDraw('nonexistent-canvas') // NOSONAR - intentionally calling constructor that throws
       }).toThrow(`Canvas element with id "nonexistent-canvas" not found`)
+      document.getElementById = originalGetElementById
     })
 
     it('should bind mouse events', () => {
@@ -458,12 +477,26 @@ describe('PackedDraw', () => {
   })
 
   describe('mouse interactions', () => {
-    it('should update hover on mousemove', () => {
-      const listeners = {}
-      mockCanvas.addEventListener.mockImplementation((event, handler) => {
+    let listeners
+    let canvas
+
+    beforeEach(() => {
+      // Ensure canvas exists for mouse interaction tests
+      createTestCanvas()
+      canvas = document.getElementById('test-canvas')
+
+      // Capture event listeners on the real canvas
+      listeners = {}
+      canvas.addEventListener.mockImplementation((event, handler) => {
         listeners[event] = handler
       })
+    })
 
+    afterEach(() => {
+      removeTestCanvas()
+    })
+
+    it('should update hover on mousemove', () => {
       const draw = new PackedDraw('test-canvas')
       jest.clearAllMocks()
 
@@ -479,11 +512,6 @@ describe('PackedDraw', () => {
     })
 
     it('should clear hover on mouseleave', () => {
-      const listeners = {}
-      mockCanvas.addEventListener.mockImplementation((event, handler) => {
-        listeners[event] = handler
-      })
-
       const draw = new PackedDraw('test-canvas')
       draw.hoverLocation = [1, 1]
 
@@ -494,11 +522,6 @@ describe('PackedDraw', () => {
     })
 
     it('should toggle cell on click', () => {
-      const listeners = {}
-      mockCanvas.addEventListener.mockImplementation((event, handler) => {
-        listeners[event] = handler
-      })
-
       const draw = new PackedDraw('test-canvas', 10, 10, 25)
       draw.packed.set(2, 2, 0)
 
