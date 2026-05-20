@@ -40,7 +40,7 @@ jest.unstable_mockModule('./grid/triangle/maskTri.js', () => {
         location: i => [Math.floor(i / 4), i % 4]
       }
     }
-    fromCoords (coords) {
+    fromCoords (_coords) {
       this.bits = 0n
     }
     get clone () {
@@ -84,37 +84,50 @@ function makeButton (id) {
   /** @type {{ disabled: boolean, listeners: Record<string, any>, addEventListener: any }} */
   const btn = { disabled: false, listeners: {}, addEventListener: null }
   btn.addEventListener = /** @type {any} */ jest.fn((evt, cb) => {
-    btn.listeners[evt] = cb
+    const eventName = /** @type {string} */ (evt)
+    btn.listeners[eventName] = cb
   })
   elementStore[id] = btn
   return btn
 }
 
 function setupDOMStubs () {
-  document.createElement = /** @type {any} */ jest.fn(() => {
-    const btn = {
-      disabled: false,
-      dataset: {},
-      addEventListener: jest.fn(() => {}),
-      textContent: ''
-    }
-    return btn
-  })
+  document.createElement = /** @type {any} */ (
+    jest.fn(() => {
+      const btn = {
+        disabled: false,
+        dataset: {},
+        addEventListener: jest.fn(() => {}),
+        textContent: ''
+      }
+      return btn
+    })
+  )
 
-  document.querySelectorAll = /** @type {any} */ jest.fn(() => [])
+  document.querySelectorAll = /** @type {any} */ (
+    jest.fn(() => {
+      const nodeList = /** @type {any} */ ([])
+      nodeList.item = index => nodeList[index]
+      nodeList.length = 0
+      return nodeList
+    })
+  )
 
-  document.getElementById = /** @type {any} */ jest.fn(id => {
-    // c (canvas) or rotateBtn or flipButtons container
-    if (id === 'c') return fakeCanvas
-    if (elementStore[id]) return elementStore[id]
-    // create container element when requested
-    if (id === 'flipButtons') {
-      const cont = { appendChild: jest.fn(() => {}) }
-      elementStore[id] = cont
-      return cont
-    }
-    return null
-  })
+  document.getElementById = /** @type {any} */ (
+    jest.fn(id => {
+      const key = /** @type {string} */ (id)
+      // c (canvas) or rotateBtn or flipButtons container
+      if (key === 'c') return fakeCanvas
+      if (elementStore[key]) return elementStore[key]
+      // create container element when requested
+      if (key === 'flipButtons') {
+        const cont = { appendChild: jest.fn(() => {}) }
+        elementStore[key] = cont
+        return cont
+      }
+      return null
+    })
+  )
 }
 
 // variables will be imported dynamically in beforeEach
@@ -235,7 +248,8 @@ describe('tri.js line tool handling', () => {
         checked: true,
         listeners: {},
         addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
-          this.listeners[event] = cb
+          const eventName = /** @type {string} */ (event)
+          this.listeners[eventName] = cb
         })
       },
       {
@@ -243,7 +257,8 @@ describe('tri.js line tool handling', () => {
         checked: false,
         listeners: {},
         addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
-          this.listeners[event] = cb
+          const eventName = /** @type {string} */ (event)
+          this.listeners[eventName] = cb
         })
       },
       {
@@ -251,7 +266,8 @@ describe('tri.js line tool handling', () => {
         checked: false,
         listeners: {},
         addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
-          this.listeners[event] = cb
+          const eventName = /** @type {string} */ (event)
+          this.listeners[eventName] = cb
         })
       },
       {
@@ -259,23 +275,35 @@ describe('tri.js line tool handling', () => {
         checked: false,
         listeners: {},
         addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
-          this.listeners[event] = cb
+          const eventName = /** @type {string} */ (event)
+          this.listeners[eventName] = cb
         })
       }
     ]
 
     // Mock querySelectorAll to return fake radio buttons
-    document.querySelectorAll = /** @type {any} */ jest.fn(selector => {
-      if (selector === 'input[name="tri-line-tool"]') return radioButtons
-      return []
-    })
+    document.querySelectorAll = /** @type {any} */ (
+      jest.fn(selector => {
+        if (selector === 'input[name="tri-line-tool"]') {
+          const nodeList = /** @type {any} */ (radioButtons)
+          nodeList.item = index => nodeList[index]
+          nodeList.length = radioButtons.length
+          return nodeList
+        }
+        const nodeList = /** @type {any} */ ([])
+        nodeList.item = index => nodeList[index]
+        nodeList.length = 0
+        return nodeList
+      })
+    )
 
     // Create fake line action dropdown
     const lineActionDropdown = /** @type {any} */ ({
       value: 'set',
       listeners: {},
       addEventListener: /** @type {any} */ jest.fn(function (event, cb) {
-        this.listeners[event] = cb
+        const eventName = /** @type {string} */ (event)
+        this.listeners[eventName] = cb
       })
     })
 
@@ -290,10 +318,13 @@ describe('tri.js line tool handling', () => {
       c: fakeCanvas
     }
 
-    document.getElementById = /** @type {any} */ jest.fn(id => {
-      if (id === 'c') return fakeCanvas
-      return elementStore[id] || null
-    })
+    document.getElementById = /** @type {any} */ (
+      jest.fn(id => {
+        const key = /** @type {string} */ (id)
+        if (key === 'c') return fakeCanvas
+        return elementStore[key] || null
+      })
+    )
 
     // dynamically import tri.js after DOM stubs are in place
     const triModule = await import('./tri.js')
@@ -339,7 +370,8 @@ describe('tri.js line tool handling', () => {
         }
       },
       setIndex: /** @type {any} */ jest.fn((i, value) => {
-        triDraw.mask.bits |= BigBits.setMask(i, value)
+        const paramValue = /** @type {number | bigint} */ (value)
+        triDraw.mask.bits |= BigBits.setMask(i, paramValue)
         return triDraw.mask.bits
       }),
       dilate: jest.fn(function () {
@@ -370,8 +402,7 @@ describe('tri.js line tool handling', () => {
   })
 
   it('setTool changes currentTool state correctly', async () => {
-    const triModule = await import('./tri.js')
-
+    await import('./tri.js')
     // Export setTool from tri.js for testing by checking radio button handlers
     const radioButtons = /** @type {any} */ (
       document.querySelectorAll('input[name="tri-line-tool"]')
@@ -386,7 +417,9 @@ describe('tri.js line tool handling', () => {
   })
 
   it('line action dropdown changes action state', async () => {
-    const lineActionDropdown = document.getElementById('tri-line-action')
+    const lineActionDropdown = /** @type {any} */ (
+      document.getElementById('tri-line-action')
+    )
 
     // Test set action
     lineActionDropdown.value = 'set'
@@ -405,8 +438,8 @@ describe('tri.js line tool handling', () => {
   })
 
   it('radio button selection fires change events', () => {
-    const radioButtons = document.querySelectorAll(
-      'input[name="tri-line-tool"]'
+    const radioButtons = /** @type {any} */ (
+      document.querySelectorAll('input[name="tri-line-tool"]')
     )
 
     // Single tool (default)
@@ -477,7 +510,7 @@ describe('tri.js line tool handling', () => {
 
   it('previewCells array initialized', async () => {
     const triModule = await import('./tri.js')
-    const { triDraw: td } = triModule
+    const td = /** @type {any} */ (triModule.triDraw)
     expect(td.previewCells).toBeDefined()
     expect(Array.isArray(td.previewCells)).toBe(true)
   })
@@ -509,36 +542,35 @@ describe('tri.js line tool handling', () => {
     testCanvas.currentTool = 'segment'
     testCanvas.lineStart = 0
 
-    testCanvas.onCanvasClick({})
+    testCanvas.onCanvasClick(/** @type {any} */ ({}))
     expect(testCanvas.completeLine).toHaveBeenCalledWith(0, 1)
     expect(testCanvas.lineStart).toBeNull()
 
     testCanvas.lineStart = 0
-    testCanvas.onCanvasMouseMove({})
+    testCanvas.onCanvasMouseMove(/** @type {any} */ ({}))
     expect(testCanvas.updateLinePreview).toHaveBeenCalledWith(0, 1)
   })
 
   it('single cell mode allows direct toggle when TriCanvas is active', async () => {
-    const triModule = await import('./tri.js')
-    const { triDraw: td, triCanvas } = triModule
+    const { triDraw: td, triCanvas } = await import('./tri.js')
 
     expect(triCanvas).toBeDefined()
     triCanvas.currentTool = null
-    td.mask.setIndex.mockClear()
+    const tdMask = /** @type {any} */ (td.mask)
+    tdMask.setIndex.mockClear()
 
     td.toggleCell(5)
 
-    expect(td.mask.setIndex).toHaveBeenCalledWith(5, 1)
+    expect(tdMask.setIndex).toHaveBeenCalledWith(5, 1)
   })
 
   it('line tool mode blocks direct toggle when TriCanvas is active', async () => {
-    const triModule = await import('./tri.js')
-    const { triDraw: td, triCanvas } = triModule
+    const { triDraw: td, triCanvas } = await import('./tri.js')
 
     expect(triCanvas).toBeDefined()
     triCanvas.currentTool = 'segment'
-    td.mask.setIndex.mockClear()
-
+    const tdMask = /** @type {any} */ (td.mask)
+    tdMask.setIndex.mockClear()
     td.toggleCell(5)
 
     expect(td.mask.setIndex).not.toHaveBeenCalled()
@@ -558,8 +590,9 @@ describe('tri.js line tool handling', () => {
     const triDraw = new TriDraw('c', 3, 300, 300, 25)
     const triCanvas = new TriCanvas('c', triDraw)
 
-    triCanvas.grid.mask.setIndex = jest.fn((idx, value) => {
-      triCanvas.grid.mask.bits = BigOne.bitMaskByPos(idx)
+    triCanvas.grid.mask.setIndex = jest.fn((idx, _value) => {
+      const index = /** @type {number} */ (idx)
+      triCanvas.grid.mask.bits = BigOne.bitMaskByPos(index)
       return triCanvas.grid.mask.bits
     })
     triCanvas.grid.setBits = jest.fn(function (bits) {

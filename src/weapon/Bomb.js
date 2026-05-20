@@ -336,7 +336,7 @@ export function addNeighborList (
 /**
  * Creates a splash effect pattern around a center point
  * @param {MapLike|null} map - Game map for bounds checking
- * @param {Coord} centerCoords - Center coordinates [row, col]
+ * @param {Array<number>} centerCoords - Center coordinates [row, col]
  * @param {number} power - Damage power for splash cells
  * @param {TerrainCheck|null} [terrainCheck] - Optional terrain validation function
  * @returns {AoePattern} Splash effect pattern
@@ -348,7 +348,9 @@ export function createSplashEffect (
   terrainCheck = null
 ) {
   const [centerRow, centerCol] = centerCoords
-  const effectPattern = [[centerRow, centerCol, power]]
+  const effectPattern = /** @type {AoePattern} */ ([
+    [centerRow, centerCol, power]
+  ])
   addOrthogonalNeighbors(
     map,
     centerRow,
@@ -493,7 +495,7 @@ export class Bomb extends Weapon {
 
   /**
    * Calculates area-of-effect damage pattern for bomb at given coordinates
-   * @param {Object} map - Game map for bounds checking
+   * @param {Object} _map - Game map for bounds checking
    * @param {number[][]} coords - Source and Target coordinates
    * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
@@ -609,8 +611,8 @@ export class Strike extends Weapon {
   /**
    * Normalizes coordinates between two map coordinates
    * Ensures actual line-of-sight boundaries are respected
-   * @param {Object} map - Game map
-   * @param {Array} base - Base coordinates
+   * @param {Object} _map - Game map
+   * @param {Array} _base - Base coordinates
    * @param {Array} coords - Coordinates to normalize [start, end]
    * @returns {Array} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
    */
@@ -620,7 +622,7 @@ export class Strike extends Weapon {
 
   /**
    * Calculates standard area-of-effect along the strike line
-   * @param {Object} map - Game map for bounds checking
+   * @param {Object} _map - Game map for bounds checking
    * @param {number[][]} coords - Source and Target coordinates
    * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
@@ -631,7 +633,7 @@ export class Strike extends Weapon {
   /**
    * Calculates splash/secondary damage pattern around a point
    * @param {Object} map - Game map
-   * @param {Array} resolvedTarget - Impact coordinate [row, col]
+   * @param {Array<number>} resolvedTarget - Impact coordinate [row, col]
    * @param {Array} _effect - Damage effect coordinates
    * @param {Object} _options - Additional options
    * @returns {Array} Splash pattern
@@ -645,7 +647,18 @@ export class Strike extends Weapon {
    * @returns {Promise} Launch animation promise
    */
   async launchTo (...args) {
-    return await this.launchRightTo(...args)
+    const [coords, rr, cc, map, viewModel, opposingViewModel, model, launch] =
+      args
+    return await this.launchRightTo(
+      coords,
+      rr,
+      cc,
+      map,
+      viewModel,
+      opposingViewModel,
+      model,
+      launch
+    )
   }
 }
 export class Fish extends Weapon {
@@ -709,8 +722,8 @@ export class Fish extends Weapon {
   /**
    * Normalizes coordinates by recalculating actual trajectory line
    * Returns first and last cells of the valid water path
-   * @param {Object} map - Game map for trajectory validation
-   * @param {Object} base - Base configuration (unused)
+   * @param {Object} _map - Game map for trajectory validation
+   * @param {Object} _base - Base configuration (unused)
    * @param {Array} coords - Original coordinates
    * @returns {Array} Normalized coordinate pair [start, end]
    */
@@ -741,7 +754,18 @@ export class Fish extends Weapon {
    * @returns {Promise} Launch animation promise
    */
   async launchTo (...args) {
-    return await this.launchRightTo(...args)
+    const [coords, rr, cc, map, viewModel, opposingViewModel, model, launch] =
+      args
+    return await this.launchRightTo(
+      coords,
+      rr,
+      cc,
+      map,
+      viewModel,
+      opposingViewModel,
+      model,
+      launch
+    )
   }
 }
 
@@ -778,7 +802,7 @@ export class Sensor extends Weapon {
   /**
    * Calculates area-of-effect as a pie segment from center to target
    * Swept area represents sensor scan coverage
-   * @param {Object} map - Game map for bounds checking
+   * @param {Object} _map - Game map for bounds checking
    * @param {number[][]} coords - Source and Target coordinates
    * @returns {Array<[number, number, number]>} Damage cells with power levels
    */
