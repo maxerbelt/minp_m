@@ -1,5 +1,5 @@
 // masks, packedMasks, unpackedMasks, coords2, coords3, grid
-
+import { BigOne } from '../bitStore/helpers/bigbits.js'
 export function coordsToZMasks (coords, width, height) {
   const masks = new Map()
 
@@ -119,18 +119,12 @@ export function gridToPacked (grid, W, H) {
   return board
 }
 
-const ONE = 1n
-
-export function bit (i) {
-  return ONE << BigInt(i)
-}
-
 function packedToOccBig_any (board, W, H) {
   let occ = 0n
   const n = W * H
   for (let i = 0; i < n; i++) {
     const c = (board[i >> 4] >> ((i & 15) << 1)) & 3
-    if (c) occ |= bit(i)
+    if (c) occ |= BigOne.bitMaskByPos(i)
   }
   return occ
 }
@@ -139,7 +133,7 @@ function packedToOccBig_color (board, W, H, target) {
   let occ = 0n
   for (let i = 0; i < W * H; i++) {
     const c = (board[i >> 4] >> ((i & 15) << 1)) & 3
-    if (c === target) occ |= bit(i)
+    if (c === target) occ |= BigOne.bitMaskByPos(i)
   }
   return occ
 }
@@ -149,7 +143,7 @@ function packedToOccBig_filter (board, W, H, fn) {
     const c = (board[i >> 4] >> ((i & 15) << 1)) & 3
     const x = i % W,
       y = Math.trunc(i / W)
-    if (fn(x, y, c, i)) occ |= bit(i)
+    if (fn(x, y, c, i)) occ |= BigOne.bitMaskByPos(i)
   }
   return occ
 }
@@ -157,7 +151,7 @@ function packedToOccBig_filter (board, W, H, fn) {
 export function occBigToPacked_const (occ, W, H, color) {
   const board = new Uint32Array(Math.ceil((W * H) / 16))
   for (let i = 0; i < W * H; i++) {
-    if (occ & bit(i)) board[i >> 4] |= (color & 3) << ((i & 15) << 1)
+    if (BigOne.isBitSet(occ, i)) board[i >> 4] |= (color & 3) << ((i & 15) << 1)
   }
   return board
 }
@@ -165,7 +159,7 @@ export function occBigToPacked_const (occ, W, H, color) {
 export function occBigToPacked_fn (occ, W, H, fn) {
   const board = new Uint32Array(Math.ceil((W * H) / 16))
   for (let i = 0; i < W * H; i++) {
-    if (occ & bit(i)) {
+    if (BigOne.isBitSet(occ, i)) {
       const x = i % W,
         y = Math.trunc(i / W)
       const c = fn(x, y, i) & 3
@@ -178,11 +172,11 @@ export function occBigToPacked_fn (occ, W, H, fn) {
 function occBigToColorPlanes (occ, W, H, fn) {
   const planes = [0n, 0n, 0n, 0n]
   for (let i = 0; i < W * H; i++) {
-    if (occ & bit(i)) {
+    if (BigOne.isBitSet(occ, i)) {
       const x = i % W,
         y = Math.trunc(i / W)
       const c = fn(x, y, i) & 3
-      planes[c] |= bit(i)
+      planes[c] |= BigOne.bitMaskByPos(i)
     }
   }
   return planes

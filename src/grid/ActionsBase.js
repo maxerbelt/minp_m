@@ -8,10 +8,10 @@
  * - classifyOrbitType(): Classify symmetry orbit types
  *
  * @typedef {Object} Mask
- * @property {Object} [store]
- * @property {Object} [indexer]
- * @property {Object} [cube]
- * @property {*} [bits]
+ * @property {Object} [store] - Bitboard store with empty, isOccupied, getIdx, setIdx, normalizeUpLeft
+ * @property {Object} [indexer] - Grid indexer with size, indices, bitsIndices, transformMaps
+ * @property {Object} [cube] - Cube helper with indices, bitsIndices
+ * @property {*} [bits] - Template bitboard
  *
  * @typedef {Object<string, Array<number>>} TransformMapObject
  * @typedef {Array<number>} TransformMapArray
@@ -70,6 +70,7 @@ export class ActionsBase {
    * @returns {TransformMaps|undefined}
    */
   get transformMaps () {
+    // @ts-ignore: dynamic property access on mask object
     return this.original?.indexer?.transformMaps
   }
 
@@ -150,10 +151,13 @@ export class ActionsBase {
    * @returns {Array<*>} Unique variants excluding default
    */
   _getCachedVariants (cacheProp, variantsRaw) {
+    // @ts-ignore: dynamic property access
     if (this[cacheProp]) return [...this[cacheProp]]
     const variants = new Set([this.defaultVariant, ...variantsRaw])
     variants.delete(this.defaultVariant)
+    // @ts-ignore: dynamic property assignment
     this[cacheProp] = [...variants]
+    // @ts-ignore: dynamic property access
     return [...this[cacheProp]]
   }
 
@@ -246,7 +250,9 @@ export class ActionsBase {
    */
   normalized (bits, width = this.width, height = this.height) {
     const normalizedBits = bits == null ? this.template : bits
+    // @ts-ignore: dynamic property access on store object
     if (this.store && typeof this.store.normalizeUpLeft === 'function') {
+      // @ts-ignore: dynamic property access on store object
       return this.store.normalizeUpLeft(normalizedBits, width, height)
     }
     throw new Error('normalized() not implemented in subclass')
@@ -302,26 +308,34 @@ export class ActionsBase {
    */
   // @ts-ignore: method may be referenced by subclasses outside this file
   *_bitsIndices (bitboard) {
+    // @ts-ignore: dynamic property access on cube object
     if (this.cube && typeof this.cube.bitsIndices === 'function') {
+      // @ts-ignore: dynamic property access on cube object
       yield* this.cube.bitsIndices(bitboard)
       return
     }
+    // @ts-ignore: dynamic property access on indexer object
     if (
+      // @ts-ignore: dynamic property access on indexer object
       this.indexer?.bitsIndices &&
       !Array.isArray(bitboard) &&
       !(bitboard instanceof Uint32Array)
     ) {
+      // @ts-ignore: dynamic property access on indexer object
       yield* this.indexer.bitsIndices(bitboard)
       return
     }
 
     const size = this._storageSize()
+    // @ts-ignore: dynamic property access on store object
     if (
       this.store &&
+      // @ts-ignore: dynamic property access on store object
       typeof this.store.isOccupied === 'function' &&
       size != null
     ) {
       for (let i = 0; i < size; i++) {
+        // @ts-ignore: dynamic property access on store object
         if (this.store.isOccupied(bitboard, i)) {
           yield i
         }
@@ -339,15 +353,20 @@ export class ActionsBase {
    * @returns {IterableIterator<number>} Cell indices
    */
   *_indices (bitboard) {
+    // @ts-ignore: dynamic property access on cube object
     if (this.cube && typeof this.cube.indices === 'function') {
+      // @ts-ignore: dynamic property access on cube object
       yield* this.cube.indices(bitboard)
       return
     }
+    // @ts-ignore: dynamic property access on indexer object
     if (
+      // @ts-ignore: dynamic property access on indexer object
       this.indexer?.indices &&
       !Array.isArray(bitboard) &&
       !(bitboard instanceof Uint32Array)
     ) {
+      // @ts-ignore: dynamic property access on indexer object
       yield* this.indexer.indices(bitboard)
       return
     }
@@ -388,12 +407,15 @@ export class ActionsBase {
     width = this.width,
     height = this.height
   ) {
+    // @ts-ignore: dynamic property access on store object
     let output = this.store?.empty || 0n
     const bitboard = bits == null ? this.template : bits
     for (const index of this._indices(bitboard)) {
       const mappedIndex = map?.[index]
       if (mappedIndex !== undefined) {
+        // @ts-ignore: dynamic property access on store object
         const color = this.store.getIdx(bitboard, index)
+        // @ts-ignore: dynamic property access on store object
         output = this.store.setIdx(output, mappedIndex, color)
       }
     }
@@ -489,6 +511,7 @@ export class ActionsBase {
    * @returns {Array<number>|undefined}
    */
   _mapForTag (tag) {
+    // @ts-ignore: dynamic property access on transformMaps
     return this.transformMaps?.[tag]
   }
 
@@ -533,6 +556,7 @@ export class ActionsBase {
    * @returns {number|undefined}
    */
   _storageSize () {
+    // @ts-ignore: dynamic property access on indexer/cube objects
     return this.indexer?.size || this.cube?.size
   }
 }

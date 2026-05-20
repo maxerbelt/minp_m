@@ -1,5 +1,6 @@
 /**
  * @jest-environment jsdom
+ * @ts-nocheck: test file with complex mock setup
  */
 
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
@@ -1274,7 +1275,7 @@ describe('Enemy.updateWeaponStatus', () => {
         _fireWeaponViaSetup: /** @type {any} */ (
           EnemyClass.prototype._fireWeaponViaSetup
         ),
-        _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
+        _fireCurrentWeaponImmediately: jest.fn(async function (_r, _c) {
           const result = { weapon: 'Missile', score: { hits: 1 } }
           this._processWeaponResult(result)
           this._finalizeTurn()

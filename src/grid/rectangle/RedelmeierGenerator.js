@@ -1,6 +1,8 @@
 import { Mask } from './mask.js'
 import { RectIndex } from './RectIndex.js'
 import { Actions } from './actions.js'
+import { BigOne } from '../bitStore/helpers/bigbits.js'
+import { BitOperations } from '../operations/BitOperations.js'
 
 const rectIndexCache = new Map()
 
@@ -132,7 +134,7 @@ export class RedelmeierGenerator {
       for (let x = 0; x < bestWidth; x++) {
         if (this.cellAt(bestBits, x, y, side, actions.store)) {
           const index = y * bestWidth + x
-          minimizedBits |= 1n << BigInt(index)
+          minimizedBits |= BigOne.bitMaskByPos(index)
         }
       }
     }
@@ -326,7 +328,7 @@ export class RedelmeierGenerator {
 
     for (const frontierCellIndex of validFrontierCells) {
       const polyominoWithNewCell =
-        polyominoBits | (1n << BigInt(frontierCellIndex))
+        polyominoBits | BigOne.bitMaskByPos(frontierCellIndex)
 
       // Recurse with new minimum frontier index constraint
       yield* this.redelmeierRecursive(
@@ -388,7 +390,7 @@ export class RedelmeierGenerator {
     const centerX = Math.floor(board.width / 2)
     const centerY = Math.floor(board.height / 2)
     const centerIndex = centerY * board.width + centerX
-    const seedPolyomino = 1n << BigInt(centerIndex)
+    const seedPolyomino = BigOne.bitMaskByPos(centerIndex)
 
     const seenCanonicalForms = new Set()
     yield* this.redelmeierRecursive(

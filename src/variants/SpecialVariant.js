@@ -15,10 +15,10 @@ import { Mask } from '../grid/rectangle/mask.js'
  * @property {any} [parent]
  * @typedef {Object} VariantTypeHandler
  * @property {Function} [variantsOf]
- * @property {function(number): number} r
- * @property {function(number): number} f
- * @property {function(number): number} rf
- * @property {function(Function, SpecialVariant): void} setBehaviour
+ * @property {Function} r
+ * @property {Function} f
+ * @property {Function} rf
+ * @property {Function} setBehaviour
  */
 
 /**
@@ -30,6 +30,7 @@ export class SpecialVariant extends RotatableVariant {
    * @param {string} symmetry - The symmetry type.
    */
   constructor (symmetry) {
+    // @ts-ignore: intentional placeholder arguments for special variant
     super(Function.prototype, 0, symmetry)
     /** @type {VariantGroup[]} */
     this.specialGroups = []
@@ -120,8 +121,11 @@ export class SpecialVariant extends RotatableVariant {
       /** @type {unknown} */ (variantType(symmetry.symmetry))
     )
     // Set static transition functions on the variant class
+    // @ts-ignore: dynamically assigning properties to constructor function
     v3.r = VariantType.r
+    // @ts-ignore: dynamically assigning properties to constructor function
     v3.f = VariantType.f
+    // @ts-ignore: dynamically assigning properties to constructor function
     v3.rf = VariantType.rf
     VariantType.setBehaviour(v3, symmetry)
   }

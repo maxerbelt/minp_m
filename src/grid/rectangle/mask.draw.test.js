@@ -1,8 +1,8 @@
-
+import { BigBits } from '../bitStore/helpers/bigbits.js'
 import { Mask } from './mask.js'
 import { coordsToZMasks } from './maskConvert.js'
 
-import { beforeEach, describe, it, expect, jest } from '@jest/globals'
+import { beforeEach, describe, it, expect } from '@jest/globals'
 
 // Jest test suite
 describe('Mask', () => {
@@ -30,7 +30,7 @@ describe('Mask', () => {
   describe('fullBits', () => {
     it('should return mask with all bits set', () => {
       const full = mask.fullBits
-      expect(full).toBe((1n << BigInt(100)) - 1n)
+      expect(full).toBe(BigBits.fullBitsForWidth(100))
     })
   })
 

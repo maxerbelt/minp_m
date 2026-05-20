@@ -64,7 +64,9 @@ export class BigBits {
     if (shift > 0) return BigInt(src) << BigInt(shift)
     return BigInt(src) >> BigInt(-shift)
   }
-
+  static fullBitsForWidth (width) {
+    return (1n << BigInt(width)) - 1n
+  }
   /**
    * Empty BigInt value.
    * @returns {bigint}
