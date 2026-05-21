@@ -3,6 +3,42 @@ import { DisplacementCalculator } from './DisplacementCalculator.js'
 import { all, mixed } from '../../terrains/all/js/terrain.js'
 
 /**
+ * @typedef {Object} ZoneTracker
+ * @property {(map?: Object) => void} recalc - Recalculates zone sizes from current map state
+ * @property {{total: number, margin: number, core: number}} sizes - Zone size metrics
+ * @property {number} totalSize - Total size of all zone areas
+ */
+
+/**
+ * @typedef {Object} ZoneEntry
+ * @property {ZoneTracker} tracker - Zone tracker for size calculations
+ * @property {HTMLSpanElement[]} counts - Array of count span elements [total, margin, core]
+ */
+
+/**
+ * @typedef {Object} ShapeWithSize
+ * @property {number} size - Shape size value
+ * @property {() => Object} subterrain - Returns the subterrain type
+ */
+
+/**
+ * @typedef {Object} ShapeObject
+ * @property {() => Object} subterrain - Returns the subterrain type
+ */
+
+/**
+ * @typedef {Object} ShipObject
+ * @property {() => Object} shape - Returns the ship's shape
+ */
+
+/**
+ * @typedef {Object} GameModel
+ * @property {ShipObject[]} ships - Array of ships in the game
+ * @property {Object} loadOut - Ship loadout configuration
+ * @property {() => number} calculateDisplacedArea - Calculates total displaced area
+ */
+
+/**
  * Manages the display and synchronization of zone information.
  * Handles zone entry creation, recalculation, and displacement area display.
  *
@@ -12,6 +48,7 @@ export class ZoneInfoManager {
   /**
    * Default CSS styles for zone display elements.
    *
+   * @readonly
    * @type {Object<string, string>}
    */
   static #DEFAULT_STYLES = {
@@ -25,7 +62,7 @@ export class ZoneInfoManager {
    *
    * @param {HTMLElement} zoneContainer - Container element for the entry
    * @param {string} labelTxt - Title text
-   * @param {Object|string} bagOrText - Bag object with size or numeric value
+   * @param {ShapeWithSize|string|number} bagOrText - Bag object with size or numeric value
    * @returns {HTMLSpanElement} The count span element for tracking
    */
   static createZoneTitle (zoneContainer, labelTxt, bagOrText) {
@@ -44,7 +81,7 @@ export class ZoneInfoManager {
    *
    * @param {HTMLElement} zoneContainer - Container element for the entry
    * @param {string} labelTxt - Item label
-   * @param {Object|string} bagOrText - Bag object with size or numeric value
+   * @param {ShapeWithSize|string|number} bagOrText - Bag object with size or numeric value
    * @returns {HTMLSpanElement} The count span element for tracking
    */
   static createZoneItem (zoneContainer, labelTxt, bagOrText) {
@@ -63,7 +100,7 @@ export class ZoneInfoManager {
    *
    * @param {HTMLElement} zoneContainer - Container element for the entry
    * @param {string} labelTxt - Label text
-   * @param {string} text - Content text or numeric value
+   * @param {string|number} text - Content text or numeric value
    * @param {string} stressTag - HTML tag for label emphasis (b, span, etc.)
    * @param {string} style - CSS style string to apply
    * @returns {HTMLSpanElement} The count span element for tracking
@@ -85,7 +122,7 @@ export class ZoneInfoManager {
    * @param {HTMLElement} zoneContainer - Container element for the entry
    * @param {string} labelTxt - Label text
    * @param {number} displacedArea - Total available displaced area
-   * @param {Array<Object>} ships - Array of ship objects
+   * @param {ShipObject[]} ships - Array of ship objects
    * @param {string} stressTag - HTML tag for label emphasis
    * @param {string} style - CSS style string
    * @param {number} [extra=0] - Extra displacement to add
@@ -118,10 +155,9 @@ export class ZoneInfoManager {
    * Internal factory for creating zone entry elements.
    * Constructs a div with styled label and count span.
    *
-   * @private
    * @param {HTMLElement} zoneContainer - Container element for the entry
    * @param {string} labelTxt - Label text
-   * @param {Object|string} bagOrText - Bag with size property or string value
+   * @param {ShapeWithSize|string|number} bagOrText - Bag with size property or string/number value
    * @param {string} stressTag - HTML tag for label emphasis
    * @param {string} style - CSS style string
    * @returns {HTMLSpanElement} The count span element
@@ -141,10 +177,21 @@ export class ZoneInfoManager {
     entry.appendChild(label)
 
     const count = document.createElement('span')
-    count.textContent =
-      bagOrText && typeof bagOrText.size === 'number'
-        ? bagOrText.size.toString()
-        : String(bagOrText)
+    // Convert to string: handle shape objects with size, strings, or numbers
+    let textValue = ''
+    if (typeof bagOrText === 'string') {
+      textValue = bagOrText
+    } else if (typeof bagOrText === 'number') {
+      textValue = bagOrText.toString()
+    } else if (
+      typeof bagOrText === 'object' &&
+      bagOrText !== null &&
+      'size' in bagOrText &&
+      typeof (/** @type {any} */ (bagOrText).size) === 'number'
+    ) {
+      textValue = /** @type {any} */ (bagOrText).size.toString()
+    }
+    count.textContent = textValue
     entry.appendChild(count)
 
     zoneContainer.appendChild(entry)
@@ -156,9 +203,9 @@ export class ZoneInfoManager {
    * Populates zoneSync with tracker data for later display updates.
    *
    * @param {HTMLElement} zoneContainer - Container element for zone display
-   * @param {Function} titleCreator - Function(labelTxt, bag) to create titles
-   * @param {Function} itemCreator - Function(labelTxt, bag) to create items
-   * @returns {Array<Object>} Zone information array for tracking and updates
+   * @param {(labelTxt: string, bag: {size: number}) => HTMLSpanElement} titleCreator - Function to create titles
+   * @param {(labelTxt: string, bag: {size: number}) => HTMLSpanElement} itemCreator - Function to create items
+   * @returns {ZoneEntry[]} Zone information array for tracking and updates
    */
   static setupZoneInfo (zoneContainer, titleCreator, itemCreator) {
     zoneContainer.innerHTML = ''
@@ -169,7 +216,8 @@ export class ZoneInfoManager {
    * Updates zone display counts from current map state.
    * Recalculates each tracked zone and updates count elements.
    *
-   * @param {Array<Object>} zoneSync - Zone tracking array
+   * @param {ZoneEntry[]} zoneSync - Zone tracking array
+   * @returns {void}
    */
   static displayZoneInfo (zoneSync) {
     const map = bh.map
@@ -185,7 +233,7 @@ export class ZoneInfoManager {
   /**
    * Checks if any non-default zones contain tracked objects.
    *
-   * @param {Array<Object>} zoneSync - Zone tracking array
+   * @param {ZoneEntry[]} zoneSync - Zone tracking array
    * @returns {boolean} True if any zone has non-zero size
    */
   static hasZoneInfo (zoneSync) {
@@ -204,7 +252,8 @@ export class ZoneInfoManager {
    * Populates zone display with map displacement and per-subterrain entries.
    *
    * @param {HTMLElement} zoneContainer - Container element for zone display
-   * @param {Object} model - Game model with ships and loadOut
+   * @param {GameModel} model - Game model with ships and loadOut
+   * @returns {void}
    */
   static displayAddZoneInfo (zoneContainer, model) {
     zoneContainer.innerHTML = ''
@@ -248,13 +297,13 @@ export class ZoneInfoManager {
   /**
    * Displays displacement information for a specific subterrain.
    *
-   * @private
    * @param {HTMLElement} zoneContainer - Container for the entry
-   * @param {Array<Object>} mixedShapes - Mixed terrain shape array
+   * @param {Object[]} mixedShapes - Mixed terrain shape array
    * @param {Object} subterrain - The subterrain object
    * @param {number} displacedArea - Available displacement area
-   * @param {Object} model - Game model with ships
+   * @param {GameModel} model - Game model with ships
    * @param {number} airAmount - Air displacement contribution
+   * @returns {HTMLSpanElement} The count span element
    */
   static #displayDisplacementEntry (
     zoneContainer,
@@ -269,7 +318,7 @@ export class ZoneInfoManager {
       subterrain
     )
 
-    this.createAddZoneEntry(
+    return this.createAddZoneEntry(
       zoneContainer,
       subterrain.title,
       displacedArea,

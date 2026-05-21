@@ -1,24 +1,33 @@
 /**
  * @typedef {Object} TrayManagerElementCache
- * @property {function(): HTMLDivElement[]} getAllTrays
- * @property {Object.<string, HTMLDivElement|null>} [trays]
+ * @property {() => HTMLDivElement[]} getAllTrays - Returns array of all tray DOM elements
+ * @property {Object.<string, HTMLDivElement|null>} [trays] - Named tray element references
  */
 
 /**
  * @typedef {Object} TrayStateOptions
- * @property {boolean} [clearContent]
- * @property {boolean} [markEmpty]
- * @property {boolean} [unmarkEmpty]
- * @property {boolean} [show]
- * @property {boolean} [hide]
+ * @property {boolean} [clearContent=false] - Clear tray innerHTML
+ * @property {boolean} [markEmpty=false] - Add 'empty' class to trays
+ * @property {boolean} [unmarkEmpty=false] - Remove 'empty' class from trays
+ * @property {boolean} [show=false] - Remove 'hidden' class from trays
+ * @property {boolean} [hide=false] - Add 'hidden' class to trays
  */
 
 /**
- * @typedef {function(HTMLElement): void} TrayAction
+ * Callback function for operating on a tray element.
+ * @callback TrayAction
+ * @param {HTMLDivElement} tray - The tray element to operate on
+ * @returns {void}
  */
 
 /**
- * @typedef {function(HTMLElement, number, number, HTMLDivElement[]): *} TrayItemAdapter
+ * Adapter function for transforming tray item data with positional context.
+ * @callback TrayItemAdapter
+ * @param {HTMLElement} element - The tray item element
+ * @param {number} trayIndex - Index of the parent tray
+ * @param {number} itemIndex - Index of the item within the tray
+ * @param {HTMLDivElement[]} trays - Array of all tray elements
+ * @returns {*} Transformed data or computed result
  */
 
 /**
@@ -53,7 +62,7 @@ export class TrayManager {
   /**
    * Executes a function for each tray in the collection.
    *
-   * @param {Function} action - Function(tray) called for each tray element
+   * @param {TrayAction} action - Function called for each tray element
    * @returns {void}
    */
   forEachTray (action) {
@@ -66,8 +75,7 @@ export class TrayManager {
    * Iterates over all items across all trays with positional context.
    * Resets itemIndex for each new tray.
    *
-   * @param {Function} action - Function(element, trayIndex, itemIndex, trays)
-   *   called for each child element
+   * @param {TrayItemAdapter} action - Function called for each tray item with positional context
    * @returns {void}
    *
    * @example
@@ -82,7 +90,12 @@ export class TrayManager {
 
     for (const tray of trays) {
       for (const element of tray.children) {
-        action(element, trayIndex, itemIndex, trays)
+        action(
+          /** @type {HTMLElement} */ (element),
+          trayIndex,
+          itemIndex,
+          trays
+        )
         itemIndex++
       }
       trayIndex++
@@ -95,8 +108,7 @@ export class TrayManager {
    * Used internally by getTrayItem and position-aware lookups.
    *
    * @param {number} shipId - Ship identifier to search for
-   * @param {Function} adapter - Function(element, trayIndex, itemIndex, trays)
-   *   that transforms/returns the result
+   * @param {TrayItemAdapter} adapter - Adapter function that transforms/returns the result
    * @returns {*} Result of adapter function, or null if not found
    */
   #findTrayItemByShipId (shipId, adapter) {
@@ -106,9 +118,10 @@ export class TrayManager {
 
     for (const tray of trays) {
       for (const child of tray.children) {
-        const id = Number.parseInt(child.dataset.id, 10)
+        const element = /** @type {HTMLElement} */ (child)
+        const id = Number.parseInt(element.dataset.id, 10)
         if (id === shipId) {
-          return adapter(child, trayIndex, itemIndex, trays)
+          return adapter(element, trayIndex, itemIndex, trays)
         }
         itemIndex++
       }
@@ -123,9 +136,9 @@ export class TrayManager {
    * Wraps #findTrayItemByShipId for public use.
    *
    * @param {number} shipId - Ship identifier to search for
-   * @param {Function} [adapter] - Optional transformer function.
+   * @param {TrayItemAdapter} [adapter] - Optional transformer function.
    *   If omitted, returns the element itself.
-   * @returns {*} The element or adapter result, or null if not found
+   * @returns {HTMLElement|Object|null} The element or adapter result, or null if not found
    *
    * @example
    * // Get element directly
@@ -156,12 +169,7 @@ export class TrayManager {
    * Applies CSS class changes to all trays based on options flags.
    * Options default to false (no-op), so only enabled flags modify state.
    *
-   * @param {Object} options - State modification flags
-   * @param {boolean} [options.clearContent=false] - Clear innerHTML
-   * @param {boolean} [options.markEmpty=false] - Add 'empty' class
-   * @param {boolean} [options.unmarkEmpty=false] - Remove 'empty' class
-   * @param {boolean} [options.show=false] - Remove 'hidden' class
-   * @param {boolean} [options.hide=false] - Add 'hidden' class
+   * @param {TrayStateOptions} [options={}] - State modification flags
    * @returns {void}
    */
   #applyTrayStateChanges (options = {}) {
@@ -175,11 +183,10 @@ export class TrayManager {
 
     this.forEachTray(tray => {
       if (clearContent) tray.innerHTML = ''
-      if (markEmpty) tray.classList.add(this.constructor.#CSS_CLASSES.EMPTY)
-      if (unmarkEmpty)
-        tray.classList.remove(this.constructor.#CSS_CLASSES.EMPTY)
-      if (show) tray.classList.remove(this.constructor.#CSS_CLASSES.HIDDEN)
-      if (hide) tray.classList.add(this.constructor.#CSS_CLASSES.HIDDEN)
+      if (markEmpty) tray.classList.add(TrayManager.#CSS_CLASSES.EMPTY)
+      if (unmarkEmpty) tray.classList.remove(TrayManager.#CSS_CLASSES.EMPTY)
+      if (show) tray.classList.remove(TrayManager.#CSS_CLASSES.HIDDEN)
+      if (hide) tray.classList.add(TrayManager.#CSS_CLASSES.HIDDEN)
     })
   }
 
@@ -187,12 +194,7 @@ export class TrayManager {
    * Sets tray visual state via CSS class changes.
    * Provides a declarative interface for multi-flag operations.
    *
-   * @param {Object} options - State change options
-   * @param {boolean} [options.clearContent=true] - Clear innerHTML
-   * @param {boolean} [options.markEmpty=false] - Add 'empty' class
-   * @param {boolean} [options.unmarkEmpty=false] - Remove 'empty' class
-   * @param {boolean} [options.show=false] - Remove 'hidden' class
-   * @param {boolean} [options.hide=false] - Add 'hidden' class
+   * @param {TrayStateOptions} [options={}] - State change options
    * @returns {void}
    */
   setTraysState (options = {}) {
@@ -259,12 +261,12 @@ export class TrayManager {
     if (this.elementCache.trays.brush) {
       this.elementCache.trays.brush.innerHTML = ''
       this.elementCache.trays.brush.classList.add(
-        this.constructor.#CSS_CLASSES.HIDDEN_MISSPELLED
+        TrayManager.#CSS_CLASSES.HIDDEN_MISSPELLED
       )
     }
 
     this.elementCache.trays.container.classList.remove(
-      this.constructor.#CSS_CLASSES.HIDDEN
+      TrayManager.#CSS_CLASSES.HIDDEN
     )
   }
 
@@ -276,7 +278,7 @@ export class TrayManager {
   hideShipTrays () {
     this.setTraysState({ hide: true })
     this.elementCache.trays.container.classList.add(
-      this.constructor.#CSS_CLASSES.HIDDEN
+      TrayManager.#CSS_CLASSES.HIDDEN
     )
   }
 
@@ -297,12 +299,12 @@ export class TrayManager {
     if (this.elementCache.trays.brush) {
       this.elementCache.trays.brush.innerHTML = ''
       this.elementCache.trays.brush.classList.remove(
-        this.constructor.#CSS_CLASSES.HIDDEN_MISSPELLED
+        TrayManager.#CSS_CLASSES.HIDDEN_MISSPELLED
       )
     }
 
     this.elementCache.trays.container.classList.remove(
-      this.constructor.#CSS_CLASSES.HIDDEN
+      TrayManager.#CSS_CLASSES.HIDDEN
     )
   }
 
@@ -315,9 +317,9 @@ export class TrayManager {
   checkTrays () {
     this.forEachTray(tray => {
       if (tray.children.length === 0) {
-        tray.classList.add(this.constructor.#CSS_CLASSES.EMPTY)
+        tray.classList.add(TrayManager.#CSS_CLASSES.EMPTY)
       } else {
-        tray.classList.remove(this.constructor.#CSS_CLASSES.EMPTY)
+        tray.classList.remove(TrayManager.#CSS_CLASSES.EMPTY)
       }
     })
   }
