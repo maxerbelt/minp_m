@@ -113,8 +113,23 @@ export class BhMap {
     this.subterrainTrackers.calc(this)
     this.isPreGenerated = true
     /** @type {Array<import('../../../weapon/Weapon.js').Weapon>} */
-    this.weapons = [standardShot]
+    this.weapons = this._initializeWeapons()
   }
+  /**
+   * Initializes weapons for this map based on terrain.
+   * Includes standard shot plus any terrain-specific weapons.
+   * @returns {Array<import('../../../weapon/Weapon.js').Weapon>} Initialized weapons array
+   * @private
+   */
+  _initializeWeapons () {
+    const weapons = [standardShot]
+    if (this.terrain?.weapons?.getAllWeapons) {
+      const terrainWeapons = this.terrain.weapons.getAllWeapons()
+      weapons.push(...terrainWeapons)
+    }
+    return weapons
+  }
+
   /**
    * Gets an empty mask for this map's dimensions.
    * All cells are initially unset (0).
@@ -532,7 +547,7 @@ export class CustomMap extends BhMap {
     super(title, size, shipNum, [], title, mapTerrain || bh.terrain, land)
     this.isPreGenerated = false
     this.example = example
-    this.weapons = [standardShot]
+    this.weapons = this._initializeWeapons()
   }
 
   /**
@@ -775,10 +790,18 @@ export class SavedCustomMap extends CustomMap {
       data.example
     )
 
-    const weapons = data.weapons.map(w =>
+    // Get saved custom weapons
+    const customWeapons = data.weapons.map(w =>
       this.terrain.getNewWeapon(w.letter, w.ammo)
     )
-    this.weapons = [standardShot].concat(weapons.filter(Boolean))
+
+    // Include terrain's default weapons plus any custom saved weapons
+    const terrainWeapons = this.terrain?.weapons?.getAllWeapons
+      ? this.terrain.weapons.getAllWeapons()
+      : []
+    this.weapons = [standardShot, ...terrainWeapons].concat(
+      customWeapons.filter(Boolean)
+    )
   }
 
   /**

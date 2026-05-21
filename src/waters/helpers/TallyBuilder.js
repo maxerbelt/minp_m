@@ -2,6 +2,24 @@ import { bh } from '../../terrains/all/js/bh.js'
 import { WeaponTallyBuilder } from './WeaponTallyBuilder.js'
 
 /**
+ * @typedef {Object} TerrainGroup
+ * @property {string} id - Terrain group identifier (S/G/A/X)
+ * @property {string} class - CSS class for styling
+ */
+
+/**
+ * @typedef {Object} TallyCount
+ * @property {number} s - Count of sea ships in tally
+ * @property {number} g - Count of land (ground) ships in tally
+ */
+
+/**
+ * @typedef {Object} TallyTrack
+ * @property {HTMLElement} col - Column element for appending rows
+ * @property {Function} inc - Function to increment counter
+ */
+
+/**
  * Builds visual representations of ships in tally boxes with styling and layout.
  * Manages ship box creation, tally row organization, and terrain-grouped display.
  *
@@ -23,7 +41,7 @@ export class TallyBuilder {
   /**
    * Terrain group identifiers and their CSS classes.
    *
-   * @type {Object<string, string>}
+   * @type {Object<string, TerrainGroup>}
    */
   static #TERRAIN_GROUPS = {
     SEA: { id: 'S', class: 'sea' },
@@ -48,6 +66,8 @@ export class TallyBuilder {
    * Shows ship letter in terrain color, or "X" for sunk ships.
    *
    * @param {Object} ship - Ship object with letter and sunk properties
+   * @param {string} ship.letter - Single character representing the ship
+   * @param {boolean} ship.sunk - Whether the ship is sunk
    * @returns {HTMLDivElement} Configured tally box element
    */
   static createShipBox (ship) {
@@ -113,7 +133,7 @@ export class TallyBuilder {
     const matching = ships.filter(s => s.letter === letter)
 
     matching.forEach(ship => {
-      const box = boxBuilder(ship)
+      const box = boxBuilder?.(ship) || this.createShipBox(ship)
       row.appendChild(box)
     })
 
@@ -124,7 +144,6 @@ export class TallyBuilder {
    * Gets unique sorted letters for ships in a specific terrain group.
    * Used to order display of tally rows.
    *
-   * @private
    * @param {Array<Object>} ships - All ships
    * @param {string} tallyGroup - Group identifier (S/G/A/X)
    * @returns {Array<string>} Sorted unique ship letters in this group
@@ -141,11 +160,10 @@ export class TallyBuilder {
    * Gets the tally track (column) with the lower item count.
    * Balances items between sea and land columns.
    *
-   * @private
-   * @param {Object} count - Count tracker with s and g properties
+   * @param {TallyCount} count - Count tracker with s and g properties
    * @param {HTMLElement} seaColumn - Sea column element
    * @param {HTMLElement} landColumn - Land column element
-   * @returns {Object} Track object with col and inc function
+   * @returns {TallyTrack} Track object with col and inc function
    */
   static #getTallyTrack (count, seaColumn, landColumn) {
     if (count.s < count.g) {
@@ -160,17 +178,18 @@ export class TallyBuilder {
    *
    * @param {HTMLElement} tallyBoxContainer - Container for the tally display
    * @param {Array<Object>} ships - All ships to display
-   * @param {Array<Object>} weaponSystems - Weapon systems to display (optional)
+   * @param {Array<Object>} [weaponSystems=[]] - Weapon systems to display
+   * @param {Object} [viewModel=null] - View model for weapon interaction
    * @param {Function} [shipBoxBuilder] - Custom ship box builder
-   * @param {Object} [viewModel] - View model for weapon interaction
    * @param {boolean} [includeWeapons=false] - Whether to include weapon rows
+   * @returns {void}
    */
   static buildTally (
     tallyBoxContainer,
     ships,
     weaponSystems = [],
-    shipBoxBuilder = this.createShipBox.bind(this),
     viewModel = null,
+    shipBoxBuilder = this.createShipBox.bind(this),
     includeWeapons = false
   ) {
     tallyBoxContainer.innerHTML = ''
@@ -248,13 +267,14 @@ export class TallyBuilder {
    * @param {HTMLElement} tallyBoxContainer - Container for display
    * @param {Array<Object>} ships - All ships to display
    * @param {Function} [shipBoxBuilder] - Custom box builder function
+   * @returns {void}
    */
   static displayShipTally (
     tallyBoxContainer,
     ships,
     shipBoxBuilder = this.createShipBox.bind(this)
   ) {
-    this.buildTally(tallyBoxContainer, ships, [], shipBoxBuilder)
+    this.buildTally(tallyBoxContainer, ships, [], null, shipBoxBuilder, false)
   }
 
   /**
@@ -263,15 +283,18 @@ export class TallyBuilder {
    *
    * @param {HTMLElement} tallyBoxContainer - Container for display
    * @param {Object} model - Game model with ships and loadOut
+   * @param {Object} model.ships - Ships array in the model
+   * @param {Object} model.loadOut - Load out object containing weapon systems
    * @param {Object} viewModel - View model for weapon interaction
+   * @returns {void}
    */
   static displayTallyFromModel (tallyBoxContainer, model, viewModel) {
     this.buildTally(
       tallyBoxContainer,
       model.ships,
       model.loadOut.weaponSystems,
-      this.createShipBox.bind(this),
       viewModel,
+      this.createShipBox.bind(this),
       true
     )
   }
@@ -283,6 +306,7 @@ export class TallyBuilder {
    * @param {Array<Object>} ships - Ships to display
    * @param {Array<Object>} weaponSystems - Weapon systems to display
    * @param {Object} viewModel - View model for interactions
+   * @returns {void}
    */
   static displayTallyWithWeapons (
     tallyBoxContainer,
@@ -294,8 +318,8 @@ export class TallyBuilder {
       tallyBoxContainer,
       ships,
       weaponSystems,
-      this.createShipBox.bind(this),
       viewModel,
+      this.createShipBox.bind(this),
       true
     )
   }
@@ -305,8 +329,16 @@ export class TallyBuilder {
    *
    * @param {HTMLElement} tallyBoxContainer - Container for display
    * @param {Array<Object>} ships - Ships to add
+   * @returns {void}
    */
   static addShipTally (tallyBoxContainer, ships) {
-    this.buildTally(tallyBoxContainer, ships, [])
+    this.buildTally(
+      tallyBoxContainer,
+      ships,
+      [],
+      null,
+      this.createShipBox.bind(this),
+      false
+    )
   }
 }

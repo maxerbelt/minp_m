@@ -3,39 +3,39 @@ import { dragNDrop } from '../../selection/dragndrop.js'
 
 /**
  * @typedef {Object} Weapon
- * @property {string} letter
- * @property {boolean} isLimited
- * @property {string} classname
+ * @property {string} letter - Single character representing the weapon
+ * @property {boolean} isLimited - Whether the weapon has limited ammo capacity
+ * @property {string} classname - CSS class name for styling
  */
 
 /**
  * @typedef {Object} WeaponSystem
- * @property {Weapon} weapon
- * @property {boolean} hit
- * @property {boolean} damaged
- * @property {string|number} id
- * @property {function(): number} ammoCapacity
- * @property {function(): number} ammoUsed
- * @property {function(): number} ammoUnattached
- * @property {function(): Weapon[]} getLeafWeapons
+ * @property {Weapon} weapon - The weapon object
+ * @property {boolean} hit - Whether the weapon has hit
+ * @property {boolean} damaged - Whether the weapon is damaged
+ * @property {string|number} id - Unique identifier for the weapon system
+ * @property {Function} ammoCapacity - Function that returns ammo capacity
+ * @property {Function} ammoUsed - Function that returns ammo used count
+ * @property {Function} ammoUnattached - Function that returns unattached ammo count
+ * @property {Function} getLeafWeapons - Function that returns array of leaf weapons
  */
 
 /**
  * @typedef {Object} WeaponMaps
- * @property {Object<string, string>} shipColors
- * @property {Object<string, string>} shipLetterColors
+ * @property {Object<string, string>} shipColors - Mapping of weapon letter to ship color
+ * @property {Object<string, string>} shipLetterColors - Mapping of weapon letter to text color
  */
 
 /**
  * @typedef {Object} WeaponBoxOptions
- * @property {number} ammoUnattached
- * @property {*} viewModel
- * @property {Weapon} weapon
- * @property {number} index
- * @property {number} ammoUsed
- * @property {WeaponMaps} maps
- * @property {WeaponSystem} weaponSystem
- * @property {HTMLElement} row
+ * @property {number} ammoUnattached - Count of unattached ammo
+ * @property {*} viewModel - View model for interactions
+ * @property {Weapon} weapon - Weapon object with letter property
+ * @property {number} index - Box index in ammo capacity
+ * @property {number} ammoUsed - Count of ammo used
+ * @property {WeaponMaps} maps - Terrain maps with color definitions
+ * @property {WeaponSystem} weaponSystem - Weapon system with state
+ * @property {HTMLElement} row - Parent row element
  */
 
 /**
@@ -74,15 +74,8 @@ export class WeaponTallyBuilder {
    * Creates a single weapon ammo box with state visualization.
    * Shows ammo availability, damage, hit status, and interactive state.
    *
-   * @param {WeaponBoxOptions} options - Configuration object
-   * @param {number} options.ammoUnattached - Count of unattached ammo
-   * @param {*} options.viewModel - View model for interactions
-   * @param {Weapon} options.weapon - Weapon object with letter property
-   * @param {number} options.index - Box index in ammo capacity
-   * @param {number} options.ammoUsed - Count of ammo used
-   * @param {WeaponMaps} options.maps - Terrain maps with color definitions
-   * @param {WeaponSystem} options.weaponSystem - Weapon system with state
-   * @param {HTMLElement} options.row - Parent row element
+   * @param {WeaponBoxOptions} options - Configuration object containing ammo and weapon state
+   * @returns {void}
    */
   static #createWeaponBox ({
     ammoUnattached,
@@ -105,7 +98,7 @@ export class WeaponTallyBuilder {
       dragNDrop.makeDraggable(viewModel, box, null, weapon, true)
     }
 
-    box.dataset.wid = wid
+    box.dataset.wid = String(wid)
     box.dataset.index = index.toString()
     box.classList?.add(this.#CSS_CLASSES.TALLY_BOX)
     box.style.fontSize = this.#DEFAULT_STYLES.FONT_SIZE
@@ -142,11 +135,12 @@ export class WeaponTallyBuilder {
    * Builds a sub-row of weapon ammo boxes for a single weapon system.
    * Creates boxes for full ammo capacity, styling based on ammo state.
    *
-   * @param {Object} weaponSystem - Weapon system with ammo data
-   * @param {Object} viewModel - View model for interactions
-   * @param {Object} weapon - Weapon object
-   * @param {Object} maps - Terrain maps with colors
-   * @param {HTMLElement} row - Parent row element
+   * @param {WeaponSystem} weaponSystem - Weapon system with ammo data
+   * @param {*} viewModel - View model for interactions
+   * @param {Weapon} weapon - Weapon object with properties
+   * @param {WeaponMaps} maps - Terrain maps with colors
+   * @param {HTMLElement} row - Parent row element to append boxes to
+   * @returns {void}
    */
   static #buildWeaponSubRow (weaponSystem, viewModel, weapon, maps, row) {
     const ammoCapacity = weaponSystem.ammoCapacity()
@@ -173,8 +167,9 @@ export class WeaponTallyBuilder {
    * Only displays if weapon has limited ammo (configured in weapon system).
    *
    * @param {HTMLElement} rowContainer - Container to append row to
-   * @param {Object} viewModel - View model for weapon interactions
-   * @param {Object} weaponSystem - Weapon system with ammo and state
+   * @param {*} viewModel - View model for weapon interactions
+   * @param {WeaponSystem} weaponSystem - Weapon system with ammo and state
+   * @returns {void}
    */
   static buildBombRow (rowContainer, viewModel, weaponSystem) {
     if (!weaponSystem.weapon.isLimited) return

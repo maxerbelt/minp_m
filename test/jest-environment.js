@@ -7,6 +7,14 @@ export default class CustomEnvironment extends JsdomEnvironment {
     console.log('CustomEnvironment: setup running')
 
     //
+    // 0️⃣ Expose jest to global scope for jest.fn() usage
+    //
+    this.global.jest = {
+      fn,
+      ...this.global.jest
+    }
+
+    //
     // 1️⃣ Set a stable default URL (optional)
     //
     if (this.dom?.reconfigure) {
