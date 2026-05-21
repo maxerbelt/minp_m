@@ -1,88 +1,124 @@
 /**
+ * Cache for frequently accessed DOM button elements.
+ * Reduces repetitive document.getElementById() calls and improves code clarity.
  * @typedef {Object} ElementCacheButtons
- * @property {HTMLButtonElement|null} newPlacement
- * @property {HTMLButtonElement|null} rotate
- * @property {HTMLButtonElement|null} rotateLeft
- * @property {HTMLButtonElement|null} flip
- * @property {HTMLButtonElement|null} transform
- * @property {HTMLButtonElement|null} test
- * @property {HTMLButtonElement|null} seek
- * @property {HTMLButtonElement|null} stop
- * @property {HTMLButtonElement|null} undo
- * @property {HTMLButtonElement|null} auto
+ * @property {HTMLButtonElement|null} newPlacement - Button for new placement
+ * @property {HTMLButtonElement|null} rotate - Button for rotate action
+ * @property {HTMLButtonElement|null} rotateLeft - Button for rotate-left action
+ * @property {HTMLButtonElement|null} flip - Button for flip action
+ * @property {HTMLButtonElement|null} transform - Button for transform action
+ * @property {HTMLButtonElement|null} test - Button for test action
+ * @property {HTMLButtonElement|null} seek - Button for seek action
+ * @property {HTMLButtonElement|null} stop - Button for stop action
+ * @property {HTMLButtonElement|null} undo - Button for undo action
+ * @property {HTMLButtonElement|null} auto - Button for auto action
  */
 
 /**
+ * Cache for frequently accessed DOM tray container elements.
+ * Organizes UI elements by category for quick access and type safety.
  * @typedef {Object} ElementCacheTrays
- * @property {HTMLDivElement|null} container
- * @property {HTMLDivElement|null} ship
- * @property {HTMLDivElement|null} plane
- * @property {HTMLDivElement|null} special
- * @property {HTMLDivElement|null} brush
- * @property {HTMLDivElement|null} weapon
- * @property {HTMLDivElement|null} building
+ * @property {HTMLDivElement|null} container - Main tray container
+ * @property {HTMLDivElement|null} ship - Ship tray
+ * @property {HTMLDivElement|null} plane - Plane/aircraft tray
+ * @property {HTMLDivElement|null} special - Special units tray
+ * @property {HTMLDivElement|null} brush - Brush/terrain tray
+ * @property {HTMLDivElement|null} weapon - Weapon tray
+ * @property {HTMLDivElement|null} building - Building/structure tray
  */
 
 /**
- * Caches DOM elements to reduce repetitive document.getElementById() calls and improve initialization clarity.
+ * Caches DOM elements to reduce repetitive document.getElementById() calls.
+ * Improves performance and provides centralized element access with proper typing.
+ * All cached elements are lazily initialized and may be null if elements don't exist in DOM.
+ *
+ * @class ElementCache
  */
 export class ElementCache {
   /**
-   * Initializes the cache with buttons and trays.
+   * Initializes the cache with button and tray element references.
+   * Queries the DOM for all managed elements and stores references.
+   * Elements that don't exist in the DOM will be null.
    */
   constructor () {
     /** @type {ElementCacheButtons} */
     this.buttons = {
-      newPlacement:
-        /** @type {HTMLButtonElement} */ document.getElementById(
-          'newPlacement'
-        ),
-      rotate:
-        /** @type {HTMLButtonElement} */ document.getElementById('rotateBtn'),
-      rotateLeft:
-        /** @type {HTMLButtonElement} */ document.getElementById(
-          'rotateLeftBtn'
-        ),
-      flip: /** @type {HTMLButtonElement} */ document.getElementById('flipBtn'),
-      transform:
-        /** @type {HTMLButtonElement} */ document.getElementById(
-          'transformBtn'
-        ),
-      test: /** @type {HTMLButtonElement} */ document.getElementById('testBtn'),
-      seek: /** @type {HTMLButtonElement} */ document.getElementById('seekBtn'),
-      stop: /** @type {HTMLButtonElement} */ document.getElementById('stopBtn'),
-      undo: /** @type {HTMLButtonElement} */ document.getElementById('undoBtn'),
-      auto: /** @type {HTMLButtonElement} */ document.getElementById('autoBtn')
+      newPlacement: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('newPlacement')
+      ),
+      rotate: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('rotateBtn')
+      ),
+      rotateLeft: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('rotateLeftBtn')
+      ),
+      flip: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('flipBtn')
+      ),
+      transform: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('transformBtn')
+      ),
+      test: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('testBtn')
+      ),
+      seek: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('seekBtn')
+      ),
+      stop: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('stopBtn')
+      ),
+      undo: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('undoBtn')
+      ),
+      auto: /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('autoBtn')
+      )
     }
 
     /** @type {ElementCacheTrays} */
     this.trays = {
-      container:
-        /** @type {HTMLDivElement} */ document.getElementById('tray-container'),
-      ship: /** @type {HTMLDivElement} */ document.getElementById('shipTray'),
-      plane: /** @type {HTMLDivElement} */ document.getElementById('planeTray'),
-      special:
-        /** @type {HTMLDivElement} */ document.getElementById('specialTray'),
-      brush: /** @type {HTMLDivElement} */ document.getElementById('brushTray'),
-      weapon:
-        /** @type {HTMLDivElement} */ document.getElementById('weaponTray'),
-      building:
-        /** @type {HTMLDivElement} */ document.getElementById('buildingTray')
+      container: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('tray-container')
+      ),
+      ship: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('shipTray')
+      ),
+      plane: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('planeTray')
+      ),
+      special: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('specialTray')
+      ),
+      brush: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('brushTray')
+      ),
+      weapon: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('weaponTray')
+      ),
+      building: /** @type {HTMLDivElement|null} */ (
+        document.getElementById('buildingTray')
+      )
     }
   }
 
   /**
-   * Gets a button by name.
-   * @param {string} name - Button name
-   * @returns {HTMLButtonElement|null} The button element
+   * Gets a button element by property name.
+   * Provides type-safe access to cached button elements.
+   * Returns null if the button wasn't found during initialization or name is invalid.
+   *
+   * @param {string} name - Button name/property key (e.g., 'rotate', 'undo', 'test')
+   * @returns {HTMLButtonElement|null} The button element or null if not found
    */
   getButtonByName (name) {
     return this.buttons[name]
   }
 
   /**
-   * Gets all tray elements.
-   * @returns {HTMLDivElement[]} Array of tray elements
+   * Gets all tray elements as an array.
+   * Provides convenient access to all tray containers for batch operations.
+   * May include null values if trays weren't found during initialization.
+   *
+   * @returns {Array<HTMLDivElement|null>} Array of tray elements
    */
   getAllTrays () {
     return [
@@ -95,9 +131,20 @@ export class ElementCache {
   }
 
   /**
-   * Gets tray by type.
-   * @param {string} type - Type code (A, S, M, T, X, G, W)
-   * @returns {HTMLDivElement|null} The tray element
+   * Gets tray container by unit/item type code.
+   * Maps game item types to their corresponding UI tray containers.
+   * Includes fallback lazy-loading of tray elements if not cached.
+   * Returns null if type is not recognized or tray element not found.
+   *
+   * Type mapping:
+   * - 'A': Aircraft/Plane tray
+   * - 'S': Ship tray
+   * - 'M', 'T', 'X': Special units tray
+   * - 'G': Building/Ground structure tray
+   * - 'W': Weapon tray
+   *
+   * @param {string} type - Unit type code (single character: A, S, M, T, X, G, W)
+   * @returns {HTMLDivElement|null} The tray container for the type, or null if not found
    */
   getTrayByType (type) {
     const typeToTrayKey = {

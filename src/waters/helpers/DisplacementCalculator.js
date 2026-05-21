@@ -1,27 +1,61 @@
 /**
- * @typedef {Object} ShipShape
- * @property {number} displacement
- * @property {*} subterrain
- * @property {function(*): number} displacementFor
+ * Callback for getting displacement for a specific subterrain
+ * @callback DisplacementForCallback
+ * @param {*} subterrain - The subterrain type
+ * @returns {number} Displacement amount for this subterrain
  */
 
 /**
+ * Represents a ship's shape and displacement characteristics.
+ * Encapsulates displacement area and terrain interaction logic.
+ * @typedef {Object} ShipShape
+ * @property {number} displacement - Total displacement area of this ship shape
+ * @property {*} subterrain - The primary subterrain this shape occupies
+ * @property {DisplacementForCallback} displacementFor - Calculates displacement for specific subterrain
+ */
+
+/**
+ * Callback for getting a ship's shape
+ * @callback ShapeCallback
+ * @returns {ShipShape} The ship's shape and displacement info
+ */
+
+/**
+ * Represents a game ship with shape and displacement properties.
  * @typedef {Object} Ship
- * @property {function(): ShipShape} shape
+ * @property {ShapeCallback} shape - Gets the ship's shape and displacement characteristics
  */
 
 /**
  * Calculates and describes displacement ratios for game board utilization.
  * Provides methods to determine ship displacement area and convert ratios to descriptive text.
+ * Displacement represents the percentage of board space occupied by ships.
+ *
+ * Usage:
+ * - Calculate total ship displacement for board analysis
+ * - Filter displacement by terrain type for zone-specific calculations
+ * - Convert displacement ratios to human-readable descriptions for UI display
+ * - Determine board tightness for game difficulty assessment
  *
  * @class DisplacementCalculator
  */
 export class DisplacementCalculator {
   /**
    * Displacement ratio thresholds and their descriptions.
-   * Defines the mapping from ratio ranges to human-readable descriptions.
+   * Maps ratio ranges to human-readable descriptions, from least to most crowded.
+   * Thresholds are evaluated in order - the first matching limit returns the description.
    *
-   * @type {Array<{limit: number, desc: string}>}
+   * Range progression:
+   * - 0.00-0.02: Empty (0-2% occupied)
+   * - 0.02-0.15: Lonely to very scattered
+   * - 0.15-0.27: Scattered to very sparse
+   * - 0.27-0.45: Sparse to very loose
+   * - 0.45-0.53: Loose to medium
+   * - 0.53-0.68: Close to very close to tight
+   * - 0.68-0.81: Very tight to compact
+   * - 0.81-1.00: Very compact to very squeezy (100%)
+   *
+   * @type {Array<DisplacementThreshold>}
    */
   static #DISPLACEMENT_THRESHOLDS = [
     { limit: 0.02, desc: 'empty' },
@@ -45,9 +79,13 @@ export class DisplacementCalculator {
 
   /**
    * Calculates total displacement for a set of ships.
+   * Sums the displacement area of all ship shapes in the collection.
+   * Used for overall board utilization analysis.
    *
-   * @param {Ship[]} ships - Array of ship objects
-   * @returns {number} Total displacement area of all ships
+   * @param {Ship[]} ships - Array of ship objects with shape methods
+   * @returns {number} Total displacement area of all ships combined
+   * @example
+   * const totalDisplacement = DisplacementCalculator.calculateShipDisplacement(allShips)
    */
   static calculateShipDisplacement (ships) {
     return ships.reduce(
@@ -58,10 +96,14 @@ export class DisplacementCalculator {
 
   /**
    * Calculates displacement for ships matching a specific subterrain.
+   * Filters ships by subterrain type, then sums their displacement.
+   * Used for terrain-specific board analysis (e.g., water vs land displacement).
    *
-   * @param {Ship[]} ships - Array of ship objects
-   * @param {*} subterrain - The subterrain to filter by
-   * @returns {number} Total displacement for matching ships
+   * @param {Ship[]} ships - Array of ship objects with shape methods
+   * @param {*} subterrain - The subterrain type to filter by (compared via ===)
+   * @returns {number} Total displacement for ships on matching subterrain
+   * @example
+   * const waterDisplacement = DisplacementCalculator.calculateSubterrainDisplacement(ships, 'water')
    */
   static calculateSubterrainDisplacement (ships, subterrain) {
     return ships
@@ -71,10 +113,13 @@ export class DisplacementCalculator {
 
   /**
    * Calculates mixed terrain ship displacement (ships occupying multiple terrains).
-   * Multiplies by 1/4 for mixed terrain portion of the calculation.
+   * Mixed terrain ships contribute 1/4 of their displacement to the calculation.
+   * Used when counting ships that span multiple terrain types.
    *
-   * @param {ShipShape[]} mixedShapes - Array of mixed terrain shapes
-   * @returns {number} Mixed terrain displacement contribution
+   * @param {ShipShape[]} mixedShapes - Array of ship shapes occupying mixed terrains
+   * @returns {number} Mixed terrain displacement contribution (1/4 of total)
+   * @example
+   * const mixedDisp = DisplacementCalculator.calculateMixedTerrainAmount(mixedShapes)
    */
   static calculateMixedTerrainAmount (mixedShapes) {
     return (
@@ -87,10 +132,14 @@ export class DisplacementCalculator {
 
   /**
    * Calculates mixed terrain displacement for a specific subterrain.
+   * Sums displacement contributions from mixed terrain ships for one terrain type.
+   * Used for multi-terrain zone displacement analysis.
    *
-   * @param {ShipShape[]} mixedShapes - Array of mixed terrain shapes
-   * @param {*} subterrain - The subterrain to calculate for
+   * @param {ShipShape[]} mixedShapes - Array of ship shapes occupying mixed terrains
+   * @param {*} subterrain - The specific subterrain to calculate displacement for
    * @returns {number} Mixed terrain displacement for this subterrain
+   * @example
+   * const mixedWaterDisp = DisplacementCalculator.calculateMixedSubterrainAmount(mixed, 'water')
    */
   static calculateMixedSubterrainAmount (mixedShapes, subterrain) {
     return mixedShapes.reduce(
@@ -101,10 +150,19 @@ export class DisplacementCalculator {
 
   /**
    * Converts a displacement ratio (0-1) to a human-readable description.
-   * Iterates through thresholds to find the first matching description.
+   * Iterates through displacement thresholds in order to find matching description.
+   * First threshold with ratio below its limit is returned; if none match, returns 'very squeezy'.
    *
-   * @param {number} ratio - Displacement ratio (0-1 range)
-   * @returns {string} Descriptive text for the ratio level
+   * Range context:
+   * - 0.0-0.02: 'empty'
+   * - 0.02-0.15: 'lonely'
+   * - 0.50-0.60: 'medium' to 'close'
+   * - 0.80+: 'compact' to 'very squeezy'
+   *
+   * @param {number} ratio - Displacement ratio in range [0, 1]
+   * @returns {string} Descriptive text for the density level
+   * @example
+   * const desc = DisplacementCalculator.describeDisplacementRatio(0.35) // 'sparse'
    */
   static describeDisplacementRatio (ratio) {
     for (const { limit, desc } of this.#DISPLACEMENT_THRESHOLDS) {
@@ -114,13 +172,17 @@ export class DisplacementCalculator {
   }
 
   /**
-   * Calculates tightness description with optional extra displacement.
-   * Used for zone display entries combining ship displacement with bonus amounts.
+   * Calculates tightness description for a zone with optional bonus displacement.
+   * Combines ship displacement with additional/bonus displacement (e.g., obstacles)
+   * and converts the ratio to a human-readable tightness description.
+   * Used for zone display entries showing combined space utilization.
    *
-   * @param {Array<Object>} ships - Array of ships
-   * @param {number} displacedArea - Available displacement area
-   * @param {number} [extra=0] - Additional displacement to include
-   * @returns {string} Descriptive tightness text
+   * @param {Ship[]} ships - Array of ships in the zone
+   * @param {number} displacedArea - Total available displacement area in zone
+   * @param {number} [extra=0] - Additional displacement to include (obstacles, bonuses, etc.)
+   * @returns {string} Descriptive tightness text (e.g., 'loose', 'crowded', 'very squeezy')
+   * @example
+   * const tightness = DisplacementCalculator.describeTightness(ships, boardArea, bonusArea)
    */
   static describeTightness (ships, displacedArea, extra = 0) {
     const shipDisplacement = this.calculateShipDisplacement(ships) + extra
