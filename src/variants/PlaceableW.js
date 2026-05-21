@@ -30,7 +30,7 @@ export class PlaceableW extends Placeable3 {
    * @param {number} c - The column position.
    * @returns {CellWsToBePlaced} The cells to be placed.
    */
-  placeAt (r, c) {
-    return new CellWsToBePlaced(this, r, c, this.weapons, this.fullIndex)
+  placeAt (x, y) {
+    return new CellWsToBePlaced(this, x, y, this.weapons, this.fullIndex)
   }
 }

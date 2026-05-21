@@ -32,7 +32,7 @@ export class Placeable3 extends Placeable {
    * @param {number} c - The column position.
    * @returns {Cell3sToBePlaced} The cells to be placed.
    */
-  placeAt (r, c) {
-    return new Cell3sToBePlaced(this, r, c)
+  placeAt (x, y) {
+    return new Cell3sToBePlaced(this, x, y)
   }
 }

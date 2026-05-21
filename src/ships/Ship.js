@@ -402,7 +402,8 @@ export class Ship {
    * @param {number} c
    */
   _findClosestRack (entries, r, c) {
-    return entries.reduce(
+    const noKey = '999,999'
+    const result = entries.reduce(
       (/** @type {[any]} */ closest, /** @type {[any]} */ current) => {
         const [closestKey] = closest
         const [currentKey] = current
@@ -411,8 +412,10 @@ export class Ship {
         const closestDist = Math.hypot(closestR - r, closestC - c)
         const currentDist = Math.hypot(currentR - r, currentC - c)
         return currentDist < closestDist ? current : closest
-      }
+      },
+      noKey
     )
+    return result === noKey ? null : result
   }
   /**
    * Find weapon system by its unique ID

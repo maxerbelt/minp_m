@@ -60,15 +60,15 @@ export class Placeable {
 
   /**
    * Creates a placement at the specified position.
-   * @param {number} row - The row position.
-   * @param {number} col - The column position.
+   * @param {number} x - The x position.
+   * @param {number} y - The y position.
    * @returns {CellsToBePlaced} The cells to be placed.
    */
-  placeAt (row, col) {
+  placeAt (x, y) {
     return new CellsToBePlaced(
       this.board,
-      row,
-      col,
+      x,
+      y,
       this.validator,
       this.zoneDetail,
       this.target

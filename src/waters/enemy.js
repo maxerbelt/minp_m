@@ -1031,10 +1031,7 @@ class Enemy extends Waters {
   }
 
   async _fireCurrentWeaponImmediately (r, c) {
-    const width = bh.map.width
-    const height = bh.map.height
-    const r0 = r < height / 2 ? height - 1 : 0
-    const c0 = c < width / 2 ? width - 1 : 0
+    const { r0, c0 } = bh.map.nearestCornerTo(r, c)
 
     this.UI.removeHighlightAoE()
     this.setWeaponFireHandlers()
