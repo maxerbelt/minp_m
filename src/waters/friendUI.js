@@ -125,6 +125,14 @@ export class FriendUI extends PlacementUI {
     this.tabElement = document.querySelector(UI_SELECTORS.TAB_HIDE)
   }
 
+  /**
+   * Determines if the UI is in placement mode.
+   * @returns {boolean} True if mode is PLACING
+   */
+  get placing () {
+    return this.mode === UI_MODES.PLACING
+  }
+
   // ============ DOM Helpers ============
 
   /**
