@@ -20,7 +20,8 @@ canvas.addEventListener('click', e => {
   )
   const i = hex.index.get(`${q},${r},${s}`)
   if (i !== undefined) {
-    shape ^= 1n << BigInt(i)
+    // Note: shape is global read-only, store toggle in preview
+    interaction.previewShape = shape ^ (1n << BigInt(i))
     redraw()
   }
 })

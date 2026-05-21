@@ -2,7 +2,7 @@ import { bh } from '../terrains/all/js/bh.js'
 import { parsePair } from '../core/utilities.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
-//import { SubBoard } from '../grid/subBoard.js'
+import { SubBoard } from '../grid/subBoard.js'
 import { Zip } from '../core/Zip.js'
 
 /**
@@ -15,9 +15,9 @@ import { Zip } from '../core/Zip.js'
 /**
  * @typedef { WeaponSystem | PositionedWeaponSystem } Rack
  */
-/**
- * @typedef {import('../grid/subBoard.js').SubBoard} SubBoard
- */
+
+////// @typedef {import('../grid/subBoard.js').SubBoard} SubBoard
+
 /**
  * @typedef {Object} Placement
  * Placement configuration interface
