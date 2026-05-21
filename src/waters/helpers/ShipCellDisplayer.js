@@ -565,7 +565,7 @@ export class ShipCellDisplayer {
     this.#applyWeaponMetadata(cell, ship, row, column)
 
     const keyIds = ship.makeKeyIds()
-    addKeysToCell(cell, this.#DATA_ATTRIBUTES.WEAPON_KEY_IDS, keyIds)
+    addKeysToCell(cell, this.#DATA_ATTRIBUTES.WEAPON_KEY_IDS, keyIds.split('|'))
   }
 
   // ──────────────────────────────────────────────────────────────────
