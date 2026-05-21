@@ -2,8 +2,59 @@ import { bh } from '../terrains/all/js/bh.js'
 
 /**
  * Manages turn-based scoring and tracking for the game board.
+ *
+ * This class maintains counters and masks for game state tracking including:
+ * - Turn and double-tap counts
+ * - Shot history and location tracking
+ * - Revealed cell tracking
+ * - Hint and wake effect tracking
+ * - Automatic miss detection
+ *
+ * @class Score
  */
 export class Score {
+  /**
+   * Number of turns taken.
+   * @type {number}
+   */
+  turns
+
+  /**
+   * Number of double-taps performed.
+   * @type {number}
+   */
+  dtaps
+
+  /**
+   * Mask tracking all shots taken on the board.
+   * @type {Object}
+   */
+  shot
+
+  /**
+   * Mask tracking cells that have been revealed (hit or miss).
+   * @type {Object}
+   */
+  reveal
+
+  /**
+   * Mask tracking cells that have been hinted.
+   * @type {Object}
+   */
+  hint
+
+  /**
+   * Mask tracking cells with wake effects from ship movement.
+   * @type {Object}
+   */
+  wake
+
+  /**
+   * Mask tracking automatic misses (shots that don't count).
+   * @type {Object}
+   */
+  auto
+
   constructor () {
     /**
      * Number of turns taken.
@@ -44,6 +95,9 @@ export class Score {
 
   /**
    * Resets all scoring masks and counters to initial state.
+   * Clears all tracking data and reinitializes to blank masks.
+   *
+   * @returns {void}
    */
   reset () {
     this.turns = 0
@@ -56,7 +110,9 @@ export class Score {
   }
 
   /**
-   * Increments the turn counter.
+   * Increments the turn counter by one.
+   *
+   * @returns {void}
    */
   finishTurn () {
     this.turns++
@@ -64,16 +120,17 @@ export class Score {
 
   /**
    * Gets the count of automatic misses from the auto mask.
-   * @returns {number} Number of automatic misses
+   *
+   * @returns {number} The occupancy count of automatic misses
    */
   get autoMisses () {
     return this.auto.occupancy
   }
 
   /**
-   * Checks if a coordinate has not been shot yet.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
    * @returns {boolean|null} True if new shot, null if already shot
    */
   newShotKey (r, c) {
@@ -82,8 +139,11 @@ export class Score {
   }
 
   /**
-   * Moves a shot from shot mask to reveal mask.
-   * @param {number} r - Row coordinate
+   * Clears the location from the shot mask and marks it in the reveal mask.
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
+   * @returns {void}
    * @param {number} c - Column coordinate
    */
   shotReveal (r, c) {
@@ -91,9 +151,12 @@ export class Score {
     this.reveal.set(c, r)
   }
   /**
-   * Moves a shot from shot mask to reveal mask.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * Finalizes a revealed shot using (x, y) coordinates.
+   * Variant of shotRevealFinalize using x, y parameter order.
+   *
+   * @param {number} x - X coordinate (0-based index)
+   * @param {number} y - Y coordinate (0-based index)
+   * @returns {void}
    */
   shotRevealFinalize (r, c) {
     if (!this.reveal.test(c, r)) return
@@ -105,10 +168,12 @@ export class Score {
     this.shot.set(y, x)
     this.reveal.clear(y, x)
   }
-  /**
-   * Marks a cell as hinted.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+  /** 
+   * Wake effects show weapon movement paths.
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
+   * @returns {void} 
    */
   hintReveal (r, c) {
     this.hint.set(c, r)
