@@ -1134,6 +1134,7 @@ describe('Enemy.updateWeaponStatus', () => {
           weapon: 'single-shot',
           score: { hits: 0 }
         })),
+        setWeaponFireHandlers: jest.fn(),
         _handleSingleShotClick: /** @type {any} */ (
           EnemyClass.prototype._handleSingleShotClick
         ),
@@ -1146,6 +1147,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       await EnemyClass.prototype.onClickCell.call(enemy, 1, 2)
 
+      expect(enemy.setWeaponFireHandlers).toHaveBeenCalled()
       expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
         1,
         2,

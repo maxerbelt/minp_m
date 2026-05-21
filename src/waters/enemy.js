@@ -314,7 +314,7 @@ class Enemy extends Waters {
     }
 
     return (
-      weapon.letter === 'M' ||
+      weapon.letter === '+' ||
       weapon.name === 'Missile' ||
       weapon.tag === 'missile'
     )
@@ -961,6 +961,13 @@ class Enemy extends Waters {
   }
 
   async _handleSingleShotClick (r, c) {
+    // CRITICAL: Ensure fire handlers are attached before firing.
+    // Without this call, the shot animates but never delivers hit/miss results.
+    // This is required because the onDestroy callbacks are only finalized here,
+    // not when the weapon was initially selected. The callbacks are needed for
+    // the shot to register hits/misses on the opponent board.
+    this.setWeaponFireHandlers()
+
     this.selectedCellCoordinates = null
     const result = await this.fireWeaponAt(
       r,
@@ -1024,9 +1031,16 @@ class Enemy extends Waters {
   }
 
   async _fireCurrentWeaponImmediately (r, c) {
+    const width = bh.map.width
+    const height = bh.map.height
+    const r0 = r < height / 2 ? height - 1 : 0
+    const c0 = c < width / 2 ? width - 1 : 0
+
     this.UI.removeHighlightAoE()
     this.setWeaponFireHandlers()
     const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+    const weapon = weaponSystem?.weapon
+    this.loadOut.addSelectedCoordinates(r0, c0, weapon)
     const result = await this.fireWeaponAt(r, c, weaponSystem)
     if (this._shouldWaitForWeaponResult(result)) return
     this._processWeaponResult(result)

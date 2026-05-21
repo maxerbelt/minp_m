@@ -112,11 +112,11 @@ const WEAPON_CONFIGS = {
 
 /**
  * Gets intercept points for a line segment on the canvas
- * @param {number} row1 - Starting row
- * @param {number} col1 - Starting column
- * @param {number} row2 - Ending row
- * @param {number} col2 - Ending column
- * @returns {Object} Intercept points { x0, y0, x1, y1 }
+ * @param {number} row1 - Starting row coordinate
+ * @param {number} col1 - Starting column coordinate
+ * @param {number} row2 - Ending row coordinate
+ * @param {number} col2 - Ending column coordinate
+ * @returns {LineIntercepts} Intercept points { x0, y0, x1, y1 }
  */
 export function getIntercepts (row1, col1, row2, col2) {
   const points = RectListCanvas.BhMapList()
@@ -126,12 +126,12 @@ export function getIntercepts (row1, col1, row2, col2) {
 /**
  * Gets points along an infinite line (extended beyond segment endpoints)
  * Converts canvas coordinates to row/column and returns power-tagged cells
- * @param {number} row1 - Starting row
- * @param {number} col1 - Starting column
- * @param {number} row2 - Ending row
- * @param {number} col2 - Ending column
+ * @param {number} row1 - Starting row coordinate
+ * @param {number} col1 - Starting column coordinate
+ * @param {number} row2 - Ending row coordinate
+ * @param {number} col2 - Ending column coordinate
  * @param {number} power - Power level for cells
- * @returns {Array} Array of [row, column, power] tuples
+ * @returns {AoePattern} Array of [row, column, power] tuples
  */
 export function getExtendedLinePoints (row1, col1, row2, col2, power) {
   const points = RectListCanvas.BhMapList()
@@ -141,12 +141,12 @@ export function getExtendedLinePoints (row1, col1, row2, col2, power) {
 
 /**
  * Gets points along a ray (from start point through end point)
- * @param {number} row1 - Starting row
- * @param {number} col1 - Starting column
- * @param {number} row2 - Ending row
- * @param {number} col2 - Ending column
+ * @param {number} row1 - Starting row coordinate
+ * @param {number} col1 - Starting column coordinate
+ * @param {number} row2 - Ending row coordinate
+ * @param {number} col2 - Ending column coordinate
  * @param {number} power - Power level for cells
- * @returns {Array} Array of [row, column, power] tuples
+ * @returns {AoePattern} Array of [row, column, power] tuples
  */
 export function getLinePoints (row1, col1, row2, col2, power) {
   const points = RectListCanvas.BhMapList()
@@ -160,9 +160,9 @@ export function getLinePoints (row1, col1, row2, col2, power) {
  * @param {number} centerRow - Center row (y coordinate)
  * @param {number} targetCol - Target column (x coordinate)
  * @param {number} targetRow - Target row (y coordinate)
- * @param {number} [radius=4] - Radius of the pie
+ * @param {number} [radius=4] - Radius of the pie segment in cells
  * @param {number} [spreadDeg=22.5] - Spread angle in degrees
- * @returns {Array} Array of [row, column, power] tuples
+ * @returns {AoePattern} Array of [row, column, power] tuples
  */
 export function getPieSegmentCells (
   centerCol,
@@ -191,11 +191,11 @@ export function getPieSegmentCells (
 
 /**
  * Checks whether a map cell is valid for inclusion in an effect pattern.
- * @param {MapLike|null} map - Game map for bounds checking
- * @param {number} row - Cell row
- * @param {number} col - Cell column
- * @param {TerrainCheck|null} terrainCheck - Optional terrain validation function
- * @returns {boolean} True if the cell should be added
+ * @param {MapLike|null} map - Game map for bounds checking (may be null)
+ * @param {number} row - Cell row coordinate
+ * @param {number} col - Cell column coordinate
+ * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
+ * @returns {boolean} True if the cell should be added to effect pattern
  */
 function isValidCell (map, row, col, terrainCheck = null) {
   const noMapCheck = map === null || map === undefined
@@ -210,7 +210,7 @@ function isValidCell (map, row, col, terrainCheck = null) {
  * @param {number} row - Cell row coordinate
  * @param {number} col - Cell column coordinate
  * @param {number} power - Damage power for added cells
- * @param {AoePattern} effectPattern - Pattern to accumulate into
+ * @param {AoePattern} effectPattern - Pattern array to accumulate into
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
  * @returns {AoePattern} Updated effect pattern
  */
@@ -234,9 +234,9 @@ export function addCellToEffect (
  * @param {number} centerRow - Center row coordinate
  * @param {number} centerCol - Center column coordinate
  * @param {number} power - Damage power for added cells
- * @param {AoePattern} effectPattern - Pattern to accumulate into
- * @param {Array<Array<number>>} directions - Direction offsets
- * @param {Object} [options] - Optional configuration
+ * @param {AoePattern} effectPattern - Pattern array to accumulate into
+ * @param {Array<[number, number]>} directions - Direction offset vectors [rowOffset, colOffset]
+ * @param {Object} [options] - Optional configuration object
  * @param {TerrainCheck|null} [options.terrainCheck=null] - Optional terrain validation function
  * @param {number} [options.radius=1] - Offset multiplier for direction vectors
  * @returns {AoePattern} Updated effect pattern
@@ -264,6 +264,17 @@ function addDirectionalCells (
   return effectPattern
 }
 
+/**
+ * Adds orthogonal (cardinal) neighbors to an effect pattern.
+ * @param {MapLike|null} map - Game map for bounds checking
+ * @param {number} centerRow - Center row coordinate
+ * @param {number} centerCol - Center column coordinate
+ * @param {number} power - Damage power for added cells
+ * @param {AoePattern} effectPattern - Pattern array to accumulate into
+ * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
+ * @param {number} [radius=1] - Distance multiplier for orthogonal neighbors
+ * @returns {AoePattern} Updated effect pattern
+ */
 export function addOrthogonalNeighbors (
   map,
   centerRow,
@@ -284,6 +295,16 @@ export function addOrthogonalNeighbors (
   )
 }
 
+/**
+ * Adds diagonal neighbors to an effect pattern.
+ * @param {MapLike|null} map - Game map for bounds checking
+ * @param {number} centerRow - Center row coordinate
+ * @param {number} centerCol - Center column coordinate
+ * @param {number} power - Damage power for added cells
+ * @param {AoePattern} effectPattern - Pattern array to accumulate into
+ * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
+ * @returns {AoePattern} Updated effect pattern
+ */
 export function addDiagonalNeighbors (
   map,
   centerRow,
@@ -309,8 +330,8 @@ export function addDiagonalNeighbors (
  * @param {number} centerRow - Center row coordinate
  * @param {number} centerCol - Center column coordinate
  * @param {AoePattern} effectPattern - Pattern array to accumulate into
- * @param {Array<Array<number>>} directions - Offsets and power values [[dr, dc, power], ...]
- * @param {TerrainCheck|null} [terrainCheck] - Optional terrain validation function
+ * @param {Array<[number, number, number]>} directions - Offsets with power [[dr, dc, power], ...]
+ * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
  * @returns {AoePattern} Updated effect pattern
  */
 export function addNeighborList (
@@ -334,11 +355,12 @@ export function addNeighborList (
   return effectPattern
 }
 /**
- * Creates a splash effect pattern around a center point
+ * Creates a splash effect pattern around a center point.
+ * Adds center cell with full power, then orthogonal neighbors with same power.
  * @param {MapLike|null} map - Game map for bounds checking
- * @param {Array<number>} centerCoords - Center coordinates [row, col]
+ * @param {Coord} centerCoords - Center coordinates [row, col]
  * @param {number} power - Damage power for splash cells
- * @param {TerrainCheck|null} [terrainCheck] - Optional terrain validation function
+ * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
  * @returns {AoePattern} Splash effect pattern
  */
 export function createSplashEffect (
@@ -363,11 +385,12 @@ export function createSplashEffect (
 }
 
 /**
- * Calculates area-of-effect along a line with optional power and terrain filtering
- * @param {number[][]} coords - Two-point coordinates [startCoord, endCoord]
- * @param {number} [power=1] - Power level for damage
- * @param {Function} [lineFunction=getExtendedLinePoints] - Function to get line points
- * @param {TerrainCheck|null} [terrainFilter] - Optional terrain filter function
+ * Calculates area-of-effect along a line with optional power and terrain filtering.
+ * @param {number[][]} coords - Two-point coordinates [[startRow, startCol], [endRow, endCol]]
+ * @param {number} [power=1] - Power level for damage cells
+ * @param {Function} [lineFunction=getExtendedLinePoints] - Function to calculate line points
+ * @param {TerrainCheck|null} [terrainFilter=null] - Optional terrain filter (stops at first match)
+ * @param {number} [penetration=0] - Cells beyond filter to include
  * @returns {AoePattern} Cells along the line with damage power
  */
 function calculateLineAreaOfEffect (
@@ -400,8 +423,9 @@ function calculateLineAreaOfEffect (
 }
 
 /**
- * Normalizes coordinates between two points using line intercepts
- * @param {number[][]} coords - Two-point coordinates [startCoord, endCoord]
+ * Normalizes coordinates between two points using line intercepts.
+ * Ensures consistent start/end points regardless of input direction.
+ * @param {number[][]|number[]} coords - Two-point coordinates or single point [row, col]
  * @returns {number[][]} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
  */
 function normalizeLineCoordinates (coords) {
@@ -458,7 +482,7 @@ function normalizeLineCoordinates (coords) {
  * Bomb - A simple explosive weapon that deals damage in a configurable pattern
  * Damages center cell heavily (power 2), surrounding 8 cells moderately (power 1),
  * and orthogonal cells at distance 2 lightly (power 0)
- * @extends Weapon
+ * @extends {Weapon}
  */
 export class Bomb extends Weapon {
   /**
@@ -483,21 +507,21 @@ export class Bomb extends Weapon {
   }
 
   /**
-   * Normalizes coordinates for bomb placement (minimal transformation)
-   * @param {Object} _map - Game map (unused)
+   * Normalizes coordinates for bomb placement (minimal transformation).
+   * @param {MapLike} _map - Game map (unused)
    * @param {Object} _base - Base configuration (unused)
-   * @param {Array} coords - Original coordinates
-   * @returns {Array} Normalized coordinates
+   * @param {number[][]} coords - Original coordinates [[row, col], ...]
+   * @returns {number[][]} Normalized coordinates
    */
   redoCoords (_map, _base, coords) {
     return [[0, coords[0][1]], coords[0]]
   }
 
   /**
-   * Calculates area-of-effect damage pattern for bomb at given coordinates
-   * @param {Object} _map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * Calculates area-of-effect damage pattern for bomb at given coordinates.
+   * @param {MapLike|null} _map - Game map for bounds checking (unused for bombs)
+   * @param {number[][]} coords - Source and Target coordinates [[sourceRow, sourceCol], [targetRow, targetCol]]
+   * @returns {AoePattern} Damage cells with power levels
    */
   aoe (_map, coords) {
     const [row, col] = coords[0]
@@ -505,11 +529,11 @@ export class Bomb extends Weapon {
   }
 
   /**
-   * Public API: Calculates blast radius pattern (center, adjacent, distance-2 orthogonal cells)
+   * Public API: Calculates blast radius pattern (center, adjacent, distance-2 orthogonal cells).
    * Used by this class and subclasses (e.g., Missile)
-   * @param {number} centerRow - Explosion center row
-   * @param {number} centerCol - Explosion center column
-   * @returns {Array} Damage pattern as [row, col, power] tuples
+   * @param {number} centerRow - Explosion center row coordinate
+   * @param {number} centerCol - Explosion center column coordinate
+   * @returns {AoePattern} Damage pattern as [row, col, power] tuples
    */
   boom (centerRow, centerCol) {
     return this._calculateExplosionPattern(centerRow, centerCol)
@@ -517,11 +541,11 @@ export class Bomb extends Weapon {
 
   /**
    * Calculates blast radius pattern: center (power 2) → adjacent cells (power 1)
-   * → orthogonal distance-2 cells (power 0)
+   * → orthogonal distance-2 cells (power 0).
    * @private
-   * @param {number} centerRow - Explosion center row
-   * @param {number} centerCol - Explosion center column
-   * @returns {Array} Damage pattern as [row, col, power] tuples
+   * @param {number} centerRow - Explosion center row coordinate
+   * @param {number} centerCol - Explosion center column coordinate
+   * @returns {AoePattern} Damage pattern as [row, col, power] tuples
    */
   _calculateExplosionPattern (centerRow, centerCol) {
     const pattern = [[centerRow, centerCol, 2]]
@@ -531,12 +555,12 @@ export class Bomb extends Weapon {
   }
 
   /**
-   * Adds all 8 adjacent (3×3 grid) cells to damage pattern, excluding center
+   * Adds all 8 adjacent (3×3 grid) cells to damage pattern, excluding center.
    * @private
-   * @param {Array} pattern - Pattern to accumulate into
-   * @param {number} centerRow - Center row
-   * @param {number} centerCol - Center column
-   * @param {number} power - Damage power for these cells
+   * @param {AoePattern} pattern - Pattern array to accumulate into
+   * @param {number} centerRow - Center row coordinate
+   * @param {number} centerCol - Center column coordinate
+   * @param {number} power - Damage power for adjacent cells
    */
   _addAdjacentCells (pattern, centerRow, centerCol, power) {
     for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
@@ -549,12 +573,12 @@ export class Bomb extends Weapon {
   }
 
   /**
-   * Adds orthogonal cells at distance 2 (forming a + pattern beyond adjacent)
+   * Adds orthogonal cells at distance 2 (forming a + pattern beyond adjacent).
    * @private
-   * @param {Array} pattern - Pattern to accumulate into
-   * @param {number} centerRow - Center row
-   * @param {number} centerCol - Center column
-   * @param {number} power - Damage power for these cells
+   * @param {AoePattern} pattern - Pattern array to accumulate into
+   * @param {number} centerRow - Center row coordinate
+   * @param {number} centerCol - Center column coordinate
+   * @param {number} power - Damage power for distance-2 cells
    */
   _addOrthogonalDistanceTwoCells (pattern, centerRow, centerCol, power) {
     const DISTANCE_2 = 2
@@ -569,17 +593,42 @@ export class Bomb extends Weapon {
     }
   }
 }
-
+/**
+ * WeaponWithPath - Base class for weapons with projectile launch animations.
+ * Provides launch trajectory animation support for line-based weapons.
+ * @extends {Weapon}
+ */
+export class WeapponWithPath extends Weapon {
+  /**
+   * Handles weapon launch animation/projectile trajectory.
+   * @param {...*} args - Weapon launch arguments [coords, rr, cc, map, viewModel, opposingViewModel, model, launch]
+   * @returns {Promise<void>} Launch animation promise
+   */
+  async launchTo (...args) {
+    const [coords, rr, cc, map, viewModel, opposingViewModel, model, launch] =
+      args
+    return await this.launchRightTo(
+      coords,
+      rr,
+      cc,
+      map,
+      viewModel,
+      opposingViewModel,
+      model,
+      launch
+    )
+  }
+}
 // ============================================================================
 // Strike Class - Line-based Strike Weapon
 // ============================================================================
 
 /**
- * Strike - A two-point targeting weapon that creates damage along a line
- * Damages along a straight line from start to end point, with configurable power falloff
- * @extends Weapon
+ * Strike - A two-point targeting weapon that creates damage along a line.
+ * Damages along a straight line from start to end point, with configurable power falloff.
+ * @extends {WeapponWithPath}
  */
-export class Strike extends Weapon {
+export class Strike extends WeapponWithPath {
   /**
    * @param {number} ammo - Number of strikes available
    * @param {string} [name] - Display name
@@ -609,59 +658,45 @@ export class Strike extends Weapon {
   }
 
   /**
-   * Normalizes coordinates between two map coordinates
-   * Ensures actual line-of-sight boundaries are respected
-   * @param {Object} _map - Game map
-   * @param {Array} _base - Base coordinates
-   * @param {Array} coords - Coordinates to normalize [start, end]
-   * @returns {Array} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
+   * Normalizes coordinates between two map coordinates.
+   * Ensures actual line-of-sight boundaries are respected.
+   * @param {MapLike} _map - Game map (unused)
+   * @param {number[][]} _base - Base coordinates (unused)
+   * @param {number[][]} coords - Coordinates to normalize [[row1, col1], [row2, col2]]
+   * @returns {number[][]} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
    */
   redoCoords (_map, _base, coords) {
     return normalizeLineCoordinates(coords)
   }
 
   /**
-   * Calculates standard area-of-effect along the strike line
-   * @param {Object} _map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * Calculates standard area-of-effect along the strike line.
+   * @param {MapLike|null} _map - Game map for bounds checking (unused)
+   * @param {number[][]} coords - Source and Target coordinates [[sourceRow, sourceCol], [targetRow, targetCol]]
+   * @returns {AoePattern} Damage cells with power levels
    */
   aoe (_map, coords) {
     return calculateLineAreaOfEffect(coords, 2, getExtendedLinePoints)
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point
-   * @param {Object} map - Game map
-   * @param {Array<number>} resolvedTarget - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates
-   * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
+   * Calculates splash/secondary damage pattern around a point.
+   * @param {MapLike} map - Game map for bounds checking
+   * @param {Coord} resolvedTarget - Impact coordinate [row, col]
+   * @param {AoePattern} _effect - Damage effect coordinates (unused)
+   * @param {Object} _options - Additional options (unused)
+   * @returns {AoePattern} Splash pattern
    */
   splash (map, resolvedTarget, _effect, _options) {
     return createSplashEffect(map, resolvedTarget, 0)
   }
-
-  /**
-   * Handles strike launch animation/projectile.
-   * @returns {Promise} Launch animation promise
-   */
-  async launchTo (...args) {
-    const [coords, rr, cc, map, viewModel, opposingViewModel, model, launch] =
-      args
-    return await this.launchRightTo(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model,
-      launch
-    )
-  }
 }
-export class Fish extends Weapon {
+/**
+ * Fish - A projectile weapon that travels through water with splash effects.
+ * Fires along water cells, stops at land boundaries, creates water-based splash.
+ * @extends {WeapponWithPath}
+ */
+export class Fish extends WeapponWithPath {
   /**
    * @param {number} ammo - Number of fish available
    * @param {string} [name='Fish'] - Display name
@@ -694,10 +729,24 @@ export class Fish extends Weapon {
     return new Fish(ammo ?? this.ammo)
   }
 
+  /**
+   * Calculates full area-of-effect along the fish's path without terrain filtering.
+   * @param {number[][]} coords - Source and Target coordinates [[sourceRow, sourceCol], [targetRow, targetCol]]
+   * @param {number} [power=1] - Power level for damage cells
+   * @returns {AoePattern} Full path cells with damage power
+   */
   aoeFull (coords, power = 1) {
     return calculateLineAreaOfEffect(coords, power, getLinePoints, null)
   }
 
+  /**
+   * Calculates area-of-effect with terrain-based stopping (land boundaries).
+   * @param {MapLike} map - Game map for land checking
+   * @param {number[][]} coords - Source and Target coordinates [[sourceRow, sourceCol], [targetRow, targetCol]]
+   * @param {number} [power=1] - Power level for damage cells
+   * @param {number} [penetration=0] - Cells beyond land boundary to include
+   * @returns {AoePattern} Path cells up to land with damage power
+   */
   aoeRaw (map, coords, power = 1, penetration = 0) {
     return calculateLineAreaOfEffect(
       coords,
@@ -709,23 +758,23 @@ export class Fish extends Weapon {
   }
 
   /**
-   * Calculates area-of-effect along the fish's water path
-   * Stops at land boundaries (map.isLand check)
-   * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * Calculates area-of-effect along the fish's water path.
+   * Stops at land boundaries (map.isLand check).
+   * @param {MapLike} map - Game map for bounds checking
+   * @param {number[][]} coords - Source and Target coordinates [[sourceRow, sourceCol], [targetRow, targetCol]]
+   * @returns {AoePattern} Damage cells with power levels
    */
   aoe (map, coords) {
     return this.aoeRaw(map, coords, 2, 0)
   }
 
   /**
-   * Normalizes coordinates by recalculating actual trajectory line
-   * Returns first and last cells of the valid water path
-   * @param {Object} _map - Game map for trajectory validation
+   * Normalizes coordinates by recalculating actual trajectory line.
+   * Returns first and last cells of the valid water path.
+   * @param {MapLike} _map - Game map for trajectory validation
    * @param {Object} _base - Base configuration (unused)
-   * @param {Array} coords - Original coordinates
-   * @returns {Array} Normalized coordinate pair [start, end]
+   * @param {number[][]} coords - Original coordinates [[row1, col1], [row2, col2]]
+   * @returns {number[][]} Normalized coordinate pair [start, end]
    */
   redoCoords (_map, _base, coords) {
     const line = this.aoe(_map, coords)
@@ -733,12 +782,13 @@ export class Fish extends Weapon {
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point
-   * @param {Object} map - Game map
-   * @param {Array} resolvedTarget - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates
-   * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
+   * Calculates splash/secondary damage pattern around a point.
+   * Only affects water cells (not land).
+   * @param {MapLike} map - Game map for land checking
+   * @param {Coord} resolvedTarget - Impact coordinate [row, col]
+   * @param {AoePattern} _effect - Damage effect coordinates (unused)
+   * @param {Object} _options - Additional options (unused)
+   * @returns {AoePattern} Water-based splash pattern
    */
   splash (map, resolvedTarget, _effect, _options) {
     return createSplashEffect(
@@ -748,25 +798,6 @@ export class Fish extends Weapon {
       (row, col) => !map.isLand(row, col)
     )
   }
-
-  /**
-   * Handles fish launch animation/projectile.
-   * @returns {Promise} Launch animation promise
-   */
-  async launchTo (...args) {
-    const [coords, rr, cc, map, viewModel, opposingViewModel, model, launch] =
-      args
-    return await this.launchRightTo(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model,
-      launch
-    )
-  }
 }
 
 // ============================================================================
@@ -774,9 +805,9 @@ export class Fish extends Weapon {
 // ============================================================================
 
 /**
- * Sensor - A scanning weapon that generates a pie-segment area from center to target
- * Used for detection/scanning; no explosion effects
- * @extends Weapon
+ * Sensor - A scanning weapon that generates a pie-segment area from center to target.
+ * Used for detection/scanning; no explosion effects.
+ * @extends {Weapon}
  */
 export class Sensor extends Weapon {
   /**
@@ -800,11 +831,11 @@ export class Sensor extends Weapon {
   }
 
   /**
-   * Calculates area-of-effect as a pie segment from center to target
-   * Swept area represents sensor scan coverage
-   * @param {Object} _map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * Calculates area-of-effect as a pie segment from center to target.
+   * Swept area represents sensor scan coverage.
+   * @param {MapLike|null} _map - Game map for bounds checking (unused)
+   * @param {number[][]} coords - Source and Target coordinates [[centerRow, centerCol], [targetRow, targetCol]]
+   * @returns {AoePattern} Damage cells with power levels
    */
   aoe (_map, coords) {
     const [centerRow, centerCol] = coords[0]

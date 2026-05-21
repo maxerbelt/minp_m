@@ -8,6 +8,11 @@ import {
 } from '@jest/globals'
 import { PackedDraw } from './packeddraw.js'
 
+function removeTestCanvas () {
+  const canvas = document.getElementById('test-canvas')
+  if (canvas) canvas.remove()
+}
+
 describe('PackedDraw', () => {
   let packedDraw
   let mockCanvas
@@ -49,11 +54,6 @@ describe('PackedDraw', () => {
     }))
     document.body.appendChild(mockCanvas)
     return mockCanvas
-  }
-
-  function removeTestCanvas () {
-    const canvas = document.getElementById('test-canvas')
-    if (canvas) canvas.remove()
   }
 
   beforeEach(() => {
