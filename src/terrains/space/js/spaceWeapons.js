@@ -41,12 +41,17 @@ import { coordToKey } from '../../../core/utilities.js'
 // Helper Constants & Utility Functions
 
 /**
- * Normalizes weapon launch coordinates into a consistent [source, target] format
- * @param {number[]|number[][]} coords - Raw coordinates in various formats
+ * Normalizes weapon launch coordinates into a consistent [source, target] format.
+ * Accepts multiple coordinate formats and produces a standardized [[source], [target]] pair.
+ * @param {number[]|number[][]} coords - Raw coordinates in various formats:
+ *   - [row, col] - flat coordinate pair
+ *   - [[row, col]] - single coordinate in array
+ *   - [[row1, col1], [row2, col2]] - coordinate pair
  * @param {number} rr - Source row coordinate
  * @param {number} cc - Source column coordinate
  * @returns {number[][]} Normalized coordinate pair [[sourceRow, sourceCol], [targetRow, targetCol]]
- * @throws {TypeError} If coords format is invalid
+ * @throws {TypeError} If coords format is invalid or unrecognized
+ * @private
  */
 function normalizeWeaponCoordinates (coords, rr, cc) {
   if (!Array.isArray(coords)) {
@@ -77,14 +82,16 @@ const CSS_CLASSES = {
 }
 
 /**
- * Creates a square explosion pattern around a center point
- * @param {number} centerRow - Center row
- * @param {number} centerCol - Center column
- * @param {number} radius - Explosion radius (distance from center)
- * @param {number} centerPower - Power at center
- * @param {number} adjacentPower - Power for adjacent cells
- * @param {number} distancePower - Power for cells at distance
- * @returns {Array<[number, number, number]>} Explosion pattern
+ * Creates a square explosion pattern around a center point.
+ * Generates a 3-layer pattern: center → 3×3 adjacent → distance ring.
+ * @param {number} centerRow - Explosion center row coordinate
+ * @param {number} centerCol - Explosion center column coordinate
+ * @param {number} radius - Explosion radius (distance from center to outer ring)
+ * @param {number} [centerPower=2] - Damage power at center cell
+ * @param {number} [adjacentPower=1] - Damage power for 3×3 adjacent cells
+ * @param {number} [distancePower=0] - Damage power for distance ring cells
+ * @returns {AoePattern} Explosion pattern as [row, col, power] tuples
+ * @private
  */
 function createSquareExplosion (
   centerRow,
@@ -144,14 +151,16 @@ function createSquareExplosion (
 
 /**
  * Performs a dual-board weapon launch with optional animation callback.
+ * Routes weapon launch to launchRightTo with animation context preserved.
  * @param {Weapon} weapon - The weapon instance being launched
- * @param {number[]|number[][]} coords - Launch coordinates
- * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {TerrainMap} map - Game map object
- * @param {GameModel} gameModel - Game model object
- * @param {(weapon: Weapon, coords: number[]|number[][], context: AnimationContext, map: TerrainMap, gameModel: GameModel) => Promise<Object>} [animationCallback] - Optional custom animation callback
- * @returns {Promise<Object>} Launch promise
+ * @param {number[]|number[][]} coords - Launch target coordinates
+ * @param {AnimationContext} context - Animation context containing source coords and view models
+ * @param {TerrainMap} map - Game map object for bounds/terrain checking
+ * @param {GameModel} gameModel - Game model object for targeting logic
+ * @param {(weapon: Weapon, coords: number[]|number[][], context: AnimationContext, map: TerrainMap, gameModel: GameModel) => Promise<Object>} [animationCallback] - Optional custom animation callback for coordinate transformation
+ * @returns {Promise<Object>} Launch completion result with optional {target} property
  * @async
+ * @private
  */
 async function launchWithDualBoardAnimation (
   weapon,
@@ -178,8 +187,10 @@ async function launchWithDualBoardAnimation (
 /**
  * Adds portal CSS classes to cells for dual-board animation.
  * Applies marker and portal classes symmetrically across both boards for visual effect.
- * @param {DualBoardCells} cells - Source and target cell references
+ * Used exclusively for animation decoration; must be cleaned up afterward.
+ * @param {DualBoardCells} cells - Source and target cell references on both boards
  * @returns {void}
+ * @private
  */
 function addPortalClasses (cells) {
   // Apply the visual portal/marker classes symmetrically to both boards.
@@ -194,8 +205,10 @@ function addPortalClasses (cells) {
 /**
  * Removes portal CSS classes from cells after animation.
  * Cleans up animation decoration classes to restore original cell styling.
- * @param {DualBoardCells} cells - Source and target cell references
+ * Essential for preventing stale hover/cursor state after animation completes.
+ * @param {DualBoardCells} cells - Source and target cell references on both boards
  * @returns {void}
+ * @private
  */
 function removePortalClasses (cells) {
   cells.sourceCell1.classList.remove(CSS_CLASSES.MARKER)
@@ -206,14 +219,16 @@ function removePortalClasses (cells) {
 
 /**
  * Performs portal-style dual-board animation for weapons.
- * Visualizes weapon trajectory as portal markers across both boards.
- * @param {Weapon} weapon - The weapon instance
+ * Visualizes weapon trajectory as portal markers (line start and end) across both boards.
+ * Decorative portal classes do not affect hit registration logic.
+ * @param {Weapon} weapon - The weapon instance (typically Strike-derived)
  * @param {number[]|number[][]} coords - Target coordinates
- * @param {AnimationContext} context - Animation context (source coords and view models)
- * @param {TerrainMap} map - Game map object
- * @param {GameModel} gameModel - Game model object
- * @returns {Promise<Object>} Animation completion result with target info
+ * @param {AnimationContext} context - Animation context with source coords and view models
+ * @param {TerrainMap} map - Game map object for line normalization
+ * @param {GameModel} gameModel - Game model object for candidate target lookup
+ * @returns {Promise<Object>} Animation completion result: {target: Coord} if has candidates, else {}
  * @async
+ * @private
  */
 async function performPortalAnimation (weapon, coords, context, map, gameModel) {
   const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
@@ -286,7 +301,8 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
  */
 export class Missile extends Bomb {
   /**
-   * Initializes missile with configuration
+   * Initializes missile with configuration.
+   * Sets up targeting cursors, animation sequence, and splash damage pattern.
    * @param {number} ammo - Number of missiles available
    */
   constructor (ammo) {
@@ -327,41 +343,45 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Gets the audio file for missile flight sound
-   * @returns {URL} URL to missile flight sound asset
+   * Gets the audio file for missile flight sound.
+   * @returns {URL} URL to missile flight sound asset (relative to this module)
+   * @public
    */
   get flightSound () {
     return Weapon.getFlightSoundUrl('missile-flight.mp3', import.meta.url)
   }
 
   /**
-   * Creates a clone of this missile with optional new ammo count
-   * Implements weapon cloning protocol
-   * @param {number} [ammo] - Ammo count for cloned instance
-   * @returns {Missile} New missile instance
+   * Creates a clone of this missile with optional new ammo count.
+   * Implements weapon cloning protocol.
+   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
+   * @returns {Missile} New missile instance with specified ammo
+   * @public
    */
   clone (ammo) {
     return this.createClone(Missile, ammo)
   }
 
   /**
-   * Normalizes launch coordinates for missile targeting
-   * Maps source and first target coordinate to launch pair format
+   * Normalizes launch coordinates for missile targeting.
+   * Maps source and first target coordinate to launch pair format.
    * @param {Object} _map - Game map (unused for missile)
    * @param {number[]} baseCoords - Source coordinates [row, col]
    * @param {number[][]} targetCoords - Array of target coordinates
    * @returns {number[][]} Transformed coordinate pair [baseCoords, targetCoords[0]]
+   * @public
    */
   redoCoords (_map, baseCoords, targetCoords) {
     return [baseCoords, targetCoords[0]]
   }
 
   /**
-   * Calculates area-of-effect damage pattern from target coordinates
-   * Delegates to inherited boom() method for standard explosion pattern
+   * Calculates area-of-effect damage pattern from target coordinates.
+   * Delegates to inherited boom() method for standard explosion pattern.
    * @param {Object} _map - Game map (unused for missile)
-   * @param {number[][]} coords - Target coordinates [[row, col]]
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * @param {number[][]} coords - Target coordinates [[row, col], ...]
+   * @returns {AoePattern} Damage cells with power levels [row, col, power]
+   * @public
    */
   aoe (_map, coords) {
     if (coords.length < 1) return []
@@ -374,6 +394,7 @@ export class Missile extends Bomb {
   /**
    * Animates missile launch with cross-board support.
    * Routes to parent launchTo if no opposing view model exists.
+   * Single-target missile seeks impact location and returns it for hit registration.
    * @async
    * @param {number[]|number[][]} coords - Target coordinates [[row, col]] or flat coordinate
    * @param {number} row - Source row coordinate
@@ -381,7 +402,8 @@ export class Missile extends Bomb {
    * @param {TerrainMap} map - Game map object
    * @param {ViewModel} viewModel - Primary view model
    * @param {OpposingViewModel} [opposingViewModel] - Optional opposing player view model
-   * @returns {Promise<Object>} Animation completion result with target info
+   * @returns {Promise<{target: Coord}>} Animation completion result with resolved target coordinate
+   * @public
    */
   async launchTo (coords, row, col, map, viewModel, opposingViewModel) {
     if (!opposingViewModel) {
@@ -418,12 +440,13 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Determines turn phase for missile variant
-   * Maps variant ID to turn duration classes for animation pacing
+   * Determines turn phase for missile variant.
+   * Maps variant ID to turn duration classes for animation pacing.
    * @param {number} variant - Weapon variant identifier (0, 2, 3)
-   * @param {number} _r - Row coordinate for turn calculation
-   * @param {number} _c - Column coordinate for turn calculation
-   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
+   * @param {number} _r - Row coordinate (unused for missile)
+   * @param {number} _c - Column coordinate (unused for missile)
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
+   * @public
    */
   getTurn (variant, _r, _c) {
     const turnMap = {
@@ -435,9 +458,10 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Creates a single-missile instance for quick access
+   * Creates a single-missile instance for quick access.
    * @static
    * @returns {Missile} Missile instance with 1 ammo
+   * @public
    */
   static get single () {
     return new Missile(1)
@@ -455,7 +479,8 @@ export class Missile extends Bomb {
  */
 export class RailBolt extends Strike {
   /**
-   * Initializes rail bolt with configuration
+   * Initializes rail bolt with configuration.
+   * Sets up two-point targeting cursors, portal animation support, and splash pattern.
    * @param {number} ammo - Number of rail bolts available
    */
   constructor (ammo) {
@@ -516,12 +541,13 @@ export class RailBolt extends Strike {
     )
   }
   /**
-   * Determines turn phase for missile variant
-   * Maps variant ID to turn duration classes for animation pacing
-   * @param {number} variant - Weapon variant identifier (0, 2, 3)
-   * @param {number} r - Row coordinate for turn calculation
-   * @param {number} c - Column coordinate for turn calculation
-   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
+   * Determines turn phase for rail bolt based on position relative to trajectory line.
+   * Complex geometric calculation for animation pacing based on diagonal/orthogonal position.
+   * @param {number} variant - Weapon variant identifier (0, 1, 2, 3)
+   * @param {number} r - Row offset from line origin
+   * @param {number} c - Column offset from line origin
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
+   * @public
    */
   getTurn (variant, r, c) {
     if (r === 0 && c === 0) {
@@ -542,36 +568,48 @@ export class RailBolt extends Strike {
     return d1 < d0 ? 'turn2' : ''
   }
   /**
-   * Gets the audio file for rail bolt flight sound
-   * @returns {URL} URL to rail bolt flight sound asset
+   * Gets the audio file for rail bolt flight sound.
+   * @returns {URL} URL to rail bolt flight sound asset (relative to this module)
+   * @public
    */
   get flightSound () {
     return Weapon.getFlightSoundUrl('rail-flight.mp3', import.meta.url)
   }
 
   /**
-   * Creates a clone of this rail bolt with optional new ammo count
-   * Implements weapon cloning protocol
-   * @param {number} [ammo] - Ammo count for cloned instance
-   * @returns {RailBolt} New rail bolt instance
+   * Creates a clone of this rail bolt with optional new ammo count.
+   * Implements weapon cloning protocol.
+   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
+   * @returns {RailBolt} New rail bolt instance with specified ammo
+   * @public
    */
   clone (ammo) {
     return this.createClone(RailBolt, ammo)
   }
 
-  aoePlus (map, coords) {
+  /**
+   * Calculates area-of-effect with auxiliary data for splash calculation.
+   * Returns affected area plus full line for directional splash determination.
+   * @param {Object} map - Game map object
+   * @param {number[][]} coords - Target coordinates [[row1, col1], [row2, col2]]
+   * @returns {{affectedArea: AoePattern, options: {fullLine: AoePattern}}} Effect data with full trajectory
+   * @public
+   */
+  aoePlus (map, coords) {"}}]
     const affectedArea = this.aoe(map, coords)
     const fullLine = affectedArea
     return { affectedArea, options: { fullLine } }
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point
-   * @param {Object} _map - Game map
-   * @param {Array} resolvedTarget - Impact coordinate [row, col]
-   * @param {Array} effect - Damage effect coordinates
-   * @param {Object} options - Additional options
-   * @returns {Array} Splash pattern
+   * Calculates splash/secondary damage pattern around a point.
+   * Creates cross-shaped splash with directional forward/backward damaging cells.
+   * @param {Object} _map - Game map (unused)
+   * @param {Coord} resolvedTarget - Impact coordinate [row, col]
+   * @param {AoePattern} effect - Damage effect coordinates (full trajectory line)
+   * @param {{fullLine: AoePattern}} options - Additional options with trajectory line
+   * @returns {AoePattern} Splash pattern [row, col, power] tuples
+   * @public
    */
   splash (_map, resolvedTarget, effect, options) {
     const last = (effect?.length || 1) - 1
@@ -613,15 +651,17 @@ export class RailBolt extends Strike {
   /**
    * Initiates rail bolt launch with coordinate transformation.
    * Routes to launchWithDualBoardAnimation for portal-style animation.
+   * Displays portal markers at line start and end for visual feedback.
    * @async
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
    * @param {number} sourceCol - Source column coordinate
-   * @param {TerrainMap} map - Game map object
+   * @param {TerrainMap} map - Game map object for line normalization
    * @param {ViewModel} viewModel - Primary view model
    * @param {OpposingViewModel} [opposingViewModel] - Optional opposing player view model
-   * @param {GameModel} [gameModel] - Optional game model for coordinate transformation
-   * @returns {Promise<Object>} Animation completion result with target info
+   * @param {GameModel} [gameModel] - Optional game model for candidate target lookup
+   * @returns {Promise<{target: Coord}|{}>} Animation result with resolved target or empty object
+   * @public
    */
   async launchTo (
     coords,
@@ -644,9 +684,10 @@ export class RailBolt extends Strike {
   }
 
   /**
-   * Creates a single-rail-bolt instance for quick access
+   * Creates a single-rail-bolt instance for quick access.
    * @static
    * @returns {RailBolt} RailBolt instance with 1 ammo
+   * @public
    */
   static get single () {
     return new RailBolt(1)
@@ -664,7 +705,8 @@ export class RailBolt extends Strike {
  */
 export class GaussRound extends Fish {
   /**
-   * Initializes Gauss round with configuration
+   * Initializes Gauss round with configuration.
+   * Sets up land-detection projectile with crash damage and dual-animation launch.
    * @param {number} ammo - Number of Gauss rounds available
    */
   constructor (ammo) {
@@ -752,15 +794,17 @@ export class GaussRound extends Fish {
    * Performs Gauss round dual-board animation with portal effect on sources.
    * Animates from source on opposing board to target on primary board,
    * then from source on primary board to target on primary board.
+   * Portal markers appear at source coordinates on both boards.
    * @async
    * @param {number[][]} coords - Target coordinates
-   * @param {number} sourceRow - Source row
-   * @param {number} sourceCol - Source column
-   * @param {TerrainMap} map - Game map
+   * @param {number} sourceRow - Source row coordinate (portal source on both boards)
+   * @param {number} sourceCol - Source column coordinate (portal source on both boards)
+   * @param {TerrainMap} map - Game map object
    * @param {ViewModel} viewModel - Primary view model
    * @param {OpposingViewModel} opposingViewModel - Opposing view model
-   * @param {GameModel} gameModel - Game model
-   * @returns {Promise<Object>} Animation promise with target info
+   * @param {GameModel} gameModel - Game model for target lookup
+   * @returns {Promise<{target: Coord}|{}>} Animation result with resolved target or empty object
+   * @private
    */
   async performGaussRoundAnimation (
     coords,
@@ -838,12 +882,13 @@ export class GaussRound extends Fish {
     return list
   }
   /**
-   * Determines turn phase for Gauss round variant
-   * Maps variant ID to turn duration classes for animation pacing
+   * Determines turn phase for Gauss round variant.
+   * Maps variant ID to turn duration classes for animation pacing.
    * @param {number} variant - Weapon variant identifier (1, 3)
    * @param {number} _r - Row coordinate (unused for Gauss round)
    * @param {number} _c - Column coordinate (unused for Gauss round)
-   * @returns {string} CSS turn class name ('turn2') or empty string
+   * @returns {string} CSS turn class name ('turn2') or empty string if no mapping
+   * @public
    */
   getTurn (variant, _r, _c) {
     const turnMap = {
@@ -854,48 +899,45 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Creates a clone of this Gauss round with optional new ammo count
-   * Implements weapon cloning protocol
-   * @param {number} [ammo] - Ammo count for cloned instance
-   * @returns {GaussRound} New Gauss round instance
+   * Creates a clone of this Gauss round with optional new ammo count.
+   * Implements weapon cloning protocol.
+   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
+   * @returns {GaussRound} New Gauss round instance with specified ammo
+   * @public
    */
   clone (ammo) {
     return this.createClone(GaussRound, ammo)
   }
 
   /**
-   * Gets the audio file for Gauss round flight sound
-   * @returns {URL} URL to Gauss round flight sound asset
+   * Gets the audio file for Gauss round flight sound.
+   * @returns {URL} URL to Gauss round flight sound asset (relative to this module)
+   * @public
    */
   get flightSound () {
     return new URL('../sounds/gauss-flight.mp3', import.meta.url)
   }
 
   /**
-   * Computes blast radius pattern from explosion center
-   * Creates expanding square pattern: center → 3×3 → 5×5 → cardinal distance
+   * Computes blast radius pattern from explosion center.
+   * Creates expanding square pattern via createSquareExplosion with radius 2.
    * @param {number} centerRow - Explosion center row
    * @param {number} centerCol - Explosion center column
-   * @returns {Array<[number, number, number]>} Damage pattern as [row, col, power] tuples
+   * @returns {AoePattern} Damage pattern as [row, col, power] tuples
+   * @public
    */
   boom (centerRow, centerCol) {
     return createSquareExplosion(centerRow, centerCol, 2)
   }
 
   /**
-   * Calculates trajectory path along ray line until land boundary
-   * Stops at first land cell if detected; records crash location
-   * @param {Object} map - Game map for terrain checking
-   * @param {number[][]} coords - Start and end coordinates [[startRow, startCol], [endRow, endCol]]
-   * @param {number} [power=1] - Power level for trajectory cells
-   * @returns {Array<[number, number, number]>} Cells along trajectory with power levels
-   */
-  /**
-   * Calculates area-of-effect along the fish's water path
-   * Stops at land boundaries (map.isLand check)
-   * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array} Cells along water path with damage power
+   * Calculates area-of-effect along the Gauss round's land-stopping path.
+   * Inherits land-detection from Fish, adds penetration distance for crash mechanics.
+   * Stops at land boundaries (map.isLand check) with optional penetration.
+   * @param {TerrainMap} map - Game map for bounds/terrain checking
+   * @param {number[][]} coords - Source and Target coordinates [[startRow, startCol], [endRow, endCol]]
+   * @returns {AoePattern} Cells along trajectory path with damage power [row, col, power]
+   * @public
    */
   aoe (map, coords) {
     const effect = this.aoeRaw(map, coords, 2, 1)
@@ -904,6 +946,14 @@ export class GaussRound extends Fish {
 
     return effect
   }
+  /**
+   * Calculates area-of-effect with auxiliary data for splash and crash calculations.
+   * Returns affected area plus full line and crash location for damage determination.
+   * @param {TerrainMap} map - Game map object
+   * @param {number[][]} coords - Target coordinates [[row1, col1], [row2, col2]]
+   * @returns {{affectedArea: AoePattern, options: {crashLoc: Coord|null, fullLine: AoePattern}}} Effect data with trajectory info
+   * @public
+   */
   aoePlus (map, coords) {
     const affectedArea = this.aoe(map, coords)
     const crashLoc = affectedArea.length > 0 ? affectedArea.at(-1) : null
@@ -912,12 +962,14 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point
-   * @param {Object} _map - Game map
+   * Calculates splash/secondary damage pattern around a point.
+   * Creates directional splash based on trajectory position (start, middle, end).
+   * @param {Object} _map - Game map (unused)
    * @param {Coord} resolvedTarget - Impact coordinate [row, col]
-   * @param {AoePattern} effect - Damage effect coordinates
-   * @param {{fullLine?: Coord[]}} options - Additional options
-   * @returns {AoePattern} Splash pattern
+   * @param {AoePattern} effect - Damage effect coordinates along trajectory
+   * @param {{fullLine: AoePattern}} options - Additional options with full trajectory line
+   * @returns {AoePattern} Splash pattern [row, col, power] tuples
+   * @public
    */
   splash (_map, resolvedTarget, effect, options) {
     const last = (effect?.length || 1) - 1
@@ -962,13 +1014,15 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Calculates crash splash damage pattern around a terminal point when no hits are registered
- 
-   * @param {Object} map - Game map
-   * @param {Array} target - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates
-   * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
+   * Calculates crash splash damage pattern around a terminal point.
+   * Applied when Gauss round hits terrain boundary with no targets registered.
+   * Creates symmetric pattern: orthogonal cells (power 1) + diagonals and distance 2 (power 0).
+   * @param {TerrainMap} map - Game map for bounds checking
+   * @param {Coord} target - Impact coordinate [row, col]
+   * @param {AoePattern} _effect - Damage effect coordinates (unused)
+   * @param {Object} _options - Additional options (unused)
+   * @returns {AoePattern} Crash splash pattern [row, col, power] tuples
+   * @public
    */
   crashSplash (map, target, _effect, _options) {
     let pattern = []
@@ -993,17 +1047,19 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Initiates Gauss round launch with coordinate transformation
-   * Routes to launchRightTo for coordinate processing before dual-animation launch
+   * Initiates Gauss round launch with coordinate transformation.
+   * Routes to launchRightTo for coordinate processing before dual-animation launch.
+   * Portal markers appear at source coordinates for visual feedback.
    * @async
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
    * @param {number} sourceCol - Source column coordinate
-   * @param {Object} map - Game map object
-   * @param {Object} viewModel - Primary view model
-   * @param {Object} [opposingViewModel] - Optional opposing player view model
-   * @param {Object} [gameModel] - Optional game model for coordinate transformation
-   * @returns {Promise<void>} Resolves when animations complete
+   * @param {TerrainMap} map - Game map object
+   * @param {ViewModel} viewModel - Primary view model
+   * @param {OpposingViewModel} [opposingViewModel] - Optional opposing player view model
+   * @param {GameModel} [gameModel] - Optional game model for coordinate transformation
+   * @returns {Promise<{target: Coord}|{}>} Animation result with resolved target or empty object
+   * @public
    */
   async launchTo (
     coords,
@@ -1035,9 +1091,10 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Creates a single-GaussRound instance for quick access
+   * Creates a single-GaussRound instance for quick access.
    * @static
    * @returns {GaussRound} GaussRound instance with 1 ammo
+   * @public
    */
   static get single () {
     return new GaussRound(1)
@@ -1047,12 +1104,14 @@ export class GaussRound extends Fish {
 /**
  * Laser - A projectile weapon that stops at terrain boundaries.
  * Extends Fish with land-detection trajectory and dual-animation launch.
- * Reuses implementation from GaussRound for equivalent behavior.
+ * Implements separate blast mechanics from GaussRound despite similar trajectory.
  * @extends Fish
+ * @class Laser
  */
 export class Laser extends Fish {
   /**
    * Initializes Laser with configuration.
+   * Sets up land-detection projectile with separate crash mechanics from GaussRound.
    * @param {number} ammo - Number of Laser Blasts available
    */
   constructor (ammo) {
@@ -1140,8 +1199,9 @@ export class Laser extends Fish {
   /**
    * Creates a clone of this laser with optional new ammo count.
    * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance
-   * @returns {Laser} New Laser instance
+   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
+   * @returns {Laser} New Laser instance with specified ammo
+   * @public
    */
   clone (ammo) {
     return this.createClone(Laser, ammo)
@@ -1149,7 +1209,8 @@ export class Laser extends Fish {
 
   /**
    * Gets the audio file for Laser blast flight sound.
-   * @returns {URL} URL to Laser blast flight sound asset
+   * @returns {URL} URL to Laser blast flight sound asset (relative to this module)
+   * @public
    */
   get flightSound () {
     return new URL('../sounds/laser-flight.mp3', import.meta.url)
@@ -1159,6 +1220,7 @@ export class Laser extends Fish {
    * Creates a single-Laser-blast instance for quick access.
    * @static
    * @returns {Laser} Laser instance with 1 ammo
+   * @public
    */
   static get single () {
     return new Laser(1)
@@ -1171,12 +1233,14 @@ export class Laser extends Fish {
 
 /**
  * Scan - A detection/scanning weapon generating pie-segment patterns.
- * Extends Sensor for radar-like sweep visualization.
+ * Extends Sensor for radar-like sweep visualization with sweep animation.
  * @extends Sensor
+ * @class Scan
  */
 export class Scan extends Sensor {
   /**
    * Initializes radar scan with configuration.
+   * Sets up two-point targeting sweep with pie-segment detection pattern.
    * @param {number} ammo - Number of scans available
    */
   constructor (ammo) {
@@ -1202,8 +1266,9 @@ export class Scan extends Sensor {
   /**
    * Creates a clone of this scan with optional new ammo count.
    * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance
-   * @returns {Scan} New scan instance
+   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
+   * @returns {Scan} New scan instance with specified ammo
+   * @public
    */
   clone (ammo) {
     return this.createClone(Scan, ammo)
@@ -1227,10 +1292,11 @@ export const spaceWeaponsCatalogue = new WeaponCatalogue([
 
 /**
  * Adds a coordinate tuple into an indexed bracket for fast lookup.
- * Stores coordinate data keyed by its string representation.
+ * Stores coordinate data keyed by its string representation for deduplication.
  * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID
- * @param {Coord} coord - Coordinate tuple [row, col, power]
+ * @param {AoeCell} coord - Coordinate tuple [row, col, power]
  * @returns {void}
+ * @private
  */
 function addCoord (bracket, coord) {
   bracket[coordToKey(...coord)] = coord
@@ -1238,12 +1304,14 @@ function addCoord (bracket, coord) {
 
 /**
  * Adds or upgrades a coordinate in a bracket using an offset and power value.
- * Updates the bracket with new coordinates, preferring higher power values.
+ * Updates the bracket with new coordinates, preferring higher power values for same cell.
+ * Essential for merging overlapping damage patterns without duplicates.
  * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID
- * @param {Coord} coord - Base coordinate tuple [row, col, power]
- * @param {[number, number]} offset - Offset to apply to the base coordinate
- * @param {number} power - Power value for the new coordinate
+ * @param {AoeCell} coord - Base coordinate tuple [row, col, power]
+ * @param {[number, number]} offset - Offset [rowDelta, colDelta] to apply to base
+ * @param {number} power - Power value for the new coordinate at offset
  * @returns {void}
+ * @private
  */
 function addOffset (bracket, coord, offset, power) {
   const newCoord = [coord[0] + offset[0], coord[1] + offset[1], power]
