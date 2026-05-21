@@ -128,10 +128,11 @@ export class Score {
   }
 
   /**
+   * Checks if a coordinate has not been shot yet.
    *
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
-   * @returns {boolean|null} True if new shot, null if already shot
+   * @returns {boolean|null} True if location is unshot, null if already shot
    */
   newShotKey (r, c) {
     if (this.shot.test(c, r)) return null
@@ -139,16 +140,29 @@ export class Score {
   }
 
   /**
+   * Moves a shot from shot mask to reveal mask.
    * Clears the location from the shot mask and marks it in the reveal mask.
    *
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {void}
-   * @param {number} c - Column coordinate
    */
   shotReveal (r, c) {
     this.shot.clear(c, r)
     this.reveal.set(c, r)
+  }
+  /**
+   * Finalizes a revealed shot by moving it from reveal mask back to shot mask.
+   * Only processes locations that are currently in the reveal mask.
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
+   * @returns {void}
+   */
+  shotRevealFinalize (r, c) {
+    if (!this.reveal.test(c, r)) return
+    this.shot.set(c, r)
+    this.reveal.clear(c, r)
   }
   /**
    * Finalizes a revealed shot using (x, y) coordinates.
@@ -158,31 +172,29 @@ export class Score {
    * @param {number} y - Y coordinate (0-based index)
    * @returns {void}
    */
-  shotRevealFinalize (r, c) {
-    if (!this.reveal.test(c, r)) return
-    this.shot.set(c, r)
-    this.reveal.clear(c, r)
-  }
   shotRevealFinalizeXY (x, y) {
     if (!this.reveal.test(y, x)) return
     this.shot.set(y, x)
     this.reveal.clear(y, x)
   }
-  /** 
-   * Wake effects show weapon movement paths.
+  /**
+   * Marks a cell as hinted in the hint mask.
    *
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
-   * @returns {void} 
+   * @returns {void}
    */
   hintReveal (r, c) {
     this.hint.set(c, r)
   }
 
   /**
-   * Marks a cell with wake effect.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * Marks a cell with a wake effect in the wake mask.
+   * Wake effects show ship movement paths.
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
+   * @returns {void}
    */
   wakeReveal (r, c) {
     this.wake.set(c, r)
@@ -190,9 +202,11 @@ export class Score {
 
   /**
    * Creates a new shot key at coordinates if not already present.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {boolean|null} True if created, null if already exists
+   * Only creates if the location has not been previously shot.
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
+   * @returns {boolean|null} True if shot key was created, null if location already shot
    */
   createShotKey (r, c) {
     const isCreated = this.newShotKey(r, c)
@@ -205,7 +219,8 @@ export class Score {
 
   /**
    * Gets a count array of all tracked metrics.
-   * @returns {number[]} [turns, dtaps, shots, reveals, hints]
+   *
+   * @returns {number[]} Array of [turns, dtaps, shots, reveals, hints] counts
    */
   counts () {
     return [
@@ -219,7 +234,9 @@ export class Score {
 
   /**
    * Calculates the number of shots excluding automatic misses.
-   * @returns {number} Number of manual shots taken
+   * Returns the occupancy of shot mask minus automatic misses, with minimum of 0.
+   *
+   * @returns {number} Number of manual shots taken (automatic misses excluded)
    */
   noOfShots () {
     return Math.max(0, this.shot.occupancy - this.autoMisses)
@@ -227,9 +244,12 @@ export class Score {
 
   /**
    * Registers an automatic miss at the given coordinates.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {boolean|null} True if registered, null if already shot there
+   * Creates a shot key and marks the location as an automatic miss.
+   * Returns null if the location was already shot.
+   *
+   * @param {number} r - Row coordinate (0-based index)
+   * @param {number} c - Column coordinate (0-based index)
+   * @returns {boolean|null} True if automatic miss registered, null if location already shot
    */
   addAutoMiss (r, c) {
     const isCreated = this.createShotKey(r, c)
