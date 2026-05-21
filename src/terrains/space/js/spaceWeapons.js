@@ -595,7 +595,7 @@ export class RailBolt extends Strike {
    * @returns {{affectedArea: AoePattern, options: {fullLine: AoePattern}}} Effect data with full trajectory
    * @public
    */
-  aoePlus (map, coords) {"}}]
+  aoePlus (map, coords) {
     const affectedArea = this.aoe(map, coords)
     const fullLine = affectedArea
     return { affectedArea, options: { fullLine } }
