@@ -1,30 +1,52 @@
 import { bh } from './terrains/all/js/bh.js'
 import { customUI } from './waters/customUI.js'
 
-////** @typedef {import('./waters/customUI.js').CustomUI} CustomUI */
 /**
+ * Represents the custom UI for battle building.
+ * Manages board display, visual feedback, and user interface elements.
  * @typedef {Object} CustomUI
- * @property {Function} resetBoardSize - Resets board size display
- * @property {Function} clearVisuals - Clears visual markers
- * @property {Function} refreshAllColor - Refreshes all cell colors
- * @property {Object} score - Score tracking object
+ * @property {(width?: number, height?: number) => void} resetBoardSize - Resets board size display
+ * @property {() => void} clearVisuals - Clears visual markers and overlays
+ * @property {() => void} refreshAllColor - Refreshes all cell colors on board
+ * @property {Object} score - Score tracking object with current stats
+ * @property {Function} buildBoard - Builds the game board in UI
+ * @property {(ships: Array) => void} addShipMode - Sets UI to ship addition mode
+ * @property {(custom: any) => void} displayShipTrackingInfo - Shows ship tracking information
+ * @property {(custom: any) => void} makeAddDroppable - Makes cells droppable for ship addition
+ * @property {() => void} handleReuse - Handles reuse of previous placement
+ * @property {Function} undoBtn - Undo button element
+ * @property {Function} resetBtn - Reset button element
+ * @property {Array} placelistenCancellables - Array of event listeners to cancel
  */
 
 /**
+ * Represents the custom placement logic and state.
+ * Manages ship placement, validation, and storage.
  * @typedef {Object} Custom
- * @property {Function} resetShipCells - Resets grid cells
- * @property {Function} createCandidateShips - Creates ships from placement
- * @property {Object} shipCellGrid - Grid tracking ship cells
- * @property {Function} setMap - Saves current map
+ * @property {() => void} resetShipCells - Resets grid cells to empty state
+ * @property {() => Array} createCandidateShips - Creates and validates ships from current placement
+ * @property {Object} shipCellGrid - Grid tracking where ship cells are positioned
+ * @property {(map?: any) => void} setMap - Saves current map configuration
  * @property {Array} ships - Array of placed ships
+ * @property {Array} [candidateShips] - Array of candidate ships being validated
+ * @property {(isClearing?: boolean) => void} handleClear - Clears current placement
+ * @property {() => void} removeAllPlacedShips - Removes all ships from placement
+ * @property {() => void} handleUndo - Undoes the last placement action
+ * @property {(editData?: any) => void} loadForEdit - Loads existing map for editing
+ * @property {() => void} initializePlacement - Initializes new placement session
+ * @property {(direction?: string) => void} moveCursor - Moves cursor in specified direction
  */
 
 /**
+ * Map of button names to their handler functions.
+ * Used for declarative button management in build mode.
  * @typedef {Object.<string, (...args: any[]) => void>} ButtonHandlerMap
  */
 
 /**
- * @typedef {Object.<string, (event: Event) => void>} KeyboardShortcutHandlerMap
+ * Map of keyboard shortcuts to their handler functions.
+ * Supports both character keys and special keys (ArrowUp, Enter, Tab, etc).
+ * @typedef {Object.<string, (event?: KeyboardEvent) => void>} KeyboardShortcutHandlerMap
  */
 
 import {
@@ -62,8 +84,9 @@ let buttonManager = null
 let keyboardManager = null
 
 /**
- * Creates and validates candidate ships from current placement.
- * @returns {Array} Validated ship array
+ * Creates candidate ships from current placement and stores them in custom state.
+ * Validates placement and prepares ships for addition to the board.
+ * @returns {Array} Validated ship array ready for placement
  * @private
  */
 function _createAndValidateCandidateShips () {
@@ -74,7 +97,8 @@ function _createAndValidateCandidateShips () {
 
 /**
  * Saves the edited map if in edit mode.
- * @param {boolean} isEditing - Whether map is being edited
+ * Persists changes to the map configuration when editing an existing map.
+ * @param {boolean} isEditing - Whether map is currently being edited
  * @private
  */
 function _saveMapIfEditing (isEditing) {
@@ -85,8 +109,8 @@ function _saveMapIfEditing (isEditing) {
 
 /**
  * Initializes the ship addition mode UI.
- * Sets up board for adding ships to placement.
- * @param {Array} ships - Ships to display
+ * Prepares the board display and UI for adding ships to the placement.
+ * @param {Array} ships - Validated ships to display in UI
  * @private
  */
 function _setupShipAdditionMode (ships) {
@@ -98,6 +122,7 @@ function _setupShipAdditionMode (ships) {
 
 /**
  * Configures drag-and-drop handlers for ship addition.
+ * Sets up event listeners and droppable zones for adding ships to board.
  * @private
  */
 function _setupShipAdditionDragHandlers () {
@@ -110,6 +135,7 @@ function _setupShipAdditionDragHandlers () {
 
 /**
  * Accepts the current ship placement and optionally saves the edited map.
+ * Validates placement, updates UI, and prepares for ship addition.
  * @param {boolean} editingMap - Whether map editing is enabled
  * @private
  */
@@ -121,10 +147,10 @@ function _handleAccept (editingMap) {
 }
 
 /**
- * Tracks level completion and navigates to target mode.
- * Records analytics and switches game state.
- * @param {string} targetMode - Target game mode
- * @param {boolean} [trackAsComplete=true] - Whether to track as complete
+ * Tracks level completion and navigates to target game mode.
+ * Records analytics event and switches game state to specified mode.
+ * @param {string} targetMode - Target game mode to switch to
+ * @param {boolean} [trackAsComplete=true] - Whether to track this as a completed level
  * @private
  */
 function _transitionToMode (targetMode, trackAsComplete = true) {
@@ -134,6 +160,7 @@ function _transitionToMode (targetMode, trackAsComplete = true) {
 
 /**
  * Switches to seek mode while preserving build progress.
+ * Transitions to battleseek mode with current map data.
  * @private
  */
 function _handleSeekMap () {
@@ -142,6 +169,7 @@ function _handleSeekMap () {
 
 /**
  * Publishes the current map and returns to the main index.
+ * Finalizes map creation and transitions to main navigation.
  * @private
  */
 function _handlePlayMap () {
@@ -150,7 +178,7 @@ function _handlePlayMap () {
 
 /**
  * Saves the current map for later editing.
- * Records incomplete tracking and loads edit mode.
+ * Records incomplete tracking and loads the map in edit mode.
  * @private
  */
 function _handleSaveMap () {
@@ -160,8 +188,10 @@ function _handleSaveMap () {
 }
 
 /**
- * Setup button handlers using declarative ButtonManager
- * Registers all build mode button actions
+ * Sets up button handlers using declarative ButtonManager.
+ * Registers all build mode button actions and initializes drag-and-drop.
+ * @returns {ButtonManager} Configured button manager instance
+ * @private
  */
 function _setupBuildButtons () {
   buttonManager = new ButtonManager(customUI)
@@ -173,8 +203,10 @@ function _setupBuildButtons () {
 }
 
 /**
+ * Creates all button handler functions for build mode.
+ * Maps button IDs to their corresponding action handlers.
+ * @returns {ButtonHandlerMap} Map of button names to handler functions
  * @private
- * @returns {ButtonHandlerMap}
  */
 function _createBuildButtonHandlers () {
   return {
@@ -193,8 +225,10 @@ function _createBuildButtonHandlers () {
 }
 
 /**
- * Registers keyboard shortcuts for build mode.
- * @returns {KeyboardShortcutManager} The keyboard manager.
+ * Registers and activates keyboard shortcuts for build mode.
+ * Sets up keyboard event handlers and integrates with state manager.
+ * @returns {KeyboardShortcutManager} Activated keyboard manager instance
+ * @private
  */
 function _setupBuildKeyboardShortcuts () {
   keyboardManager = new KeyboardShortcutManager()
@@ -207,8 +241,10 @@ function _setupBuildKeyboardShortcuts () {
 }
 
 /**
+ * Creates all keyboard shortcut handlers for build mode.
+ * Maps keyboard keys to their corresponding action handlers.
+ * @returns {KeyboardShortcutHandlerMap} Map of keys to handler functions
  * @private
- * @returns {KeyboardShortcutHandlerMap}
  */
 function _createBuildKeyboardShortcuts () {
   return {
@@ -234,29 +270,45 @@ function _createBuildKeyboardShortcuts () {
   }
 }
 
+// ============================================================================
+// BUILD MODE INITIALIZATION
+// ============================================================================
+
 // Register mode callbacks with GameStateManager
+// Handles setup and teardown of build mode state and managers
 stateManager.registerModeCallbacks('build', {
+  /**
+   * Called when entering build mode.
+   * Sets up all button and keyboard managers.
+   */
   onInit: () => {
     _setupBuildButtons()
     _setupBuildKeyboardShortcuts()
   },
+  /**
+   * Called when exiting build mode.
+   * Managers are auto-cleaned up by stateManager.
+   */
   onExit: () => {
     // Managers are auto-cleaned up by stateManager
   }
 })
 
 // Save UI visibility config for build mode
+// Specifies which UI elements should be visible during build mode
 stateManager.saveUIVisibility('build', {
   'height-container': true,
   'width-container': true
 })
 
 // Initialize build mode UI
+// Fetches navbar configuration and applies build mode styling
 await fetchNavBar('build', 'Create Your Own Game')
 
 show2ndBar()
 stateManager.applyUIVisibility(uiManager, 'build')
 
+// Setup build options with callbacks for board size and placement initialization
 const editing = setupBuildOptions(
   customUI.resetBoardSize.bind(customUI),
   custom.initializePlacement.bind(custom),
@@ -268,6 +320,7 @@ const editing = setupBuildOptions(
 _setupBuildButtons()
 _setupBuildKeyboardShortcuts()
 
+// Load existing map if editing, otherwise setup fresh placement
 if (editing) {
   custom.loadForEdit(editing)
 } else {
@@ -275,5 +328,6 @@ if (editing) {
   custom.initializePlacement()
 }
 
+// Override tab click listeners to use game flow handlers
 tabs.hide?.overrideClickListener(_handlePlayMap)
 tabs.seek?.overrideClickListener(_handleSeekMap)

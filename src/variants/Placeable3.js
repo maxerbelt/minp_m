@@ -3,16 +3,40 @@ import { Placeable } from './Placeable.js'
 
 /**
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
+ * @typedef {import('./CellsToBePlaced.js').PlacementTarget} PlacementTarget
+ * @typedef {(zoneInfo: any) => boolean} PlacementValidator
  */
 
 /**
  * Represents a placeable with multiple subgroups (layers).
+ * Extends the base Placeable class to support hierarchical placement
+ * with a standard group and multiple special groups for complex layered objects.
  */
 export class Placeable3 extends Placeable {
   /**
-   * Creates a placeable3 instance.
-   * @param {PlaceableType} full - The full placeable.
-   * @param {PlaceableType[]} [subGroups] - The subgroups.
+   * Array of all subgroups (layers) including standard and special groups.
+   * @type {PlaceableType[]}
+   */
+  subGroups
+
+  /**
+   * The standard (primary) subgroup, typically the main structure.
+   * @type {PlaceableType}
+   */
+  standardGroup
+
+  /**
+   * Array of special (secondary) subgroups for additional structures.
+   * @type {PlaceableType[]}
+   */
+  specialGroups
+
+  /**
+   * Creates a placeable3 instance with hierarchical subgroups.
+   * Decomposes the subGroups array into a standard group (first element)
+   * and special groups (remaining elements) for organized layer management.
+   * @param {PlaceableType} full - The full placeable with board and validation configuration.
+   * @param {PlaceableType[]} [subGroups=[]] - Array of subgroups to organize into standard and special groups.
    */
   constructor (full, subGroups) {
     let board = full.board
@@ -28,9 +52,11 @@ export class Placeable3 extends Placeable {
 
   /**
    * Creates a placement at the specified position.
-   * @param {number} r - The row position.
-   * @param {number} c - The column position.
-   * @returns {Cell3sToBePlaced} The cells to be placed.
+   * Returns a Cell3sToBePlaced instance containing the placement configuration
+   * for the cells and all subgroups at the given coordinates.
+   * @param {number} x - The x (column) position for placement.
+   * @param {number} y - The y (row) position for placement.
+   * @returns {Cell3sToBePlaced} The cells to be placed with subgroup information.
    */
   placeAt (x, y) {
     return new Cell3sToBePlaced(this, x, y)
