@@ -262,7 +262,10 @@ export class LoadOut {
    * @private
    */
   _buildFiringInfo (wps, map) {
-    const fireCoordinates = structuredClone(this.selectedCoordinates)
+    // Filter out invalid sentinel coordinates ([-1, -1]) used for unattached cursor tracking
+    const fireCoordinates = structuredClone(this.selectedCoordinates).filter(
+      ([r, c]) => r >= 0 && c >= 0
+    )
     this.selectedWeapon = null
     this.useAmmo(wps)
     const fireWeapon = this._createFireWeaponFunction(map, fireCoordinates, wps)

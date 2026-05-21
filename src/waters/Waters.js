@@ -881,7 +881,28 @@ export class Waters {
     const weapons = bh.terrain?.hasUnattachedWeapons
       ? map?.weapons || []
       : (map?.weapons || []).filter(weapon => !weapon.isLimited)
-    return new LoadOut(weapons, ships, this.UI, this.steps)
+    const loadOut = new LoadOut(weapons, ships, this.UI, this.steps)
+
+    // For terrains without unattached weapons, also create weapon systems
+    // from limited weapons for display purposes (weapon tally boxes)
+    if (!bh.terrain?.hasUnattachedWeapons && map?.weapons) {
+      const limitedWeapons = map.weapons.filter(weapon => weapon.isLimited)
+      for (const limitedWeapon of limitedWeapons) {
+        // Check if this weapon system doesn't already exist
+        const exists = loadOut.allWeaponSystems.some(
+          wps => wps.weapon.letter === limitedWeapon.letter
+        )
+        if (!exists) {
+          // Create a weapon system for display purposes
+          const weaponSystem = LoadOut.createWeaponSystems([limitedWeapon])[0]
+          if (weaponSystem) {
+            loadOut.allWeaponSystems.push(weaponSystem)
+          }
+        }
+      }
+    }
+
+    return loadOut
   }
   /**
    * Displays auto-selection warning for weapons.

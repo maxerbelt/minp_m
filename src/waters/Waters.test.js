@@ -279,6 +279,33 @@ describe('Waters', () => {
       )
       terrainSpy.mockRestore()
     })
+
+    it('adds limited weapons to allWeaponSystems for display even when not in unattachedWeapons', () => {
+      const map = {
+        weapons: [
+          { letter: 'S', isLimited: false },
+          { letter: 'G', isLimited: true }
+        ]
+      }
+      const terrainSpy = jest.spyOn(bh, 'terrain', 'get').mockReturnValue({
+        hasUnattachedWeapons: false
+      })
+      const loadOut = waters.createLoadOut(map, [])
+
+      // Limited weapons should NOT be in unattachedWeapons for firing
+      expect(loadOut.unattachedWeapons).toEqual([
+        { letter: 'S', isLimited: false }
+      ])
+
+      // But limited weapons SHOULD be in allWeaponSystems for display
+      const allLimitedWeapons = loadOut.getAllLimitedWeaponSystems()
+      expect(allLimitedWeapons.some(wps => wps.weapon.letter === 'G')).toBe(
+        true
+      )
+      expect(allLimitedWeapons.length).toBeGreaterThan(0)
+
+      terrainSpy.mockRestore()
+    })
   })
 
   describe('loadForEdit', () => {
