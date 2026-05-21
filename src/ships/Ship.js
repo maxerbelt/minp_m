@@ -2,11 +2,22 @@ import { bh } from '../terrains/all/js/bh.js'
 import { parsePair } from '../core/utilities.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
-import { SubBoard } from '../grid/subBoard.js'
+//import { SubBoard } from '../grid/subBoard.js'
 import { Zip } from '../core/Zip.js'
 
-///// @typedef {import('../weapon/WeaponSystem.js').WeaponSystem} WeaponSystem WeaponSystem
+/**
+ * @typedef {WeaponSystem & {
+ *   row: number,
+ *   col: number
+ * }} PositionedWeaponSystem
+ */
 
+/**
+ * @typedef { WeaponSystem | PositionedWeaponSystem } Rack
+ */
+/**
+ * @typedef {import('../grid/subBoard.js').SubBoard} SubBoard
+ */
 /**
  * @typedef {Object} Placement
  * Placement configuration interface
@@ -46,6 +57,7 @@ export class Ship {
    * @param {string} symmetry
    * @param {string} letter
    * @param {{ '1,1': { id: number; }; }} [weapons]
+   * @property {Mask | SubBoard} hits
    */
   constructor (id, symmetry, letter, weapons) {
     this.id = id
@@ -219,7 +231,7 @@ export class Ship {
    */
   static noOfSunk (ships) {
     return ships.reduce(
-      (/** @type { number} */ sum, /** @type {{ sunk: any; }} */ s) =>
+      (/** @type {  number} */ sum, /** @type {{ sunk: any; }} */ s) =>
         sum + (s.sunk ? 1 : 0),
       0
     )
@@ -316,6 +328,7 @@ export class Ship {
    */
   static createShipsFromShapes (shapes) {
     Ship.id = 1
+    WeaponSystem.id = 1
     return Ship.extraShipsFromShapes(shapes)
   }
   /**
@@ -600,7 +613,7 @@ export class Ship {
 
   /**
    * Internal: Assign row and column coordinates to weapon system
-   * @param {WeaponSystem} weaponSystem - Weapon system to update
+   * @param {Rack} weaponSystem - Weapon system to update
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {void}
@@ -613,7 +626,7 @@ export class Ship {
 
   /**
    * Internal: Update weapon collections with new weapon system
-   * @param {WeaponSystem} weaponSystem - Weapon system to add
+   * @param {Rack} weaponSystem - Weapon system to add
    * @param {Map} weaponsById - Weapons by ID map
    * @param {Array} weaponArray - Weapons array
    * @param {boolean} preserveExisting - Whether to preserve existing collections
@@ -751,7 +764,7 @@ export class Ship {
 
   /**
    * Internal: Process hit on weapon magazine (check if loaded/vulnerable)
-   * @param {WeaponSystem} weaponSystem - Weapon system at impact point
+   * @param {Rack} weaponSystem - Weapon system at impact point
    * @param {any} model - Game model
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
@@ -768,7 +781,7 @@ export class Ship {
 
   /**
    * Internal: Handle hit on unloaded weapon system
-   * @param {WeaponSystem} weaponSystem - Weapon system that was hit
+   * @param {Rack} weaponSystem - Weapon system that was hit
    * @param {any} model - Game model
    * @returns {Object} Damage result for unloaded weapon
    * @private
@@ -781,7 +794,7 @@ export class Ship {
 
   /**
    * Internal: Handle hit on loaded weapon system
-   * @param {WeaponSystem} weaponSystem - Loaded weapon system that was hit
+   * @param {Rack} weaponSystem - Loaded weapon system that was hit
    * @param {any} model - Game model
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate

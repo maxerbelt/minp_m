@@ -59,7 +59,12 @@ canvas.addEventListener('mousemove', e => {
   if (interaction.dragging) {
     const dq = q - interaction.dragStartHex.q
     const dr = r - interaction.dragStartHex.r
-    interaction.previewShape = translateShape(interaction.originalShape, dq, dr, hex)
+    interaction.previewShape = translateShape(
+      interaction.originalShape,
+      dq,
+      dr,
+      hex
+    )
     redraw()
   }
 
@@ -67,7 +72,10 @@ canvas.addEventListener('mousemove', e => {
     const dx = px - interaction.dragStartPixel.x
     const step = Math.floor(dx / 40)
     const k = ((step % 6) + 6) % 6
-    interaction.previewShape = applyTransform(interaction.originalShape, transforms[k])
+    interaction.previewShape = applyTransform(
+      interaction.originalShape,
+      transforms[k]
+    )
     redraw()
   }
 })
@@ -76,10 +84,16 @@ canvas.addEventListener('contextmenu', e => e.preventDefault())
 
 globalThis.addEventListener('keydown', e => {
   if (e.key === 'r') {
-    interaction.previewShape = applyTransform(interaction.previewShape || interaction.originalShape, transforms[1])
+    interaction.previewShape = applyTransform(
+      interaction.previewShape || interaction.originalShape,
+      transforms[1]
+    )
   }
   if (e.key === 'f') {
-    interaction.previewShape = applyTransform(interaction.previewShape || interaction.originalShape, transforms[6])
+    interaction.previewShape = applyTransform(
+      interaction.previewShape || interaction.originalShape,
+      transforms[6]
+    )
   }
   redraw()
 })

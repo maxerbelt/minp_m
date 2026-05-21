@@ -227,8 +227,10 @@ function _createBuildKeyboardShortcuts () {
     ArrowDown: custom.moveCursor.bind(custom),
     ArrowLeft: custom.moveCursor.bind(custom),
     ArrowRight: custom.moveCursor.bind(custom),
-    Tab: (event) => tabCursor(/** @type {KeyboardEvent} */ (event), customUI, custom),
-    Enter: (event) => enterCursor(/** @type {KeyboardEvent} */ (event), customUI, custom)
+    Tab: event =>
+      tabCursor(/** @type {KeyboardEvent} */ (event), customUI, custom),
+    Enter: event =>
+      enterCursor(/** @type {KeyboardEvent} */ (event), customUI, custom)
   }
 }
 
