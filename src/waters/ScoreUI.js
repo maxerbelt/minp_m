@@ -20,8 +20,8 @@ import { DisplacementCalculator } from './helpers/DisplacementCalculator.js'
 
 /**
  * @typedef {Object} ViewModel
- * @property {Array<Object>} ships - Ships for display
- * @property {Array<Object>} weaponSystems - Weapon systems for display
+ * @property {Array<Object>} [ships] - Ships for display
+ * @property {Array<Object>} [weaponSystems] - Weapon systems for display
  */
 
 /**
@@ -368,6 +368,7 @@ export class ScoreUI {
       this.tallyBox,
       ships,
       [],
+      null,
       boxer || this.buildShipBox.bind(this)
     )
   }
@@ -398,8 +399,8 @@ export class ScoreUI {
       this.tallyBox,
       ships,
       weaponSystems || [],
-      this.buildShipBox.bind(this),
       viewModel,
+      this.buildShipBox.bind(this),
       true
     )
   }
