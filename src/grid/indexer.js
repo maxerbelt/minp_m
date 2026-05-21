@@ -638,7 +638,7 @@ export class Indexer {
    * @private
    */
   _getCachedActions (_bb, factory) {
-    if (this._actions && this._actions?.original?.bits === bb.bits) {
+    if (this._actions && this._actions?.original?.bits === _bb.bits) {
       return this._actions
     }
     this._actions = factory()

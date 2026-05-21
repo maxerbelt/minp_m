@@ -60,9 +60,11 @@ describe('terrainUI', () => {
         return new OrigURL(input)
       }
     } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug('URL mock failed:', e)
       origURL = undefined
     }
-    const origURLSearchParams = globalThis.URLSearchParams
+    let origURLSearchParams = globalThis.URLSearchParams
     // intercept URLSearchParams so tests can set search via __testLocationString
     try {
       const OrigURLSearchParams = origURLSearchParams
@@ -79,6 +81,8 @@ describe('terrainUI', () => {
         return new OrigURLSearchParams(input)
       }
     } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug('URLSearchParams mock failed:', e)
       origURLSearchParams = undefined
     }
   })

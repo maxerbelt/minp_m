@@ -33,6 +33,7 @@ describe('PackedDraw', () => {
       stroke: jest.fn()
     }
 
+    // @ts-ignore - Mock context for testing
     HTMLCanvasElement.prototype.getContext = jest.fn(() => ctx)
     mockCtx = ctx
     return ctx

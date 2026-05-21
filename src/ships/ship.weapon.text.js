@@ -1,7 +1,3 @@
-/* global describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll, jest */
-
-/* global describe, it, expect, jest */
-
 import { describe, it, expect } from '@jest/globals'
 import { Ship } from './Ship'
 

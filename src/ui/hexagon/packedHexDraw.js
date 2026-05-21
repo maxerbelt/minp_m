@@ -211,36 +211,6 @@ export class PackedHexDraw extends DrawBase {
   }
 
   /**
-   * Convert pixel coordinates to cube coordinates
-   * @private
-   */
-  _pixelToHex (x, y) {
-    const q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / this.hexSize
-    const r = ((2 / 3) * y) / this.hexSize
-    return this._cubeRound(q, r, -q - r)
-  }
-
-  /**
-   * Round pixel coordinates to nearest cube coordinates
-   * @private
-   */
-  _cubeRound (q, r, s) {
-    let rq = Math.round(q)
-    let rr = Math.round(r)
-    let rs = Math.round(s)
-
-    const dq = Math.abs(rq - q)
-    const dr = Math.abs(rr - r)
-    const ds = Math.abs(rs - s)
-
-    if (dq > dr && dq > ds) rq = -rr - rs
-    else if (dr > ds) rr = -rq - rs
-    else rs = -rq - rr
-
-    return [rq, rr, rs]
-  }
-
-  /**
    * Get indexed coordinates of the hex mask
    */
   get coords () {

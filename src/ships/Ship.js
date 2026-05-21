@@ -5,21 +5,7 @@ import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { SubBoard } from '../grid/subBoard.js'
 import { Zip } from '../core/Zip.js'
 
-/**
- * @typedef {Object} WeaponSystem
- * Weapon system interface
- * @property {number} id - Unique weapon ID
- * @property {string} letter - Weapon letter identifier
- * @property {number} ammo - Current ammunition count
- * @property {number} row - Row coordinate
- * @property {number} col - Column coordinate
- * @property {boolean} [damaged] - Whether weapon is damaged
- * @property {boolean} [hit] - Whether weapon has been hit
- * @property {Function} [hasAmmo] - Check if weapon has ammo
- * @property {Function} [ammoRemaining] - Get remaining ammo
- * @property {Function} [ammoCapacity] - Get ammo capacity
- * @property {Function} [reset] - Reset weapon state
- */
+///// @typedef {import('../weapon/WeaponSystem.js').WeaponSystem} WeaponSystem WeaponSystem
 
 /**
  * @typedef {Object} Placement
@@ -233,7 +219,7 @@ export class Ship {
    */
   static noOfSunk (ships) {
     return ships.reduce(
-      (/** @type {string | number} */ sum, /** @type {{ sunk: any; }} */ s) =>
+      (/** @type { number} */ sum, /** @type {{ sunk: any; }} */ s) =>
         sum + (s.sunk ? 1 : 0),
       0
     )
@@ -330,7 +316,6 @@ export class Ship {
    */
   static createShipsFromShapes (shapes) {
     Ship.id = 1
-    WeaponSystem.id = 1
     return Ship.extraShipsFromShapes(shapes)
   }
   /**
@@ -348,12 +333,11 @@ export class Ship {
   }
 
   /**
-   * Find weapon system at position (r, c)
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * Find weapon system at position
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {any|null} Weapon system at position or null if none
    */
-
   rackAt (x, y) {
     if (!this.__weaponArray?.length) return null
     const coordKey = `${x},${y}`
@@ -810,7 +794,10 @@ export class Ship {
     // model.opponent?.updateUI()
 
     const viewModel = model.UI
-    model.loadOut.useAmmo(weaponSystem)
+    if (!bh.seekingMode) {
+      model.loadOut.useAmmo(weaponSystem)
+    }
+
     const cell = viewModel.gridCellAt(r, c)
     viewModel.useAmmoInCell(cell, damaged)
     model.updateUI()
@@ -828,19 +815,6 @@ export class Ship {
     }
 
     return { damaged, info: null, hits: [], misses: [] }
-  }
-
-  /**
-   * Internal: Process hit on loaded magazine with potential detonation
-   * @param {WeaponSystem} weaponSystem - Loaded weapon system
-   * @param {any} model - Game model
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Object} Damage result for loaded weapon
-   * @private
-   */
-  _processLoadedMagazineHit (weaponSystem, model, r, c) {
-    return this._handleLoadedWeaponHit(weaponSystem, model, r, c)
   }
 
   /**
