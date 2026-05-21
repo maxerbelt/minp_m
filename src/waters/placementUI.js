@@ -19,7 +19,6 @@ export class PlacementUI extends WatersUI {
    * CSS class names for styling and state management.
    * Centralizes string literals to prevent typos and enable consistency.
    * @type {Object<string, string>}
-   * @private
    */
   static #CSS_CLASSES = {
     HIDDEN: 'hidden',
@@ -182,6 +181,16 @@ export class PlacementUI extends WatersUI {
     this.buildingTray = /** @type {HTMLDivElement} */ (
       this.elements.trays.building
     )
+  }
+
+  /**
+   * Determines if the UI is in placement mode.
+   * Base implementation checks placingShips flag.
+   * Subclasses can override to use different state.
+   * @returns {boolean} True if currently placing ships
+   */
+  get placing () {
+    return this.placingShips
   }
 
   showStatus () {
