@@ -1,12 +1,30 @@
 import { bh } from '../terrains/all/js/bh.js'
 
+/**
+ * No-operation callback function used as default for event handlers.
+ * @type {Function}
+ * @returns {void}
+ */
 const NOOP = () => {}
 
+/**
+ * Enum for player types in the game.
+ * @typedef {Object} PlayerEnum
+ * @property {string} friend - Friendly player/ally
+ * @property {string} enemy - Enemy player/opponent
+ */
 export const Player = Object.freeze({
   friend: 'FRIEND',
   enemy: 'ENEMY'
 })
 
+/**
+ * Enum for weapon targeting and selection modes.
+ * @typedef {Object} WeaponModeEnum
+ * @property {string} sourceSelect - Mode for selecting weapon source
+ * @property {string} targetAim - Mode for aiming at target
+ * @property {string} othersTurn - Mode when it's not player's turn
+ */
 export const WeaponMode = Object.freeze({
   sourceSelect: 'SELECT',
   targetAim: 'AIM',
@@ -14,32 +32,109 @@ export const WeaponMode = Object.freeze({
 })
 
 /**
+ * Context information for a board cell location.
  * @typedef {Object} BoardContext
- * @property {Object} board
- * @property {number} r
- * @property {number} c
- * @property {HTMLElement} cell
+ * @property {Object} board - The game board object
+ * @property {number} r - Row coordinate
+ * @property {number} c - Column coordinate
+ * @property {HTMLElement} cell - DOM element of the cell
  */
 
 /**
+ * Represents an equipped weapon rack on a ship.
  * @typedef {Object} SourceRack
- * @property {*} rack
- * @property {*} weapon
- * @property {string} wletter
- * @property {number} weaponId
- * @property {number} r
- * @property {number} c
- * @property {HTMLElement} cell
- * @property {number} shadowR
- * @property {number} shadowC
+ * @property {Object} rack - The weapon rack object
+ * @property {Object} weapon - The weapon object
+ * @property {string} wletter - Single letter identifier for the weapon
+ * @property {number} weaponId - Unique identifier for the weapon
+ * @property {number} r - Row coordinate of the source
+ * @property {number} c - Column coordinate of the source
+ * @property {HTMLElement} cell - DOM element of the source cell
+ * @property {number} shadowR - Row coordinate of weapon shadow/hint
+ * @property {number} shadowC - Column coordinate of weapon shadow/hint
+ */
+
+/**
+ * Callback function signature for weapon change events.
+ * @typedef {Function} WeaponChangeCallback
+ * @param {string} wletter - Weapon letter identifier
+ * @returns {void}
+ */
+
+/**
+ * Callback function signature for weapon activation/deactivation.
+ * @typedef {Function} WeaponActivationCallback
+ * @param {Object} rack - The weapon rack
+ * @param {Object} weapon - The weapon object
+ * @param {string} wletter - Weapon letter identifier
+ * @param {number} weaponId - Weapon ID
+ * @param {number} r - Row coordinate
+ * @param {number} c - Column coordinate
+ * @param {HTMLElement} cell - DOM cell element
+ * @param {number} shadowR - Shadow row coordinate
+ * @param {number} shadowC - Shadow column coordinate
+ * @returns {void}
+ */
+
+/**
+ * Callback function signature for weapon deactivation.
+ * @typedef {Function} WeaponDeactivationCallback
+ * @param {number} r - Row coordinate
+ * @param {number} c - Column coordinate
+ * @param {number} shadowR - Shadow row coordinate
+ * @param {number} shadowC - Shadow column coordinate
+ * @returns {void}
+ */
+
+/**
+ * Callback function signature for hint and targeting events.
+ * @typedef {Function} HintCallback
+ * @param {number} r - Row coordinate
+ * @param {number} c - Column coordinate
+ * @returns {void}
+ */
+
+/**
+ * Callback function signature for turn and selection events.
+ * @typedef {Function} TurnCallback
+ * @param {Steps} steps - The Steps instance
+ * @returns {void}
+ */
+
+/**
+ * Callback function signature for aiming events.
+ * @typedef {Function} AimCallback
+ * @param {Steps} steps - The Steps instance
+ * @param {boolean} hasAttached - Whether weapon has attached components
+ * @returns {void}
  */
 
 /**
  * Tracks weapon selection, aiming, and activation steps for a player.
+ * Manages the state machine of weapon targeting, from source selection through firing.
+ * Coordinates callbacks for UI updates and game state changes.
+ * @class Steps
  */
 export class Steps {
   /**
-   * @param {string} player
+   * @param {string} player - Player identifier ('FRIEND' or 'ENEMY')
+   * @property {string} player - The player identifier
+   * @property {string} mode - Current weapon mode (SELECT, AIM, or OTHERS)
+   * @property {string|null} wletter - Current weapon letter identifier
+   * @property {SourceRack|null} sourceRack - Currently selected weapon rack
+   * @property {BoardContext|null} source - Source ship/weapon location
+   * @property {Object|null} sourceShip - Source ship object (if weapon is attached)
+   * @property {BoardContext|null} sourceHint - Hint/preview location
+   * @property {BoardContext|null} sourceShadow - Shadow/targeting indicator location
+   * @property {BoardContext|null} target - Current target location
+   * @property {WeaponChangeCallback} onChangeWeapon - Callback for weapon changes
+   * @property {WeaponActivationCallback} onActivate - Callback for weapon activation
+   * @property {WeaponDeactivationCallback} onDeactivate - Callback for weapon deactivation
+   * @property {HintCallback} onHint - Callback for hint reveals
+   * @property {TurnCallback} onEndTurn - Callback for turn end
+   * @property {TurnCallback} onBeginTurn - Callback for turn start
+   * @property {AimCallback} onAim - Callback for aiming
+   * @property {TurnCallback} onSelect - Callback for weapon selection
    */
   constructor (player) {
     this._initializeState(player)
@@ -47,8 +142,10 @@ export class Steps {
   }
 
   /**
+   * Initialize player state and set initial weapon mode.
    * @private
-   * @param {string} player
+   * @param {string} player - Player identifier
+   * @returns {void}
    */
   _initializeState (player) {
     this.player = player
@@ -57,21 +154,35 @@ export class Steps {
   }
 
   /**
+   * Initialize all event callbacks to no-op functions.
+   * These will be overridden by game controller to handle game events.
    * @private
+   * @returns {void}
    */
   _initializeCallbacks () {
+    /** @type {WeaponChangeCallback} */
     this.onChangeWeapon = NOOP
+    /** @type {WeaponActivationCallback} */
     this.onActivate = NOOP
+    /** @type {WeaponDeactivationCallback} */
     this.onDeactivate = NOOP
+    /** @type {HintCallback} */
     this.onHint = NOOP
+    /** @type {TurnCallback} */
     this.onEndTurn = NOOP
+    /** @type {TurnCallback} */
     this.onBeginTurn = NOOP
+    /** @type {AimCallback} */
     this.onAim = NOOP
+    /** @type {TurnCallback} */
     this.onSelect = NOOP
   }
 
   /**
+   * Reset all source and targeting fields to null.
+   * Called when deselecting a weapon or ending a turn.
    * @private
+   * @returns {void}
    */
   _resetSourceFields () {
     this.wletter = null
@@ -84,82 +195,93 @@ export class Steps {
   }
 
   /**
+   * Check if there is currently an active weapon rack selected.
    * @private
-   * @returns {boolean}
+   * @returns {boolean} True if sourceRack exists and has a valid weaponId
    */
   _hasActiveRack () {
     return Boolean(this.sourceRack && this.sourceRack.weaponId !== -1)
   }
 
   /**
+   * Check if the provided weaponId differs from the currently selected rack.
    * @private
-   * @param {number} weaponId
-   * @returns {boolean}
+   * @param {number} weaponId - Weapon ID to check
+   * @returns {boolean} True if weaponId differs from current sourceRack.weaponId
    */
   _isNewRackId (weaponId) {
     return weaponId !== this.sourceRack?.weaponId
   }
 
   /**
+   * Resolve the weapon ID, using provided value or falling back to rack.id.
    * @private
-   * @param {number|undefined} weaponId
-   * @param {*} rack
-   * @returns {number}
+   * @param {number|undefined} weaponId - Explicit weapon ID, may be undefined
+   * @param {Object} rack - Weapon rack object with id property
+   * @returns {number} Resolved weapon ID
    */
   _resolveWeaponId (weaponId, rack) {
-    return weaponId !== undefined ? weaponId : rack.id
+    return weaponId === undefined ? rack.id : weaponId
   }
 
   /**
+   * Determine shadow coordinates based on weapon type and game mode.
+   * In seeking mode or for weapons with shadow at hint, uses hint coordinates.
    * @private
-   * @param {*} weapon
-   * @param {number} r
-   * @param {number} c
-   * @param {number} hintR
-   * @param {number} hintC
-   * @returns {[number, number]}
+   * @param {Object} weapon - Weapon object to check for shadow properties
+   * @param {number} r - Row coordinate of source
+   * @param {number} c - Column coordinate of source
+   * @param {number} hintR - Row coordinate of hint/preview
+   * @param {number} hintC - Column coordinate of hint/preview
+   * @returns {number[]} Array [shadowR, shadowC] - Shadow coordinates
    */
   _resolveShadowCoords (weapon, r, c, hintR, hintC) {
-    return weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
+    return bh.seekingMode || weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
   }
 
   /**
+   * Check if the weapon letter differs from currently selected weapon.
    * @private
-   * @param {string} wletter
-   * @returns {boolean}
+   * @param {string} wletter - Weapon letter to check
+   * @returns {boolean} True if weapon letter differs from current selection
    */
   _isWeaponChangeRequired (wletter) {
     return wletter !== this.sourceRack?.wletter
   }
 
   /**
+   * Set a board context property on the Steps instance.
    * @private
-   * @param {string} key
-   * @param {Object} board
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
+   * @param {string} key - Property name to set (e.g., 'source', 'sourceHint', 'sourceShadow')
+   * @param {Object} board - Game board object
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - DOM element of the cell
+   * @returns {void}
    */
   _setBoardContext (key, board, r, c, cell) {
     this[key] = this._buildBoardContext(board, r, c, cell)
   }
 
   /**
+   * Build a BoardContext object from cell coordinates and elements.
    * @private
-   * @param {Object} board
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
-   * @returns {BoardContext}
+   * @param {Object} board - Game board object
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - DOM element of the cell
+   * @returns {BoardContext} Context object with board, r, c, and cell properties
    */
   _buildBoardContext (board, r, c, cell) {
     return { board, r, c, cell }
   }
 
   /**
+   * Set the current weapon mode and execute a callback.
    * @private
-   * @param {string} mode
-   * @param {Function} callback
+   * @param {string} mode - New mode (SELECT, AIM, or OTHERS from WeaponMode)
+   * @param {Function} callback - Callback function to execute with this Steps instance
+   * @returns {void}
    */
   _setMode (mode, callback) {
     this.mode = mode
@@ -167,25 +289,28 @@ export class Steps {
   }
 
   /**
-   * @param {string} wletter
-   * @returns {boolean}
+   * Query whether a weapon change should occur for the given letter.
+   * @param {string} wletter - Weapon letter to check
+   * @returns {boolean} True if the letter differs from current weapon
    */
   shouldChangeWeapon (wletter) {
     return this._isWeaponChangeRequired(wletter)
   }
 
   /**
-   * @param {number} weaponId
-   * @returns {boolean}
+   * Query whether the previous weapon rack should be deactivated.
+   * @param {number} weaponId - New weapon ID being activated
+   * @returns {boolean} True if a new rack is being selected
    */
   shouldDeactivatePreviousRack (weaponId) {
     return this._hasActiveRack() && this._isNewRackId(weaponId)
   }
 
   /**
-   * @param {*} weapon
-   * @param {number} weaponId
-   * @returns {boolean}
+   * Query whether a new weapon rack should be activated.
+   * @param {Object} weapon - Weapon object to check
+   * @param {number} weaponId - Weapon ID to check
+   * @returns {boolean} True if weapon is valid and weaponId differs from current
    */
   shouldActivateNewRack (weapon, weaponId) {
     return (
@@ -194,7 +319,9 @@ export class Steps {
   }
 
   /**
-   * @param {number} weaponId
+   * Deactivate current rack if a new weapon ID is being selected.
+   * @param {number} weaponId - New weapon ID being activated
+   * @returns {void}
    */
   deactivateOnNewRack (weaponId) {
     if (this._isNewRackId(weaponId)) {
@@ -203,7 +330,9 @@ export class Steps {
   }
 
   /**
+   * Deactivate the current source rack and trigger deactivation callback.
    * @private
+   * @returns {void}
    */
   _deactivateCurrentSourceRack () {
     if (!this._hasActiveRack()) return
@@ -211,24 +340,43 @@ export class Steps {
     this.onDeactivate(r, c, shadowR, shadowC)
   }
 
+  /**
+   * Public method to deactivate the current weapon rack.
+   * @returns {void}
+   */
   deactivateCurrentSourceRack () {
     this._deactivateCurrentSourceRack()
   }
 
+  /**
+   * Reset all source fields to null state.
+   * @returns {void}
+   */
   resetSourceState () {
     this._resetSourceFields()
   }
 
+  /**
+   * Transition to weapon selection mode and trigger onSelect callback.
+   * @returns {void}
+   */
   select () {
     this._setMode(WeaponMode.sourceSelect, () => this.onSelect(this))
   }
 
+  /**
+   * Transition to targeting/aiming mode.
+   * @param {boolean} hasAttached - Whether selected weapon has attached components
+   * @returns {void}
+   */
   targetting (hasAttached) {
     this._setMode(WeaponMode.targetAim, () => this.onAim(this, hasAttached))
   }
 
   /**
-   * Fires the selected weapon if a source is available.
+   * Fire the selected weapon if a source is available.
+   * Deactivates the rack, uses ammo, reveals hints if needed, and returns to select mode.
+   * @returns {void}
    */
   fire () {
     this._warnIfNoSourceShipForUnattachedWeapon()
@@ -241,14 +389,18 @@ export class Steps {
   }
 
   /**
+   * Consume ammunition from the source weapon.
    * @private
+   * @returns {void}
    */
   _useSourceAmmo () {
     this.source.board.cellUseAmmo(this.source.r, this.source.c)
   }
 
   /**
+   * Log a warning if firing an unattached weapon without a source ship.
    * @private
+   * @returns {void}
    */
   _warnIfNoSourceShipForUnattachedWeapon () {
     if (!bh.terrain.hasUnattachedWeapons && this.sourceShip === null) {
@@ -259,7 +411,9 @@ export class Steps {
   }
 
   /**
+   * Reveal hint location if the weapon provides hints and hint location exists.
    * @private
+   * @returns {void}
    */
   _revealHintIfRequired () {
     if (!this.sourceRack?.weapon?.givesHint || !this.sourceHint) return
@@ -269,16 +423,17 @@ export class Steps {
   }
 
   /**
-   * @param {*} rack
-   * @param {*} weapon
-   * @param {string} wletter
-   * @param {number} weaponId
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
-   * @param {number} hintR
-   * @param {number} hintC
-   * @returns {{shadowR:number,shadowC:number}}
+   * Register and activate a new weapon rack at the given location.
+   * @param {Object} rack - The weapon rack object
+   * @param {Object} weapon - The weapon object
+   * @param {string} wletter - Single-letter weapon identifier
+   * @param {number} weaponId - Unique weapon ID
+   * @param {number} r - Row coordinate of weapon source
+   * @param {number} c - Column coordinate of weapon source
+   * @param {HTMLElement} cell - DOM element of the source cell
+   * @param {number} hintR - Row coordinate of hint/preview location
+   * @param {number} hintC - Column coordinate of hint/preview location
+   * @returns {{shadowR: number, shadowC: number}} Shadow coordinates for the weapon
    */
   addRack (rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC) {
     const resolvedWeaponId = this._resolveWeaponId(weaponId, rack)
@@ -321,17 +476,18 @@ export class Steps {
   }
 
   /**
+   * Build a SourceRack object from weapon and location information.
    * @private
-   * @param {*} rack
-   * @param {*} weapon
-   * @param {string} wletter
-   * @param {number} weaponId
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
-   * @param {number} shadowR
-   * @param {number} shadowC
-   * @returns {SourceRack}
+   * @param {Object} rack - The weapon rack object
+   * @param {Object} weapon - The weapon object
+   * @param {string} wletter - Single-letter weapon identifier
+   * @param {number} weaponId - Unique weapon ID
+   * @param {number} r - Row coordinate of weapon source
+   * @param {number} c - Column coordinate of weapon source
+   * @param {HTMLElement} cell - DOM element of the source cell
+   * @param {number} shadowR - Row coordinate of weapon shadow
+   * @param {number} shadowC - Column coordinate of weapon shadow
+   * @returns {SourceRack} Source rack object with all weapon information
    */
   _buildSourceRack (
     rack,
@@ -358,8 +514,10 @@ export class Steps {
   }
 
   /**
+   * Notify weapon change if terrain has attached weapons and letter changed.
    * @private
-   * @param {string} wletter
+   * @param {string} wletter - Weapon letter identifier
+   * @returns {void}
    */
   _maybeNotifyAttachedWeaponChange (wletter) {
     if (bh.terrain.hasAttachedWeapons && this.shouldChangeWeapon(wletter)) {
@@ -368,15 +526,18 @@ export class Steps {
   }
 
   /**
-   * @param {number} weaponId
-   * @param {*} weapon
-   * @param {*} rack
-   * @param {string} wletter
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
-   * @param {number} shadowR
-   * @param {number} shadowC
+   * Activate a weapon rack with deactivation of previous rack.
+   * Triggers onActivate callback if conditions are met.
+   * @param {number} weaponId - Unique weapon ID
+   * @param {Object} weapon - The weapon object
+   * @param {Object} rack - The weapon rack object
+   * @param {string} wletter - Single-letter weapon identifier
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - DOM element of the cell
+   * @param {number} shadowR - Row coordinate of shadow
+   * @param {number} shadowC - Column coordinate of shadow
+   * @returns {void}
    */
   activate (weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC) {
     this.deactivateOnNewRack(weaponId)
@@ -395,13 +556,20 @@ export class Steps {
     }
   }
 
+  /**
+   * Clear the current source weapon and reset state.
+   * @returns {void}
+   */
   clearSource () {
     this._deactivateCurrentSourceRack()
     this.resetSourceState()
   }
 
   /**
-   * @param {*} ship
+   * Register a source ship for attached weapons.
+   * Updates weapon letter if terrain has attached weapons.
+   * @param {Object} ship - The ship object with getPrimaryWeapon() method
+   * @returns {void}
    */
   addShip (ship) {
     this.sourceShip = ship
@@ -418,15 +586,18 @@ export class Steps {
   }
 
   /**
+   * Check if current terrain uses attached weapons (weapons on ships).
    * @private
-   * @returns {boolean}
+   * @returns {boolean} True if terrain has attached weapons
    */
   _isAttachedWeaponTerrain () {
     return bh.terrain.hasAttachedWeapons
   }
 
   /**
+   * Log a warning when attached weapon terrain receives a ship.
    * @private
+   * @returns {void}
    */
   _warnAttachedWeaponWithoutShip () {
     console.warn(
@@ -435,39 +606,53 @@ export class Steps {
   }
 
   /**
-   * @param {Object} board
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
+   * Register hint/preview location for weapon effect preview.
+   * @param {Object} board - Game board object
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - DOM element of the cell
+   * @returns {void}
    */
   addHint (board, r, c, cell) {
     this._setBoardContext('sourceHint', board, r, c, cell)
   }
 
   /**
-   * @param {Object} board
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
+   * Register shadow/targeting indicator location.
+   * @param {Object} board - Game board object
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - DOM element of the cell
+   * @returns {void}
    */
   addShadow (board, r, c, cell) {
     this._setBoardContext('sourceShadow', board, r, c, cell)
   }
 
   /**
-   * @param {Object} board
-   * @param {number} r
-   * @param {number} c
-   * @param {HTMLElement} cell
+   * Register weapon source location.
+   * @param {Object} board - Game board object
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - DOM element of the cell
+   * @returns {void}
    */
   addSource (board, r, c, cell) {
     this._setBoardContext('source', board, r, c, cell)
   }
 
+  /**
+   * End current player's turn and transition to opponent's turn.
+   * @returns {void}
+   */
   endTurn () {
     this._setMode(WeaponMode.othersTurn, () => this.onEndTurn(this))
   }
 
+  /**
+   * Begin current player's turn and transition to weapon selection mode.
+   * @returns {void}
+   */
   beginTurn () {
     this._setMode(WeaponMode.sourceSelect, () => this.onBeginTurn(this))
   }
