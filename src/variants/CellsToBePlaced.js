@@ -85,7 +85,7 @@ export class CellsToBePlaced {
    * @returns {any} Mask representing the displaced area.
    */
   displacedArea (width, height) {
-    return this.board.flatDilateExpand(1, 0).toMask(width, height)
+    return this.board.toMask(width, height).flatDilate()
   }
 
   /**
@@ -216,5 +216,21 @@ export class CellsToBePlaced {
     }
     // console.log('good')
     return true
+  }
+  cantPlaceReason (shipCellGrid) {
+    if (this.isNotInBounds()) {
+      return 'out of bounds'
+    }
+    if (this.isWrongZone()) {
+      return 'wrong Zone'
+    }
+
+    if (this.isOverlapping(shipCellGrid)) {
+      return 'overlapping'
+    }
+    if (this.isTouching(shipCellGrid)) {
+      return 'touching'
+    }
+    return 'good'
   }
 }

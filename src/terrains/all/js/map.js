@@ -82,11 +82,17 @@ export class BhMap {
     this.land = land instanceof Set ? land : new Set()
     this.terrain = mapTerrain || bh.terrain
 
-    lazy(this, 'landBits', () => {
-      const mask = this.blankMask
-      mask.setRanges(this.landArea)
-      return mask.bits
-    })
+    const landMask = this.blankMask
+    if (this.landArea && this.landArea.length > 0) {
+      landMask.setRanges(this.landArea)
+    } else {
+      for (const coord of this.land) {
+        const [row, col] = coord.split(',').map(Number)
+        landMask.set(col, row)
+      }
+    }
+    this.landMask = landMask
+    this.landBits = landMask.bits
 
     lazy(this, 'defaultTerrainBits', () => {
       return this.landMask.invertedBits
@@ -95,12 +101,6 @@ export class BhMap {
     lazy(this, 'defaultTerrainMask', () => {
       const mask = this.blankMask
       mask.bits = this.defaultTerrainBits
-      return mask
-    })
-
-    lazy(this, 'landMask', () => {
-      const mask = this.blankMask
-      mask.bits = this.landBits
       return mask
     })
 

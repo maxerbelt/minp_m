@@ -193,10 +193,15 @@ export class AsciiRepresentation {
   #appendCellChar (row, location, symbols) {
     row += this.grid.indexer.cellPadding()
     const value = this.grid.at(...location)
-    const char = symbols[value] || '?'
-    return row + char
+    return row + this.#cellChar(value, symbols)
   }
+  #cellChar (value, symbols) {
+    if (value < 0) {
+      return '!'
+    }
 
+    return symbols[value] || '?'
+  }
   /**
    * Renders generic rectangular grid without indexer.
    * Iterates row-by-row, column-by-column to build output.
@@ -211,8 +216,7 @@ export class AsciiRepresentation {
       let row = ''
       for (let columnIndex = 0; columnIndex < this.grid.width; columnIndex++) {
         const value = this.grid.at(columnIndex, rowIndex)
-        const char = symbols[value] || '?'
-        row += char
+        row += this.#cellChar(value, symbols)
       }
       lines.push(row)
     }

@@ -181,15 +181,19 @@ export class Waters {
     onShipPlaced = Function.prototype,
     onPlacementReset = Function.prototype
   ) {
+    this.resetPlacementStore()
     const result = this.shipCellGrid.attemptToPlaceShips(
       ships,
       (ship, placedCells) => {
-        onShipPlaced?.(ship, placedCells)
-        this.recordShipPlacement(placedCells, ship)
+        this.storeShipPlacement(placedCells, ship)
       },
       this.handlePlacementFailure.bind(this, onPlacementReset)
     )
     if (result) {
+      for (const { placedCells, ship } of this.tempPlacement) {
+        onShipPlaced?.(ship, placedCells)
+        this.UI.markPlaced(placedCells, ship)
+      }
       this.UI.onFleetPlaced?.()
     }
     return result
@@ -215,6 +219,13 @@ export class Waters {
    */
   recordShipPlacement (placedCells, ship) {
     this.UI.placement(placedCells, this, ship)
+  }
+  resetPlacementStore () {
+    this.tempPlacement = []
+  }
+
+  storeShipPlacement (placedCells, ship) {
+    this.tempPlacement.push({ placedCells, ship })
   }
   /**
    * Accumulates weapon result data into an accumulator object.
@@ -292,8 +303,25 @@ export class Waters {
         onShipPlaced,
         onPlacementReset
       )
-      if (placementSuccessful) return true
+      console.log(
+        `Auto placement ${this.steps?.player || 'Unknown'} attempt ${
+          attempt + 1
+        }: ${placementSuccessful}`
+      )
+      if (placementSuccessful) {
+        console.log(
+          `Successful placement ${this.steps?.player || 'Unknown'} attempt ${
+            attempt + 1
+          }`
+        )
+        return true
+      }
     }
+
+    const map = bh.map
+    const landMask = map.landMask
+    console.log(landMask.toAscii)
+    console.warn(`Auto placement failed after ${maxAttempts} attempts`)
     return false
   }
 
@@ -2343,12 +2371,8 @@ export class Waters {
   }
   updateTally (ships, weaponSystems) {
     ships = ships || this.ships
-    if (this.UI.placing && this.UI.placeTally) {
-      this.UI.placeTally(ships)
-    } else {
-      this._updateStats(ships)
-      this.UI.score.buildTally(ships, weaponSystems, this.UI)
-    }
+    this._updateStats(ships)
+    this.UI.score.buildTally(ships, weaponSystems, this.UI)
   }
 
   _hideWaiting () {

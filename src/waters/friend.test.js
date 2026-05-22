@@ -16,6 +16,7 @@ const getMockUI = () => ({
   resetShips: jest.fn(),
   buildBoard: jest.fn(),
   makeDroppable: jest.fn(),
+  markWeaponCellsOnFriendlyBoard: jest.fn(),
   buildTrays: jest.fn(),
   reset: jest.fn(),
   board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
@@ -490,13 +491,17 @@ describe('Friend', () => {
       friend.UI.buildBoard = jest.fn(() => callOrder.push('buildBoard'))
       friend.resetShipCells = jest.fn(() => callOrder.push('resetShipCells'))
       friend.UI.makeDroppable = jest.fn(() => callOrder.push('makeDroppable'))
+      friend.UI.markWeaponCellsOnFriendlyBoard = jest.fn(() =>
+        callOrder.push('markWeaponCellsOnFriendlyBoard')
+      )
 
       friend.buildBoard()
 
       expect(callOrder).toEqual([
         'buildBoard',
         'resetShipCells',
-        'makeDroppable'
+        'makeDroppable',
+        'markWeaponCellsOnFriendlyBoard'
       ])
     })
   })

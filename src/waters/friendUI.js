@@ -125,14 +125,6 @@ export class FriendUI extends PlacementUI {
     this.tabElement = document.querySelector(UI_SELECTORS.TAB_HIDE)
   }
 
-  /**
-   * Determines if the UI is in placement mode.
-   * @returns {boolean} True if mode is PLACING
-   */
-  get placing () {
-    return this.mode === UI_MODES.PLACING
-  }
-
   // ============ DOM Helpers ============
 
   /**
@@ -527,6 +519,32 @@ export class FriendUI extends PlacementUI {
       cell.classList.add(UI_CLASSES.EMPTY)
     }
     cell.dataset.ammo = '0'
+  }
+
+  /**
+   * Marks weapon cells on the friendly board with the 'weapon' class.
+   * Iterates through all ships and their cells, adding the weapon class to cells that have armed weapons.
+   * Called during game initialization to visually distinguish weapon-equipped cells.
+   *
+   * @param {Array<Object>} ships - Array of ship objects with cells and rackAt method
+   * @returns {void}
+   */
+  markWeaponCellsOnFriendlyBoard (ships) {
+    if (!ships) return
+
+    for (const ship of ships) {
+      if (!ship.cells) continue
+
+      for (const [column, row] of ship.cells) {
+        const weaponSlot = ship.rackAt?.(column, row)
+        if (weaponSlot) {
+          const cell = this.gridCellAt(row, column)
+          if (cell) {
+            cell.classList.add(UI_CLASSES.WEAPON)
+          }
+        }
+      }
+    }
   }
 
   /**

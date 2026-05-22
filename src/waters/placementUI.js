@@ -237,17 +237,6 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * Determines if the UI is in placement mode.
-   * Base implementation checks placingShips flag.
-   * Subclasses can override to use different state machine.
-   *
-   * @returns {boolean} True if currently placing ships
-   */
-  get placing () {
-    return this.placingShips
-  }
-
-  /**
    * Shows game status UI elements for current game mode and turn.
    * Removes hidden class from status elements and applies styling.
    *

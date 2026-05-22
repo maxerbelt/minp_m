@@ -138,13 +138,17 @@ export class ShipCellGrid extends GridBase {
    * Delegates to RC-based accessor after coordinate conversion.
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
-   * @returns {ShipCell|undefined} Ship cell object or undefined if empty
+   * @returns {number} Ship cell object, -1 if masked, or 0 if empty
    */
   atRC (row, col) {
-    return this.cellAtRC(row, col)?.id || 0
+    const cell = this.cellAtRC(row, col)?.id
+    if (cell) {
+      return cell
+    }
+    return this.maskedGrid.test(col, row) ? -1 : 0
   }
 
-  /**
+  /**v
    * Returns the ship ID at the given row and column.
    * @param {number} row - Row coordinate
    * @param {number} col - Column coordinate
@@ -458,20 +462,43 @@ export class ShipCellGrid extends GridBase {
     for (const placeable of shuffledPlaceables) {
       const placement = placeable.placeAt(col, row)
       const conflict = placement.board.overlap(this.maskedGrid)
-      if (conflict.occupancy > 0 || !placement.canPlace(this)) {
+      if (!placement.canPlace(this)) {
         continue
       }
-
+      if (conflict.occupancy > 0) {
+        console.warn(
+          `Conflict detected for ship ${ship.letter} at (${col}, ${row}) with placement variant. Occupied cells: ${conflict.occupancy}`
+        )
+      }
       // Placement succeeded: update ship and mask
       ship.placePlacement(placement)
       const displacedCells = placement.displacedArea(
         this._maskedGrid.width,
         this._maskedGrid.height
       )
+      /*
+      console.log(`Masked grid:\n`, this.maskedGrid.toAsciiWith())
+      const placementAscii = placement.board.toMask(
+        this._maskedGrid.width,
+        this._maskedGrid.height
+      )
+      
+      console.log(`Placement board:\n`, placementAscii.toAsciiWith())
+      const flatPlacement = placementAscii.occupancyLayer()
+      console.log(`flat board:\n`, flatPlacement.toAsciiWith())
+      const dilatedPlacement = flatPlacement.dilate()
+      console.log(`Dilated placement:\n`, dilatedPlacement.toAsciiWith())
+      console.log(`Displaced cells:\n`, displacedCells.toAsciiWith())
+      console.log(`Displaced cells:\n`, displacedCells.toAsciiWith())
+ 
+      console.log(
+        `Placing ship ${ship.letter} at (${col}, ${row}) with placement variant`
+      )
+*/
       this._maskedGrid.joinWith(displacedCells)
 
       ship.addToGrid(this)
-
+      //  console.log(`joined grid:\n`, this.toAscii)
       return ship.cells
     }
 
@@ -500,12 +527,26 @@ export class ShipCellGrid extends GridBase {
     const placeables = shipShape.placeables()
 
     for (const [col, row] of validLocations) {
+      if (col >= maxCol || row >= maxRow) {
+        console.warn(
+          `Skipping invalid placement location (${col}, ${row}) for ship ${ship.letter}`
+        )
+        continue
+      }
       const placedCells = this._tryPlacementVariants(ship, placeables, col, row)
       if (placedCells) {
         return placedCells
       }
     }
 
+    const failedMask = Mask.fromCoords(
+      validLocations,
+      this._maskedGrid.width,
+      this._maskedGrid.height
+    )
+    console.log(`failed grid:\n`, this.toAscii)
+    console.log(`Failed placement mask:\n`, failedMask.toAsciiWith())
+    console.log(bh.map.landMask.toAscii)
     return null
   }
 
@@ -533,13 +574,22 @@ export class ShipCellGrid extends GridBase {
   attemptToPlaceShips (ships, onShipPlaced = NOOP, onPlacementReset = NOOP) {
     this.reset()
     const shuffledShips = Random.shuffleArray([...ships])
+
+    const numShips = shuffledShips.length
+    let placedCount = 0
+
     for (const ship of shuffledShips) {
       const placedCells = this._randomPlaceShip(ship)
       if (!placedCells) {
         onPlacementReset?.()
+        const numVar = ship.shape()?.placeables().length || 0
+        console.warn(
+          `Placed (${placedCount}/${numShips}) Failed to place ship ${ship.letter} after trying all locations and ${numVar} orientations. Resetting grid.`
+        )
         return false
       }
       onShipPlaced?.(ship, placedCells)
+      placedCount++
     }
     return true
   }

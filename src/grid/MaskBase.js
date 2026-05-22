@@ -592,6 +592,11 @@ export class MaskBase extends CanvasGrid {
     const dilated = newMask.dilate()
     return dilated
   }
+  flatDilate () {
+    const newMask = this.occupancyLayer()
+    const dilated = newMask.dilate()
+    return dilated
+  }
   flatDilateExpand (borderSize = 1) {
     const newMask = this.flattenExpandMask(borderSize) || this
     const dilated = newMask.dilate()

@@ -984,6 +984,7 @@ export class Friend extends Placement {
    * 2. Resetting ship cell styling/state
    * 3. Making the board droppable for ship placement/dragging
    * 4. Setting up drag and drop event handlers
+   * 5. Marking weapon cells with the 'weapon' class for hide & seek mode
    *
    * The click handler (onClickCell) is bound to this Friend instance so it can
    * access weapon selection methods and UI state.
@@ -996,6 +997,8 @@ export class Friend extends Placement {
     this.resetShipCells()
     this.UI.makeDroppable(this)
     setupDragHandlers(this.UI)
+    // Mark cells with weapons on friendly board for visual indication
+    this.UI.markWeaponCellsOnFriendlyBoard(this.ships)
   }
 
   /**
