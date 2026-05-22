@@ -14,6 +14,42 @@ import { DirectionMovement } from './helpers/DirectionMovement.js'
 import { UIElementBuilder } from './helpers/UIElementBuilder.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 
+/**
+ * Grid cell styling options for drag previews and board display.
+ * @typedef {Object} GridCellOptions
+ * @property {string} [bg] - Background color CSS value
+ * @property {string} [fg] - Foreground (text) color CSS value
+ * @property {string} [letter] - Text content to display (ship/weapon letter)
+ * @property {boolean} [isSpecial=false] - Whether cell has special styling (affects display)
+ * @property {string[]} [classes=[]] - Additional CSS class names to apply
+ */
+
+/**
+ * Ship information for tray building with counts.
+ * @typedef {Object} ShipInfo
+ * @property {Object} shape - Ship shape/form object with board and letter properties
+ * @property {number} count - Number of ships of this type to display
+ */
+
+/**
+ * Game model containing game state and configuration.
+ * @typedef {Object} GameModel
+ * @property {Array<Object>} ships - Array of placed ships with cells and properties
+ * @property {Array<Object>} candidateShips - Array of candidate ships available for placement
+ * @property {Object} shipCellGrid - Grid representation of ship cells for highlighting
+ * @property {Object} loadOut - Weapon loadout configuration and state
+ * @property {Function} armWeapons - Method to configure and initialize weapons
+ * @property {Function} hasPlayableShips - Method checking if playable ships exist
+ * @property {Function} hasFewShips - Method checking if ship count is low
+ */
+
+/**
+ * Cursor direction delta for arrow key navigation.
+ * @typedef {Object} CursorDirection
+ * @property {number} dx - Row delta (-1, 0, or 1)
+ * @property {number} dy - Column delta (-1, 0, or 1)
+ */
+
 export class PlacementUI extends WatersUI {
   /**
    * CSS class names for styling and state management.
@@ -112,6 +148,19 @@ export class PlacementUI extends WatersUI {
    */
   static #BRUSH_SIZES = [1, 2, 3]
 
+  /**
+   * Initializes PlacementUI with UI elements, button references, and state.
+   * Extends WatersUI base class with placement-specific initialization.
+   *
+   * Side effects:
+   * - Caches all button and tray DOM element references
+   * - Initializes ElementCache and TrayManager for efficient DOM access
+   * - Sets up initial UI state (placingShips=true, readyingShips=false)
+   * - Initializes event listener cancellation handlers
+   *
+   * @param {Object} territory - Terrain object defining board size and placement rules
+   * @param {string} title - Display title for the placement UI panel
+   */
   constructor (territory, title) {
     super(territory, title)
     this.placingShips = true
@@ -135,10 +184,12 @@ export class PlacementUI extends WatersUI {
   /**
    * Initializes all button element references from element cache.
    * Extracted to reduce constructor complexity and improve maintainability.
-   * All buttons are cast to HTMLButtonElement for type safety.
+   * Casts all buttons to HTMLButtonElement for type safety.
+   *
+   * Side effects:
+   * - Assigns button properties (newPlacementBtn, rotateBtn, etc.) from this.elements.buttons
    *
    * @returns {void}
-   * @private
    */
   #initializeButtonReferences () {
     this.newPlacementBtn = /** @type {HTMLButtonElement} */ (
@@ -164,10 +215,12 @@ export class PlacementUI extends WatersUI {
   /**
    * Initializes all tray element references from element cache.
    * Extracted to reduce constructor complexity and improve maintainability.
-   * All trays are cast to HTMLDivElement for type safety.
+   * Casts all trays to HTMLDivElement for type safety.
+   *
+   * Side effects:
+   * - Assigns tray properties (shipTray, planeTray, brushTray, weaponTray, etc.) from this.elements.trays
    *
    * @returns {void}
-   * @private
    */
   #initializeTrayReferences () {
     this.trays = /** @type {HTMLDivElement} */ (this.elements.trays.container)
@@ -186,13 +239,25 @@ export class PlacementUI extends WatersUI {
   /**
    * Determines if the UI is in placement mode.
    * Base implementation checks placingShips flag.
-   * Subclasses can override to use different state.
+   * Subclasses can override to use different state machine.
+   *
    * @returns {boolean} True if currently placing ships
    */
   get placing () {
     return this.placingShips
   }
 
+  /**
+   * Shows game status UI elements for current game mode and turn.
+   * Removes hidden class from status elements and applies styling.
+   *
+   * Side effects:
+   * - Shows gameStatus.game, gameStatus.mode, gameStatus.line elements
+   * - Changes gameStatus.line from 'small' to 'medium' class
+   * - Clears any queued status messages
+   *
+   * @returns {void}
+   */
   showStatus () {
     gameStatus.game.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
     gameStatus.mode.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
@@ -203,6 +268,10 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Removes 'alt' styling class from all panel elements to reset to standard appearance.
+   * Restores panels to normal theme when highlighted/focused state should be cleared.
+   *
+   * Side effects:
+   * - Removes CSS class from all elements with PANEL class
    *
    * @returns {void}
    */
@@ -218,6 +287,9 @@ export class PlacementUI extends WatersUI {
   /**
    * Hides all transformation control buttons (rotate, flip, undo, etc.).
    * Used to disable ship manipulation controls when no ship is selected.
+   *
+   * Side effects:
+   * - Adds HIDDEN class to rotate, rotateLeft, transform, flip, undo, auto buttons
    *
    * @returns {void}
    */
@@ -236,6 +308,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Shows transformation control buttons, conditionally showing transform button based on terrain capability.
    * Used when a ship is selected and manipulation is possible.
+   *
+   * Side effects:
+   * - Removes HIDDEN class from rotate, rotateLeft, flip, undo, auto buttons
+   * - Conditionally shows/hides transform button based on bh.terrain.hasTransforms
    *
    * @returns {void}
    */
@@ -260,10 +336,12 @@ export class PlacementUI extends WatersUI {
    * Adds or removes hidden class from button collection.
    * Helper to reduce code duplication in visibility control methods.
    *
+   * Side effects:
+   * - Adds or removes HIDDEN class from all buttons based on hide parameter
+   *
    * @param {HTMLButtonElement[]} buttons - Array of button elements to update
    * @param {boolean} hide - If true, add hidden class; if false, remove it
    * @returns {void}
-   * @private
    */
   #setButtonsVisibility (buttons, hide) {
     const action = hide ? 'add' : 'remove'
@@ -278,7 +356,6 @@ export class PlacementUI extends WatersUI {
    *
    * @param {(cell: HTMLElement) => void} callback - Function to invoke for each cell
    * @returns {void}
-   * @private
    */
   #forEachBoardCell (callback) {
     for (const cell of this.board.children) {
@@ -291,12 +368,15 @@ export class PlacementUI extends WatersUI {
    * Centralizes grid CSS setup to ensure consistency and ease maintenance.
    * Sets grid-template-rows/columns, gap, and box-size CSS variable.
    *
+   * Side effects:
+   * - Sets element.style with grid layout attributes
+   * - Sets CSS variable --boxSize for use in grid calculations
+   *
    * @param {HTMLElement} element - Container element to style with grid layout
    * @param {number} rows - Number of rows for grid layout
    * @param {number} cols - Number of columns for grid layout
    * @param {string} [boxSize] - Size of each grid cell box (defaults to computed cell size)
    * @returns {void}
-   * @private
    */
   #setGridDisplayStyle (element, rows, cols, boxSize = this.cellSizeString()) {
     element.setAttribute(
@@ -309,9 +389,11 @@ export class PlacementUI extends WatersUI {
    * Sets disabled state on all placement control buttons (rotate, rotate-left, flip).
    * Consolidates button disabled state management.
    *
+   * Side effects:
+   * - Sets disabled property on rotateBtn, rotateLeftBtn, flipBtn
+   *
    * @param {boolean} disabled - If true, disables buttons; if false, enables them
    * @returns {void}
-   * @private
    */
   #setPlacementControlsDisabled (disabled) {
     this.rotateBtn.disabled = disabled
@@ -323,10 +405,14 @@ export class PlacementUI extends WatersUI {
    * Configures board cells for ship placement with standard drop and drag-enter handlers.
    * Consolidated pattern used by placement and additional weapon scenarios.
    *
-   * @param {Object} model - Game model containing placement rules and state
+   * Side effects:
+   * - Clears visual styling from all board cells using ShipCellDisplayer.clearPlaceCell
+   * - Invokes dragNDrop.drop() and dragNDrop.dragEnter() on each cell
+   * - Calls additionalSetup callback on each cell if provided
+   *
+   * @param {GameModel} model - Game model containing placement rules and state
    * @param {Function} [additionalSetup] - Optional callback for additional cell configuration
    * @returns {void}
-   * @private
    */
   #configureBoardCellsForDrop (model, additionalSetup) {
     this.#forEachBoardCell(cell => {
@@ -343,7 +429,7 @@ export class PlacementUI extends WatersUI {
    * Prepares board cells for standard ship placement with drop handlers.
    * Clears existing visuals and enables drag-drop interactions.
    *
-   * @param {Object} model - Game model with placement configuration
+   * @param {GameModel} model - Game model with placement configuration
    * @returns {void}
    */
   makeDroppable (model) {
@@ -354,7 +440,11 @@ export class PlacementUI extends WatersUI {
    * Prepares board cells for additional weapon placement with enhanced drop handlers.
    * Includes weapon-specific drop behavior in addition to standard handlers.
    *
-   * @param {Object} model - Game model with weapon placement configuration
+   * Side effects:
+   * - Invokes dragNDrop.addWeaponDrop(model, this)
+   * - Configures board cells with both standard and weapon-specific drop handlers
+   *
+   * @param {GameModel} model - Game model with weapon placement configuration
    * @returns {void}
    */
   makeAddDroppable (model) {
@@ -368,6 +458,9 @@ export class PlacementUI extends WatersUI {
    * Enables terrain brush dragging interactions on all board cells.
    * Prepares cells to respond to brush tool drag-enter events.
    *
+   * Side effects:
+   * - Invokes dragNDrop.dragBrushEnter on each board cell
+   *
    * @returns {void}
    */
   makeBrushable () {
@@ -380,6 +473,11 @@ export class PlacementUI extends WatersUI {
    * Removes a dragged ship element and its container if empty.
    * Cleans up DOM after dragged ship is dropped or discarded.
    * Triggers tray check to update visibility state.
+   *
+   * Side effects:
+   * - Removes dragShip from DOM
+   * - Removes container if empty (no children left)
+   * - Invokes trayManager.checkTrays() to validate visibility
    *
    * @param {HTMLElement} dragShip - Dragged ship element to remove
    * @returns {void}
@@ -402,6 +500,9 @@ export class PlacementUI extends WatersUI {
    * Removes all visual highlight states from board cells.
    * Clears validity indicators (good/bad/worse classes).
    *
+   * Side effects:
+   * - Removes all highlight CSS classes from board cells
+   *
    * @returns {void}
    */
   removeHighlight () {
@@ -415,6 +516,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Removes clicked state from all elements and disables placement controls.
    * Resets UI to neutral state when selection is cleared.
+   *
+   * Side effects:
+   * - Removes CLICKED class from all elements with CLICKED class
+   * - Disables all placement control buttons
    *
    * @returns {void}
    */
@@ -448,7 +553,6 @@ export class PlacementUI extends WatersUI {
    *
    * @param {string} direction - Direction constant from DirectionMovement.DIRECTIONS
    * @returns {Element|null} First item element in specified direction or null
-   * @private
    */
   #getFirstTrayItemInDirection (direction) {
     return DirectionMovement.getFirstItem(
@@ -459,6 +563,7 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Gets the first tray item starting from the right (left-to-right navigation).
+   * Delegates to #getFirstTrayItemInDirection for consistency.
    *
    * @returns {Element|null} First tray item from right or null
    */
@@ -468,6 +573,7 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Gets the first tray item starting from bottom (bottom-to-top navigation).
+   * Delegates to #getFirstTrayItemInDirection for consistency.
    *
    * @returns {Element|null} First tray item from bottom or null
    */
@@ -478,6 +584,7 @@ export class PlacementUI extends WatersUI {
   /**
    * Gets first tray item in direction specified by arrow key.
    * Converts arrow key to direction and retrieves corresponding item.
+   * Used in tray navigation when cursor navigates directionally.
    *
    * @param {string} arrowkey - Arrow key code (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
    * @returns {Element|null} First item in specified direction or null
@@ -490,10 +597,11 @@ export class PlacementUI extends WatersUI {
   /**
    * Moves to next tray item in specified direction with unified logic.
    * Delegates to DirectionMovement for consistent navigation behavior.
+   * Used internally for arrow key navigation within trays.
    *
-   * @param {string} arrowKey - Arrow key code for direction
-   * @param {HTMLElement[]} trays - Array of tray container elements
-   * @param {number} itemIndex - Current item index within tray
+   * @param {string} arrowKey - Arrow key code for direction (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+   * @param {Array<HTMLElement>} trays - Array of tray container elements
+   * @param {number} itemIndex - Current item index within current tray
    * @param {number} trayIndex - Current tray index within trays array
    * @returns {Element|null} Next item element or null if at boundary
    */
@@ -510,8 +618,9 @@ export class PlacementUI extends WatersUI {
   /**
    * Moves selection to next tray item based on arrow key, starting from currently selected ship.
    * Integrates with tray manager to get current ship position and apply directional movement.
+   * Used for arrow key navigation starting from an already-selected ship.
    *
-   * @param {string} arrowKey - Arrow key code for direction
+   * @param {string} arrowKey - Arrow key code for direction (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
    * @param {Object} clickedShip - Currently selected ship with source element reference
    * @returns {Element|null} Next ship element or null if at boundary
    */
@@ -533,10 +642,14 @@ export class PlacementUI extends WatersUI {
   /**
    * Assigns ship selection via cursor navigation (arrow keys).
    * Moves from currently selected ship or starts at first item if none selected.
-   * Finds corresponding ship and updates UI state.
+   * Finds corresponding ship and updates UI state with visual selection.
    *
-   * @param {string} arrowkey - Arrow key code for direction
-   * @param {Object[]} ships - Array of available ships to search
+   * Side effects:
+   * - Calls moveAssignByCursor or clickAssignByCursor to get next element
+   * - Calls assignClicked to update selected ship state and UI
+   *
+   * @param {string} arrowkey - Arrow key code for direction (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+   * @param {Array<Object>} ships - Array of available ships to search
    * @returns {void}
    */
   assignByCursor (arrowkey, ships) {
@@ -556,6 +669,9 @@ export class PlacementUI extends WatersUI {
    * Disables rotation and flip controls.
    * Used when deselecting ships or transitioning between UI states.
    *
+   * Side effects:
+   * - Disables rotateBtn, rotateLeftBtn, flipBtn via #setPlacementControlsDisabled
+   *
    * @returns {void}
    */
   disableRotateFlip () {
@@ -567,7 +683,14 @@ export class PlacementUI extends WatersUI {
    * Configures placement controls based on ship transformation capabilities.
    * Updates visual state and enables/disables relevant transformation buttons.
    *
-   * @param {Object} ship - Ship object with shape, id, and capability methods
+   * Side effects:
+   * - Removes previously clicked state via removeClicked()
+   * - Shows ship tip/notice
+   * - Creates and sets ClickedShip state via dragNDrop.setClickedShip()
+   * - Adds CLICKED class to clicked element
+   * - Updates button disabled states based on ship capabilities
+   *
+   * @param {Object} ship - Ship object with shape() method and capability methods
    * @param {HTMLElement} clicked - Ship element in tray that was clicked
    * @returns {void}
    */
@@ -594,6 +717,14 @@ export class PlacementUI extends WatersUI {
   /**
    * Assigns a weapon as the currently selected item and updates UI state.
    * Disables all placement controls since weapons cannot be transformed like ships.
+   * Updates visual selection state and shows weapon tip.
+   *
+   * Side effects:
+   * - Removes previously clicked state via removeClicked()
+   * - Shows weapon tip/notice
+   * - Clears ship selection via dragNDrop.setClickedShip(null)
+   * - Adds CLICKED class to clicked element
+   * - Disables all placement control buttons via #setPlacementControlsDisabled(true)
    *
    * @param {Object} weapon - Weapon object with tip property
    * @param {HTMLElement} clicked - Weapon element in tray that was clicked
@@ -611,6 +742,10 @@ export class PlacementUI extends WatersUI {
    * Populates a drag preview with ship grid cells.
    * Iterates through ship board locations and creates cells based on board color data.
    * Sets grid layout and calls cell creation for each position.
+   *
+   * Side effects:
+   * - Calls #setGridDisplayStyle to apply CSS grid layout
+   * - Appends grid cells to dragShip for each board position
    *
    * @param {HTMLElement} dragShip - Container element for drag preview grid cells
    * @param {Object} board - Ship board object with height, width, and cell color data
@@ -634,7 +769,6 @@ export class PlacementUI extends WatersUI {
    *
    * @param {Array<[number, number, number]>} cells - Array of [row, col, value] tuples
    * @returns {Object} Object with minR, minC, rows, cols properties defining the extent
-   * @private
    */
   #getCellExtent (cells) {
     const minR = Math.min(...cells.map(s => s[0]))
@@ -652,6 +786,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Populates drag preview with splash effect grid cells.
    * Calculates extent from cell array and creates grid with splash cells.
+   *
+   * Side effects:
+   * - Calls #setGridDisplayStyle to apply CSS grid layout
+   * - Appends splash cells to dragShip for grid
    *
    * @param {HTMLElement} dragShip - Container element for splash grid
    * @param {Array<[number, number, number]>} cells - Array of [row, col, power] tuples representing splash effect
@@ -671,6 +809,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Populates brush preview with terrain brush grid cells.
    * Creates checkerboard pattern with terrain-specific styling.
+   *
+   * Side effects:
+   * - Calls #setGridDisplayStyle to apply CSS grid layout
+   * - Appends brush cells to brush container for each grid position
    *
    * @param {HTMLElement} brush - Container element for brush grid
    * @param {number} size - Size of brush grid (size x size)
@@ -696,13 +838,15 @@ export class PlacementUI extends WatersUI {
    * Creates a single ship cell for drag preview grid.
    * Determines cell appearance based on board color value (empty vs occupied).
    *
+   * Side effects:
+   * - Appends grid cell to dragShip with appropriate styling
+   *
    * @param {HTMLElement} dragShip - Grid container for cell
    * @param {string} letter - Ship letter for color/style lookup
    * @param {number} r - Row position
    * @param {number} c - Column position
    * @param {number} color - Board color value (0=empty, >0=occupied, >1=special)
    * @returns {void}
-   * @private
    */
   #createDragShipCell (dragShip, letter, r, c, color) {
     const maps = bh.maps
@@ -724,13 +868,16 @@ export class PlacementUI extends WatersUI {
   /**
    * Creates a splash effect cell for preview grid.
    * Finds matching cell from array and renders with splash tag or as empty.
+   * Used in weapon splash effect visualization.
+   *
+   * Side effects:
+   * - Appends grid cell to dragShip with splash styling or empty class
    *
    * @param {HTMLElement} dragShip - Grid container for cell
    * @param {Array<[number, number, number]>} cells - All splash cells in effect
    * @param {number} r - Row position
    * @param {number} c - Column position
    * @returns {void}
-   * @private
    */
   #createSplashCell (dragShip, cells, r, c) {
     const cell = cells.find(cell => cell[0] === r && cell[1] === c)
@@ -748,11 +895,14 @@ export class PlacementUI extends WatersUI {
   /**
    * Creates a DOM element representing a single grid cell.
    * Initializes cell with CSS class and coordinate metadata.
+   * Used as foundation for all grid cell creation.
+   *
+   * Side effects:
+   * - Creates new div element and sets className and coordinates
    *
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {HTMLDivElement} New cell element with coordinates set
-   * @private
    */
   #makeCell (r, c) {
     const cell = document.createElement('div')
@@ -764,19 +914,18 @@ export class PlacementUI extends WatersUI {
   /**
    * Appends a styled grid cell to container with customizable appearance.
    * Unified cell creation method handling background, foreground, text, and classes.
-   * Consolidates all grid cell styling logic.
+   * Consolidates all grid cell styling logic for reuse across drag previews.
+   *
+   * Side effects:
+   * - Creates cell via #makeCell
+   * - Applies styling properties to cell
+   * - Appends cell to dragItem
    *
    * @param {HTMLElement} dragItem - Container element to append cell to
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {Object} [options] - Styling options
-   * @param {string} [options.bg] - Background color CSS value
-   * @param {string} [options.fg] - Foreground (text) color CSS value
-   * @param {string} [options.letter] - Text content (ship/weapon letter)
-   * @param {boolean} [options.isSpecial=false] - Whether cell is special (affects styling)
-   * @param {string[]} [options.classes=[]] - Additional CSS class names to apply
+   * @param {GridCellOptions} [options={}] - Styling options object
    * @returns {void}
-   * @private
    */
   #appendGridCell (
     dragItem,
@@ -801,6 +950,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Appends a brush terrain cell with checkerboard pattern.
    * Creates alternating light/dark background based on coordinate parity.
+   * Used to visualize brush size and terrain type.
+   *
+   * Side effects:
+   * - Calls #appendGridCell to create and append cell with checkerboard styling
    *
    * @param {HTMLElement} dragItem - Container element to append cell to
    * @param {number} r - Row coordinate
@@ -808,7 +961,6 @@ export class PlacementUI extends WatersUI {
    * @param {string} bg - Background color for non-tagged terrain
    * @param {string} tag - Terrain tag for specialized styling
    * @returns {void}
-   * @private
    */
   #appendBrushCell (dragItem, r, c, bg, tag) {
     const checker = (r + c) % 2 === 0
@@ -840,9 +992,7 @@ export class PlacementUI extends WatersUI {
    * Builds tray item display for single or transformable ship form.
    * Creates drag preview for each available form and counts.
    *
-   * @param {Object} shipInfo - Ship information with shape and count
-   * @param {Object} shipInfo.shape - Ship shape/form object
-   * @param {number} shipInfo.count - Number of ships of this type
+   * @param {ShipInfo} shipInfo - Ship information with shape and count
    * @param {HTMLElement} tray - Target tray element to add item to
    * @returns {void}
    */
@@ -860,6 +1010,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Builds visual legend for weapon splash effects.
    * Creates grid showing each splash power level with label.
+   *
+   * Side effects:
+   * - Creates/removes HIDDEN class on splash-legend element
+   * - Appends splash visualization cells to tray
    *
    * @param {Array<[number, number, number]>} cells - Array of [row, col, power] for splash cells
    * @param {Object} weapon - Weapon object with tag property
@@ -906,11 +1060,15 @@ export class PlacementUI extends WatersUI {
    * Simplified using UIElementBuilder to reduce duplication.
    * Creates container, drag element, and appends to tray.
    *
-   * @param {Object} shape - Shape object with board and letter properties
+   * Side effects:
+   * - Creates new DOM container and drag element
+   * - Appends container to tray
+   * - Calls setDragShipContents to populate drag preview
+   *
+   * @param {Object} shape - Shape object with board, letter, and descriptionText properties
    * @param {number} count - Number of ships of this type/form
    * @param {HTMLElement} tray - Tray element to add item to
    * @returns {void}
-   * @private
    */
   #addTrayItem (shape, count, tray) {
     const container = UIElementBuilder.createDragContainer({
@@ -927,8 +1085,12 @@ export class PlacementUI extends WatersUI {
    * Builds weapon splash effect display with title and splash pattern grid.
    * Creates visual representation of weapon's splash damage pattern.
    *
+   * Side effects:
+   * - Shows splash title element and sets innerHTML
+   * - Shows splash tray and appends splash grid visualization
+   *
    * @param {Array<[number, number, number]>} cells - Array of [row, col, power] for splash cells
-   * @param {Object} weapon - Weapon object with name and tag properties
+   * @param {Object} weapon - Weapon object with name, tag, and letter properties
    * @param {string} [splashType='splash'] - Type of splash (splash or crash) for description
    * @returns {void}
    */
@@ -954,10 +1116,17 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Creates a draggable ship element with grid preview and metadata.
-   * Sets up drag properties and initializes grid display for ship board.
+   * Shrinks shape based on container height and creates drag element.
    *
-   * @param {Object[]} ships - All ships in game (for drag validation)
-   * @param {Object} ship - Ship object to create drag element for
+   * Side effects:
+   * - Creates new drag element DOM node
+   * - Sets VARIANT, TYPE, ID data attributes
+   * - Calls setDragShipContents to populate grid
+   * - Invokes dragNDrop.makeDraggable to set up drag handlers
+   * - Appends drag element to container
+   *
+   * @param {Array<Object>} ships - All available ships for drag validation
+   * @param {Object} ship - Ship object with id, shape() method
    * @param {HTMLElement} container - Parent container to append drag element to
    * @param {number} cellHeight - Height to use for drag preview sizing
    * @returns {void}
@@ -979,7 +1148,14 @@ export class PlacementUI extends WatersUI {
    * Creates a draggable weapon element with grid preview and metadata.
    * Converts weapon shape to mask for display grid setup.
    *
-   * @param {Object} weapon - Weapon object with letter and dragShape properties
+   * Side effects:
+   * - Creates new drag element DOM node
+   * - Sets LETTER, TYPE data attributes
+   * - Converts dragShape to Mask and calls setDragShipContents
+   * - Invokes dragNDrop.makeDraggable to set up drag handlers
+   * - Appends drag element to container
+   *
+   * @param {Object} weapon - Weapon object with letter, dragShape, and properties
    * @param {HTMLElement} container - Parent container to append drag element to
    * @returns {void}
    */
@@ -1000,8 +1176,13 @@ export class PlacementUI extends WatersUI {
    * Adds a ship to appropriate tray based on its type.
    * Looks up tray by unit type and builds tray item with ship.
    *
-   * @param {Object[]} ships - All ships for drag validation
-   * @param {Object} ship - Ship to add to tray
+   * Side effects:
+   * - Creates new DOM container for ship item
+   * - Sets CELL_HEIGHT data attribute on tray
+   * - Calls buildDragShip to populate drag preview
+   *
+   * @param {Array<Object>} ships - All ships for drag validation
+   * @param {Object} ship - Ship to add to tray with id, type(), and properties
    * @param {HTMLElement} tray - Tray element to add item to
    * @param {number} [cellHeight] - Optional cell height for sizing
    * @returns {void}
@@ -1020,7 +1201,11 @@ export class PlacementUI extends WatersUI {
    * Adds a weapon to weapon tray as draggable item.
    * Creates container and drag element for weapon preview.
    *
-   * @param {Object} weapon - Weapon to add to tray
+   * Side effects:
+   * - Creates new DOM container and appends to tray
+   * - Calls buildDragWeapon to populate drag preview
+   *
+   * @param {Object} weapon - Weapon to add to tray with letter property
    * @param {HTMLElement} tray - Weapon tray element
    * @returns {void}
    */
@@ -1037,6 +1222,12 @@ export class PlacementUI extends WatersUI {
   /**
    * Creates draggable brush element with preview grid.
    * Sets up brush size and terrain styling for drag operations.
+   *
+   * Side effects:
+   * - Creates brush container and drag element
+   * - Sets SIZE and ID data attributes on brush
+   * - Calls setBrushContents to populate preview
+   * - Invokes dragNDrop.makeBrushDraggable for interaction setup
    *
    * @param {number} size - Brush size (1-3)
    * @param {Object} subterrain - Terrain configuration with letter and styling
@@ -1068,7 +1259,11 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Rebuilds brush tray with all terrain variations and sizes.
-   * Clears existing items and regenerates brush previews.
+   * Clears existing items and regenerates brush previews for all size/terrain combinations.
+   *
+   * Side effects:
+   * - Clears brushTray.innerHTML
+   * - Appends brush items for each size and terrain variation
    *
    * @param {Object} terrain - Terrain object with subterrains array
    * @returns {void}
@@ -1086,6 +1281,9 @@ export class PlacementUI extends WatersUI {
    * Triggers tray visibility checks and updates.
    * Delegates to tray manager to validate and show/hide trays as needed.
    *
+   * Side effects:
+   * - Invokes trayManager.checkTrays() which may modify tray visibility
+   *
    * @returns {void}
    */
   checkTrays () {
@@ -1096,7 +1294,12 @@ export class PlacementUI extends WatersUI {
    * Rebuilds all unit trays (ships, planes, etc.) from ship list.
    * Partitions ships by type, creates tray items, and checks tray visibility.
    *
-   * @param {Object[]} ships - Array of all available ships
+   * Side effects:
+   * - Removes HIDDEN class from appropriate trays
+   * - Creates tray items for all ships via buildTrayItem
+   * - Invokes checkTrays() to validate tray visibility
+   *
+   * @param {Array<Object>} ships - Array of all available ships with type() method
    * @returns {void}
    */
   buildTrays (ships) {
@@ -1118,8 +1321,8 @@ export class PlacementUI extends WatersUI {
    * Partitions ships into groups by normalized unit type.
    * Consolidates type-based grouping logic with unit type normalization.
    *
-   * @param {Object[]} ships - Array of ships to partition
-   * @returns {Object<string, Object[]>} Map of unit type to ship group
+   * @param {Array<Object>} ships - Array of ships to partition
+   * @returns {Object<string, Array<Object>>} Map of unit type to ship group
    */
   #partitionShipsByType (ships) {
     return ships.reduce((acc, ship) => {
@@ -1133,6 +1336,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Builds weapon tray if terrain has unattached weapons.
    * Iterates through weapon list and creates tray items.
+   *
+   * Side effects:
+   * - Conditionally appends weapons to weaponTray
+   * - Invokes buildTrayItemWeapon for each weapon
    *
    * @returns {void}
    */
@@ -1148,11 +1355,11 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Gets normalized unit type for ship, mapping M/T types to 'X'.
-   * Consolidates unit type conversion logic.
+   * Consolidates unit type conversion logic for consistent categorization.
+   * Used to group ships into logical tray categories.
    *
    * @param {string} shipType - Ship type letter (S, A, M, T, G, etc.)
    * @returns {string} Normalized unit type, with M/T mapped to X
-   * @private
    */
   #normalizeUnitType (shipType) {
     return PlacementUI.#UNIT_TYPE_MAP[shipType] || shipType
@@ -1161,10 +1368,11 @@ export class PlacementUI extends WatersUI {
   /**
    * Gets the tray element for a given unit type.
    * Looks up tray through element cache with error handling.
+   * Used to find the correct tray for adding ships.
    *
-   * @param {string} type - Unit type letter
-   * @returns {HTMLElement} Tray element for type
-   * @throws {Error} If type is unknown
+   * @param {string} type - Unit type letter (S, A, X for ships, etc.)
+   * @returns {HTMLDivElement} Tray element for type
+   * @throws {Error} If type is unknown or not found
    */
   getTrayOfType (type) {
     return (
@@ -1178,8 +1386,9 @@ export class PlacementUI extends WatersUI {
   /**
    * Gets the notes/info element for a given unit type.
    * Returns appropriate info section for type using centralized mapping.
+   * Used to update unit-specific information displays.
    *
-   * @param {string} type - Unit type letter
+   * @param {string} type - Unit type letter (S, A, X, etc.)
    * @returns {HTMLElement|null} Notes element for type or null if not found
    * @throws {Error} If type is unknown
    */
@@ -1194,9 +1403,10 @@ export class PlacementUI extends WatersUI {
   /**
    * Splits ship array into groups by normalized unit type.
    * Creates a map of unit types to ship groups for categorization.
+   * Used for organizing ships into unit-specific containers.
    *
-   * @param {Object[]} ships - Array of ships to split
-   * @returns {Object<string, Object>} Map of unit type to ship group map
+   * @param {Array<Object>} ships - Array of ships to split with type() method
+   * @returns {Object<string, Object>} Map of unit type to ship group data
    */
   splitUnits (ships) {
     return ships.reduce((acc, ship) => {
@@ -1211,8 +1421,13 @@ export class PlacementUI extends WatersUI {
   /**
    * Hides unit containers that have no ships of their type.
    * Shows only containers with ship counts > 0.
+   * Updates UI visibility based on available ship inventory.
    *
-   * @param {Object[]} ships - Ships to count by type
+   * Side effects:
+   * - Counts ships by type
+   * - Invokes Terrain.showsUnits() to update container visibility
+   *
+   * @param {Array<Object>} ships - Ships to count by type with type() method
    * @returns {void}
    */
   hideEmptyUnits (ships) {
@@ -1229,11 +1444,16 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Adds a ship to the appropriate type tray.
-   * Looks up tray by ship type and creates tray item.
+   * Looks up tray by ship type and creates tray item with drag preview.
    *
-   * @param {Object[]} ships - All ships for validation
-   * @param {Object} ship - Ship to add
+   * Side effects:
+   * - Calls getTrayOfType to find target tray
+   * - Calls buildTrayItem to create and append ship item
+   *
+   * @param {Array<Object>} ships - All ships for validation during drag
+   * @param {Object} ship - Ship to add with type() method
    * @returns {void}
+   * @throws {Error} If ship type is unknown or tray not found
    */
   addShipToTrays (ships, ship) {
     const type = ship.type()
@@ -1247,9 +1467,15 @@ export class PlacementUI extends WatersUI {
   /**
    * Creates a tally box element displaying ship letter with ship colors.
    * Used in score display to show visual representation of placed ships.
+   * Returns styled div with ship letter and color scheme.
+   *
+   * Side effects:
+   * - Creates new div element with TALLY_BOX class
+   * - Sets text content to ship letter
+   * - Applies ship colors via ShipCellDisplayer.setShipCellColors
    *
    * @param {Object} ship - Ship object with letter and cells properties
-   * @returns {HTMLElement} Styled tally box element
+   * @returns {HTMLDivElement} Styled tally box element
    */
   placeShipBox (ship) {
     const box = document.createElement('div')
@@ -1266,9 +1492,13 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Builds tally display of placed ships in score area.
-   * Delegates to score component with ship display callback.
+   * Delegates to score component with custom ship display callback.
+   * Shows visual representation of each placed ship.
    *
-   * @param {Object[]} ships - Ships to display in tally
+   * Side effects:
+   * - Invokes this.score.buildShipTally() with placeShipBox callback
+   *
+   * @param {Array<Object>} ships - Ships to display in tally
    * @returns {void}
    */
   placeTally (ships) {
@@ -1279,9 +1509,9 @@ export class PlacementUI extends WatersUI {
    * Displays placement event: shows notice, marks placed cells, updates score.
    * Orchestrates UI updates when ship is placed during placement phase.
    *
-   * @param {Array<[number, number]>} placed - Array of [row, col] placed cells
-   * @param {Object} model - Game model with ship list
-   * @param {Object} ship - Ship that was placed
+   * @param {Array<Array<number>>} placed - Array of [row, col] placed cells
+   * @param {GameModel} model - Game model with ship list
+   * @param {Object} ship - Ship that was placed with letter, cells, and description
    * @returns {void}
    */
   placement (placed, model, ship) {
@@ -1295,7 +1525,7 @@ export class PlacementUI extends WatersUI {
    * Displays ship tracking information for additional placement phase.
    * Updates tally and zone info during weapon/addition phase.
    *
-   * @param {Object} model - Game model with loadout and ships
+   * @param {GameModel} model - Game model with loadout and ships
    * @returns {void}
    */
   displayShipTrackingInfo (model) {
@@ -1308,10 +1538,15 @@ export class PlacementUI extends WatersUI {
    * Displays addition event: adds ship to model and updates UI state.
    * Used for adding additional ships after initial placement (weapons/ships).
    *
-   * @param {Array<[number, number]>} placed - Array of placed cells
-   * @param {Object} model - Game model to update
-   * @param {Object} ship - Ship to add to model
-   * @returns {string|number} ID of newly added ship
+   * Side effects:
+   * - Adds ship to model.ships array
+   * - Clones ship and updates candidateShips
+   * - Re-arms weapons for new ship configuration
+   *
+   * @param {Array<Array<number>>} placed - Array of [row, col] placed cells
+   * @param {GameModel} model - Game model to update
+   * @param {Object} ship - Ship to add to model with id and clone method
+   * @returns {string|number|undefined} ID of newly added ship
    */
   addition (placed, model, ship) {
     this.showNotice(ship.getDescription() + this.addText)
@@ -1333,8 +1568,13 @@ export class PlacementUI extends WatersUI {
    * Displays subtraction event: removes ship from model and updates UI.
    * Called when user removes an added ship during addition phase.
    *
-   * @param {Object} model - Game model to update
-   * @param {Object} ship - Ship to remove from model
+   * Side effects:
+   * - Removes ship from model.ships array by id match
+   * - Re-arms weapons for updated ship configuration
+   * - Updates score and add info display
+   *
+   * @param {GameModel} model - Game model to update
+   * @param {Object} ship - Ship to remove from model with id and description
    * @returns {void}
    */
   subtraction (model, ship) {
@@ -1351,8 +1591,8 @@ export class PlacementUI extends WatersUI {
    * Displays unplacement event: removes ship and updates score display.
    * Called when user removes ship during initial placement phase.
    *
-   * @param {Object} model - Game model
-   * @param {Object} ship - Ship that was unplaced
+   * @param {GameModel} model - Game model with ship list
+   * @param {Object} ship - Ship that was unplaced with description
    * @returns {void}
    */
   unplacement (model, ship) {
@@ -1366,7 +1606,7 @@ export class PlacementUI extends WatersUI {
    * Sets button disabled states and updates ship/ammo counts.
    * Called when model changes during addition phase.
    *
-   * @param {Object} model - Game model with ships and loadout
+   * @param {GameModel} model - Game model with ships and loadout
    * @returns {void}
    */
   displayAddInfo (model) {
@@ -1379,8 +1619,9 @@ export class PlacementUI extends WatersUI {
 
   /**
    * Gets total number of available ships.
+   * Returns length of this.ships array.
    *
-   * @returns {number} Total ship count
+   * @returns {number} Total ship count available for placement
    */
   noOfShips () {
     return this.ships.length
@@ -1390,7 +1631,7 @@ export class PlacementUI extends WatersUI {
    * Counts number of placed ships from array.
    * Filters ships with placed flag set to true.
    *
-   * @param {Object[]} [ships=this.ships] - Ships to count, defaults to this.ships
+   * @param {Array<Object>} [ships=this.ships] - Ships to count with placed property, defaults to this.ships
    * @returns {number} Number of placed ships
    */
   noOfPlacedShips (ships = this.ships) {
@@ -1400,9 +1641,13 @@ export class PlacementUI extends WatersUI {
   /**
    * Updates ship placement display in score area.
    * Shows placed/total count and triggers next stage callback if all placed.
-   * Called whenever placement status changes.
+   * Called whenever placement status changes to update UI.
    *
-   * @param {Object[]} [ships=this.ships] - Ships to display, defaults to this.ships
+   * Side effects:
+   * - Updates this.score.placed text content with placement count
+   * - Calls gotoNextStageAfterPlacement() if all ships placed and placing mode active
+   *
+   * @param {Array<Object>} [ships=this.ships] - Ships to display count for, defaults to this.ships
    * @returns {void}
    */
   displayShipInfo (ships = this.ships) {
@@ -1424,7 +1669,12 @@ export class PlacementUI extends WatersUI {
    * Clears board and trays, resets UI to initial state.
    * Used when returning to placement phase or starting new game.
    *
-   * @param {Object[]} ships - Ships to display updated count for
+   * Side effects:
+   * - Clears board.innerHTML
+   * - Clears all trays
+   * - Updates ship count display
+   *
+   * @param {Array<Object>} ships - Ships to display updated count for
    * @returns {void}
    */
   reset (ships) {
@@ -1437,7 +1687,13 @@ export class PlacementUI extends WatersUI {
    * Clears board and trays for addition phase, reinitializes weapons.
    * Called when transitioning to addition phase.
    *
-   * @param {Object} model - Game model with weapons configuration
+   * Side effects:
+   * - Clears board.innerHTML
+   * - Clears all trays
+   * - Invokes model.armWeapons() to reconfigure weapons
+   * - Updates add info display
+   *
+   * @param {GameModel} model - Game model with weapons configuration and armWeapons method
    * @returns {void}
    */
   resetAdd (model) {
@@ -1449,8 +1705,13 @@ export class PlacementUI extends WatersUI {
   /**
    * Adds a marked-as-placed visual to ship cell and surroundings.
    * Calls display surround with callbacks to render miss/surround effects.
+   * Displays ship placement result and surrounding terrain state.
    *
-   * @param {Array<[number, number]>} cells - Placed cell coordinates
+   * Side effects:
+   * - Invokes this.displaySurround() with cellMiss and cellPlacedAt callbacks
+   * - Updates board display to show placement result
+   *
+   * @param {Array<[number, number]>} cells - Placed cell coordinates as [row, col] tuples
    * @param {Object} ship - Ship that was placed
    * @returns {void}
    */
@@ -1469,8 +1730,8 @@ export class PlacementUI extends WatersUI {
 
 /**
  * Cursor direction mappings for arrow key navigation.
- * Maps arrow keys to row/column delta values.
- * @type {Object<string, {dx: number, dy: number}>}
+ * Maps arrow keys to row/column delta values for cursor movement with wrapping.
+ * @type {Object<string, CursorDirection>}
  * @private
  */
 const CURSOR_DIRECTION_MAP = {
@@ -1485,9 +1746,13 @@ const CURSOR_DIRECTION_MAP = {
  * Updates cursor position with wrapping at board boundaries.
  * Triggers grid highlighting for new position.
  *
- * @param {KeyboardEvent} event - Keyboard event with arrow key
- * @param {Object} shipCellGrid - Ship grid model for highlighting
- * @param {Object} viewModel - UI view model with cursor state
+ * Side effects:
+ * - Modifies global cursor.x and cursor.y coordinates
+ * - Invokes dragNDrop.highlight() to update visual feedback
+ *
+ * @param {KeyboardEvent} event - Keyboard event with arrow key property
+ * @param {Object} shipCellGrid - Ship grid model for highlighting with row/col dimensions
+ * @param {PlacementUI} viewModel - UI view model with board and display methods
  * @returns {void}
  * @private
  */
@@ -1515,9 +1780,13 @@ function moveGridCursor (event, shipCellGrid, viewModel) {
  * Routes to grid cursor movement or tray item selection based on cursor mode.
  * Respects placement state and drag operation status.
  *
- * @param {KeyboardEvent} event - Arrow key event
- * @param {Object} viewModel - PlacementUI instance with cursor navigation methods
- * @param {Object} model - Game model with ship grid and ships
+ * Early return conditions:
+ * - viewModel.placingShips is false (not in placement mode)
+ * - cursor.isDragging is true (drag operation in progress)
+ *
+ * @param {KeyboardEvent} event - Arrow key event (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+ * @param {PlacementUI} viewModel - PlacementUI instance with cursor navigation methods and placingShips flag
+ * @param {GameModel} model - Game model with ship grid and ships array
  * @returns {void}
  */
 export function moveCursorBase (event, viewModel, model) {
