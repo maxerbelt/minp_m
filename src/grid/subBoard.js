@@ -6,6 +6,11 @@ import { minMaxXY } from '../core/utilities.js'
 /** @typedef {[number, number]} CoordinatePair */
 /** @typedef {[number, number, number]} CoordinateTuple */
 /** @typedef {MaskBase|Packed} MaskLike */
+/** @typedef {import('../core/utilities.js').MinMaxBounds} MinMaxBounds */
+/** @typedef {import('./SubMask.js').SubMask} SubMaskType */
+/** @typedef {Object} SymbolMap
+ * @property {string} [key] - Symbol for each value
+ */
 
 /**
  * SubBoard - A windowed view into a larger grid with world-relative coordinates
@@ -60,7 +65,7 @@ export class SubBoard extends SubMask {
    * @protected
    * @param {number} worldX - World X coordinate
    * @param {number} worldY - World Y coordinate
-   * @returns {Array<number>} [localX, localY] coordinates in window space
+   * @returns {CoordinatePair} [localX, localY] coordinates in window space
    */
   _worldToLocal (worldX, worldY) {
     return [worldX - this.offsetX, worldY - this.offsetY]
@@ -71,7 +76,7 @@ export class SubBoard extends SubMask {
    * @protected
    * @param {number} localX - Local mask X coordinate
    * @param {number} localY - Local mask Y coordinate
-   * @returns {Array<number>} [worldX, worldY] coordinates in world space
+   * @returns {CoordinatePair} [worldX, worldY] coordinates in world space
    */
   _localToWorld (localX, localY) {
     return [localX + this.offsetX, localY + this.offsetY]
@@ -82,7 +87,7 @@ export class SubBoard extends SubMask {
    * @protected
    * @param {number} worldX - World X coordinate
    * @param {number} worldY - World Y coordinate
-   * @returns {Array<number>} [localX, localY] coordinates in window space
+   * @returns {CoordinatePair} [localX, localY] coordinates in window space
    */
   _applyOffset (worldX, worldY) {
     return this._worldToLocal(worldX, worldY)
@@ -90,9 +95,10 @@ export class SubBoard extends SubMask {
 
   /**
    * Override SubMask's _removeOffset - delegates to _localToWorld for consistency
+   * @protected
    * @param {number} localX - Local X coordinate
    * @param {number} localY - Local Y coordinate
-   * @returns {Array<number>} [worldX, worldY] coordinates in world space
+   * @returns {CoordinatePair} [worldX, worldY] coordinates in world space
    */
   _removeOffset (localX, localY) {
     return this._localToWorld(localX, localY)
@@ -256,7 +262,7 @@ export class SubBoard extends SubMask {
 
   /**
    * Get ASCII representation with custom symbols
-   * @param {Object} symbols - Symbol mapping for rendering
+   * @param {string[]} [symbols] - Symbol array for each depth value (e.g., '.', '1', '2')
    * @returns {string} ASCII representation with custom symbols
    */
   toAsciiWith (symbols) {
@@ -297,11 +303,11 @@ export class SubBoard extends SubMask {
    * @private
    * @param {number|bigint} value - Value to clamp
    * @param {number|bigint} targetMask - Target mask value for the store
-   * @returns {number|bigint} Clamped value
+   * @returns {number} Clamped value as number
    */
   _clampToDepth (value, targetMask) {
     if (typeof targetMask === 'bigint') {
-      return BigInt(value) & targetMask
+      return Number(BigInt(value) & targetMask)
     }
     return Number(value) & targetMask
   }
@@ -309,22 +315,24 @@ export class SubBoard extends SubMask {
   /**
    * Copy occupied cells from a larger mask into this window
    * Only copies values that are within this window's bounds and positive
-   * @param {Object} largeMask - Source mask to copy from
+   * @param {MaskBase|Packed} largeMask - Source mask to copy from
    */
   copyFromMask (largeMask) {
     const depthMask = this.mask.store.cellMask
-    this._forEachWindowCell((localX, localY) => {
-      const [worldX, worldY] = this._localToWorld(localX, localY)
-      const value = largeMask.at(worldX, worldY)
-      if (value > 0) {
-        this.mask.set(localX, localY, this._clampToDepth(value, depthMask))
+    for (let y = 0; y < this.windowHeight; y++) {
+      for (let x = 0; x < this.windowWidth; x++) {
+        const [worldX, worldY] = this._localToWorld(x, y)
+        const value = largeMask.at(worldX, worldY)
+        if (value > 0) {
+          this.mask.set(x, y, this._clampToDepth(value, depthMask))
+        }
       }
-    })
+    }
   }
 
   /**
    * Copy this window's occupied cells into a larger mask
-   * @param {Object} largeMask - Target mask to copy to
+   * @param {MaskBase|Packed} largeMask - Target mask to copy to
    */
   copyToMask (largeMask) {
     const depth = largeMask.store.cellMask
@@ -338,7 +346,7 @@ export class SubBoard extends SubMask {
 
   /**
    * Compute overlap between this window and a larger mask
-   * @param {Object} largeMask - Mask to overlap with
+   * @param {MaskBase|Packed} largeMask - Mask to overlap with
    * @returns {SubBoard} New SubBoard containing only overlapping cells
    */
   overlap (largeMask) {
@@ -350,7 +358,7 @@ export class SubBoard extends SubMask {
 
   /**
    * Apply this window's cells as an overlap mask onto a larger mask
-   * @param {Object} largeMask - Target mask for overlap
+   * @param {MaskBase|Packed} largeMask - Target mask for overlap
    */
   overlapWith (largeMask) {
     const overlap = this.emptyMask
@@ -362,7 +370,7 @@ export class SubBoard extends SubMask {
    * Convert this window to a new mask of specified dimensions
    * @param {number} newWidth - Width of new mask
    * @param {number} newHeight - Height of new mask
-   * @returns {Object} New mask with this window's local content
+   * @returns {MaskBase|Packed} New mask with this window's local content
    */
   toMask (newWidth, newHeight) {
     const newMask = this.mask.emptyMaskOfSize(newWidth, newHeight)
@@ -372,8 +380,8 @@ export class SubBoard extends SubMask {
 
   /**
    * Convert this window to a new mask matching another mask's dimensions and depth
-   * @param {Object} otherMask - Template mask for dimensions/depth
-   * @returns {Object} New mask matching otherMask's properties
+   * @param {MaskBase|Packed} otherMask - Template mask for dimensions/depth
+   * @returns {MaskBase|Packed} New mask matching otherMask's properties
    */
   toMaskMatching (otherMask) {
     const newMask = otherMask.emptyMaskOfSize(
@@ -434,12 +442,12 @@ export class SubBoard extends SubMask {
 
   /**
    * Load window contents from a list of world-relative coordinates
-   * @param {Array<Array<number>>} coords - [x, y, value] tuples in world coordinates
+   * @param {CoordinateTuple[]} coords - [x, y, value] tuples in world coordinates
    */
   copyFromCoords (coords) {
     for (const [worldX, worldY, value] of coords) {
       if (this.isValid(worldX, worldY)) {
-        this.set(worldX, worldY, value)
+        this.set(worldX, worldY, /** @type {number} */ (value))
       }
     }
   }
@@ -448,7 +456,7 @@ export class SubBoard extends SubMask {
    * Get all occupied cells as coordinate tuples in world coordinates
    * For multi-bit (colored) grids, includes color value: [x, y, value]
    * For single-bit grids, includes only position: [x, y]
-   * @returns {Array<Array<number>>} Array of [worldX, worldY] or [worldX, worldY, value]
+   * @returns {(CoordinatePair|CoordinateTuple)[]} Array of [worldX, worldY] or [worldX, worldY, value]
    */
   get toCoords () {
     const coords = []
@@ -470,7 +478,7 @@ export class SubBoard extends SubMask {
    * Populate mask from coordinate list (helper to eliminate duplication)
    * @private
    * @param {SubBoard} subBoard - SubBoard instance to populate
-   * @param {Array<Array<number>>} coords - Coordinates to populate from
+   * @param {(CoordinatePair|CoordinateTuple)[]} coords - Coordinates to populate from
    */
   static _populateFromCoords (subBoard, coords) {
     const windowCoords = coords.map(([x, y, value]) => [
@@ -486,7 +494,7 @@ export class SubBoard extends SubMask {
         y >= 0 &&
         y < subBoard.windowHeight
       ) {
-        subBoard.mask.set(x, y, value)
+        subBoard.mask.set(x, y, /** @type {number} */ (value))
       }
     }
   }
@@ -556,7 +564,7 @@ export class SubBoard extends SubMask {
   /**
    * Create SubBoard from coordinate list using bounding box
    * @static
-   * @param {Array<Array<number>>} coords - [x, y, value] tuples in world coordinates
+   * @param {(CoordinatePair|CoordinateTuple)[]} coords - [x, y, value] tuples in world coordinates
    * @param {MaskBase|Packed|null} base - Base mask, or null to create from template
    * @param {MaskBase|Packed} template - Template mask for creating empty masks
    * @param {number} [offsetX=0] - Additional X offset to apply
@@ -580,7 +588,7 @@ export class SubBoard extends SubMask {
 
   /**
    * Create SubBoard from coordinate list with swapped X/Y (row-column to X/Y)
-   * @param {Array<Array<number>>} coords - [row, col, value] tuples
+   * @param {(CoordinatePair|CoordinateTuple)[]} coords - [row, col, value] tuples
    * @param {MaskBase|Packed|null} base - Base mask, or null to create from template
    * @param {MaskBase|Packed} template - Template mask for creating empty masks
    * @param {number} [offsetX=0] - Additional X offset to apply
@@ -593,7 +601,7 @@ export class SubBoard extends SubMask {
 
   /**
    * Create SubBoard from row-column coordinates (swaps to X/Y internally)
-   * @param {Array<Array<number>>} coords - [row, col, value] tuples
+   * @param {(CoordinatePair|CoordinateTuple)[]} coords - [row, col, value] tuples
    * @param {MaskBase|Packed|null} base - Base mask, or null to create from template
    * @param {MaskBase|Packed} template - Template mask for creating empty masks
    * @param {number} [offsetX=0] - Additional X offset to apply
@@ -601,15 +609,24 @@ export class SubBoard extends SubMask {
    * @returns {SubBoard} New SubBoard with swapped coordinates
    */
   static fromRCcoords (coords, base, template, offsetX = 0, offsetY = 0) {
-    const xyCoords = coords.map(c => [c[1], c[0], c[2] || 1])
-    return SubBoard.fromCoords(xyCoords, base, template, offsetX, offsetY)
+    const xyCoords = coords.map(c => {
+      const [row, col, value] = c
+      return [col, row, value || 1]
+    })
+    return SubBoard.fromCoords(
+      /** @type {(CoordinatePair|CoordinateTuple)[]} */ (xyCoords),
+      base,
+      template,
+      offsetX,
+      offsetY
+    )
   }
 
   /**
    * Create SubBoard from coordinate list using square bounding box
    * Creates a square window that fits all coordinates
    * @static
-   * @param {Array<Array<number>>} coords - [x, y, value] tuples in world coordinates
+   * @param {(CoordinatePair|CoordinateTuple)[]} coords - [x, y, value] tuples in world coordinates
    * @param {MaskBase|Packed|null} base - Base mask, or null to create from template
    * @param {MaskBase|Packed} template - Template mask for creating empty masks
    * @returns {SubBoard} New square SubBoard containing the coordinates
@@ -714,7 +731,7 @@ export class SubBoard extends SubMask {
   /**
    * Dilate with border, filling border with specified value
    * Creates expanded grid by adding border of empty cells then dilating into them
-   * @param {number} [borderSize=1] - Size of border to add on all sides
+   * @param {number} [borderSize=1] - Size of border to add on all sides (must be positive)
    * @param {number} [fillValue=0] - Value to fill border with (typically 0 or empty)
    * @returns {SubBoard} New expanded SubBoard with dilated content
    */
@@ -726,7 +743,7 @@ export class SubBoard extends SubMask {
   /**
    * Dilate with border, treating border as background for expansion
    * Like dilateExpand but uses "flat" dilation that expands into background
-   * @param {number} [borderSize=1] - Size of border to add on all sides
+   * @param {number} [borderSize=1] - Size of border to add on all sides (must be positive)
    * @returns {SubBoard} New expanded SubBoard with dilated content
    */
   flatDilateExpand (borderSize = 1) {

@@ -83,15 +83,22 @@ export class AsciiRepresentation {
    * Initializes renderer for a grid-like object.
    *
    * @param {Object} gridLike - Grid object with width, height, and at(x, y) methods
-   *                            Can be a Mask, AsciiGrid, or other grid implementation
+   * @param {number} gridLike.width - Width of the grid
+   * @param {number} gridLike.height - Height of the grid
+   * @param {Function} gridLike.at - Function to get value at (x, y) coordinates
+   * @param {Object} [gridLike.indexer] - Optional indexer for non-rectangular grids
+   * @param {number} [gridLike.occupancy] - Optional occupancy count for statistics
+   * @param {number} [gridLike.size] - Optional size value for statistics
    */
   constructor (gridLike) {
+    /** @type {Object} */
     this.grid = gridLike
   }
 
   /**
    * Converts grid to ASCII string using default symbols.
    *
+   * @public
    * @returns {string} ASCII art representation of the grid
    * @example
    * const ascii = new AsciiRepresentation(grid).toAscii();
@@ -107,7 +114,8 @@ export class AsciiRepresentation {
    * - If grid has indexer (for non-rectangular grids), uses indexer-based rendering
    * - Otherwise uses generic rectangular rendering
    *
-   * @param {Array<string>} [symbols=defaultSymbols] - Symbol array mapping values to characters
+   * @public
+   * @param {Array<string>} [symbols] - Symbol array mapping values to characters
    * @returns {string} ASCII art representation using provided symbols
    * @example
    * const customSymbols = ['·', '#', '@', '*'];
@@ -185,6 +193,7 @@ export class AsciiRepresentation {
   /**
    * Appends a single cell character to row string.
    * Includes indexer cell padding and value-to-symbol mapping.
+   *
    * @param {string} row - Row string to append to
    * @param {Array<number>} location - [x, y] coordinate for cell
    * @param {Array<string>} symbols - Symbol array for value mapping
@@ -195,6 +204,15 @@ export class AsciiRepresentation {
     const value = this.grid.at(...location)
     return row + this.#cellChar(value, symbols)
   }
+
+  /**
+   * Maps cell value to display character.
+   * Handles negative values (returns '!') and unmapped values (returns '?').
+   *
+   * @param {number|bigint} value - Cell value from grid
+   * @param {Array<string>} symbols - Symbol array for value mapping
+   * @returns {string} Single character representing the cell value
+   */
   #cellChar (value, symbols) {
     if (value < 0) {
       return '!'
@@ -206,7 +224,7 @@ export class AsciiRepresentation {
    * Renders generic rectangular grid without indexer.
    * Iterates row-by-row, column-by-column to build output.
    * Simple and efficient for standard rectangular grids.
-   
+   *
    * @param {Array<string>} symbols - Symbol array for value mapping
    * @returns {string} ASCII art with one character per cell, rows separated by newlines
    */
@@ -227,6 +245,7 @@ export class AsciiRepresentation {
    * Extracts grid values as a 2D array.
    * Returns nested array: grid[rowIndex][columnIndex] = value.
    *
+   * @public
    * @returns {Array<Array<number|bigint>>} 2D array of cell values
    * @example
    * const values = renderer.toGrid();
@@ -251,6 +270,7 @@ export class AsciiRepresentation {
    * Combines ASCII representation with occupancy and size statistics.
    * Requires grid to have occupancy and size properties.
    *
+   * @public
    * @returns {string} Multi-line string with ASCII art and statistics
    * @example
    * const summary = renderer.toVisualString();

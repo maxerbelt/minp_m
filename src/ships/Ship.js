@@ -1,28 +1,38 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { parsePair } from '../core/utilities.js'
 import { Mask } from '../grid/rectangle/mask.js'
-import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { SubBoard } from '../grid/subBoard.js'
 import { Zip } from '../core/Zip.js'
 
+// WeaponSystem is used in JSDoc typedefs but not directly in code
+
 /**
- * @typedef {WeaponSystem & {
- *   row: number,
- *   col: number
- * }} PositionedWeaponSystem
+ * @typedef {Object} PositionedWeaponSystem
+ * WeaponSystem with row/col coordinates
+ * @property {number} id - Unique identifier for weapon system
+ * @property {Object} weapon - Weapon instance with damage/hit properties
+ * @property {number} row - Row coordinate of weapon on board
+ * @property {number} col - Column coordinate of weapon on board
+ * @property {boolean} [hit] - Whether weapon has been hit by enemy fire
+ * @property {boolean} [damaged] - Whether weapon is damaged but not hit (unloaded)
+ * @property {number} [ammo] - Current ammunition count
+ * @property {Function} [hasAmmo] - Check if weapon has ammunition
+ * @property {Function} [ammoRemaining] - Get remaining ammunition
+ * @property {Function} [ammoCapacity] - Get ammunition capacity
+ * @property {Function} [animateDetonation] - Animation function for detonation
+ * @property {Function} [reset] - Reset weapon state
  */
 
 /**
- * @typedef { WeaponSystem | PositionedWeaponSystem } Rack
+ * @typedef {Object|PositionedWeaponSystem} Rack
+ * Weapon rack (WeaponSystem or positioned variant)
  */
-
-////// @typedef {import('../grid/subBoard.js').SubBoard} SubBoard
 
 /**
  * @typedef {Object} Placement
  * Placement configuration interface
  * @property {SubBoard} board - Board defining placement
- * @property {Object} [weapons] - Weapon systems by coordinate
+ * @property {Object<string, Rack>} [weapons] - Weapon systems by coordinate key
  * @property {number} [variant] - Placement variant index
  */
 
@@ -31,33 +41,154 @@ import { Zip } from '../core/Zip.js'
  * Hit processing result interface
  * @property {string} letter - Ship letter identifier
  * @property {string|null} info - Hit information message
- * @property {string|null} damaged - Damage type indicator
- * @property {Array} list - Array of hit results
- * @property {Array} misses - Array of miss results
+ * @property {string|null} damaged - Damage type indicator ('burnt', 'skull', 'damaged')
+ * @property {Array<{key: string, cell: [number, number], damaged: string}>} list - Array of hit results
+ * @property {Array<{key: string, cell: [number, number], damaged: string}>} misses - Array of miss results
  */
 
 /**
  * @typedef {Object} DamageResult
  * Damage processing result interface
- * @property {Array} hits - Array of hit coordinates
- * @property {Array} misses - Array of miss coordinates
+ * @property {Array<{key: string, cell: [number, number], damaged: string}>} hits - Array of hit coordinates
+ * @property {Array<{key: string, cell: [number, number], damaged: string}>} misses - Array of miss coordinates
  * @property {number} dtaps - Number of double taps (already hit cells)
  */
 
 /**
- * @param {string | any[]} arr
+ * @typedef {[number, number]} CoordinatePair
+ * Array coordinate pair [row, column]
+ */
+
+/**
+ * @typedef {[string, Rack]} WeaponEntry
+ * Weapon entry pair for iteration [coordKey, weaponSystem]
+ * @description Format is ["row,col", weaponSystem] for tracking weapon positions
+ */
+
+/**
+ * @typedef {Object} ShipShape
+ * Ship shape definition
+ * @property {string} symmetry - Symmetry type
+ * @property {string} letter - Ship letter identifier
+ * @property {Object<string, any>} weaponSystem - Weapon system configuration
+ * @property {string} [tallyGroup] - Tally group identifier
+ * @property {(filter?: Function) => ShipShape[]} [placeables] - Available placement variants
+ * @property {(variant: number, r: number, c: number) => CoordinatePair[]} [placeCells] - Calculate placement cells
+ */
+
+/**
+ * @typedef {Object} ShipCellGrid
+ * Grid tracking occupied ship cells
+ * @property {(r: number, c: number) => boolean} hasRC - Check if cell is occupied
+ * @property {(r: number, c: number, cell: Object) => void} setCell - Set cell value
+ * @property {(r: number, c: number, inBoundsFn: Function) => boolean} isAreaClearAroundXY - Check no adjacent ships
+ */
+
+/**
+ * @typedef {Object} MapInterface
+ * Game map interface
+ * @property {(r: number, c: number) => boolean} isLand - Check if cell is land
+ * @property {(r: number, c: number) => boolean} inBounds - Check if coordinates in bounds
+ * @property {(r: number, c: number) => CoordinatePair[]} surround - Get surrounding cells
+ */
+
+/**
+ * @typedef {Object} UIViewModel
+ * UI view model interface
+ * @property {(r: number, c: number) => any} gridCellAt - Get grid cell at coordinates
+ * @property {(cell: any, damaged: string) => void} useAmmoInCell - Mark ammo used in cell
+ * @property {() => number} cellSize - Get cell size in pixels
+ */
+
+/**
+ * @typedef {Object} GameModel
+ * Game model interface
+ * @property {UIViewModel} UI - UI view model
+ * @property {any} loadOut - Ship loadout manager
+ * @property {any} [opponent] - Opponent ship reference
+ * @property {() => void} updateUI - Update UI display
+ */
+
+/**
+ * @typedef {Object} WeaponAtPosition
+ * Weapon positioned at specific location
+ * @property {(r: number, c: number) => boolean} hasAmmo - Check ammunition availability
+ * @property {number} [ammo] - Ammunition count
+ * @property {() => number} [ammoRemaining] - Get remaining ammunition
+ * @property {() => number} [ammoCapacity] - Get ammunition capacity
+ * @property {string} [letter] - Weapon letter identifier
+ * @property {number} id - Weapon system unique ID
+ * @property {boolean} [hit] - Whether weapon has been hit
+ * @property {boolean} [damaged] - Whether weapon is damaged
+ * @property {any} [weapon] - Weapon instance with properties
+ * @property {(cell: any, cellSize: number) => void} [animateDetonation] - Animation function
+ * @property {() => void} [reset] - Reset weapon state
+ */
+
+/**
+ * @typedef {Object} MagazineHitResult
+ * Result of magazine hit processing
+ * @property {string} damaged - Damage type indicator
+ * @property {string|null} info - Hit information message
+ * @property {Array} hits - Hit cells from detonation
+ * @property {Array} misses - Miss cells from detonation
+ */
+
+/**
+ * Internal: Get first element from array or iterator
+ * Handles strings, arrays, and iterators safely with type checking.
+ * @param {string | any[] | IterableIterator<any>} arr - Array, string, or iterable
+ * @returns {any|null} First element or null if empty/invalid
+ * @private
  */
 function firstElement (arr) {
-  return arr && arr.length > 0 ? arr[0] : null
+  if (!arr) return null
+  if (typeof arr === 'string' && arr.length > 0) return arr[0]
+  if (Array.isArray(arr) && arr.length > 0) return arr[0]
+  // For iterators, convert to array first
+  if (arr && typeof arr[Symbol.iterator] === 'function') {
+    const arr_temp = Array.from(arr)
+    return arr_temp.length > 0 ? arr_temp[0] : null
+  }
+  return null
 }
 
+/**
+ * Ship - Represents a single game ship with placement, weapons, and hit tracking
+ *
+ * Ships maintain their own state including:
+ * - Position and size on game board (board, cells, size)
+ * - Equipped weapons and ammunition (weapons, weaponsById)
+ * - Hit tracking and damage state (hits, sunk, placed)
+ * - Connection to shape definition for placement variants (shape)
+ *
+ * Weapons are tracked by coordinate key ("row,col") and internal ID.
+ * Hits are recorded in a Mask object tracking which cells have been targeted.
+ * Ships can have multiple placement variants with different weapon configurations.
+ *
+ * @class Ship
+ * @property {number} id - Unique ship identifier
+ * @property {string} symmetry - Ship symmetry type
+ * @property {string} letter - Single letter identifier (A-Z)
+ * @property {SubBoard|Mask} hits - Mask tracking hit locations on this ship
+ * @property {SubBoard} [_board] - Board representing ship cells (internal)
+ * @property {number} size - Number of cells occupied by ship
+ * @property {boolean} placed - Whether ship has been placed on board
+ * @property {boolean} sunk - Whether all cells have been hit
+ * @property {number} variant - Current placement variant index
+ * @property {ShipShape} [_shape] - Ship shape definition (cached, internal)
+ * @property {[number, number][]} [_cellsArray] - Array of ship cells (cached, internal)
+ * @property {Map<number, Rack>} [_weaponsById] - Weapons indexed by ID (cached, internal)
+ * @property {Object<string, Rack>} [_weapons] - Weapons indexed by coordinate (cached, internal)
+ */
 export class Ship {
   /**
-   * @param {number} id
-   * @param {string} symmetry
-   * @param {string} letter
-   * @param {{ '1,1': { id: number; }; }} [weapons]
-   * @property {Mask | SubBoard} hits
+   * Create a new ship instance
+   * @param {number} id - Unique ship identifier
+   * @param {string} symmetry - Ship symmetry type (e.g., 'vert', 'horiz')
+   * @param {string} letter - Ship letter identifier (A-Z)
+   * @param {Object<string, Rack>} [weapons] - Initial weapons configuration (optional)
+   *   Format: {"row,col": weaponSystem, ...}
    */
   constructor (id, symmetry, letter, weapons) {
     this.id = id
@@ -68,11 +199,22 @@ export class Ship {
     this.placed = false
     this.sunk = false
     this.variant = 0
+    this._board = undefined
+    this._shape = undefined
+    this._cellsArray = undefined
+    this._weaponsById = undefined
+    this.__weaponArray = undefined
+    this._weapons = undefined
     if (weapons) {
       this.weapons = weapons
     }
   }
 
+  /**
+   * Get weapons indexed by unique ID
+   * Lazily initializes Map on first access.
+   * @returns {Map<number, Rack>} Map of weapon systems by ID
+   */
   get weaponsById () {
     if (this._weaponsById) {
       return this._weaponsById
@@ -80,6 +222,11 @@ export class Ship {
     this._weaponsById = new Map()
     return this._weaponsById
   }
+  /**
+   * Get weapons indexed by coordinate key ("row,col")
+   * Lazily generates from weaponsById map on first access.
+   * @returns {Object<string, Rack>} Object with coordinate keys mapping to weapon systems
+   */
   get weapons () {
     if (this._weapons) {
       return this._weapons
@@ -88,14 +235,27 @@ export class Ship {
     this._weapons = this._idWeaponMapToWeaponPositionObject()
     return this._weapons
   }
+  /**
+   * Set weapons from various input formats (Map, Array, Set, or Object)
+   * Automatically converts input to internal weaponsById Map format.
+   * @param {Map<number, Rack>|Array<Rack>|Array<[string, Rack]>|Object<string, Rack>} weapons
+   *   Weapons in various formats
+   */
   set weapons (weapons) {
     this._createOrUpdateWeapons(weapons)
   }
   _idWeaponMapToWeaponPositionObject () {
-    return this._weaponEntriesFromIdMap().reduce((obj, [key, weapon]) => {
-      obj[key] = weapon
-      return obj
-    }, {})
+    return this._weaponEntriesFromIdMap().reduce(
+      /**
+       * @param {Object<string, Rack>} obj
+       * @param {[string, Rack]} entry
+       */
+      (obj, [key, weapon]) => {
+        obj[key] = weapon
+        return obj
+      },
+      {}
+    )
   }
   _createOrUpdateWeapons (weapons) {
     const type = Zip.getType(weapons)
@@ -153,52 +313,110 @@ export class Ship {
     return this.__weaponArray
   }
   get _defaultWeaponArray () {
-    return this._weaponsById?.values() || []
+    const values = this._weaponsById?.values()
+    return values ? Array.from(values) : []
   }
   set _weaponArray (weapons) {
-    this.__weaponArray = [...weapons]
+    this.__weaponArray = Array.isArray(weapons) ? [...weapons] : []
   }
   /**
    * Check if any weapons are equipped
+   * @returns {boolean} True if at least one weapon is equipped
    */
   get hasWeapon () {
     return this.numWeapons > 0
   }
+  /**
+   * Get total number of equipped weapons
+   * @returns {number} Count of weapon systems (0 if none equipped)
+   */
   get numWeapons () {
     return this._weaponArray?.length || this.weaponsById?.size || 0
   }
 
+  /**
+   * Get ship cells
+   * @returns {[number, number][]} Array of cell coordinates
+   */
   get cells () {
-    const hasSavedCells = this._cellsArray && this._cellsArray.length > 0
-    const coords = hasSavedCells ? this._cellsArray : this.board.toCoords
-    return coords.map(cell =>
-      Array.isArray(cell) ? [cell[0], cell[1]] : [cell?.r, cell?.c]
-    )
+    if (this._cellsArray && this._cellsArray.length > 0) {
+      return this._cellsArray
+    }
+    const board = this.board
+    if (board && typeof board === 'object' && 'toCoords' in board) {
+      const coords = board.toCoords
+      if (Array.isArray(coords)) {
+        return coords.map(cell =>
+          Array.isArray(cell)
+            ? [cell[0], cell[1]]
+            : [cell?.r ?? 0, cell?.c ?? 0]
+        )
+      }
+    }
+    return []
   }
+  /**
+   * Set cells and update board
+   * @param {CoordinatePair[]} cells - Cells to set
+   */
   set cells (cells) {
     const normalizedCells = this._normalizeCells(cells)
     this._cellsArray = normalizedCells
     this.board = Mask.fromCoordsSquare(normalizedCells)
   }
   get board () {
-    return this._board || this._shape?.board || Mask.empty(0, 0)
+    return this._board || Mask.empty(0, 0)
   }
+  /**
+   * Set board
+   * @param {SubBoard|Mask|unknown} board
+   */
   set board (board) {
-    this._board = board
-    this.size = board.occupancy
-    this.hits = board.emptyMask
+    /** @type {any} */
+    const b = board
+    this._board = b
+    if (b && typeof b === 'object') {
+      if ('occupancy' in b) {
+        this.size = b.occupancy
+      }
+      if ('emptyMask' in b) {
+        const emptyMask = b.emptyMask
+        if (emptyMask) {
+          this.hits = emptyMask
+        }
+      }
+    }
   }
   get height () {
-    return this.board.height
+    const board = this.board
+    return board && typeof board === 'object' && 'height' in board
+      ? board.height
+      : 0
   }
   get width () {
-    return this.board.width
+    const board = this.board
+    return board && typeof board === 'object' && 'width' in board
+      ? board.width
+      : 0
   }
+  /**
+   * Get minimum ship size (smaller of width/height)
+   * Used to determine minimum distance constraint for placement.
+   * @returns {number} Minimum dimension of board (0 if no board)
+   */
   get minSize () {
-    return Math.min(this.height, this.width)
+    const h = Number(this.height) || 0
+    const w = Number(this.width) || 0
+    return Math.min(h, w)
   }
+  /**
+   * Get maximum ship size (larger of width/height)
+   * @returns {number} Maximum dimension
+   */
   get maxSize () {
-    return Math.max(this.height, this.width)
+    const h = Number(this.height) || 0
+    const w = Number(this.width) || 0
+    return Math.max(h, w)
   }
 
   resetBoard () {
@@ -217,29 +435,54 @@ export class Ship {
   }
 
   /**
-   * @param {any[]} ships
+   * Calculate total hits across all ships
+   * @param {Ship[]} ships - Array of ship instances
+   * @returns {number} Total number of hits across all ships
    */
   static noOfHits (ships) {
-    return ships.reduce(
-      (/** @type {any} */ sum, /** @type {{ getTotalHits: () => any; }} */ s) =>
-        sum + s.getTotalHits(),
-      0
-    )
+    return ships.reduce((sum, s) => sum + s.getTotalHits(), 0)
   }
   /**
-   * @param {any[]} ships
+   * Count total number of sunk ships
+   * @param {Ship[]} ships - Array of ship instances
+   * @returns {number} Number of sunk ships in array
    */
   static noOfSunk (ships) {
-    return ships.reduce(
-      (/** @type {  number} */ sum, /** @type {{ sunk: any; }} */ s) =>
-        sum + (s.sunk ? 1 : 0),
-      0
-    )
+    return ships.reduce((sum, s) => sum + (s.sunk ? 1 : 0), 0)
   }
 
+  /**
+   * Get turn information at given coordinates from primary weapon
+   * Adjusts coordinates for hit mask offset before delegating to weapon.
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {string} Turn information string from weapon (empty string if no weapon)
+   */
   getTurn (r, c) {
-    const r0 = r - this.hits.offsetY - (this.hits.windowHeight - 1) / 2
-    const c0 = c - this.hits.offsetX - (this.hits.windowWidth - 1) / 2
+    // hits is a SubBoard/SubMask with offsetY, windowHeight, offsetX, windowWidth properties
+    const hits = this.hits
+    const offsetY = Number(
+      hits && typeof hits === 'object' && 'offsetY' in hits
+        ? hits.offsetY || 0
+        : 0
+    )
+    const windowHeight = Number(
+      hits && typeof hits === 'object' && 'windowHeight' in hits
+        ? hits.windowHeight || 1
+        : 1
+    )
+    const offsetX = Number(
+      hits && typeof hits === 'object' && 'offsetX' in hits
+        ? hits.offsetX || 0
+        : 0
+    )
+    const windowWidth = Number(
+      hits && typeof hits === 'object' && 'windowWidth' in hits
+        ? hits.windowWidth || 1
+        : 1
+    )
+    const r0 = r - offsetY - (windowHeight - 1) / 2
+    const c0 = c - offsetX - (windowWidth - 1) / 2
     return this.getPrimaryWeapon()?.getTurn(this.variant, r0, c0) || ''
   }
   reset () {
@@ -250,14 +493,29 @@ export class Ship {
 
   /**
    * Internal: Reset state of all equipped weapons
+   * Calls reset() method on each weapon if it exists.
+   * @returns {void}
+   * @private
    */
   _resetAllWeapons () {
     for (const weapon of this._weaponArray) {
       weapon.reset?.()
     }
   }
+  /**
+   * Reset hit tracking
+   * @returns {void}
+   */
   resetHits () {
-    this.hits = this.board?.emptyMask
+    const board = this.board
+    if (board && typeof board === 'object' && 'emptyMask' in board) {
+      /** @type {any} */
+      const boardAny = board
+      const emptyMask = boardAny.emptyMask
+      if (emptyMask) {
+        this.hits = emptyMask
+      }
+    }
   }
 
   /**
@@ -293,15 +551,20 @@ export class Ship {
    * @returns {boolean} True if all board cells are hit
    */
   isSunk () {
-    return this.getTotalHits() === this.board.occupancy
+    const board = this.board
+    const boardOccupancy =
+      board && typeof board === 'object' && 'occupancy' in board
+        ? board.occupancy
+        : 0
+    return this.getTotalHits() === boardOccupancy
   }
 
   _weaponEntriesFromIdMap () {
     if (!this._weaponsById) return []
-    return Array.from(this._weaponsById, ([, weapon]) => [
-      `${weapon.row},${weapon.col}`,
-      weapon
-    ])
+    return Array.from(this._weaponsById, ([, weapon]) => {
+      const positioned = /** @type {PositionedWeaponSystem} */ (weapon)
+      return [`${positioned.row},${positioned.col}`, weapon]
+    })
   }
 
   /**
@@ -326,18 +589,27 @@ export class Ship {
   /**
    * @param {{ symmetry: string; letter: string; weaponSystem: {}; }[]} shapes
    */
+  /**
+   * Create fleet from shape definitions, resetting ID counters
+   * @param {ShipShape[]} shapes - Array of shape definitions
+   * @returns {Ship[]} Array of created ships
+   */
   static createShipsFromShapes (shapes) {
     Ship.id = 1
-    WeaponSystem.id = 1
+    // WeaponSystem.id is managed by WeaponSystemIdManager internally
     return Ship.extraShipsFromShapes(shapes)
   }
   /**
-   * @param {{ symmetry: string; letter: string; weaponSystem: {}; }[]} shapes
+   * Create additional ships from shapes with optional filtering
+   * @param {ShipShape[]} shapes - Array of shape definitions
+   * @param {(shape: ShipShape) => boolean} [filter] - Optional filter function
+   * @returns {Ship[]} Array of created ships
    */
   static extraShipsFromShapes (shapes, filter = () => true) {
+    /** @type {Ship[]} */
     const ships = []
     for (const shape of shapes) {
-      if (!filter(shape)) continue
+      if (!filter?.(shape)) continue
       const newShip = Ship.createFromShape(shape)
       ships.push(newShip)
       Ship.next()
@@ -430,7 +702,8 @@ export class Ship {
 
   /**
    * Check if this ship matches the given ID
-   * @param {any} id
+   * @param {number} id - Ship ID to check
+   * @returns {boolean} True if this ship's ID matches
    */
   matchesId (id) {
     return this.id === id
@@ -438,7 +711,9 @@ export class Ship {
 
   /**
    * Get self if ID matches, null otherwise
-   * @param {number} id
+   * Used for finding ship in fleet by ID.
+   * @param {number} id - Ship ID to match
+   * @returns {Ship|null} This ship if ID matches, null otherwise
    */
   getShipById (id) {
     return this.id === id ? this : null
@@ -446,6 +721,8 @@ export class Ship {
 
   /**
    * Format weapon coordinates and IDs as string (e.g., "1,2:10|2,3:11")
+   * Useful for serialization and debugging weapon placement.
+   * @returns {string} Pipe-delimited string of "row,col:id" pairs
    */
   makeKeyIds () {
     return this._weaponEntries()
@@ -455,11 +732,11 @@ export class Ship {
 
   /**
    * Get all [coordKey, weapon] entries for loaded weapons
+   * Loaded weapons are those with ammunition remaining.
+   * @returns {Array<[string, Rack]>} Array of [coordinate key, weapon] pairs for loaded weapons
    */
   getLoadedWeaponEntries () {
-    return this._filterWeaponEntries((/** @type {any} */ weapon) =>
-      this._isWeaponLoaded(weapon)
-    )
+    return this._filterWeaponEntries(weapon => this._isWeaponLoaded(weapon))
   }
 
   /**
@@ -542,6 +819,13 @@ export class Ship {
     )
   }
 
+  /**
+   * Create a ship instance from a shape definition
+   * Initializes ship with shape's symmetry, letter, and weapon system.
+   * @param {ShipShape} shape - Shape definition containing symmetry, letter, and weaponSystem
+   * @returns {Ship} New ship instance with shape properties applied
+   * @static
+   */
   static createFromShape (shape) {
     const ship = new Ship(Ship.id, shape.symmetry, shape.letter)
     // Convert shape's weapon system to ship format
@@ -555,9 +839,14 @@ export class Ship {
 
   /**
    * Internal: Process weapon system data and assign row/col coordinates
-   * @param {Map<number, any>|Array<any>} weaponsToProcess - Weapon systems to process
-   * @param {boolean} [preserveExisting=false] - If true, preserve existing weaponsById instead of creating new
-   * @returns {Object} Object with {weaponsById, weaponArray} after coordinate assignment
+   * Converts various weapon input formats to normalized weaponsById Map and weaponArray.
+   * Assigns row/col coordinates to each weapon from coordinate key format.
+   * @param {Map<number, Rack>|Array<Rack>|Array<[string, Rack]>|any} weaponsToProcess
+   *   Weapon systems to process in various formats
+   * @param {boolean} [preserveExisting=false]
+   *   If true, preserve existing weaponsById instead of creating new Map
+   * @returns {{weaponsById: Map<number, Rack>, weaponArray: Rack[]}}
+   *   Object with normalized {weaponsById, weaponArray} after coordinate assignment
    * @private
    */
   _processWeaponCoordinates (weaponsToProcess, preserveExisting = false) {
@@ -574,23 +863,33 @@ export class Ship {
   }
 
   /**
-   * Internal: Normalize weapons input to array format
-   * @param {Map<number, any>|Array<any>} weaponsToProcess - Input weapons data
-   * @returns {Array} Normalized array of weapon items
+   * Internal: Normalize weapons input to array format for processing
+   * Converts Maps and other iterables to array format consistently.
+   * @param {Map<number, Rack>|Array<Rack>|Array<[string, Rack]>} weaponsToProcess
+   *   Input weapons data in various formats
+   * @returns {Array<[string|number, Rack]|Rack>}
+   *   Normalized array of weapon items (entries or single weapons)
    * @private
    */
   _normalizeWeaponsInput (weaponsToProcess) {
-    return Array.isArray(weaponsToProcess)
-      ? weaponsToProcess
-      : Array.from(weaponsToProcess.entries || weaponsToProcess)
+    if (Array.isArray(weaponsToProcess)) {
+      return weaponsToProcess
+    }
+    if (weaponsToProcess instanceof Map) {
+      return Array.from(weaponsToProcess.entries())
+    }
+    return Array.from(weaponsToProcess || [])
   }
 
   /**
    * Internal: Process single weapon item and update collections
-   * @param {Array} item - [key, weaponSystem] pair
-   * @param {Map} weaponsById - Weapons by ID map
-   * @param {Array} weaponArray - Weapons array
-   * @param {boolean} preserveExisting - Whether to preserve existing collections
+   * Extracts coordinate key and weapon system, assigns coordinates, and updates maps.
+   * @param {[string|number, Rack]|Rack} item
+   *   [key, weaponSystem] pair or single Rack
+   * @param {Map<number, Rack>} weaponsById - Weapons by ID map to update
+   * @param {Rack[]} weaponArray - Weapons array to update
+   * @param {boolean} preserveExisting
+   *   Whether to preserve existing collections when adding new weapons
    * @returns {void}
    * @private
    */
@@ -616,23 +915,27 @@ export class Ship {
 
   /**
    * Internal: Assign row and column coordinates to weapon system
+   * Mutates the weapon system to add row and col properties.
    * @param {Rack} weaponSystem - Weapon system to update
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} r - Row coordinate to assign
+   * @param {number} c - Column coordinate to assign
    * @returns {void}
    * @private
    */
   _assignCoordinatesToWeapon (weaponSystem, r, c) {
-    weaponSystem.row = r
-    weaponSystem.col = c
+    const positioned = /** @type {PositionedWeaponSystem} */ (weaponSystem)
+    positioned.row = r
+    positioned.col = c
   }
 
   /**
    * Internal: Update weapon collections with new weapon system
+   * Adds weapon to weaponsById Map by ID and to weaponArray if not already present.
    * @param {Rack} weaponSystem - Weapon system to add
-   * @param {Map} weaponsById - Weapons by ID map
-   * @param {Array} weaponArray - Weapons array
-   * @param {boolean} preserveExisting - Whether to preserve existing collections
+   * @param {Map<number, Rack>} weaponsById - Weapons by ID map to update
+   * @param {Rack[]} weaponArray - Weapons array to update
+   * @param {boolean} preserveExisting
+   *   Whether to preserve existing collections when adding new weapons
    * @returns {void}
    * @private
    */
@@ -652,8 +955,10 @@ export class Ship {
 
   /**
    * Internal: Import weapons from shape definition
-   * @param {any} shapeWeaponSystem - Shape's weapon system data
-   * @returns {Object} Object with {weaponsById, weaponArray}
+   * Creates new weaponsById Map from shape's weapon system configuration.
+   * @param {Object<string, Rack>|any} shapeWeaponSystem - Shape's weapon system data
+   * @returns {{weaponsById: Map<number, Rack>, weaponArray: Rack[]}}
+   *   Object with {weaponsById, weaponArray} populated from shape
    * @private
    */
   _weaponsFromShape (shapeWeaponSystem) {
@@ -662,8 +967,12 @@ export class Ship {
 
   /**
    * Internal: Import weapons from placement, updating existing weapons
-   * @param {any} placeWeaponSystem - Placement weapon system data
-   * @returns {Object} Object with {weaponsById, weaponArray}
+   * Updates existing weapons with placement variant coordinate keys.
+   * Preserves weapon objects while updating their coordinate positions.
+   * @param {Array<[string, Rack]>|any} placeWeaponSystem
+   *   Placement weapon system data with coordinate keys
+   * @returns {{weaponsById: Map<number, Rack>, weaponArray: Rack[]}}
+   *   Object with {weaponsById, weaponArray} updated from placement
    * @private
    */
   _weaponsFromPlacement (placeWeaponSystem) {
@@ -690,19 +999,25 @@ export class Ship {
   }
 
   /**
-   * @param {any} variant
-   * @param {any} r0
-   * @param {any} c0
+   * Calculate placement cells for given variant at position
+   * Delegates to shape's placeCells method if available.
+   * @param {number} variant - Placement variant index
+   * @param {number} r0 - Starting row coordinate
+   * @param {number} c0 - Starting column coordinate
+   * @returns {CoordinatePair[]} Array of [row, col] cell coordinates (empty if no shape)
    */
   placeCells (variant, r0, c0) {
     const shape = this.shape()
-    return shape.placeCells(variant, r0, c0)
+    if (!shape || typeof shape.placeCells !== 'function') {
+      return []
+    }
+    return shape.placeCells(variant, r0, c0) || []
   }
   /**
    * Process multiple cells for damage and record hits/misses
-   * @param {any} model - Game model with UI and opponent references
-   * @param {Array<[number, number]>} cells - Array of [row, col] cells to process
-   * @returns {Object} Result object with {hits, misses, dtaps} arrays and count
+   * @param {GameModel} model - Game model with UI and opponent references
+   * @param {CoordinatePair[]} cells - Array of [row, col] cells to process
+   * @returns {DamageResult} Result object with {hits, misses, dtaps} arrays and count
    * @private
    */
   _processCellDamage (model, cells) {
@@ -720,29 +1035,44 @@ export class Ship {
 
   /**
    * Internal: Process single cell damage result (hit or miss)
-   * @param {any} model - Game model reference
+   * Checks if cell is on ship board; if yes, marks as hit; if no, marks as miss.
+   * Accumulates results in provided DamageResult object.
+   * @param {GameModel} model - Game model reference
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {{ hits: Array; misses: Array; dtaps?: number }} results - Accumulator for hit/miss results
-   * @param {[number, number]} cell - Cell coordinate pair
+   * @param {DamageResult} results
+   *   Accumulator for hit/miss results (modified in place)
+   * @param {CoordinatePair} cell - Cell coordinate pair [row, col]
    * @returns {void}
    * @private
    */
   processHitAt (model, r, c, results, cell) {
-    if (this.board.test(c, r)) {
-      const { damaged } = this.hitAt(model, r, c)
-      results.hits.push({ key: `${r},${c}`, cell, damaged: damaged || 'burnt' })
-    } else {
-      results.misses.push({ key: `${r},${c}`, cell, damaged: 'burnt' })
+    const board = this.board
+    if (
+      board &&
+      typeof board === 'object' &&
+      'test' in board &&
+      typeof board.test === 'function'
+    ) {
+      if (board.test(c, r)) {
+        const { damaged } = this.hitAt(model, r, c)
+        results.hits.push({
+          key: `${r},${c}`,
+          cell,
+          damaged: damaged || 'burnt'
+        })
+      } else {
+        results.misses.push({ key: `${r},${c}`, cell, damaged: 'burnt' })
+      }
     }
   }
 
   /**
    * Process hit at specific coordinates (record hit, check for weapon damage)
-   * @param {any} model - Game model with UI and loadout
+   * @param {GameModel} model - Game model with UI and loadout
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {Object} Hit result with {letter, info, damaged, list, misses}
+   * @returns {HitResult} Hit result with {letter, info, damaged, list, misses}
    */
   hitAt (model, r, c) {
     this.recordHit(r, c)
@@ -767,11 +1097,13 @@ export class Ship {
 
   /**
    * Internal: Process hit on weapon magazine (check if loaded/vulnerable)
+   * Determines whether weapon is loaded and delegates to appropriate handler.
    * @param {Rack} weaponSystem - Weapon system at impact point
-   * @param {any} model - Game model
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Object|null} Result with {damaged, info, hits, misses} or null if weapon not loaded
+   * @param {GameModel} model - Game model
+   * @param {number} r - Row coordinate of hit
+   * @param {number} c - Column coordinate of hit
+   * @returns {MagazineHitResult|null}
+   *   Result with {damaged, info, hits, misses} or null if weapon not loaded
    * @private
    */
   _processMagazineHit (weaponSystem, model, r, c) {
@@ -784,9 +1116,11 @@ export class Ship {
 
   /**
    * Internal: Handle hit on unloaded weapon system
+   * Marks weapon as damaged and updates UI. No detonation occurs.
    * @param {Rack} weaponSystem - Weapon system that was hit
-   * @param {any} model - Game model
-   * @returns {Object} Damage result for unloaded weapon
+   * @param {GameModel} model - Game model for UI updates
+   * @returns {MagazineHitResult}
+   *   Damage result with damaged='damaged', no hits/misses
    * @private
    */
   _handleUnloadedWeaponHit (weaponSystem, model) {
@@ -797,11 +1131,13 @@ export class Ship {
 
   /**
    * Internal: Handle hit on loaded weapon system
+   * Marks weapon as hit, uses ammunition, and checks for volatile detonation.
    * @param {Rack} weaponSystem - Loaded weapon system that was hit
-   * @param {any} model - Game model
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Object} Damage result for loaded weapon
+   * @param {GameModel} model - Game model for UI/ammo updates
+   * @param {number} r - Row coordinate of hit
+   * @param {number} c - Column coordinate of hit
+   * @returns {MagazineHitResult}
+   *   Damage result with damaged='skull', may include detonation hits/misses
    * @private
    */
   _handleLoadedWeaponHit (weaponSystem, model, r, c) {
@@ -835,14 +1171,16 @@ export class Ship {
 
   /**
    * Internal: Process magazine detonation damage in surrounding cells
-   * @param {{ animateDetonation: (cell: any, cellSize: number) => void }} weapon - Volatile weapon
+   * For volatile weapons: animates detonation and processes damage in 3x3 area.
+   * @param {WeaponAtPosition} weapon - Volatile weapon that detonated
    * @param {any} cell - Grid cell where detonation occurs
-   * @param {{ cellSize: () => number }} viewModel - View model
-   * @param {any} model - Game model
+   * @param {UIViewModel} viewModel - View model for animation
+   * @param {GameModel} model - Game model for processing surrounding damage
    * @param {number} r - Row coordinate of detonation center
    * @param {number} c - Column coordinate of detonation center
-   * @param {string} damaged - Damage type indicator
-   * @returns {Object} Detonation result with {damaged, info, hits, misses}
+   * @param {string} damaged - Damage type indicator ('skull')
+   * @returns {MagazineHitResult}
+   *   Detonation result with damaged, info='Magazine Detonated', hits/misses arrays
    * @private
    */
   _processDetonation (weapon, cell, viewModel, model, r, c, damaged) {
@@ -857,11 +1195,16 @@ export class Ship {
 
   /**
    * Internal: Determine final hit result (check if sunk)
-   * @param {string} info - Hit information message
-   * @param {any} damaged - Damage type indicator
-   * @param {Array} [hits=[]] - Array of hit results
-   * @param {Array} [misses=[]] - Array of miss results
-   * @returns {Object} Final hit result with {letter, info, damaged, list, misses}
+   * If ship is sunk after this hit, returns letter for display. Otherwise returns empty string.
+   * @param {string|null} info - Hit information message (e.g., 'Magazine Detonated')
+   * @param {string|null} damaged - Damage type indicator ('burnt', 'skull', 'damaged')
+   * @param {Array<{key: string, cell: CoordinatePair, damaged: string}>} [hits=[]]
+   *   Array of hit results from damage processing
+   * @param {Array<{key: string, cell: CoordinatePair, damaged: string}>} [misses=[]]
+   *   Array of miss results from damage processing
+   * @returns {HitResult}
+   *   Final hit result with {letter, info, damaged, list, misses}
+   *   letter is non-empty only if ship sank
    * @private
    */
   _determineHitResult (info, damaged, hits = [], misses = []) {
@@ -881,16 +1224,25 @@ export class Ship {
   }
 
   /**
-   * Place ship at given cells with automatic hit/sunk reset
-   * @param {Array<[number, number]>} cells - Array of [row, col] coordinate pairs
-   * @returns {Array<[number, number]>} The cells where ship was placed
+   * Internal: Normalize cells to standard [row, col] format
+   * @param {CoordinatePair[]|any[]} cells - Array of cells in various formats
+   * @returns {[number, number][]} Normalized cells as [row, col] pairs
    */
   _normalizeCells (cells) {
-    return Array.isArray(cells)
-      ? cells.map(cell =>
-          Array.isArray(cell) ? [cell[0], cell[1]] : [cell?.r, cell?.c]
-        )
-      : []
+    if (!Array.isArray(cells)) return []
+    const result = []
+    for (const cell of cells) {
+      if (Array.isArray(cell) && cell.length >= 2) {
+        result.push([cell[0], cell[1]])
+      } else if (cell && typeof cell === 'object') {
+        const r = cell.r ?? cell[0] ?? 0
+        const c = cell.c ?? cell[1] ?? 0
+        result.push([r, c])
+      } else {
+        result.push([0, 0])
+      }
+    }
+    return result
   }
 
   placeAtCells (cells) {
@@ -903,20 +1255,34 @@ export class Ship {
 
   /**
    * Place ship at given board with automatic hit/sunk reset
-   * @param {SubBoard} board - Board defining ship placement
+   * @param {SubBoard|Mask|unknown} board - Board defining ship placement
    * @returns {void}
    */
   placeAtBoard (board) {
-    this._cellsArray = board.toCoords.map(coord =>
-      Array.isArray(coord) ? [coord[0], coord[1]] : [coord?.r, coord?.c]
-    )
+    const b = board
+    if (b && typeof b === 'object' && 'toCoords' in b) {
+      const toCoords = b.toCoords
+      if (Array.isArray(toCoords)) {
+        this._cellsArray = toCoords.map(coord => {
+          if (Array.isArray(coord) && coord.length >= 2) {
+            return [coord[0], coord[1]]
+          }
+          if (coord && typeof coord === 'object') {
+            const r = coord.r ?? coord[0] ?? 0
+            const c = coord.c ?? coord[1] ?? 0
+            return [r, c]
+          }
+          return [0, 0]
+        })
+      }
+    }
     this.board = board
     this.sunk = false
   }
 
   /**
    * Place using variant placement object at given coordinates
-   * @param {{ placeAt: (r: number, c: number) => any }} placeable - Placeable variant object
+   * @param {{placeAt: (c: number, r: number) => Placement}} placeable - Placeable variant object
    * @param {number} r - Row coordinate for placement
    * @param {number} c - Column coordinate for placement
    * @returns {void}
@@ -928,7 +1294,7 @@ export class Ship {
 
   /**
    * Apply placement object with board and weapons configuration
-   * @param {{ board: SubBoard; weapons: Object; variant: number }} placement - Placement configuration
+   * @param {Placement} placement - Placement configuration
    * @returns {void}
    */
   placePlacement (placement) {
@@ -944,20 +1310,26 @@ export class Ship {
 
   /**
    * Get available placement variants for this ship
+   * @returns {any[]} Array of available placement variants
    */
   getAvailablePlacements () {
-    return this.shape?.placeables() || []
+    const shape = this.shape()
+    if (!shape || typeof shape.placeables !== 'function') {
+      return []
+    }
+    return shape.placeables() || []
   }
 
   /**
    * Check if location is in valid zone for this ship type (land/sea based on ship type)
+   * Ground ships must be on land terrain; sea ships must be on water terrain.
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {boolean} True if location is in correct zone for ship type
    */
   isRightZone (r, c) {
     const shipType = this.type()
-    const isLand = bh.map.isLand(r, c)
+    const isLand = bh.map?.isLand(r, c) ?? false
     // Ground ships must be on land, sea ships must be on water
     if (shipType === 'G' && !isLand) return false
     if (shipType === 'S' && isLand) return false
@@ -967,20 +1339,33 @@ export class Ship {
 
   /**
    * Check if cell grid location is clear of adjacent ships (no touching)
+   * Validates against ShipCellGrid interface implementation.
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {unknown} shipCellGrid - Grid tracking occupied cells by ships
+   * @param {ShipCellGrid|any[][]|unknown} shipCellGrid - Grid tracking occupied cells by ships (interface or 2D array)
    * @returns {boolean} True if no adjacent ships detected (8-way neighborhood clear)
    */
   noTouchCheck (r, c, shipCellGrid) {
     const map = bh.map
-
-    return shipCellGrid.noTouch(r, c, map.inBounds.bind(map))
+    if (!map || typeof map.inBounds !== 'function') {
+      return false
+    }
+    // Type guard: check if shipCellGrid has isAreaClearAroundXY method before calling
+    if (!shipCellGrid || typeof shipCellGrid !== 'object') {
+      return true
+    }
+    if (
+      'isAreaClearAroundXY' in shipCellGrid &&
+      typeof shipCellGrid.isAreaClearAroundXY === 'function'
+    ) {
+      return shipCellGrid.isAreaClearAroundXY(r, c, map.inBounds.bind(map))
+    }
+    return true
   }
 
   /**
    * Internal: Check if any cell in placement is in wrong zone for ship type
-   * @param {Array<[number, number]>} placing - Placement cells as [row, col] pairs
+   * @param {CoordinatePair[]} placing - Placement cells as [row, col] pairs
    * @returns {boolean} True if any cell violates zone requirements
    * @private
    */
@@ -991,11 +1376,12 @@ export class Ship {
   }
   /**
    * Check if ship can be placed at variant and position
+   * Validates bounds, zone, overlap, and adjacency constraints.
    * @param {number} variant - Placement variant index
    * @param {number} r0 - Starting row position
    * @param {number} c0 - Starting column position
-   * @param {Array<Array<any>>} shipCellGrid - Grid tracking occupied cells by ships
-   * @returns {boolean} True if placement is valid at this location
+   * @param {ShipCellGrid|any[][]|unknown} shipCellGrid - Grid tracking occupied cells by ships (interface or 2D array)
+   * @returns {boolean} True if placement is valid at this location (all constraints satisfied)
    */
   canPlace (variant, r0, c0, shipCellGrid) {
     const placing = this.placeCells(variant, r0, c0)
@@ -1010,45 +1396,77 @@ export class Ship {
   }
 
   /**
-   * Internal: Validate placement is within map bounds
-   * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
-   * @returns {boolean} True if all cells are in bounds
+   * Validate placement is within map bounds
+   * @param {CoordinatePair[]} cells - Placement cells as [row, col] pairs
+   * @returns {boolean} True if all cells are within map bounds
    */
   #validatePlacementBounds (cells) {
     const map = bh.map
+    if (!map || typeof map.inBounds !== 'function') {
+      return false
+    }
     return !cells.some(([r, c]) => !map.inBounds(r, c))
   }
 
   /**
-   * Internal: Validate placement is in correct zone (land/sea based on ship type)
-   * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
-   * @returns {boolean} True if all cells are in correct zone
+   * Validate placement is in correct zone (land/sea based on ship type)
+   * Ground ships must be on land, sea ships on water.
+   * @param {CoordinatePair[]} cells - Placement cells as [row, col] pairs
+   * @returns {boolean} True if all cells are in correct zone for ship type
    */
   #validatePlacementZone (cells) {
     return !this.isAllRightZone(cells)
   }
 
   /**
-   * Internal: Validate placement doesn't overlap existing ships
-   * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
-   * @param {Array<Array<any>>} shipCellGrid - Grid tracking occupied cells
+   * Validate placement doesn't overlap existing ships
+   * Handles both ShipCellGrid interface and 2D array representations.
+   * @param {CoordinatePair[]} cells - Placement cells as [row, col] pairs
+   * @param {ShipCellGrid|any[][]|unknown} shipCellGrid
+   *   Grid tracking occupied cells (interface or 2D array)
    * @returns {boolean} True if no overlapping ships detected
    */
   #validatePlacementOverlap (cells, shipCellGrid) {
     const map = bh.map
-    return !cells.some(
-      ([r, c]) => map.inBounds(r, c) && shipCellGrid.hasRC(r, c)
-    )
+    if (!map || typeof map.inBounds !== 'function') {
+      return false
+    }
+    // Handle both ShipCellGrid interface and 2D array
+    if (Array.isArray(shipCellGrid) && Array.isArray(shipCellGrid[0])) {
+      return !cells.some(([r, c]) => {
+        const row = shipCellGrid[r]
+        return map.inBounds(r, c) && row?.[c]
+      })
+    }
+    // Handle ShipCellGrid interface
+    if (
+      shipCellGrid &&
+      typeof shipCellGrid === 'object' &&
+      'hasRC' in shipCellGrid
+    ) {
+      const grid = shipCellGrid
+      const hasRC = grid.hasRC
+      if (typeof hasRC === 'function') {
+        return !cells.some(
+          ([r, c]) => map.inBounds(r, c) && (hasRC.apply(grid, [r, c]) || false)
+        )
+      }
+    }
+    return true
   }
 
   /**
-   * Internal: Validate placement doesn't touch adjacent ships
-   * @param {Array<[number, number]>} cells - Placement cells as [row, col] pairs
-   * @param {Array<Array<any>>} shipCellGrid - Grid tracking occupied cells
+   * Validate placement doesn't touch adjacent ships
+   * Checks 8-way neighborhood around each placement cell.
+   * @param {CoordinatePair[]} cells - Placement cells as [row, col] pairs
+   * @param {ShipCellGrid|any[][]|unknown} shipCellGrid
+   *   Grid tracking occupied cells (interface or 2D array)
    * @returns {boolean} True if no adjacent ships detected
    */
   #validatePlacementTouching (cells, shipCellGrid) {
-    return !cells.some(([r, c]) => !this.noTouchCheck(r, c, shipCellGrid))
+    /** @type {ShipCellGrid|any[][]|unknown} */
+    const grid = shipCellGrid
+    return !cells.some(([r, c]) => !this.noTouchCheck(r, c, grid))
   }
 
   /**
@@ -1089,16 +1507,36 @@ export class Ship {
 
   /**
    * Add ship to grid at its current position
-   * @param {unknown} shipCellGrid
+   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to
+   * @returns {void}
    */
   addToGrid (shipCellGrid) {
-    for (const [x, y] of this.board.occupiedLocations()) {
-      shipCellGrid.setCell(x, y, { id: this.id, letter: this.letter })
+    const grid = shipCellGrid
+    if (
+      !grid ||
+      typeof grid !== 'object' ||
+      !('setCell' in grid) ||
+      typeof grid.setCell !== 'function'
+    ) {
+      return
+    }
+    const board = this.board
+    if (
+      board &&
+      typeof board === 'object' &&
+      'occupiedLocations' in board &&
+      typeof board.occupiedLocations === 'function'
+    ) {
+      for (const [x, y] of board.occupiedLocations()) {
+        grid.setCell(x, y, { id: this.id, letter: this.letter })
+      }
     }
   }
 
   /**
-   * @param {any[]} arr
+   * Get maximum minimum size among ships
+   * @param {Ship[]} arr - Array of ships
+   * @returns {number} Maximum of minimum sizes
    */
   static maxMinSizeIn (arr) {
     const mm = arr.reduce(
@@ -1109,7 +1547,9 @@ export class Ship {
     return mm
   }
   /**
-   * @param {any[]} arr
+   * Get minimum size among ships
+   * @param {Ship[]} arr - Array of ships
+   * @returns {number} Minimum ship size
    */
   static minSizeIn (arr) {
     return arr.reduce(
@@ -1119,7 +1559,9 @@ export class Ship {
     )
   }
   /**
-   * @param {any[]} arr
+   * Get maximum size among ships
+   * @param {Ship[]} arr - Array of ships
+   * @returns {number} Maximum ship size
    */
   static maxSizeIn (arr) {
     return arr.reduce(
@@ -1131,7 +1573,8 @@ export class Ship {
 
   /**
    * Check if ship belongs to tally group
-   * @param {any} tallyGroup
+   * @param {string} tallyGroup - Tally group identifier
+   * @returns {boolean} True if ship is in tally group
    */
   isInTallyGroup (tallyGroup) {
     const shape = this.shape()
@@ -1139,23 +1582,23 @@ export class Ship {
       console.log('shape not found for', this)
       return false
     }
-    return shape.tallyGroup === tallyGroup
+    return shape && typeof shape === 'object' && shape.tallyGroup === tallyGroup
   }
 
   /**
    * Get shape definition for this ship
-   * @returns {unknown} Shape object defining this ship's form and properties
+   * @returns {ShipShape|undefined} Shape object defining this ship's form and properties
    */
   shape () {
     if (this._shape) return this._shape
-
-    this._shape = bh.shapesByLetter(this.letter)
+    this._shape = bh.shapesByLetter?.(this.letter)
     return this._shape
   }
 
   /**
    * Get ship type classification (e.g., 'G' for ground, 'S' for sea)
-   * @returns {string} Ship type code
+   * Delegates to bh.shipType() for type mapping from letter.
+   * @returns {string} Ship type code from ship letter identifier
    */
   type () {
     return bh.shipType(this.letter)
@@ -1163,6 +1606,7 @@ export class Ship {
 
   /**
    * Get description for sunk ship
+   * Combines ship name and sunk status text with optional separator.
    * @param {string} [middle=' '] - String to insert between ship name and status
    * @returns {string} Description text for sunk ship state
    */
@@ -1172,7 +1616,8 @@ export class Ship {
 
   /**
    * Get general description of ship
-   * @returns {string} Description text for ship
+   * Returns descriptive text about the ship's role and characteristics.
+   * @returns {string} Description text for this ship's type
    */
   getDescription () {
     return bh.shipDescription(this.letter)

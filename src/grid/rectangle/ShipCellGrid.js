@@ -92,38 +92,6 @@ export class ShipCellGrid extends GridBase {
   }
 
   /**
-   * Ensures the grid and placement mask are properly initialized.
-   * Restores to blank map if either structure is malformed.
-   * @private
-   */
-  _ensureInitialized () {
-    this._ensureGridValid()
-    this._ensureMaskValid()
-  }
-
-  /**
-   * Validates grid is a 2D array; restores to blank if corrupted.
-   * @private
-   */
-  _ensureGridValid () {
-    if (!Array.isArray(this._grid) || !Array.isArray(this._grid[0])) {
-      this._grid = bh.map.blankGrid
-      this.width = this._grid[0]?.length || 0
-      this.height = this._grid.length
-    }
-  }
-
-  /**
-   * Validates mask is a Mask instance; restores to blank if corrupted.
-   * @private
-   */
-  _ensureMaskValid () {
-    if (!(this._maskedGrid instanceof Mask)) {
-      this._maskedGrid = bh.map.blankMask
-    }
-  }
-
-  /**
    * Returns the ship cell at the given row and column coordinates.
    * @param {number} row - Row coordinate (0-indexed from top)
    * @param {number} col - Column coordinate (0-indexed from left)
@@ -136,8 +104,8 @@ export class ShipCellGrid extends GridBase {
   /**
    * Returns the ship cell at the given x/y coordinates.
    * Delegates to RC-based accessor after coordinate conversion.
-   * @param {number} x - Column coordinate (0-indexed from left)
-   * @param {number} y - Row coordinate (0-indexed from top)
+   * @param {number} col - Column coordinate (0-indexed from left)
+   * @param {number} row - Row coordinate (0-indexed from top)
    * @returns {number} Ship cell object, -1 if masked, or 0 if empty
    */
   atRC (row, col) {
@@ -150,8 +118,8 @@ export class ShipCellGrid extends GridBase {
 
   /**v
    * Returns the ship ID at the given row and column.
-   * @param {number} row - Row coordinate
-   * @param {number} col - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {number} Ship ID or 0 if empty
    */
   at (x, y) {
@@ -159,11 +127,11 @@ export class ShipCellGrid extends GridBase {
   }
 
   /**
-   * Returns the ship ID at the given x/y coordinates.
+   * Returns the ship cell at the given x/y coordinates.
    * Delegates to RC-based lookup after coordinate conversion.
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @returns {number} Ship ID or 0 if empty
+   * @returns {{ShipCell|undefined}} Ship cell object or undefined if empty
    */
   cellAt (x, y) {
     return this.cellAtRC(y, x)
@@ -302,14 +270,19 @@ export class ShipCellGrid extends GridBase {
     return this._filterCells(cell => cell.id === shipId)
   }
 
+  isAreaClearAroundXY (x, y, boundsChecker) {
+    return this.isAreaClearAroundRowCol(y, x, boundsChecker)
+  }
+
   /**
-   * Checks whether a 3x3 neighborhood is free of ship cells.
-   * @param {number} row - Row coordinate
-   * @param {number} col - Column coordinate
+   * Checks whether a 3x3 neighborhood (surrounding cells) is free of ship cells.
+   * Used to enforce non-adjacency spacing between ships.
+   * @param {number} row - Row coordinate of center cell
+   * @param {number} col - Column coordinate of center cell
    * @param {function(number, number): boolean} boundsChecker - Bounds validation callback
-   * @returns {boolean}
+   * @returns {boolean} True if all 8 surrounding cells are empty
    */
-  noTouchRC (row, col, boundsChecker) {
+  isAreaClearAroundRowCol (row, col, boundsChecker) {
     for (let nr = row - 1; nr <= row + 1; nr++) {
       for (let nc = col - 1; nc <= col + 1; nc++) {
         if (boundsChecker(nr, nc) && this.hasRC(nr, nc)) {
@@ -320,8 +293,17 @@ export class ShipCellGrid extends GridBase {
     return true
   }
 
-  noTouch (x, y, boundsChecker) {
-    return this.noTouchRC(y, x, boundsChecker)
+  /**
+   * Checks whether a 3x3 neighborhood (surrounding cells) is free of ship cells.
+   * Delegates to RC-based check after coordinate conversion.
+   * @param {number} x - Column coordinate of center cell
+   * @param {number} y - Row coordinate of center cell
+   * @param {function(number, number): boolean} boundsChecker - Bounds validation callback
+   * @returns {boolean} True if all 8 surrounding cells are empty
+   */
+  isAreaClearAround (x, y, boundsChecker) {
+    const [row, col] = this._normalizeXYToRC(x, y)
+    return this.isAreaClearAroundRowCol(row, col, boundsChecker)
   }
 
   /**
@@ -355,38 +337,6 @@ export class ShipCellGrid extends GridBase {
         }
       })
     })
-  }
-
-  /**
-   * Checks whether a 3x3 neighborhood (surrounding cells) is free of ship cells.
-   * Used to enforce non-adjacency spacing between ships.
-   * @param {number} row - Row coordinate of center cell
-   * @param {number} col - Column coordinate of center cell
-   * @param {function(number, number): boolean} boundsChecker - Bounds validation callback
-   * @returns {boolean} True if all 8 surrounding cells are empty
-   */
-  isAreaClearAroundRowCol (row, col, boundsChecker) {
-    for (let nr = row - 1; nr <= row + 1; nr++) {
-      for (let nc = col - 1; nc <= col + 1; nc++) {
-        if (boundsChecker(nr, nc) && this.hasShipAtRowCol(nr, nc)) {
-          return false
-        }
-      }
-    }
-    return true
-  }
-
-  /**
-   * Checks whether a 3x3 neighborhood (surrounding cells) is free of ship cells.
-   * Delegates to RC-based check after coordinate conversion.
-   * @param {number} x - Column coordinate of center cell
-   * @param {number} y - Row coordinate of center cell
-   * @param {function(number, number): boolean} boundsChecker - Bounds validation callback
-   * @returns {boolean} True if all 8 surrounding cells are empty
-   */
-  isAreaClearAround (x, y, boundsChecker) {
-    const [row, col] = this._normalizeXYToRC(x, y)
-    return this.isAreaClearAroundRowCol(row, col, boundsChecker)
   }
 
   /**
@@ -545,7 +495,7 @@ export class ShipCellGrid extends GridBase {
       this._maskedGrid.height
     )
     console.log(`failed grid:\n`, this.toAscii)
-    console.log(`Failed placement mask:\n`, failedMask.toAsciiWith())
+    console.log(`possible placement locations:\n${failedMask.toAsciiWith()}`)
     console.log(bh.map.landMask.toAscii)
     return null
   }

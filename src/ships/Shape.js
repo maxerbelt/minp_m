@@ -8,24 +8,46 @@ import { Blinker } from '../variants/Blinker.js'
 import { makeKey, parsePair } from '../core/utilities.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
 import { Mask } from '../grid/rectangle/mask.js'
-import { SubTerrain } from '../terrains/all/js/SubTerrain.js'
 import { Zip } from '../core/Zip.js'
 
 /**
  * @typedef {[number, number]} CoordinatePair
+ * Array coordinate pair [row, column]
  */
 
 /**
- * @typedef {Set<string>|Array<any>|null} RackInput
+ * @typedef {Set<string>|Array<string|Array<number>>|null} RackInput
+ * Weapon rack position input in various formats:
+ * - Set<string>: Set of "r,c" coordinate keys
+ * - Array<string>: Array of "r,c" coordinate keys
+ * - Array<Array<number>>: Array of [r, c] coordinate pairs
+ * - null: No racks available
  */
 
 /**
- * @typedef {Object<string, any>} WeaponMap
+ * @typedef {Object<string, WeaponSystem>} WeaponMap
+ * Weapons indexed by coordinate key ("r,c" format)
+ */
+
+/**
+ * @typedef {Object} SubTerrain
+ * Subterrain type for shape validation
+ * Used to determine valid terrain types for ship placement
  */
 
 /**
  * @callback AmmoBuilder
+ * Factory function for creating ammunition payload at weapon racks
  * @returns {any} Ammunition payload for a weapon rack
+ */
+
+/**
+ * @typedef {Object} VariantFactory
+ * Factory for generating ship placement variants
+ * @property {(variantIndex: number) => Mask} boardFor - Get board for variant
+ * @property {() => number} numVariants - Get variant count
+ * @property {() => Array} placeables - Get placeable variants
+ * @property {(cellHeight: number) => any} shrunkUnder - Get shrink information
  */
 
 export const token = 'geoffs-hidden-battle'
@@ -42,12 +64,15 @@ export class Shape {
 
   /**
    * Creates a ship shape with specified properties and variant generation
-   * @param {string} letter - Ship letter identifier (e.g., 'A', 'B', 'C')
-   * @param {string} symmetry - Symmetry type for variant generation ('D', 'A', 'S', 'H', 'L', 'G')
-   * @param {Array<[number, number]>} cells - Array of [row, col] coordinates defining ship shape
-   * @param {string} tallyGroup - Grouping identifier for tally calculations
-   * @param {any} tip - UI tip/styling information for ship placement
-   * @param {Set<string>|Array<string>|Array<[number, number]>|null} [racks] - Weapon rack positions
+   * Shape manages placement variants, weapon systems, and damage properties.
+   * @param {string} letter - Ship letter identifier (A-Z, e.g., 'A', 'B', 'C')
+   * @param {string} symmetry - Symmetry type for variant generation
+   *   ('D'=Asymmetric, 'A'=Orbit4F, 'S'=Invariant, 'H'=Orbit4R, 'L'=Blinker, 'G'=Diagonal)
+   * @param {CoordinatePair[]} cells - Array of [row, col] coordinates defining ship shape
+   * @param {string} tallyGroup - Grouping identifier for tally calculations (e.g., 'Cruisers')
+   * @param {Object} tip - UI tip/styling information for ship placement visual display
+   * @param {RackInput} [racks] - Weapon rack positions (Set, Array, or null)
+   *   If provided, enables weapon attachment at specified coordinates
    */
   constructor (letter, symmetry, cells, tallyGroup, tip, racks) {
     this.letter = letter
@@ -77,7 +102,9 @@ export class Shape {
   }
   /**
    * Weapons attached to this shape's racks
-   * @returns {Object} Attached weapons indexed by coordinate
+   * Only populated after attachWeapon() is called.
+   * @returns {WeaponMap} Attached weapons indexed by coordinate key
+   *   Empty object if no weapons attached
    */
   get attachedWeapons () {
     return this._attachedWeapons || {}
@@ -85,7 +112,7 @@ export class Shape {
 
   /**
    * Set weapons attached to shape's racks
-   * @param {Object} weapons - Weapons object indexed by coordinate
+   * @param {WeaponMap} weapons - Weapons object indexed by coordinate
    */
   set attachedWeapons (weapons) {
     this._attachedWeapons = weapons
@@ -93,7 +120,8 @@ export class Shape {
 
   /**
    * Tip/styling information for this shape
-   * @returns {any} Tip configuration
+   * Used for UI display during ship placement selection.
+   * @returns {Object} Tip configuration object
    */
   get tip () {
     return this._tip
@@ -101,7 +129,7 @@ export class Shape {
 
   /**
    * Set tip/styling information
-   * @param {any} newTip - New tip value
+   * @param {Object} newTip - New tip value for UI display
    */
   set tip (newTip) {
     this._tip = newTip
@@ -175,9 +203,11 @@ export class Shape {
   }
 
   /**
-   * Internal: Get or initialize a named array property.
-   * @param {string} property - Internal property name
-   * @returns {Array} Array value stored in property
+   * Internal: Get or initialize a named array property
+   * Lazily initializes empty array on first access.
+   * Used for vulnerable, hardened, and immune cell arrays.
+   * @param {string} property - Internal property name (e.g., '_vulnerable')
+   * @returns {Array} Array value stored in property (auto-initialized if undefined)
    * @private
    */
   _getOrInitArrayProperty (property) {
@@ -187,9 +217,10 @@ export class Shape {
   }
 
   /**
-   * Internal: Normalize a rack coordinate value into a row/column pair.
-   * @param {string|Array<number>|any} value - Coordinate value in various formats
-   * @returns {CoordinatePair} Valid [row, column] or [NaN, NaN] if invalid
+   * Internal: Normalize a rack coordinate value into a row/column pair
+   * Handles string ("r,c" format) and array ([r, c]) coordinate formats.
+   * @param {string|CoordinatePair|any} value - Coordinate value in various formats
+   * @returns {CoordinatePair} Valid [row, column] pair or [NaN, NaN] if invalid
    * @private
    */
   _parseRackCoordinate (value) {
@@ -204,8 +235,10 @@ export class Shape {
 
   /**
    * Internal: Normalize rack coordinates from various input formats
+   * Converts all rack input types to validated [row, col] coordinate pairs.
+   * Filters out invalid/NaN coordinates.
    * @param {RackInput} racks - Rack coordinates in various formats
-   * @returns {Array<CoordinatePair>} Array of valid [row, col] coordinate pairs
+   * @returns {CoordinatePair[]} Array of valid [row, col] coordinate pairs
    * @private
    */
   _normalizeRackCoordinates (racks) {
@@ -217,9 +250,10 @@ export class Shape {
   }
 
   /**
-   * Internal: Check whether the rack input contains any coordinates.
-   * @param {RackInput} racks - Rack input container
-   * @returns {boolean} True if racks container has coordinates
+   * Internal: Check whether the rack input contains any coordinates
+   * Validates that racks container is not empty and not null.
+   * @param {RackInput} racks - Rack input container (Set, Array, or null)
+   * @returns {boolean} True if racks container has at least one coordinate
    * @private
    */
   _hasValidRackInput (racks) {
@@ -229,9 +263,10 @@ export class Shape {
   }
 
   /**
-   * Internal: Validate coordinate pair values.
-   * @param {CoordinatePair} coord - Coordinate pair
-   * @returns {boolean} True if row and column are finite numbers
+   * Internal: Validate coordinate pair values
+   * Used to filter out invalid/NaN coordinates from normalized coordinates.
+   * @param {CoordinatePair} coord - Coordinate pair [row, col]
+   * @returns {boolean} True if both row and column are finite numbers
    * @private
    */
   _isFiniteCoordinate ([r, c]) {
@@ -240,6 +275,7 @@ export class Shape {
 
   /**
    * Internal: Build Set of coordinate keys from rack positions mask
+   * Converts mask occupancy to coordinate key format.
    * @returns {Set<string>} Set of coordinate keys in "r,c" format
    * @private
    */
@@ -265,14 +301,15 @@ export class Shape {
 
   /**
    * Board mask defining shape occupancy
-   * @returns {Mask} Occupancy mask
+   * Returns cached board or generates from variant index 1.
+   * @returns {Mask} Occupancy mask representing ship shape
    */
   get board () {
     return this._board || this.boardFor(1) || Mask.empty(0, 0)
   }
 
   /**
-   * Set board mask
+   * Set board mask and update size
    * @param {Mask} board - New board mask
    */
   set board (board) {
@@ -282,7 +319,8 @@ export class Shape {
 
   /**
    * Square board representation (W×H square containing board)
-   * @returns {Mask} Squared board mask
+   * Used for generating placement variants.
+   * @returns {Mask} Squared board mask with padding
    */
   get boardSquare () {
     return this.board.square
@@ -290,7 +328,7 @@ export class Shape {
 
   /**
    * Minimum dimension of shape (width or height)
-   * @returns {number} Minimum size
+   * @returns {number} Minimum size in cells
    */
   get minSize () {
     return Math.min(this.width, this.height)
@@ -298,7 +336,7 @@ export class Shape {
 
   /**
    * Maximum dimension of shape (width or height)
-   * @returns {number} Maximum size
+   * @returns {number} Maximum size in cells
    */
   get maxSize () {
     return Math.max(this.width, this.height)
@@ -306,7 +344,7 @@ export class Shape {
 
   /**
    * Original cell coordinates defining shape
-   * @returns {Array<[number, number]>} Array of [row, col] pairs
+   * @returns {CoordinatePair[]} Array of [row, col] coordinate pairs
    */
   get cells () {
     return this._originalCells
@@ -314,7 +352,8 @@ export class Shape {
 
   /**
    * Set cell coordinates (updates board representation)
-   * @param {Array<[number, number]>} cells - New cell coordinates
+   * Recalculates board mask from new coordinates.
+   * @param {CoordinatePair[]} cells - New cell coordinates
    */
   set cells (cells) {
     this._originalCells = cells
@@ -323,17 +362,20 @@ export class Shape {
 
   /**
    * Weapon rack positions
-   * @returns {Set<string>|null} Set of rack coordinate keys or null if no racks
+   * Returns null if no racks were provided in constructor.
+   * @returns {Set<string>|null} Set of "r,c" coordinate keys or null
    */
   get racks () {
     if (this._racksWasNull) return null
     if (this._racksSet) return this._racksSet
     return this._buildRacksFromPositions()
   }
+
   /**
    * Check if shape can exist on given subterrain
+   * Validates terrain compatibility for ship placement.
    * @param {SubTerrain} subterrain - Subterrain type to check
-   * @returns {boolean} True if shape matches subterrain
+   * @returns {boolean} True if shape's subterrain matches given type
    */
   canBeOn (subterrain) {
     return this.subterrain === subterrain
@@ -341,8 +383,13 @@ export class Shape {
 
   /**
    * Get protection level against weapon type
-   * @param {string} weapon - Weapon type code
-   * @returns {number} Protection level: 0=vulnerable, 1=normal, 2=hardened, 3=immune
+   * Checks vulnerability/hardening/immunity status for damage calculation.
+   * @param {string} weapon - Weapon type code to check protection against
+   * @returns {number} Protection level:
+   *   0=vulnerable (extra damage),
+   *   1=normal (standard damage),
+   *   2=hardened (reduced damage),
+   *   3=immune (no damage)
    */
   protectionAgainst (weapon) {
     if (this.immune.includes(weapon)) return 3
@@ -353,8 +400,10 @@ export class Shape {
 
   /**
    * Attach weapons to all rack positions on this shape
-   * @param {AmmoBuilder} ammoBuilder - Factory function creating ammunition for each rack
-   * @returns {WeaponMap} Attached weapons indexed by coordinate
+   * Creates weapon system at each rack position using provided factory.
+   * @param {AmmoBuilder} ammoBuilder
+   *   Factory function called once per rack to create ammunition payload
+   * @returns {WeaponMap} Attached weapons indexed by "r,c" coordinate key
    * @throws {Error} If no racks available or weapon already attached
    */
   attachWeapon (ammoBuilder) {
@@ -368,7 +417,7 @@ export class Shape {
 
   /**
    * Internal: Verify shape has weapon rack positions
-   * @throws {Error} If shape has no racks
+   * @throws {Error} If shape has no racks available for weapons
    * @private
    */
   _assertCanAttachWeapons () {
@@ -379,6 +428,7 @@ export class Shape {
 
   /**
    * Internal: Verify weapon not already attached
+   * Ensures attachWeapon() is called at most once per shape.
    * @throws {Error} If weapon already attached to this shape
    * @private
    */
@@ -390,8 +440,10 @@ export class Shape {
 
   /**
    * Internal: Build weapon objects at all rack positions
-   * @param {Function} ammoBuilder - Factory creating ammunition for each position
-   * @returns {Object} Weapons indexed by coordinate key
+   * Calls ammoBuilder once per rack coordinate to create payload.
+   * @param {AmmoBuilder} ammoBuilder
+   *   Factory function creating ammunition for each rack position
+   * @returns {WeaponMap} Weapons indexed by "r,c" coordinate key
    * @private
    */
   _buildAttachedWeapons (ammoBuilder) {
@@ -404,7 +456,9 @@ export class Shape {
 
   /**
    * Get weapon system representation with all rack positions
-   * @returns {Object|null} Object mapping coordinates to WeaponSystem instances, or null if not attached
+   * Wraps attached weapons in WeaponSystem instances for game use.
+   * @returns {WeaponMap|null}
+   *   Object mapping "r,c" coordinates to WeaponSystem instances, or null if not attached
    */
   get weaponSystem () {
     if (!this.isAttachedToRack) {
@@ -417,10 +471,12 @@ export class Shape {
       ])
     )
   }
+
   /**
-   * Get board for specific variant index
-   * @param {number} variantIndex - Variant index to get board for
-   * @returns {Mask} Board mask for variant
+   * Get board mask for specific variant index
+   * Delegates to variant factory's boardFor method.
+   * @param {number} variantIndex - Variant index (1-based) to get board for
+   * @returns {Mask} Board mask for specified variant
    */
   boardFor (variantIndex) {
     const variants = this.variants()
@@ -429,8 +485,10 @@ export class Shape {
 
   /**
    * Get variant factory for this shape's symmetry type
-   * @returns {Invariant|Orbit4F|Asymmetric|Orbit4R|Blinker|Diagonal} Variant instance
-   * @throws {Error} If symmetry type is unknown
+   * Creates appropriate variant generator based on symmetry value.
+   * @returns {VariantFactory}
+   *   Variant factory (Invariant, Orbit4F, Asymmetric, Orbit4R, Blinker, or Diagonal)
+   * @throws {Error} If symmetry type is unknown or not registered
    */
   variants () {
     const VariantClass = Shape.variantConstructors[this.symmetry]
@@ -442,7 +500,8 @@ export class Shape {
 
   /**
    * Get number of available placement variants
-   * @returns {number} Total variant count for this shape
+   * Total count depends on symmetry type.
+   * @returns {number} Total variant count for this shape's symmetry
    */
   numVariants () {
     return this.variants().numVariants()
@@ -450,7 +509,8 @@ export class Shape {
 
   /**
    * Get all placeable variant objects for this shape
-   * @returns {Array} Placeable variant objects
+   * Each variant represents a unique placement configuration.
+   * @returns {Array} Placeable variant objects with placement methods
    */
   placeables () {
     return this.variants().placeables()
@@ -458,8 +518,9 @@ export class Shape {
 
   /**
    * Check if shape shrinks under given cell height
-   * @param {number} cellHeight - Cell height threshold
-   * @returns {any} Shrink information for display scaling
+   * Used for responsive display scaling at small cell sizes.
+   * @param {number} cellHeight - Cell height threshold in pixels
+   * @returns {Object} Shrink information for display scaling
    */
   infoShrunkUnder (cellHeight) {
     return this.variants().shrunkUnder(cellHeight)
@@ -467,7 +528,8 @@ export class Shape {
 
   /**
    * Get ship type from terrain configuration
-   * @returns {string} Ship type code
+   * Returns type code (e.g., 'G' for ground, 'S' for sea).
+   * @returns {string} Ship type code from terrain.ships.types
    */
   type () {
     return this.terrain.ships.types[this.letter]
@@ -475,7 +537,8 @@ export class Shape {
 
   /**
    * Get ship color from terrain configuration
-   * @returns {string} Ship color value
+   * Used for ship display and UI rendering.
+   * @returns {string} Ship color value from terrain.ships.colors
    */
   color () {
     return this.terrain.ships.colors[this.letter]
@@ -483,7 +546,8 @@ export class Shape {
 
   /**
    * Get letter color scheme from terrain
-   * @returns {Object} Letter color configuration
+   * Provides color configuration for ship letter display.
+   * @returns {Object} Letter color configuration from terrain.ships.letterColors
    */
   letterColors () {
     return this.terrain.ships.letterColors[this.letter]
@@ -491,7 +555,8 @@ export class Shape {
 
   /**
    * Get ship description text
-   * @returns {string} Human-readable ship description
+   * Human-readable text describing the ship type.
+   * @returns {string} Ship description from terrain.ships.description
    */
   description () {
     return this.terrain.ships.description[this.letter]
@@ -499,6 +564,7 @@ export class Shape {
 
   /**
    * Get sunk ship description with optional separator
+   * Combines ship name with sunk status text.
    * @param {string} [middle=' '] - Separator between ship name and status
    * @returns {string} Full sunk description text
    */
@@ -508,7 +574,8 @@ export class Shape {
 
   /**
    * Get sunk status descriptions for ship type
-   * @returns {string} Sunk status text for this ship type
+   * Returns status text appropriate for this ship's type.
+   * @returns {string} Sunk status text for this ship's type from terrain config
    */
   shipSunkDescriptions () {
     return this.terrain.ships.shipSunkDescriptions[this.type()]
