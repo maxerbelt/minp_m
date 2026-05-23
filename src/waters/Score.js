@@ -11,92 +11,57 @@ import { bh } from '../terrains/all/js/bh.js'
  * - Automatic miss detection
  *
  * @class Score
+ * @classdesc Tracks all game actions and maintains coordinate-based masks for gameplay state
  */
 export class Score {
   /**
    * Number of turns taken.
    * @type {number}
    */
-  turns
+  turns = 0
 
   /**
    * Number of double-taps performed.
    * @type {number}
    */
-  dtaps
+  dtaps = 0
 
   /**
    * Mask tracking all shots taken on the board.
    * @type {Object}
    */
-  shot
+  shot = bh.map.blankMask
 
   /**
    * Mask tracking cells that have been revealed (hit or miss).
    * @type {Object}
    */
-  reveal
+  reveal = bh.map.blankMask
 
   /**
    * Mask tracking cells that have been hinted.
    * @type {Object}
    */
-  hint
+  hint = bh.map.blankMask
 
   /**
    * Mask tracking cells with wake effects from ship movement.
    * @type {Object}
    */
-  wake
+  wake = bh.map.blankMask
 
   /**
    * Mask tracking automatic misses (shots that don't count).
    * @type {Object}
    */
-  auto
-
-  constructor () {
-    /**
-     * Number of turns taken.
-     * @type {number}
-     */
-    this.turns = 0
-    /**
-     * Number of double-taps.
-     * @type {number}
-     */
-    this.dtaps = 0
-    /**
-     * Mask tracking all shots taken.
-     * @type {Object}
-     */
-    this.shot = bh.map.blankMask
-    /**
-     * Mask tracking revealed cells.
-     * @type {Object}
-     */
-    this.reveal = bh.map.blankMask
-    /**
-     * Mask tracking hinted cells.
-     * @type {Object}
-     */
-    this.hint = bh.map.blankMask
-    /**
-     * Mask tracking wake effects.
-     * @type {Object}
-     */
-    this.wake = bh.map.blankMask
-    /**
-     * Mask tracking automatic misses.
-     * @type {Object}
-     */
-    this.auto = bh.map.blankMask
-  }
+  auto = bh.map.blankMask
 
   /**
    * Resets all scoring masks and counters to initial state.
-   * Clears all tracking data and reinitializes to blank masks.
+   * Clears all tracking data and reinitializes all masks to blank state.
+   * This method should be called when starting a new game or round.
    *
+   * @public
    * @returns {void}
    */
   reset () {
@@ -111,7 +76,9 @@ export class Score {
 
   /**
    * Increments the turn counter by one.
+   * Called at the end of each player turn to track game progression.
    *
+   * @public
    * @returns {void}
    */
   finishTurn () {
@@ -120,7 +87,9 @@ export class Score {
 
   /**
    * Gets the count of automatic misses from the auto mask.
+   * Automatic misses are shots that don't count toward the player's shot count.
    *
+   * @public
    * @returns {number} The occupancy count of automatic misses
    */
   get autoMisses () {
@@ -129,7 +98,9 @@ export class Score {
 
   /**
    * Checks if a coordinate has not been shot yet.
+   * Returns true if the location is available for a new shot, null if already shot.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {boolean|null} True if location is unshot, null if already shot
@@ -141,8 +112,10 @@ export class Score {
 
   /**
    * Moves a shot from shot mask to reveal mask.
-   * Clears the location from the shot mask and marks it in the reveal mask.
+   * Removes the location from active shots and marks it as temporarily revealed.
+   * Used during shot animation/reveal phase before finalizing.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {void}
@@ -154,7 +127,9 @@ export class Score {
   /**
    * Finalizes a revealed shot by moving it from reveal mask back to shot mask.
    * Only processes locations that are currently in the reveal mask.
+   * Called after shot animation completes to persist the shot.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {void}
@@ -166,10 +141,12 @@ export class Score {
   }
   /**
    * Finalizes a revealed shot using (x, y) coordinates.
-   * Variant of shotRevealFinalize using x, y parameter order.
+   * Variant of shotRevealFinalize using x, y parameter order (column, row).
+   * Used when coordinates are already in x, y format to avoid swapping.
    *
-   * @param {number} x - X coordinate (0-based index)
-   * @param {number} y - Y coordinate (0-based index)
+   * @public
+   * @param {number} x - X coordinate / column (0-based index)
+   * @param {number} y - Y coordinate / row (0-based index)
    * @returns {void}
    */
   shotRevealFinalizeXY (x, y) {
@@ -179,7 +156,9 @@ export class Score {
   }
   /**
    * Marks a cell as hinted in the hint mask.
+   * Records that the player has used a hint on this location.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {void}
@@ -190,8 +169,10 @@ export class Score {
 
   /**
    * Marks a cell with a wake effect in the wake mask.
-   * Wake effects show ship movement paths.
+   * Wake effects show ship movement paths and disturbances.
+   * Records cells affected by ship wake for visual display.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {void}
@@ -202,8 +183,10 @@ export class Score {
 
   /**
    * Creates a new shot key at coordinates if not already present.
-   * Only creates if the location has not been previously shot.
+   * Registers a shot at the location only if it hasn't been shot before.
+   * Returns true on successful creation, null if location already has a shot.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {boolean|null} True if shot key was created, null if location already shot
@@ -219,7 +202,9 @@ export class Score {
 
   /**
    * Gets a count array of all tracked metrics.
+   * Provides a snapshot of current game state counters for display or scoring.
    *
+   * @public
    * @returns {number[]} Array of [turns, dtaps, shots, reveals, hints] counts
    */
   counts () {
@@ -235,7 +220,9 @@ export class Score {
   /**
    * Calculates the number of shots excluding automatic misses.
    * Returns the occupancy of shot mask minus automatic misses, with minimum of 0.
+   * Provides accurate shot count for scoring purposes.
    *
+   * @public
    * @returns {number} Number of manual shots taken (automatic misses excluded)
    */
   noOfShots () {
@@ -245,8 +232,10 @@ export class Score {
   /**
    * Registers an automatic miss at the given coordinates.
    * Creates a shot key and marks the location as an automatic miss.
+   * Automatic misses are excluded from player's shot count.
    * Returns null if the location was already shot.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {boolean|null} True if automatic miss registered, null if location already shot

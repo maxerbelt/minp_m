@@ -208,6 +208,7 @@ export class AsciiRepresentation {
   /**
    * Maps cell value to display character.
    * Handles negative values (returns '!') and unmapped values (returns '?').
+   * Converts bigint values to numbers for array indexing.
    *
    * @param {number|bigint} value - Cell value from grid
    * @param {Array<string>} symbols - Symbol array for value mapping
@@ -218,7 +219,9 @@ export class AsciiRepresentation {
       return '!'
     }
 
-    return symbols[value] || '?'
+    // Convert bigint to number for array indexing (TypeScript requirement)
+    const index = typeof value === 'bigint' ? Number(value) : value
+    return symbols[index] ?? '?'
   }
   /**
    * Renders generic rectangular grid without indexer.

@@ -4,31 +4,35 @@ import { custom } from './custom.js'
 
 /**
  * Weapon object containing ammunition and firing configuration.
+ * Represents a single weapon type available in a custom map game.
+ *
  * @typedef {Object} Weapon
- * @property {string} letter - Single-character identifier for the weapon
+ * @property {string} letter - Single-character identifier for the weapon type
  * @property {number} ammo - Current ammunition count (0 or more for limited weapons)
- * @property {boolean} [unlimited] - Optional flag indicating unlimited ammo weapons
- * @property {string} tag - Weapon type tag (e.g., 'missile', 'rail')
- * @property {boolean} isLimited - Whether this weapon has limited ammunition
+ * @property {boolean} [unlimited] - Optional flag indicating unlimited ammo weapons (if true, ammo count is ignored)
+ * @property {string} tag - Weapon type tag (e.g., 'missile', 'rail', 'beam')
+ * @property {boolean} isLimited - Whether this weapon has limited ammunition (false means unlimited)
  */
 
 /**
  * Custom map object containing terrain and weapon configuration.
+ * Represents a complete custom game map with all placement and weapon data.
+ *
  * @typedef {Object} CustomMapData
- * @property {number} rows - Number of rows in the map grid
- * @property {number} cols - Number of columns in the map grid
- * @property {string} title - Display title of the map
- * @property {Object} shipNum - Ship count configuration
- * @property {Array<string>} land - Array of land cell coordinates
- * @property {Array<Weapon>} weapons - Array of weapons available on this map
- * @property {string} terrain - Terrain type identifier
+ * @property {number} rows - Number of rows in the map grid (map height)
+ * @property {number} cols - Number of columns in the map grid (map width)
+ * @property {string} title - Display title of the map for UI presentation
+ * @property {Object} shipNum - Ship count configuration defining available fleet composition
+ * @property {Array<string>} land - Array of land cell coordinates as strings (e.g., ['1,1', '2,2'])
+ * @property {Array<Weapon>} weapons - Array of weapons available on this map during gameplay
+ * @property {string} terrain - Terrain type identifier (e.g., 'sea', 'space', 'asteroid')
  */
 
 /**
  * Check if any ships have been placed in the custom map.
  * Queries the custom map state to determine if the player has placed any ships.
  *
- * @returns {boolean} True if ships have been placed, false otherwise
+ * @returns {boolean} True if ships have been placed (count > 0), false if no ships placed
  * @private
  */
 function hasPlacedShips () {
@@ -38,10 +42,10 @@ function hasPlacedShips () {
 /**
  * Filter weapons to only include those with available ammunition or unlimited ammo.
  * Removes weapons that have been depleted (ammo = 0) and are not marked as unlimited.
- * Used during save operations to persist only viable weapons for the next game.
+ * Used during save operations to persist only viable weapons for the next game session.
  *
- * @param {Array<Weapon>} weapons - Array of weapon objects to filter
- * @returns {Array<Weapon>} Filtered array containing only weapons with ammo or unlimited status
+ * @param {Array<Weapon>} weapons - Array of weapon objects to filter from the map
+ * @returns {Array<Weapon>} Filtered array containing only weapons with ammo > 0 or unlimited flag set
  * @private
  */
 function filterWeaponsWithAmmo (weapons) {
@@ -51,9 +55,9 @@ function filterWeaponsWithAmmo (weapons) {
 /**
  * Save a custom map configuration with placed ships to persistent storage.
  * Performs the following operations when ships are placed:
- * - Tracks level completion via analytics
+ * - Tracks level completion via analytics (calls trackLevelEnd)
  * - Filters weapons to remove ammo-depleted items
- * - Stores custom map data locally
+ * - Stores custom map data locally via custom.store()
  * - Adds map to battle history for future reference
  *
  * Side effects:
@@ -86,11 +90,11 @@ export function saveCustomMap (map) {
  * @param {string} buildMode - Current build mode ('build' enters special save mode, other values skip persistence)
  * @param {string} targetPage - Target HTML page name for navigation (without .html extension)
  * @param {CustomMapData} map - The map object containing placed ships and weapon configuration
- * @returns {string} Complete navigation URL with encoded parameters and target page
+ * @returns {string} Complete navigation URL with encoded parameters and target page (e.g., './battlehide.html?terrain=space&placedShips=')
+ * @public
  * @example
  * // Returns: './battlehide.html?terrain=space&placedShips='
  * storeShips(params, 'build', 'battlehide', customMap)
- * @public
  */
 export function storeShips (urlParams, buildMode, targetPage, map) {
   if (buildMode === 'build') {
@@ -105,7 +109,7 @@ export function storeShips (urlParams, buildMode, targetPage, map) {
  * from build/placement mode:
  *
  * If ships are placed:
- * - Saves the custom map configuration with weapons filtering
+ * - Saves the custom map configuration with weapons filtering via saveCustomMap()
  * - Adds 'placedShips' parameter to signal the next page that ships have been placed
  *
  * If no ships are placed:

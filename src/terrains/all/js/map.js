@@ -16,9 +16,10 @@ import { getCopyNumKey, makeTitle } from './makeTitle.js'
 /**
  * Creates a function to check if an element is within a range.
  * Geometry helper for checking if a point falls within a row range.
- * @param {number} r - Row coordinate
- * @param {number} c - Column coordinate
- * @returns {(element: RangeElement) => boolean} Function that tests if an element [r, c1, c2] contains the point (r, c)
+ *
+ * @param {number} r - Row coordinate to check
+ * @param {number} c - Column coordinate to check
+ * @returns {(element: RangeElement) => boolean} Function that tests if element [r, c1, c2] contains point (r, c)
  */
 export const inRange = (r, c) => element =>
   element[0] == r && element[1] <= c && element[2] >= c
@@ -26,51 +27,56 @@ export const inRange = (r, c) => element =>
  * Base class for terrain maps with common functionality.
  * Handles map geometry, terrain tracking, and basic operations.
  * Provides lazy-loaded properties and terrain management features.
+ *
  * @class BhMap
+ * @classdesc Central map system managing terrain, dimensions, land areas, and game mechanics
  */
 export class BhMap {
-  /** @type {string} Map title/name */
+  /** @type {string} - Map title/display name shown to players */
   title
-  /** @type {string} Internal map name identifier */
+  /** @type {string} - Internal map identifier/name used for storage and references */
   name
-  /** @type {number} Number of rows in the map */
+  /** @type {number} - Number of rows in the map grid */
   rows
-  /** @type {number} Number of columns in the map */
+  /** @type {number} - Number of columns in the map grid */
   cols
-  /** @type {number|Object<string, number>} Number of ships or map of ship counts by type */
+  /** @type {number|Object<string, number>} - Number of ships or map of ship counts by type letter */
   shipNum
-  /** @type {Array<RangeElement>} Array of land area ranges */
+  /** @type {Array<RangeElement>} - Array of land area ranges [row, colStart, colEnd] */
   landArea
-  /** @type {Set<string>} Set of land cell coordinates as comma-separated strings */
+  /** @type {Set<string>} - Set of land cell coordinates as comma-separated strings */
   land
-  /** @type {Object} Terrain configuration object */
+  /** @type {Object} - Terrain configuration object with subterrains and properties */
   terrain
-  /** @type {bigint} Bitfield representation of land areas */
+  /** @type {bigint} - Bitfield representation of land areas for efficient storage */
   landBits
-  /** @type {bigint} Bitfield representation of default terrain areas */
+  /** @type {bigint} - Bitfield representation of default (non-land) terrain areas */
   defaultTerrainBits
-  /** @type {Mask} Mask representing default terrain */
+  /** @type {Mask} - Mask object representing default terrain cells */
   defaultTerrainMask
-  /** @type {Mask} Mask representing land areas */
+  /** @type {Mask} - Mask object representing land area cells */
   landMask
-  /** @type {SubTerrainTrackers} Tracker for subterrain regions */
+  /** @type {SubTerrainTrackers} - Tracker managing subterrain regions and zones */
   subterrainTrackers
-  /** @type {boolean} Whether this map is pre-generated or custom */
+  /** @type {boolean} - Whether this map is pre-generated (true) or custom (false) */
   isPreGenerated
-  /** @type {Array<Weapon>} Array of weapons available on this map */
+  /** @type {Array<Weapon>} - Array of weapons available for use on this map */
   weapons
 
   /**
    * Creates a new BhMap instance with terrain configuration.
    * Initializes lazy-loaded properties for masks and terrain tracking.
-   * @param {string} title - The map title/display name.
-   * @param {Array<number>} size - Array [rows, cols] defining map dimensions.
-   * @param {number|Object<string, number>} shipNum - Number of ships or map of ship-type counts (e.g., {A: 2, B: 1}).
-   * @param {Array<RangeElement>} landArea - Array of land area ranges [row, colStart, colEnd].
-   * @param {string} name - The internal map name identifier.
-   * @param {Object} mapTerrain - The terrain configuration object with subterrains and properties.
-   * @param {Set<string>} [land] - Optional set of land coordinates; created as empty Set if not provided.
-   * @throws {Error} Logs error if terrain is invalid and uses default bh.terrain.
+   * Sets up land masks from either landArea ranges or individual coordinates.
+   *
+   * @constructor
+   * @param {string} title - The map title/display name
+   * @param {Array<number>} size - Array [rows, cols] defining map dimensions
+   * @param {number|Object<string, number>} shipNum - Number of ships or map of ship-type counts (e.g., {A: 2, B: 1})
+   * @param {Array<RangeElement>} landArea - Array of land area ranges [row, colStart, colEnd]
+   * @param {string} name - The internal map name identifier
+   * @param {Object} mapTerrain - The terrain configuration object with subterrains and properties
+   * @param {Set<string>} [land] - Optional set of land coordinates; created as empty Set if not provided
+   * @throws {Error} Logs warning if terrain is invalid and uses default bh.terrain
    */
   constructor (title, size, shipNum, landArea, name, mapTerrain, land) {
     this.title = title
@@ -117,9 +123,10 @@ export class BhMap {
   }
   /**
    * Initializes weapons for this map based on terrain.
-   * Includes standard shot plus any terrain-specific weapons.
-   * @returns {Array<import('../../../weapon/Weapon.js').Weapon>} Initialized weapons array
-   * @private
+   * Includes standard shot plus any terrain-specific weapons from the terrain configuration.
+   *
+   * @protected
+   * @returns {Array<Weapon>} Initialized weapons array with standard shot and terrain weapons
    */
   _initializeWeapons () {
     const weapons = [standardShot]
@@ -132,9 +139,10 @@ export class BhMap {
 
   /**
    * Gets an empty mask for this map's dimensions.
-   * All cells are initially unset (0).
-   * @returns {Mask} A new empty mask with dimensions matching this map
+   * All cells are initially unset (0) and ready for marking.
+   *
    * @public
+   * @returns {Mask} A new empty mask with dimensions matching this map (cols × rows)
    */
   get blankMask () {
     return Mask.empty(this.cols, this.rows)
@@ -142,9 +150,10 @@ export class BhMap {
 
   /**
    * Gets a full mask for this map's dimensions.
-   * All cells are set (1).
-   * @returns {Mask} A new full mask with all cells enabled and dimensions matching this map
+   * All cells are set (1) and enabled for operations.
+   *
    * @public
+   * @returns {Mask} A new full mask with all cells enabled and dimensions matching this map
    */
   get fullMask () {
     return Mask.full(this.cols, this.rows)
@@ -152,9 +161,10 @@ export class BhMap {
 
   /**
    * Gets extra armed fleet shapes for this map.
-   * Includes ships that are attached to racks.
-   * @returns {Array<Object>} Array of ship shape objects attached to racks
+   * Includes ships that are attached to weapon racks.
+   *
    * @public
+   * @returns {Array<Object>} Array of ship shape objects with armed weapons attached to racks
    */
   get extraArmedFleetForMap () {
     const repeatShapes = this.newShapesForMap
@@ -165,8 +175,9 @@ export class BhMap {
   /**
    * Gets the new fleet shapes for this map.
    * Includes all ships based on shipNum configuration.
-   * @returns {Array<Object>} Array of ship shape objects
+   *
    * @public
+   * @returns {Array<Object>} Array of ship shape objects ready for placement
    */
   get newFleetForMap () {
     const repeatShapes = this.newShapesForMap
@@ -177,8 +188,9 @@ export class BhMap {
   /**
    * Gets the base shapes repeated according to ship numbers.
    * Each base shape is duplicated according to shipNum configuration.
-   * @returns {Array<Object>} Array of repeated ship shape objects
+   *
    * @public
+   * @returns {Array<Object>} Array of repeated ship shape objects for fleet composition
    */
   get newShapesForMap () {
     const terrain = this.terrain
@@ -192,10 +204,11 @@ export class BhMap {
   /**
    * Gets a random edge position, optionally biased by row/column.
    * If a row or column is provided, selects an edge closer to that coordinate.
-   * @param {number} [r] - Optional row coordinate to bias edge selection (top edge if < midpoint)
-   * @param {number} [c] - Optional column coordinate to bias edge selection (left edge if < midpoint)
-   * @returns {Array<number>} [row, col] coordinates on the edge
+   *
    * @public
+   * @param {number} [r] - Optional row coordinate to bias edge selection (top edge if < rows/2)
+   * @param {number} [c] - Optional column coordinate to bias edge selection (left edge if < cols/2)
+   * @returns {Array<number>} [row, col] coordinates on the map edge
    */
   randomEdge (r, c) {
     let edge = null
@@ -218,10 +231,12 @@ export class BhMap {
 
   /**
    * Gets the nearest corner to the specified coordinates.
+   * Returns the corner (top-left, top-right, bottom-left, or bottom-right) closest to the given point.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Array<number>} [row, col] coordinates of the nearest corner
-   * @public
    */
   nearestCornerTo (r, c) {
     const r0 = r < this.rows / 2 ? this.rows - 1 : 0
@@ -231,10 +246,11 @@ export class BhMap {
 
   /**
    * Gets a random position on a specific edge.
-   * Edges: 0=top, 1=bottom, 2=left, 3=right.
+   * Edges are numbered: 0=top, 1=bottom, 2=left, 3=right.
+   *
+   * @public
    * @param {number} [edge] - Edge number (0-3); randomly selected if undefined
    * @returns {Array<number>} [row, col] coordinates on the specified edge
-   * @public
    */
   randomEdgeFor (edge) {
     edge = edge || Random.integerWithMax(4)
@@ -246,8 +262,9 @@ export class BhMap {
 
   /**
    * Gets a random row index within map bounds.
-   * @returns {number} Random row between 0 and rows-1 (inclusive)
+   *
    * @public
+   * @returns {number} Random row between 0 and rows-1 (inclusive)
    */
   randomRow () {
     return Random.integerWithMax(this.rows)
@@ -255,8 +272,9 @@ export class BhMap {
 
   /**
    * Gets a random column index within map bounds.
-   * @returns {number} Random column between 0 and cols-1 (inclusive)
+   *
    * @public
+   * @returns {number} Random column between 0 and cols-1 (inclusive)
    */
   randomColumn () {
     return Random.integerWithMax(this.cols)
@@ -264,10 +282,11 @@ export class BhMap {
 
   /**
    * Checks if coordinates are within map bounds.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {boolean} True if 0 <= r < rows and 0 <= c < cols
-   * @public
+   * @returns {boolean} True if 0 <= r < rows and 0 <= c < cols, false otherwise
    */
   inBounds (r, c) {
     return r >= 0 && r < this.rows && c >= 0 && c < this.cols
@@ -275,8 +294,9 @@ export class BhMap {
 
   /**
    * Creates a blank grid of the map dimensions.
-   * @returns {Array<Array<?Object>>} 2D array of rows × cols filled with null values
+   *
    * @public
+   * @returns {Array<Array<?Object>>} 2D array of rows × cols filled with null values
    */
   get blankGrid () {
     return Array.from({ length: this.rows }, () =>
@@ -286,11 +306,12 @@ export class BhMap {
 
   /**
    * Gets all surrounding coordinates including the center position.
-   * Returns up to 9 coordinates: the center and up to 8 neighbors.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Array<Array<number>>} Array of [row, col] coordinates within bounds
+   * Returns up to 9 coordinates: the center and up to 8 neighbors (filtered by inBounds).
+   *
    * @public
+   * @param {number} r - Row coordinate of center
+   * @param {number} c - Column coordinate of center
+   * @returns {Array<Array<number>>} Array of [row, col] coordinates within bounds
    */
   surroundArea (r, c) {
     let surroundings = []
@@ -300,11 +321,12 @@ export class BhMap {
 
   /**
    * Gets all surrounding coordinates excluding the center position.
-   * Returns up to 8 coordinates: the neighbors excluding the center.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {Array<Array<number>>} Array of [row, col] coordinates within bounds, excluding center
+   * Returns up to 8 coordinates: the neighbors excluding the center point.
+   *
    * @public
+   * @param {number} r - Row coordinate of center
+   * @param {number} c - Column coordinate of center
+   * @returns {Array<Array<number>>} Array of [row, col] coordinates within bounds, excluding center
    */
   surround (r, c) {
     let surroundings = []
@@ -316,12 +338,13 @@ export class BhMap {
   /**
    * Base method for getting surrounding coordinates with custom validation.
    * Adds coordinates to surrounding array if they pass the isValid check.
+   *
+   * @public
    * @param {number} r - Center row coordinate
    * @param {number} c - Center column coordinate
    * @param {(rr: number, cc: number) => boolean} isValid - Validation function for coordinates
    * @param {Array<Array<number>>} surroundings - Array to populate with valid [row, col] coordinates
    * @returns {void}
-   * @public
    */
   surroundBase (r, c, isValid, surroundings) {
     for (let rr = r - 1; rr <= r + 1; rr++) {
@@ -335,12 +358,13 @@ export class BhMap {
 
   /**
    * Checks if a rectangular area fits within map bounds.
+   *
+   * @public
    * @param {number} r - Starting row (top-left)
    * @param {number} c - Starting column (top-left)
-   * @param {number} height - Height of the area
-   * @param {number} width - Width of the area
+   * @param {number} height - Height of the rectangular area
+   * @param {number} width - Width of the rectangular area
    * @returns {boolean} True if all cells (r, r+height) × (c, c+width) are within bounds
-   * @public
    */
   inAllBounds (r, c, height, width) {
     return r >= 0 && r + height < this.rows && c + width >= 0 && c < this.cols
@@ -349,11 +373,12 @@ export class BhMap {
   /**
    * Adds land at the specified coordinates.
    * Only applicable to custom maps; base class throws error.
-   * @param {number} _r - Row coordinate
-   * @param {number} _c - Column coordinate
+   *
+   * @public
+   * @param {number} _r - Row coordinate (unused in base class)
+   * @param {number} _c - Column coordinate (unused in base class)
    * @throws {Error} Always throws "Not a custom map" in base class
    * @returns {void}
-   * @public
    */
   addLand (_r, _c) {
     throw new Error('Not a custom map')
@@ -362,10 +387,11 @@ export class BhMap {
   /**
    * Gets the subterrain at the specified coordinates.
    * Subterrains represent specific terrain variations (water types, ground types, etc.).
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Object} The subterrain object with properties like isDefault, tag, etc.
-   * @public
    */
   subterrain (r, c) {
     return this.subterrainTrackers.subterrain(
@@ -378,10 +404,11 @@ export class BhMap {
   /**
    * Gets zone detail at the specified coordinates.
    * Zone detail includes information about terrain zones and their properties.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Object} Zone detail information with zone properties
-   * @public
    */
   zoneDetail (r, c) {
     return this.subterrainTrackers.zoneDetail(r, c)
@@ -390,10 +417,11 @@ export class BhMap {
   /**
    * Gets the zone at the specified coordinates.
    * A zone represents a region of similar terrain properties.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {Object} Zone information object
-   * @public
    */
   zone (r, c) {
     return this.subterrainTrackers.zone(r, c)
@@ -402,11 +430,12 @@ export class BhMap {
   /**
    * Gets zone information at the specified coordinates.
    * Can optionally use provided zone detail instead of calculating it.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {Object} [zoneDetail] - Optional pre-calculated zone detail to use instead of fetching
    * @returns {Object} Zone information object
-   * @public
    */
   zoneInfo (r, c, zoneDetail) {
     return this.subterrainTrackers.zoneInfo(r, c, zoneDetail)
@@ -415,10 +444,11 @@ export class BhMap {
   /**
    * Checks if the specified coordinates are land.
    * Uses the landMask to determine if a cell is land or water.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {boolean} True if the position is land, false if water
-   * @public
    */
   isLand (r, c) {
     return this.landMask.test(c, r)
@@ -426,11 +456,12 @@ export class BhMap {
 
   /**
    * Gets the tag for the terrain at the specified coordinates.
-   * Tags identify terrain types (e.g., 'water', 'grass', 'rock').
+   * Tags identify terrain types (e.g., 'water', 'grass', 'rock', 'asteroid').
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {string} Terrain tag string, or empty string if no tag
-   * @public
+   * @returns {string} Terrain tag string, or empty string if no tag found
    */
   tag (r, c) {
     return this.terrain.subterrainTag(this.isLand(r, c)) || ''
@@ -438,8 +469,10 @@ export class BhMap {
 
   /**
    * Gets all possible terrain tags for this map's terrain.
-   * @returns {string} Concatenated string of all subterrain tags
+   * Aggregates all subterrain tags into a single concatenated string.
+   *
    * @public
+   * @returns {string} Concatenated string of all subterrain tags
    */
   allTags () {
     return this.terrain.allSubterrainTag() || ''
@@ -449,11 +482,12 @@ export class BhMap {
    * Applies terrain tags to a cell element.
    * Removes all existing terrain tags and applies the appropriate one.
    * Also applies light/dark checkerboard styling based on row+col parity.
-   * @param {Object} cell - DOM element or object with add/remove methods
+   *
+   * @public
+   * @param {Object} cell - DOM element or object with add/remove methods for CSS classes
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {void}
-   * @public
    */
   tagCell (cell, r, c) {
     const allTags = this.allTags()
@@ -467,9 +501,10 @@ export class BhMap {
   /**
    * Creates a saved version of this map with a new title.
    * Converts a BhMap to an EditedCustomMap for persistence and editing.
+   *
+   * @public
    * @param {string} [newTitle] - Optional new title for the saved map; auto-generated if omitted
    * @returns {EditedCustomMap} A new saved custom map instance with all land data copied
-   * @public
    */
   savedMap (newTitle) {
     newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
@@ -490,9 +525,10 @@ export class BhMap {
   /**
    * Creates a clone of this map with a new title and saves it to localStorage.
    * The cloned map is stored with localStorage key based on the new title.
+   *
+   * @public
    * @param {string} [newTitle] - Optional new title for the cloned map; auto-generated if omitted
    * @returns {EditedCustomMap} A new cloned map instance stored in localStorage
-   * @public
    */
   clone (newTitle) {
     newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
@@ -505,8 +541,9 @@ export class BhMap {
   /**
    * Gets the export name for this map.
    * Used when exporting map data; appends ' copy' suffix to the internal name.
-   * @returns {string} The export name (internal name + ' copy')
+   *
    * @public
+   * @returns {string} The export name (internal name + ' copy')
    */
   exportName () {
     return this.name + ' copy'
@@ -515,9 +552,10 @@ export class BhMap {
   /**
    * Converts this map to a JSON string for export.
    * Filters out bigint values which cannot be serialized to JSON.
+   *
+   * @public
    * @param {string} [newTitle] - Optional title for the exported map; uses exportName() if omitted
    * @returns {string} Formatted JSON string representation of the map data
-   * @public
    */
   jsonString (newTitle) {
     newTitle = newTitle || this.exportName()
@@ -530,13 +568,18 @@ export class BhMap {
  * Represents a custom user-created map that can be modified.
  * Extends BhMap with land editing capabilities and persistence.
  * Uses a Set of coordinates to track land instead of pre-generated ranges.
+ *
  * @class CustomMap
+ * @extends BhMap
+ * @classdesc User-editable map with localStorage persistence
  */
 export class CustomMap extends BhMap {
   /**
    * Creates a new CustomMap instance.
    * Unlike BhMap, custom maps use a Set to track land coordinates instead of ranges.
-   * @param {string} title - The display title of the map
+   *
+   * @constructor
+   * @param {string} title - The display title of the map shown to players
    * @param {Array<number>} size - Array [rows, cols] defining map dimensions
    * @param {number|Object<string, number>} shipNum - Number of ships or ship-type count map (e.g., {A: 2, B: 1})
    * @param {Set<string>} land - Set of land cell coordinates as comma-separated strings
@@ -552,11 +595,12 @@ export class CustomMap extends BhMap {
 
   /**
    * Checks if the specified coordinates are land in this custom map.
-   * Uses the land Set to determine land status.
+   * Uses the land Set to determine land status efficiently.
+   *
+   * @public
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @returns {boolean} True if the coordinate is in the land Set, false otherwise
-   * @public
    */
   isLand (r, c) {
     return this.land.has(makeKey(r, c))
@@ -565,8 +609,9 @@ export class CustomMap extends BhMap {
   /**
    * Gets the export name for this custom map.
    * For custom maps, the export name is the title itself.
-   * @returns {string} The map's title (no suffix)
+   *
    * @public
+   * @returns {string} The map's title (no suffix appended)
    */
   exportName () {
     return this.title
@@ -574,9 +619,10 @@ export class CustomMap extends BhMap {
 
   /**
    * Converts this map to a plain object for JSON serialization.
-   * Excludes bigint and function properties.
-   * @returns {Object} Plain object with all map properties suitable for JSON.stringify
+   * Excludes bigint and function properties which cannot be serialized.
+   *
    * @public
+   * @returns {Object} Plain object with all map properties suitable for JSON.stringify()
    */
   jsonObj () {
     return {
@@ -597,8 +643,9 @@ export class CustomMap extends BhMap {
   /**
    * Converts this map to a JSON string.
    * Bigint values are filtered out as they cannot be serialized to JSON.
-   * @returns {string} Pretty-printed (2-space indent) JSON string of the map
+   *
    * @public
+   * @returns {string} Pretty-printed (2-space indent) JSON string of the map data
    */
   jsonString () {
     const data = this.jsonObj()
@@ -612,10 +659,11 @@ export class CustomMap extends BhMap {
   /**
    * Saves this map to localStorage.
    * Stores the JSON representation and updates the terrain's custom maps list.
+   *
+   * @public
    * @param {string} [title] - Optional title for the saved map; auto-generated if omitted
    * @param {string} [key] - Optional localStorage key; computed from title if omitted
    * @returns {void}
-   * @public
    */
   saveToLocalStorage (title, key) {
     title = title || makeTitle(this.terrain, this.cols, this.rows)
@@ -629,9 +677,10 @@ export class CustomMap extends BhMap {
   /**
    * Gets the localStorage key for this map.
    * The key combines the oldToken prefix with the map's title.
+   *
+   * @public
    * @param {string} [title] - Optional title to use in the key; uses current title if omitted
    * @returns {string} The localStorage key in format: `{oldToken}.{title}`
-   * @public
    */
   localStorageKey (title) {
     this.title = title || makeTitle(this.terrain, this.cols, this.rows)
@@ -642,6 +691,7 @@ export class CustomMap extends BhMap {
 /**
  * Mixin that adds land modification capabilities to map classes.
  * Provides methods to add, remove, and modify land at map coordinates.
+ *
  * @param {Constructor} Base - The base class to extend (must have land Set, inBounds method)
  * @returns {Constructor} The extended class with modification methods
  */
@@ -650,10 +700,11 @@ const withModifyable = Base =>
     /**
      * Adds land at the specified coordinates.
      * Only adds if coordinates are within map bounds.
+     *
+     * @public
      * @param {number} r - Row coordinate
      * @param {number} c - Column coordinate
      * @returns {void}
-     * @public
      */
     addLand (r, c) {
       if (this.inBounds(r, c)) this.land.add(makeKey(r, c))
@@ -662,10 +713,11 @@ const withModifyable = Base =>
     /**
      * Removes land at the specified coordinates.
      * Only removes if coordinates are within map bounds.
+     *
+     * @public
      * @param {number} r - Row coordinate
      * @param {number} c - Column coordinate
      * @returns {void}
-     * @public
      */
     removeLand (r, c) {
       if (this.inBounds(r, c)) this.land.delete(makeKey(r, c))
@@ -674,9 +726,10 @@ const withModifyable = Base =>
     /**
      * Adds ships to the map's ship count.
      * Replaces the current shipNum with counts based on the provided ships array.
+     *
+     * @public
      * @param {Array<Object>} ships - Array of ship objects, each with a letter property
      * @returns {void}
-     * @public
      */
     addShips (ships) {
       this.shipNum = {}
@@ -688,11 +741,12 @@ const withModifyable = Base =>
     /**
      * Sets land or water at the specified coordinates based on subterrain type.
      * If subterrain.isDefault is true, removes land (water); otherwise adds land.
+     *
+     * @public
      * @param {number} r - Row coordinate
      * @param {number} c - Column coordinate
      * @param {Object} subterrain - The subterrain object with isDefault property
      * @returns {void}
-     * @public
      */
     setLand (r, c, subterrain) {
       if (subterrain.isDefault) {
@@ -707,14 +761,20 @@ const withModifyable = Base =>
  * Represents a blank custom map that can be modified.
  * Extends CustomMap with the withModifyable mixin for land editing capabilities.
  * Starts with no land and can be populated by the user.
+ * Inherits: addLand, removeLand, addShips, setLand from withModifyable mixin.
+ *
  * @class CustomBlankMap
+ * @extends CustomMap
+ * @classdesc Editable blank map starting with empty land set; includes modification methods
  */
 export class CustomBlankMap extends withModifyable(CustomMap) {
   /**
    * Creates a new blank custom map with empty land.
    * The title is auto-generated from terrain and dimensions.
-   * @param {number} rows - Number of rows for the map
-   * @param {number} cols - Number of columns for the map
+   *
+   * @constructor
+   * @param {number} rows - Number of rows for the map grid
+   * @param {number} cols - Number of columns for the map grid
    * @param {Object} [mapTerrain] - Optional terrain configuration; uses default if omitted
    */
   constructor (rows, cols, mapTerrain) {
@@ -730,10 +790,11 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
   /**
    * Gets the index token for this map's dimensions.
    * Used to generate unique identifiers for maps of the same size.
+   *
+   * @public
    * @param {number} rows - Number of rows
    * @param {number} cols - Number of columns
    * @returns {string} The index token for this dimension combination
-   * @public
    */
   indexToken (rows, cols) {
     return getCopyNumKey(this.terrain, cols, rows)
@@ -742,10 +803,11 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
   /**
    * Resizes the map and removes land outside the new bounds.
    * Prunes land coordinates that fall outside the new dimensions.
-   * @param {number} rows - New number of rows
-   * @param {number} cols - New number of columns
-   * @returns {void}
+   *
    * @public
+   * @param {number} rows - New number of rows for the map
+   * @param {number} cols - New number of columns for the map
+   * @returns {void}
    */
   setSize (rows, cols) {
     this.title = makeTitle(this.terrain, cols, rows)
@@ -762,21 +824,26 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
  * Represents a saved custom map loaded from localStorage.
  * Extends CustomMap with loading, persistence, and management capabilities.
  * Provides static methods for loading maps and instance methods for deletion/renaming.
+ *
  * @class SavedCustomMap
+ * @extends CustomMap
+ * @classdesc Persistent custom map loaded from and saved to localStorage
  */
 export class SavedCustomMap extends CustomMap {
   /**
    * Creates a new SavedCustomMap from saved data.
    * Reconstructs weapons from the saved weapon specifications.
+   *
+   * @constructor
    * @param {Object} data - The saved map data object from localStorage
-   * @param {string} data.title - Map title
-   * @param {number} data.rows - Number of rows
-   * @param {number} data.cols - Number of columns
-   * @param {number|Object<string, number>} data.shipNum - Ship counts by type
-   * @param {Array<string>} data.land - Array of land cell coordinates
-   * @param {string|Object} data.terrain - Terrain name or terrain object
-   * @param {Array<Object>} [data.weapons] - Array of weapon specifications with letter and ammo
-   * @param {Object} [data.example] - Optional example data
+   * @param {string} data.title - Map title shown to players
+   * @param {number} data.rows - Number of rows in the grid
+   * @param {number} data.cols - Number of columns in the grid
+   * @param {number|Object<string, number>} data.shipNum - Ship counts by type letter
+   * @param {Array<string>} data.land - Array of land cell coordinates as strings
+   * @param {string|Object} data.terrain - Terrain name or terrain object with subterrains
+   * @param {Array<Object>} [data.weapons] - Array of weapon specifications with letter and ammo properties
+   * @param {Object} [data.example] - Optional example or reference data
    */
   constructor (data) {
     super(
@@ -807,9 +874,10 @@ export class SavedCustomMap extends CustomMap {
   /**
    * Loads map data from localStorage by title.
    * Returns the raw saved data object without constructing a SavedCustomMap.
-   * @param {string} title - The map title to load
-   * @returns {Object|null} The loaded map data object, or null if not found
+   *
    * @public
+   * @param {string} title - The map title to load from localStorage
+   * @returns {Object|null} The loaded map data object, or null if not found
    * @static
    */
   static loadObj (title) {
@@ -823,9 +891,10 @@ export class SavedCustomMap extends CustomMap {
   /**
    * Loads a saved custom map from localStorage.
    * Returns null and logs a message if the map is not found.
-   * @param {string} title - The map title to load
-   * @returns {SavedCustomMap|null} The loaded SavedCustomMap instance, or null if not found
+   *
    * @public
+   * @param {string} title - The map title to load from localStorage
+   * @returns {SavedCustomMap|null} The loaded SavedCustomMap instance, or null if not found
    * @static
    */
   static load (title) {
@@ -839,8 +908,9 @@ export class SavedCustomMap extends CustomMap {
   /**
    * Gets the localStorage key for this map.
    * The key combines the oldToken prefix with the map's title.
-   * @returns {string} The localStorage key in format: `{oldToken}.{title}`
+   *
    * @public
+   * @returns {string} The localStorage key in format: `{oldToken}.{title}`
    */
   localStorageKey () {
     return `${oldToken}.${this.title}`
@@ -849,9 +919,10 @@ export class SavedCustomMap extends CustomMap {
   /**
    * Removes this map from localStorage and terrain records.
    * Throws an error if deletion fails (map still in storage).
-   * @throws {Error} If deletion fails with message about the key
-   * @returns {void}
+   *
    * @public
+   * @throws {Error} If deletion fails with message about the localStorage key
+   * @returns {void}
    */
   remove () {
     const key = this.localStorageKey()
@@ -868,9 +939,10 @@ export class SavedCustomMap extends CustomMap {
   /**
    * Renames this map and saves it with the new name.
    * Removes the old map from storage and persists with the new title.
-   * @param {string} newTitle - The new title for the map
-   * @returns {void}
+   *
    * @public
+   * @param {string} newTitle - The new title/name for the map
+   * @returns {void}
    */
   rename (newTitle) {
     this.remove()
@@ -881,10 +953,11 @@ export class SavedCustomMap extends CustomMap {
   /**
    * Creates a clone of this map with a new title and saves it to localStorage.
    * Throws an error if the clone creation fails.
-   * @param {string} [newTitle] - Optional new title; auto-generated if omitted
-   * @throws {Error} If cloning fails with message about the key
-   * @returns {EditedCustomMap} The newly created and saved clone
+   *
    * @public
+   * @param {string} [newTitle] - Optional new title; auto-generated if omitted
+   * @throws {Error} If cloning fails with message about the localStorage key
+   * @returns {EditedCustomMap} The newly created and saved clone
    */
   clone (newTitle) {
     newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
@@ -905,15 +978,21 @@ export class SavedCustomMap extends CustomMap {
  * Represents an edited custom map with modification capabilities.
  * Extends SavedCustomMap with the withModifyable mixin for land editing.
  * Provides the full interface for loading, editing, and persisting custom maps.
+ * Inherits: addLand, removeLand, addShips, setLand from withModifyable mixin.
+ * Inherits: load, loadObj, localStorageKey, remove, rename from SavedCustomMap.
+ *
  * @class EditedCustomMap
+ * @extends SavedCustomMap
+ * @classdesc Fully editable custom map with persistence and modification capabilities
  */
 export class EditedCustomMap extends withModifyable(SavedCustomMap) {
   /**
    * Loads an edited custom map from localStorage.
    * Returns null if not found; no log message is printed.
-   * @param {string} title - The map title to load
-   * @returns {EditedCustomMap|null} The loaded EditedCustomMap with edit capabilities, or null if not found
+   *
    * @public
+   * @param {string} title - The map title to load from localStorage
+   * @returns {EditedCustomMap|null} The loaded EditedCustomMap with edit capabilities, or null if not found
    * @static
    */
   static load (title) {

@@ -92,8 +92,21 @@ export class Waters {
   /**
    * Initializes the Waters game instance with UI and basic setup.
    *
-   * @param {Object} ui - The user interface instance for rendering
-   * @param {string|null} [playerType] - Type of player (AI, Human, etc.)
+   * Initializes core game state including ship management, scoring, UI rendering,
+   * and optional turn-based step tracking. Sets up default message preambles for
+   * UI display and game event logging.
+   *
+   * @param {Object} ui - The user interface instance for rendering board and interactions
+   * @param {string|null} [playerType] - Type of player (e.g., 'AI', 'Human', null for local)
+   *
+   * @property {Ship[]} ships - Array of ships in this player's fleet
+   * @property {Score} score - Scoring system for tracking game results
+   * @property {Waters|null} opponent - Reference to opposing player instance
+   * @property {Object} UI - User interface controller
+   * @property {ShipCellGrid} shipCellGrid - 2D grid tracking ship cell positions
+   * @property {boolean} boardDestroyed - Whether this player's fleet is completely destroyed
+   * @property {Steps} [steps] - Optional turn tracking system for game progression
+   * @property {WeaponSystem} [loadOut] - Weapon system manager for armed ships
    */
   constructor (ui, playerType = null) {
     assembleTerrains()
@@ -141,13 +154,18 @@ export class Waters {
 
   /**
    * Stores the current ship placement to local storage.
+   * Serializes ship placement data with custom handling for BigInt values,
+   * converting them to strings for JSON compatibility.
+   *
+   * @returns {void}
    */
   storePlacedShips () {
     // Custom replacer to handle BigInt serialization
     /**
-     * @param {string} _key
-     * @param {unknown} value
-     * @returns {unknown}
+     * JSON replacer function for serialization.
+     * @param {string} _key - Property name (unused)
+     * @param {unknown} value - Property value to serialize
+     * @returns {unknown} Stringified BigInt or original value
      */
     const replacer = (_key, value) => {
       if (typeof value === 'bigint') {
@@ -170,24 +188,27 @@ export class Waters {
   }
 
   /**
-   * Attempts to place ships randomly on the board.
-   * @param {Array} ships - Ships to attempt placement for
-   * @param {Function} [onShipPlaced] - Callback when ship is placed
-   * @param {Function} [onPlacementReset] - Callback when placement is reset
-   * @returns {boolean} True if placement was successful
+   * Attempts to place ships randomly on the board with optional callbacks.
+   * Routes placement through the shipCellGrid system and collects results
+   * for batch UI updates on success.
+   *
+   * @param {Ship[]} ships - Array of ships to place on the board
+   * @param {Function} [onShipPlaced] - Callback fired when each ship is successfully placed.
+   *        Called with (ship: Ship, placedCells: Array)
+   * @param {Function} [onPlacementReset] - Callback fired when placement fails and is reset
+   * @returns {boolean} True if all ships placed successfully, false if placement failed
    */
   attemptToPlaceShips (
     ships,
     onShipPlaced = Function.prototype,
     onPlacementReset = Function.prototype
   ) {
-    this.resetPlacementStore()
+    this.resetPlacementStore.bind(this)
     const result = this.shipCellGrid.attemptToPlaceShips(
       ships,
       (ship, placedCells) => {
         this.storeShipPlacement(placedCells, ship)
-      },
-      this.handlePlacementFailure.bind(this, onPlacementReset)
+      }
     )
     if (result) {
       for (const { placedCells, ship } of this.tempPlacement) {
@@ -195,13 +216,19 @@ export class Waters {
         this.UI.markPlaced(placedCells, ship)
       }
       this.UI.onFleetPlaced?.()
+      return result
     }
+    this.handlePlacementFailure.bind(this, onPlacementReset)
     return result
   }
 
   /**
-   * Handles placement failure by resetting visuals.
-   * @param {Function} onPlacementReset - Reset callback
+   * Handles placement failure by resetting visuals and invoking callback.
+   * Clears all placed ship visuals and triggers optional reset callback
+   * before updating UI state displays.
+   *
+   * @param {Function} onPlacementReset - Reset callback to invoke
+   * @returns {void}
    * @private
    */
   handlePlacementFailure (onPlacementReset) {
@@ -211,15 +238,6 @@ export class Waters {
     this.UI.displayShipInfo(this.ships)
   }
 
-  /**
-   * Records a successful ship placement.
-   * @param {Array} placedCells - The cells where ship was placed
-   * @param {Object} ship - The placed ship
-   * @private
-   */
-  recordShipPlacement (placedCells, ship) {
-    this.UI.placement(placedCells, this, ship)
-  }
   resetPlacementStore () {
     this.tempPlacement = []
   }
@@ -229,8 +247,12 @@ export class Waters {
   }
   /**
    * Accumulates weapon result data into an accumulator object.
-   * @param {WeaponResult} result - The result to accumulate
-   * @param {WeaponResult} accumulator - The accumulator object
+   * Aggregates hits, double-taps, ship sinks, reveals, and info messages
+   * from individual weapon firing results into a single accumulator object.
+   *
+   * @param {WeaponResult} result - The result to accumulate (may have partial properties)
+   * @param {WeaponResult} accumulator - The accumulator object to update in place
+   * @returns {void} Modifies accumulator in place
    */
   accumulateResult (result, accumulator) {
     if (result?.hits) accumulator.hits += result.hits
@@ -248,9 +270,11 @@ export class Waters {
   }
   /**
    * Automatically places ships using random placement with callbacks.
-   * @param {Function} [onShipPlaced] - Callback when ship is placed
-   * @param {Function} [onPlacementReset] - Callback when placement fails
-   * @returns {boolean} True if placement succeeded
+   * Initializes ships and delegates to performAutoPlacement with provided callbacks.
+   *
+   * @param {Function} [onShipPlaced] - Callback when ship placed (ship: Ship, cells: Array)
+   * @param {Function} [onPlacementReset] - Callback when placement reset
+   * @returns {boolean} True if placement succeeded after attempts
    */
   autoPlaceWithCallbacks (onShipPlaced, onPlacementReset) {
     const ships = this.initShips()
@@ -259,7 +283,9 @@ export class Waters {
 
   /**
    * Automatically places ships with default callbacks.
-   * @returns {boolean} True if placement succeeded
+   * Uses placedShipsInstance tracking and standard UI clearing behavior.
+   *
+   * @returns {boolean} True if placement succeeded after attempts
    */
   autoPlace () {
     return this.autoPlaceWithCallbacks(
@@ -276,7 +302,9 @@ export class Waters {
 
   /**
    * Automatically places ships with UI clearing callback.
-   * @returns {boolean} True if placement succeeded
+   * Variant of autoPlace using a different UI clear method.
+   *
+   * @returns {boolean} True if placement succeeded after attempts
    */
   autoPlace2 () {
     return this.autoPlaceWithCallbacks(
@@ -286,11 +314,14 @@ export class Waters {
   }
 
   /**
-   * Performs the actual auto placement logic.
-   * @param {Array} ships - Ships to place
-   * @param {Function} [onShipPlaced] - Ship placement callback
-   * @param {Function} [onPlacementReset] - Placement reset callback
-   * @returns {boolean} True if successful
+   * Performs the actual auto placement logic with retry loop.
+   * Attempts placement up to maxAttempts times, logging results for debugging.
+   * Logs detailed diagnostic info on failure including land mask visualization.
+   *
+   * @param {Ship[]} ships - Array of ships to place on the board
+   * @param {Function} [onShipPlaced] - Ship placement callback invoked on each success
+   * @param {Function} [onPlacementReset] - Placement reset callback on failure
+   * @returns {boolean} True if successful within maxAttempts, false if all attempts fail
    * @private
    */
   performAutoPlacement (ships, onShipPlaced, onPlacementReset) {
@@ -418,6 +449,9 @@ export class Waters {
 
   /**
    * Sets up weapon fire event handlers.
+   * Binds destroy methods to loadOut callbacks for shot resolution.
+   *
+   * @returns {void}
    */
   setWeaponFireHandlers () {
     this.loadOut.onDestroy = this.destroy.bind(this)
@@ -426,8 +460,10 @@ export class Waters {
 
   /**
    * Returns the active view model for the current opponent or local UI.
-   * @param {Object} [oppo] - Optional opponent instance
-   * @returns {Object} UI view model
+   * Determines which UI instance should be used for operations based on opponent state.
+   *
+   * @param {Waters} [oppo] - Optional opponent instance to check for UI
+   * @returns {Object} UI view model instance (opponent's UI or this player's UI)
    * @private
    */
   getViewModel (oppo) {
@@ -435,27 +471,31 @@ export class Waters {
   }
 
   /**
-   * Creates a normalized weapon selection payload.
+   * Creates a normalized weapon selection payload with all targeting coordinates.
+   * Encapsulates launch point, weapon ID, and hint coordinates for firing.
+   *
    * @private
-   * @param {number|null} launchR - Launch row coordinate.
-   * @param {number|null} launchC - Launch column coordinate.
-   * @param {number|null} weaponId - Weapon system ID.
-   * @param {number|null} hintR - Hint row coordinate.
-   * @param {number|null} hintC - Hint column coordinate.
-   * @returns {WeaponSelection} Weapon selection payload.
+   * @param {number|null} launchR - Launch row coordinate (weapon origin)
+   * @param {number|null} launchC - Launch column coordinate (weapon origin)
+   * @param {number|null} weaponId - Weapon system ID to fire
+   * @param {number|null} hintR - Hint row coordinate (UI hint location)
+   * @param {number|null} hintC - Hint column coordinate (UI hint location)
+   * @returns {WeaponSelection} Normalized weapon selection payload
    */
   _createWeaponSelectionPayload (launchR, launchC, weaponId, hintR, hintC) {
     return { launchR, launchC, weaponId, hintR, hintC }
   }
 
   /**
-   * Creates a normalized weapon selection payload.
-   * @param {number|null} launchR - Launch row coordinate.
-   * @param {number|null} launchC - Launch column coordinate.
-   * @param {number|null} weaponId - Weapon system ID.
-   * @param {number|null} hintR - Hint row coordinate.
-   * @param {number|null} hintC - Hint column coordinate.
-   * @returns {WeaponSelection} Weapon selection payload.
+   * Creates a normalized weapon selection payload with all targeting coordinates.
+   * Public wrapper around _createWeaponSelectionPayload.
+   *
+   * @param {number|null} launchR - Launch row coordinate (weapon origin)
+   * @param {number|null} launchC - Launch column coordinate (weapon origin)
+   * @param {number|null} weaponId - Weapon system ID to fire
+   * @param {number|null} hintR - Hint row coordinate (UI hint location)
+   * @param {number|null} hintC - Hint column coordinate (UI hint location)
+   * @returns {WeaponSelection} Weapon selection payload
    */
   createWeaponSelection (launchR, launchC, weaponId, hintR, hintC) {
     return this._createWeaponSelectionPayload(
@@ -468,11 +508,14 @@ export class Waters {
   }
 
   /**
-   * Adds a source marker for the current weapon selection.
-   * @param {Object} viewModel - UI view model instance
-   * @param {number} launchR - Launch row coordinate
-   * @param {number} launchC - Launch column coordinate
-   * @param {HTMLElement|null} cell - Candidate cell element
+   * Adds a source marker for the current weapon selection to the UI.
+   * Records launch coordinates as the weapon's origin point in the steps tracker.
+   *
+   * @param {Object} viewModel - UI view model instance for marker rendering
+   * @param {number} launchR - Launch row coordinate (weapon origin)
+   * @param {number} launchC - Launch column coordinate (weapon origin)
+   * @param {HTMLElement|null} cell - Candidate cell element for marker placement
+   * @returns {void}
    * @private
    */
   addSelectionSource (viewModel, launchR, launchC, cell) {
@@ -486,9 +529,12 @@ export class Waters {
 
   /**
    * Checks whether repeated clicks should filter out previously selected source keys.
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @param {Array} keyIds - Cell key collection
+   * Implements single-click filtering: if user clicks the same cell again,
+   * exclude weapons that were selected in the previous click.
+   *
+   * @param {number} hintR - Current hint row coordinate
+   * @param {number} hintC - Current hint column coordinate
+   * @param {Array<string>} keyIds - Available cell key collection
    * @returns {boolean} True when repeated selection filtering applies
    * @private
    */
@@ -501,9 +547,11 @@ export class Waters {
   }
 
   /**
-   * Filters weapon keys to only include loaded weapons.
-   * @param {Array<string>} keyIds - Candidate key identifiers
-   * @returns {Array<string>} Filtered keys for loaded weapons
+   * Filters weapon keys to only include those with loaded/armed weapons.
+   * Parses triple keys to extract weapon IDs and checks against loaded weapons.
+   *
+   * @param {Array<string>} keyIds - Candidate key identifiers (triple-format strings)
+   * @returns {Array<string>} Filtered keys for weapons that have ammo
    * @private
    */
   filterLoadedWeaponKeys (keyIds) {
@@ -516,7 +564,9 @@ export class Waters {
 
   /**
    * Returns the set of loaded weapon IDs for the current load out.
-   * @returns {Set<number>}
+   * Collects all weapon IDs from armed weapon systems.
+   *
+   * @returns {Set<number>} Set of loaded/armed weapon IDs
    * @private
    */
   _getLoadedWeaponIds () {
@@ -533,7 +583,10 @@ export class Waters {
    * @private
    */
   findClosestWeaponKey (filteredKeys, hintC, hintR) {
-    return findClosestCoord(filteredKeys, hintC, hintR, k => parseTriple(k))
+    return findClosestCoord(filteredKeys, hintC, hintR, k => {
+      const [c, r] = parseTriple(k)
+      return [r, c]
+    })
   }
 
   /**
@@ -562,12 +615,15 @@ export class Waters {
 
   /**
    * Selects a loaded weapon system by cell key values.
-   * @param {Array<string>} keyIds - Candidate key identifiers
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
-   * @param {boolean|string} random - Whether to select randomly
-   * @param {Object} viewModel - UI view model
-   * @returns {WeaponSelection} Weapon selection payload
+   * Filters available keys to loaded weapons, applies repeated-click filtering,
+   * and selects either randomly or by closest distance to hint coordinates.
+   *
+   * @param {Array<string>} keyIds - Candidate key identifiers (triple-format)
+   * @param {number} hintR - Hint row coordinate for distance calculation
+   * @param {number} hintC - Hint column coordinate for distance calculation
+   * @param {boolean|string} random - Whether to select randomly ('random', true) or by distance
+   * @param {Object} viewModel - UI view model instance
+   * @returns {WeaponSelection} Weapon selection payload with all targeting coordinates
    * @private
    */
   selectWeaponFromCell (keyIds, hintR, hintC, random, viewModel) {
@@ -731,8 +787,6 @@ export class Waters {
     const dragship = this.UI.trayManager.getTrayItem(ship.id)
     if (dragship) {
       this.UI.removeDragShip(dragship)
-    } else {
-      //    console.log('drag ship not found : ', JSON.stringify(ship))
     }
   }
 
@@ -751,8 +805,12 @@ export class Waters {
     }
   }
   /**
-   * Loads placed ships from storage or data.
-   * @param {ShipPlacement} [placedShips] - Placed ships data to load
+   * Loads placed ships from storage or provided data.
+   * Retrieves ship placements from localStorage or uses provided data,
+   * then places matching ships on the board with UI updates.
+   *
+   * @param {ShipPlacement} [placedShips] - Explicit placed ships data to load (overrides storage)
+   * @returns {void}
    */
   load (placedShips) {
     const map = bh.map
@@ -858,9 +916,6 @@ export class Waters {
     }
     let weaponShips = this.ships.filter(ship => ship.hasWeapon)
     this.hasAttachedWeapons = weaponShips.length > 0
-    //if (bh.seekingMode && this.hasAttachedWeapons) {
-    //  weaponShips = _map.extraArmedFleetForMap || weaponShips
-    //}
     this.weaponShips = weaponShips
     return weaponShips
   }
@@ -1152,7 +1207,7 @@ export class Waters {
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
       this.updateMode(rack, undefined)
-      this.steps?.targetting()
+      this.steps?.targetting(this.hasAttachedWeapons)
       this.loadOut.launch = async coords => {
         return await this.launchTo(coords, hintR, hintC, rack)
       }
@@ -1412,7 +1467,7 @@ export class Waters {
     const { r, c } = this.steps.sourceHint || { r: 0, c: 0 }
     return await this.launchTo(coords, r, c, wps)
   }
-  //onClickOppoCell = null
+
   setupAttachedAim () {
     const oppo = this.opponent
     if (
@@ -1715,8 +1770,9 @@ export class Waters {
 
   /**
    * Gets all ships that are sunk.
+   * Filters ships with sunk property = true.
    *
-   * @returns {Ship[]} Array of sunk ships
+   * @returns {Ship[]} Array of destroyed/sunk ships
    */
   shipsSunk () {
     return this.ships.filter(s => s.sunk)
@@ -1724,8 +1780,9 @@ export class Waters {
 
   /**
    * Gets all ships that are NOT sunk.
+   * Filters ships with sunk property = false or undefined.
    *
-   * @returns {Ship[]} Array of unsunk ships
+   * @returns {Ship[]} Array of surviving/unsunk ships
    */
   shipsUnsunk () {
     return this.ships.filter(s => !s.sunk)
@@ -1733,19 +1790,21 @@ export class Waters {
 
   /**
    * Gets all unique unsunk ship shapes.
+   * Returns unique shape instances from unsunk ships for type analysis.
    *
-   * @returns {Array} Unique shapes of unsunk ships
+   * @returns {Array} Unique ship shapes from unsunk fleet
    */
   shapesUnsunk () {
     return [...new Set(this.shipsUnsunk().map(s => s.shape()))]
   }
 
   /**
-   * Gets unsunk ship shapes that can be placed on subterrain in zone.
+   * Gets unsunk ship shapes that can be placed on specified terrain/zone.
+   * Filters shapes based on terrain compatibility constraints.
    *
-   * @param {Object} subterrain - The subterrain type
-   * @param {Object} zone - The zone constraints
-   * @returns {Array} Shapes that satisfy constraints
+   * @param {Object} subterrain - Terrain type for placement compatibility check
+   * @param {Object} zone - Zone constraints for placement
+   * @returns {Array} Shapes that satisfy terrain and zone constraints
    */
   shapesCanBeOn (subterrain, zone) {
     return this.shapesUnsunk().filter(s => s.canBeOn(subterrain, zone))
@@ -1753,8 +1812,9 @@ export class Waters {
 
   /**
    * Gets armed ship cells (cells with ammo > 0).
+   * Filters all board cells to find those with loaded weapons.
    *
-   * @returns {HTMLElement[]} Array of armed cell elements
+   * @returns {HTMLElement[]} Array of armed cell DOM elements
    */
   armedCells () {
     return this.cellList().filter(c => Number.parseInt(c.dataset.ammo) > 0)
@@ -1762,9 +1822,10 @@ export class Waters {
 
   /**
    * Gets armed ship cells for a specific weapon letter.
+   * Filters armed cells to those with specified weapon letter.
    *
-   * @param {string} letter - Weapon letter identifier
-   * @returns {HTMLElement[]} Array of armed cells with weapon letter
+   * @param {string} letter - Weapon letter identifier (e.g., 'M', 'R', 'T')
+   * @returns {HTMLElement[]} Array of armed cells with matching weapon letter
    */
   armedCellsWithWeapon (letter) {
     return this.cellList().filter(
@@ -1774,18 +1835,20 @@ export class Waters {
 
   /**
    * Gets all cells on the game board.
+   * Converts HTMLCollection to array for easier iteration and filtering.
    *
-   * @returns {HTMLElement[]} Array of board cell elements
+   * @returns {HTMLElement[]} Array of all board cell DOM elements
    */
   cellList () {
-    // @ts-ignore - cellsOnBoard returns Elements, cast to HTMLElement[]
+    // @ts-ignore - cellsOnBoard returns HTMLCollection, cast to HTMLElement[]
     return [...this.cellsOnBoard()]
   }
 
   /**
    * Gets direct children elements of board (cell references).
+   * Returns the HTMLCollection of board's immediate children.
    *
-   * @returns {HTMLCollection} Collection of board cell children
+   * @returns {HTMLCollection} Live collection of board cell children
    */
   cellsOnBoard () {
     return this.UI.board.children
@@ -1793,15 +1856,18 @@ export class Waters {
 
   /**
    * Gets all cells on board belonging to a specific ship.
+   * Filters cells by matching ship ID in dataset.
    *
-   * @param {number} id - Ship ID
-   * @returns {HTMLElement[]} Array of ship's cells
+   * @param {number} id - Ship ID to match
+   * @returns {HTMLElement[]} Array of cells belonging to the ship
    */
   shipCells (id) {
-    let list = []
+    /** @type {HTMLElement[]} */
+    const list = []
     for (const cell of this.cellsOnBoard()) {
-      // @ts-ignore - dataset property available on Element
+      // @ts-ignore - dataset property available on Element, cast to HTMLElement
       if (Number.parseInt(cell.dataset.id) === id) {
+        // @ts-ignore - Element from HTMLCollection, cast to HTMLElement
         list.push(cell)
       }
     }
@@ -1930,10 +1996,11 @@ export class Waters {
 
   _applyHitEntries (hitEntries, totalHits) {
     for (const { cell, damaged } of hitEntries) {
-      this.score.shotRevealFinalizeXY(...cell)
-      this.score.shot.set(...cell)
+      const [r, c] = /** @type {[number, number]} */ (cell)
+      this.score.shotRevealFinalizeXY(r, c)
+      this.score.shot.set(r, c)
       totalHits++
-      this.markHit(cell[0], cell[1], damaged)
+      this.markHit(r, c, damaged)
     }
     return totalHits
   }
@@ -1976,6 +2043,17 @@ export class Waters {
     }
   }
 
+  /**
+   * Fires a single shot at a coordinate with specified power level.
+   * Checks if target cell contains a ship, applies weapon protection rules,
+   * and marks hits/misses on the board.
+   *
+   * @param {Object} weapon - The weapon firing (with letter property for protection matching)
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @param {number} power - Weapon power level (determines penetration)
+   * @returns {Object} Result object with hits, shots, and sunk ship info
+   */
   fireShot (weapon, r, c, power) {
     const shipCell = this.shipCellAt(r, c)
     if (!shipCell) {
@@ -2315,12 +2393,13 @@ export class Waters {
   }
 
   /**
-   * Applies weapon effect to area of effect and updates display.
-   * Flashes long animation if hits registered. Accumulates double tap count.
+   * Applies weapon effect to area of effect with hit accumulation.
+   * Normalizes effect payload, flashes animation on hits, accumulates double-tap count.
    *
    * @param {Object} weapon - The weapon being used
-   * @param {Array<Array<number>>} effect - [row, col, power] cells affected
-   * @returns {Object} Accumulated result with hits, dtap counts
+   * @param {Array<Array<number>>} effect - Array of [row, col, power] cells affected
+   * @param {Object} [options] - Additional firing context and options
+   * @returns {Object} Accumulated result with hits, dtaps, reveals, and sunk ships
    * @private
    */
   destroy (weapon, effect, options) {
@@ -2329,10 +2408,12 @@ export class Waters {
 
   /**
    * Applies the weapon effect to the area of effect.
-   * @param {*} weapon - The weapon.
-   * @param {Array} effect - The effect coordinates.
-   * @param {Object} options - Additional options.
-   * @returns {*} The results.
+   * Processes each affected cell and accumulates results.
+   *
+   * @param {Object} weapon - The weapon firing
+   * @param {Array<Array<number>>} effect - Array of [row, col, power] coordinates
+   * @param {Object} [options] - Additional options for firing
+   * @returns {Object} Accumulated results object
    */
   applyWeaponEffect (weapon, effect, options) {
     const results = this.applyToAoE(effect, weapon, options)

@@ -521,7 +521,7 @@ export class ShipCellGrid extends GridBase {
    * @param {function(): void} [onPlacementReset] - Callback when placement fails (grid reset)
    * @returns {boolean} True if all ships placed; false if placement failed
    */
-  attemptToPlaceShips (ships, onShipPlaced = NOOP, onPlacementReset = NOOP) {
+  attemptToPlaceShips (ships, onShipPlaced = NOOP) {
     this.reset()
     const shuffledShips = Random.shuffleArray([...ships])
 
@@ -531,7 +531,6 @@ export class ShipCellGrid extends GridBase {
     for (const ship of shuffledShips) {
       const placedCells = this._randomPlaceShip(ship)
       if (!placedCells) {
-        onPlacementReset?.()
         const numVar = ship.shape()?.placeables().length || 0
         console.warn(
           `Placed (${placedCount}/${numShips}) Failed to place ship ${ship.letter} after trying all locations and ${numVar} orientations. Resetting grid.`
