@@ -1,6 +1,7 @@
 import { ActionsHex } from './actionHex.js'
 import { MaskBase } from '../MaskBase.js'
 import { HexagonShape } from './HexagonShape.js'
+import { ForLocation } from '../ForLocation.js'
 
 /**
  * MaskHex - Hexagonal grid mask implementation
@@ -19,7 +20,7 @@ export class MaskHex extends MaskBase {
    * @param {Object} [store] - Bit storage implementation (optional)
    */
   constructor (radius, bits, store) {
-    super(HexagonShape(radius), 1, bits, store)
+    super(HexagonShape(radius), bits, store)
     this.radius = radius
   }
 
@@ -96,6 +97,23 @@ export class MaskHex extends MaskBase {
    */
   bitPos (q, r, s) {
     return this.index(q, r, s)
+  }
+
+  /**
+   * Create a ForLocation helper for the specified cube coordinates
+   * Encapsulates bit position and provides location-specific operations
+   * @param {number} q - The q coordinate
+   * @param {number} r - The r coordinate
+   * @param {number} s - The s coordinate
+   * @returns {ForLocation} Location helper object
+   * @private
+   */
+  for (q, r, s) {
+    if (s === undefined) {
+      s = -(q + r)
+    }
+    const pos = this.bitPos(q, r, s)
+    return new ForLocation(pos, this.bits, this.store)
   }
 
   // ============================================================================

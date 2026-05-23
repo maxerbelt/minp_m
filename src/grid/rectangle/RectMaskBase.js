@@ -39,7 +39,7 @@ export class RectMaskBase extends MaskBase {
    * @param {number} [depth=1] - Color depth (number of possible values per cell)
    */
   constructor (width, height, bits, store, depth) {
-    super(RectangleShape(width, height), depth, bits, store)
+    super(RectangleShape(width, height), bits, store, depth)
   }
 
   /**

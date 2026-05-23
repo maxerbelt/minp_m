@@ -14,6 +14,8 @@ export const RectangleShape = (width, height) => ({
   width,
   /** @type {number} Rectangle height */
   height,
+  /** @type {number} Total size (width × height) */
+  size: width * height,
   /** @type {RectIndex} Lazy-loaded rectangle indexer instance */
   get indexer () {
     return new RectIndex(this.width, this.height)

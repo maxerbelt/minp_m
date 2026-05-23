@@ -1,8 +1,6 @@
 /**
  * @jest-environment jsdom
- */
-
-/**
+ *
  * Waters class unit tests
  *
  * Test suite for core game mechanics including:
@@ -16,78 +14,7 @@ import { Waters } from './Waters.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 import { bh } from '../terrains/all/js/bh.js'
 
-/**
- * @typedef {Object} MockTrayManager
- * @property {jest.Mock<any>} resetTrays - Reset ship trays
- * @property {jest.Mock<any>} showShipTrays - Show ship trays
- * @property {jest.Mock<any>} hideShipTrays - Hide ship trays
- * @property {jest.Mock<any>} getTrayItem - Get tray item by key
- */
-
-/**
- * @typedef {Object} MockClassList
- * @property {jest.Mock<any>} add - Add CSS class
- * @property {jest.Mock<any>} remove - Remove CSS class
- */
-
-/**
- * @typedef {Object} MockButton
- * @property {MockClassList} classList - CSS class list
- */
-
-/**
- * @typedef {Object} MockScore
- * @property {jest.Mock<any>} display - Display score
- * @property {jest.Mock<any>} buildTally - Build score tally
- * @property {MockButton} shotsLabel - Shots label element
- * @property {MockButton} hitsLabel - Hits label element
- * @property {MockButton} sunkLabel - Sunk ships label element
- * @property {MockButton} revealsLabel - Reveals label element
- * @property {MockButton} hintsLabel - Hints label element
- * @property {MockButton} placedLabel - Placed ships label element
- */
-
-/**
- * Mock UI object for testing game interactions.
- * Provides Jest mock functions for all UI operations needed by Waters class.
- *
- * @typedef {Object} MockUI
- * @property {jest.Mock<any>} placement - Placement callback
- * @property {jest.Mock<any>} placeTally - Tally update callback
- * @property {jest.Mock<any>} displayShipInfo - Display ship information
- * @property {jest.Mock<any>} clearPlaceVisuals - Clear placement visuals
- * @property {jest.Mock<any>} clearVisuals - Clear general visuals
- * @property {Object} board - Board DOM element with classList
- * @property {jest.Mock<any>} displayFleetSunk - Display sunk fleet
- * @property {jest.Mock<any>} displaySurround - Display surrounding cells
- * @property {jest.Mock<any>} cellHit - Cell hit callback
- * @property {jest.Mock<any>} cellMiss - Cell miss callback
- * @property {jest.Mock<any>} cellSunkAt - Cell sunk callback
- * @property {jest.Mock<any>} gridCellAt - Get grid cell at coordinates
- * @property {MockTrayManager} trayManager - Ship tray manager
- * @property {jest.Mock<any>} removeDragShip - Remove dragged ship
- * @property {jest.Mock<any>} cellSize - Get cell size in pixels
- * @property {jest.Mock<any>} surroundCells - Get surrounding cells
- * @property {jest.Mock<any>} surroundCellElement - Get surround cell element
- * @property {jest.Mock<any>} makeDroppable - Make element droppable
- * @property {jest.Mock<any>} reset - Reset UI
- * @property {jest.Mock<any>} buildBoard - Build game board
- * @property {jest.Mock<any>} buildTrays - Build ship trays
- * @property {jest.Mock<any>} showStatus - Show status message
- * @property {jest.Mock<any>} showTips - Show help tips
- * @property {jest.Mock<any>} hideTips - Hide help tips
- * @property {jest.Mock<any>} displayInfo - Display information
- * @property {jest.Mock<any>} showTransformBtns - Show transform buttons
- * @property {jest.Mock<any>} hideTransformBtns - Hide transform buttons
- * @property {jest.Mock<any>} showTestBtns - Show test buttons
- * @property {jest.Mock<any>} hideTestBtns - Hide test buttons
- * @property {jest.Mock<any>} standardPanels - Standard UI panels
- * @property {MockButton} newPlacementBtn - New placement button
- * @property {MockButton} testBtn - Test button
- * @property {MockButton} seekBtn - Seek button
- * @property {MockButton} stopBtn - Stop button
- * @property {MockScore} score - Score display system
- */
+/**\n * Mock UI object for testing game interactions.\n * Provides Jest mock functions for all UI operations needed by Waters class.\n *\n * @typedef {Object} MockUI\n * @property {jest.Mock} placement - Mock placement callback\n * @property {jest.Mock} placeTally - Mock tally update\n * @property {jest.Mock} displayShipInfo - Mock ship info display\n * @property {jest.Mock} clearPlaceVisuals - Mock visual clear for placement\n * @property {jest.Mock} clearVisuals - Mock general visual clear\n * @property {Object} board - Mock board DOM element with classList and children\n * @property {jest.Mock} displayFleetSunk - Mock sunk fleet display\n * @property {jest.Mock} displaySurround - Mock surround display\n * @property {jest.Mock} cellHit - Mock cell hit callback\n * @property {jest.Mock} cellMiss - Mock cell miss callback\n * @property {jest.Mock} cellSunkAt - Mock cell sunk at callback\n * @property {jest.Mock} gridCellAt - Mock cell lookup by coordinates\n * @property {Object} trayManager - Mock ship tray manager\n * @property {jest.Mock} removeDragShip - Mock drag removal\n * @property {jest.Mock} cellSize - Mock cell size getter\n * @property {jest.Mock} surroundCells - Mock surround cells\n * @property {jest.Mock} surroundCellElement - Mock surround cell element\n * @property {jest.Mock} makeDroppable - Mock draggable setup\n * @property {jest.Mock} reset - Mock reset callback\n * @property {jest.Mock} buildBoard - Mock board construction\n * @property {jest.Mock} buildTrays - Mock tray construction\n * @property {jest.Mock} showStatus - Mock status display\n * @property {jest.Mock} showTips - Mock tips display\n * @property {jest.Mock} hideTips - Mock tips hiding\n * @property {jest.Mock} displayInfo - Mock info display\n * @property {jest.Mock} showTransformBtns - Mock transform buttons show\n * @property {jest.Mock} hideTransformBtns - Mock transform buttons hide\n * @property {jest.Mock} showTestBtns - Mock test buttons show\n * @property {jest.Mock} hideTestBtns - Mock test buttons hide\n * @property {jest.Mock} standardPanels - Mock standard panels\n * @property {Object} newPlacementBtn - Mock new placement button\n * @property {Object} testBtn - Mock test button\n * @property {Object} seekBtn - Mock seek button\n * @property {Object} stopBtn - Mock stop button\n * @property {Object} score - Mock score display system\n */
 const mockUI = {
   placement: jest.fn(),
   placeTally: jest.fn(),
@@ -273,14 +200,7 @@ describe('Waters', () => {
       })
     })
 
-    /**
-     * Test that attemptToPlaceShips returns true when all ships successfully placed.
-     * Verifies automatic ship placement succeeds when ships can be positioned.
-     *
-     * @returns {void}
-     */
     it.skip('attemptToPlaceShips returns true if all ships placed', () => {
-      // @ts-ignore - Mock Ship objects for testing
       const ships = [
         {
           cells: [1, 2],
@@ -323,19 +243,11 @@ describe('Waters', () => {
           placeVariant: jest.fn()
         }
       ]
-      // @ts-ignore - Mock Ship objects don't match full Ship interface
       const result = waters.attemptToPlaceShips(ships, jest.fn())
       expect(result).toBe(true)
     })
 
-    /**
-     * Test that attemptToPlaceShips returns false when a ship cannot be placed.
-     * Verifies automatic ship placement fails when ships lack valid placements.
-     *
-     * @returns {void}
-     */
     it.skip('attemptToPlaceShips returns false if any ship not placed', () => {
-      // @ts-ignore - Mock Ship objects for testing
       const ships = [
         {
           cells: null,
@@ -345,6 +257,7 @@ describe('Waters', () => {
               { height: () => 1, width: () => 1, canPlace: () => true }
             ],
             displacement: 3,
+
             minSize: 1
           }),
           minSize: 1,
@@ -359,6 +272,7 @@ describe('Waters', () => {
               { height: () => 1, width: () => 1, canPlace: () => true }
             ],
             displacement: 3,
+
             minSize: 1
           }),
           minSize: 1,
@@ -368,7 +282,6 @@ describe('Waters', () => {
       ]
       let result
       try {
-        // @ts-ignore - Mock Ship objects don't match full Ship interface
         result = waters.attemptToPlaceShips(ships, jest.fn(), jest.fn())
       } catch (e) {
         expect(e.message).toMatch('No shape for letter A')
@@ -513,28 +426,18 @@ describe('Waters', () => {
     })
   })
 
-  /**
-   * loadForEdit method test suite.
-   * Tests ship loading and placement for map editing.
-   */
   describe('loadForEdit', () => {
-    /**
-     * Test that loadForEdit initializes ships when array is empty.
-     * Verifies automatic ship creation when no ships exist.
-     *
-     * @returns {void}
-     */
     it('loadForEdit initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
       // Mock setMap to avoid real initialization
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       emptyWaters.setMap = jest.fn()
 
       // Mock autoPlace to avoid real placement logic
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Call loadForEdit with a map that has no example ships
@@ -545,18 +448,12 @@ describe('Waters', () => {
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
     })
 
-    /**
-     * Test that loadForEdit preserves existing ships.
-     * Verifies ships are not reinitialized when already populated.
-     *
-     * @returns {void}
-     */
     it('loadForEdit does not reinitialize ships if ships array already has ships', () => {
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.autoPlace = jest.fn()
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -574,16 +471,10 @@ describe('Waters', () => {
       expect(waters.autoPlace).not.toHaveBeenCalled()
     })
 
-    /**
-     * Test that loadForEdit calls placeMatchingShips with example data.
-     * Verifies matching ships are placed when example configuration exists.
-     *
-     * @returns {void}
-     */
     it('loadForEdit calls placeMatchingShips when map.example exists', () => {
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -604,16 +495,10 @@ describe('Waters', () => {
       )
     })
 
-    /**
-     * Test that loadForEdit calls autoPlace when no example exists.
-     * Verifies automatic placement is triggered for null example data.
-     *
-     * @returns {void}
-     */
     it('loadForEdit calls autoPlace when map.example is null', () => {
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.autoPlace = jest.fn()
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       const mockMap = { example: null }
@@ -624,22 +509,16 @@ describe('Waters', () => {
       expect(waters.autoPlace).toHaveBeenCalled()
     })
 
-    /**
-     * Test that loadForEdit logs unmatched ships.
-     * Verifies console log is called with count of unmatched ships.
-     *
-     * @returns {void}
-     */
     it('loadForEdit logs when ships are not matched', () => {
-      // @ts-ignore - Mock console for testing
+      // @ts-ignore jest mock type issue
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
 
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       // Mock placeMatchingShips to return unmatched ships
       const unmatchedShips = [{ cells: [5, 6], letter: 'C' }]
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => unmatchedShips)
 
       const mockMap = {
@@ -657,28 +536,14 @@ describe('Waters', () => {
     })
   })
 
-  /**
-   * load method test suite.
-   * Tests ship loading from localStorage and placement.
-   */
-  /**
-   * load method test suite.
-   * Tests ship loading from localStorage and placement.
-   */
   describe('load', () => {
-    /**
-     * Test that load initializes ships when array is empty.
-     * Verifies automatic ship creation when no ships exist and no saved data.
-     *
-     * @returns {void}
-     */
     it('load initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
       // Mock autoPlace to avoid real placement logic
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -700,17 +565,11 @@ describe('Waters', () => {
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
     })
 
-    /**
-     * Test that load gracefully handles null placedShips.
-     * Verifies null data doesn't cause errors and triggers autoPlace.
-     *
-     * @returns {void}
-     */
     it('load handles null placedShips gracefully', () => {
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -732,16 +591,10 @@ describe('Waters', () => {
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
     })
 
-    /**
-     * Test that load places matching ships from saved data.
-     * Verifies placeMatchingShips is called when saved data matches current map.
-     *
-     * @returns {void}
-     */
     it('load calls placeMatchingShips when map.example has placed ships', () => {
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-ignore - Mock private method for testing
+      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       // Mock localStorage with placed ships data matching current map
@@ -771,12 +624,6 @@ describe('Waters', () => {
       expect(waters.placeMatchingShips).toHaveBeenCalled()
     })
 
-    /**
-     * Test that load calls autoPlace when saved map doesn't match.
-     * Verifies automatic placement when saved data is for different map.
-     *
-     * @returns {void}
-     */
     it('load calls autoPlace when placedShips map does not match current map', () => {
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []

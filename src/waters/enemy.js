@@ -89,18 +89,18 @@ const MESSAGES = {
  * @property {HTMLButtonElement} [weaponBtn] - Weapon selection button
  * @property {HTMLButtonElement} [revealBtn] - Reveal ships button
  * @property {Array<HTMLButtonElement>} [weaponBtns] - Array of weapon buttons
- * @property {(row: number, col: number) => void} [cellWeaponActive] - Activate weapon cell display
- * @property {(row: number, col: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
+ * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
+ * @property {(row: number, column: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
  * @property {(row: number, col: number) => void} [cellHintDeactivate] - Deactivate hint display
  * @property {() => void} [clearClasses] - Clear all CSS classes from board
- * @property {(ships: Array<Ship>) => void} [revealAll] - Reveal all ships on board
+ * @property {(ships: Array<Object>) => void} [revealAll] - Reveal all ships on board
  * @property {() => void} [playMode] - Switch to play mode display
  * @property {() => void} [reset] - Reset UI to initial state
  * @property {() => void} [deactivateTempHints] - Clear temporary hint displays
  * @property {(row: number, col: number) => HTMLElement} [gridCellAt] - Get cell element at coordinates
  * @property {() => void} [enableBtns] - Enable all control buttons
  * @property {() => void} [disableBtns] - Disable all control buttons
- * @property {(row: number, col: number) => HTMLElement} [buildBoard] - Build board UI
+ * @property {(onClickCell?: Function, thisRef?: any, map?: any) => void} [buildBoard] - Build board UI with click handlers
  * @property {() => void} [removeHighlightAoE] - Remove area-of-effect highlight
  */
 
@@ -493,10 +493,7 @@ class Enemy extends Waters {
    *
    * @public
    * @param {string|null} oldCursor - The previous cursor class (nullable)
-   * @param {CursorInfo} newCursorInfo - Information about the new cursor
-   * @param {WeaponSystem} [newCursorInfo.wps] - Weapon system info
-   * @param {number} [newCursorInfo.idx] - Cursor mode index
-   * @param {string} [newCursorInfo.cursor] - New cursor class name
+   * @param {CursorInfo} newCursorInfo - Information about the new cursor (wps: WeaponSystem, idx: number, cursor: string)
    * @returns {void}
    */
   cursorChange (oldCursor, newCursorInfo) {

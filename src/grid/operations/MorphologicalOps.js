@@ -136,10 +136,18 @@ export class MorphologicalOps {
    * Single source of truth for radius conversion
    * @private
    * @param {number} radius - Radius value in cells
-   * @returns {bigint} Normalized radius in store type
+   * @returns {bigint|number} Normalized radius in store type
    */
   _normalizeRadius (radius) {
-    return this.store.storeType(radius)
+    // Check if store has storeType method, otherwise use the store's one property to determine type
+    if (typeof this.store.storeType === 'function') {
+      return this.store.storeType(radius)
+    }
+    // Fallback: determine type from store's one property
+    if (typeof this.store.one === 'bigint') {
+      return BigInt(radius)
+    }
+    return radius
   }
 
   /**

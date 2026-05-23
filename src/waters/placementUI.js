@@ -38,9 +38,10 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
  * @property {Array<Object>} candidateShips - Array of candidate ships available for placement
  * @property {Object} shipCellGrid - Grid representation of ship cells for highlighting
  * @property {Object} loadOut - Weapon loadout configuration and state
- * @property {Function} armWeapons - Method to configure and initialize weapons
- * @property {Function} hasPlayableShips - Method checking if playable ships exist
- * @property {Function} hasFewShips - Method checking if ship count is low
+ * @property {(map?: Object) => void} armWeapons - Method to configure and initialize weapons
+ * @property {() => boolean} hasPlayableShips - Method checking if playable ships exist
+ * @property {() => boolean} hasFewShips - Method checking if ship count is low
+ * @property {() => number} calculateDisplacedArea - Method to calculate total displaced area of ships
  */
 
 /**
@@ -85,7 +86,6 @@ export class PlacementUI extends WatersUI {
    * Dataset attribute names for storing component metadata.
    * Standardizes dataset key naming across all element operations.
    * @type {Object<string, string>}
-   * @private
    */
   static #DATA_ATTRIBUTES = {
     ID: 'id',
@@ -100,7 +100,6 @@ export class PlacementUI extends WatersUI {
    * Unit type mappings for ship categorization.
    * Consolidates type conversion logic in one place.
    * @type {Object<string, string>}
-   * @private
    */
   static #UNIT_TYPE_MAP = {
     M: 'X',
@@ -111,7 +110,6 @@ export class PlacementUI extends WatersUI {
    * HTML element ID mappings for different unit type note sections.
    * Replaces switch statement with direct lookup.
    * @type {Object<string, string>}
-   * @private
    */
   static #NOTES_ID_MAP = {
     A: 'planeNotes',
@@ -127,7 +125,6 @@ export class PlacementUI extends WatersUI {
    * Splash description text for different splash types.
    * Centralizes user-facing descriptions.
    * @type {Object<string, string>}
-   * @private
    */
   static #SPLASH_DESCRIPTIONS = {
     splash: 'splash damage on striking unit',
@@ -137,14 +134,12 @@ export class PlacementUI extends WatersUI {
   /**
    * CSS highlight class names for cell validity states.
    * @type {string[]}
-   * @private
    */
   static #HIGHLIGHT_CLASSES = ['good', 'notgood', 'bad', 'worse']
 
   /**
    * Brush size range for terrain brush generation.
    * @type {number[]}
-   * @private
    */
   static #BRUSH_SIZES = [1, 2, 3]
 
@@ -179,6 +174,27 @@ export class PlacementUI extends WatersUI {
     this.removeText = ' removed'
     this.brushlistenCancellables = []
     this.placelistenCancellables = []
+
+    // Optional properties set by subclasses
+    /** @type {HTMLButtonElement|undefined} */
+    this.publishBtn = undefined
+    /** @type {HTMLButtonElement|undefined} */
+    this.saveBtn = undefined
+    /** @type {Array<Object>|undefined} */
+    this.ships = undefined
+    /** @type {Function|undefined} */
+    this.gotoNextStageAfterPlacement = undefined
+  }
+
+  /**
+   * Updates the state of change/clear button controls.
+   * Base implementation is a no-op; subclasses (e.g., CustomUI) override as needed.
+   * Called during drag-highlight operations to update UI state.
+   *
+   * @returns {void}
+   */
+  updateChangeClearButton () {
+    // Base implementation - override in subclasses if needed
   }
 
   /**
@@ -189,8 +205,7 @@ export class PlacementUI extends WatersUI {
    * Side effects:
    * - Assigns button properties (newPlacementBtn, rotateBtn, etc.) from this.elements.buttons
    *
-   * @returns {void}
-   */
+   * @returns {void}\n   */
   #initializeButtonReferences () {
     this.newPlacementBtn = /** @type {HTMLButtonElement} */ (
       this.elements.buttons.newPlacement
@@ -589,7 +604,7 @@ export class PlacementUI extends WatersUI {
    * Used internally for arrow key navigation within trays.
    *
    * @param {string} arrowKey - Arrow key code for direction (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
-   * @param {Array<HTMLElement>} trays - Array of tray container elements
+   * @param {Array<HTMLDivElement>} trays - Array of tray container elements
    * @param {number} itemIndex - Current item index within current tray
    * @param {number} trayIndex - Current tray index within trays array
    * @returns {Element|null} Next item element or null if at boundary
@@ -621,7 +636,7 @@ export class PlacementUI extends WatersUI {
 
     if (shipId === null || shipnode === null) return null
 
-    const adaptInfo = (child, trayIndex, itemIndex, trays) => {
+    const adaptInfo = (_child, trayIndex, itemIndex, trays) => {
       return this.moveNextTrayItem(arrowKey, trays, itemIndex, trayIndex)
     }
 
@@ -1181,7 +1196,7 @@ export class PlacementUI extends WatersUI {
       className: PlacementUI.#CSS_CLASSES.DRAG_SHIP_CONTAINER,
       dataset: { [PlacementUI.#DATA_ATTRIBUTES.ID]: ship.id }
     })
-    tray.dataset[PlacementUI.#DATA_ATTRIBUTES.CELL_HEIGHT] = cellHeight
+    tray.dataset[PlacementUI.#DATA_ATTRIBUTES.CELL_HEIGHT] = String(cellHeight)
     this.buildDragShip(ships, ship, container, cellHeight)
     UIElementBuilder.appendTrayItem(tray, container, null, null)
   }
@@ -1238,7 +1253,7 @@ export class PlacementUI extends WatersUI {
     const brush = UIElementBuilder.createDragElement(
       PlacementUI.#CSS_CLASSES.DRAG_BRUSH
     )
-    brush.dataset[PlacementUI.#DATA_ATTRIBUTES.SIZE] = size
+    brush.dataset[PlacementUI.#DATA_ATTRIBUTES.SIZE] = String(size)
     brush.dataset[PlacementUI.#DATA_ATTRIBUTES.ID] =
       subterrain + size.toString()
     this.setBrushContents(brush, size, subterrain)
@@ -1378,7 +1393,7 @@ export class PlacementUI extends WatersUI {
    * Used to update unit-specific information displays.
    *
    * @param {string} type - Unit type letter (S, A, X, etc.)
-   * @returns {HTMLElement|null} Notes element for type or null if not found
+   * @returns {HTMLDivElement} Notes element for type
    * @throws {Error} If type is unknown
    */
   getNotesOfType (type) {
@@ -1386,7 +1401,7 @@ export class PlacementUI extends WatersUI {
     if (!noteId) {
       throw new Error('Unknown type for ' + type)
     }
-    return document.getElementById(noteId)
+    return /** @type {HTMLDivElement} */ (document.getElementById(noteId))
   }
 
   /**
@@ -1498,7 +1513,7 @@ export class PlacementUI extends WatersUI {
    * Displays placement event: shows notice, marks placed cells, updates score.
    * Orchestrates UI updates when ship is placed during placement phase.
    *
-   * @param {Array<Array<number>>} placed - Array of [row, col] placed cells
+   * @param {Array<[number, number]>} placed - Array of [row, col] placed cells
    * @param {GameModel} model - Game model with ship list
    * @param {Object} ship - Ship that was placed with letter, cells, and description
    * @returns {void}
@@ -1532,7 +1547,7 @@ export class PlacementUI extends WatersUI {
    * - Clones ship and updates candidateShips
    * - Re-arms weapons for new ship configuration
    *
-   * @param {Array<Array<number>>} placed - Array of [row, col] placed cells
+   * @param {Array<[number, number]>} placed - Array of [row, col] placed cells
    * @param {GameModel} model - Game model to update
    * @param {Object} ship - Ship to add to model with id and clone method
    * @returns {string|number|undefined} ID of newly added ship
@@ -1613,17 +1628,18 @@ export class PlacementUI extends WatersUI {
    * @returns {number} Total ship count available for placement
    */
   noOfShips () {
-    return this.ships.length
+    return (this.ships ?? []).length
   }
 
   /**
    * Counts number of placed ships from array.
    * Filters ships with placed flag set to true.
    *
-   * @param {Array<Object>} [ships=this.ships] - Ships to count with placed property, defaults to this.ships
+   * @param {Array<Object>} [ships] - Ships to count with placed property, defaults to this.ships
    * @returns {number} Number of placed ships
    */
-  noOfPlacedShips (ships = this.ships) {
+  noOfPlacedShips (ships) {
+    ships = ships ?? this.ships
     return ships.filter(s => s.placed).length
   }
 
@@ -1636,10 +1652,11 @@ export class PlacementUI extends WatersUI {
    * - Updates this.score.placed text content with placement count
    * - Calls gotoNextStageAfterPlacement() if all ships placed and placing mode active
    *
-   * @param {Array<Object>} [ships=this.ships] - Ships to display count for, defaults to this.ships
+   * @param {Array<Object>} [ships] - Ships to display count for, defaults to this.ships
    * @returns {void}
    */
-  displayShipInfo (ships = this.ships) {
+  displayShipInfo (ships) {
+    ships = ships ?? this.ships
     if (!ships) return
     const total = ships.length
     const placed = this.noOfPlacedShips(ships)

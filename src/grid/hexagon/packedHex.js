@@ -30,7 +30,7 @@ export class PackedHex extends MaskBase {
       store || new Store32(depth, size, bitlength, shape.width, shape.height)
     bits = bits || store.newWords()
 
-    super(shape, depth, bits, store)
+    super(shape, bits, store, depth)
     this.radius = radius
   }
 

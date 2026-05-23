@@ -8,27 +8,27 @@ import { CustomMap } from '../terrains/all/js/map.js'
 /**
  * @typedef {Object} ViewModel
  * View model interface for UI interactions
- * @property {Function} removeHighlight - Removes highlight from cells
+ * @property {() => void} removeHighlight - Removes highlight from cells
  * @property {boolean} placingShips - Whether in ship placement mode
- * @property {Function} gridCellAt - Gets cell element at coordinates
- * @property {Function} disableRotateFlip - Disables rotation/flip controls
- * @property {Function} removeClicked - Removes clicked state
- * @property {Function} assignByCursor - Assigns cursor to direction
- * @property {Function} getFirstTrayItem - Gets first tray item
- * @property {Function} trayManager - Tray manager object
- * @property {Function} setDragShipContents - Sets drag ship contents
- * @property {Function} addition - Handles ship addition
- * @property {Function} placement - Handles ship placement
- * @property {Function} removeDragShip - Removes drag ship
- * @property {Function} displayShipTrackingInfo - Displays ship info
- * @property {Function} checkTrays - Checks tray states
- * @property {Function} recolor - Recolors cell
- * @property {Function} score - Score object
- * @property {Function} updateChangeClearButton - Updates button
- * @property {Function} refreshAllColor - Refreshes colors
- * @property {Function} assignClicked - Assigns clicked ship
- * @property {Function} assignClickedWeapon - Assigns clicked weapon
- * @property {Function} showNotice - Shows notice
+ * @property {(r: number, c: number) => HTMLElement} gridCellAt - Gets cell element at coordinates
+ * @property {() => void} disableRotateFlip - Disables rotation/flip controls
+ * @property {() => void} removeClicked - Removes clicked state
+ * @property {(arrowKey: string, ships: Array) => void} assignByCursor - Assigns cursor to direction
+ * @property {() => Element|null} getFirstTrayItem - Gets first tray item
+ * @property {Object} trayManager - Tray manager object
+ * @property {(dragShip: HTMLElement, board: Object, letter: string) => void} setDragShipContents - Sets drag ship contents
+ * @property {(placed: Array<[number, number]>, model: Object, ship: Object) => void} addition - Handles ship addition
+ * @property {(placed: Array<[number, number]>, model: Object, ship: Object) => void} placement - Handles ship placement
+ * @property {(dragShip: HTMLElement) => void} removeDragShip - Removes drag ship
+ * @property {(model: Object) => void} displayShipTrackingInfo - Displays ship info
+ * @property {() => void} checkTrays - Checks tray states
+ * @property {(r: number, c: number, color: string, letter?: string) => void} recolor - Recolors cell
+ * @property {Object} score - Score object
+ * @property {() => void} updateChangeClearButton - Updates button
+ * @property {() => void} refreshAllColor - Refreshes colors
+ * @property {(ship: Object, clicked: HTMLElement) => void} assignClicked - Assigns clicked ship
+ * @property {(weapon: Object, clicked: HTMLElement) => void} assignClickedWeapon - Assigns clicked weapon
+ * @property {(text: string) => void} showNotice - Shows notice
  * @property {HTMLElement} board - Board element
  * @property {HTMLElement} trays - Trays element
  * @property {Array} placelistenCancellables - Placement listeners
@@ -39,15 +39,15 @@ import { CustomMap } from '../terrains/all/js/map.js'
  * @typedef {Object} Model
  * Model interface for game state
  * @property {Object} shipCellGrid - Ship cell grid
- * @property {Array} ships - Array of ships
- * @property {Function} armWeapons - Arms weapons
+ * @property {Array<Object>} ships - Array of ships
+ * @property {(map?: Object) => void} armWeapons - Arms weapons
  */
 
 /**
  * @typedef {Object} Ship
  * Ship object interface
  * @property {number} id - Ship ID
- * @property {Function} shape - Gets ship shape
+ * @property {() => Object} shape - Gets ship shape
  */
 
 /**
