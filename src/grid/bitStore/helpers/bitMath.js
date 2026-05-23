@@ -5,16 +5,40 @@
  * @class BitMath
  */
 export class BitMath {
+  /**
+   * Array of supported bits per cell values
+   * @static
+   * @type {number[]}
+   */
   static SUPPORTED_BITS_PER_CELL = [1, 2, 4, 8]
+
+  /**
+   * Gets supported color depths (2^bits per cell)
+   * @static
+   * @returns {number[]} Array of supported depths [2, 4, 16, 256]
+   */
   static get SUPPORTED_DEPTHS () {
     return this.SUPPORTED_BITS_PER_CELL.map(bits => 1 << bits)
   }
+
+  /**
+   * Gets supported depths in reverse order
+   * @static
+   * @returns {number[]} Reversed array of supported depths [256, 16, 4, 2]
+   */
   static get SUPPORTED_DEPTHS_REV () {
     return this.SUPPORTED_DEPTHS.reverse()
   }
+
+  /**
+   * Gets supported bits per cell in reverse order
+   * @static
+   * @returns {number[]} Reversed array [8, 4, 2, 1]
+   */
   static get SUPPORTED_BITS_PER_CELL_REV () {
     return this.SUPPORTED_BITS_PER_CELL.slice().reverse()
   }
+
   /**
    * Checks if a number is a power of 2.
    * Uses bit manipulation: (n & (n-1)) === 0 for n > 0.
@@ -75,7 +99,7 @@ export class BitMath {
    *
    * @static
    * @param {number} [depth=2] - Number of distinct colors to represent
-   * @param {number} [bitLength=null] - Override automatic calculation with explicit bit count
+   * @param {number|null} [bitLength=null] - Override automatic calculation with explicit bit count
    * @returns {number} Power-of-2 bit allocation per cell
    *
    * @example
@@ -84,16 +108,26 @@ export class BitMath {
    * BitMath.bitsPerCell(3, 2) // 2 (explicit override: use 2 bits)
    */
   static bitsPerCell (depth = 2, bitLength = null) {
-    const effectiveBitLength =
-      bitLength !== null ? bitLength : BitMath.bitLength32(depth)
+    const effectiveBitLength = bitLength ?? BitMath.bitLength32(depth)
     return BitMath.nextPow2(effectiveBitLength)
   }
 
   /**
    * Convert number of colors to bits per cell
+   *
+   * Maps a color count to the minimum supported bits per cell that can
+   * represent that many colors. Searches supported values in reverse
+   * order for efficiency.
+   *
+   * @static
    * @param {number} numOfColors - Number of colors (2, 4, 16, or 256)
-   * @returns {number} Bits per cell
- 
+   * @returns {number} Bits per cell required
+   * @throws {Error} If numOfColors is not supported
+   *
+   * @example
+   * BitMath.numOfColorsToBitsPerCell(2)   // 1
+   * BitMath.numOfColorsToBitsPerCell(8)   // 3
+   * BitMath.numOfColorsToBitsPerCell(256) // 8
    */
   static numOfColorsToBitsPerCell (numOfColors) {
     for (const bits of BitMath.SUPPORTED_BITS_PER_CELL_REV) {
@@ -109,6 +143,23 @@ export class BitMath {
     )
   }
 
+  /**
+   * Convert maximum colors to bits per cell (exact match only)
+   *
+   * Maps a specific maximum color count to bits per cell, requiring
+   * an exact match with a supported depth (2, 4, 16, or 256 colors).
+   * Unlike numOfColorsToBitsPerCell, this does not round up.
+   *
+   * @static
+   * @param {number} maxColors - Exact number of colors (2, 4, 16, or 256)
+   * @returns {number} Bits per cell for the specified color count
+   * @throws {Error} If maxColors is not an exactly supported depth
+   *
+   * @example
+   * BitMath.maxColorsToBitsPerCell(4)   // 2
+   * BitMath.maxColorsToBitsPerCell(16)  // 4
+   * BitMath.maxColorsToBitsPerCell(256) // 8
+   */
   static maxColorsToBitsPerCell (maxColors) {
     for (const bits of BitMath.SUPPORTED_BITS_PER_CELL_REV) {
       const colors = 1 << bits

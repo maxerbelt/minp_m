@@ -298,7 +298,7 @@ export class Packed extends RectMaskBase {
    */
   checkType (bb) {
     if (!(bb instanceof Packed)) {
-      throw new Error('union requires a Packed instance')
+      throw new TypeError('union requires a Packed instance')
     }
   }
 

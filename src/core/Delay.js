@@ -1,59 +1,99 @@
 import { Random } from './Random.js'
 
 /**
+ * Callback function to check if loop should be cancelled
+ *
  * @callback CancellationCheck
- * @returns {boolean} True if loop should cancel
+ * @returns {boolean} True if loop should cancel, false to continue
  */
 
 /**
+ * Callback function invoked when loop is cancelled by CancellationCheck
+ *
  * @callback CancellationCallback
  * @returns {void}
  */
 
 /**
+ * Callback function invoked when loop encounters an error
+ *
  * @callback ErrorCallback
- * @param {Error} error - The caught error
+ * @param {Error} error - The caught error from iterationTask
  * @returns {void}
  */
 
 /**
+ * Callback function invoked when loop completes (cancel, error, or natural end)
+ *
  * @callback CompletionCallback
  * @returns {void}
  */
 
 /**
  * Delay utilities for async timing and cancellable loop management
- * Provides promise-based delays and a configurable async loop pattern
+ *
+ * Provides promise-based delays with static methods (wait, yield, randomWait)
+ * and a configurable async loop pattern via runLoop(). The loop supports
+ * cancellation checking, error handling, and completion callbacks for
+ * managing long-running async operations.
+ *
+ * @class Delay
  */
 export class Delay {
-  // Default range for random wait (milliseconds)
+  /**
+   * Default minimum delay for randomWait in milliseconds
+   * @static
+   * @type {number}
+   */
   static DEFAULT_MIN_DELAY = 380
+
+  /**
+   * Default maximum delay for randomWait in milliseconds
+   * @static
+   * @type {number}
+   */
   static DEFAULT_MAX_DELAY = 730
 
   /**
-   * Creates Delay instance with specified interval
-   * @constructs
-   * @param {number} delayMs - Default delay in milliseconds for runLoop
+   * Creates a Delay instance with specified default interval
+   *
+   * Initializes instance callbacks to undefined. Set callbacks before calling runLoop()
+   * to handle cancellation, errors, and completion events.
+   *
+   * @constructor
+   * @param {number} delayMs - Default delay in milliseconds for runLoop iterations
+   *
+   * @example
+   * const delay = new Delay(1000)
+   * delay.isCancelled = () => shouldStop
+   * delay.onError = (err) => console.error(err)
    */
   constructor (delayMs) {
-    /** @type {number} */
+    /** @type {number} - Default iteration interval in milliseconds */
     this.delayMs = delayMs
-    /** @type {CancellationCheck|undefined} */
+    /** @type {CancellationCheck|undefined} - Callback to check if loop should stop */
     this.isCancelled = undefined
-    /** @type {CancellationCallback|undefined} */
+    /** @type {CancellationCallback|undefined} - Callback when loop is cancelled */
     this.onCancel = undefined
-    /** @type {ErrorCallback|undefined} */
+    /** @type {ErrorCallback|undefined} - Callback when iterationTask throws error */
     this.onError = undefined
-    /** @type {CompletionCallback|undefined} */
+    /** @type {CompletionCallback|undefined} - Callback when loop ends (always called) */
     this.onComplete = undefined
   }
 
   /**
    * Pause execution for specified milliseconds
+   *
+   * Returns a promise that resolves after the given delay. Useful for
+   * introducing timing delays in async code.
+   *
    * @static
    * @async
-   * @param {number} ms - Milliseconds to wait
-   * @returns {Promise<void>}
+   * @param {number} ms - Milliseconds to wait (0 for immediate execution)
+   * @returns {Promise<void>} Resolves when timeout completes
+   *
+   * @example
+   * await Delay.wait(1000)  // Wait 1 second
    */
   static wait (ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
@@ -61,9 +101,16 @@ export class Delay {
 
   /**
    * Yield to allow other microtasks to execute (0ms timeout)
+   *
+   * Allows other pending microtasks and macrotasks to execute before continuing.
+   * Useful for preventing long-running loops from blocking the event loop.
+   *
    * @static
    * @async
-   * @returns {Promise<void>}
+   * @returns {Promise<void>} Resolves on next event loop tick
+   *
+   * @example
+   * await Delay.yield()  // Give other tasks a chance to run
    */
   static async yield () {
     await Delay.wait(0)
@@ -71,11 +118,19 @@ export class Delay {
 
   /**
    * Wait for random duration between minDelay and maxDelay (inclusive)
+   *
+   * Generates a random delay within the specified range. Falls back to default
+   * range if non-finite values are provided. Useful for introducing variation
+   * in polling or retry delays.
+   *
    * @static
    * @async
-   * @param {number} [minDelay=DEFAULT_MIN_DELAY] - Minimum milliseconds
-   * @param {number} [maxDelay=DEFAULT_MAX_DELAY] - Maximum milliseconds
-   * @returns {Promise<void>}
+   * @param {number} [minDelay=DEFAULT_MIN_DELAY] - Minimum milliseconds (defaults to 380)
+   * @param {number} [maxDelay=DEFAULT_MAX_DELAY] - Maximum milliseconds (defaults to 730)
+   * @returns {Promise<void>} Resolves after random delay
+   *
+   * @example
+   * await Delay.randomWait(100, 500)  // Wait 100-500ms
    */
   static async randomWait (
     minDelay = Delay.DEFAULT_MIN_DELAY,
@@ -89,32 +144,36 @@ export class Delay {
   }
 
   /**
-   * Run an async task repeatedly with delay, supporting cancellation and error handling
-   * @async
-   * @param {Function} iterationTask - Async function to execute each iteration
-   * @param {number} [intervalMs=this.delayMs] - Milliseconds between iterations
-   * @returns {Promise<void>}
+   * Execute an async loop until cancelled, error occurs, or completes naturally
    *
-   * @description
-   * Runs iterationTask in a loop with intervalMs delay between each execution.
-   * Set callbacks for control flow:
-   * - isCancelled: Function that returns true to break loop
-   * - onCancel: Called when loop breaks via cancellation
-   * - onError: Called if iterationTask throws (loop terminates)
-   * - onComplete: Always called when loop ends (cancel, error, or normal)
+   * Runs iterationTask repeatedly with intervalMs delay between executions.
+   * Supports optional callbacks for cancellation, error handling, and completion.
+   * Always calls onComplete() when loop ends, regardless of exit reason.
+   *
+   * Loop execution flow:
+   * 1. Check isCancelled() - break and call onCancel() if true
+   * 2. Execute iterationTask()
+   * 3. Wait intervalMs
+   * 4. Repeat from step 1
+   *
+   * If iterationTask throws, onError() is called and loop terminates.
+   * Always calls onComplete() in finally block.
+   *
+   * @async
+   * @param {() => Promise<void>} [iterationTask=async () => {}] - Async function to execute each iteration
+   * @param {number} [intervalMs=this.delayMs] - Milliseconds between iterations
+   * @returns {Promise<void>} Resolves when loop ends
+   * @throws {Error} Does not throw; errors are passed to onError() callback
    *
    * @example
    * const looper = new Delay(1000)
-   * looper.isCancelled = () => someFlag
-   * looper.onError = (err) => console.error(err)
-   * looper.onComplete = () => console.log('Done')
-   * await looper.runLoop(async () => { console.log('tick') })
-   */
-  /**
-   * Execute an async loop until cancelled or error occurs.
-   * @param {() => Promise<void>} [iterationTask] - Async function to execute each iteration.
-   * @param {number} [intervalMs=this.delayMs] - Milliseconds between iterations.
-   * @returns {Promise<void>}
+   * looper.isCancelled = () => shouldStop
+   * looper.onError = (err) => console.error('Loop error:', err)
+   * looper.onComplete = () => console.log('Loop ended')
+   * await looper.runLoop(async () => {
+   *   console.log('tick')
+   *   await someAsyncTask()
+   * })
    */
   async runLoop (iterationTask = async () => {}, intervalMs = this.delayMs) {
     try {
@@ -137,15 +196,17 @@ export class Delay {
 
   /**
    * Check if cancellation was requested
+   *
    * @private
-   * @returns {boolean} True if isCancelled callback exists and returns true
+   * @returns {boolean} True if isCancelled is a function and returns truthy value
    */
   _checkCancellation () {
     return typeof this.isCancelled === 'function' && this.isCancelled()
   }
 
   /**
-   * Notify cancellation handler
+   * Notify cancellation handler if defined
+   *
    * @private
    * @returns {void}
    */
@@ -156,9 +217,10 @@ export class Delay {
   }
 
   /**
-   * Notify error handler
+   * Notify error handler if defined
+   *
    * @private
-   * @param {Error} err - The caught error
+   * @param {Error} err - The caught error from iterationTask
    * @returns {void}
    */
   _notifyError (err) {
@@ -168,7 +230,10 @@ export class Delay {
   }
 
   /**
-   * Notify completion handler
+   * Notify completion handler if defined
+   *
+   * Called from finally block to ensure notification even after cancellation or error.
+   *
    * @private
    * @returns {void}
    */

@@ -1,16 +1,16 @@
 /**
  * @typedef {Object} MorphologyCapabilities
- * @property {boolean} canDilate - Whether dilate operation would change mask
- * @property {boolean} canErode - Whether erode operation would change mask
- * @property {boolean} canCross - Whether cross operation would change mask
+ * @property {boolean} canDilate - Whether dilate operation would expand mask (add boundary cells)
+ * @property {boolean} canErode - Whether erode operation would shrink mask (remove boundary cells)
+ * @property {boolean} canCross - Whether cross operation (erosion followed by dilation) would change mask
  */
 
 /**
  * @typedef {Object} TransformCapabilities
- * @property {boolean} canRotateCW - Whether clockwise rotation would change mask
- * @property {boolean} canRotateCCW - Whether counter-clockwise rotation would change mask
- * @property {boolean} canFlipH - Whether horizontal flip would change mask
- * @property {boolean} canFlipV - Whether vertical flip would change mask
+ * @property {boolean} canRotateCW - Whether 90° clockwise rotation would change mask
+ * @property {boolean} canRotateCCW - Whether 90° counter-clockwise rotation would change mask
+ * @property {boolean} canFlipH - Whether horizontal flip (mirror across Y axis) would change mask
+ * @property {boolean} canFlipV - Whether vertical flip (mirror across X axis) would change mask
  */
 
 /**
@@ -19,41 +19,40 @@
 
 /**
  * @typedef {Object} GridMask
- * @property {*} bits - Bitboard representing current mask state.
- * @property {*} [fullMask] - Full mask bitboard.
- * @property {*} [emptyMask] - Empty mask bitboard.
- * @property {TransformActions|null} [actions] - Actions object for transforms and symmetry.
- * @property {*} [clone] - Clone of the mask for non-mutating operations.
+ * @property {*} bits - Bitboard representing current mask state
+ * @property {*} [fullMask] - Full mask bitboard for capacity checking
+ * @property {*} [emptyMask] - Empty mask bitboard for comparison
+ * @property {TransformActions|null} [actions] - Actions object for transforms and symmetry operations
+ * @property {*} [clone] - Clone of the mask for non-mutating operations
  */
 
 /**
  * @typedef {Object} TransformActions
- * @property {Object<string, any>} transformMaps - Map keys to transformation data.
- * @property {*} template - Template used for transform comparison.
- * @property {Function} [applyMap] - Function that applies a transform map and returns a result.
- * @property {Function} [classifyOrbitType] - Function that returns symmetry classification.
+ * @property {Object<string, any>} transformMaps - Map keys to transformation data (e.g., 'r90', 'fx')
+ * @property {*} template - Template bitboard used for transform comparison
+ * @property {Function} [applyMap] - Function that applies a transform map and returns result
+ * @property {Function} [classifyOrbitType] - Function that returns symmetry classification string
  */
-
-/**
- * Single source of truth for grid state
- * Encapsulates all state queries without side effects
- */
-
-import {
-  checkMorphologyState,
-  bitsChanged,
-  isBitboardFull
-} from './MorphologyOps.js'
 
 /**
  * Queries grid state and capabilities without side effects
- * Supports morphology operations (dilate/erode), transforms (rotate/flip), and symmetry classification
+ *
+ * Single source of truth for grid state queries. Provides read-only access to mask properties
+ * and computes capabilities for morphology operations (dilate/erode/cross), transforms
+ * (rotate/flip), and symmetry classification. All queries are non-mutating.
+ *
+ * @class GridState
  */
 export class GridState {
   /**
    * Initialize grid state with mask and optional indexer
-   * @param {GridMask} mask - The mask object with bits and clone capabilities.
-   * @param {?Object} indexer - Optional indexer for grid operations.
+   *
+   * Creates a state query interface for a grid mask. The optional indexer can be used
+   * for grid-specific operations or lookups.
+   *
+   * @constructor
+   * @param {GridMask} mask - The mask object with bits and optional clone/fullMask/emptyMask/actions
+   * @param {Object|null} [indexer=null] - Optional indexer for grid operations or lookups
    */
   constructor (mask, indexer = null) {
     this.mask = mask
@@ -62,7 +61,11 @@ export class GridState {
 
   /**
    * Get current actions from mask
-   * @returns {TransformActions|null} Actions object with transform maps and methods, or null if unavailable.
+   *
+   * Retrieves the actions object containing transform maps and methods for symmetry
+   * classification and transform application.
+   *
+   * @returns {TransformActions|null} Actions object with transform maps and methods, or null if unavailable
    */
   getCurrentActions () {
     return this.mask?.actions ?? null
@@ -70,8 +73,13 @@ export class GridState {
 
   /**
    * Check if morphology operation would change the mask
-   * @param {MorphologyOperation} operation - Operation name: 'dilate', 'erode', or 'cross'.
-   * @returns {boolean} True if operation would change mask
+   *
+   * Queries whether applying the specified morphology operation would result in a
+   * different mask. Operation names correspond to standard morphological operations
+   * on binary images: dilate expands, erode shrinks, cross applies both.
+   *
+   * @param {MorphologyOperation} operation - Operation name: 'dilate', 'erode', or 'cross'
+   * @returns {boolean} True if operation would change mask, false if it would have no effect
    */
   canApplyMorphology (operation) {
     return checkMorphologyState(this.mask, operation)
@@ -79,7 +87,12 @@ export class GridState {
 
   /**
    * Get morphology operation capabilities
-   * @returns {MorphologyCapabilities} Object indicating which operations would change mask
+   *
+   * Returns a snapshot of which morphology operations (dilate, erode, cross) would
+   * currently have an effect on the mask. Useful for disabling UI buttons or
+   * preventing no-op operations.
+   *
+   * @returns {MorphologyCapabilities} Object with boolean flags for each operation
    */
   getMorphologyCapabilities () {
     return {
@@ -91,6 +104,10 @@ export class GridState {
 
   /**
    * Check if dilate is disabled (grid is at full capacity)
+   *
+   * Returns true if the grid has reached maximum size and cannot expand further.
+   * This check uses the fullMask bitboard to determine if all cells are occupied.
+   *
    * @returns {boolean} True if grid is at maximum size and cannot dilate
    */
   isDilateDisabled () {
@@ -101,7 +118,12 @@ export class GridState {
 
   /**
    * Get transform capabilities for rectangular grids
-   * @returns {TransformCapabilities} Object indicating which transforms would change mask
+   *
+   * Returns flags indicating which transforms (rotations and flips) would change
+   * the current mask. Returns all false if transform maps are unavailable.
+   * Used for both rectangular and hex grids with indexed transforms.
+   *
+   * @returns {TransformCapabilities} Object with boolean flags for each transform
    */
   getTransformCapabilities () {
     const actions = this._getActionsWithTransformMaps()
@@ -124,8 +146,12 @@ export class GridState {
 
   /**
    * Helper to retrieve actions with transform maps, avoiding repetition
+   *
+   * Safely retrieves actions and checks for transformMaps availability.
+   * Handles null/undefined gracefully.
+   *
    * @private
-   * @returns {TransformActions|null} Actions object with transformMaps, or null if unavailable.
+   * @returns {TransformActions|null} Actions object with transformMaps, or null if unavailable
    */
   _getActionsWithTransformMaps () {
     const actions = this.getCurrentActions()
@@ -135,11 +161,14 @@ export class GridState {
 
   /**
    * Check if indexed transform map (rotation or flip) would change the mask
-   * Consolidates logic for both canApplyRotation and canApplyFlip
+   *
+   * Consolidates logic for checking if a specific indexed transform (identified by key)
+   * would result in a different mask. Used internally for both rotation and flip checks.
+   *
    * @private
-   * @param {string} mapKey - Transform key in transformMaps (e.g. 'r90', 'fx').
-   * @param {TransformActions} actions - Actions object from getCurrentActions.
-   * @returns {boolean} True if transform would change mask
+   * @param {string} mapKey - Transform key in transformMaps (e.g., 'r90', 'r270', 'fx', 'fy')
+   * @param {TransformActions} actions - Actions object from getCurrentActions()
+   * @returns {boolean} True if transform would change mask, false otherwise
    */
   _canApplyIndexedTransform (mapKey, actions) {
     const map = actions.transformMaps[mapKey]
@@ -149,11 +178,16 @@ export class GridState {
 
   /**
    * Helper to check if a transform map would change the mask
+   *
+   * Core logic for all transform capability checks. Applies the transform map to the
+   * template and compares result. Returns false if map/template/applyMap are unavailable
+   * or if an error occurs during application.
+   *
    * @private
-   * @param {?any} map - Transform map to apply
-   * @param {*} template - Original template to compare against
+   * @param {any|null} map - Transform map to apply, or null
+   * @param {*} template - Original template bitboard to compare against
    * @param {TransformActions} actions - Actions object with applyMap method
-   * @returns {boolean} True if applying map changes template
+   * @returns {boolean} True if applying map changes template, false if no change or error
    */
   _canApplyTransform (map, template, actions) {
     if (!map) return false
@@ -169,8 +203,13 @@ export class GridState {
 
   /**
    * Get rotation or flip capability for hex grids using map index
-   * @param {number} mapIndex - Index of rotation or flip map in transformMaps array
-   * @returns {boolean} True if transform would change mask
+   *
+   * Checks if a transform at a specific index in the transformMaps array would
+   * change the mask. This method supports indexed transforms for hexagonal grids
+   * which may have multiple rotation/reflection variations.
+   *
+   * @param {number} mapIndex - Index or key of rotation/flip map in transformMaps array
+   * @returns {boolean} True if transform would change mask, false if no change or unavailable
    */
   canApply (mapIndex) {
     const actions = this._getActionsWithTransformMaps()
@@ -183,7 +222,12 @@ export class GridState {
 
   /**
    * Get current symmetry classification
-   * @returns {string} Symmetry class name or 'n/a' if unavailable
+   *
+   * Queries the actions object for the current symmetry classification of the mask.
+   * Uses the classifyOrbitType function if available. Returns 'n/a' if classification
+   * is unavailable or if an error occurs.
+   *
+   * @returns {string} Symmetry class name (e.g., 'C4', 'D2') or 'n/a' if unavailable
    */
   getSymmetry () {
     try {
@@ -202,7 +246,11 @@ export class GridState {
 
   /**
    * Clone the current state (for testing or branching)
-   * @returns {?any} Clone of mask.bits, or null if unavailable
+   *
+   * Returns a clone of the mask for non-mutating operations or branching state.
+   * The clone is obtained from the mask's clone property if available.
+   *
+   * @returns {any|null} Clone of mask.bits, or null if unavailable
    */
   cloneBits () {
     if (!this.mask?.clone) return null
@@ -211,7 +259,11 @@ export class GridState {
 
   /**
    * Check if mask is empty (all bits unset, matches empty mask)
-   * @returns {boolean} True if mask has no bits set
+   *
+   * Compares current bits against emptyMask to determine if no cells are occupied.
+   * Returns true if mask equals empty state.
+   *
+   * @returns {boolean} True if mask has no bits set or matches emptyMask
    */
   isEmpty () {
     if (!this.mask?.bits) return true
@@ -221,7 +273,11 @@ export class GridState {
 
   /**
    * Check if mask is full (all bits set, matches full mask)
-   * @returns {boolean} True if all bits are set in mask
+   *
+   * Compares current bits against fullMask to determine if all cells are occupied.
+   * Returns true if mask equals full state.
+   *
+   * @returns {boolean} True if all bits are set in mask or matches fullMask
    */
   isFull () {
     if (!this.mask) return false
