@@ -18,7 +18,7 @@ export class MaskTri extends MaskBase {
    * @param {Object} [store] - Bit storage implementation (optional)
    */
   constructor (side, bits, store) {
-    super(TriangleShape(side), 1, bits, store)
+    super(TriangleShape(side), bits, store)
     this.side = side
   }
 

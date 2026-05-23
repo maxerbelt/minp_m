@@ -68,6 +68,24 @@ export class MaskBase extends CanvasGrid {
     this.bits = bits !== null && bits !== undefined ? bits : this.store.empty
     this.depth = depth
   }
+
+  /**
+   * Create a default store for this mask type with given depth
+   * Subclasses can override to use different store types (e.g., Store32 for Packed)
+   * @param {number} depth - Color depth (number of color layers)
+   * @returns {StoreBig} Default BigInt-based store instance
+   * @protected
+   */
+  defaultStore (depth) {
+    return new StoreBig(
+      depth,
+      this._totalArea,
+      undefined,
+      this.width,
+      this.height
+    )
+  }
+
   /**
    * Minimum grid dimension (smallest of width/height)
    * @type {number}
@@ -1170,13 +1188,7 @@ export class MaskBase extends CanvasGrid {
     const oldBits = this.cloneBits
     const newDepth = layers.length + 2
     this.depth = newDepth
-    this.store = new StoreBig(
-      newDepth,
-      this._totalArea,
-      undefined,
-      this.width,
-      this.height
-    )
+    this.store = this.defaultStore(newDepth)
     const bitss = [...layers].map(layer => layer.bits)
     this.bits = this.addLayersBits([oldBits, ...bitss])
   }
