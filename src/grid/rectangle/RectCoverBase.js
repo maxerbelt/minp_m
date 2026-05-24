@@ -233,9 +233,8 @@ export class RectCoverBase {
           moveInX,
           moveInY,
           previousX,
-          stepX,
           previousY,
-          stepY,
+          { stepX, stepY },
           step,
           indexer
         )
@@ -260,6 +259,12 @@ export class RectCoverBase {
   }
 
   /**
+   * @typedef {Object} DirectionVector
+   * @property {number} stepX - X direction: -1, 0, or +1
+   * @property {number} stepY - Y direction: -1, 0, or +1
+   */
+
+  /**
    * Template method: Handles corner crossing behavior when both axes move simultaneously.
    * Subclasses override to implement different line coverage algorithms.
    * Base implementation yields nothing (default: no corner handling).
@@ -268,21 +273,19 @@ export class RectCoverBase {
    * @param {number} _moveInX - Whether moved in X (0 or 1), parameter available for subclass use
    * @param {number} _moveInY - Whether moved in Y (0 or 1), parameter available for subclass use
    * @param {number} _previousX - Previous X position before step, parameter available for subclass use
-   * @param {number} _stepX - X direction: -1, 0, or +1, parameter available for subclass use
    * @param {number} _previousY - Previous Y position before step, parameter available for subclass use
-   * @param {number} _stepY - Y direction: -1, 0, or +1, parameter available for subclass use
+   * @param {DirectionVector} _direction - Direction vector with stepX and stepY components
    * @param {number} _step - Current step count in traversal, parameter available for subclass use
    * @param {CoordinateIndexer} _indexer - Indexer function, parameter available for subclass use
-   * @yields {number} Extra corner cell grid indices to include in traversal
+   * @returns {Generator<number, void, unknown>} Generator yielding extra corner cell grid indices
    * @protected
    */
   *_handleCornerCrossing (
     _moveInX,
     _moveInY,
     _previousX,
-    _stepX,
     _previousY,
-    _stepY,
+    _direction,
     _step,
     _indexer
   ) {

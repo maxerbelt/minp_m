@@ -248,20 +248,6 @@ export class RectMaskBase extends MaskBase {
   }
 
   /**
-   * Check if a transformation capability is available
-   * Internal helper method to query transformation capabilities by name.
-   * Primarily used internally; consider using getTransformCapabilities() for direct queries.
-   *
-   * @param {string} _capability - The capability name to check (e.g., 'canRotateCW', 'canFlipH')
-   * @returns {boolean} True if the capability is available
-   * @private
-   */
-  _hasTransformCapability (_capability) {
-    const capabilities = this.getTransformCapabilities()
-    return capabilities[_capability] || false
-  }
-
-  /**
    * Check if this mask can be rotated
    * Tests if any rotation transformation will change the current bitboard state.
    *
@@ -392,11 +378,15 @@ export class RectMaskBase extends MaskBase {
    * @returns {Object} Actions instance with transformation methods, or null if indexer unavailable
    */
   get actions () {
-    // @ts-ignore - bitEqual expects bigint but type inference sees union type
-    if (
-      !this._actions ||
-      !this.store.bitEqual(this._actions?.original?.bits, this.bits)
-    ) {
+    const cachedBits = this._actions?.original?.bits
+    // Check if cache is valid: _actions exists, cached bits is a bigint, and equals current bits
+    const isValidCache =
+      this._actions &&
+      typeof cachedBits === 'bigint' &&
+      // @ts-ignore - bitboard type inference sees union but runtime guarantees bigint
+      this.store.bitEqual(cachedBits, this.bits)
+
+    if (!isValidCache) {
       // @ts-ignore - ShapeIndexer subclasses implement this method
       this._actions = this.indexer?.actions?.(this)
     }

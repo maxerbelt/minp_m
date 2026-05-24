@@ -3,6 +3,19 @@ import { RectangleShape } from './RectangleShape.js'
 import { AsciiRepresentation } from '../AsciiRepresentation.js'
 
 /**
+ * @typedef {Object} SymbolMap
+ * @property {string} empty - Character representing empty cells
+ * @property {string} full - Character representing occupied cells
+ */
+
+/**
+ * @typedef {Object} MaskLike
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {Function} occupiedLocationsAndValues - Iterator of [x, y, color] tuples
+ */
+
+/**
  * ASCII string-based grid with newline-separated rows.
  * Stores grid state as a string where each row is separated by '\n'.
  * Cells are represented as characters: fillChar for empty, '#' for set (color=1).
@@ -89,7 +102,7 @@ export class AsciiGrid extends GridBase {
    * Creates a new grid with the same dimensions and fillChar,
    * but initialized to empty state (all cells = '.').
    *
-   * @returns {AsciiGrid}
+   * @returns {AsciiGrid} New empty grid
    */
   get empty () {
     return this.#createGridWithFill('.')
@@ -99,7 +112,7 @@ export class AsciiGrid extends GridBase {
    * Creates a new grid with the same dimensions and fillChar,
    * but initialized to full state (all cells = '#').
    *
-   * @returns {AsciiGrid}
+   * @returns {AsciiGrid} New full grid
    */
   get full () {
     return this.#createGridWithFill('#')
@@ -122,7 +135,7 @@ export class AsciiGrid extends GridBase {
    * Returns the raw string representation.
    * Direct access to underlying ASCII format (rows separated by '\n').
    *
-   * @returns {string}
+   * @returns {string} Raw ASCII grid string
    */
   get toAscii () {
     return this.string
@@ -132,7 +145,9 @@ export class AsciiGrid extends GridBase {
    * Converts grid to ASCII using custom symbol mappings via AsciiRepresentation.
    * Allows different visual representations of the same grid state.
    *
-   * @param {Object} [symbols=AsciiRepresentation.defaultSymbols] - Custom symbol map
+   * @param {Object} [symbols=AsciiRepresentation.defaultSymbols] - Custom symbol map with empty and full properties
+   * @param {string} symbols.empty - Character representing empty cells
+   * @param {string} symbols.full - Character representing occupied cells
    * @returns {string} ASCII string with custom symbols
    *
    * @example
@@ -147,7 +162,7 @@ export class AsciiGrid extends GridBase {
    * Counts the number of non-empty cells (excluding fillChar and newlines).
    * Useful for determining grid occupancy/density.
    *
-   * @returns {number}
+   * @returns {number} Number of occupied cells
    */
   get occupancy () {
     return [...this.string].filter(c => this.#isOccupiedCharacter(c)).length
@@ -157,7 +172,7 @@ export class AsciiGrid extends GridBase {
    * Maximum valid linear index (size - 1).
    * For a grid with stride = width + 1, last valid index is (width + 1) * height - 1.
    *
-   * @type {number}
+   * @returns {number} Maximum valid index in the string
    */
   get indexMax () {
     return this.#rowStride * this.height - 1
@@ -167,7 +182,7 @@ export class AsciiGrid extends GridBase {
    * Width stride: the number of characters per row including the newline.
    * Overrides parent's columnStride which only returns width.
    *
-   * @type {number}
+   * @returns {number} Row stride including newline character
    */
   get columnStride () {
     return this.#rowStride
@@ -178,7 +193,7 @@ export class AsciiGrid extends GridBase {
    * Iterates mask.occupiedLocationsAndValues() and copies set cells to the new grid.
    *
    * @static
-   * @param {Object} mask - Mask object with width, height, and occupiedLocationsAndValues() method
+   * @param {MaskLike} mask - Mask object with width, height, and occupiedLocationsAndValues() method
    * @param {string} [fillChar='.'] - Character for empty cells
    * @returns {AsciiGrid} New grid populated from mask data
    *
@@ -196,7 +211,7 @@ export class AsciiGrid extends GridBase {
   /**
    * Convert an input color into its character representation.
    * @param {number|boolean} color - Color value to map
-   * @returns {string} Character used for that color
+   * @returns {string} Character used for that color ('#' or fillChar)
    */
   #cellCharacter (color) {
     return color ? '#' : this.fillChar
@@ -217,7 +232,7 @@ export class AsciiGrid extends GridBase {
   /**
    * Determine whether a character represents an occupied cell.
    * @param {string} char - Single character from the ASCII grid string
-   * @returns {boolean}
+   * @returns {boolean} True if character is not fillChar or newline
    */
   #isOccupiedCharacter (char) {
     return char !== this.fillChar && char !== '\n'

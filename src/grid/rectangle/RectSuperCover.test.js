@@ -1,4 +1,4 @@
-import { expect, jest } from '@jest/globals'
+import { expect } from '@jest/globals'
 import { RectIndex } from './RectIndex.js'
 import { RectSuperCover } from './RectSuperCover.js'
 import { AsciiGrid } from './asciiGrid.js'
@@ -105,7 +105,7 @@ describe('RectSuperCover', () => {
     it('vertical superCoverSegmentTo', () => {
       const line = Array.from(rectSuper.superCoverSegmentTo(4, 1, 4, 4))
       expect(line.length).toBe(4)
-      line.forEach(([x, y]) => {
+      line.forEach(([x, _y]) => {
         expect(x).toBe(4)
       })
     })

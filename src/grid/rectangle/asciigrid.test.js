@@ -1,10 +1,17 @@
-
-
 import { describe, it, expect, beforeEach } from '@jest/globals'
 import { AsciiGrid } from './asciiGrid.js'
 import { Mask } from './mask.js'
 
-// Jest test suite
+/**
+ * @fileoverview Test suite for AsciiGrid class.
+ * Tests ASCII string-based grid implementation with newline-separated rows.
+ * Covers initialization, cell operations, grid creation, and occupancy tracking.
+ */
+
+/**
+ * Test suite for AsciiGrid class
+ * @test {AsciiGrid}
+ */
 describe('AsciiGrid', () => {
   it('uses provided ascii string and indexes including newlines', () => {
     const g = new AsciiGrid(3, 2, 'abc\ndef')

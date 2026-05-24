@@ -1,6 +1,25 @@
 import { RectCoverBase } from './RectCoverBase.js'
 
 /**
+ * Function signature for converting coordinates to grid index.
+ * Maps 2D coordinates to a 1D grid index.
+ * @typedef {Function} CoordinateIndexer
+ * @param {number} x - X coordinate in the grid
+ * @param {number} y - Y coordinate in the grid
+ * @param {number} step - Step number in the line traversal sequence
+ * @returns {number} 1D grid index corresponding to (x, y)
+ */
+
+/**
+ * Function signature for coordinate validation.
+ * Validates and optionally adjusts coordinates.
+ * @typedef {Function} CoordinateValidator
+ * @param {number} x - X coordinate to validate
+ * @param {number} y - Y coordinate to validate
+ * @returns {Array<number>|null} Validated [x, y] coordinates or null if invalid
+ */
+
+/**
  * RectIndex interface expected by line coverage algorithms.
  * @typedef {Object} RectIndex
  * @property {number} width - Grid width in cells
@@ -91,21 +110,21 @@ export class RectHalfCover extends RectCoverBase {
    * @param {number} _moveInX - Whether moved in X direction (0 or 1)
    * @param {number} _moveInY - Whether moved in Y direction (0 or 1)
    * @param {number} _previousX - Previous X position before step
-   * @param {number} _stepX - X direction: -1, 0, or +1
    * @param {number} _previousY - Previous Y position before step
-   * @param {number} _stepY - Y direction: -1, 0, or +1
+   * @param {Object} _direction - Direction vector with stepX and stepY properties
+   * @param {number} _direction.stepX - X direction: -1, 0, or +1
+   * @param {number} _direction.stepY - Y direction: -1, 0, or +1
    * @param {number} _step - Current step count in traversal
-   * @param {Function} _indexer - Indexer function to convert coordinates to grid index
-   * @yields {number} Grid index of the extra corner cell (if any valid cell exists)
+   * @param {CoordinateIndexer} _indexer - Indexer function to convert coordinates to grid index
+   * @returns {Generator<number, void, unknown>} Generator yielding grid index of the extra corner cell
    * @protected
    */
   *_handleCornerCrossing (
     _moveInX,
     _moveInY,
     _previousX,
-    _stepX,
     _previousY,
-    _stepY,
+    _direction,
     _step,
     _indexer
   ) {
@@ -113,9 +132,8 @@ export class RectHalfCover extends RectCoverBase {
     const moveInX = _moveInX
     const moveInY = _moveInY
     const previousX = _previousX
-    const stepX = _stepX
     const previousY = _previousY
-    const stepY = _stepY
+    const { stepX, stepY } = _direction
     const step = _step
     const indexer = _indexer
 
