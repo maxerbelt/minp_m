@@ -42,7 +42,8 @@ export class GridUIManager {
 
       const handler = handlerFactory(config)
       btn.addEventListener('click', handler)
-      this.buttonHandlers.set(`${prefix}-${config.id}`, handler)
+      const key = `${prefix}-${config.id}`
+      this.buttonHandlers.set(key, { btn, handler })
     }
   }
 
@@ -192,18 +193,25 @@ export class GridUIManager {
 
   /**
    * Clean up all event listeners
+   * Removes all registered listeners and clears the handler map
+   * Safe and idempotent
    */
   cleanup () {
-    // Note: Full cleanup would require storing original handlers
-    // For now, caller should manage DOM cleanup
+    for (const [, { btn, handler }] of this.buttonHandlers) {
+      if (btn && typeof btn.removeEventListener === 'function') {
+        btn.removeEventListener('click', handler)
+      }
+    }
     this.buttonHandlers.clear()
   }
 
   /**
    * Get registered handler for a button
    * @param {string} buttonName - Button ID with prefix (e.g., 'morph-dilateBtn')
+   * @returns {Function|undefined} The handler function or undefined if not found
    */
   getHandler (buttonName) {
-    return this.buttonHandlers.get(buttonName)
+    const entry = this.buttonHandlers.get(buttonName)
+    return entry ? entry.handler : undefined
   }
 }

@@ -203,7 +203,7 @@ export class Waters {
     onShipPlaced = Function.prototype,
     onPlacementReset = Function.prototype
   ) {
-    this.resetPlacementStore.bind(this)
+    this.resetPlacementStore()
     const result = this.shipCellGrid.attemptToPlaceShips(
       ships,
       (ship, placedCells) => {
@@ -218,7 +218,7 @@ export class Waters {
       this.UI.onFleetPlaced?.()
       return result
     }
-    this.handlePlacementFailure.bind(this, onPlacementReset)
+    this.handlePlacementFailure(onPlacementReset)
     return result
   }
 

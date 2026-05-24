@@ -2,24 +2,72 @@ import { CellsToBePlaced } from './CellsToBePlaced.js'
 
 /**
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
- * @typedef {{
- *   board: any,
- *   validator: (zoneInfo:any)=>boolean,
- *   zoneDetail:any,
- *   target:any,
- *   subGroups:Array<{placeAt:(r:number,c:number)=>any}>
- * }} Placeable3Type
+ * @typedef {import('./makeCell3.js').ZoneInfo} ZoneInfo
+ * @typedef {import('./makeCell3.js').PlacementTarget} PlacementTarget
+ * @typedef {import('../grid/MaskBase.js').MaskBase} MaskBase
  */
 
 /**
- * Represents 3D cells to be placed with subgroups.
+ * Subgroup placement cell for 3D placement validation.
+ * Represents a subgroup of cells with placement and validation methods.
+ *
+ * @typedef {Object} SubGroupPlaced
+ * @property {(c: number, r: number) => boolean} isCandidate - Checks if position is a candidate cell
+ * @property {(zoneInfo: ZoneInfo) => boolean} validator - Validates zone constraints for the position
+ */
+
+/**
+ * 3D placeable configuration with board, validator, zone detail, target, and subgroups.
+ * Contains all information needed for 3D cell placement with subgroup support.
+ * The board parameter must be compatible with Board interface (see CellsToBePlaced.js).
+ *
+ * @typedef {Object} Placeable3Type
+ * @property {Object} board - The board to embed cells into (Board-compatible object)
+ * @property {(x: number, y: number) => Object} board.embed - Creates embedded board at offset
+ * @property {Object} board.emptyMask - Empty board at same position and size
+ * @property {(x: number, y: number, depth?: number) => number|null} board.at - Gets value at coordinates
+ * @property {() => Generator<[number, number]>} board.occupiedLocations - Generator of occupied cell positions
+ * @property {() => Generator<[number, number, *]>} board.occupiedLocationsAndValues - Generator of occupied cells with values
+ * @property {Array<[number, number, number]>} board.toCoords - Array of coordinate tuples
+ * @property {(width: number, height: number) => Object} board.toMask - Creates new mask at specified dimensions
+ * @property {(mask: Object) => void} board.copyToMask - Copies occupied cells to another mask
+ * @property {() => Object} board.flatDilate - Returns dilated version
+ * @property {number} board.width - Grid width
+ * @property {number} board.height - Grid height
+ * @property {number} board.occupancy - Count or percentage of occupied cells
+ * @property {(zoneInfo: ZoneInfo) => boolean} validator - Zone validation function
+ * @property {number} zoneDetail - Zone detail level for validation queries
+ * @property {PlacementTarget} target - Placement target with bounds checking and zone info
+ * @property {Array<{placeAt:(r:number,c:number)=>SubGroupPlaced}>} subGroups - Array of subgroup factories
+ */
+
+/**
+ * Represents 3D cells to be placed with subgroup validation support.
+ * Extends CellsToBePlaced with additional subgroup management for multi-part placement constraints.
+ * Uses subgroups to validate that cells are placed in matching zones across multiple placement areas.
+ *
+ * @class Cell3sToBePlaced
+ * @extends CellsToBePlaced
  */
 export class Cell3sToBePlaced extends CellsToBePlaced {
   /**
-   * Creates 3D cells to be placed.
-   * @param {Placeable3Type} placeable3 - The placeable3 instance.
-   * @param {number} row - The row.
-   * @param {number} col - The column.
+   * Array of placed subgroups with candidate checking and zone validation.
+   * Each subgroup represents a related placement area that must satisfy zone constraints.
+   *
+   * @type {Array<SubGroupPlaced>}
+   */
+  subGroups
+
+  /**
+   * Creates 3D cells to be placed with subgroup support.
+   * Initializes parent CellsToBePlaced instance and creates subgroup instances
+   * for the given row and column position.
+   *
+   * @param {Placeable3Type} placeable3 - The 3D placeable configuration containing board,
+   *   validator, zone detail level, target, and subgroup factories
+   * @param {number} row - The row position for embedding cells (0-based index)
+   * @param {number} col - The column position for embedding cells (0-based index)
+   * @throws {Error} If placeable3 lacks required properties or subGroups are invalid
    */
   constructor (placeable3, row, col) {
     super(
@@ -34,10 +82,15 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
   }
 
   /**
-   * Checks if a position is in matching zone for subgroups.
-   * @param {number} r - The row.
-   * @param {number} c - The column.
-   * @returns {boolean} True if in matching zone.
+   * Checks if a position is in a matching zone for all subgroups.
+   * A position is considered in a matching zone if all subgroups report it as
+   * a candidate cell AND their zone validators approve the zone information at that position.
+   *
+   * @param {number} r - The row coordinate to check (0-based index)
+   * @param {number} c - The column coordinate to check (0-based index)
+   * @returns {boolean} True if position is a candidate in all subgroups AND passes validation,
+   *   false otherwise
+   * @public
    */
   isInMatchingZone (r, c) {
     const zoneInfo = this.zoneInfo(r, c, 2)
@@ -48,8 +101,16 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
   }
 
   /**
-   * Checks if any cell is in wrong zone and sets notGood mask.
-   * @returns {boolean} True if wrong zone.
+   * Validates that all occupied cells are in matching zones for subgroups.
+   * Identifies cells that are in wrong zones and marks them in the notGood mask.
+   * A cell is considered in a wrong zone if it does not satisfy subgroup placement constraints.
+   *
+   * The notGood mask is updated with:
+   * - 1 for cells in matching zone (good placement)
+   * - 0 for cells in wrong zone (invalid placement)
+   *
+   * @returns {boolean} True if any cell is found to be in a wrong zone, false if all cells pass validation
+   * @public
    */
   isWrongZone () {
     const cells = [...this.board.occupiedLocations()]
@@ -58,6 +119,7 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
     })
     for (const [c, r] of cells) {
       const match = this.isInMatchingZone(r, c) ? 1 : 0
+      // @ts-expect-error - notGood is typed as Board in parent but runtime type is MaskBase with set() method
       this.notGood.set(c, r, match)
     }
     return result

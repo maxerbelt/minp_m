@@ -20,7 +20,7 @@ export async function fetchComponent (insertPointId, componentUrl, callback) {
       try {
         callback()
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     }
   } catch (error) {

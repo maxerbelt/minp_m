@@ -655,4 +655,190 @@ describe('Waters', () => {
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
     })
   })
+
+  /**
+   * Ship Placement Regression Tests
+   * Tests for bug fix: Waters.js line 205 and 223 were using .bind() without calling functions.
+   * This caused tempPlacement to remain undefined, causing "Cannot read properties of undefined" errors.
+   *
+   * Bug Details:
+   * - Line 205: this.resetPlacementStore.bind(this) - Created bound function but didn't call it
+   * - Line 223: this.handlePlacementFailure.bind(this, ...) - Same issue
+   *
+   * Fix: Changed to actual function calls:
+   * - Line 205: this.resetPlacementStore()
+   * - Line 223: this.handlePlacementFailure(onPlacementReset)
+   */
+  describe('Ship Placement Regression Tests', () => {
+    /**
+     * Test that resetPlacementStore() is called (not just bound).
+     * Ensures tempPlacement array is initialized before storeShipPlacement is called.
+     * Regression test for bug where .bind() was used without calling the function.
+     *
+     * @returns {void}
+     */
+    it('resetPlacementStore is called during attemptToPlaceShips', () => {
+      // Spy on resetPlacementStore
+      const resetSpy = jest.spyOn(waters, 'resetPlacementStore')
+
+      // Create a mock shipCellGrid that returns false (failed placement)
+      waters.shipCellGrid.attemptToPlaceShips = jest.fn(
+        (ships, callback) => false
+      )
+
+      const onPlacementReset = jest.fn()
+      waters.attemptToPlaceShips([], undefined, onPlacementReset)
+
+      // Verify resetPlacementStore was called (not just bound)
+      expect(resetSpy).toHaveBeenCalled()
+
+      resetSpy.mockRestore()
+    })
+
+    /**
+     * Test that tempPlacement is properly initialized as an array.
+     * Ensures tempPlacement exists and is an array before storeShipPlacement is called.
+     *
+     * @returns {void}
+     */
+    it('tempPlacement is initialized as an empty array', () => {
+      // Call resetPlacementStore to initialize tempPlacement
+      waters.resetPlacementStore()
+
+      // Verify tempPlacement is initialized as an array
+      expect(Array.isArray(waters.tempPlacement)).toBe(true)
+      expect(waters.tempPlacement).toEqual([])
+    })
+
+    /**
+     * Test that storeShipPlacement doesn't throw when tempPlacement is initialized.
+     * Regression test for "Cannot read properties of undefined (reading 'push')" error.
+     *
+     * @returns {void}
+     */
+    it('storeShipPlacement can be called safely without undefined error', () => {
+      // Initialize tempPlacement
+      waters.resetPlacementStore()
+
+      // Create mock ship
+      const mockShip = { letter: 'A', cells: [1, 2] }
+      const mockPlacedCells = [
+        [0, 0],
+        [0, 1]
+      ]
+
+      // Should not throw
+      expect(() => {
+        waters.storeShipPlacement(mockPlacedCells, mockShip)
+      }).not.toThrow()
+
+      // Verify placement was stored
+      expect(waters.tempPlacement).toHaveLength(1)
+      expect(waters.tempPlacement[0]).toEqual({
+        placedCells: mockPlacedCells,
+        ship: mockShip
+      })
+    })
+
+    /**
+     * Test that storeShipPlacement accumulates multiple placements.
+     * Ensures tempPlacement can handle multiple calls without errors.
+     *
+     * @returns {void}
+     */
+    it('storeShipPlacement accumulates multiple ship placements', () => {
+      // Initialize tempPlacement
+      waters.resetPlacementStore()
+
+      // Store first ship
+      const ship1 = { letter: 'A', cells: [1, 2] }
+      const cells1 = [
+        [0, 0],
+        [0, 1]
+      ]
+      waters.storeShipPlacement(cells1, ship1)
+
+      // Store second ship
+      const ship2 = { letter: 'B', cells: [3, 4, 5] }
+      const cells2 = [
+        [1, 0],
+        [1, 1],
+        [1, 2]
+      ]
+      waters.storeShipPlacement(cells2, ship2)
+
+      // Verify both placements were stored
+      expect(waters.tempPlacement).toHaveLength(2)
+      expect(waters.tempPlacement[0].ship.letter).toBe('A')
+      expect(waters.tempPlacement[1].ship.letter).toBe('B')
+    })
+
+    /**
+     * Test that handlePlacementFailure is called (not just bound) when placement fails.
+     * Ensures onPlacementReset callback is invoked when placement fails.
+     * Regression test for bug where .bind() was used without calling the function.
+     *
+     * @returns {void}
+     */
+    it('handlePlacementFailure is called when attemptToPlaceShips fails', () => {
+      // Spy on handlePlacementFailure
+      const failureSpy = jest.spyOn(waters, 'handlePlacementFailure')
+
+      // Create a mock shipCellGrid that returns false (failed placement)
+      waters.shipCellGrid.attemptToPlaceShips = jest.fn(
+        (ships, callback) => false
+      )
+
+      const onPlacementReset = jest.fn()
+      const result = waters.attemptToPlaceShips([], undefined, onPlacementReset)
+
+      // Verify handlePlacementFailure was called (not just bound)
+      expect(failureSpy).toHaveBeenCalledWith(onPlacementReset)
+
+      // Verify the result is false (placement failed)
+      expect(result).toBe(false)
+
+      failureSpy.mockRestore()
+    })
+
+    /**
+     * Test that tempPlacement is reset between placement attempts.
+     * Ensures old placements don't carry over to new attempts.
+     *
+     * @returns {void}
+     */
+    it('tempPlacement is reset between placement attempts', () => {
+      // First attempt - store a placement
+      waters.resetPlacementStore()
+      waters.storeShipPlacement([[0, 0]], { letter: 'A', cells: [1] })
+      expect(waters.tempPlacement).toHaveLength(1)
+
+      // Second attempt - reset and store new placement
+      waters.resetPlacementStore()
+      expect(waters.tempPlacement).toHaveLength(0)
+      waters.storeShipPlacement([[1, 0]], { letter: 'B', cells: [2] })
+      expect(waters.tempPlacement).toHaveLength(1)
+      expect(waters.tempPlacement[0].ship.letter).toBe('B')
+    })
+
+    /**
+     * Test that handlePlacementFailure properly clears ship cells on failure.
+     * Ensures UI is updated correctly when placement fails.
+     *
+     * @returns {void}
+     */
+    it('handlePlacementFailure calls resetShipCells', () => {
+      // Spy on resetShipCells
+      const resetCellsSpy = jest.spyOn(waters, 'resetShipCells')
+
+      // Call handlePlacementFailure
+      const onPlacementReset = jest.fn()
+      waters.handlePlacementFailure(onPlacementReset)
+
+      // Verify resetShipCells was called
+      expect(resetCellsSpy).toHaveBeenCalled()
+
+      resetCellsSpy.mockRestore()
+    })
+  })
 })

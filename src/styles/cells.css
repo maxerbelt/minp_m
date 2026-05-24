@@ -337,27 +337,6 @@
     }
 }
 
-/* Keyframes */
-@keyframes flyweapon {
-    0% {
-        left: var(--start-x);
-        top: var(--start-y);
-        opacity: 1;
-    }
-
-    2% {
-        left: var(--start-x);
-        top: var(--start-y);
-        opacity: 1;
-    }
-
-    100% {
-        opacity: 1;
-        left: var(--end-x);
-        top: var(--end-y);
-    }
-}
-
 .ripple {
     width: 72px;
     height: 72px;
@@ -677,7 +656,7 @@
     transition: opacity 0.25s ease;
 }
 
-.board:not(.not-step) .cell.path-vunerable::after {
+.board:not(.not-step) .cell.path-vulnerable::after {
     background: #c9e673;
     opacity: 0.5;
 }
@@ -687,7 +666,7 @@
     opacity: 0.5;
 }
 
-.board:not(.not-step) .cell.destroy-vunerable::after {
+.board:not(.not-step) .cell.destroy-vulnerable::after {
     background: #c9e673;
 }
 
@@ -699,7 +678,7 @@
     background: #6c0135 !important;
 }
 
-.board:not(.not-step) .cell.reveal-vunerable {
+.board:not(.not-step) .cell.reveal-vulnerable {
     background: #73bce6 !important;
 }
 
@@ -731,7 +710,7 @@
     }
 
 
-    div.print-preview .cell.path-vunerable {
+    div.print-preview .cell.path-vulnerable {
         background: #c6f683 !important;
         opacity: 0.4;
     }
@@ -741,7 +720,7 @@
         opacity: 0.4;
     }
 
-    div.print-preview .cell.destroy-vunerable {
+    div.print-preview .cell.destroy-vulnerable {
         background: #c6f683 !important;
         opacity: 0.8;
     }
@@ -756,7 +735,7 @@
         opacity: 0.8;
     }
 
-    div.print-preview .cell.reveal-vunerable {
+    div.print-preview .cell.reveal-vulnerable {
         background: #93ccf6 !important;
         opacity: 0.8;
     }

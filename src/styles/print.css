@@ -124,7 +124,7 @@
     }
 
 
-    .cell.path-vunerable {
+    .cell.path-vulnerable {
         background: #c6f683 !important;
         opacity: 0.5;
         -webkit-print-color-adjust: exact;
@@ -138,7 +138,7 @@
         print-color-adjust: exact;
     }
 
-    .cell.destroy-vunerable {
+    .cell.destroy-vulnerable {
         background: #c6f683 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -156,7 +156,7 @@
         print-color-adjust: exact;
     }
 
-    .cell.reveal-vunerable {
+    .cell.reveal-vulnerable {
         background: #93ccf6 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;

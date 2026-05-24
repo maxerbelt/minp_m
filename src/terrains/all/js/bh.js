@@ -194,16 +194,16 @@ if (!bhLocal)
     },
     get splashTags () {
       return {
-        0: 'destroy-vunerable',
+        0: 'destroy-vulnerable',
         1: 'destroy-normal',
         2: 'destroy-hardened',
         3: 'destroy-hardened',
         4: 'destroy-hardened',
-        10: 'reveal-vunerable',
+        10: 'reveal-vulnerable',
         11: 'reveal-normal',
         12: 'reveal-hardened',
         20: 'weapon-path',
-        30: 'path-vunerable',
+        30: 'path-vulnerable',
         31: 'path-normal'
       }
     },
