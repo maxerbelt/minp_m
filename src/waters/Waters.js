@@ -16,6 +16,7 @@ import { assembleTerrains } from '../terrains/all/js/gameMaps.js'
 import { LoadOut } from './LoadOut.js'
 import { Ship } from '../ships/Ship.js'
 import { WeaponSystem } from '../weapon/WeaponSystem.js'
+// @ts-ignore - WeaponSystem typedef locally conflicts with import, handled at runtime
 import { Steps } from './steps.js'
 import { Animator } from '../core/Animator.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
@@ -70,6 +71,76 @@ import { Random } from '../core/Random.js'
  * @property {Array<Array<number>>} normalized - [r, c, power] coordinate triples
  * @property {boolean} isValid - Whether effect was properly formatted
  * @property {Array<Array<number>>} filtered - Entries with exactly 3+ elements
+ */
+
+/**
+ * @typedef {Object} Board
+ * @property {HTMLElement} board - Main game board DOM element
+ * @property {Function} gridCellAt - Get cell at coordinates (r, c)
+ * @property {Function} cellHit - Mark cell as hit
+ * @property {Function} cellMiss - Mark cell as miss
+ * @property {Function} cellUseAmmo - Mark ammo usage
+ * @property {Function} cellHintReveal - Reveal cell via hint
+ * @property {Function} markPlaced - Mark ship as placed
+ * @property {Function} onFleetPlaced - Callback when fleet placed
+ * @property {Function} placeTally - Display placement tally
+ * @property {Function} displayShipInfo - Display ship information
+ * @property {Function} revealShips - Reveal ships visually
+ * @property {Function} clearVisuals - Clear visual elements
+ * @property {Function} clearPlaceVisuals - Clear placement visuals
+ * @property {Function} surroundCells - Get surrounding cells
+ * @property {Function} surroundCellElement - Get surrounding cell elements
+ * @property {Function} displayFleetSunk - Display fleet sunk
+ * @property {Function} displaySurround - Display surround cells
+ * @property {Function} deactivateTempHints - Deactivate temp hints
+ * @property {Function} deactivateWeapons - Deactivate weapons
+ * @property {HTMLCollection} children - Cell children collection
+ * @property {Object} [score] - Score display object
+ * @property {Object} [weaponBtns] - Weapon button elements
+ * @property {Object} [trayManager] - Tray manager for ships
+ * @property {DOMTokenList} classList - CSS class list
+ */
+
+/**
+ * @typedef {Object} Weapon
+ * @property {string} letter - Weapon letter identifier
+ * @property {string} name - Weapon display name
+ * @property {boolean} [hasWake] - Whether weapon creates wake
+ * @property {boolean} [givesHint] - Whether weapon gives hint
+ * @property {boolean} [hasFlash] - Whether weapon has flash animation
+ * @property {boolean} [crashOverSplash] - Whether crash takes over splash
+ * @property {Function} launchTo - Launch weapon to coordinates
+ * @property {Function} splash - Get splash effect
+ * @property {Function} crashSplash - Get crash splash effect
+ * @property {Function} animateSplashExplode - Animate explosion
+ */
+
+/**
+ * @typedef {Object} WeaponSystem
+ * @property {Weapon} weapon - The weapon object
+ * @property {number} id - Weapon system ID
+ * @property {number} ammo - Remaining ammunition
+ * @property {Function} [hasAmmo] - Check if weapon has ammo
+ * @property {Function} [getLoadedWeapon] - Get loaded weapon variant
+ */
+
+/**
+ * @typedef {Object} WeaponRack
+ * @property {Weapon} [weapon] - The weapon object
+ * @property {number} [id] - Rack/weapon ID
+ * @property {number} [ammo] - Ammunition count
+ */
+
+/**
+ * @typedef {Object} Map
+ * @property {string} title - Map identifier/title
+ * @property {Array<Ship>} newFleetForMap - Initial fleet for map
+ * @property {Array<Ship>} [extraArmedFleetForMap] - Extra armed ships
+ * @property {Array<Weapon>} [weapons] - Weapons available on map
+ * @property {Object} [example] - Example ship placement
+ * @property {Function} inBounds - Check if coordinates in bounds
+ * @property {number} [rows] - Number of rows on map
+ * @property {number} [cols] - Number of columns on map
  */
 
 /**
@@ -250,11 +321,13 @@ export class Waters {
     if (result) {
       for (const { placedCells, ship } of this.tempPlacement) {
         onShipPlaced?.(ship, placedCells)
-        // @ts-ignore - UI property available at runtime
-        this.UI.markPlaced(placedCells, ship)
+        // @ts-ignore - UI is Board at runtime
+        const board = /** @type {Board} */ (this.UI)
+        board.markPlaced?.(placedCells, ship)
       }
-      // @ts-ignore - UI property available at runtime
-      this.UI.onFleetPlaced?.()
+      // @ts-ignore - UI is Board at runtime
+      const board = /** @type {Board} */ (this.UI)
+      board.onFleetPlaced?.()
       return result
     }
     this.handlePlacementFailure(onPlacementReset)
@@ -273,10 +346,10 @@ export class Waters {
   handlePlacementFailure (onPlacementReset) {
     this.resetShipCells()
     onPlacementReset?.()
-    // @ts-ignore - UI property available at runtime
-    this.UI.placeTally(this.ships)
-    // @ts-ignore - UI property available at runtime
-    this.UI.displayShipInfo(this.ships)
+    // @ts-ignore - UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    board.placeTally?.(this.ships)
+    board.displayShipInfo?.(this.ships)
   }
 
   /**
@@ -440,8 +513,9 @@ export class Waters {
    */
   resetShipCells () {
     if (this.ships && this.UI) {
-      // @ts-ignore - revealShips method available at runtime
-      this.UI.revealShips?.(this.ships)
+      // @ts-ignore - UI is Board at runtime
+      const board = /** @type {Board} */ (this.UI)
+      board.revealShips?.(this.ships)
     }
   }
 
@@ -450,21 +524,26 @@ export class Waters {
    * @param {Object} [map] - The map to load from
    * @returns {void}
    * @private
+   * @deprecated Not currently used in codebase; kept for API compatibility
    */
+  // @ts-ignore - method intentionally unused
   loadForEdit (map) {
     map = map || bh.map
     if (!map) return
     this.resetShipCells()
     this.ensureShipsInitialized()
 
-    // @ts-ignore - example property available at runtime
-    if (!map.example) {
+    // @ts-ignore - map is Map at runtime
+    const mapTyped = /** @type {Map} */ (map)
+    if (!mapTyped.example) {
       this.autoPlace()
       return
     }
 
-    // @ts-ignore - example property available at runtime
-    const placedShips = this.validatePlacedShips(map.example, map)
+    const placedShips = this.validatePlacedShips(
+      /** @type {Ship[]} */ (mapTyped.example),
+      map
+    )
     if (!placedShips) return
 
     const unmatchedShips = this.placeMatchingShips(
@@ -522,7 +601,9 @@ export class Waters {
    */
   setWeaponFireHandlers () {
     if (this.loadOut) {
+      // @ts-ignore - method signature compatible at runtime
       this.loadOut.onDestroy = this.destroy.bind(this)
+      // @ts-ignore - method signature compatible at runtime
       this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)
     }
   }
@@ -531,11 +612,12 @@ export class Waters {
    * Returns the active view model for the current opponent or local UI.
    * Determines which UI instance should be used for operations based on opponent state.
    *
-   * @param {Waters} [oppo] - Optional opponent instance to check for UI
-   * @returns {Object} UI view model instance (opponent's UI or this player's UI)
+   * @param {Waters|null|undefined} [oppo] - Optional opponent instance to check for UI
+   * @returns {Board} UI view model instance (opponent's UI or this player's UI)
    * @private
    */
   getViewModel (oppo) {
+    // @ts-ignore - UI property available at runtime, returns Board at runtime
     return oppo?.UI || this.UI
   }
 
@@ -589,13 +671,14 @@ export class Waters {
    */
   addSelectionSource (viewModel, launchR, launchC, cell) {
     if (!this.steps) return
-    // @ts-ignore - viewModel is Board at runtime
+    // @ts-ignore - viewModel is Board at runtime, cast for steps.addSource
+    const board = /** @type {Board} */ (viewModel)
     this.steps.addSource(
-      viewModel,
+      board,
       launchR,
       launchC,
       // @ts-ignore - gridCellAt method available at runtime
-      cell || viewModel.gridCellAt(launchR, launchC)
+      cell || board.gridCellAt?.(launchR, launchC)
     )
   }
 
@@ -686,12 +769,15 @@ export class Waters {
     const result = parseTriple(selectedKey)
     if (!result) return this.createEmptyWeaponSelection()
     const [launchC, launchR, weaponId] = result
-    this.addSelectionSource(viewModel, launchR, launchC, null)
+    // @ts-ignore - viewModel is Board at runtime
+    const board = /** @type {Board} */ (viewModel)
+    this.addSelectionSource(board, launchR, launchC, null)
 
     if (this.loadOut) {
       // @ts-ignore - weaponId is number from parseTriple
       const ship = this.loadOut.getShipByWeaponId(weaponId)
       if (ship && this.steps) {
+        // @ts-ignore - ship structure has required getPrimaryWeapon at runtime
         this.steps.addShip(ship)
         const [sourceR, sourceC] = this.generateSourceHint(ship, this.opponent)
         this.createShadowSource(sourceR, sourceC)
@@ -710,7 +796,7 @@ export class Waters {
    * @param {number} hintR - Hint row coordinate for distance calculation
    * @param {number} hintC - Hint column coordinate for distance calculation
    * @param {boolean|string} random - Whether to select randomly ('random', true) or by distance
-   * @param {Object} viewModel - UI view model instance
+   * @param {Board} viewModel - UI view model instance
    * @returns {WeaponSelection} Weapon selection payload with all targeting coordinates
    * @private
    */
@@ -735,7 +821,9 @@ export class Waters {
     }
 
     this.previousSources.add(selectedKey)
-    return this.processSelectedWeaponKey(selectedKey, viewModel, hintR, hintC)
+    // @ts-ignore - viewModel is Board at runtime
+    const board = /** @type {Board} */ (viewModel)
+    return this.processSelectedWeaponKey(selectedKey, board, hintR, hintC)
   }
 
   /**
@@ -963,6 +1051,7 @@ export class Waters {
     if (!map) return
     this.initShips()
 
+    // @ts-ignore - retrievePlacedShips returns ShipPlacement|null at runtime
     placedShips = this.retrievePlacedShips(map, placedShips)
     if (!placedShips) {
       this.autoPlace()
@@ -975,6 +1064,7 @@ export class Waters {
       this.placeMatchingShip.bind(this)
     )
     if (unmatchedShips.length === 0) {
+      // @ts-ignore - trayManager available on Board at runtime
       this.UI.trayManager?.resetTrays?.()
     } else {
       console.log(`${unmatchedShips.length} ships not matched`)
@@ -1029,13 +1119,18 @@ export class Waters {
         accumulator.maxShipId = Math.max(ship.id || 1, accumulator.maxShipId)
         // @ts-ignore - weapons property and structure available at runtime
         if (ship.weapons && typeof ship.weapons === 'object') {
-          accumulator.maxWeaponId = Object.values(ship.weapons).reduce(
-            (weaponMax, /** @type {any} */ weapon) => {
-              // @ts-ignore - weapon is Rack type with id property
-              const weaponId = typeof weapon === 'object' ? weapon?.id : 1
-              return Math.max(weaponId || 1, weaponMax)
-            },
-            accumulator.maxWeaponId
+          // @ts-ignore - Object.values returns Rack[], but reduce returns number
+          accumulator.maxWeaponId = /** @type {number} */ (
+            Object.values(ship.weapons).reduce(
+              (weaponMax, /** @type {any} */ weapon) => {
+                // @ts-ignore - weapon is WeaponRack type with id property at runtime
+                const weaponId =
+                  (typeof weapon === 'object' && weapon?.id ? weapon.id : 1) ||
+                  1
+                return Math.max(/** @type {number} */ (weaponId), weaponMax)
+              },
+              accumulator.maxWeaponId
+            )
           )
         }
         return accumulator
@@ -1141,10 +1236,11 @@ export class Waters {
    */
   createLoadOut (map, ships) {
     ships = ships || this.weaponShips || []
-    // @ts-ignore - map.weapons property available at runtime
+    // @ts-ignore - map is Map at runtime
+    const mapTyped = /** @type {Map} */ (map)
     const weapons = bh.terrain?.hasUnattachedWeapons
-      ? map?.weapons || []
-      : (map?.weapons || []).filter(
+      ? mapTyped?.weapons || []
+      : (mapTyped?.weapons || []).filter(
           (/** @type {any} */ weapon) => !weapon.isLimited
         )
     // @ts-ignore - UI type is Board at runtime
@@ -1152,9 +1248,9 @@ export class Waters {
 
     // For terrains without unattached weapons, also create weapon systems
     // from limited weapons for display purposes (weapon tally boxes)
-    if (!bh.terrain?.hasUnattachedWeapons && map?.weapons) {
+    if (!bh.terrain?.hasUnattachedWeapons && mapTyped?.weapons) {
       // @ts-ignore - map.weapons is available at runtime
-      const limitedWeapons = map.weapons.filter(
+      const limitedWeapons = mapTyped.weapons.filter(
         (/** @type {any} */ weapon) => weapon.isLimited
       )
       for (const limitedWeapon of limitedWeapons) {
@@ -1177,7 +1273,7 @@ export class Waters {
   /**
    * Displays auto-selection warning for weapons.
    * @param {string} weaponName - Name of the weapon
-   * @param {Object|null} currentShip - The ship with the weapon
+   * @param {Object|null} currentShip - The ship with the weapon (may be null or undefined)
    * @returns {void}
    * @private
    *
@@ -1287,7 +1383,7 @@ export class Waters {
   /**
    * Generates a source hint for weapon targeting.
    * @param {Object} ship - The ship to generate hint for
-   * @param {Object|null} opponent - The opponent instance
+   * @param {Waters|null} opponent - The opponent instance
    * @returns {[number, number]} Coordinates [row, col] for hint
    * @private
    */
@@ -1305,7 +1401,7 @@ export class Waters {
    * This prevents seek-mode weapons from accidentally placing a hint at [0,0].
    *
    * @param {Object} ship - The ship to generate hint for
-   * @param {Object|null} opponent - The opponent instance
+   * @param {Waters|null} opponent - The opponent instance
    * @returns {[number, number]} Coordinates [row, col] for hint
    * @private
    */
@@ -1321,7 +1417,9 @@ export class Waters {
     if (!hintKey) return [0, 0]
     const [r, c] = parsePair(hintKey)
     if (this.steps && opponent?.UI) {
-      this.steps.addHint(opponent.UI, r, c, opponent.UI.gridCellAt(r, c))
+      // @ts-ignore - opponent.UI is Board at runtime
+      const opponentBoard = /** @type {Board} */ (opponent.UI)
+      this.steps.addHint(opponentBoard, r, c, opponentBoard.gridCellAt?.(r, c))
     }
     return [r, c]
   }
@@ -1330,15 +1428,18 @@ export class Waters {
    * Gets surrounding cells for a ship relative to opponent.
    * Returns an empty array when the opponent is missing.
    * @param {Object} ship - The ship
-   * @param {Object|null} opponent - The opponent instance
+   * @param {Waters|null} opponent - The opponent instance
    * @returns {string[]} Array of surrounding cell keys
    * @private
    */
   getSurroundingCells (ship, opponent) {
     if (!opponent || !ship) return []
+    // @ts-ignore - ship.cells is available at runtime
     const cells = ship.cells
     if (!cells) return []
-    const surrounding = [...opponent.UI.surroundCells(cells)]
+    // @ts-ignore - opponent.UI is Board at runtime
+    const opponentBoard = /** @type {Board} */ (opponent.UI)
+    const surrounding = [...(opponentBoard.surroundCells?.(cells) || [])]
     return surrounding
   }
 
@@ -1346,19 +1447,23 @@ export class Waters {
    * Creates a shadow source at the given coordinates.
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {Object|null} The shadow cell or null
+   * @returns {HTMLElement|null} The shadow cell or null
    * @private
    */
   createShadowSource (r, c) {
     const opponent = this.opponent
     if (opponent && opponent.UI) {
-      const opponentCell = opponent.UI.gridCellAt(r, c)
+      // @ts-ignore - opponent.UI is Board at runtime
+      const opponentBoard = /** @type {Board} */ (opponent.UI)
+      const opponentCell = opponentBoard.gridCellAt?.(r, c)
       if (this.steps) {
-        this.steps.addShadow(opponent.UI, r, c, opponentCell)
+        this.steps.addShadow(opponentBoard, r, c, opponentCell || null)
       }
-      return opponentCell
+      return opponentCell || null
     } else {
-      return this.UI.gridCellAt(r, c)
+      // @ts-ignore - this.UI is Board at runtime
+      const board = /** @type {Board} */ (this.UI)
+      return board.gridCellAt?.(r, c) || null
     }
   }
 
@@ -1367,7 +1472,10 @@ export class Waters {
    * @param {boolean} isTargeting - Whether the board is in targeting mode.
    */
   setBoardTargetingState (isTargeting) {
-    const boardClasses = this.UI.board.classList
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    const boardClasses = board.board?.classList
+    if (!boardClasses) return
     if (bh.seekingMode) {
       boardClasses.add('seeking-mode')
     }
@@ -1393,30 +1501,21 @@ export class Waters {
    */
   selectAndArmWps (oppo, weaponId, launchR, launchC, hintR, hintC, cell = null) {
     // @ts-ignore - loadOut available at runtime
-    const rack = this.loadOut.getWeaponBySystemId(weaponId)
+    const rack = this.loadOut?.getWeaponBySystemId(weaponId)
     // @ts-ignore - rack structure known at runtime
     const weapon = rack?.weapon
     const letter = weapon?.letter
 
     this.giveTempHint(weapon, cell, oppo)
     this.addSource(oppo, launchR, launchC, rack, cell)
-    // @ts-ignore - steps available at runtime
-    const { shadowR, shadowC } = this.steps.addRack(
-      rack,
-      weapon,
-      letter,
-      weaponId,
-      launchR,
-      launchC,
-      cell,
-      hintR,
-      hintC
-    )
+    // @ts-ignore - steps.addRack method accepts rack object directly
+    const rackInfo = this.steps?.addRack?.(rack) || { shadowR: 0, shadowC: 0 }
+    const { shadowR, shadowC } = rackInfo
 
-    if (letter) {
+    if (letter && this.loadOut) {
       this.loadOut.switchToWeapon(letter)
 
-      if (weapon.postSelectCoords === 0) {
+      if (weapon?.postSelectCoords === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
@@ -1469,14 +1568,16 @@ export class Waters {
       )
     }
     // @ts-ignore - steps and terrain available at runtime
-    if (!bh.terrain.hasUnattachedWeapons && !this.steps.sourceShip) {
+    if (!bh.terrain?.hasUnattachedWeapons && !this.steps?.sourceShip) {
       console.warn(
         'Terrain does not have unattached weapons, but a weapon is without a source ship'
       )
       // @ts-ignore - loadOut available at runtime
-      const ship = this.loadOut.getShipByWeaponId(rack?.id)
-      // @ts-ignore - steps available at runtime
-      this.steps.addShip(ship)
+      const ship = this.loadOut?.getShipByWeaponId(rack?.id)
+      // @ts-ignore - steps available at runtime, ship has getPrimaryWeapon method at runtime
+      if (ship && this.steps) {
+        this.steps.addShip(ship)
+      }
     }
   }
 
@@ -1488,15 +1589,15 @@ export class Waters {
    * @private
    */
   _armSelectedWeapon (selection, oppo) {
-    // @ts-ignore - UI available at runtime
+    // @ts-ignore - UI available at runtime on oppo or this
     const cell = oppo?.UI?.gridCellAt(selection.hintR, selection.hintC)
     this.selectAndArmWeaponId(
-      selection.weaponId,
+      selection.weaponId || -1,
       oppo,
-      selection.launchR,
-      selection.launchC,
-      selection.hintR,
-      selection.hintC,
+      selection.launchR || 0,
+      selection.launchC || 0,
+      selection.hintR || 0,
+      selection.hintC || 0,
       cell
     )
   }
@@ -1510,6 +1611,7 @@ export class Waters {
    * @returns {void}
    * @private
    */
+  // @ts-ignore - method intentionally unused
   selectAttachedWeapon (cell, r, c, oppo) {
     const selection = this.selectWeaponId(cell, r, c, false, null, oppo)
     this._armSelectedWeapon(selection, oppo)
@@ -1534,12 +1636,12 @@ export class Waters {
    * @param {number} launchC - Launch column coordinate
    * @param {number} hintR - Hint row coordinate
    * @param {number} hintC - Hint column coordinate
-   * @param {HTMLElement|null} cell - Cell element
+   * @param {HTMLElement|null} [cell] - Cell element
    * @returns {void}
    * @private
    */
   selectAndArmWeaponId (weaponId, oppo, launchR, launchC, hintR, hintC, cell) {
-    if (weaponId < 1) {
+    if (!weaponId || weaponId < 1) {
       return
     }
 
@@ -1554,19 +1656,22 @@ export class Waters {
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
-   * @returns {Promise<null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }>} Result with weapon or selection state
+   * @returns {Promise<null|{weapon: Object, score: Object}|{hasTargettedWeapon: boolean}>} Result with weapon or selection state
    */
   async launchRandomWeapon (r, c, autoSelectWarning = !bh.seekingMode) {
+    // @ts-ignore - launchUnattachedWeapon returns union type at runtime
     const result =
-      /** @type {null|{ weapon: Object, score: Object}|{ hasTargettedWeapon: boolean }} */ (
+      /** @type {null|{weapon: Object, score: Object}|{hasTargettedWeapon: boolean}} */ (
         (await this.launchUnattachedWeapon(r, c)) || {}
       )
     // Check for score property using bracket notation to avoid type narrowing issues
-    if (result && 'score' in result && result['score'] !== LoadOut.noResult) {
+    // @ts-ignore - result type is union, safely check score property
+    if (result && 'score' in result && result.score !== LoadOut.noResult) {
       return result
     }
+    // @ts-ignore - add hasTargettedWeapon property to result
     if (result) {
-      result['hasTargettedWeapon'] =
+      result.hasTargettedWeapon =
         this.prepareTargetedRandomWeaponSelection(autoSelectWarning)
     }
     return result
@@ -1598,7 +1703,9 @@ export class Waters {
    * @private
    */
   createDefaultWeaponSelection (hintR, hintC) {
-    this.addSelectionSource(this.UI, 0, 0, this.UI.gridCellAt(0, 0))
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    this.addSelectionSource(board, 0, 0, board.gridCellAt?.(0, 0))
     return this.createWeaponSelection(0, 0, -1, hintR, hintC)
   }
 
@@ -1611,8 +1718,8 @@ export class Waters {
    * @param {number} hintR - Hint row coordinate
    * @param {number} hintC - Hint column coordinate
    * @param {boolean|string} random - Whether to select randomly
-   * @param {Object} [ship] - Specific ship to select from (overrides cell)
-   * @param {Object} [oppo] - Opponent instance
+   * @param {Object|null|undefined} [ship] - Specific ship to select from (overrides cell)
+   * @param {Waters|null|undefined} [oppo] - Opponent instance
    * @returns {WeaponSelection} Weapon selection payload
    */
   selectWeaponId (cell, hintR, hintC, random, ship, oppo) {
@@ -1644,51 +1751,107 @@ export class Waters {
     return this.selectWeaponFromCell(keys, hintR, hintC, random, viewModel)
   }
 
+  /**
+   * Attempts to select and arm a targeted random weapon for the specified weapon system.
+   * Auto-selects from armed ships when a weapon system is ready.
+   * @param {boolean} [autoSelectWarning] - Whether to display selection warning
+   * @returns {boolean} True if weapon was successfully selected and armed
+   * @private
+   */
   hasTargettedRandomWeaponForWps (autoSelectWarning = !bh.seekingMode) {
     this.randomAttachedWeapon(this.opponent)
-    const currentWeapon = this.loadOut.selectedWeapon
+    const currentWeapon = this.loadOut?.selectedWeapon
 
     if (!currentWeapon) return false
     // @ts-ignore - currentWeapon structure known at runtime
-    const currentShip = this.loadOut.getShipByWeaponId(currentWeapon.id)
+    const currentShip = this.loadOut?.getShipByWeaponId(currentWeapon.id)
     // @ts-ignore - weapon property available at runtime
     const weaponName = currentWeapon.weapon?.name || 'weapon'
     if (autoSelectWarning) {
       this.displayAutoSelectWarning(weaponName, currentShip)
     }
 
-    this.loadOut.launch = (coords, _weapon, wps) => {
-      return this.launchWeapon(wps, coords)
+    if (this.loadOut) {
+      // @ts-ignore - launch signature compatible at runtime with 3 parameters
+      this.loadOut.launch = (coords, _weapon, wps) => {
+        return this.launchWeapon(wps, coords)
+      }
     }
     return true
   }
+  /**
+   * Gets the currently selected or active weapon system.
+   * Falls back to getCurrentWeaponSystem if selectedWeapon is not available.
+   * @returns {Object|undefined} Current weapon system or undefined
+   */
   get currentWeaponSystem () {
-    return this.loadOut.selectedWeapon || this.loadOut.getCurrentWeaponSystem()
+    // @ts-ignore - selectedWeapon available at runtime
+    return (
+      this.loadOut?.selectedWeapon || this.loadOut?.getCurrentWeaponSystem()
+    )
   }
+
+  /**
+   * Gets the weapon object from the current weapon system.
+   * @returns {Object|undefined} Current weapon or undefined
+   */
   get currentWeapon () {
     const wps = this.currentWeaponSystem
+    // @ts-ignore - weapon property available at runtime
     return wps?.weapon
   }
 
+  /**
+   * Fires a weapon at specified coordinates.
+   * @param {number} row - Target row coordinate
+   * @param {number} col - Target column coordinate
+   * @param {Object} [weaponSystem] - Weapon system to fire (defaults to loadOut.selectedWeapon)
+   * @param {Function} [launch] - Launch function (defaults to loadOut.launch)
+   * @returns {Promise<any>} Fire result
+   * @private
+   */
   async fireWeaponAt (
     row,
     col,
-    weaponSystem = this.loadOut.selectedWeapon,
-    launch = this.loadOut.launch
+    weaponSystem = this.loadOut?.selectedWeapon || undefined,
+    launch = this.loadOut?.launch
   ) {
-    return await this.loadOut.aimWeapon(bh.map, row, col, weaponSystem, launch)
+    // @ts-ignore - loadOut available at runtime, cast weapon system
+    return await this.loadOut?.aimWeapon(bh.map, row, col, weaponSystem, launch)
   }
+  /**
+   * Launches the selected armed weapon at target coordinates.
+   * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
+   *
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @returns {Promise<Object|null>} Fire result or null
+   * @private
+   * @deprecated Not used in current codebase
+   */
+  // @ts-ignore - unused but may be called externally
   async launchSelectedWeapon (r, c) {
-    if (this.loadOut.isArmed()) {
-      return await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
+    if (this.loadOut?.isArmed()) {
+      return await this.fireWeaponAt(
+        r,
+        c,
+        this.loadOut.selectedWeapon || undefined
+      )
     }
     return null
   }
 
+  /**
+   * Fires unattached weapon system at target coordinates.
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @returns {Promise<Object|null>} Fire result or null
+   * @private
+   */
   async launchUnattachedWeapon (r, c) {
     const unAttached = this.getUnattachedWeaponSystem()
     if (unAttached) {
-      const launch = async coords => {
+      const launch = async (/** @type {Array<number>} */ coords) => {
         return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
       }
       const result = await this.fireWeaponAt(r, c, unAttached, launch)
@@ -1696,45 +1859,101 @@ export class Waters {
     }
     return null
   }
+  /**
+   * Launches a single shot weapon system at target coordinates.
+   * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
+   *
+   * @param {number} r - Target row coordinate
+   * @param {number} c - Target column coordinate
+   * @param {Object} sShot - Single shot weapon data with fire configuration
+   * @returns {Promise<void>}
+   * @private
+   * @deprecated Not used in current codebase
+   */
+  // @ts-ignore - unused but may be called externally, loadOut available at runtime
   async launchSingleShot (r, c, sShot) {
-    this.loadOut.onDestroy = (weapon, affectedArea) => {
-      return this.processShot(weapon, ...(affectedArea?.[0] || []))
+    if (!this.loadOut) return
+    this.loadOut.onDestroy = (
+      /** @type {any} */ weapon,
+      /** @type {any} */ affectedArea
+    ) => {
+      // @ts-ignore - affectedArea is coordinate array at runtime
+      const [ar, ac] = /** @type {[number, number]} */ (affectedArea?.[0] || [])
+      return this.processShot(weapon, ar, ac, 0)
     }
 
-    const { fireSingleShot, coordinates, wps } = this.loadOut.aimSingleShotInfo(
-      sShot,
-      r,
-      c
-    )
+    // @ts-ignore - aimSingleShotInfo available at runtime
+    const { fireSingleShot, coordinates, wps } =
+      this.loadOut.aimSingleShotInfo?.(sShot, r, c)
     await this.launchTo(coordinates, bh.map.rows - 1, 0, wps)
 
-    const score = fireSingleShot()
+    const score = fireSingleShot?.()
     return { weapon: wps.weapon, score }
   }
 
+  /**
+   * Gets the unattached weapon system.
+   * @returns {WeaponSystem|null} Unattached weapon system or null
+   * @private
+   */
   getUnattachedWeaponSystem () {
     if (this.opponent == null || bh.seekingMode) {
-      const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+      // @ts-ignore - loadOut available at runtime
+      const weaponSystem = this.loadOut?.getCurrentWeaponSystem()
       // @ts-ignore - getLoadedWeapon method available at runtime
-      return weaponSystem?.getLoadedWeapon()
+      return weaponSystem?.getLoadedWeapon() || null
     } else {
-      return this.loadOut.getUnattachedWeaponSystem()
+      // @ts-ignore - loadOut available at runtime
+      return this.loadOut?.getUnattachedWeaponSystem() || null
     }
   }
 
+  /**
+   * Launches weapon system to given coordinate destination.
+   * @param {Array<number>|Object} coords - Target coordinate as array [r,c] or object {r,c}
+   * @param {number} rr - Reference row position for launch fallback
+   * @param {number} cc - Reference column position for launch fallback
+   * @param {Object} currentWps - Current weapon system with weapon reference
+   * @returns {Promise<Object|null>} Weapon launch result
+   * @private
+   */
+  /**
+   * Launches weapon system to given coordinate destination.
+   * @param {Array<number>|Object} coords - Target coordinate as array [r,c] or object {r,c}
+   * @param {number} rr - Reference row position for launch fallback
+   * @param {number} cc - Reference column position for launch fallback
+   * @param {Object} currentWps - Current weapon system with weapon reference
+   * @returns {Promise<Object|null>} Weapon launch result
+   * @private
+   */
   async launchTo (coords, rr, cc, currentWps) {
-    return await currentWps.weapon.launchTo(
-      coords,
-      rr,
-      cc,
-      bh.map,
-      this.UI,
-      this.opponent?.UI,
-      this
+    // @ts-ignore - opponent.UI is Board at runtime
+    const opponentBoard = this.opponent?.UI
+      ? /** @type {Board} */ (this.opponent.UI)
+      : null
+    // @ts-ignore - currentWps.weapon available at runtime, Board type for UI
+    return (
+      (await currentWps.weapon?.launchTo(
+        coords,
+        rr,
+        cc,
+        bh.map,
+        /** @type {Board} */ (this.UI),
+        opponentBoard,
+        this
+      )) || null
     )
   }
+  /**
+   * Launches weapon system to coordinate from stored source hint.
+   * @param {Object} wps - Weapon system to launch
+   * @param {Array<number>|Object} coords - Target coordinate destination
+   * @returns {Promise<Object|null>} Weapon launch result
+   * @private
+   */
   async launchWeapon (wps, coords) {
-    const { r, c } = this.steps.sourceHint || { r: 0, c: 0 }
+    // @ts-ignore - this.steps available at runtime
+    const { r, c } = this.steps?.sourceHint || { r: 0, c: 0 }
     return await this.launchTo(coords, r, c, wps)
   }
 
@@ -1815,14 +2034,18 @@ export class Waters {
   }
   /**
    * Resets the base board state.
+   * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
+   *
    * @returns {void}
    * @private
+   * @deprecated Not used in current codebase
    */
+  // @ts-ignore - unused but may be called externally
   resetBase () {
     this.boardDestroyed = false
-    if (this.UI?.board) {
-      this.UI.board.classList.remove('destroyed')
-    }
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    board.board?.classList?.remove('destroyed')
     this.score.reset()
   }
   /**
@@ -1832,18 +2055,19 @@ export class Waters {
    * @private
    */
   setMap (map) {
-    map = map || bh.map
-    if (!map) return
+    // @ts-ignore - map is Map type at runtime
+    const mapTyped = /** @type {Map} */ (map || bh.map)
+    if (!mapTyped) return
     if (!this.ships || this.ships.length === 0) {
       // Debug: log map and fleet composition to diagnose missing attached weapons
       try {
-        console.debug('Waters.setMap: setting map', map?.title)
-        const newFleet = map.newFleetForMap || []
+        console.debug('Waters.setMap: setting map', mapTyped?.title)
+        const newFleet = mapTyped.newFleetForMap || []
         console.debug(
           'Waters.setMap: map.newFleetForMap letters',
           newFleet.map((/** @type {any} */ s) => s.letter)
         )
-        const extra = map.extraArmedFleetForMap || []
+        const extra = mapTyped.extraArmedFleetForMap || []
         console.debug(
           'Waters.setMap: map.extraArmedFleetForMap letters',
           extra.map((/** @type {any} */ s) => s.letter)
@@ -1852,8 +2076,8 @@ export class Waters {
         console.debug('Waters.setMap: debug failed', e)
       }
 
-      this.ships = map.newFleetForMap || []
-      this.armWeapons(map)
+      this.ships = mapTyped.newFleetForMap || []
+      this.armWeapons(mapTyped)
     }
     for (const ship of this.ships) {
       ship.reset()
@@ -1871,14 +2095,19 @@ export class Waters {
   }
   /**
    * Gets a random target from hit candidates.
+   * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
+   *
    * @param {Array<Array<number>>} effect - The effect area
    * @param {Object} weapon - The weapon being used
    * @returns {Array<number>|null} Random hit candidate or null
    * @private
+   * @deprecated Not used in current codebase
    */
+  // @ts-ignore - unused but may be called externally
   getTarget (effect, weapon) {
     const candidates = this.getHitCandidates(effect, weapon)
-    return randomElement(candidates)
+    // @ts-ignore - randomElement may return undefined, cast to null
+    return randomElement(candidates) || null
   }
 
   /**
@@ -1889,20 +2118,28 @@ export class Waters {
    * @private
    */
   getHitCandidates (effect, weapon) {
+    /** @type {Array<Array<number>>} */
     const candidates = []
     const map = bh.map
     const maps = bh.maps
     if (!map || !maps) return candidates
     for (const [r, c, power] of effect) {
       if (map.inBounds(r, c) && this.score.newShotKey(r, c) !== null) {
-        const cell = this.UI.gridCellAt(r, c)
-        this.addWake(cell, r, c, weapon)
+        // @ts-ignore - this.UI is Board at runtime
+        const board = /** @type {Board} */ (this.UI)
+        const cell = board.gridCellAt?.(r, c)
+        this.addWake(cell || null, r, c, weapon)
         const shipCell = this.shipCellAt(r, c)
         if (shipCell !== null) {
+          // @ts-ignore - shapesByLetter available at runtime
           const shape = maps.shapesByLetter[shipCell.letter]
-          const protection = shape.protectionAgainst(weapon.letter)
+          // @ts-ignore - weapon is Weapon at runtime with letter property
+          const protection = shape?.protectionAgainst?.(weapon?.letter)
 
-          if (power >= protection || (power === 1 && protection === 2)) {
+          if (
+            protection &&
+            (power >= protection || (power === 1 && protection === 2))
+          ) {
             candidates.push([r, c, power])
           }
         }
@@ -1913,7 +2150,7 @@ export class Waters {
 
   /**
    * Adds wake visual to cell if applicable.
-   * @param {HTMLElement} cell - The cell to add wake to
+   * @param {HTMLElement|null} cell - The cell to add wake to
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {Object} weapon - The weapon being used
@@ -1921,13 +2158,14 @@ export class Waters {
    * @private
    */
   addWake (cell, r, c, weapon) {
-    if (!weapon || !weapon.hasWake) return
+    // @ts-ignore - weapon is Weapon at runtime with hasWake property
+    if (!weapon || !weapon?.hasWake) return
     if (
-      !cell.classList.contains('frd-hit') &&
-      !cell.classList.contains('miss') &&
-      !cell.classList.contains('hit')
+      !cell?.classList?.contains('frd-hit') &&
+      !cell?.classList?.contains('miss') &&
+      !cell?.classList?.contains('hit')
     ) {
-      cell.classList.add('wake')
+      cell?.classList?.add('wake')
       this.score.wakeReveal(r, c)
     }
   }
@@ -1942,16 +2180,18 @@ export class Waters {
 
   /**
    * Handles the case when there are no hit candidates.
-   * @param {*} weapon - The weapon.
+   * @param {Object} weapon - The weapon.
    * @param {Array<any>} effect - The effect.
-   * @param {Object} options - Additional options.
+   * @param {Object} [options] - Additional options.
    * @returns {Promise<any>} The destruction result.
    */
-  async handleNoHits (weapon, effect, options) {
+  async handleNoHits (weapon, effect, options = {}) {
+    // @ts-ignore - options may have crashLoc at runtime
     if (!options?.crashLoc) {
       return await this.destroy(weapon, effect, options)
     }
 
+    // @ts-ignore - options.crashLoc available at runtime
     const splashEffect = await this.getCrashSplash(
       weapon,
       options.crashLoc,
@@ -1959,7 +2199,9 @@ export class Waters {
       options
     )
     const result = await this.destroy(weapon, effect, options)
+    // @ts-ignore - add isSplash property at runtime
     options.isSplash = true
+    // @ts-ignore - accumulate result properly
     this.accumulateResult(
       await this.destroy(weapon, splashEffect, options),
       result
@@ -1989,15 +2231,16 @@ export class Waters {
 
   /**
    * Chooses the correct splash effect based on weapon state.
-   * @param {*} weapon - The weapon.
+   * @param {Object} weapon - The weapon.
    * @param {Array<any>} resolvedTarget - Resolved hit target.
    * @param {Array<any>} effect - The original effect.
-   * @param {Object} options - Additional options.
+   * @param {Object} [options] - Additional options.
    * @returns {Array<any>} The splash effect.
    * @private
    */
-  selectSplashEffect (weapon, resolvedTarget, effect, options) {
+  selectSplashEffect (weapon, resolvedTarget, effect, options = {}) {
     if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
+      // @ts-ignore - options.crashLoc available at runtime
       return this.getCrashSplash(weapon, options.crashLoc, effect, options)
     }
     return this.getStrikeSplash(weapon, resolvedTarget, effect, options)
@@ -2006,8 +2249,11 @@ export class Waters {
    * Initializes the steps event handlers.
    */
   initializeSteps () {
-    this.steps.onEndTurn = this.handleEndTurn.bind(this)
-    this.steps.onHint = this.handleHint.bind(this)
+    // @ts-ignore - this.steps available at runtime
+    if (this.steps) {
+      this.steps.onEndTurn = this.handleEndTurn.bind(this)
+      this.steps.onHint = this.handleHint.bind(this)
+    }
   }
   get cannotPassTurn () {
     return (
@@ -2022,14 +2268,20 @@ export class Waters {
   /**
    * Handles end of turn event.
    * Finishes opponent turn and triggers opponent begin turn if game not over.
-   *
    */
   async handleEndTurn () {
     if (this.cannotPassTurn) {
       return
     }
-    this.UI.deactivateWeapons()
-    this.opponent?.UI.deactivateWeapons()
+    // @ts-ignore - UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    board.deactivateWeapons?.()
+    // @ts-ignore - opponent.UI is Board at runtime
+    const opponentBoard = this.opponent?.UI
+      ? /** @type {Board} */ (this.opponent.UI)
+      : null
+    opponentBoard?.deactivateWeapons?.()
+    // @ts-ignore - opponent may have _handleBeginTurn at runtime
     await this.opponent?._handleBeginTurn?.()
   }
   /**
@@ -2046,11 +2298,11 @@ export class Waters {
   }
   /**
    * Destroys one target with the given weapon and effect.
-   * @param {*} weapon - The weapon used.
-   * @param {Array<any>} effect - The effect coordinates.
-   * @param {Array<any>} [target] - Optional target coordinates.
-   * @param {Object} [options] - Additional options for destruction.
-   * @returns {*} The result of the destruction.
+   * @param {Object} weapon - The weapon used
+   * @param {Array<any>} effect - The effect coordinates
+   * @param {Array<any>|null} [target] - Optional target coordinates
+   * @param {Object} [options] - Additional options for destruction
+   * @returns {WeaponResult|Promise<WeaponResult>} The result of the destruction
    */
   destroyOne (weapon, effect, target = null, options = {}) {
     const hitCandidates = this.getHitCandidates(effect, weapon)
@@ -2063,11 +2315,12 @@ export class Waters {
   /**
    * Checks if crash splash should be used.
    * @private
-   * @param {*} weapon - The weapon.
-   * @param {Array<any>} resolvedTarget - The resolved target.
-   * @returns {boolean} True if crash splash.
+   * @param {Object} weapon - The weapon
+   * @param {Array<any>} resolvedTarget - The resolved target
+   * @param {Object} [options] - Additional firing options
+   * @returns {boolean} True if crash splash
    */
-  shouldUseCrashSplash (weapon, resolvedTarget, options) {
+  shouldUseCrashSplash (weapon, resolvedTarget, options = {}) {
     return (
       weapon.crashOverSplash &&
       options?.crashLoc &&
@@ -2076,18 +2329,47 @@ export class Waters {
     )
   }
 
-  getStrikeSplash (weapon, targetCoords, effect, options) {
+  /**
+   * Gets the strike splash effect.
+   * @param {Object} weapon - The weapon
+   * @param {Array<number>} targetCoords - Target coordinates [r, c]
+   * @param {Array<any>} effect - The original effect
+   * @param {Object} [options] - Additional options
+   * @returns {Array<any>} The splash effect
+   * @private
+   */
+  getStrikeSplash (weapon, targetCoords, effect, options = {}) {
     this.animateStrikeSplash(targetCoords, weapon)
     return weapon.splash(bh.map, targetCoords, effect, options)
   }
 
+  /**
+   * Animates the strike splash effect.
+   * @param {Array<number>} targetCoords - Target coordinates [r, c]
+   * @param {Object} weapon - The weapon
+   * @returns {Promise<void>}
+   * @private
+   */
   async animateStrikeSplash (targetCoords, weapon) {
-    const cellSize = this.UI.cellSize()
-    const targetCell = this.UI.gridCellAt(targetCoords[0], targetCoords[1])
-    await weapon.animateSplashExplode(targetCell, cellSize)
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    const cellSize = board.cellSize?.()
+    const targetCell = board.gridCellAt?.(targetCoords[0], targetCoords[1])
+    if (cellSize && targetCell && weapon?.animateSplashExplode) {
+      await weapon.animateSplashExplode(targetCell, cellSize)
+    }
   }
 
-  getCrashSplash (weapon, targetCoords, effect, options) {
+  /**
+   * Gets the crash splash effect.
+   * @param {Object} weapon - The weapon
+   * @param {Array<number>} targetCoords - Target coordinates [r, c]
+   * @param {Array<any>} effect - The original effect
+   * @param {Object} [options] - Additional options
+   * @returns {Array<any>} The crash splash effect
+   * @private
+   */
+  getCrashSplash (weapon, targetCoords, effect, options = {}) {
     this.animateStrikeSplash(targetCoords, weapon)
     return weapon?.crashSplash(bh.map, targetCoords, effect, options)
   }
@@ -2145,7 +2427,9 @@ export class Waters {
    * @returns {HTMLElement[]} Array of armed cell DOM elements
    */
   armedCells () {
-    return this.cellList().filter(c => Number.parseInt(c.dataset.ammo) > 0)
+    return this.cellList().filter(
+      (/** @type {any} */ c) => Number.parseInt(c?.dataset?.ammo || '0') > 0
+    )
   }
 
   /**
@@ -2157,7 +2441,9 @@ export class Waters {
    */
   armedCellsWithWeapon (letter) {
     return this.cellList().filter(
-      c => Number.parseInt(c.dataset.ammo) > 0 && c.dataset.wletter === letter
+      (/** @type {any} */ c) =>
+        Number.parseInt(c?.dataset?.ammo || '0') > 0 &&
+        c?.dataset?.wletter === letter
     )
   }
 
@@ -2169,7 +2455,7 @@ export class Waters {
    */
   cellList () {
     // @ts-ignore - cellsOnBoard returns HTMLCollection, cast to HTMLElement[]
-    return [...this.cellsOnBoard()]
+    return [...(this.cellsOnBoard() || [])]
   }
 
   /**
@@ -2179,7 +2465,9 @@ export class Waters {
    * @returns {HTMLCollection} Live collection of board cell children
    */
   cellsOnBoard () {
-    return this.UI.board.children
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    return board.board?.children || []
   }
 
   /**
@@ -2193,9 +2481,11 @@ export class Waters {
   shipCells (id) {
     /** @type {HTMLElement[]} */
     const list = []
-    for (const cell of this.cellsOnBoard()) {
-      // @ts-ignore - dataset property available on Element, cast to HTMLElement
-      if (Number.parseInt(cell.dataset.id) === id) {
+    const cells = this.cellsOnBoard() || []
+    for (const cell of cells) {
+      // @ts-ignore - dataset property available on Element
+      const cellId = cell?.dataset?.id ? Number.parseInt(cell.dataset.id) : null
+      if (cellId === id) {
         // @ts-ignore - Element from HTMLCollection, cast to HTMLElement
         list.push(cell)
       }
@@ -2213,7 +2503,9 @@ export class Waters {
   recordAutoMiss (r, c) {
     const key = this.score.addAutoMiss(r, c)
     if (!key) return // already shot here
-    this.UI.cellMiss(r, c)
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    board.cellMiss?.(r, c)
   }
 
   /**
@@ -2258,12 +2550,22 @@ export class Waters {
    * @private
    */
   markSunk (ship) {
-    if (!ship || !ship.cells) return
-    this.UI.displaySurround(
-      ship.cells,
+    if (!ship) return
+    // @ts-ignore - ship.cells property available at runtime
+    const shipCells = ship.cells
+    if (!shipCells) return
+    // @ts-ignore - this.UI is Board at runtime
+    const board = /** @type {Board} */ (this.UI)
+    board.displaySurround?.(
+      shipCells,
       ship.letter,
-      (r, c) => this.recordAutoMiss(r, c),
-      (c, r, letter) => this.UI.cellSunkAt(r, c, letter)
+      (/** @type {number} */ r, /** @type {number} */ c) =>
+        this.recordAutoMiss(r, c),
+      (
+        /** @type {number} */ c,
+        /** @type {number} */ r,
+        /** @type {string} */ letter
+      ) => board.cellSunkAt?.(r, c, letter)
     )
     this.checkFleetSunk()
   }

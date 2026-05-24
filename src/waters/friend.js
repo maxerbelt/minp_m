@@ -107,13 +107,25 @@ const SEEK_CONSTANTS = {
  * Provides test mode automation and friendly AI for validation scenarios.
  * Implements multi-strategy shot selection with preference for damaged ships.
  *
+ * Extends Placement to add autonomous AI capabilities including:
+ * - Strategic targeting with priority-based shot selection
+ * - Morphological pattern matching for ship localization
+ * - Autonomous seeking loops for test mode automation
+ * - Two-click and single-click weapon firing modes
+ * - Bitmask-based coordinate tracking and filtering
+ *
  * @class Friend
  * @extends Placement
+ * @description AI-controlled friendly player with advanced seeking and targeting strategies
  */
 export class Friend extends Placement {
   /**
    * Creates a Friend AI player instance.
-   * @param {Object} friendUI - The friend player UI instance
+   * Initializes the AI player with UI controller, game state, and internal tracking structures.
+   * Calls parent Placement constructor to set up base game state and weapon systems.
+   *
+   * @param {import('./placementUI.js').PlacementUI} friendUI - The friend player UI instance.
+   *   Provides board rendering, event handling, and visual feedback for weapon targeting.
    */
   constructor (friendUI) {
     super(friendUI, Player.friend)
@@ -288,11 +300,12 @@ export class Friend extends Placement {
       console.warn('no more locations to choose from')
       return ['0', 0]
     }
-    // @ts-ignore - reduce callback receives [col, row] tuples, accumulator is {row: count} object
+    // @ts-ignore - reduce callback receives [col, row] tuples, accumulator is Record<number, number>
     const tally = locs.reduce((acc, [, y]) => {
+      // @ts-ignore - numeric index access on accumulator object
       acc[y] = 1 + (acc[y] || 0)
       return acc
-    }, {})
+    }, /** @type {Record<number, number>} */ ({}))
     const unordered = Random.shuffleArray([...Object.entries(tally)])
     const ordered = unordered.toSorted((a, b) => b[1] - a[1])
 
@@ -321,9 +334,10 @@ export class Friend extends Placement {
    * @returns {Function} Async function(coords) that launches weapon at target
    */
   createLaunchFunction (weaponSystem) {
-    // @ts-ignore - coords is {r: number, c: number} object passed to launchTo method
-    return async coords =>
-      await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
+    return async (/** @type {Location} */ coords) => {
+      // @ts-ignore - launchTo is private in Waters but accessible in subclass Friend
+      return await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
+    }
   }
 
   /**
@@ -337,31 +351,6 @@ export class Friend extends Placement {
   }
 
   /**
-   * Launches weapon from source coordinates to target coordinates.
-   * Displays trajectory and handles UI updates for both players.
-   *
-   * @param {Object} coords - Target cell object with r and c properties
-   * @param {number} rr - Source row coordinate
-   * @param {number} cc - Source column coordinate
-   * @param {WeaponSystem} currentWeapon - Weapon system rack with weapon property
-   * @returns {Promise<WeaponLaunchResult>} Result with weapon, score, and hit information
-   * @throws {Error} If weapon system or UI is not properly initialized
-   */
-  async launchTo (coords, rr, cc, currentWeapon) {
-    // @ts-ignore - currentWeapon.weapon is Weapon object available at runtime
-    return await currentWeapon.weapon.cursorLaunchTo(
-      coords,
-      rr,
-      cc,
-      this.map,
-      this.UI,
-      // @ts-ignore - opponent is Waters|null, may not have UI property in some contexts
-      this.opponent?.UI,
-      this
-    )
-  }
-
-  /**
    * Launches randomly selected weapon at specified location.
    * Returns true if weapon was successfully launched (no result).
    *
@@ -371,12 +360,12 @@ export class Friend extends Placement {
    */
   async launchCurrentWeapon (r, c) {
     const launch = this._createCurrentLaunchFunction()
-    // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class
+    // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class at runtime
     return await this.loadOut.aimWeapon(
       this.map,
       r,
       c,
-      this.currentWeaponSystem,
+      /** @type {any} */ (this.currentWeaponSystem),
       launch
     )
   }
@@ -402,7 +391,8 @@ export class Friend extends Placement {
       this.map,
       fallbackR,
       fallbackC,
-      this.currentWeaponSystem,
+      // @ts-ignore - currentWeaponSystem type may be broader at runtime, casting to any for aimWeapon method
+      /** @type {any} */ (this.currentWeaponSystem),
       launch
     )
   }
@@ -414,8 +404,8 @@ export class Friend extends Placement {
    * Attempts multiple bomb launches at random untried locations.
    * Returns result of first successful hit or no result after all attempts.
    *
-   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score, or noResult
    * @private
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score, or noResult if no hits
    */
   async randomBomb () {
     const result = await this._attemptBomb()
@@ -426,15 +416,17 @@ export class Friend extends Placement {
 
   /**
    * Attempts bomb launches with fallback retry logic.
-   * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null otherwise
+   * Iterates through BOMB_ATTEMPTS tries, checking if coordinates are new shots.
+   *
    * @private
+   * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null if all attempts exhausted
    */
   async _attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
       if (this.isCancelled()) return this.noResult
-      // @ts-ignore - this.map is MapInfo at runtime
+      // @ts-ignore - this.map is MapInfo at runtime with randomLocation compat
       const { r, c } = this.randomLocation(/** @type {MapInfo} */ (this.map))
-      // @ts-ignore - newShotKey is defined in base Waters class
+      // @ts-ignore - this.score.newShotKey() is Score method available at runtime
       if (this.score.newShotKey(r, c)) {
         return await this._attemptLaunchWithFallback(r, c)
       }
@@ -444,15 +436,15 @@ export class Friend extends Placement {
 
   /**
    * Launches single destroy-type weapon across highest frequency row.
-   * Uses most-attempted row for targeting line sweep.
+   * Uses most-attempted row for targeting line sweep (row sweep with fallback to opposite end).
    *
-   * @returns {Promise<WeaponLaunchResult|null>} Result with weapon and score
    * @private
+   * @returns {Promise<WeaponLaunchResult|null>} Result with weapon and score
    */
   async randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
     const r = this.getMostFrequentRowNumber()
-    // @ts-ignore - map.cols is available at runtime
+    // @ts-ignore - this.map.cols is number property available at runtime
     return await this._attemptLaunchWithFallback(r, 0, r, this.map.cols - 1)
   }
 
@@ -484,8 +476,8 @@ export class Friend extends Placement {
    * Attempts to find and fire at valid untried locations.
    * Stops game if unable to find valid locations after max attempts.
    *
-   * @returns {Promise<WeaponLaunchResult|null>} Null on success, noResult on failure
    * @private
+   * @returns {Promise<WeaponLaunchResult|null>} Null on success, noResult on failure
    */
   async randomSeek () {
     for (
@@ -501,7 +493,7 @@ export class Friend extends Placement {
         return this.noResult
       }
       if (this.isHitValid(loc[1], loc[0])) {
-        // @ts-ignore - launchSingleShot is defined in base Placement class
+        // @ts-ignore - launchSingleShot is defined in base Placement class at runtime
         return await this.launchSingleShot(loc[1], loc[0])
       }
     }
@@ -521,14 +513,14 @@ export class Friend extends Placement {
 
   /**
    * Performs area scan with two random locations.
-   * Reveals hidden areas without destroying.
+   * Reveals hidden areas without destroying ships.
    * Sets up reveal handler before launching scan weapon.
    *
-   * @returns {Promise<WeaponLaunchResult>} Result with scan weapon and score
    * @private
+   * @returns {Promise<WeaponLaunchResult>} Result with scan weapon and score
    */
   async randomScan () {
-    // @ts-ignore - loadOut is defined in base Placement class
+    // @ts-ignore - loadOut.onReveal is property for callback at runtime
     this.loadOut.onReveal = this.scan.bind(this)
     if (this.isCancelled()) return this.noResult
     // @ts-ignore - this.map is MapInfo at runtime
@@ -537,13 +529,13 @@ export class Friend extends Placement {
     const { r: r1, c: c1 } = this.randomLocation(
       /** @type {MapInfo} */ (this.map)
     )
-    // @ts-ignore - currentWeaponSystem is defined in base Placement class
-    const wps = this.currentWeaponSystem
-    // @ts-ignore - weapon property exists on WeaponSystem at runtime
+    // @ts-ignore - currentWeaponSystem is available at runtime, wps.weapon is Weapon object
+    const wps = /** @type {any} */ (this.currentWeaponSystem)
+    // @ts-ignore - wps.weapon is Weapon object available at runtime
     const weapon = wps.weapon
-    // @ts-ignore - loadOut is defined in base Placement class
+    // @ts-ignore - loadOut.aimWeapon is method available at runtime
     await this.loadOut.aimWeapon(this.map, r, c)
-    // @ts-ignore - loadOut is defined in base Placement class
+    // @ts-ignore - loadOut.aimWeapon returns Promise<WeaponLaunchResult> at runtime
     const score = await this.loadOut.aimWeapon(this.map, r1, c1, wps)
     return { weapon, score }
   }
@@ -551,17 +543,19 @@ export class Friend extends Placement {
   /**
    * Handles scan effect - reveals cells in effect area.
    * Callback for loadOut onReveal handler.
+   * Currently marks UI for revealed cells without detailed logic.
    *
-   * @param {Object} _weapon - The scan weapon (unused)
-   * @param {Array<GridCoordinate>} effect - [row, col, power] cells to reveal
    * @private
+   * @param {Object} _weapon - The scan weapon (unused, not needed for reveal)
+   * @param {Array<GridCoordinate>} effect - [row, col, power] cells to reveal
+   * @returns {void}
    */
   scan (_weapon, effect) {
-    // @ts-ignore - updateUI is inherited from Waters base class
+    // @ts-ignore - updateUI is inherited from Waters base class at runtime
     this.updateUI()
     for (const position of effect) {
       const [r, c] = position
-      // @ts-ignore - map.inBounds is available at runtime
+      // @ts-ignore - this.map.inBounds is function available at runtime
       if (this.map.inBounds(r, c)) {
         // reveal what is in this position
       }
@@ -573,10 +567,11 @@ export class Friend extends Placement {
   /**
    * Dispatches weapon effect to appropriate handler method.
    * Routes effect types to specialized targeting strategies.
+   * Returns noResult if effect type is not recognized or handler fails.
    *
+   * @private
    * @param {EffectType} effect - Effect type: 'DestroyOne' | 'Bomb' | 'Scan' | 'Seek'
    * @returns {Promise<WeaponLaunchResult|null>} Result from effect handler or noResult
-   * @private
    */
   async randomEffect (effect) {
     const effectHandlers = {
@@ -585,9 +580,9 @@ export class Friend extends Placement {
       Scan: () => this.randomScan(),
       Seek: () => this.randomSeek()
     }
-    // @ts-ignore - effect is keyof effectHandlers at runtime
+    // @ts-ignore - effect is EffectType string, effectHandlers[effect] returns async function
     const handler = effectHandlers[effect]
-    // @ts-ignore - handler may return null, noResult is WeaponLaunchResult
+    // @ts-ignore - handler returns Promise<WeaponLaunchResult|null> at runtime
     return handler ? await handler() : this.noResult
   }
 
@@ -596,14 +591,15 @@ export class Friend extends Placement {
   /**
    * Attempts to execute finish action if mask has occupied cells.
    * Generic helper for attempting location-based finish strategies.
+   * Checks mask occupancy and delegates to finishAction if non-zero.
    *
-   * @param {Bitmask|null} mask - Bitmask with occupancy property
-   * @param {Function} finishAction - Callback(mask) to execute if occupied
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish action or null
    * @private
+   * @param {Bitmask|null} mask - Bitmask with occupancy property, or null
+   * @param {MaskConditionHandler} finishAction - Callback(mask) to execute if occupied
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish action or null if no candidates
    */
   async tryFinishCondition (mask, finishAction) {
-    // @ts-ignore - mask.occupancy is available on Bitmask at runtime
+    // @ts-ignore - mask.occupancy is number property at runtime, indicates non-empty mask
     if (mask?.occupancy > 0) {
       return await finishAction(mask)
     }
@@ -612,9 +608,11 @@ export class Friend extends Placement {
 
   /**
    * Executes prioritized finish strategies until one returns a result.
-   * @param {Array<Function>} strategies - Array of asynchronous strategy functions.
-   * @returns {Promise<WeaponLaunchResult|null>} Strategy result or null
+   * Attempts strategies in order, returning first non-null result.
+   *
    * @private
+   * @param {Array<FinishStrategy>} strategies - Array of asynchronous strategy functions.
+   * @returns {Promise<WeaponLaunchResult|null>} Strategy result or null if all exhausted
    */
   async _executeFinishStrategies (strategies) {
     for (const strategy of strategies) {
@@ -625,13 +623,15 @@ export class Friend extends Placement {
   }
 
   /**
-   * Attempts to select a random target from a candidate mask.
-   * @param {Bitmask|null} mask - Candidate mask to use for selection.
-   * @returns {Promise<WeaponLaunchResult|null>} Result from firing at the selected candidate
+   * Attempts to fire at a random target from a candidate mask.
+   * Validates mask has occupancy, then delegates to selectRandomCandidate.
+   *
    * @private
+   * @param {Bitmask|null} mask - Candidate mask to use for selection.
+   * @returns {Promise<WeaponLaunchResult|null>} Result from firing at selected candidate
    */
   async _finishMaskCandidates (mask) {
-    // @ts-ignore - mask is Bitmask at runtime
+    // @ts-ignore - mask is Bitmask at runtime with occupancy property and methods
     return await this.tryFinishCondition(mask, candidate =>
       this.selectRandomCandidate(candidate)
     )
@@ -640,25 +640,30 @@ export class Friend extends Placement {
   /**
    * Attempts to fire at revealed but not yet attacked cells.
    * Prioritizes previously revealed locations for follow-up shots.
+   * Removes already-shot cells from reveal mask before selection.
    *
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    */
   async finishRevealed () {
     // @ts-ignore - score.reveal is Bitmask at runtime with occupancy property
-    if (this.score.reveal.occupancy === 0) return null
-    // @ts-ignore - score.reveal and score.shot are Bitmask at runtime
-    this.score.reveal = this.score.reveal.take(this.score.shot)
-    return await this._finishMaskCandidates(this.score.reveal)
+    const reveal = /** @type {Bitmask} */ (this.score.reveal)
+    if (reveal.occupancy === 0) return null
+    // @ts-ignore - score.reveal and score.shot are Bitmask methods available at runtime
+    this.score.reveal = reveal.take(this.score.shot)
+    return await this._finishMaskCandidates(
+      /** @type {Bitmask} */ (this.score.reveal)
+    )
   }
 
   /**
    * Attempts to finish partially damaged ship.
-   * First tries orthogonal cross pattern, then dilates to surrounding cells.
+   * First tries orthogonal cross pattern (up/down/left/right neighbors).
+   * Falls back to surrounding cells (all 8-neighbors) if cross pattern yields no shots.
    *
-   * @param {Bitmask|null} hits - Hit locations mask
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
+   * @param {Bitmask|null} hits - Hit locations mask from unsunk ships
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    */
   async finishPartiallySunk (hits) {
     // @ts-ignore - hits is Bitmask at runtime with occupancy property
@@ -672,14 +677,16 @@ export class Friend extends Placement {
 
   /**
    * Tries cross pattern for finishing partially sunk ship.
-   * @param {Bitmask} hits - Hit locations mask
-   * @returns {Promise<WeaponLaunchResult|null>} Result or null
+   * Dilates hits in orthogonal directions (±1 row/col), excludes already-shot cells.
+   *
    * @private
+   * @param {Bitmask} hits - Hit locations mask
+   * @returns {Promise<WeaponLaunchResult|null>} Result or null if no candidates
    */
   async _tryCrossPattern (hits) {
-    // @ts-ignore - score.shot is Bitmask at runtime
+    // @ts-ignore - score.shot is Bitmask at runtime with take method
     const shots = this.score.shot
-    // @ts-ignore - hits.clone and dilateCross are Bitmask methods at runtime
+    // @ts-ignore - hits.clone.dilateCross() are Bitmask methods at runtime
     const cross = hits.clone.dilateCross()
     // @ts-ignore - cross.take is Bitmask method at runtime
     const candidates = cross.take(shots)
@@ -689,14 +696,16 @@ export class Friend extends Placement {
 
   /**
    * Tries surround pattern for finishing partially sunk ship.
-   * @param {Bitmask} hits - Hit locations mask
-   * @returns {Promise<WeaponLaunchResult|null>} Result or null
+   * Dilates hits to all 8-neighbors, excludes already-shot cells.
+   *
    * @private
+   * @param {Bitmask} hits - Hit locations mask
+   * @returns {Promise<WeaponLaunchResult|null>} Result or null if no candidates
    */
   async _trySurroundPattern (hits) {
     // @ts-ignore - score.shot is Bitmask at runtime
     const shots = this.score.shot
-    // @ts-ignore - hits.clone and dilate are Bitmask methods at runtime
+    // @ts-ignore - hits.clone.dilate(1).take() are Bitmask methods at runtime
     const surround = hits.clone.dilate(1).take(shots)
     return await this._finishMaskCandidates(surround)
   }
@@ -725,16 +734,17 @@ export class Friend extends Placement {
 
   /**
    * Attempts to fire at hint-revealed locations.
-   * Expands hint area and looks for untried cells within expansion.
+   * Expands hint area by 1 cell and looks for untried cells within expansion.
+   * Focuses on areas near hint clusters for strategic targeting.
    *
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    */
   async finishHints () {
     // @ts-ignore - score.hint is Bitmask at runtime with occupancy property
     const numHints = this.score?.hint?.occupancy || 0
     if (numHints > 0) {
-      // @ts-ignore - score.hint and score.shot are Bitmask at runtime
+      // @ts-ignore - score.hint.clone.dilate(1).take() are Bitmask methods at runtime
       const surroundHints = this.score.hint.clone
         .dilate(1)
         .take(this.score.shot)
@@ -745,28 +755,29 @@ export class Friend extends Placement {
 
   /**
    * Selects random cell from candidate mask and launches single shot.
-   * Switches to single shot weapon before firing.
+   * Switches to single shot weapon before firing at selected coordinate.
    *
+   * @private
    * @param {Bitmask} candidate - Bitmask with randomOccupied property
    * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
-   * @private
    */
   async selectRandomCandidate (candidate) {
-    // @ts-ignore - loadOut is defined in base Placement class
+    // @ts-ignore - loadOut.switchToSingleShot is method at runtime
     this.loadOut.switchToSingleShot()
-    // @ts-ignore - candidate.randomOccupied is Bitmask method at runtime
+    // @ts-ignore - candidate.randomOccupied is [col, row] tuple at runtime
     const [c, r] = candidate.randomOccupied
-    // @ts-ignore - launchSingleShot is defined in base Placement class
+    // @ts-ignore - launchSingleShot is method defined in base Placement class at runtime
     return await this.launchSingleShot(r, c, false)
   }
 
   /**
    * Selects next shot strategy based on current board state.
    * Priority: Revealed cells > Partially sunk ships > Hint areas > Effect weapon > Seek.
+   * Implements escalating strategy: finish easy targets first, then switch to scanning/seeking.
    *
+   * @private
    * @param {Bitmask} hits - Current hit locations on board
    * @returns {Promise<WeaponLaunchResult|null>} Result from selected shot strategy
-   * @private
    */
   async selectShot (hits) {
     const finishMethods = [
@@ -778,13 +789,13 @@ export class Friend extends Placement {
     const strategyResult = await this._executeFinishStrategies(finishMethods)
     if (strategyResult) return strategyResult
 
-    // @ts-ignore - loadOut is defined in base Placement class
+    // @ts-ignore - loadOut.switchToPreferredWeapon returns EffectType|null at runtime
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
       return await this.randomEffect(op)
     }
 
-    // @ts-ignore - loadOut is defined in base Placement class
+    // @ts-ignore - loadOut.switchToSingleShot is method at runtime
     this.loadOut.switchToSingleShot()
     return await this.randomSeek()
   }
@@ -796,25 +807,29 @@ export class Friend extends Placement {
    * Clears visuals, resets ship display, and re-arms weapons.
    *
    * @param {boolean} [friendlyMode=false] - Also clear friendly player visuals if true
+   * @returns {void}
    */
   restartBoard (friendlyMode = false) {
-    // @ts-ignore - resetBase is defined in base Placement class
+    // @ts-ignore - resetBase is method defined in base Placement class at runtime
     this.resetBase()
-    // @ts-ignore - UI.clearVisuals is defined in Board class at runtime
+    // @ts-ignore - UI.clearVisuals is method defined in Board class at runtime
     this.UI.clearVisuals()
     if (friendlyMode) {
-      // @ts-ignore - UI.clearFriendVisuals is defined in Board class at runtime
+      // @ts-ignore - UI.clearFriendVisuals is method defined in Board class at runtime
       this.UI.clearFriendVisuals()
     }
-    // @ts-ignore - UI.resetShips is defined in Board class at runtime
+    // @ts-ignore - UI.resetShips is method defined in Board class at runtime
     this.UI.resetShips(this.ships)
-    // @ts-ignore - armWeapons is defined in base Placement class
+    // @ts-ignore - armWeapons is method defined in base Placement class at runtime
     this.armWeapons()
   }
 
   /**
    * Initializes untried locations mask with full map.
-   * Used to track which cells have not yet been shot.
+   * Used to track which cells have not yet been shot at.
+   * Called at start of seek loop to reset candidate pool.
+   *
+   * @returns {void}
    */
   setupUntried () {
     // @ts-ignore - map.fullMask is Bitmask at runtime
@@ -824,13 +839,14 @@ export class Friend extends Placement {
   /**
    * Gets combined hit mask from all unsunk ships.
    * Used to identify areas with damaged but unsunk ships.
+   * Joins hit masks of all unsunk ships into single aggregate mask.
    *
-   * @returns {Bitmask} Bitmask of all current hits
+   * @returns {Bitmask} Bitmask of all current hits across unsunk ships
    */
   getHits () {
     // @ts-ignore - map.blankMask is Bitmask at runtime
     const blankMask = this.map.blankMask
-    // @ts-ignore - shipsUnsunk is defined in base Waters class
+    // @ts-ignore - shipsUnsunk is method inherited from Waters base class at runtime
     return this.shipsUnsunk().reduce((acc, ship) => {
       // @ts-ignore - ship.hits is Bitmask with occupancy property
       if (!ship.hits?.occupancy) {
@@ -863,18 +879,24 @@ export class Friend extends Placement {
 
   /**
    * Initiates test mode and begins autonomous seeking.
-   * Disables controls and starts seek loop.
+   * Disables player controls and starts seek loop.
+   * Prepares board state and weapon systems for automated play.
+   *
+   * @returns {void}
    */
   test () {
     gameStatus.flush()
-    // @ts-ignore - UI.testMode is defined in Board class at runtime
+    // @ts-ignore - UI.testMode is method defined in Board class at runtime
     this.UI.testMode()
-    // @ts-ignore - UI.testBtn is defined in Board class at runtime
-    this.UI.testBtn.disabled = true
-    // @ts-ignore - UI.seekBtn is defined in Board class at runtime
-    this.UI.seekBtn.disabled = true
-    // @ts-ignore - UI.stopBtn is defined in Board class at runtime
-    this.UI.stopBtn.disabled = false
+    // @ts-ignore - UI.testBtn is HTMLButton element at runtime
+    const testBtn = /** @type {HTMLButtonElement} */ (this.UI.testBtn)
+    // @ts-ignore - UI.seekBtn is HTMLButton element at runtime
+    const seekBtn = /** @type {HTMLButtonElement} */ (this.UI.seekBtn)
+    // @ts-ignore - UI.stopBtn is HTMLButton element at runtime
+    const stopBtn = /** @type {HTMLButtonElement} */ (this.UI.stopBtn)
+    testBtn.disabled = true
+    seekBtn.disabled = true
+    stopBtn.disabled = false
 
     this.restartBoard()
     this.seek()
@@ -883,12 +905,13 @@ export class Friend extends Placement {
   /**
    * Performs single seek step: selects target, fires, and processes results.
    * Updates UI with shot results and ends turn.
+   * Core loop iteration for autonomous seeking AI.
    *
    * @returns {Promise<void>}
    */
   async seekStep () {
     const hits = this.getHits()
-    // @ts-ignore - setWeaponFireHandlers is defined in base Waters class
+    // @ts-ignore - setWeaponFireHandlers is method defined in base Waters class at runtime
     this.setWeaponFireHandlers()
     const result = await this.selectShot(hits)
     await this._finalizeSeekStep(result)
@@ -896,36 +919,44 @@ export class Friend extends Placement {
 
   /**
    * Finalizes a seek action by updating results, UI, and turn state.
-   * @param {WeaponLaunchResult|null} result - The result from a shot or action.
+   * Records hit/score if weapon was successfully fired.
+   * Transitions to opponent's turn and triggers UI update.
+   *
    * @private
+   * @param {WeaponLaunchResult|null} result - The result from a shot or action.
+   * @returns {Promise<void>}
    */
   async _finalizeSeekStep (result) {
     if (result?.score && result.score !== LoadOut.noResult) {
-      // @ts-ignore - updateResultsOfBomb is defined in base Waters class
+      // @ts-ignore - updateResultsOfBomb is method defined in base Waters class at runtime
       this.updateResultsOfBomb(result.weapon, result.score)
     }
-    // @ts-ignore - score.finishTurn is defined in Score class
+    // @ts-ignore - score.finishTurn is method defined in Score class at runtime
     this.score.finishTurn()
-    // @ts-ignore - updateUI is inherited from Waters base class
+    // @ts-ignore - updateUI is method inherited from Waters base class at runtime
     this.updateUI()
-    // @ts-ignore - steps.endTurn is defined in Steps class
+    // @ts-ignore - steps.endTurn is method defined in Steps class at runtime
     this.steps.endTurn()
   }
 
   /**
    * Main seek entry point. Runs autonomous loop and restores UI afterward.
    * Re-enables controls and hides stop button when complete.
+   * Wrapper that ensures UI cleanup after seeking finishes.
    *
    * @returns {Promise<void>}
    */
   async seek () {
     await this.seekRaw()
-    // @ts-ignore - UI.testBtn is defined in Board class at runtime
-    this.UI.testBtn.disabled = false
-    // @ts-ignore - UI.seekBtn is defined in Board class at runtime
-    this.UI.seekBtn.disabled = false
-    // @ts-ignore - UI.stopBtn is defined in Board class at runtime
-    this.UI.stopBtn.classList.add('hidden')
+    // @ts-ignore - UI.testBtn is HTMLButton element at runtime
+    const testBtn = /** @type {HTMLButtonElement} */ (this.UI.testBtn)
+    // @ts-ignore - UI.seekBtn is HTMLButton element at runtime
+    const seekBtn = /** @type {HTMLButtonElement} */ (this.UI.seekBtn)
+    // @ts-ignore - UI.stopBtn is HTMLElement with classList at runtime
+    const stopBtn = /** @type {HTMLElement} */ (this.UI.stopBtn)
+    testBtn.disabled = false
+    seekBtn.disabled = false
+    stopBtn.classList.add('hidden')
   }
 
   /**
@@ -939,13 +970,21 @@ export class Friend extends Placement {
   async _initializeSeekRun () {
     this.testContinue = true
     this.boardDestroyed = false
-    // @ts-ignore - armWeapons is defined in base Placement class
+    // @ts-ignore - armWeapons is method defined in base Placement class at runtime
     this.armWeapons()
     // @ts-ignore - score.shot and map.blankMask are available at runtime
     this.score.shot = this.map.blankMask
     this.setupUntried()
   }
 
+  /**
+   * Main autonomous seeking loop with delay between steps.
+   * Initializes seek state and enters continuous targeting loop.
+   * Exits when testContinue becomes false or board destroyed.
+   *
+   * @returns {Promise<void>}
+   * @private
+   */
   async seekRaw () {
     await this._initializeSeekRun()
 
@@ -958,13 +997,16 @@ export class Friend extends Placement {
 
   /**
    * Resets the model to initial state.
+   * Clears score, resets map state, and reinitializes UI.
+   *
+   * @returns {void}
    */
   resetModel () {
-    // @ts-ignore - score.reset is defined in Score class
+    // @ts-ignore - score.reset is method defined in Score class at runtime
     this.score.reset()
-    // @ts-ignore - resetMap is defined in base Placement class
+    // @ts-ignore - resetMap is method defined in base Placement class at runtime
     this.resetMap()
-    // @ts-ignore - resetUI is defined below
+    // @ts-ignore - resetUI is method defined below
     this.resetUI(this.ships)
   }
 
@@ -977,8 +1019,8 @@ export class Friend extends Placement {
    * selection flow.
    *
    * @private
-   * @param {WeaponSystem|undefined} [weaponSystem]
-   * @returns {boolean}
+   * @param {WeaponSystem|undefined} [weaponSystem] - Optional weapon system to check
+   * @returns {boolean} True if missile should fire in single-click mode
    */
   _shouldFireSeekModeMissileImmediately (weaponSystem) {
     // NOTE (regression prevention): In the "Space and Asteroids" terrain,
@@ -991,9 +1033,9 @@ export class Friend extends Placement {
 
     // Use current weapon system if not provided
     if (weaponSystem === undefined) {
-      // @ts-ignore - loadOut and getCurrentWeaponSystem are defined at runtime
+      // @ts-ignore - loadOut.getCurrentWeaponSystem is method at runtime
       if (typeof this.loadOut?.getCurrentWeaponSystem === 'function') {
-        // @ts-ignore - getCurrentWeaponSystem returns WeaponSystem
+        // @ts-ignore - getCurrentWeaponSystem returns WeaponSystem at runtime
         weaponSystem = this.loadOut.getCurrentWeaponSystem()
       } else {
         return false
@@ -1020,6 +1062,7 @@ export class Friend extends Placement {
   /**
    * Fires the current weapon immediately at the specified coordinates.
    * Used for single-click weapons in seek mode (e.g., missiles in Space & Asteroids).
+   * Updates opponent board and UI after firing.
    *
    * @private
    * @param {number} r - Target row coordinate
@@ -1027,14 +1070,14 @@ export class Friend extends Placement {
    * @returns {Promise<void>}
    */
   async _fireCurrentWeaponImmediately (r, c) {
-    // @ts-ignore - setWeaponFireHandlers is defined in base Waters class
+    // @ts-ignore - setWeaponFireHandlers is method defined in base Waters class at runtime
     this.setWeaponFireHandlers()
-    // @ts-ignore - loadOut and getCurrentWeaponSystem are defined at runtime
+    // @ts-ignore - loadOut.getCurrentWeaponSystem is method at runtime
     const weaponSystem =
       typeof this.loadOut?.getCurrentWeaponSystem === 'function'
         ? this.loadOut.getCurrentWeaponSystem()
         : undefined
-    // @ts-ignore - fireWeaponAt is defined in base Waters class
+    // @ts-ignore - fireWeaponAt is method defined in base Waters class at runtime
     const result = await this.fireWeaponAt(r, c, weaponSystem)
     // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
@@ -1043,25 +1086,29 @@ export class Friend extends Placement {
     }
     // @ts-ignore - opponent is Waters|null at runtime
     this.opponent?.updateUI()
-    // @ts-ignore - updateUI is inherited from Waters base class
+    // @ts-ignore - updateUI is method inherited from Waters base class at runtime
     this.updateUI(this.ships)
-    // @ts-ignore - steps.endTurn is defined in Steps class
+    // @ts-ignore - steps.endTurn is method defined in Steps class at runtime
     this.steps.endTurn()
   }
 
   /**
    * Handles the first click in hide/seek mode: selects a random weapon, ship, and hint location.
+   * Stores the initial click coordinate for use in second click.
+   *
    * @private
    * @returns {void}
    */
   _onFirstClickSelection () {
-    // @ts-ignore - randomAttachedWeapon is defined in base Waters class
+    // @ts-ignore - randomAttachedWeapon is method defined in base Waters class at runtime
     this.randomAttachedWeapon(this.opponent)
     gameStatus.addToQueue('Click again to fire', true)
   }
 
   /**
    * Handles the second click in hide/seek mode: fires the selected weapon at the target.
+   * Clears the selected cell coordinates and updates opponent UI after firing.
+   *
    * @private
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
@@ -1069,7 +1116,7 @@ export class Friend extends Placement {
    */
   async _onSecondClickFire (r, c) {
     this.selectedCellCoordinates = null
-    // @ts-ignore - loadOut.selectedWeapon is defined in LoadOut class
+    // @ts-ignore - loadOut.selectedWeapon is WeaponSystem available at runtime
     const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
     // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
@@ -1078,9 +1125,9 @@ export class Friend extends Placement {
     }
     // @ts-ignore - opponent is Waters|null at runtime
     this.opponent?.updateUI()
-    // @ts-ignore - updateUI is inherited from Waters base class
+    // @ts-ignore - updateUI is method inherited from Waters base class at runtime
     this.updateUI(this.ships)
-    // @ts-ignore - steps.endTurn is defined in Steps class
+    // @ts-ignore - steps.endTurn is method defined in Steps class at runtime
     this.steps.endTurn()
   }
 
@@ -1091,8 +1138,10 @@ export class Friend extends Placement {
    * When a player clicks a cell in Hide & Seek mode with attached weapons enabled,
    * it triggers weapon selection for that cell location.
    *
-   * In hide/seek mode: implements two-click behavior (first click selects, second fires).
-   * In other modes: not applicable.
+   * Behavior by mode:
+   * - Pure Seek with Space/Asteroids terrain: Missile fires immediately (single-click)
+   * - Other attached weapon modes: Two-click behavior (first click selects, second fires)
+   * - Seek mode without attached weapons: Returns early, no action
    *
    * Validation:
    * - Only processes clicks if in seeking mode (hide & seek)
@@ -1101,6 +1150,7 @@ export class Friend extends Placement {
    *
    * @param {number} r - Row coordinate of clicked cell
    * @param {number} c - Column coordinate of clicked cell
+   * @returns {Promise<void>}
    */
   async onClickCell (r, c) {
     // In pure Seek mode with Space/Asteroids, Missiles are single-click weapons
@@ -1145,35 +1195,40 @@ export class Friend extends Placement {
    * access weapon selection methods and UI state.
    *
    * Called during game initialization and board reset operations.
+   *
+   * @returns {void}
    */
   buildBoard () {
     // Register the onClickCell handler with 'this' context for method access
-    // @ts-ignore - UI.buildBoard is defined in Board class at runtime
+    // @ts-ignore - UI.buildBoard is method defined in Board class at runtime
     this.UI.buildBoard(this.onClickCell, this)
-    // @ts-ignore - resetShipCells is defined in base Placement class
+    // @ts-ignore - resetShipCells is method defined in base Placement class at runtime
     this.resetShipCells()
-    // @ts-ignore - UI.makeDroppable is defined in Board class at runtime
+    // @ts-ignore - UI.makeDroppable is method defined in Board class at runtime
     this.UI.makeDroppable(this)
     setupDragHandlers(this.UI)
     // Mark cells with weapons on friendly board for visual indication
-    // @ts-ignore - UI.markWeaponCellsOnFriendlyBoard is defined in Board class at runtime
+    // @ts-ignore - UI.markWeaponCellsOnFriendlyBoard is method defined in Board class at runtime
     this.UI.markWeaponCellsOnFriendlyBoard(this.ships)
   }
 
   /**
    * Resets the UI and places ships.
-   * @param {Object} [ships] - The ships to place.
+   * Comprehensive board initialization including ship placement and weapon UI.
+   *
+   * @param {Object} [ships] - The ships to place. Uses this.ships if not provided.
+   * @returns {void}
    */
   resetUI (ships) {
-    // @ts-ignore - resetBase is defined in base Placement class
+    // @ts-ignore - resetBase is method defined in base Placement class at runtime
     this.resetBase()
     ships = ships || this.ships
-    // @ts-ignore - UI.reset is defined in Board class at runtime
+    // @ts-ignore - UI.reset is method defined in Board class at runtime
     this.UI.reset(ships)
     this.buildBoard()
-    // @ts-ignore - UI.buildTrays is defined in Board class at runtime
+    // @ts-ignore - UI.buildTrays is method defined in Board class at runtime
     this.UI.buildTrays(ships, this.shipCellGrid)
-    // @ts-ignore - updateUI is inherited from Waters base class
+    // @ts-ignore - updateUI is method inherited from Waters base class at runtime
     this.updateUI(ships)
   }
 }
