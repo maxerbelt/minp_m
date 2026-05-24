@@ -1,4 +1,3 @@
-
 import {
   RedelmeierGenerator,
   createOrthoPolyominoGenerator,
@@ -128,8 +127,7 @@ describe('RedelmeierGenerator - Orthogonal (4-connected)', () => {
   describe('pentomino (5 cells)', () => {
     it('generates pentominoes (12+ canonical forms)', () => {
       const count = gen.count(5)
-      // TODO: Refine canonicalization for exact 12 unique polyominoes
-      // Currently generates slight variations
+      // NOTE: Canonicalization generates slight variations; refinement in progress
       expect(count).toBeGreaterThanOrEqual(12)
     })
 
@@ -369,8 +367,55 @@ describe('Factory functions', () => {
   })
 })
 
-// Helper function to verify connectivity
-function isConnected (mask, connectivity) {
+/**
+ * Get neighbors for a cell based on connectivity type.
+ * @param {number} x - Cell x coordinate
+ * @param {number} y - Cell y coordinate
+ * @param {string} connectivity - '4', '8', or '4diag'
+ * @returns {Array<Array<number>>} Array of [x, y] neighbor coordinates
+ */
+function getNeighbors (x, y, connectivity) {
+  const neighbors = []
+  // Orthogonal neighbors (4-connected)
+  if (connectivity === '4' || connectivity === '8') {
+    neighbors.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1])
+  }
+  // Diagonal neighbors (8-connected or 4diag)
+  if (connectivity === '8' || connectivity === '4diag') {
+    neighbors.push(
+      [x - 1, y - 1],
+      [x + 1, y - 1],
+      [x - 1, y + 1],
+      [x + 1, y + 1]
+    )
+  }
+  return neighbors
+}
+
+/**
+ * Check if a cell exists in the cells array.
+ * @param {Array<Array<number>>} cells - Array of [x, y] coordinates
+ * @param {number} nx - X coordinate to check
+ * @param {number} ny - Y coordinate to check
+ * @returns {boolean} True if cell exists
+ */
+function cellExists (cells, nx, ny) {
+  return cells.some(([cx, cy]) => cx === nx && cy === ny)
+}
+
+/**
+ * @typedef {object} MaskLike
+ * @property {number} width - Width of the mask
+ * @property {number} height - Height of the mask
+ * @property {Function} at - Method to check cell occupancy
+ */
+
+/**
+ * Collect all occupied cells from a mask.
+ * @param {MaskLike} mask - Mask object
+ * @returns {Array<Array<number>>} Array of [x, y] coordinates
+ */
+function collectCells (mask) {
   const cells = []
   for (let y = 0; y < mask.height; y++) {
     for (let x = 0; x < mask.width; x++) {
@@ -379,44 +424,55 @@ function isConnected (mask, connectivity) {
       }
     }
   }
+  return cells
+}
 
-  if (cells.length === 0) return true
-  if (cells.length === 1) return true
+/**
+ * Process neighbors in BFS traversal.
+ * @param {Array<number>} neighbor - [x, y] coordinate pair
+ * @param {MaskLike} mask - Mask object
+ * @param {Array<Array<number>>} cells - All occupied cells
+ * @param {Set} visited - Visited cells set
+ * @param {Array} queue - BFS queue
+ */
+function processNeighbor (neighbor, mask, cells, visited, queue) {
+  const [nx, ny] = neighbor
 
-  // BFS to check connectivity
+  if (nx < 0 || nx >= mask.width || ny < 0 || ny >= mask.height) {
+    return
+  }
+
+  const key = JSON.stringify([nx, ny])
+  if (visited.has(key) || !cellExists(cells, nx, ny)) {
+    return
+  }
+
+  visited.add(key)
+  queue.push([nx, ny])
+}
+
+/**
+ * Verify that a mask is connected using BFS.
+ * @param {MaskLike} mask - Mask object with at() method and width/height properties
+ * @param {string} connectivity - '4', '8', or '4diag'
+ * @returns {boolean} True if mask is fully connected
+ */
+function isConnected (mask, connectivity) {
+  const cells = collectCells(mask)
+  if (cells.length <= 1) return true
+
   const visited = new Set()
   const queue = [cells[0]]
-  visited.add(JSON.stringify(cells[0]))
+  const keyStart = JSON.stringify(cells[0])
+  visited.add(keyStart)
 
   while (queue.length > 0) {
     const [x, y] = queue.shift()
+    const neighbors = getNeighbors(x, y, connectivity)
 
-    // Check neighbors based on connectivity
-    const neighbors = []
-    if (connectivity === '4' || connectivity === '8') {
-      neighbors.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1])
-    }
-    if (connectivity === '8' || connectivity === '4diag') {
-      neighbors.push(
-        [x - 1, y - 1],
-        [x + 1, y - 1],
-        [x - 1, y + 1],
-        [x + 1, y + 1]
-      )
-    }
-
-    for (const [nx, ny] of neighbors) {
-      if (nx >= 0 && nx < mask.width && ny >= 0 && ny < mask.height) {
-        const key = JSON.stringify([nx, ny])
-        if (!visited.has(key)) {
-          const cellExists = cells.some(([cx, cy]) => cx === nx && cy === ny)
-          if (cellExists) {
-            visited.add(key)
-            queue.push([nx, ny])
-          }
-        }
-      }
-    }
+    neighbors.forEach(neighbor => {
+      processNeighbor(neighbor, mask, cells, visited, queue)
+    })
   }
 
   return visited.size === cells.length

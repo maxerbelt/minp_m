@@ -1,25 +1,47 @@
 const cache = new Map()
 
 /**
- * @typedef {Object<string, Array<number>>} TransformMaps
+ * @typedef {Object<string, number[]>} TransformMaps
+ * @property {number[]} id - Identity: no transformation
+ * @property {number[]} r90 - Rotate 90° clockwise
+ * @property {number[]} r180 - Rotate 180°
+ * @property {number[]} r270 - Rotate 270° clockwise
+ * @property {number[]} fx - Reflect vertically (flip across vertical axis)
+ * @property {number[]} fy - Reflect horizontally (flip across horizontal axis)
+ * @property {number[]} fd1 - Reflect along main diagonal (↘ direction)
+ * @property {number[]} fd2 - Reflect along anti-diagonal (↙ direction)
  */
 
 /**
- * Build D4 symmetry transformation maps for rectangular grids.
- * Maps define how each cell index transforms under rotations and reflections.
- * Results are cached for square grids (width === height) for performance.
+ * Build D4 dihedral symmetry transformation maps for rectangular grids.
  *
- * @param {number} width - Grid width
- * @param {number} height - Grid height
- * @returns {TransformMaps} Transform maps:
- *   - id: identity (no change)
- *   - r90: rotate 90° clockwise
- *   - r180: rotate 180°
- *   - r270: rotate 270° clockwise (or 90° counter-clockwise)
- *   - fx: reflect vertically (flip x-axis)
- *   - fy: reflect horizontally (flip y-axis)
- *   - fd1: reflect along main diagonal (top-left to bottom-right)
- *   - fd2: reflect along anti-diagonal (top-right to bottom-left)
+ * Creates index transformation maps for all 8 elements of the D4 symmetry group:
+ * 4 rotations (0°, 90°, 180°, 270°) and 4 reflections (vertical, horizontal, both diagonals).
+ * Each transformation is represented as an array where array[oldIndex] = newIndex.
+ *
+ * **Performance:** Square grids (width === height) are cached for reuse.
+ * Rectangular grids compute fresh maps each call.
+ *
+ * **D4 Group Structure:**
+ * - Rotations: id, r90, r180, r270
+ * - Reflections: fx (vertical), fy (horizontal), fd1 (main diagonal), fd2 (anti-diagonal)
+ * - All combinations are composable: r90 ∘ fx generates all group elements
+ *
+ * **Memory Layout:**
+ * Grid indices are computed as: `index = y * width + x`
+ * Transformations recalculate (x, y) coordinates, then recompute indices.
+ *
+ * @param {number} width - Grid width in cells (positive integer)
+ * @param {number} height - Grid height in cells (positive integer)
+ * @returns {TransformMaps} Object with 8 transformation mapping arrays.
+ *   Each array maps [oldIndex] → newIndex under the corresponding transformation.
+ *
+ * @example
+ * // Build maps for 4×4 grid
+ * const maps = buildTransformMaps(4, 4);
+ * const oldIndex = 5;
+ * const rotated90Index = maps.r90[oldIndex];  // Cell at (1,1) → (3,1)
+ * const flipped = maps.fx[oldIndex];          // Cell at (1,1) → (2,1)
  */
 export function buildTransformMaps (width, height) {
   const cacheKey = getCacheKey(width, height)
@@ -42,8 +64,12 @@ export function buildTransformMaps (width, height) {
 /**
  * Build an empty transform map object with pre-allocated arrays.
  *
- * @param {number} size - Number of cells in the grid
- * @returns {TransformMaps}
+ * Creates an object with 8 pre-allocated arrays, one for each transformation.
+ * Arrays are sized to grid dimensions for direct index-based access.
+ *
+ * @param {number} size - Total number of cells in the grid (width × height)
+ * @returns {TransformMaps} Object with 8 empty typed arrays ready for population
+ * @private
  */
 function createEmptyTransformMaps (size) {
   return {
@@ -59,11 +85,15 @@ function createEmptyTransformMaps (size) {
 }
 
 /**
- * Populate the transform maps for each cell in the grid.
+ * Populate all transformation maps for each cell in the grid.
  *
- * @param {TransformMaps} maps - Transform maps to populate
- * @param {number} width - Grid width
- * @param {number} height - Grid height
+ * Iterates through every cell (x, y) and computes its transformed index
+ * under each of the 8 D4 transformations. Results are stored in the provided maps.
+ *
+ * @param {TransformMaps} maps - Transform maps object to populate (mutated in place)
+ * @param {number} width - Grid width in cells
+ * @param {number} height - Grid height in cells
+ * @private
  */
 function populateTransformMaps (maps, width, height) {
   for (let y = 0; y < height; y++) {
@@ -82,12 +112,15 @@ function populateTransformMaps (maps, width, height) {
 }
 
 /**
- * Return the cache key for a grid.
- * Only square grids are cached.
+ * Return the cache key for a grid, or undefined if not cacheable.
  *
- * @param {number} width
- * @param {number} height
- * @returns {number|undefined}
+ * Only square grids (width === height) are cached for performance reuse.
+ * Rectangular grids are computed fresh each call since they're less common.
+ *
+ * @param {number} width - Grid width
+ * @param {number} height - Grid height
+ * @returns {number|undefined} Cache key (grid size) for square grids, undefined for rectangular
+ * @private
  */
 function getCacheKey (width, height) {
   return width === height ? width : undefined
@@ -96,87 +129,126 @@ function getCacheKey (width, height) {
 /**
  * Compute the target index for a 90° clockwise rotation.
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @param {number} height
- * @returns {number}
+ * **Transformation:** (x, y) → (y, width - 1 - x)
+ * The rotated grid has dimensions (height × width).
+ * New linear index: x * height + (height - 1 - y)
+ *
+ * @param {number} x - Original X coordinate
+ * @param {number} y - Original Y coordinate
+ * @param {number} _width - Original grid width (not used, included for consistency)
+ * @param {number} height - Original grid height (becomes width after rotation)
+ * @returns {number} Transformed index in the rotated grid
+ * @private
  */
-function getR90Index (x, y, width, height) {
+function getR90Index (x, y, _width, height) {
   return x * height + (height - 1 - y)
 }
 
 /**
  * Compute the target index for a 180° rotation.
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @param {number} height
- * @returns {number}
+ * **Transformation:** (x, y) → (width - 1 - x, height - 1 - y)
+ * Grid dimensions remain the same (width × height).
+ * New linear index: (height - 1 - y) * width + (width - 1 - x)
+ *
+ * @param {number} x - Original X coordinate
+ * @param {number} y - Original Y coordinate
+ * @param {number} width - Grid width (unchanged)
+ * @param {number} height - Grid height (unchanged)
+ * @returns {number} Transformed index (same grid dimensions)
+ * @private
  */
 function getR180Index (x, y, width, height) {
   return (height - 1 - y) * width + (width - 1 - x)
 }
 
 /**
- * Compute the target index for a 270° clockwise rotation.
+ * Compute the target index for a 270° clockwise rotation (90° counter-clockwise).
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @param {number} height
- * @returns {number}
+ * **Transformation:** (x, y) → (height - 1 - y, x)
+ * The rotated grid has dimensions (height × width).
+ * New linear index: (width - 1 - x) * height + y
+ *
+ * @param {number} x - Original X coordinate
+ * @param {number} y - Original Y coordinate
+ * @param {number} width - Original grid width (becomes height after rotation)
+ * @param {number} height - Original grid height (becomes width after rotation)
+ * @returns {number} Transformed index in the rotated grid
+ * @private
  */
 function getR270Index (x, y, width, height) {
   return (width - 1 - x) * height + y
 }
 
 /**
- * Compute the target index for a vertical flip (mirror across the vertical axis).
+ * Compute the target index for a vertical flip (mirror across vertical axis).
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @returns {number}
+ * **Transformation:** (x, y) → (width - 1 - x, y)
+ * Grid dimensions remain the same (width × height).
+ * Reflects left↔right, Y-coordinates unchanged.
+ * New linear index: y * width + (width - 1 - x)
+ *
+ * @param {number} x - Original X coordinate
+ * @param {number} y - Original Y coordinate (unchanged)
+ * @param {number} width - Grid width (unchanged)
+ * @returns {number} Transformed index (same grid dimensions)
+ * @private
  */
 function getFxIndex (x, y, width) {
   return y * width + (width - 1 - x)
 }
 
 /**
- * Compute the target index for a horizontal flip (mirror across the horizontal axis).
+ * Compute the target index for a horizontal flip (mirror across horizontal axis).
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @param {number} height
- * @returns {number}
+ * **Transformation:** (x, y) → (x, height - 1 - y)
+ * Grid dimensions remain the same (width × height).
+ * Reflects top↔bottom, X-coordinates unchanged.
+ * New linear index: (height - 1 - y) * width + x
+ *
+ * @param {number} x - Original X coordinate (unchanged)
+ * @param {number} y - Original Y coordinate
+ * @param {number} width - Grid width (unchanged)
+ * @param {number} height - Grid height (unchanged)
+ * @returns {number} Transformed index (same grid dimensions)
+ * @private
  */
 function getFyIndex (x, y, width, height) {
   return (height - 1 - y) * width + x
 }
 
 /**
- * Compute the target index for the main diagonal flip.
+ * Compute the target index for the main diagonal flip (↘ direction).
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @returns {number}
+ * **Transformation:** (x, y) → (y, x)
+ * Also known as matrix transpose operation.
+ * For rectangular grids, this swaps width and height.
+ * New linear index: x * width + y
+ *
+ * @param {number} x - Original X coordinate
+ * @param {number} y - Original Y coordinate
+ * @param {number} width - Grid width (unchanged in linear calc)
+ * @returns {number} Transformed index with coordinates swapped
+ * @private
  */
 function getFd1Index (x, y, width) {
   return x * width + y
 }
 
 /**
- * Compute the target index for the anti-diagonal flip.
+ * Compute the target index for the anti-diagonal flip (↙ direction).
  *
- * @param {number} x
- * @param {number} y
- * @param {number} width
- * @param {number} height
- * @returns {number}
+ * **Transformation:** (x, y) → (height - 1 - y, width - 1 - x)
+ * Combines transpose with 180° rotation.
+ * For rectangular grids, this swaps width and height.
+ * New linear index: (width - 1 - x) * width + (height - 1 - y)
+ *
+ * @param {number} x - Original X coordinate
+ * @param {number} y - Original Y coordinate
+ * @param {number} width - Grid width (unchanged in linear calc)
+ * @param {number} height - Grid height (unchanged in linear calc)
+ * @returns {number} Transformed index with coordinates swapped and inverted
+ * @private
  */
 function getFd2Index (x, y, width, height) {
   return (width - 1 - x) * width + (height - 1 - y)

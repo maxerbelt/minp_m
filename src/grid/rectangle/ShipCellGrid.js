@@ -131,7 +131,7 @@ export class ShipCellGrid extends GridBase {
    * Delegates to RC-based lookup after coordinate conversion.
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @returns {{ShipCell|undefined}} Ship cell object or undefined if empty
+   * @returns {ShipCell|undefined} Ship cell object or undefined if empty
    */
   cellAt (x, y) {
     return this.cellAtRC(y, x)
@@ -158,36 +158,36 @@ export class ShipCellGrid extends GridBase {
     return !!this.cellAt(x, y)
   }
 
+  /**
+   * Sets a ship cell at the given row/column coordinates.
+   * @param {number} row - Row coordinate
+   * @param {number} col - Column coordinate
+   * @param {ShipCell} cell - Ship cell object to place
+   */
   setCellRC (row, col, cell) {
-    /**
-     * Sets a ship cell at the given row/column coordinates.
-     * @param {number} row - Row coordinate
-     * @param {number} col - Column coordinate
-     * @param {ShipCell} cell - Ship cell object to place
-     */
     if (this.isValidRC(row, col)) {
       this._grid[row][col] = cell
     }
   }
 
+  /**
+   * Sets a ship cell at the given x/y coordinates.
+   * Delegates to RC-based setter after coordinate conversion.
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {ShipCell} cell - Ship cell object to place
+   */
   setCell (x, y, cell) {
     this.setCellRC(y, x, cell)
-    /**
-     * Sets a ship cell at the given x/y coordinates.
-     * Delegates to RC-based setter after coordinate conversion.
-     * @param {number} x - Column coordinate
-     * @param {number} y - Row coordinate
-     * @param {ShipCell} cell - Ship cell object to place
-     */
   }
 
+  /**
+   * Sets a ship ID at the given row/column, creating a cell if needed.
+   * @param {number} row - Row coordinate
+   * @param {number} col - Column coordinate
+   * @param {number} id - Ship ID to set
+   */
   setRC (row, col, id) {
-    /**
-     * Sets a ship ID at the given row/column, creating a cell if needed.
-     * @param {number} row - Row coordinate
-     * @param {number} col - Column coordinate
-     * @param {number} id - Ship ID to set
-     */
     if (this.isValidRC(row, col)) {
       if (this._grid[row][col]?.id != null) {
         this._grid[row][col].id = id
@@ -197,15 +197,15 @@ export class ShipCellGrid extends GridBase {
     }
   }
 
+  /**
+   * Sets a ship ID at the given x/y coordinates.
+   * Delegates to RC-based setter after coordinate conversion.
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} id - Ship ID to set
+   */
   set (x, y, id) {
     this.setRC(y, x, id)
-    /**
-     * Sets a ship ID at the given x/y coordinates.
-     * Delegates to RC-based setter after coordinate conversion.
-     * @param {number} x - Column coordinate
-     * @param {number} y - Row coordinate
-     * @param {number} id - Ship ID to set
-     */
   }
 
   /**
@@ -227,7 +227,7 @@ export class ShipCellGrid extends GridBase {
    * Helper: Filters grid cells by a predicate function.
    * Iterates entire grid and collects cells matching the predicate.
    * @private
-   * @param {function(ShipCell): boolean} predicate - Filter function returning true to include cell
+   * @param {(cell: ShipCell) => boolean} predicate - Filter function returning true to include cell
    * @returns {ShipCell[]} Array of matching cells
    */
   _filterCells (predicate) {
@@ -279,7 +279,7 @@ export class ShipCellGrid extends GridBase {
    * Used to enforce non-adjacency spacing between ships.
    * @param {number} row - Row coordinate of center cell
    * @param {number} col - Column coordinate of center cell
-   * @param {function(number, number): boolean} boundsChecker - Bounds validation callback
+   * @param {(row: number, col: number) => boolean} boundsChecker - Bounds validation callback
    * @returns {boolean} True if all 8 surrounding cells are empty
    */
   isAreaClearAroundRowCol (row, col, boundsChecker) {
@@ -298,7 +298,7 @@ export class ShipCellGrid extends GridBase {
    * Delegates to RC-based check after coordinate conversion.
    * @param {number} x - Column coordinate of center cell
    * @param {number} y - Row coordinate of center cell
-   * @param {function(number, number): boolean} boundsChecker - Bounds validation callback
+   * @param {(row: number, col: number) => boolean} boundsChecker - Bounds validation callback
    * @returns {boolean} True if all 8 surrounding cells are empty
    */
   isAreaClearAround (x, y, boundsChecker) {
@@ -327,13 +327,13 @@ export class ShipCellGrid extends GridBase {
 
   /**
    * Iterate over occupied cells.
-   * @param {function(ShipCell, number, number): void} callback - Called for each cell with (cell, rowIndex, colIndex)
+   * @param {(cell: ShipCell, rowIndex: number, colIndex: number) => void} callback - Called for each cell with (cell, rowIndex, colIndex)
    */
   forEachCell (callback) {
     this._grid.forEach((rowCells, rowIndex) => {
-      rowCells.forEach((cell, colIndex) => {
-        if (cell) {
-          callback(cell, rowIndex, colIndex)
+      rowCells.forEach((_cell, colIndex) => {
+        if (_cell) {
+          callback(_cell, rowIndex, colIndex)
         }
       })
     })
@@ -346,7 +346,7 @@ export class ShipCellGrid extends GridBase {
    */
   updateMask (mask) {
     const emptyCellMask = mask.emptyMask
-    this.forEachCell((cell, row, col) => {
+    this.forEachCell((_cell, row, col) => {
       emptyCellMask.set(col, row)
     })
   }
@@ -412,39 +412,17 @@ export class ShipCellGrid extends GridBase {
     for (const placeable of shuffledPlaceables) {
       const placement = placeable.placeAt(col, row)
       const conflict = placement.board.overlap(this.maskedGrid)
-      if (!placement.canPlace(this)) {
+      if (conflict.occupancy > 0 && !placement.canPlace(this)) {
         continue
       }
-      if (conflict.occupancy > 0) {
-        console.warn(
-          `Conflict detected for ship ${ship.letter} at (${col}, ${row}) with placement variant. Occupied cells: ${conflict.occupancy}`
-        )
-      }
+
       // Placement succeeded: update ship and mask
       ship.placePlacement(placement)
       const displacedCells = placement.displacedArea(
         this._maskedGrid.width,
         this._maskedGrid.height
       )
-      /*
-      console.log(`Masked grid:\n`, this.maskedGrid.toAsciiWith())
-      const placementAscii = placement.board.toMask(
-        this._maskedGrid.width,
-        this._maskedGrid.height
-      )
-      
-      console.log(`Placement board:\n`, placementAscii.toAsciiWith())
-      const flatPlacement = placementAscii.occupancyLayer()
-      console.log(`flat board:\n`, flatPlacement.toAsciiWith())
-      const dilatedPlacement = flatPlacement.dilate()
-      console.log(`Dilated placement:\n`, dilatedPlacement.toAsciiWith())
-      console.log(`Displaced cells:\n`, displacedCells.toAsciiWith())
-      console.log(`Displaced cells:\n`, displacedCells.toAsciiWith())
- 
-      console.log(
-        `Placing ship ${ship.letter} at (${col}, ${row}) with placement variant`
-      )
-*/
+
       this._maskedGrid.joinWith(displacedCells)
 
       ship.addToGrid(this)
@@ -501,24 +479,10 @@ export class ShipCellGrid extends GridBase {
   }
 
   /**
-   * Synchronizes the internal placement mask to the current ship grid.
-   * Reconstructs mask from scratch to ensure consistency after external changes.
-   * @private
-   */
-  _synchronizeMaskToGrid () {
-    const emptyCellMask = this._maskedGrid.emptyMask
-    this.forEachCell((cell, row, col) => {
-      emptyCellMask.set(col, row)
-    })
-    this._maskedGrid = emptyCellMask
-  }
-
-  /**
    * Randomly places ships on the board with event callbacks for monitoring.
    * Resets grid before attempting placement; rolls back if any ship fails.
    * @param {Array} ships - Array of ship objects to place
-   * @param {function(ship, cells): void} [onShipPlaced] - Callback when ship placed successfully
-   * @param {function(): void} [onPlacementReset] - Callback when placement fails (grid reset)
+   * @param {(ship: Object, cells: ShipCell[]) => void} [onShipPlaced] - Callback when ship placed successfully
    * @returns {boolean} True if all ships placed; false if placement failed
    */
   attemptToPlaceShips (ships, onShipPlaced = NOOP) {

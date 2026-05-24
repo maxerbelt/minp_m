@@ -1,5 +1,3 @@
-
-import { jest } from '@jest/globals'
 import { RectListCanvas } from './rectListCanvas.js'
 import { bh } from '../../terrains/all/js/bh.js'
 

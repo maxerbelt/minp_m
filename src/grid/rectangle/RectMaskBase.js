@@ -5,13 +5,28 @@ import { Random } from '../../core/Random.js'
 /**
  * @typedef {[number, number]} Coordinate
  * @typedef {[number, number, number]} CoordinateWithValue
- * @typedef {*} BitRepresentation
+ * @typedef {bigint} BitRepresentation
  * @typedef {Object} TransformCapabilities
+ * @property {boolean} [canRotateCW] - Can rotate 90° clockwise
+ * @property {boolean} [canRotateCCW] - Can rotate 90° counter-clockwise
+ * @property {boolean} [canFlipH] - Can flip horizontally
+ * @property {boolean} [canFlipV] - Can flip vertically
+ * @typedef {Object} TransformMaps
+ * @property {*} [r90] - 90° rotation map
+ * @property {*} [r180] - 180° rotation map
+ * @property {*} [r270] - 270° rotation map
+ * @property {*} [fx] - Horizontal flip map
+ * @property {*} [fy] - Vertical flip map
  */
 
 /**
  * Base class for rectangular grid masks providing common functionality
  * for 2D grid operations, transformations, and coordinate conversions.
+ * Extends MaskBase with rectangular grid-specific coordinate conversion,
+ * indexing, and symmetry transformation capabilities.
+ *
+ * @extends MaskBase
+ * @class RectMaskBase
  */
 export class RectMaskBase extends MaskBase {
   /**
@@ -32,11 +47,14 @@ export class RectMaskBase extends MaskBase {
   }
   /**
    * Create a new rectangular mask base
-   * @param {number} width - Width of the grid
-   * @param {number} height - Height of the grid
-   * @param {BitRepresentation} [bits] - Bit representation of the mask data
-   * @param {Object} [store] - Bit storage implementation
-   * @param {number} [depth=1] - Color depth (number of possible values per cell)
+   * Initializes a rectangular grid mask with optional bitboard data and storage backend.
+   * Parameters are passed in the correct order to the parent MaskBase constructor.
+   *
+   * @param {number} width - Width of the grid in cells
+   * @param {number} height - Height of the grid in cells
+   * @param {bigint} [bits] - Initial bitboard bits (optional)
+   * @param {Object} [store] - Custom bit storage backend (optional, defaults to StoreBig)
+   * @param {number} [depth=1] - Number of color layers (must be last parameter for variadic compatibility)
    */
   constructor (width, height, bits, store, depth) {
     super(RectangleShape(width, height), bits, store, depth)
@@ -86,9 +104,11 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Get bit position in store for rectangular coordinates
+   * Returns the bit position corresponding to the given (x, y) cell coordinates.
+   *
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
-   * @returns {BitRepresentation} Bit position in the store
+   * @returns {number} Bit position in the store
    */
   bitPos (x, y) {
     return this.store.bitPos(this.index(x, y))
@@ -98,7 +118,7 @@ export class RectMaskBase extends MaskBase {
    * Get bit position for XY coordinates (alias for bitPos)
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
-   * @returns {BitRepresentation} Bit position
+   * @returns {number} Bit position
    */
   bitPosXY (x, y) {
     return this.bitPos(x, y)
@@ -108,7 +128,7 @@ export class RectMaskBase extends MaskBase {
    * Get bit position for row/column coordinates
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {BitRepresentation} Bit position
+   * @returns {number} Bit position
    */
   bitPosRC (r, c) {
     return this.bitPos(c, r)
@@ -120,23 +140,29 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Get cell value at (x, y) coordinates
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @returns {*} Cell value at the specified coordinates
+   * Retrieves the color/value stored at the given rectangular coordinates.
+   *
+   * @param {number} x - X coordinate (column, 0-based)
+   * @param {number} y - Y coordinate (row, 0-based)
+   * @returns {bigint} Cell value at the specified coordinates
    */
   at (x, y) {
     const idx = this.index(x, y)
+    // @ts-ignore - bitboard type inference sees union but is always bigint at runtime
     return this.store.getIdx(this.bits, idx)
   }
 
   /**
    * Set cell value at (x, y) coordinates
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @param {number} [color=1] - Value to set
-   * @returns {BitRepresentation} Updated bits
+   * Updates the color/value at the given rectangular coordinates and updates this.bits.
+   *
+   * @param {number} x - X coordinate (column, 0-based)
+   * @param {number} y - Y coordinate (row, 0-based)
+   * @param {number} [color=1] - Value to set (default 1 for occupied)
+   * @returns {bigint} Updated bitboard representation
    */
   set (x, y, color = 1) {
+    // @ts-ignore - bitboard type inference sees union but is always bigint at runtime
     this.bits = this.store.setIdx(this.bits, this.index(x, y), color)
     return this.bits
   }
@@ -149,7 +175,7 @@ export class RectMaskBase extends MaskBase {
    * @returns {boolean} True if cell matches the color
    */
   test (x, y, color = 1) {
-    return this.at(x, y) === color
+    return this.at(x, y) === BigInt(color)
   }
 
   /**
@@ -176,31 +202,43 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Check if cell at (x, y) has non-zero value
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
+   * Tests whether the cell at the given coordinates contains an occupied (non-zero) value.
+   *
+   * @param {number} x - X coordinate (column, 0-based)
+   * @param {number} y - Y coordinate (row, 0-based)
    * @returns {boolean} True if cell has non-zero value
    */
   isOccupied (x, y) {
     const idx = this.index(x, y)
-    return this.store.isOccupied(this.bits, idx)
+    // @ts-ignore - bitboard type inference sees union but is always bigint at runtime
+    return this.store.hasIdxSet(this.bits, idx)
   }
 
   /**
    * Get transformation capabilities for this mask
-   * @returns {TransformCapabilities} Object with capability flags like canRotate, canFlip
+   * Determines which symmetry operations (rotation, flip) will produce a different result
+   * than the identity transformation for the current bitboard state.
+   *
+   * @returns {TransformCapabilities} Object with boolean flags for rotation/flip capabilities
    */
   getTransformCapabilities () {
-    return this.indexer?.getTransformCapabilities(this) || {}
+    // @ts-ignore - ShapeIndexer subclasses implement this method
+    return this.indexer?.getTransformCapabilities?.(this) || {}
   }
 
   /**
    * Apply a transformation using the specified action method
-   * @param {string} actionMethod - The name of the action method to call
-   * @param {string} errorMessage - Error message if transformation fails
+   * Internal helper that applies a named transformation from the actions object.
+   * Updates this.bits with the transformed result and supports method chaining.
+   *
+   * @param {string} actionMethod - The name of the action method to call (e.g., 'r90Map', 'fxMap')
+   * @param {string} errorMessage - Error message to throw if transformation is not available
    * @returns {RectMaskBase} This instance for chaining
+   * @throws {Error} If transformation method is not available on actions
    * @private
    */
   _applyTransformation (actionMethod, errorMessage) {
+    // @ts-ignore - bitboard type inference sees union but is always bigint at runtime
     const transformed = this.actions?.[actionMethod]?.(this.bits)
     if (transformed !== undefined) {
       this.bits = transformed
@@ -211,29 +249,40 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Check if a transformation capability is available
-   * @param {string} capability - The capability to check
+   * Internal helper method to query transformation capabilities by name.
+   * Primarily used internally; consider using getTransformCapabilities() for direct queries.
+   *
+   * @param {string} _capability - The capability name to check (e.g., 'canRotateCW', 'canFlipH')
    * @returns {boolean} True if the capability is available
    * @private
    */
-  _hasTransformCapability (capability) {
+  _hasTransformCapability (_capability) {
     const capabilities = this.getTransformCapabilities()
-    return capabilities[capability] || false
+    return capabilities[_capability] || false
   }
 
   /**
    * Check if this mask can be rotated
+   * Tests if any rotation transformation will change the current bitboard state.
+   *
    * @returns {boolean} True if rotation is supported
+   * @deprecated Use specific rotation checks instead
    */
   canRotate () {
-    return this._hasTransformCapability('canRotate')
+    const caps = this.getTransformCapabilities()
+    return caps.canRotateCW || caps.canRotateCCW || false
   }
 
   /**
    * Check if this mask can be flipped
+   * Tests if any flip transformation will change the current bitboard state.
+   *
    * @returns {boolean} True if flipping is supported
+   * @deprecated Use specific flip checks instead
    */
   canFlip () {
-    return this._hasTransformCapability('canFlip')
+    const caps = this.getTransformCapabilities()
+    return caps.canFlipH || caps.canFlipV || false
   }
 
   /**
@@ -336,54 +385,78 @@ export class RectMaskBase extends MaskBase {
   }
   /**
    * Get the cached actions instance for transformations
-   * @returns {Object|null} The actions instance or null if not available
+   * Lazily creates and caches an Actions instance for the current bitboard state.
+   * Cache is invalidated whenever this.bits changes (detected by bitEqual check).
+   *
+   * @type {Object|null}
+   * @returns {Object} Actions instance with transformation methods, or null if indexer unavailable
    */
   get actions () {
+    // @ts-ignore - bitEqual expects bigint but type inference sees union type
     if (
       !this._actions ||
       !this.store.bitEqual(this._actions?.original?.bits, this.bits)
     ) {
-      this._actions = this.indexer?.actions(this)
+      // @ts-ignore - ShapeIndexer subclasses implement this method
+      this._actions = this.indexer?.actions?.(this)
     }
     return this._actions
   }
 
   /**
-   * Load coordinates
-   * @param {Coordinate[]} coords - Array of coordinates
+   * Load coordinates into the internal coordinate converter
+   * Provides access to the lazy-loaded CoordinateConversion helper for this mask.
+   *
+   * @param {Coordinate[]} coords - Array of [x, y] coordinates to load
+   * @returns {void}
    */
   fromCoords (coords) {
     this._coords.fromCoordinates(coords)
   }
 
   /**
-   * Convert coordinates to bits
-   * @param {Coordinate[]} coords - Array of coordinates
-   * @returns {BitRepresentation} Bit representation
+   * Convert an array of coordinates to a bitboard representation
+   * Takes a list of [x, y] coordinates and creates a bitboard with those cells marked as occupied.
+   *
+   * @param {Coordinate[]} coords - Array of [x, y] coordinates
+   * @returns {bigint} Bitboard representation with marked cells
    */
   bitsFromCoords (coords) {
     return this._coords.coordinatesToBits(coords)
   }
 
   /**
-   * Get random occupied coordinate
-   * @returns {Coordinate} Random occupied coordinate
+   * Get a random occupied coordinate from the mask
+   * Selects a random coordinate from all currently occupied cells.
+   * Throws error if no occupied cells exist.
+   *
+   * @type {Coordinate}
+   * @returns {Coordinate} A random [x, y] coordinate from occupied cells
+   * @throws {RangeError} If no occupied cells exist in the mask
    */
   get randomOccupied () {
     return Random.element(this.toCoords)
   }
 
   /**
-   * Get all occupied coordinates
-   * @returns {Coordinate[]} Array of coordinates
+   * Get all occupied coordinates as an array
+   * Converts the bitboard representation to a list of all occupied [x, y] coordinates.
+   * Returns coordinates in order of their linear index.
+   *
+   * @type {Coordinate[]}
+   * @returns {Coordinate[]} Array of [x, y] coordinates for all occupied cells
    */
   get toCoords () {
     return this._coords.bitsToCoordinates().map(a => a.slice(0, 2))
   }
   /**
-   * Invert coordinates by swapping x and y values
-   * @param {CoordinateWithValue[]} coords - Array of [x, y, value] coordinates
+   * Invert an array of coordinates by swapping x and y values
+   * Transposes a list of coordinates by swapping their x and y components.
+   * Useful for converting between row-major and column-major representations.
+   *
+   * @param {CoordinateWithValue[]} coords - Array of [x, y] or [x, y, value] coordinates
    * @returns {CoordinateWithValue[]} Coordinates with x and y swapped
+   * @static
    */
   static invertCoords (coords) {
     return coords.map(c => RectMaskBase.invertCoord(c))
@@ -391,8 +464,12 @@ export class RectMaskBase extends MaskBase {
 
   /**
    * Invert a single coordinate by swapping x and y
-   * @param {CoordinateWithValue} coord - [x, y] or [x, y, value] coordinate
-   * @returns {CoordinateWithValue} Coordinate with x and y swapped
+   * Swaps the x and y components of a coordinate, preserving the value component if present.
+   * If value is omitted, defaults to 1 (occupied).
+   *
+   * @param {CoordinateWithValue} coord - [x, y] or [x, y, value] coordinate tuple
+   * @returns {CoordinateWithValue} Inverted [y, x, value] coordinate
+   * @static
    */
   static invertCoord (coord) {
     return [coord[1], coord[0], coord[2] || 1]
