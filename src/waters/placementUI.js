@@ -27,17 +27,17 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 /**
  * Ship information for tray building with counts.
  * @typedef {Object} ShipInfo
- * @property {Object} shape - Ship shape/form object with board and letter properties
+ * @property {Object<string, any>} shape - Ship shape/form object with board and letter properties
  * @property {number} count - Number of ships of this type to display
  */
 
 /**
  * Game model containing game state and configuration.
  * @typedef {Object} GameModel
- * @property {Array<Object>} ships - Array of placed ships with cells and properties
- * @property {Array<Object>} candidateShips - Array of candidate ships available for placement
- * @property {Object} shipCellGrid - Grid representation of ship cells for highlighting
- * @property {Object} loadOut - Weapon loadout configuration and state
+ * @property {Array<any>} ships - Array of placed ships with cells and properties
+ * @property {Array<any>} candidateShips - Array of candidate ships available for placement
+ * @property {Object<string, any>} shipCellGrid - Grid representation of ship cells for highlighting
+ * @property {Object<string, any>} loadOut - Weapon loadout configuration and state
  * @property {(map?: Object) => void} armWeapons - Method to configure and initialize weapons
  * @property {() => boolean} hasPlayableShips - Method checking if playable ships exist
  * @property {() => boolean} hasFewShips - Method checking if ship count is low
@@ -153,7 +153,7 @@ export class PlacementUI extends WatersUI {
    * - Sets up initial UI state (placingShips=true, readyingShips=false)
    * - Initializes event listener cancellation handlers
    *
-   * @param {Object} territory - Terrain object defining board size and placement rules
+   * @param {string} territory - Territory identifier (e.g., 'friend', 'enemy')
    * @param {string} title - Display title for the placement UI panel
    */
   constructor (territory, title) {
@@ -205,7 +205,8 @@ export class PlacementUI extends WatersUI {
    * Side effects:
    * - Assigns button properties (newPlacementBtn, rotateBtn, etc.) from this.elements.buttons
    *
-   * @returns {void}\n   */
+   * @returns {void}
+   */
   #initializeButtonReferences () {
     this.newPlacementBtn = /** @type {HTMLButtonElement} */ (
       this.elements.buttons.newPlacement
@@ -263,10 +264,10 @@ export class PlacementUI extends WatersUI {
    * @returns {void}
    */
   showStatus () {
-    gameStatus.game.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
-    gameStatus.mode.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
-    gameStatus.line.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN, 'small')
-    gameStatus.line.classList.add('medium')
+    gameStatus.game?.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
+    gameStatus.mode?.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
+    gameStatus.line?.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN, 'small')
+    gameStatus.line?.classList.add('medium')
     gameStatus.clearQueue()
   }
 
@@ -330,9 +331,9 @@ export class PlacementUI extends WatersUI {
     this.#setButtonsVisibility(buttons, false)
 
     if (bh.terrain.hasTransforms) {
-      this.transformBtn.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
+      this.transformBtn?.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
     } else {
-      this.transformBtn.classList.add(PlacementUI.#CSS_CLASSES.HIDDEN)
+      this.transformBtn?.classList.add(PlacementUI.#CSS_CLASSES.HIDDEN)
     }
   }
 
@@ -343,15 +344,15 @@ export class PlacementUI extends WatersUI {
    * Side effects:
    * - Adds or removes HIDDEN class from all buttons based on hide parameter
    *
-   * @param {HTMLButtonElement[]} buttons - Array of button elements to update
+   * @param {(HTMLButtonElement|undefined)[]} buttons - Array of button elements to update
    * @param {boolean} hide - If true, add hidden class; if false, remove it
    * @returns {void}
    */
   #setButtonsVisibility (buttons, hide) {
     const action = hide ? 'add' : 'remove'
-    buttons.forEach(btn =>
-      btn.classList[action](PlacementUI.#CSS_CLASSES.HIDDEN)
-    )
+    buttons.forEach(btn => {
+      if (btn) btn.classList[action](PlacementUI.#CSS_CLASSES.HIDDEN)
+    })
   }
 
   /**
@@ -362,8 +363,10 @@ export class PlacementUI extends WatersUI {
    * @returns {void}
    */
   #forEachBoardCell (callback) {
-    for (const cell of this.board.children) {
-      callback(/** @type {HTMLElement} */ (cell))
+    if (this.board) {
+      for (const cell of this.board.children) {
+        callback(/** @type {HTMLElement} */ (cell))
+      }
     }
   }
 
@@ -400,9 +403,9 @@ export class PlacementUI extends WatersUI {
    * @returns {void}
    */
   #setPlacementControlsDisabled (disabled) {
-    this.rotateBtn.disabled = disabled
-    this.rotateLeftBtn.disabled = disabled
-    this.flipBtn.disabled = disabled
+    if (this.rotateBtn) this.rotateBtn.disabled = disabled
+    if (this.rotateLeftBtn) this.rotateLeftBtn.disabled = disabled
+    if (this.flipBtn) this.flipBtn.disabled = disabled
   }
 
   /**
@@ -490,7 +493,7 @@ export class PlacementUI extends WatersUI {
     const container = dragShip.parentElement
     dragShip.remove()
     if (
-      container.classList.contains(
+      container?.classList.contains(
         PlacementUI.#CSS_CLASSES.DRAG_SHIP_CONTAINER
       ) &&
       container.children.length === 0
@@ -559,6 +562,7 @@ export class PlacementUI extends WatersUI {
    * @returns {Element|null} First item element in specified direction or null
    */
   #getFirstTrayItemInDirection (direction) {
+    if (!direction) return null
     return DirectionMovement.getFirstItem(
       direction,
       this.trayManager.elementCache.getAllTrays()
@@ -595,6 +599,7 @@ export class PlacementUI extends WatersUI {
    */
   clickAssignByCursor (arrowkey) {
     const direction = DirectionMovement.fromArrowKey(arrowkey)
+    if (!direction) return null
     return this.#getFirstTrayItemInDirection(direction)
   }
 
@@ -611,6 +616,7 @@ export class PlacementUI extends WatersUI {
    */
   moveNextTrayItem (arrowKey, trays, itemIndex, trayIndex) {
     const direction = DirectionMovement.fromArrowKey(arrowKey)
+    if (!direction) return null
     return DirectionMovement.moveInDirection(
       direction,
       trays,
@@ -625,22 +631,25 @@ export class PlacementUI extends WatersUI {
    * Used for arrow key navigation starting from an already-selected ship.
    *
    * @param {string} arrowKey - Arrow key code for direction (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
-   * @param {Object} clickedShip - Currently selected ship with source element reference
+   * @param {any} clickedShip - Currently selected ship with source element reference
    * @returns {Element|null} Next ship element or null if at boundary
    */
   moveAssignByCursor (arrowKey, clickedShip) {
-    let shipnode = clickedShip.source
+    const shipnode = clickedShip?.source
+    if (!shipnode || !shipnode.dataset) return null
     const shipId = Number.parseInt(
-      shipnode.dataset[PlacementUI.#DATA_ATTRIBUTES.ID]
+      shipnode.dataset[PlacementUI.#DATA_ATTRIBUTES.ID] || ''
     )
 
-    if (shipId === null || shipnode === null) return null
+    if (!shipId || !shipnode) return null
 
     const adaptInfo = (_child, trayIndex, itemIndex, trays) => {
       return this.moveNextTrayItem(arrowKey, trays, itemIndex, trayIndex)
     }
 
-    return this.trayManager.getTrayItemInfo(shipId, adaptInfo)
+    return /** @type {Element|null} */ (
+      this.trayManager.getTrayItemInfo(shipId, adaptInfo)
+    )
   }
 
   /**
@@ -653,7 +662,7 @@ export class PlacementUI extends WatersUI {
    * - Calls assignClicked to update selected ship state and UI
    *
    * @param {string} arrowkey - Arrow key code for direction (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
-   * @param {Array<Object>} ships - Array of available ships to search
+   * @param {Array<any>} ships - Array of available ships to search
    * @returns {void}
    */
   assignByCursor (arrowkey, ships) {
@@ -662,11 +671,12 @@ export class PlacementUI extends WatersUI {
     if (clicked) shipElement = this.moveAssignByCursor(arrowkey, clicked)
     else shipElement = this.clickAssignByCursor(arrowkey)
 
-    if (shipElement === null) return
+    if (!shipElement || !(shipElement instanceof HTMLElement)) return
 
     const shipId = getShipIdFromElement(shipElement)
-    const ship = ships.find(s => s.id === shipId)
-    if (ship && shipElement) this.assignClicked(ship, shipElement)
+    const ship = ships.find(s => s?.id === shipId)
+    if (ship && shipElement instanceof HTMLElement)
+      this.assignClicked(ship, shipElement)
   }
 
   /**
@@ -694,17 +704,17 @@ export class PlacementUI extends WatersUI {
    * - Adds CLICKED class to clicked element
    * - Updates button disabled states based on ship capabilities
    *
-   * @param {Object} ship - Ship object with shape() method and capability methods
+   * @param {any} ship - Ship object with shape() method and capability methods
    * @param {HTMLElement} clicked - Ship element in tray that was clicked
    * @returns {void}
    */
   assignClicked (ship, clicked) {
     const variantIndex = Number.parseInt(
-      clicked.dataset[PlacementUI.#DATA_ATTRIBUTES.VARIANT]
+      clicked.dataset[PlacementUI.#DATA_ATTRIBUTES.VARIANT] || '0'
     )
     this.removeClicked()
-    const shape = ship.shape()
-    this.showNotice(shape.tip)
+    const shape = ship?.shape?.()
+    if (shape?.tip) this.showNotice(shape.tip)
     const clickedShip = new ClickedShip(
       ship,
       clicked,
@@ -714,8 +724,9 @@ export class PlacementUI extends WatersUI {
     dragNDrop.setClickedShip(clickedShip)
     clicked.classList.add(PlacementUI.#CSS_CLASSES.CLICKED)
     this.#setPlacementControlsDisabled(!clickedShip.canRotate())
-    this.flipBtn.disabled = !clickedShip.canFlip()
-    this.transformBtn.disabled = !clickedShip.canTransform()
+    if (this.flipBtn) this.flipBtn.disabled = !clickedShip.canFlip()
+    if (this.transformBtn)
+      this.transformBtn.disabled = !clickedShip.canTransform()
   }
 
   /**
@@ -730,13 +741,13 @@ export class PlacementUI extends WatersUI {
    * - Adds CLICKED class to clicked element
    * - Disables all placement control buttons via #setPlacementControlsDisabled(true)
    *
-   * @param {Object} weapon - Weapon object with tip property
+   * @param {any} weapon - Weapon object with tip property
    * @param {HTMLElement} clicked - Weapon element in tray that was clicked
    * @returns {void}
    */
   assignClickedWeapon (weapon, clicked) {
     this.removeClicked()
-    this.showNotice(weapon.tip)
+    if (weapon?.tip) this.showNotice(weapon.tip)
     dragNDrop.setClickedShip(null)
     clicked.classList.add(PlacementUI.#CSS_CLASSES.CLICKED)
     this.#setPlacementControlsDisabled(true)
@@ -752,18 +763,20 @@ export class PlacementUI extends WatersUI {
    * - Appends grid cells to dragShip for each board position
    *
    * @param {HTMLElement} dragShip - Container element for drag preview grid cells
-   * @param {Object} board - Ship board object with height, width, and cell color data
+   * @param {any} board - Ship board object with height, width, and cell color data
    * @param {string} letter - Ship letter for color/style lookup
    * @returns {void}
    */
   setDragShipContents (dragShip, board, letter) {
-    const maxR = board.height
-    const maxC = board.width
+    const maxR = board?.height || 0
+    const maxC = board?.width || 0
     this.#setGridDisplayStyle(dragShip, maxR, maxC)
 
-    for (const [c, r] of board.allXYlocations()) {
-      const color = board.at(c, r)
-      this.#createDragShipCell(dragShip, letter, r, c, color)
+    if (board?.allXYlocations) {
+      for (const [c, r] of board.allXYlocations()) {
+        const color = board.at(c, r)
+        this.#createDragShipCell(dragShip, letter, r, c, color)
+      }
     }
   }
 
@@ -772,7 +785,7 @@ export class PlacementUI extends WatersUI {
    * Used to determine grid dimensions for splash effect visualization.
    *
    * @param {Array<[number, number, number]>} cells - Array of [row, col, value] tuples
-   * @returns {Object} Object with minR, minC, rows, cols properties defining the extent
+   * @returns {Object<string, number>} Object with minR, minC, rows, cols properties defining the extent
    */
   #getCellExtent (cells) {
     const minR = Math.min(...cells.map(s => s[0]))
@@ -984,7 +997,7 @@ export class PlacementUI extends WatersUI {
    *
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {Object} ship - Ship object to display
+   * @param {any} ship - Ship object to display
    * @returns {void}
    */
   cellPlacedAt (r, c, ship) {
@@ -1149,7 +1162,7 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * Creates a draggable weapon element with grid preview and metadata.
+   * Builds weapon drag element with grid preview.
    * Converts weapon shape to mask for display grid setup.
    *
    * Side effects:
@@ -1159,7 +1172,7 @@ export class PlacementUI extends WatersUI {
    * - Invokes dragNDrop.makeDraggable to set up drag handlers
    * - Appends drag element to container
    *
-   * @param {Object} weapon - Weapon object with letter, dragShape, and properties
+   * @param {any} weapon - Weapon object with letter, dragShape, and properties
    * @param {HTMLElement} container - Parent container to append drag element to
    * @returns {void}
    */
@@ -1172,7 +1185,7 @@ export class PlacementUI extends WatersUI {
     dragShip.dataset[PlacementUI.#DATA_ATTRIBUTES.TYPE] = 'weapon'
 
     this.setDragShipContents(dragShip, board, weapon.letter)
-    dragNDrop.makeDraggable(this, dragShip, null, weapon)
+    dragNDrop.makeDraggable(this, dragShip, [], weapon)
     container.appendChild(dragShip)
   }
 
@@ -1273,9 +1286,11 @@ export class PlacementUI extends WatersUI {
    * @returns {void}
    */
   buildBrushTray (terrain) {
+    if (!this.brushTray) return
     this.brushTray.innerHTML = ''
+    const subterrains = terrain?.subterrains || []
     for (const size of PlacementUI.#BRUSH_SIZES) {
-      for (const subterrain of terrain.subterrains) {
+      for (const subterrain of subterrains) {
         this.buildBrush(size, subterrain, this.brushTray)
       }
     }
@@ -1313,7 +1328,7 @@ export class PlacementUI extends WatersUI {
       const tray = this.getTrayOfType(type)
       tray.classList.remove(PlacementUI.#CSS_CLASSES.HIDDEN)
       const group = groups[type]
-      const height = Ship.maxMinSizeIn(group)
+      const height = Ship.maxMinSizeIn(/** @type {any[]} */ (group))
       for (const ship of group) {
         this.buildTrayItem(ships, ship, tray, height)
       }
@@ -1329,12 +1344,14 @@ export class PlacementUI extends WatersUI {
    * @returns {Object<string, Array<Object>>} Map of unit type to ship group
    */
   #partitionShipsByType (ships) {
-    return ships.reduce((acc, ship) => {
-      const type = this.#normalizeUnitType(ship.type())
-      if (!acc[type]) acc[type] = []
-      acc[type].push(ship)
-      return acc
-    }, {})
+    return /** @type {Object<string, Array<any>>} */ (
+      ships.reduce((acc, ship) => {
+        const type = this.#normalizeUnitType(ship.type())
+        if (!acc[type]) acc[type] = []
+        acc[type].push(ship)
+        return acc
+      }, {})
+    )
   }
 
   /**
@@ -1680,11 +1697,11 @@ export class PlacementUI extends WatersUI {
    * - Clears all trays
    * - Updates ship count display
    *
-   * @param {Array<Object>} ships - Ships to display updated count for
+   * @param {Array<any>} ships - Ships to display updated count for
    * @returns {void}
    */
   reset (ships) {
-    this.board.innerHTML = ''
+    if (this.board) this.board.innerHTML = ''
     this.trayManager.clearTrays()
     this.displayShipInfo(ships)
   }
@@ -1703,9 +1720,9 @@ export class PlacementUI extends WatersUI {
    * @returns {void}
    */
   resetAdd (model) {
-    this.board.innerHTML = ''
+    if (this.board) this.board.innerHTML = ''
     this.trayManager.clearTrays()
-    model.armWeapons()
+    model.armWeapons?.()
     this.displayAddInfo(model)
   }
   /**
@@ -1757,7 +1774,7 @@ const CURSOR_DIRECTION_MAP = {
  * - Invokes dragNDrop.highlight() to update visual feedback
  *
  * @param {KeyboardEvent} event - Keyboard event with arrow key property
- * @param {Object} shipCellGrid - Ship grid model for highlighting with row/col dimensions
+ * @param {Object<string, any>} shipCellGrid - Ship grid model for highlighting with row/col dimensions
  * @param {PlacementUI} viewModel - UI view model with board and display methods
  * @returns {void}
  * @private

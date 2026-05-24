@@ -1,15 +1,36 @@
 import { RectCoverBase } from './RectCoverBase.js'
 
 /**
+ * Rectangle grid index configuration and utilities.
+ * Encapsulates coordinate validation, indexing, and boundary detection.
  * @typedef {Object} RectIndex
- * @property {Function} index - Converts (x, y) coordinates to 1D grid index
- * @property {Function} validate - Validates and optionally transforms coordinates
- * @property {Function} intercepts - Calculates line-boundary intercepts
- * @property {Function} _ensureIndexer - Ensures valid indexer function
- * @property {Function} _ensureExitCondition - Ensures valid exit condition
- * @property {Function} _ensureValidate - Ensures valid validation function
- * @property {Function} _createBoundaryExitCondition - Creates boundary exit condition
- * @property {Function} _createDistanceLimitExitCondition - Creates distance limit exit condition
+ * @property {CoordinateIndexer} index - Converts (x, y) coordinates to 1D grid index
+ * @property {CoordinateValidator} validate - Validates and optionally transforms coordinates
+ * @property {Function} intercepts - Calculates line-boundary intercepts for ray exit detection
+ * @property {Function} _ensureIndexer - Ensures valid indexer function or throws
+ * @property {Function} _ensureExitCondition - Ensures valid exit condition or throws
+ * @property {Function} _ensureValidate - Ensures valid validation function or throws
+ * @property {Function} _createBoundaryExitCondition - Creates boundary exit condition factory
+ * @property {Function} _createDistanceLimitExitCondition - Creates distance limit exit condition factory
+ */
+
+/**
+ * Function signature for coordinate validation.
+ * Validates and optionally adjusts coordinates.
+ * @typedef {Function} CoordinateValidator
+ * @param {number} x - X coordinate to validate (may be out of bounds)
+ * @param {number} y - Y coordinate to validate (may be out of bounds)
+ * @returns {[number, number]|null} Validated [x, y] coordinate pair, or null if validation fails
+ */
+
+/**
+ * Function signature for converting coordinates to grid index.
+ * Maps 2D coordinates to a 1D grid index in row-major or other ordering.
+ * @typedef {Function} CoordinateIndexer
+ * @param {number} x - X coordinate in the grid (0-based column)
+ * @param {number} y - Y coordinate in the grid (0-based row)
+ * @param {number} step - Current step number in the line traversal sequence (1-based)
+ * @returns {number} 1D grid index corresponding to (x, y) coordinates
  */
 
 /**
@@ -29,6 +50,12 @@ import { RectCoverBase } from './RectCoverBase.js'
  * - vs HalfCover: HalfCover has specific corner handling; Normal skips all
  * - vs Normal: This class - optimal for standard grid traversal
  *
+ * **Wrapped convenience methods:** After construction, these methods are available:
+ * - `rayIndices(startX, startY, endX, endY)` - Wrap of `ray()` with injected indexer
+ * - `segmentToIndices(startX, startY, endX, endY)` - Wrap of `segmentTo()` with injected indexer
+ * - `fullLineIndices(startX, startY, endX, endY)` - Wrap of `fullLine()` with injected indexer
+ * - `segmentForIndices(startX, startY, endX, endY, distance)` - Wrap of `segmentFor()` with injected indexer
+ *
  * @extends RectCoverBase
  * @class RectNormalCover
  */
@@ -38,15 +65,30 @@ export class RectNormalCover extends RectCoverBase {
    * Initializes wrapper methods for convenient access to the base line-generation functions.
    * These wrappers automatically inject the grid indexer as the final parameter.
    *
-   * **Wrapped Methods:**
-   * - `rayIndices(startX, startY, endX, endY)` - Wrap of `ray()`
-   * - `segmentToIndices(startX, startY, endX, endY)` - Wrap of `segmentTo()`
-   * - `fullLineIndices(startX, startY, endX, endY)` - Wrap of `fullLine()`
-   * - `segmentForIndices(startX, startY, endX, endY, distance)` - Wrap of `segmentFor()`
+   * **Initialization Process:**
+   * 1. Calls parent constructor with rectIndex configuration
+   * 2. Creates wrapper method pairs that bind the indexer function
+   * 3. Attaches wrapped methods as instance properties for direct access
    *
+   * **Wrapped Methods Created:**
+   * - `rayIndices(startX, startY, endX, endY)` - Wraps `ray()` base method
+   * - `segmentToIndices(startX, startY, endX, endY)` - Wraps `segmentTo()` base method
+   * - `fullLineIndices(startX, startY, endX, endY)` - Wraps `fullLine()` base method
+   * - `segmentForIndices(startX, startY, endX, endY, distance)` - Wraps `segmentFor()` base method
+   *
+   * **Example Usage:**
+   * ```javascript
+   * const cover = new RectNormalCover(rectIndex);
+   * const lineIndices = cover.rayIndices(0, 0, 10, 10);
+   * for (const index of lineIndices) {
+   *   console.log(index);
+   * }
+   * ```
+   *
+   * @constructor
    * @param {RectIndex} rectIndex - The rectangle index instance containing coordinate validation,
    *                                 indexing functions, and boundary/distance limit helpers
-   * @throws {TypeError} If rectIndex is null or undefined
+   * @throws {TypeError} If rectIndex is null, undefined, or missing required functions
    */
   constructor (rectIndex) {
     super(rectIndex)
@@ -71,11 +113,14 @@ export class RectNormalCover extends RectCoverBase {
    * This avoids the overhead of detecting diagonal moves, which normal cover doesn't need.
    *
    * **Why normal cover uses step() over stepMove():**
-   * - `step()` - Fast Bresenham without movement direction tracking
+   * - `step()` - Fast Bresenham without movement direction tracking (returns {errorTerm, currentX, currentY})
    * - `stepMove()` - Returns moveInX/moveInY flags for corner detection (used by SuperCover/HalfCover)
    *
-   * @returns {Function} The step function: `step(errorTerm, deltaY, deltaX, currentX, stepX, currentY, stepY)`
-   *                    Returns object with {errorTerm, currentX, currentY}
+   * **Return Function Signature:**
+   * `(errorTerm, deltaY, deltaX, currentX, stepX, currentY, stepY) => StepResult`
+   *
+   * @returns {Function} The step function for Bresenham line generation without movement tracking.
+   *                    Returns StepResult with {errorTerm, currentX, currentY}
    * @protected
    */
   _getStepFunction () {
@@ -87,17 +132,22 @@ export class RectNormalCover extends RectCoverBase {
    * Normal cover returns an empty generator (no cells) when start == end.
    * This is the standard behavior for line-of-sight calculations.
    *
-   * **Comparison:**
-   * - Normal cover: Skip identical points (returns empty)
+   * **Behavior Comparison:**
+   * - Normal cover: Skip identical points (returns empty generator)
    * - SuperCover: May include the single cell even for identical points
    * - HalfCover: May include the single cell even for identical points
    *
-   * @param {number} startX - Starting X coordinate (0-based column)
-   * @param {number} startY - Starting Y coordinate (0-based row)
-   * @param {number} endX - Ending X coordinate (0-based column)
-   * @param {number} endY - Ending Y coordinate (0-based row)
-   * @returns {boolean} True to skip traversal when start point equals end point,
-   *                   returning an empty generator
+   * **Why this matters:**
+   * - In line-of-sight calculations, identical start/end typically means no visible path
+   * - Prevents unnecessary computation for zero-length lines
+   * - Maintains consistency with standard grid traversal semantics
+   *
+   * @param {number} startX - Starting X coordinate (0-based column, validated by caller)
+   * @param {number} startY - Starting Y coordinate (0-based row, validated by caller)
+   * @param {number} endX - Ending X coordinate (0-based column, validated by caller)
+   * @param {number} endY - Ending Y coordinate (0-based row, validated by caller)
+   * @returns {boolean} True if traversal should be skipped (returns empty generator);
+   *                   false if traversal should proceed even with identical points
    * @protected
    */
   _shouldSkipIdenticalStartEnd (startX, startY, endX, endY) {

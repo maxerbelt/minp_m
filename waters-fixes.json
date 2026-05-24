@@ -1,0 +1,304 @@
+{
+  "file": "src/waters/Waters.js",
+  "totalLines": 1726,
+  "summary": "326 TypeScript/ESLint errors - Array generics, class properties, method parameters, and null checks needed",
+  
+  "typedefs_to_add": [
+    {
+      "name": "PlacedShipData",
+      "definition": "/**\n   * @typedef {Object} PlacedShipData\n   * @property {Array} placedCells - Array of placed cell coordinates\n   * @property {Ship} ship - The ship that was placed\n   */",
+      "reason": "For storing temporary placements",
+      "insertAfter": "EffectNormalizationResult"
+    },
+    {
+      "name": "LastClickCoords",
+      "definition": "/**\n   * @typedef {Object} LastClickCoords\n   * @property {number} r - Row coordinate\n   * @property {number} c - Column coordinate\n   */",
+      "reason": "For tracking last click location",
+      "insertAfter": "PlacedShipData"
+    },
+    {
+      "name": "SourceHintCoords",
+      "definition": "/**\n   * @typedef {Object} SourceHintCoords\n   * @property {number} r - Row coordinate of hint\n   * @property {number} c - Column coordinate of hint\n   */",
+      "reason": "For source hint tracking in steps",
+      "insertAfter": "LastClickCoords"
+    },
+    {
+      "name": "CrashOptions",
+      "definition": "/**\n   * @typedef {Object} CrashOptions\n   * @property {Array<number>} [crashLoc] - Crash location coordinates\n   * @property {boolean} [isSplash] - Whether this is a splash effect\n   */",
+      "reason": "For weapon firing options",
+      "insertAfter": "SourceHintCoords"
+    }
+  ],
+
+  "class_properties_to_add": [
+    {
+      "property": "ships",
+      "lineNumber": 121,
+      "oldString": "    this.ships = []\n    this.score = new Score()",
+      "newString": "    /** @type {Ship[]} */\n    this.ships = []\n    this.score = new Score()",
+      "reason": "Array of Ship objects needs generic type"
+    },
+    {
+      "property": "opponent",
+      "lineNumber": 122,
+      "oldString": "    this.opponent = null\n    this.UI = ui",
+      "newString": "    /** @type {Waters|null} */\n    this.opponent = null\n    this.UI = ui",
+      "reason": "opponent is either Waters instance or null"
+    },
+    {
+      "property": "boardDestroyed",
+      "lineNumber": 126,
+      "oldString": "    this.boardDestroyed = false\n    this.preamble1 = 'You '",
+      "newString": "    /** @type {boolean} */\n    this.boardDestroyed = false\n    /** @type {string} */\n    this.preamble1 = 'You '",
+      "reason": "Boolean and string properties need explicit types"
+    },
+    {
+      "property": "preamble",
+      "lineNumber": 128,
+      "oldString": "    this.preamble0 = 'Your'\n    this.preamble = 'You were '",
+      "newString": "    /** @type {string} */\n    this.preamble0 = 'Your'\n    /** @type {string} */\n    this.preamble = 'You were '",
+      "reason": "String properties need explicit type annotations"
+    },
+    {
+      "property": "steps",
+      "lineNumber": 130,
+      "oldString": "    if (playerType) {\n      this.steps = new Steps(playerType)\n      this.initializeSteps()\n    }",
+      "newString": "    /** @type {Steps|undefined} */\n    this.steps\n    if (playerType) {\n      this.steps = new Steps(playerType)\n      this.initializeSteps()\n    }",
+      "reason": "steps is optional and only set if playerType exists"
+    },
+    {
+      "property": "displayInfo",
+      "lineNumber": 134,
+      "oldString": "    this.displayInfo = gameStatus.info2.bind(gameStatus)\n  }",
+      "newString": "    /** @type {Function} */\n    this.displayInfo = gameStatus.info2.bind(gameStatus)\n  }",
+      "reason": "displayInfo is a bound function and needs type annotation"
+    },
+    {
+      "property": "tempPlacement",
+      "lineNumber": 237,
+      "oldString": "  resetPlacementStore () {\n    this.tempPlacement = []",
+      "newString": "  resetPlacementStore () {\n    /** @type {Array<PlacedShipData>} */\n    this.tempPlacement = []",
+      "reason": "Array of placement data needs generic type"
+    },
+    {
+      "property": "lastClick",
+      "lineNumber": 573,
+      "oldString": "  _setLastClick (hintR, hintC) {\n    this.lastClick = { r: hintR, c: hintC }\n  }",
+      "newString": "  _setLastClick (hintR, hintC) {\n    /** @type {LastClickCoords|undefined} */\n    this.lastClick = { r: hintR, c: hintC }\n  }",
+      "reason": "lastClick tracking needs typed property"
+    },
+    {
+      "property": "previousSources",
+      "lineNumber": 618,
+      "oldString": "    const availableKeys = [...keyIds]\n    if (this.shouldFilterPreviousSourceKeys(hintR, hintC, keyIds)) {\n      return availableKeys.filter(k => !this.previousSources.has(k))\n    }\n    this.previousSources = new Set()",
+      "newString": "    const availableKeys = [...keyIds]\n    if (this.shouldFilterPreviousSourceKeys(hintR, hintC, keyIds)) {\n      return availableKeys.filter(k => !this.previousSources.has(k))\n    }\n    /** @type {Set<string>} */\n    this.previousSources = new Set()",
+      "reason": "previousSources is a Set of string keys"
+    },
+    {
+      "property": "loadOut",
+      "lineNumber": 952,
+      "oldString": "    this.loadOut = this.createLoadOut(map, shipsForLoadOut)\n  }",
+      "newString": "    /** @type {LoadOut} */\n    this.loadOut = this.createLoadOut(map, shipsForLoadOut)\n  }",
+      "reason": "loadOut is a LoadOut instance and needs explicit type"
+    },
+    {
+      "property": "weaponShips",
+      "lineNumber": 937,
+      "oldString": "    this.hasAttachedWeapons = weaponShips.length > 0\n    this.weaponShips = weaponShips",
+      "newString": "    this.hasAttachedWeapons = weaponShips.length > 0\n    /** @type {Ship[]} */\n    this.weaponShips = weaponShips",
+      "reason": "Array of armed ships needs generic type"
+    },
+    {
+      "property": "isRevealed",
+      "lineNumber": 906,
+      "oldString": "  resetMap (map) {\n    this.boardDestroyed = false\n    this.isRevealed = false",
+      "newString": "  resetMap (map) {\n    this.boardDestroyed = false\n    /** @type {boolean} */\n    this.isRevealed = false",
+      "reason": "Boolean flag needs explicit type"
+    }
+  ],
+
+  "method_fixes": [
+    {
+      "method": "attemptToPlaceShips",
+      "lineNumber": 196,
+      "currentSignature": "attemptToPlaceShips (ships, onShipPlaced = Function.prototype, onPlacementReset = Function.prototype)",
+      "issue": "Callback parameters not typed",
+      "oldString": "  attemptToPlaceShips (\n    ships,\n    onShipPlaced = Function.prototype,\n    onPlacementReset = Function.prototype\n  ) {",
+      "newString": "  /**\n   * Attempts to place ships randomly on the board with optional callbacks.\n   * Routes placement through the shipCellGrid system and collects results\n   * for batch UI updates on success.\n   *\n   * @param {Ship[]} ships - Array of ships to place on the board\n   * @param {(ship: Ship, placedCells: Array<Array<number>>) => void} [onShipPlaced] - Callback fired when each ship is successfully placed.\n   * @param {() => void} [onPlacementReset] - Callback fired when placement fails and is reset\n   * @returns {boolean} True if all ships placed successfully, false if placement failed\n   */\n  attemptToPlaceShips (\n    ships,\n    onShipPlaced = Function.prototype,\n    onPlacementReset = Function.prototype\n  ) {",
+      "reason": "Callback functions need explicit parameter and return types"
+    },
+    {
+      "method": "selectWeaponFromCell",
+      "lineNumber": 655,
+      "issue": "keyIds parameter array not typed",
+      "oldString": "  selectWeaponFromCell (keyIds, hintR, hintC, random, viewModel) {",
+      "newString": "  /**\n   * Selects a loaded weapon system by cell key values.\n   * Filters available keys to loaded weapons, applies repeated-click filtering,\n   * and selects either randomly or by closest distance to hint coordinates.\n   *\n   * @param {Array<string>} keyIds - Candidate key identifiers (triple-format)\n   * @param {number} hintR - Hint row coordinate for distance calculation\n   * @param {number} hintC - Hint column coordinate for distance calculation\n   * @param {boolean|string} random - Whether to select randomly ('random', true) or by distance\n   * @param {Object} viewModel - UI view model instance\n   * @returns {WeaponSelection} Weapon selection payload with all targeting coordinates\n   */\n  selectWeaponFromCell (keyIds, hintR, hintC, random, viewModel) {",
+      "reason": "Array<string> generic type needed for keyIds parameter"
+    },
+    {
+      "method": "selectWeaponFromShip",
+      "lineNumber": 833,
+      "issue": "entries parameter and destructuring not typed",
+      "oldString": "  selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {\n    const entries = ship.getLoadedWeaponEntries()\n    const [key, weapon] = random",
+      "newString": "  /**\n   * Selects a loaded weapon system from a ship's available entries.\n   * @param {Object} ship - Ship instance with loaded weapons\n   * @param {number} hintR - Hint row coordinate\n   * @param {number} hintC - Hint column coordinate\n   * @param {boolean} random - Whether to select randomly\n   * @param {Object} viewModel - UI view model\n   * @param {HTMLElement|null} cell - Candidate cell element\n   * @returns {WeaponSelection} Weapon selection payload\n   */\n  selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {\n    /** @type {Array<[string, Object]>} */\n    const entries = ship.getLoadedWeaponEntries()\n    const [key, weapon] = random",
+      "reason": "entries is array of [string, weapon] tuples"
+    },
+    {
+      "method": "placeMatchingShipsFromData",
+      "lineNumber": 823,
+      "issue": "matchableShips array not typed",
+      "oldString": "  placeMatchingShipsFromData (placedShips, placer) {\n    const matchableShips = [...this.ships]",
+      "newString": "  /**\n   * Places matching ships from loaded data using a placer function.\n   * @param {ShipPlacement} placedShips - The placed ships data\n   * @param {(ship: Ship, shipData: Object) => void} placer - Function to place individual ships\n   * @returns {Ship[]} Array of ships that couldn't be matched\n   */\n  placeMatchingShipsFromData (placedShips, placer) {\n    /** @type {Ship[]} */\n    const matchableShips = [...this.ships]",
+      "reason": "Array copy needs explicit type annotation"
+    },
+    {
+      "method": "determineWeaponShips",
+      "lineNumber": 930,
+      "issue": "Return type not documented",
+      "oldString": "  determineWeaponShips (_map) {\n    if (!this.ships) {\n      this.ships = []\n    }\n    let weaponShips = this.ships.filter(ship => ship.hasWeapon)",
+      "newString": "  /**\n   * Determines which ships should have weapons based on map configuration.\n   * @param {Object} _map - The map object (unused, kept for API compatibility)\n   * @returns {Ship[]} Array of ships with weapons\n   */\n  determineWeaponShips (_map) {\n    if (!this.ships) {\n      this.ships = []\n    }\n    /** @type {Ship[]} */\n    let weaponShips = this.ships.filter(ship => ship.hasWeapon)",
+      "reason": "weaponShips array needs explicit Ship[] type"
+    },
+    {
+      "method": "getHitCandidates",
+      "lineNumber": 1137,
+      "issue": "candidates array not typed",
+      "oldString": "  getHitCandidates (effect, weapon) {\n    const candidates = []",
+      "newString": "  /**\n   * Gets all valid hit candidates from a weapon effect.\n   * @param {Array<Array<number>>} effect - Array of [r, c, power] coordinates\n   * @param {Object} weapon - The weapon being used\n   * @returns {Array<Array<number>>} Array of valid target coordinates [r, c, power]\n   */\n  getHitCandidates (effect, weapon) {\n    /** @type {Array<Array<number>>} */\n    const candidates = []",
+      "reason": "candidates is array of [r, c, power] coordinate triples"
+    },
+    {
+      "method": "cellList",
+      "lineNumber": 1320,
+      "issue": "Return type needs casting annotation",
+      "oldString": "  cellList () {\n    // @ts-ignore - cellsOnBoard returns HTMLCollection, cast to HTMLElement[]\n    return [...this.cellsOnBoard()]\n  }",
+      "newString": "  /**\n   * Gets all cells on the game board.\n   * Converts HTMLCollection to array for easier iteration and filtering.\n   *\n   * @returns {HTMLElement[]} Array of all board cell DOM elements\n   */\n  cellList () {\n    /** @type {HTMLElement[]} */\n    return [...this.cellsOnBoard()]\n  }",
+      "reason": "Array spread of HTMLCollection needs explicit HTMLElement[] type"
+    },
+    {
+      "method": "shipCells",\n      "lineNumber": 1334,\n      "issue": "Loop casting not documented",
+      "oldString": "  shipCells (id) {\n    /** @type {HTMLElement[]} */\n    const list = []\n    for (const cell of this.cellsOnBoard()) {\n      // @ts-ignore - dataset property available on Element, cast to HTMLElement\n      if (Number.parseInt(cell.dataset.id) === id) {\n        // @ts-ignore - Element from HTMLCollection, cast to HTMLElement\n        list.push(cell)\n      }\n    }",
+      "newString": "  /**\n   * Gets all cells on board belonging to a specific ship.\n   * Filters cells by matching ship ID in dataset.\n   *\n   * @param {number} id - Ship ID to match\n   * @returns {HTMLElement[]} Array of cells belonging to the ship\n   */\n  shipCells (id) {\n    /** @type {HTMLElement[]} */\n    const list = []\n    for (const cell of this.cellsOnBoard()) {\n      // @ts-ignore - dataset property available on Element, cast to HTMLElement\n      if (Number.parseInt(cell.dataset.id) === id) {\n        // @ts-ignore - Element from HTMLCollection, cast to HTMLElement\n        list.push(cell)\n      }\n    }",
+      "reason": "shipCells needs proper JSDoc with parameter and return types"
+    }
+  ],
+
+  "nullability_fixes": [
+    {
+      "issue": "loadOut null check missing",
+      "lineNumber": 479,
+      "severity": "high",
+      "context": "setWeaponFireHandlers",
+      "oldString": "  setWeaponFireHandlers () {\n    this.loadOut.onDestroy = this.destroy.bind(this)\n    this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)\n  }",
+      "newString": "  /**\n   * Sets up weapon fire event handlers.\n   * Binds destroy methods to loadOut callbacks for shot resolution.\n   *\n   * @returns {void}\n   */\n  setWeaponFireHandlers () {\n    if (this.loadOut) {\n      this.loadOut.onDestroy = this.destroy.bind(this)\n      this.loadOut.onDestroyOneOfMany = this.destroyOne.bind(this)\n    }\n  }",
+      "reason": "loadOut may not be initialized; should check before accessing"
+    },
+    {
+      "issue": "steps null check missing",
+      "lineNumber": 544,
+      "severity": "high",
+      "context": "addSelectionSource",
+      "oldString": "  addSelectionSource (viewModel, launchR, launchC, cell) {\n    this.steps.addSource(\n      viewModel,\n      launchR,\n      launchC,\n      cell || viewModel.gridCellAt(launchR, launchC)\n    )\n  }",
+      "newString": "  /**\n   * Adds a source marker for the current weapon selection to the UI.\n   * Records launch coordinates as the weapon's origin point in the steps tracker.\n   *\n   * @param {Object} viewModel - UI view model instance for marker rendering\n   * @param {number} launchR - Launch row coordinate (weapon origin)\n   * @param {number} launchC - Launch column coordinate (weapon origin)\n   * @param {HTMLElement|null} cell - Candidate cell element for marker placement\n   * @returns {void}\n   * @private\n   */\n  addSelectionSource (viewModel, launchR, launchC, cell) {\n    if (this.steps) {\n      this.steps.addSource(\n        viewModel,\n        launchR,\n        launchC,\n        cell || viewModel.gridCellAt(launchR, launchC)\n      )\n    }\n  }",
+      "reason": "steps is optional property; must check before calling methods"
+    },
+    {
+      "issue": "parseTriple return may be undefined",
+      "lineNumber": 582,
+      "severity": "high",
+      "context": "filterLoadedWeaponKeys",
+      "oldString": "  filterLoadedWeaponKeys (keyIds) {\n    const loadedWeaponIds = this._getLoadedWeaponIds()\n    return keyIds.filter(key => {\n      const [, , weaponId] = parseTriple(key)\n      return loadedWeaponIds.has(weaponId)\n    })",
+      "newString": "  /**\n   * Filters weapon keys to only include those with loaded/armed weapons.\n   * Parses triple keys to extract weapon IDs and checks against loaded weapons.\n   *\n   * @param {Array<string>} keyIds - Candidate key identifiers (triple-format strings)\n   * @returns {Array<string>} Filtered keys for weapons that have ammo\n   * @private\n   */\n  filterLoadedWeaponKeys (keyIds) {\n    const loadedWeaponIds = this._getLoadedWeaponIds()\n    return keyIds.filter(key => {\n      const result = parseTriple(key)\n      if (!result || !Array.isArray(result)) return false\n      const [, , weaponId] = result\n      return weaponId != null && loadedWeaponIds.has(weaponId)\n    })",
+      "reason": "parseTriple may return undefined; need null check"
+    },
+    {
+      "issue": "loadOut null check missing",\n      "lineNumber": 596,
+      "severity": "high",
+      "context": "_getLoadedWeaponIds",
+      "oldString": "  _getLoadedWeaponIds () {\n    // @ts-ignore - Weapon object structure known at runtime\n    return new Set(this.loadOut.getLoadedWeapons().map(w => w.id))\n  }",
+      "newString": "  /**\n   * Returns the set of loaded weapon IDs for the current load out.\n   * Collects all weapon IDs from armed weapon systems.\n   *\n   * @returns {Set<number>} Set of loaded/armed weapon IDs\n   * @private\n   */\n  _getLoadedWeaponIds () {\n    if (!this.loadOut) {\n      return new Set()\n    }\n    // @ts-ignore - Weapon object structure known at runtime\n    return new Set(this.loadOut.getLoadedWeapons().map(w => w.id))\n  }",
+      "reason": "loadOut may be undefined; should return empty Set as fallback"
+    },
+    {
+      "issue": "parseTriple return may be undefined",
+      "lineNumber": 609,
+      "severity": "high",
+      "context": "findClosestWeaponKey",
+      "oldString": "  findClosestWeaponKey (filteredKeys, hintC, hintR) {\n    return findClosestCoord(filteredKeys, hintC, hintR, k => {\n      const [c, r] = parseTriple(k)\n      return [r, c]\n    })\n  }",
+      "newString": "  /**\n   * Finds the closest weapon key to the hint coordinates.\n   * @param {Array<string>} filteredKeys - Filtered weapon keys\n   * @param {number} hintC - Hint column coordinate\n   * @param {number} hintR - Hint row coordinate\n   * @returns {string|null} The closest key or null\n   * @private\n   */\n  findClosestWeaponKey (filteredKeys, hintC, hintR) {\n    return findClosestCoord(filteredKeys, hintC, hintR, k => {\n      const result = parseTriple(k)\n      if (!result || !Array.isArray(result) || result.length < 2) {\n        return [0, 0]\n      }\n      const [c, r] = result\n      return [r ?? 0, c ?? 0]\n    })\n  }",
+      "reason": "parseTriple result may be undefined or have fewer elements"
+    },
+    {
+      "issue": "parseTriple return may be undefined",
+      "lineNumber": 624,
+      "severity": "high",
+      "context": "processSelectedWeaponKey",
+      "oldString": "  processSelectedWeaponKey (selectedKey, viewModel, hintR, hintC) {\n    const [launchC, launchR, weaponId] = parseTriple(selectedKey)\n    this.addSelectionSource(viewModel, launchR, launchC, null)\n\n    // @ts-ignore - weaponId is string from parseTriple\n    const ship = this.loadOut.getShipByWeaponId(weaponId)\n    if (ship) {\n      this.steps.addShip(ship)\n      const [sourceR, sourceC] = this.generateSourceHint(ship, this.opponent)\n      this.createShadowSource(sourceR, sourceC)\n    }",
+      "newString": "  /**\n   * Processes the selected weapon key and adds necessary UI elements.\n   * @param {string} selectedKey - The selected weapon key\n   * @param {Object} viewModel - UI view model\n   * @param {number} hintR - Hint row coordinate\n   * @param {number} hintC - Hint column coordinate\n   * @returns {WeaponSelection} Weapon selection payload\n   * @private\n   */\n  processSelectedWeaponKey (selectedKey, viewModel, hintR, hintC) {\n    const result = parseTriple(selectedKey)\n    if (!result || !Array.isArray(result) || result.length < 3) {\n      return this.createWeaponSelection(0, 0, null, hintR, hintC)\n    }\n    const [launchC, launchR, weaponId] = result\n    this.addSelectionSource(viewModel, launchR, launchC, null)\n\n    if (this.loadOut) {\n      // @ts-ignore - weaponId is string from parseTriple\n      const ship = this.loadOut.getShipByWeaponId(weaponId)\n      if (ship && this.steps) {\n        this.steps.addShip(ship)\n        const [sourceR, sourceC] = this.generateSourceHint(ship, this.opponent)\n        this.createShadowSource(sourceR, sourceC)\n      }\n    }",
+      "reason": "parseTriple, loadOut, and steps may be null/undefined"
+    },
+    {
+      "issue": "loadOut null check missing",
+      "lineNumber": 1032,
+      "severity": "high",
+      "context": "selectRandomWeapon",
+      "oldString": "  selectRandomWeapon () {\n    const armedShips = this.loadOut.getArmedShips()\n    const selectedShip = randomElement(armedShips)\n\n    if (!selectedShip) {\n      return this.createEmptyWeaponSelection()\n    }\n\n    this.steps.addShip(selectedShip)\n    return this.generateWeaponSelectionForShip(selectedShip)\n  }",
+      "newString": "  /**\n   * Selects a random weapon system and returns its targeting information.\n   * @returns {WeaponSelection} Weapon selection data\n   */\n  selectRandomWeapon () {\n    if (!this.loadOut) {\n      return this.createEmptyWeaponSelection()\n    }\n    const armedShips = this.loadOut.getArmedShips()\n    const selectedShip = randomElement(armedShips)\n\n    if (!selectedShip) {\n      return this.createEmptyWeaponSelection()\n    }\n\n    if (this.steps) {\n      this.steps.addShip(selectedShip)\n    }\n    return this.generateWeaponSelectionForShip(selectedShip)\n  }",
+      "reason": "loadOut and steps may be undefined; must check before using"
+    },
+    {
+      "issue": "opponent null check incomplete",
+      "lineNumber": 1103,
+      "severity": "medium",
+      "context": "generateWeaponSelectionForShip",
+      "oldString": "  generateWeaponSelectionForShip (ship) {\n    const opponent = this.opponent\n    const hintCoords = opponent\n      ? this.generateSourceHint(ship, opponent)\n      : [null, null]\n\n    if (!opponent || !this.areHintCoordsValid(hintCoords)) {\n      return this.generateWeaponSelectionWithDefaults(ship)\n    }",
+      "newString": "  /**\n   * Generates weapon selection data for a given ship.\n   * @param {Object} ship - The ship to generate selection for\n   * @returns {WeaponSelection} Weapon selection data\n   * @private\n   */\n  generateWeaponSelectionForShip (ship) {\n    const opponent = this.opponent\n    if (!opponent) {\n      return this.generateWeaponSelectionWithDefaults(ship)\n    }\n    const hintCoords = this.generateSourceHint(ship, opponent)\n\n    if (!this.areHintCoordsValid(hintCoords)) {\n      return this.generateWeaponSelectionWithDefaults(ship)\n    }",
+      "reason": "opponent null check needs to be before using it"
+    },
+    {
+      "issue": "steps null check missing",
+      "lineNumber": 1122,
+      "severity": "medium",
+      "context": "generateSourceHint",
+      "oldString": "  generateSourceHint (ship, opponent) {\n    if (this.steps.sourceHint) {\n      return [this.steps.sourceHint.r, this.steps.sourceHint.c]\n    }\n    return this.generateRandomSourceHint(ship, opponent)\n  }",
+      "newString": "  /**\n   * Generates a source hint for weapon targeting.\n   * @param {Object} ship - The ship to generate hint for\n   * @param {Object|null} opponent - The opponent instance\n   * @returns {[number, number]} Coordinates [row, col] for hint\n   */\n  generateSourceHint (ship, opponent) {\n    if (this.steps?.sourceHint) {\n      return [this.steps.sourceHint.r, this.steps.sourceHint.c]\n    }\n    return this.generateRandomSourceHint(ship, opponent)\n  }",
+      "reason": "steps may be undefined; use optional chaining"
+    },
+    {
+      "issue": "opponent null check missing",
+      "lineNumber": 1140,
+      "severity": "high",
+      "context": "getSurroundingCells",
+      "oldString": "  getSurroundingCells (ship, opponent) {\n    if (!opponent) return []\n    const cells = ship.cells\n    const surrounding = [...opponent.UI.surroundCells(cells)]\n    return surrounding\n  }",
+      "newString": "  /**\n   * Gets surrounding cells for a ship relative to opponent.\n   * Returns an empty array when the opponent is missing.\n   * @param {Object} ship - The ship\n   * @param {Object|null} opponent - The opponent instance\n   * @returns {string[]} Array of surrounding cell keys\n   * @private\n   */\n  getSurroundingCells (ship, opponent) {\n    if (!opponent || !opponent.UI) return []\n    const cells = ship.cells\n    if (!cells) return []\n    const surrounding = [...opponent.UI.surroundCells(cells)]\n    return surrounding\n  }",
+      "reason": "opponent and opponent.UI need null checks; cells may be undefined"
+    },
+    {
+      "issue": "opponent null check in array destructuring",
+      "lineNumber": 1149,
+      "severity": "medium",
+      "context": "createShadowSource",
+      "oldString": "  createShadowSource (r, c) {\n    const opponent = this.opponent\n    if (opponent) {\n      const opponentCell = opponent.UI.gridCellAt(r, c)\n      this.steps.addShadow(opponent.UI, r, c, opponentCell)\n      return opponentCell\n    } else {\n      return this.UI.gridCellAt(r, c)\n    }\n  }",
+      "newString": "  /**\n   * Creates a shadow source at the given coordinates.\n   * @param {number} r - Row coordinate\n   * @param {number} c - Column coordinate\n   * @returns {Object} The shadow cell\n   */\n  createShadowSource (r, c) {\n    const opponent = this.opponent\n    if (opponent && opponent.UI && this.steps) {\n      const opponentCell = opponent.UI.gridCellAt(r, c)\n      this.steps.addShadow(opponent.UI, r, c, opponentCell)\n      return opponentCell\n    } else {\n      return this.UI.gridCellAt(r, c)\n    }\n  }",
+      "reason": "opponent.UI and steps need null checks before use"
+    },
+    {
+      "issue": "parseTriple destructuring with undefined result",
+      "lineNumber": 745,
+      "severity": "high",
+      "context": "selectWeaponFromShip",
+      "oldString": "  selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {\n    const entries = ship.getLoadedWeaponEntries()\n    const [key, weapon] = random\n      ? randomElement(entries)\n      : findClosestCoord(entries, hintR, hintC, ([k]) => parsePair(k))",
+      "newString": "  /**\n   * Selects a loaded weapon system from a ship's available entries.\n   * @param {Object} ship - Ship instance with loaded weapons\n   * @param {number} hintR - Hint row coordinate\n   * @param {number} hintC - Hint column coordinate\n   * @param {boolean} random - Whether to select randomly\n   * @param {Object} viewModel - UI view model\n   * @param {HTMLElement|null} cell - Candidate cell element\n   * @returns {WeaponSelection} Weapon selection payload\n   * @private\n   */\n  selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {\n    /** @type {Array<[string, Object]>} */\n    const entries = ship.getLoadedWeaponEntries()\n    if (!entries || entries.length === 0) {\n      return this.createEmptyWeaponSelection()\n    }\n    const selectedEntry = random\n      ? randomElement(entries)\n      : findClosestCoord(entries, hintR, hintC, ([k]) => {\n        const result = parsePair(k)\n        return (result && Array.isArray(result)) ? result : [0, 0]\n      })\n    if (!selectedEntry || !Array.isArray(selectedEntry) || selectedEntry.length < 2) {\n      return this.createEmptyWeaponSelection()\n    }\n    const [key, weapon] = selectedEntry",
+      "reason": "parsePair and entries may be undefined; need defensive checks"
+    }
+  ],
+
+  "notes": {
+    "array_generic_patterns": "Replace bare 'Array' with Array<T> throughout - Array<Ship>, Array<string>, Array<Array<number>>, etc.",
+    "parseTriple_pattern": "Always check if parseTriple result exists and is array with sufficient elements before destructuring",
+    "optional_property_pattern": "loadOut, steps are optional properties - check with 'if (this.property)' before calling methods",
+    "opponent_pattern": "opponent is often null - check before accessing properties like opponent.UI or opponent.ships",
+    "callback_typing": "All function parameters should have explicit parameter types and return types",
+    "total_estimated_fixes": "~150+ individual changes needed across the file"
+  }
+}

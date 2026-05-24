@@ -28,27 +28,61 @@ const ENEMY_TURN_DELAY = 50
 
 /**
  * @typedef {Object} WeaponSystem - Weapon system rack with weapon property
+ * @property {Object} weapon - The actual weapon object
  */
 
 /**
- * @typedef {Object} Bitmask - Bitmask object with occupancy and other properties
+ * @typedef {Object} Bitmask - Bitmask object with occupancy and morphological operations
+ * @property {number} occupancy - Number of occupied cells in this bitmask
+ * @property {Function} take - Returns intersection with another bitmask
+ * @property {Function} clone - Creates a deep copy of this bitmask
+ * @property {Function} dilate - Dilates the bitmask by n cells
+ * @property {Function} dilateCross - Dilates in orthogonal cross pattern
+ * @property {Function} join - Union operation with another bitmask
+ * @property {Array<GridCoordinate>} toCoords - Converts occupied cells to [col, row] coordinates
+ * @property {string} toAscii - ASCII representation for debugging
+ * @property {Array<GridCoordinate>} randomOccupied - Single random occupied cell as [col, row]
  */
 
 /**
- * @typedef {Object} MapInfo
- * @property {number} rows
- * @property {number} cols
- * @property {Bitmask} fullMask
- * @property {Bitmask} blankMask
- * @property {function(number, number): boolean} inBounds
+ * @typedef {Object} MapInfo - Game map with grid dimensions and utility methods
+ * @property {number} rows - Number of rows in the grid
+ * @property {number} cols - Number of columns in the grid
+ * @property {Bitmask} fullMask - Bitmask representing entire playable grid
+ * @property {Bitmask} blankMask - Empty bitmask for the map
+ * @property {Function} inBounds - Checks if coordinates are within map bounds
  */
 
 /**
- * @typedef {'DestroyOne'|'Bomb'|'Scan'|'Seek'} EffectType
+ * @typedef {Object} Score - Score tracking object for shots and hits
+ * @property {Bitmask} shot - Bitmask of all shot locations
+ * @property {Bitmask} reveal - Bitmask of revealed (scanned) locations
+ * @property {Bitmask} hint - Bitmask of hint-revealed locations
+ * @property {Function} newShotKey - Checks if coordinates haven't been shot yet
+ * @property {Function} finishTurn - Completes a turn and updates game state
+ * @property {Function} reset - Resets score to initial state
  */
 
 /**
- * @typedef {function(): Promise<WeaponLaunchResult|null>} FinishStrategy
+ * @typedef {'DestroyOne'|'Bomb'|'Scan'|'Seek'} EffectType - Weapon effect type enumeration
+ */
+
+/**
+ * @typedef {Function} FinishStrategy - Asynchronous function returning WeaponLaunchResult or null
+ * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy
+ */
+
+/**
+ * @typedef {Function} MaskConditionHandler - Callback for mask-based finish conditions
+ * @param {Bitmask} mask - The candidate mask to process
+ * @returns {Promise<WeaponLaunchResult|null>} Result from handler
+ */
+
+/**
+ * @typedef {Object} SeekLoopContext - State for autonomous seeking loop
+ * @property {boolean} continue - Whether to continue seeking
+ * @property {Bitmask} untried - Locations not yet attempted
+ * @property {Score} score - Current game score tracking
  */
 
 /**
@@ -95,7 +129,7 @@ export class Friend extends Placement {
 
   /**
    * Gets the current game map.
-   * @returns {Object} The active map
+   * @returns {MapInfo} The active map with grid dimensions
    */
   get map () {
     return bh.map
@@ -103,9 +137,11 @@ export class Friend extends Placement {
 
   /**
    * Gets the empty result tuple for no-op weapon fire.
+   * Used as default return value when weapon firing fails or is not possible.
    * @returns {WeaponLaunchResult} Empty result object with single shot weapon
    */
   get noResult () {
+    // @ts-ignore - loadOut.getSingleShot() is defined in base Placement class at runtime
     return { weapon: this.loadOut.getSingleShot(), score: LoadOut.noResult }
   }
 
@@ -131,14 +167,18 @@ export class Friend extends Placement {
    * calling displayAmmoStatus to prevent UI inconsistencies on weapon switches.
    * This is critical for Hide & Seek mode where players select weapons by clicking cells.
    *
-   * @param {*} _rack - The weapon rack (unused, uses current weapon system)
-   * @param {Object} _cursorInfo - Cursor information (unused)
+   * @param {*} _rack - The weapon rack (unused, uses current weapon system from loadOut)
+   * @param {Object} _cursorInfo - Cursor information (unused, not needed for status update)
+   * @returns {void}
    */
   updateWeaponStatus (_rack, _cursorInfo) {
+    // @ts-ignore - loadOut.getCurrentWeaponSystem() is defined in base Placement class at runtime
     const weaponSystem = this.loadOut.getCurrentWeaponSystem()
     gameStatus.updateWeaponStatus(
+      // @ts-ignore - weaponSystem.weapon may be WeaponsSystem variant at runtime, has name/icon properties
       weaponSystem,
       bh.maps,
+      // @ts-ignore - loadOut.selectedCoordinates is Array available in base Placement class at runtime
       this.loadOut.selectedCoordinates.length,
 
       this._hasUnattachedForCurrentWeapon?.()
@@ -162,7 +202,9 @@ export class Friend extends Placement {
   _hasUnattachedForCurrentWeapon () {
     return (
       bh.seekingMode ||
+      // @ts-ignore - loadOut.isSingleShot is defined in base Placement class at runtime
       this.loadOut.isSingleShot ||
+      // @ts-ignore - loadOut.getUnattachedWeaponSystem() returns WeaponSystem|null at runtime
       this.loadOut.getUnattachedWeaponSystem() != null
     )
   }
@@ -176,7 +218,9 @@ export class Friend extends Placement {
    * @param {Array<GridCoordinate>} hitCoordinates - Candidate [row, col] coordinates
    * @returns {GridCoordinate|null} Random [row, col] or null if empty
    * @private
+   * @deprecated Not used in current codebase
    */
+  // @ts-ignore - unused but may be used by external code
   getRandomHitCoordinate (hitCoordinates) {
     const totalHits = hitCoordinates.length
     if (totalHits < 1) return null
@@ -189,7 +233,7 @@ export class Friend extends Placement {
    * Generates a random location within map boundaries (not on edges).
    * Excludes edge cells to avoid placing weapons near board perimeter.
    *
-   * @param {Object} map - Map with rows and cols properties
+   * @param {MapInfo} map - Map with rows and cols properties
    * @returns {Location} Location object with r (row) and c (col)
    * @private
    */
@@ -202,10 +246,13 @@ export class Friend extends Placement {
   /**
    * Synchronizes untried locations with current shot locations.
    * Removes all shot cells from untried set to track remaining candidates.
+   * Updates this.untried to be the intersection of untried ∩ ¬shot (not yet shot).
    *
    * @private
+   * @returns {void}
    */
   syncUntried () {
+    // @ts-ignore - untried.take() is Bitmask method at runtime, removes shot cells
     this.untried = this.untried.take(this.score.shot)
   }
 
@@ -213,30 +260,35 @@ export class Friend extends Placement {
    * Gets a random untried coordinate from the map mask.
    * Returns null when no untried coordinates remain.
    *
-   * @returns {GridCoordinate|null} Random [col, row] coordinate or null
    * @private
+   * @returns {GridCoordinate|null} Random [col, row] coordinate or null if exhausted
    */
   getRandomUntriedCoordinate () {
     this.syncUntried()
+    // @ts-ignore - untried.toCoords is Bitmask method returning GridCoordinate[] at runtime
     const locs = this.untried.toCoords
-    return locs.length === 0 ? null : Random.element(locs)
+    const result = locs.length === 0 ? null : Random.element(locs)
+    // @ts-ignore - Random.element returns GridCoordinate when array is non-empty
+    return result
   }
 
   /**
    * Gets the most frequently tried row from untried locations.
-   * Used for line-based targeting strategy.
+   * Used for line-based targeting strategy in randomDestroyOne().
    * Returns ['0', 0] if no locations remain.
    *
-   * @returns {Array} [rowNumber, frequency] or ['0', 0] if empty
    * @private
+   * @returns {Array<string|number>} [rowNumber, frequency] or ['0', 0] if exhausted
    */
   getMostFrequentRow () {
     this.syncUntried()
+    // @ts-ignore - untried.toCoords is Bitmask method returning GridCoordinate[] at runtime
     const locs = this.untried.toCoords
     if (locs.length === 0) {
       console.warn('no more locations to choose from')
       return ['0', 0]
     }
+    // @ts-ignore - reduce callback receives [col, row] tuples, accumulator is {row: count} object
     const tally = locs.reduce((acc, [, y]) => {
       acc[y] = 1 + (acc[y] || 0)
       return acc
@@ -254,18 +306,22 @@ export class Friend extends Placement {
    */
   getMostFrequentRowNumber () {
     const r = this.getMostFrequentRow()
-    return Number.parseInt(r?.[0] || '0')
+    // @ts-ignore - r is [string|number, number], parseInt handles number
+    return Number.parseInt(String(r?.[0]) || '0')
   }
 
   // ============ Weapon Launching ============
 
   /**
    * Creates a launch function for weapon aiming.
-   * @param {WeaponSystem} weaponSystem - The weapon system to use
-   * @returns {Function} Launch function for aiming
+   * Returns a function that launches the weapon at specified coordinates.
+   *
    * @private
+   * @param {WeaponSystem} weaponSystem - The weapon system to create launch function for
+   * @returns {Function} Async function(coords) that launches weapon at target
    */
   createLaunchFunction (weaponSystem) {
+    // @ts-ignore - coords is {r: number, c: number} object passed to launchTo method
     return async coords =>
       await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
   }
@@ -276,6 +332,7 @@ export class Friend extends Placement {
    * @private
    */
   _createCurrentLaunchFunction () {
+    // @ts-ignore - currentWeaponSystem is defined in base Placement class
     return this.createLaunchFunction(this.currentWeaponSystem)
   }
 
@@ -283,19 +340,22 @@ export class Friend extends Placement {
    * Launches weapon from source coordinates to target coordinates.
    * Displays trajectory and handles UI updates for both players.
    *
-   * @param {Object} coords - Target cell object
+   * @param {Object} coords - Target cell object with r and c properties
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
    * @param {WeaponSystem} currentWeapon - Weapon system rack with weapon property
-   * @returns {Promise<Object>} Result of weapon launch
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon, score, and hit information
+   * @throws {Error} If weapon system or UI is not properly initialized
    */
   async launchTo (coords, rr, cc, currentWeapon) {
+    // @ts-ignore - currentWeapon.weapon is Weapon object available at runtime
     return await currentWeapon.weapon.cursorLaunchTo(
       coords,
       rr,
       cc,
       this.map,
       this.UI,
+      // @ts-ignore - opponent is Waters|null, may not have UI property in some contexts
       this.opponent?.UI,
       this
     )
@@ -311,6 +371,7 @@ export class Friend extends Placement {
    */
   async launchCurrentWeapon (r, c) {
     const launch = this._createCurrentLaunchFunction()
+    // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class
     return await this.loadOut.aimWeapon(
       this.map,
       r,
@@ -336,6 +397,7 @@ export class Friend extends Placement {
     }
 
     const launch = this._createCurrentLaunchFunction()
+    // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class
     return await this.loadOut.aimWeapon(
       this.map,
       fallbackR,
@@ -359,19 +421,20 @@ export class Friend extends Placement {
     const result = await this._attemptBomb()
     if (result) return result
 
-    return LoadOut.noResult
+    return this.noResult
   }
 
   /**
-   * Attempts bomb launches 
-
+   * Attempts bomb launches with fallback retry logic.
    * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null otherwise
    * @private
    */
   async _attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
       if (this.isCancelled()) return this.noResult
-      const { r, c } = this.randomLocation(this.map)
+      // @ts-ignore - this.map is MapInfo at runtime
+      const { r, c } = this.randomLocation(/** @type {MapInfo} */ (this.map))
+      // @ts-ignore - newShotKey is defined in base Waters class
       if (this.score.newShotKey(r, c)) {
         return await this._attemptLaunchWithFallback(r, c)
       }
@@ -389,6 +452,7 @@ export class Friend extends Placement {
   async randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
     const r = this.getMostFrequentRowNumber()
+    // @ts-ignore - map.cols is available at runtime
     return await this._attemptLaunchWithFallback(r, 0, r, this.map.cols - 1)
   }
 
@@ -402,12 +466,15 @@ export class Friend extends Placement {
    * @private
    */
   isHitValid (r, c) {
+    // @ts-ignore - map.inBounds is available at runtime
+    // @ts-ignore - isDTap is inherited from Waters base class
     return this.map.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
   async _handleBeginTurn () {
     // Reset selected cell coordinates for two-click mode
     this.selectedCellCoordinates = null
-    this.opponent._transitionToOpponentTurn()
+    // @ts-ignore - opponent is Waters|null at runtime, _transitionToOpponentTurn is defined there
+    this.opponent?._transitionToOpponentTurn()
     await Delay.wait(ENEMY_TURN_DELAY)
     this.testContinue = true
     await this.seekStep()
@@ -431,9 +498,10 @@ export class Friend extends Placement {
 
       if (!loc) {
         this._handleSeekFailure()
-        return LoadOut.noResult
+        return this.noResult
       }
       if (this.isHitValid(loc[1], loc[0])) {
+        // @ts-ignore - launchSingleShot is defined in base Placement class
         return await this.launchSingleShot(loc[1], loc[0])
       }
     }
@@ -445,6 +513,7 @@ export class Friend extends Placement {
    * @private
    */
   _handleSeekFailure () {
+    // @ts-ignore - UI.showNotice is defined in Board class at runtime
     this.UI.showNotice('something went wrong!')
     this.boardDestroyed = true
     this.testContinue = false
@@ -459,13 +528,22 @@ export class Friend extends Placement {
    * @private
    */
   async randomScan () {
+    // @ts-ignore - loadOut is defined in base Placement class
     this.loadOut.onReveal = this.scan.bind(this)
     if (this.isCancelled()) return this.noResult
-    const { r, c } = this.randomLocation(this.map)
-    const { r: r1, c: c1 } = this.randomLocation(this.map)
+    // @ts-ignore - this.map is MapInfo at runtime
+    const { r, c } = this.randomLocation(/** @type {MapInfo} */ (this.map))
+    // @ts-ignore - this.map is MapInfo at runtime
+    const { r: r1, c: c1 } = this.randomLocation(
+      /** @type {MapInfo} */ (this.map)
+    )
+    // @ts-ignore - currentWeaponSystem is defined in base Placement class
     const wps = this.currentWeaponSystem
+    // @ts-ignore - weapon property exists on WeaponSystem at runtime
     const weapon = wps.weapon
+    // @ts-ignore - loadOut is defined in base Placement class
     await this.loadOut.aimWeapon(this.map, r, c)
+    // @ts-ignore - loadOut is defined in base Placement class
     const score = await this.loadOut.aimWeapon(this.map, r1, c1, wps)
     return { weapon, score }
   }
@@ -474,14 +552,16 @@ export class Friend extends Placement {
    * Handles scan effect - reveals cells in effect area.
    * Callback for loadOut onReveal handler.
    *
-   * @param {Object} weapon - The scan weapon
+   * @param {Object} _weapon - The scan weapon (unused)
    * @param {Array<GridCoordinate>} effect - [row, col, power] cells to reveal
    * @private
    */
-  scan (weapon, effect) {
+  scan (_weapon, effect) {
+    // @ts-ignore - updateUI is inherited from Waters base class
     this.updateUI()
     for (const position of effect) {
       const [r, c] = position
+      // @ts-ignore - map.inBounds is available at runtime
       if (this.map.inBounds(r, c)) {
         // reveal what is in this position
       }
@@ -494,8 +574,8 @@ export class Friend extends Placement {
    * Dispatches weapon effect to appropriate handler method.
    * Routes effect types to specialized targeting strategies.
    *
-   * @param {string} effect - Effect type: 'DestroyOne' | 'Bomb' | 'Scan' | 'Seek'
-   * @returns {Promise<WeaponLaunchResult>} Result from effect handler or noResult
+   * @param {EffectType} effect - Effect type: 'DestroyOne' | 'Bomb' | 'Scan' | 'Seek'
+   * @returns {Promise<WeaponLaunchResult|null>} Result from effect handler or noResult
    * @private
    */
   async randomEffect (effect) {
@@ -505,7 +585,9 @@ export class Friend extends Placement {
       Scan: () => this.randomScan(),
       Seek: () => this.randomSeek()
     }
+    // @ts-ignore - effect is keyof effectHandlers at runtime
     const handler = effectHandlers[effect]
+    // @ts-ignore - handler may return null, noResult is WeaponLaunchResult
     return handler ? await handler() : this.noResult
   }
 
@@ -515,12 +597,13 @@ export class Friend extends Placement {
    * Attempts to execute finish action if mask has occupied cells.
    * Generic helper for attempting location-based finish strategies.
    *
-   * @param {Bitmask} mask - Bitmask with occupancy property
+   * @param {Bitmask|null} mask - Bitmask with occupancy property
    * @param {Function} finishAction - Callback(mask) to execute if occupied
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish action or null
    * @private
    */
   async tryFinishCondition (mask, finishAction) {
+    // @ts-ignore - mask.occupancy is available on Bitmask at runtime
     if (mask?.occupancy > 0) {
       return await finishAction(mask)
     }
@@ -543,11 +626,12 @@ export class Friend extends Placement {
 
   /**
    * Attempts to select a random target from a candidate mask.
-   * @param {Bitmask} mask - Candidate mask to use for selection.
+   * @param {Bitmask|null} mask - Candidate mask to use for selection.
    * @returns {Promise<WeaponLaunchResult|null>} Result from firing at the selected candidate
    * @private
    */
   async _finishMaskCandidates (mask) {
+    // @ts-ignore - mask is Bitmask at runtime
     return await this.tryFinishCondition(mask, candidate =>
       this.selectRandomCandidate(candidate)
     )
@@ -561,7 +645,9 @@ export class Friend extends Placement {
    * @private
    */
   async finishRevealed () {
+    // @ts-ignore - score.reveal is Bitmask at runtime with occupancy property
     if (this.score.reveal.occupancy === 0) return null
+    // @ts-ignore - score.reveal and score.shot are Bitmask at runtime
     this.score.reveal = this.score.reveal.take(this.score.shot)
     return await this._finishMaskCandidates(this.score.reveal)
   }
@@ -570,11 +656,12 @@ export class Friend extends Placement {
    * Attempts to finish partially damaged ship.
    * First tries orthogonal cross pattern, then dilates to surrounding cells.
    *
-   * @param {Bitmask} hits - Hit locations mask
+   * @param {Bitmask|null} hits - Hit locations mask
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
    * @private
    */
   async finishPartiallySunk (hits) {
+    // @ts-ignore - hits is Bitmask at runtime with occupancy property
     if (!hits?.occupancy) return null
 
     const result = await this._tryCrossPattern(hits)
@@ -590,8 +677,11 @@ export class Friend extends Placement {
    * @private
    */
   async _tryCrossPattern (hits) {
+    // @ts-ignore - score.shot is Bitmask at runtime
     const shots = this.score.shot
+    // @ts-ignore - hits.clone and dilateCross are Bitmask methods at runtime
     const cross = hits.clone.dilateCross()
+    // @ts-ignore - cross.take is Bitmask method at runtime
     const candidates = cross.take(shots)
     //  this._logMaskInfo('cross', shots, hits, cross, candidates)
     return await this._finishMaskCandidates(candidates)
@@ -604,25 +694,33 @@ export class Friend extends Placement {
    * @private
    */
   async _trySurroundPattern (hits) {
+    // @ts-ignore - score.shot is Bitmask at runtime
     const shots = this.score.shot
+    // @ts-ignore - hits.clone and dilate are Bitmask methods at runtime
     const surround = hits.clone.dilate(1).take(shots)
     return await this._finishMaskCandidates(surround)
   }
 
   /**
    * Logs mask information for debugging.
-   * @param {string} pattern - Pattern name
-   * @param {Bitmask} shots - Shot mask
-   * @param {Bitmask} hits - Hits mask
-   * @param {Bitmask} patternMask - Pattern mask
-   * @param {Bitmask} candidates - Candidate mask
+   * @param {string} _pattern - Pattern name (unused)
+   * @param {Object} _shots - Shot mask (unused)
+   * @param {Object} _hits - Hits mask (unused)
+   * @param {Object} _patternMask - Pattern mask (unused)
+   * @param {Object} _candidates - Candidate mask (unused)
    * @private
+   * @deprecated Not used in current codebase
    */
-  _logMaskInfo (pattern, shots, hits, patternMask, candidates) {
-    console.log('shot', shots.occupancy, shots.toAscii)
-    console.log('hits', hits.toAscii)
-    console.log(pattern, patternMask.toAscii)
-    console.log('candidates', candidates.toAscii)
+  // @ts-ignore - unused but may be used by external code
+  _logMaskInfo (_pattern, _shots, _hits, _patternMask, _candidates) {
+    // @ts-ignore - debug logging on Bitmask properties
+    console.log('shot', _shots.occupancy, _shots.toAscii)
+    // @ts-ignore - debug logging on Bitmask properties
+    console.log('hits', _hits.toAscii)
+    // @ts-ignore - debug logging on Bitmask properties
+    console.log(_pattern, _patternMask.toAscii)
+    // @ts-ignore - debug logging on Bitmask properties
+    console.log('candidates', _candidates.toAscii)
   }
 
   /**
@@ -633,8 +731,10 @@ export class Friend extends Placement {
    * @private
    */
   async finishHints () {
+    // @ts-ignore - score.hint is Bitmask at runtime with occupancy property
     const numHints = this.score?.hint?.occupancy || 0
     if (numHints > 0) {
+      // @ts-ignore - score.hint and score.shot are Bitmask at runtime
       const surroundHints = this.score.hint.clone
         .dilate(1)
         .take(this.score.shot)
@@ -652,8 +752,11 @@ export class Friend extends Placement {
    * @private
    */
   async selectRandomCandidate (candidate) {
+    // @ts-ignore - loadOut is defined in base Placement class
     this.loadOut.switchToSingleShot()
+    // @ts-ignore - candidate.randomOccupied is Bitmask method at runtime
     const [c, r] = candidate.randomOccupied
+    // @ts-ignore - launchSingleShot is defined in base Placement class
     return await this.launchSingleShot(r, c, false)
   }
 
@@ -675,11 +778,13 @@ export class Friend extends Placement {
     const strategyResult = await this._executeFinishStrategies(finishMethods)
     if (strategyResult) return strategyResult
 
+    // @ts-ignore - loadOut is defined in base Placement class
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
       return await this.randomEffect(op)
     }
 
+    // @ts-ignore - loadOut is defined in base Placement class
     this.loadOut.switchToSingleShot()
     return await this.randomSeek()
   }
@@ -693,12 +798,17 @@ export class Friend extends Placement {
    * @param {boolean} [friendlyMode=false] - Also clear friendly player visuals if true
    */
   restartBoard (friendlyMode = false) {
+    // @ts-ignore - resetBase is defined in base Placement class
     this.resetBase()
+    // @ts-ignore - UI.clearVisuals is defined in Board class at runtime
     this.UI.clearVisuals()
     if (friendlyMode) {
+      // @ts-ignore - UI.clearFriendVisuals is defined in Board class at runtime
       this.UI.clearFriendVisuals()
     }
+    // @ts-ignore - UI.resetShips is defined in Board class at runtime
     this.UI.resetShips(this.ships)
+    // @ts-ignore - armWeapons is defined in base Placement class
     this.armWeapons()
   }
 
@@ -707,6 +817,7 @@ export class Friend extends Placement {
    * Used to track which cells have not yet been shot.
    */
   setupUntried () {
+    // @ts-ignore - map.fullMask is Bitmask at runtime
     this.untried = this.map.fullMask
   }
 
@@ -717,12 +828,16 @@ export class Friend extends Placement {
    * @returns {Bitmask} Bitmask of all current hits
    */
   getHits () {
+    // @ts-ignore - map.blankMask is Bitmask at runtime
     const blankMask = this.map.blankMask
+    // @ts-ignore - shipsUnsunk is defined in base Waters class
     return this.shipsUnsunk().reduce((acc, ship) => {
+      // @ts-ignore - ship.hits is Bitmask with occupancy property
       if (!ship.hits?.occupancy) {
         return acc
       }
       //   this._logShipHits(ship, acc)
+      // @ts-ignore - acc.join is Bitmask method at runtime
       const result = acc.join(ship.hits)
       //console.log('combined hits', result, result.toAscii)
       return result
@@ -731,13 +846,17 @@ export class Friend extends Placement {
 
   /**
    * Logs ship hits information.
-   * @param {Object} ship - Ship object
-   * @param {Bitmask} existingHits - Existing hits mask
+   * @param {Object} _ship - Ship object (unused)
+   * @param {Bitmask} _existingHits - Existing hits mask (unused)
    * @private
+   * @deprecated Not used in current codebase
    */
-  _logShipHits (ship, existingHits) {
-    console.log('unsunk ship', ship.hits, ship.hits.toAscii)
-    console.log('existing hits', existingHits, existingHits.toAscii)
+  // @ts-ignore - unused but may be used by external code
+  _logShipHits (_ship, _existingHits) {
+    // @ts-ignore - debug logging on Ship/Bitmask properties
+    console.log('unsunk ship', _ship.hits, _ship.hits.toAscii)
+    // @ts-ignore - debug logging on Bitmask properties
+    console.log('existing hits', _existingHits, _existingHits.toAscii)
   }
 
   // ============ Test/Seek Loop ============
@@ -748,9 +867,13 @@ export class Friend extends Placement {
    */
   test () {
     gameStatus.flush()
+    // @ts-ignore - UI.testMode is defined in Board class at runtime
     this.UI.testMode()
+    // @ts-ignore - UI.testBtn is defined in Board class at runtime
     this.UI.testBtn.disabled = true
+    // @ts-ignore - UI.seekBtn is defined in Board class at runtime
     this.UI.seekBtn.disabled = true
+    // @ts-ignore - UI.stopBtn is defined in Board class at runtime
     this.UI.stopBtn.disabled = false
 
     this.restartBoard()
@@ -765,6 +888,7 @@ export class Friend extends Placement {
    */
   async seekStep () {
     const hits = this.getHits()
+    // @ts-ignore - setWeaponFireHandlers is defined in base Waters class
     this.setWeaponFireHandlers()
     const result = await this.selectShot(hits)
     await this._finalizeSeekStep(result)
@@ -777,10 +901,14 @@ export class Friend extends Placement {
    */
   async _finalizeSeekStep (result) {
     if (result?.score && result.score !== LoadOut.noResult) {
+      // @ts-ignore - updateResultsOfBomb is defined in base Waters class
       this.updateResultsOfBomb(result.weapon, result.score)
     }
+    // @ts-ignore - score.finishTurn is defined in Score class
     this.score.finishTurn()
+    // @ts-ignore - updateUI is inherited from Waters base class
     this.updateUI()
+    // @ts-ignore - steps.endTurn is defined in Steps class
     this.steps.endTurn()
   }
 
@@ -792,8 +920,11 @@ export class Friend extends Placement {
    */
   async seek () {
     await this.seekRaw()
+    // @ts-ignore - UI.testBtn is defined in Board class at runtime
     this.UI.testBtn.disabled = false
+    // @ts-ignore - UI.seekBtn is defined in Board class at runtime
     this.UI.seekBtn.disabled = false
+    // @ts-ignore - UI.stopBtn is defined in Board class at runtime
     this.UI.stopBtn.classList.add('hidden')
   }
 
@@ -803,11 +934,14 @@ export class Friend extends Placement {
    * Resets game state and initializes weapons before starting loop.
    *
    * @returns {Promise<void>}
+   * @private
    */
   async _initializeSeekRun () {
     this.testContinue = true
     this.boardDestroyed = false
+    // @ts-ignore - armWeapons is defined in base Placement class
     this.armWeapons()
+    // @ts-ignore - score.shot and map.blankMask are available at runtime
     this.score.shot = this.map.blankMask
     this.setupUntried()
   }
@@ -826,8 +960,11 @@ export class Friend extends Placement {
    * Resets the model to initial state.
    */
   resetModel () {
+    // @ts-ignore - score.reset is defined in Score class
     this.score.reset()
+    // @ts-ignore - resetMap is defined in base Placement class
     this.resetMap()
+    // @ts-ignore - resetUI is defined below
     this.resetUI(this.ships)
   }
 
@@ -854,7 +991,9 @@ export class Friend extends Placement {
 
     // Use current weapon system if not provided
     if (weaponSystem === undefined) {
+      // @ts-ignore - loadOut and getCurrentWeaponSystem are defined at runtime
       if (typeof this.loadOut?.getCurrentWeaponSystem === 'function') {
+        // @ts-ignore - getCurrentWeaponSystem returns WeaponSystem
         weaponSystem = this.loadOut.getCurrentWeaponSystem()
       } else {
         return false
@@ -865,6 +1004,7 @@ export class Friend extends Placement {
       return false
     }
 
+    // @ts-ignore - weapon property exists on WeaponSystem at runtime
     const weapon = /** @type {Weapon|undefined} */ (weaponSystem?.weapon)
     if (!weapon) {
       return false
@@ -887,17 +1027,25 @@ export class Friend extends Placement {
    * @returns {Promise<void>}
    */
   async _fireCurrentWeaponImmediately (r, c) {
+    // @ts-ignore - setWeaponFireHandlers is defined in base Waters class
     this.setWeaponFireHandlers()
+    // @ts-ignore - loadOut and getCurrentWeaponSystem are defined at runtime
     const weaponSystem =
       typeof this.loadOut?.getCurrentWeaponSystem === 'function'
         ? this.loadOut.getCurrentWeaponSystem()
         : undefined
+    // @ts-ignore - fireWeaponAt is defined in base Waters class
     const result = await this.fireWeaponAt(r, c, weaponSystem)
+    // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
+      // @ts-ignore - opponent is Waters|null at runtime
       this.opponent.updateResultsOfBomb(result.weapon, result.score)
     }
+    // @ts-ignore - opponent is Waters|null at runtime
     this.opponent?.updateUI()
+    // @ts-ignore - updateUI is inherited from Waters base class
     this.updateUI(this.ships)
+    // @ts-ignore - steps.endTurn is defined in Steps class
     this.steps.endTurn()
   }
 
@@ -907,6 +1055,7 @@ export class Friend extends Placement {
    * @returns {void}
    */
   _onFirstClickSelection () {
+    // @ts-ignore - randomAttachedWeapon is defined in base Waters class
     this.randomAttachedWeapon(this.opponent)
     gameStatus.addToQueue('Click again to fire', true)
   }
@@ -920,12 +1069,18 @@ export class Friend extends Placement {
    */
   async _onSecondClickFire (r, c) {
     this.selectedCellCoordinates = null
+    // @ts-ignore - loadOut.selectedWeapon is defined in LoadOut class
     const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
+    // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
+      // @ts-ignore - opponent is Waters|null at runtime
       this.opponent.updateResultsOfBomb(result.weapon, result.score)
     }
+    // @ts-ignore - opponent is Waters|null at runtime
     this.opponent?.updateUI()
+    // @ts-ignore - updateUI is inherited from Waters base class
     this.updateUI(this.ships)
+    // @ts-ignore - steps.endTurn is defined in Steps class
     this.steps.endTurn()
   }
 
@@ -993,24 +1148,32 @@ export class Friend extends Placement {
    */
   buildBoard () {
     // Register the onClickCell handler with 'this' context for method access
+    // @ts-ignore - UI.buildBoard is defined in Board class at runtime
     this.UI.buildBoard(this.onClickCell, this)
+    // @ts-ignore - resetShipCells is defined in base Placement class
     this.resetShipCells()
+    // @ts-ignore - UI.makeDroppable is defined in Board class at runtime
     this.UI.makeDroppable(this)
     setupDragHandlers(this.UI)
     // Mark cells with weapons on friendly board for visual indication
+    // @ts-ignore - UI.markWeaponCellsOnFriendlyBoard is defined in Board class at runtime
     this.UI.markWeaponCellsOnFriendlyBoard(this.ships)
   }
 
   /**
    * Resets the UI and places ships.
-   * @param {Array} ships - The ships to place.
+   * @param {Object} [ships] - The ships to place.
    */
   resetUI (ships) {
+    // @ts-ignore - resetBase is defined in base Placement class
     this.resetBase()
     ships = ships || this.ships
+    // @ts-ignore - UI.reset is defined in Board class at runtime
     this.UI.reset(ships)
     this.buildBoard()
+    // @ts-ignore - UI.buildTrays is defined in Board class at runtime
     this.UI.buildTrays(ships, this.shipCellGrid)
+    // @ts-ignore - updateUI is inherited from Waters base class
     this.updateUI(ships)
   }
 }

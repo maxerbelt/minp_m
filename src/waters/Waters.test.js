@@ -243,6 +243,7 @@ describe('Waters', () => {
           placeVariant: jest.fn()
         }
       ]
+      // @ts-ignore - Mocking Ship type for testing
       const result = waters.attemptToPlaceShips(ships, jest.fn())
       expect(result).toBe(true)
     })
@@ -282,8 +283,10 @@ describe('Waters', () => {
       ]
       let result
       try {
+        // @ts-ignore - Mocking Ship type for testing
         result = waters.attemptToPlaceShips(ships, jest.fn(), jest.fn())
       } catch (e) {
+        // @ts-ignore - e is unknown in catch block
         expect(e.message).toMatch('No shape for letter A')
         result = false
       }
@@ -385,9 +388,9 @@ describe('Waters', () => {
       expect(loadOut.unattachedWeapons).toEqual([
         { letter: 'S', isLimited: false }
       ])
-      expect(loadOut.weaponSystems.some(wps => wps.weapon.letter === 'G')).toBe(
-        false
-      )
+      expect(
+        loadOut.weaponSystems?.some(wps => wps.weapon.letter === 'G')
+      ).toBe(false)
       terrainSpy.mockRestore()
     })
 
@@ -558,8 +561,8 @@ describe('Waters', () => {
         configurable: true
       })
 
-      // Call load with null
-      emptyWaters.load(null)
+      // Call load with undefined
+      emptyWaters.load(undefined)
 
       // Verify autoPlace was called since no placedShips data exists
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
@@ -584,8 +587,8 @@ describe('Waters', () => {
         configurable: true
       })
 
-      // Call load with null
-      emptyWaters.load(null)
+      // Call load with undefined
+      emptyWaters.load(undefined)
 
       // Should call autoPlace when no placedShips data
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
@@ -618,7 +621,7 @@ describe('Waters', () => {
       })
 
       // Call load
-      waters.load(null)
+      waters.load(undefined)
 
       // Should call placeMatchingShips with data
       expect(waters.placeMatchingShips).toHaveBeenCalled()
@@ -649,7 +652,7 @@ describe('Waters', () => {
       })
 
       // Call load
-      emptyWaters.load(null)
+      emptyWaters.load(undefined)
 
       // Should call autoPlace since map doesn't match
       expect(emptyWaters.autoPlace).toHaveBeenCalled()
@@ -679,11 +682,12 @@ describe('Waters', () => {
      */
     it('resetPlacementStore is called during attemptToPlaceShips', () => {
       // Spy on resetPlacementStore
+      // @ts-ignore - Private method for testing
       const resetSpy = jest.spyOn(waters, 'resetPlacementStore')
 
       // Create a mock shipCellGrid that returns false (failed placement)
       waters.shipCellGrid.attemptToPlaceShips = jest.fn(
-        (ships, callback) => false
+        (_ships, _callback) => false
       )
 
       const onPlacementReset = jest.fn()
@@ -703,6 +707,7 @@ describe('Waters', () => {
      */
     it('tempPlacement is initialized as an empty array', () => {
       // Call resetPlacementStore to initialize tempPlacement
+      // @ts-ignore - Private method for testing
       waters.resetPlacementStore()
 
       // Verify tempPlacement is initialized as an array
@@ -718,9 +723,11 @@ describe('Waters', () => {
      */
     it('storeShipPlacement can be called safely without undefined error', () => {
       // Initialize tempPlacement
+      // @ts-ignore - Private method for testing
       waters.resetPlacementStore()
 
       // Create mock ship
+      // @ts-ignore - Mocking Ship type for testing
       const mockShip = { letter: 'A', cells: [1, 2] }
       const mockPlacedCells = [
         [0, 0],
@@ -729,12 +736,13 @@ describe('Waters', () => {
 
       // Should not throw
       expect(() => {
+        // @ts-ignore - Private method for testing
         waters.storeShipPlacement(mockPlacedCells, mockShip)
       }).not.toThrow()
 
       // Verify placement was stored
       expect(waters.tempPlacement).toHaveLength(1)
-      expect(waters.tempPlacement[0]).toEqual({
+      expect(waters.tempPlacement?.[0]).toEqual({
         placedCells: mockPlacedCells,
         ship: mockShip
       })
@@ -748,29 +756,35 @@ describe('Waters', () => {
      */
     it('storeShipPlacement accumulates multiple ship placements', () => {
       // Initialize tempPlacement
+      // @ts-ignore - Private method for testing
       waters.resetPlacementStore()
 
       // Store first ship
+      // @ts-ignore - Mocking Ship type for testing
       const ship1 = { letter: 'A', cells: [1, 2] }
       const cells1 = [
         [0, 0],
         [0, 1]
       ]
+      // @ts-ignore - Private method for testing
       waters.storeShipPlacement(cells1, ship1)
 
       // Store second ship
+      // @ts-ignore - Mocking Ship type for testing
       const ship2 = { letter: 'B', cells: [3, 4, 5] }
       const cells2 = [
         [1, 0],
         [1, 1],
         [1, 2]
       ]
+      // @ts-ignore - Private method for testing
       waters.storeShipPlacement(cells2, ship2)
 
       // Verify both placements were stored
       expect(waters.tempPlacement).toHaveLength(2)
-      expect(waters.tempPlacement[0].ship.letter).toBe('A')
-      expect(waters.tempPlacement[1].ship.letter).toBe('B')
+      expect(waters.tempPlacement).toHaveLength(2)
+      expect(waters.tempPlacement?.[0]?.ship.letter).toBe('A')
+      expect(waters.tempPlacement?.[1]?.ship.letter).toBe('B')
     })
 
     /**
@@ -786,7 +800,7 @@ describe('Waters', () => {
 
       // Create a mock shipCellGrid that returns false (failed placement)
       waters.shipCellGrid.attemptToPlaceShips = jest.fn(
-        (ships, callback) => false
+        (_ships, _callback) => false
       )
 
       const onPlacementReset = jest.fn()
@@ -809,16 +823,20 @@ describe('Waters', () => {
      */
     it('tempPlacement is reset between placement attempts', () => {
       // First attempt - store a placement
+      // @ts-ignore - Private method for testing
       waters.resetPlacementStore()
-      waters.storeShipPlacement([[0, 0]], { letter: 'A', cells: [1] })
+      // @ts-ignore - Private method for testing
+      waters.storeShipPlacement([[[0, 0]]], { letter: 'A', cells: [1] })
       expect(waters.tempPlacement).toHaveLength(1)
 
       // Second attempt - reset and store new placement
+      // @ts-ignore - Private method for testing
       waters.resetPlacementStore()
       expect(waters.tempPlacement).toHaveLength(0)
-      waters.storeShipPlacement([[1, 0]], { letter: 'B', cells: [2] })
+      // @ts-ignore - Private method for testing
+      waters.storeShipPlacement([[[1, 0]]], { letter: 'B', cells: [2] })
       expect(waters.tempPlacement).toHaveLength(1)
-      expect(waters.tempPlacement[0].ship.letter).toBe('B')
+      expect(waters.tempPlacement?.[0]?.ship.letter).toBe('B')
     })
 
     /**

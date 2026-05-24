@@ -34,17 +34,44 @@ export const WeaponMode = Object.freeze({
 /**
  * Context information for a board cell location.
  * @typedef {Object} BoardContext
- * @property {Object} board - The game board object
+ * @property {Board} board - The game board object
  * @property {number} r - Row coordinate
  * @property {number} c - Column coordinate
  * @property {HTMLElement} cell - DOM element of the cell
  */
 
 /**
+ * Weapon object with targeting and firing properties.
+ * @typedef {Object} Weapon
+ * @property {string} letter - Single letter identifier for the weapon
+ * @property {boolean} givesHint - Whether weapon provides hint/preview
+ * @property {boolean} hasShadowAtHint - Whether shadow is at hint location
+ */
+
+/**
+ * Weapon rack on a ship with identity and weapon reference.
+ * @typedef {Object} Rack
+ * @property {number} id - Unique identifier for the rack
+ */
+
+/**
+ * Ship object with weapon management methods.
+ * @typedef {Object} Ship
+ * @property {Function} getPrimaryWeapon - Method returning primary weapon object
+ */
+
+/**
+ * Board object with cell manipulation methods.
+ * @typedef {Object} Board
+ * @property {Function} cellUseAmmo - Method to consume ammunition from a cell
+ * @property {Function} cellHintReveal - Method to reveal hint at a cell location
+ */
+
+/**
  * Represents an equipped weapon rack on a ship.
  * @typedef {Object} SourceRack
- * @property {Object} rack - The weapon rack object
- * @property {Object} weapon - The weapon object
+ * @property {Rack} rack - The weapon rack object
+ * @property {Weapon} weapon - The weapon object
  * @property {string} wletter - Single letter identifier for the weapon
  * @property {number} weaponId - Unique identifier for the weapon
  * @property {number} r - Row coordinate of the source
@@ -52,6 +79,41 @@ export const WeaponMode = Object.freeze({
  * @property {HTMLElement} cell - DOM element of the source cell
  * @property {number} shadowR - Row coordinate of weapon shadow/hint
  * @property {number} shadowC - Column coordinate of weapon shadow/hint
+ */
+
+/**
+ * Parameters for adding a new weapon rack.
+ * @typedef {Object} AddRackParams
+ * @property {Rack} rack - The weapon rack object
+ * @property {Weapon} weapon - The weapon object
+ * @property {string} wletter - Single-letter weapon identifier
+ * @property {number} weaponId - Unique weapon ID
+ * @property {number} r - Row coordinate of weapon source
+ * @property {number} c - Column coordinate of weapon source
+ * @property {HTMLElement} cell - DOM element of the source cell
+ * @property {number} hintR - Row coordinate of hint/preview location
+ * @property {number} hintC - Column coordinate of hint/preview location
+ */
+
+/**
+ * Shadow coordinates for a weapon placement.
+ * @typedef {Object} ShadowCoords
+ * @property {number} shadowR - Row coordinate of weapon shadow
+ * @property {number} shadowC - Column coordinate of weapon shadow
+ */
+
+/**
+ * Parameters for weapon activation.
+ * @typedef {Object} ActivateParams
+ * @property {number} weaponId - Unique weapon ID
+ * @property {Weapon} weapon - The weapon object
+ * @property {Rack} rack - The weapon rack object
+ * @property {string} wletter - Single-letter weapon identifier
+ * @property {number} r - Row coordinate
+ * @property {number} c - Column coordinate
+ * @property {HTMLElement} cell - DOM element of the cell
+ * @property {number} shadowR - Row coordinate of shadow
+ * @property {number} shadowC - Column coordinate of shadow
  */
 
 /**
@@ -64,8 +126,8 @@ export const WeaponMode = Object.freeze({
 /**
  * Callback function signature for weapon activation/deactivation.
  * @typedef {Function} WeaponActivationCallback
- * @param {Object} rack - The weapon rack
- * @param {Object} weapon - The weapon object
+ * @param {Rack} rack - The weapon rack
+ * @param {Weapon} weapon - The weapon object
  * @param {string} wletter - Weapon letter identifier
  * @param {number} weaponId - Weapon ID
  * @param {number} r - Row coordinate
@@ -123,7 +185,7 @@ export class Steps {
    * @property {string|null} wletter - Current weapon letter identifier
    * @property {SourceRack|null} sourceRack - Currently selected weapon rack
    * @property {BoardContext|null} source - Source ship/weapon location
-   * @property {Object|null} sourceShip - Source ship object (if weapon is attached)
+   * @property {Ship|null} sourceShip - Source ship object (if weapon is attached)
    * @property {BoardContext|null} sourceHint - Hint/preview location
    * @property {BoardContext|null} sourceShadow - Shadow/targeting indicator location
    * @property {BoardContext|null} target - Current target location
@@ -185,12 +247,19 @@ export class Steps {
    * @returns {void}
    */
   _resetSourceFields () {
+    /** @type {string|null} */
     this.wletter = null
+    /** @type {SourceRack|null} */
     this.sourceRack = null
+    /** @type {BoardContext|null} */
     this.source = null
+    /** @type {Ship|null} */
     this.sourceShip = null
+    /** @type {BoardContext|null} */
     this.sourceHint = null
+    /** @type {BoardContext|null} */
     this.sourceShadow = null
+    /** @type {BoardContext|null} */
     this.target = null
   }
 
@@ -217,7 +286,7 @@ export class Steps {
    * Resolve the weapon ID, using provided value or falling back to rack.id.
    * @private
    * @param {number|undefined} weaponId - Explicit weapon ID, may be undefined
-   * @param {Object} rack - Weapon rack object with id property
+   * @param {Rack} rack - Weapon rack object with id property
    * @returns {number} Resolved weapon ID
    */
   _resolveWeaponId (weaponId, rack) {
@@ -228,7 +297,7 @@ export class Steps {
    * Determine shadow coordinates based on weapon type and game mode.
    * In seeking mode or for weapons with shadow at hint, uses hint coordinates.
    * @private
-   * @param {Object} weapon - Weapon object to check for shadow properties
+   * @param {Weapon} weapon - Weapon object to check for shadow properties
    * @param {number} r - Row coordinate of source
    * @param {number} c - Column coordinate of source
    * @param {number} hintR - Row coordinate of hint/preview
@@ -253,20 +322,34 @@ export class Steps {
    * Set a board context property on the Steps instance.
    * @private
    * @param {string} key - Property name to set (e.g., 'source', 'sourceHint', 'sourceShadow')
-   * @param {Object} board - Game board object
+   * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell
    * @returns {void}
    */
   _setBoardContext (key, board, r, c, cell) {
-    this[key] = this._buildBoardContext(board, r, c, cell)
+    const context = this._buildBoardContext(board, r, c, cell)
+    switch (key) {
+      case 'source':
+        this.source = context
+        break
+      case 'sourceHint':
+        this.sourceHint = context
+        break
+      case 'sourceShadow':
+        this.sourceShadow = context
+        break
+      case 'target':
+        this.target = context
+        break
+    }
   }
 
   /**
    * Build a BoardContext object from cell coordinates and elements.
    * @private
-   * @param {Object} board - Game board object
+   * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell
@@ -308,7 +391,7 @@ export class Steps {
 
   /**
    * Query whether a new weapon rack should be activated.
-   * @param {Object} weapon - Weapon object to check
+   * @param {Weapon} weapon - Weapon object to check
    * @param {number} weaponId - Weapon ID to check
    * @returns {boolean} True if weapon is valid and weaponId differs from current
    */
@@ -335,7 +418,7 @@ export class Steps {
    * @returns {void}
    */
   _deactivateCurrentSourceRack () {
-    if (!this._hasActiveRack()) return
+    if (!this._hasActiveRack() || !this.sourceRack) return
     const { r, c, shadowR, shadowC } = this.sourceRack
     this.onDeactivate(r, c, shadowR, shadowC)
   }
@@ -394,6 +477,7 @@ export class Steps {
    * @returns {void}
    */
   _useSourceAmmo () {
+    if (!this.source) return
     this.source.board.cellUseAmmo(this.source.r, this.source.c)
   }
 
@@ -416,7 +500,12 @@ export class Steps {
    * @returns {void}
    */
   _revealHintIfRequired () {
-    if (!this.sourceRack?.weapon?.givesHint || !this.sourceHint) return
+    if (
+      !this.sourceRack?.weapon ||
+      !this.sourceRack.weapon.givesHint ||
+      !this.sourceHint
+    )
+      return
 
     this.sourceHint.board.cellHintReveal(this.sourceHint.r, this.sourceHint.c)
     this.onHint(this.sourceHint.r, this.sourceHint.c)
@@ -424,18 +513,11 @@ export class Steps {
 
   /**
    * Register and activate a new weapon rack at the given location.
-   * @param {Object} rack - The weapon rack object
-   * @param {Object} weapon - The weapon object
-   * @param {string} wletter - Single-letter weapon identifier
-   * @param {number} weaponId - Unique weapon ID
-   * @param {number} r - Row coordinate of weapon source
-   * @param {number} c - Column coordinate of weapon source
-   * @param {HTMLElement} cell - DOM element of the source cell
-   * @param {number} hintR - Row coordinate of hint/preview location
-   * @param {number} hintC - Column coordinate of hint/preview location
-   * @returns {{shadowR: number, shadowC: number}} Shadow coordinates for the weapon
+   * @param {AddRackParams} params - Parameters for adding the rack
+   * @returns {ShadowCoords} Shadow coordinates for the weapon
    */
-  addRack (rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC) {
+  addRack (params) {
+    const { rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC } = params
     const resolvedWeaponId = this._resolveWeaponId(weaponId, rack)
     this._maybeNotifyAttachedWeaponChange(wletter)
 
@@ -447,8 +529,8 @@ export class Steps {
       hintC
     )
 
-    this.activate(
-      resolvedWeaponId,
+    this.activate({
+      weaponId: resolvedWeaponId,
       weapon,
       rack,
       wletter,
@@ -457,19 +539,19 @@ export class Steps {
       cell,
       shadowR,
       shadowC
-    )
+    })
 
-    this.sourceRack = this._buildSourceRack(
+    this.sourceRack = this._buildSourceRack({
       rack,
       weapon,
       wletter,
-      resolvedWeaponId,
+      weaponId: resolvedWeaponId,
       r,
       c,
       cell,
       shadowR,
       shadowC
-    )
+    })
 
     this.select()
     return { shadowR, shadowC }
@@ -478,28 +560,21 @@ export class Steps {
   /**
    * Build a SourceRack object from weapon and location information.
    * @private
-   * @param {Object} rack - The weapon rack object
-   * @param {Object} weapon - The weapon object
-   * @param {string} wletter - Single-letter weapon identifier
-   * @param {number} weaponId - Unique weapon ID
-   * @param {number} r - Row coordinate of weapon source
-   * @param {number} c - Column coordinate of weapon source
-   * @param {HTMLElement} cell - DOM element of the source cell
-   * @param {number} shadowR - Row coordinate of weapon shadow
-   * @param {number} shadowC - Column coordinate of weapon shadow
+   * @param {Object} params - Parameters object
+   * @param {Rack} params.rack - The weapon rack object
+   * @param {Weapon} params.weapon - The weapon object
+   * @param {string} params.wletter - Single-letter weapon identifier
+   * @param {number} params.weaponId - Unique weapon ID
+   * @param {number} params.r - Row coordinate of weapon source
+   * @param {number} params.c - Column coordinate of weapon source
+   * @param {HTMLElement} params.cell - DOM element of the source cell
+   * @param {number} params.shadowR - Row coordinate of weapon shadow
+   * @param {number} params.shadowC - Column coordinate of weapon shadow
    * @returns {SourceRack} Source rack object with all weapon information
    */
-  _buildSourceRack (
-    rack,
-    weapon,
-    wletter,
-    weaponId,
-    r,
-    c,
-    cell,
-    shadowR,
-    shadowC
-  ) {
+  _buildSourceRack (params) {
+    const { rack, weapon, wletter, weaponId, r, c, cell, shadowR, shadowC } =
+      params
     return {
       rack,
       weapon,
@@ -528,18 +603,12 @@ export class Steps {
   /**
    * Activate a weapon rack with deactivation of previous rack.
    * Triggers onActivate callback if conditions are met.
-   * @param {number} weaponId - Unique weapon ID
-   * @param {Object} weapon - The weapon object
-   * @param {Object} rack - The weapon rack object
-   * @param {string} wletter - Single-letter weapon identifier
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @param {HTMLElement} cell - DOM element of the cell
-   * @param {number} shadowR - Row coordinate of shadow
-   * @param {number} shadowC - Column coordinate of shadow
+   * @param {ActivateParams} params - Parameters for activation
    * @returns {void}
    */
-  activate (weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC) {
+  activate (params) {
+    const { weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC } =
+      params
     this.deactivateOnNewRack(weaponId)
     if (this.shouldActivateNewRack(weapon, weaponId)) {
       this.onActivate(
@@ -568,7 +637,7 @@ export class Steps {
   /**
    * Register a source ship for attached weapons.
    * Updates weapon letter if terrain has attached weapons.
-   * @param {Object} ship - The ship object with getPrimaryWeapon() method
+   * @param {Ship} ship - The ship object with getPrimaryWeapon() method
    * @returns {void}
    */
   addShip (ship) {
@@ -578,7 +647,8 @@ export class Steps {
       return
     }
 
-    const letter = ship.getPrimaryWeapon().letter
+    const primaryWeapon = ship.getPrimaryWeapon()
+    const letter = primaryWeapon.letter
     if (this._isWeaponChangeRequired(letter)) {
       this.onChangeWeapon(letter)
     }
@@ -607,7 +677,7 @@ export class Steps {
 
   /**
    * Register hint/preview location for weapon effect preview.
-   * @param {Object} board - Game board object
+   * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell
@@ -619,7 +689,7 @@ export class Steps {
 
   /**
    * Register shadow/targeting indicator location.
-   * @param {Object} board - Game board object
+   * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell
@@ -631,7 +701,7 @@ export class Steps {
 
   /**
    * Register weapon source location.
-   * @param {Object} board - Game board object
+   * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell

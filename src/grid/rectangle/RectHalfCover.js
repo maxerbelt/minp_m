@@ -2,11 +2,12 @@ import { RectCoverBase } from './RectCoverBase.js'
 
 /**
  * Function signature for converting coordinates to grid index.
- * Maps 2D coordinates to a 1D grid index.
+ * Maps 2D coordinates to a 1D grid index in row-major or other ordering.
  * @typedef {Function} CoordinateIndexer
- * @param {number} x - X coordinate in the grid
- * @param {number} y - Y coordinate in the grid
- * @param {number} step - Step number in the line traversal sequence
+ * Callback function that converts coordinates to linear grid index.
+ * @param {number} x - X coordinate in the grid (0-based column)
+ * @param {number} y - Y coordinate in the grid (0-based row)
+ * @param {number} step - Step number in the line traversal sequence (1-based)
  * @returns {number} 1D grid index corresponding to (x, y)
  */
 
@@ -14,50 +15,74 @@ import { RectCoverBase } from './RectCoverBase.js'
  * Function signature for coordinate validation.
  * Validates and optionally adjusts coordinates.
  * @typedef {Function} CoordinateValidator
- * @param {number} x - X coordinate to validate
- * @param {number} y - Y coordinate to validate
- * @returns {Array<number>|null} Validated [x, y] coordinates or null if invalid
+ * Callback function that validates or transforms coordinates.
+ * @param {number} x - X coordinate to validate (may be out of bounds)
+ * @param {number} y - Y coordinate to validate (may be out of bounds)
+ * @returns {[number, number]|null} Validated [x, y] coordinate pair, or null if validation fails
+ */
+
+/**
+ * Direction vector for line traversal.
+ * Specifies how to move along X and Y axes during line traversal.
+ * @typedef {Object} DirectionVector
+ * @property {number} stepX - X direction multiplier: -1 (left), 0 (stationary), or +1 (right)
+ * @property {number} stepY - Y direction multiplier: -1 (up), 0 (stationary), or +1 (down)
  */
 
 /**
  * RectIndex interface expected by line coverage algorithms.
+ * Provides coordinate validation, indexing, and boundary calculation services.
  * @typedef {Object} RectIndex
- * @property {number} width - Grid width in cells
- * @property {number} height - Grid height in cells
+ * @property {number} width - Grid width in cells (positive integer)
+ * @property {number} height - Grid height in cells (positive integer)
  * @property {Function} index - Converts (x, y) to 1D array index
- * @property {Function} validate - Validates coordinates and applies boundary handling (clamp/wrap)
+ * @property {CoordinateValidator} validate - Validates coordinates and applies boundary handling (clamp/wrap)
  * @property {Function} intercepts - Calculates where a line intersects grid boundaries
- * @property {Function} _ensureIndexer - Ensures valid indexer function
- * @property {Function} _ensureExitCondition - Ensures valid exit condition function
- * @property {Function} _ensureValidate - Ensures valid validator function
- * @property {Function} _createBoundaryExitCondition - Creates boundary exit condition function
- * @property {Function} _createDistanceLimitExitCondition - Creates distance limit exit condition function
+ * @property {Function} _ensureIndexer - Ensures valid indexer function (private)
+ * @property {Function} _ensureExitCondition - Ensures valid exit condition function (private)
+ * @property {Function} _ensureValidate - Ensures valid validator function (private)
+ * @property {Function} _createBoundaryExitCondition - Creates boundary exit condition function (private)
+ * @property {Function} _createDistanceLimitExitCondition - Creates distance limit exit condition function (private)
  */
 
 /**
  * Half-cover line algorithm for rectangle grids.
  *
- *
  * Extends the Bresenham line algorithm to handle corner crossings with rightward bias.
- * When a diagonal step occurs (both X and Y axes move), emits one additional cell adjacent
- * to the corner, preferring right before down. This provides coverage between the two
- * adjacent lines in a square grid.
+ * When a diagonal step occurs (both X and Y axes move simultaneously), emits one additional
+ * cell adjacent to the corner. Uses rightward bias: prefers to emit the right-adjacent cell
+ * before the down-adjacent cell. This provides coverage between the two adjacent lines in
+ * a square grid, useful for vision algorithms, ray casting, and light propagation.
  *
- * Algorithm: Places exactly one extra cell at corners with consistent rightward bias,
- * creating a visually smooth half-plane coverage for diagonal lines.
+ * Algorithm Details:
+ * - Places exactly one extra cell at corners with consistent rightward bias
+ * - Creates visually smooth half-plane coverage for diagonal lines
+ * - Includes all cells that a straight line "touches" in the continuous plane
+ * - More coverage than normal (Bresenham) but less than super-coverage
  *
- * Useful for: Vision algorithms, ray casting, light propagation where you want to cover
- * all diagonal transitions but avoid the extra cells that super-cover produces.
+ * Usage: Useful when you want to cover all diagonal transitions but avoid the extra cells
+ * that super-cover produces. Commonly used for line-of-sight and visibility algorithms.
+ *
+ * @extends RectCoverBase
  */
 export class RectHalfCover extends RectCoverBase {
   /**
    * Creates a half-cover algorithm instance with index wrapper methods.
    *
-   * Sets up convenience methods that delegate to parent class methods via indexer wrapper.
-   * Creates both generic indices methods (e.g., halfCoverRayIndices) that return 1D indices
-   * and coordinate methods (e.g., halfCoverRay) that return [x, y, step] tuples.
+   * Initializes the RectHalfCover instance with convenience method aliases for:
+   * - Index-based methods: halfCoverRayIndices, halfCoverSegmentToIndices, etc. (return 1D indices)
+   * - Coordinate methods: halfCoverRay, halfCoverSegmentTo, etc. (return [x, y, step] tuples)
    *
-   * @param {RectIndex} rectIndex - The rectangular grid indexer instance
+   * These methods wrap the parent class base methods (ray, segmentTo, fullLine, segmentFor)
+   * and pass the grid indexer function to convert results to either 1D indices or coordinates.
+   *
+   * @param {RectIndex} rectIndex - The rectangular grid indexer instance providing index(), validate(), and other services
+   * @example
+   * const halfCover = new RectHalfCover(gridIndex);
+   * // Coordinate results: [[x, y, step], ...]
+   * for (const [x, y, step] of halfCover.halfCoverRay(0, 0, 10, 10)) { ... }
+   * // Index results: [index, index, ...]
+   * for (const idx of halfCover.halfCoverRayIndices(0, 0, 10, 10)) { ... }
    */
   constructor (rectIndex) {
     super(rectIndex)
@@ -89,8 +114,13 @@ export class RectHalfCover extends RectCoverBase {
    * which tracks whether X and Y axes moved independently. This enables
    * identification of corner crossings for the extra cell insertion.
    *
-   * @returns {Function} The stepMove function (tracks moveInX and moveInY)
+   * Unlike RectNormalCover which uses step(), RectHalfCover uses stepMove() to
+   * detect when both X and Y change simultaneously (moveInX && moveInY), triggering
+   * the _handleCornerCrossing() method to emit extra cells.
+   *
+   * @returns {Function} The stepMove function from parent class (tracks moveInX and moveInY)
    * @protected
+   * @see RectCoverBase#stepMove
    */
   _getStepFunction () {
     return this.stepMove
@@ -105,20 +135,29 @@ export class RectHalfCover extends RectCoverBase {
    * right is out of bounds.
    *
    * Rightward bias ensures consistent, deterministic results for equivalent lines
-   * from different directions.
+   * from different directions, making the algorithm deterministic regardless of
+   * which adjacent line is traversed first.
    *
-   * @param {number} _moveInX - Whether moved in X direction (0 or 1)
-   * @param {number} _moveInY - Whether moved in Y direction (0 or 1)
-   * @param {number} _previousX - Previous X position before step
-   * @param {number} _previousY - Previous Y position before step
-   * @param {Object} _direction - Direction vector with stepX and stepY properties
-   * @param {number} _direction.stepX - X direction: -1, 0, or +1
-   * @param {number} _direction.stepY - Y direction: -1, 0, or +1
-   * @param {number} _step - Current step count in traversal
+   * Algorithm:
+   * 1. Check if both X and Y moved (crossedCorner = moveInX && moveInY)
+   * 2. If corner crossed, try right-adjacent cell first (previousX + stepX, previousY)
+   * 3. If right cell is valid (within bounds), yield its index and return
+   * 4. Otherwise try down-adjacent cell (previousX, previousY + stepY)
+   * 5. If down cell is valid, yield its index
+   * 6. If both invalid, yield nothing (edge case)
+   *
+   * @param {number} _moveInX - Whether moved in X direction (0 or 1), 1 if x changed, 0 otherwise
+   * @param {number} _moveInY - Whether moved in Y direction (0 or 1), 1 if y changed, 0 otherwise
+   * @param {number} _previousX - Previous X position before step (before Bresenham step applied)
+   * @param {number} _previousY - Previous Y position before step (before Bresenham step applied)
+   * @param {DirectionVector} _direction - Direction vector with stepX and stepY properties
+   * @param {number} _step - Current step count in traversal sequence (1-based)
    * @param {CoordinateIndexer} _indexer - Indexer function to convert coordinates to grid index
-   * @returns {Generator<number, void, unknown>} Generator yielding grid index of the extra corner cell
+   * @yields {number} Grid index of the extra corner cell (exactly one per diagonal step, or none if out of bounds)
    * @protected
+   * @override
    */
+  // @ts-ignore - Compatible override: subclass yields more specific type (number) than parent (never)
   *_handleCornerCrossing (
     _moveInX,
     _moveInY,
@@ -128,7 +167,7 @@ export class RectHalfCover extends RectCoverBase {
     _step,
     _indexer
   ) {
-    // Use non-underscore versions for clarity within the method
+    // Destructure for clarity
     const moveInX = _moveInX
     const moveInY = _moveInY
     const previousX = _previousX
@@ -137,27 +176,32 @@ export class RectHalfCover extends RectCoverBase {
     const step = _step
     const indexer = _indexer
 
+    // Only handle corner crossing when both axes moved simultaneously (diagonal step)
     const crossedCorner = moveInX && moveInY
 
     if (crossedCorner) {
-      // Try right cell first (rightward bias)
-      const extraCell1X = previousX + stepX
-      const extraCell1Y = previousY
-      const right = this.rectIndex.validate(extraCell1X, extraCell1Y)
+      // Rightward bias: Try right-adjacent cell first (previousX + stepX, previousY)
+      // This creates consistent behavior regardless of traversal direction
+      const rightX = previousX + stepX
+      const rightY = previousY
+      const rightCell = this.rectIndex.validate(rightX, rightY)
 
-      if (right !== null) {
-        yield indexer(right[0], right[1], step)
+      if (rightCell !== null) {
+        // Right cell is valid - emit its index and return
+        yield indexer(rightCell[0], rightCell[1], step)
         return
       }
 
-      // If right is invalid, try down cell
-      const extraCell2X = previousX
-      const extraCell2Y = previousY + stepY
-      const down = this.rectIndex.validate(extraCell2X, extraCell2Y)
+      // Right cell is invalid (out of bounds) - try down-adjacent cell fallback
+      const downX = previousX
+      const downY = previousY + stepY
+      const downCell = this.rectIndex.validate(downX, downY)
 
-      if (down !== null) {
-        yield indexer(down[0], down[1], step)
+      if (downCell !== null) {
+        // Down cell is valid - emit its index
+        yield indexer(downCell[0], downCell[1], step)
       }
+      // If both cells are invalid (edge case), yield nothing
     }
   }
 }
