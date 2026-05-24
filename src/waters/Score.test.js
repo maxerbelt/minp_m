@@ -2,6 +2,10 @@ import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 import { Mask } from '../grid/rectangle/mask.js'
 
+/**
+ * @typedef {import('./Score.js').Score} Score
+ */
+
 // Score will be imported after mocking bh so that our mock takes effect
 let Score
 
@@ -20,6 +24,10 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', async () => {
 })
 
 describe('Score', () => {
+  /**
+   * Instance of Score class for testing.
+   * @type {Score}
+   */
   let score
 
   beforeEach(async () => {
@@ -193,7 +201,7 @@ describe('Score', () => {
       score.shot.set(0, 0)
       score.shot.set(1, 1)
       score.auto.set(1, 2)
-      score.auto.set(1, 3)
+      score.auto.set(2, 3)
       expect(score.noOfShots()).toBe(0)
     })
 

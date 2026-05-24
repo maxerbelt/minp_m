@@ -79,9 +79,14 @@ export class ScoreUI {
    * @property {HTMLElement|null} weaponsLabel - Label for weapons indicator
    * @property {HTMLElement|null} zoneLabel - Label for zone information
    * @property {HTMLElement|null} tallyBox - Container for tally display
-   * @property {Array<Object>} zoneSync - Tracked zone information for updates
+   * @property {any[]} zoneSync - Tracked zone information for updates
    */
   constructor (playerPrefix) {
+    /**
+     * Gets an element by ID with the player prefix.
+     * @param {string} suffix - The element ID suffix
+     * @returns {HTMLElement|null} The element or null if not found
+     */
     const getElement = suffix =>
       document.getElementById(`${playerPrefix}-${suffix}`)
 
@@ -113,6 +118,10 @@ export class ScoreUI {
 
     // Tally box and zone tracking
     this.tallyBox = getElement('tallyBox')
+    /**
+     * Tracked zone information for updates.
+     * @type {any[]}
+     */
     this.zoneSync = []
   }
 
@@ -120,7 +129,7 @@ export class ScoreUI {
    * Displays score counters for the game state.
    * Updates all counter displays including calculated values like misses.
    *
-   * @param {Array<Object>} ships - Array of ship objects with hit/sunk state
+   * @param {Array<Ship>} ships - Array of ship objects with hit/sunk state
    * @param {number} turns - Number of turns taken
    * @param {number} dtaps - Number of double-taps performed
    * @param {number} shots - Number of shots fired
@@ -138,7 +147,9 @@ export class ScoreUI {
     const misses = shots - hits
     this.showCounter(this.misses, misses, this.missesLabel)
     const sunkCount = Ship.noOfSunk(ships)
-    this.sunk.textContent = `${sunkCount} / ${ships.length}`
+    if (this.sunk) {
+      this.sunk.textContent = `${sunkCount} / ${ships.length}`
+    }
 
     this.showCounter(this.hints, hints, this.hintsLabel)
     this.showCounter(this.reveals, reveals, this.revealsLabel)
@@ -157,8 +168,8 @@ export class ScoreUI {
     if (field && count > 0) {
       label?.classList?.remove('hidden')
       field.textContent = count.toString()
-    } else {
-      label?.classList?.add('hidden')
+    } else if (label) {
+      label.classList?.add('hidden')
     }
   }
 
@@ -171,8 +182,9 @@ export class ScoreUI {
    * @returns {void}
    */
   displayIfPositive (value, label) {
-    if (value > 0) label?.classList?.remove('hidden')
-    else label?.classList?.add('hidden')
+    if (!label) return
+    if (value > 0) label.classList.remove('hidden')
+    else label.classList.add('hidden')
   }
 
   /**
@@ -180,10 +192,11 @@ export class ScoreUI {
    * Delegates to ZoneInfoManager for implementation.
    *
    * @param {string} labelTxt - Title text for the zone
-   * @param {Object|string|number} bagOrText - Bag object with size property or numeric/string value
-   * @returns {HTMLSpanElement} The count span element for tracking
+   * @param {any} bagOrText - Bag object with size property or numeric/string value
+   * @returns {HTMLSpanElement|null} The count span element for tracking
    */
   createZoneTitle (labelTxt, bagOrText) {
+    if (!this.zone) return null
     return ZoneInfoManager.createZoneTitle(this.zone, labelTxt, bagOrText)
   }
 
@@ -192,10 +205,11 @@ export class ScoreUI {
    * Delegates to ZoneInfoManager for implementation.
    *
    * @param {string} labelTxt - Item label text
-   * @param {Object|string|number} bagOrText - Bag object with size property or numeric/string value
-   * @returns {HTMLSpanElement} The count span element for tracking
+   * @param {any} bagOrText - Bag object with size property or numeric/string value
+   * @returns {HTMLSpanElement|null} The count span element for tracking
    */
   createZoneItem (labelTxt, bagOrText) {
+    if (!this.zone) return null
     return ZoneInfoManager.createZoneItem(this.zone, labelTxt, bagOrText)
   }
 
@@ -207,9 +221,10 @@ export class ScoreUI {
    * @param {string|number} text - Content text or numeric value
    * @param {string} stress - HTML tag for label emphasis (b, span, etc.)
    * @param {string} style - CSS style string to apply
-   * @returns {HTMLSpanElement} The count span element for tracking
+   * @returns {HTMLSpanElement|null} The count span element for tracking
    */
   createZoneTextEntry (labelTxt, text, stress, style) {
+    if (!this.zone) return null
     return ZoneInfoManager.createZoneTextEntry(
       this.zone,
       labelTxt,
@@ -225,13 +240,14 @@ export class ScoreUI {
    *
    * @param {string} labelTxt - Label text
    * @param {number} displacedArea - Total available displaced area
-   * @param {Array<Object>} ships - Array of ship objects for displacement calculation
+   * @param {any[]} ships - Array of ship objects for displacement calculation
    * @param {string} stress - HTML tag for label emphasis (b, span, etc.)
    * @param {string} style - CSS style string to apply
    * @param {number} [extra=0] - Extra displacement to add to calculation
-   * @returns {HTMLSpanElement} The count span element for tracking
+   * @returns {HTMLSpanElement|null} The count span element for tracking
    */
   createAddZoneEntry (labelTxt, displacedArea, ships, stress, style, extra = 0) {
+    if (!this.zone) return null
     return ZoneInfoManager.createAddZoneEntry(
       this.zone,
       labelTxt,
@@ -278,10 +294,11 @@ export class ScoreUI {
    * Displays zone information with displacement area calculations.
    * Delegates to ZoneInfoManager for implementation.
    *
-   * @param {GameModel} model - The game model with ships and loadOut
+   * @param {any} model - The game model with ships and loadOut
    * @returns {void}
    */
   displayAddZoneInfo (model) {
+    if (!this.zone) return
     ZoneInfoManager.displayAddZoneInfo(this.zone, model)
   }
 
@@ -293,11 +310,13 @@ export class ScoreUI {
    * @returns {void}
    */
   setupZoneInfo () {
-    this.zoneSync = ZoneInfoManager.setupZoneInfo(
-      this.zone,
-      this.createZoneTitle.bind(this),
-      this.createZoneItem.bind(this)
-    )
+    if (!this.zone) return
+    this.zoneSync =
+      ZoneInfoManager.setupZoneInfo(
+        this.zone,
+        /** @type {any} */ (this.createZoneTitle.bind(this)),
+        /** @type {any} */ (this.createZoneItem.bind(this))
+      ) || []
   }
 
   /**
@@ -307,14 +326,16 @@ export class ScoreUI {
    * @returns {void}
    */
   resetTallyBox () {
-    this.tallyBox.innerHTML = ''
+    if (this.tallyBox) {
+      this.tallyBox.innerHTML = ''
+    }
   }
 
   /**
    * Creates a tally box element for a ship.
    * Delegates to TallyBuilder for implementation.
    *
-   * @param {Object} ship - The ship object with properties like letter, size, hits
+   * @param {Ship} ship - The ship object with properties like letter, size, hits
    * @returns {HTMLElement} The tally box element for the ship
    */
   buildShipBox (ship) {
@@ -325,10 +346,10 @@ export class ScoreUI {
    * Builds a tally row for ships of a given letter.
    * Delegates to TallyBuilder for implementation.
    *
-   * @param {Array<Object>} ships - All ships to filter and display
+   * @param {any[]} ships - All ships to filter and display
    * @param {string} letter - Ship letter identifier to filter ships
    * @param {HTMLElement} rowList - Container element for the tally row
-   * @param {((ship: Object) => HTMLElement)} [boxer] - Function to create box element for each ship
+   * @param {((ship: any) => HTMLElement)} [boxer] - Function to create box element for each ship
    * @param {string} [tallyGroup] - Tally group identifier for grouping ships
    * @returns {void}
    */
@@ -348,7 +369,7 @@ export class ScoreUI {
    *
    * @param {HTMLElement} rowList - Container element for the weapon row
    * @param {ViewModel} viewModel - The view model with display state
-   * @param {Object} weaponSystem - The weapon system object with ammo data
+   * @param {any} weaponSystem - The weapon system object with ammo data
    * @returns {void}
    */
   buildBombRow (rowList, viewModel, weaponSystem) {
@@ -359,16 +380,17 @@ export class ScoreUI {
    * Displays ships organized by tally group (sea, land, air, special).
    * Delegates to TallyBuilder for implementation.
    *
-   * @param {Array<Object>} ships - All ships to display
-   * @param {((ship: Object) => HTMLElement)} [boxer] - Custom function to create ship boxes
+   * @param {any[]} ships - All ships to display
+   * @param {((ship: any) => HTMLElement)} [boxer] - Custom function to create ship boxes
    * @returns {void}
    */
   buildShipTally (ships, boxer) {
+    if (!this.tallyBox) return
     TallyBuilder.buildTally(
       this.tallyBox,
       ships,
       [],
-      null,
+      undefined,
       boxer || this.buildShipBox.bind(this)
     )
   }
@@ -382,6 +404,7 @@ export class ScoreUI {
    * @returns {void}
    */
   buildTallyFromModel (model, viewModel) {
+    if (!this.tallyBox) return
     TallyBuilder.displayTallyFromModel(this.tallyBox, model, viewModel)
   }
 
@@ -389,12 +412,13 @@ export class ScoreUI {
    * Builds tally display with weapons.
    * Delegates to TallyBuilder for implementation.
    *
-   * @param {Array<Object>} ships - All ships to display in tally
-   * @param {Array<Object>} weaponSystems - All weapon systems to display
+   * @param {any[]} ships - All ships to display in tally
+   * @param {any[]} weaponSystems - All weapon systems to display
    * @param {ViewModel} viewModel - The view model for display state
    * @returns {void}
    */
   buildTally (ships, weaponSystems, viewModel) {
+    if (!this.tallyBox) return
     TallyBuilder.buildTally(
       this.tallyBox,
       ships,
@@ -409,10 +433,11 @@ export class ScoreUI {
    * Adds ships to the tally display.
    * Delegates to TallyBuilder for implementation.
    *
-   * @param {Array<Object>} ships - Ships to add to the tally
+   * @param {any[]} ships - Ships to add to the tally
    * @returns {void}
    */
   addShipTally (ships) {
+    if (!this.tallyBox) return
     TallyBuilder.addShipTally(this.tallyBox, ships)
   }
 }
