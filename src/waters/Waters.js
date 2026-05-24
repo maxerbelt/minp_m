@@ -103,25 +103,28 @@ import { Random } from '../core/Random.js'
 
 /**
  * @typedef {Object} Weapon
- * @property {string} letter - Weapon letter identifier
+ * @property {string} letter - Weapon letter identifier (e.g., 'M', 'R', 'T', '-')
  * @property {string} name - Weapon display name
- * @property {boolean} [hasWake] - Whether weapon creates wake
- * @property {boolean} [givesHint] - Whether weapon gives hint
- * @property {boolean} [hasFlash] - Whether weapon has flash animation
- * @property {boolean} [crashOverSplash] - Whether crash takes over splash
+ * @property {number} [postSelectCoords] - Post-selection coordinates mode
+ * @property {boolean} [hasWake] - Whether weapon creates wake effect on miss
+ * @property {boolean} [givesHint] - Whether weapon provides targeting hint
+ * @property {boolean} [hasFlash] - Whether weapon has flash/explosion animation
+ * @property {boolean} [crashOverSplash] - Whether crash splash overrides regular splash
+ * @property {boolean} [isLimited] - Whether weapon is limited (display only)
  * @property {Function} launchTo - Launch weapon to coordinates
- * @property {Function} splash - Get splash effect
+ * @property {Function} splash - Get splash effect for hit location
  * @property {Function} crashSplash - Get crash splash effect
- * @property {Function} animateSplashExplode - Animate explosion
+ * @property {Function} animateSplashExplode - Animate explosion effect
  */
 
 /**
- * @typedef {Object} WeaponSystem
+ * @typedef {Object} WeaponSystemType
  * @property {Weapon} weapon - The weapon object
  * @property {number} id - Weapon system ID
  * @property {number} ammo - Remaining ammunition
  * @property {Function} [hasAmmo] - Check if weapon has ammo
  * @property {Function} [getLoadedWeapon] - Get loaded weapon variant
+ * @property {Function} [getLoadedWeapons] - Get all loaded weapons
  */
 
 /**
@@ -132,13 +135,14 @@ import { Random } from '../core/Random.js'
  */
 
 /**
- * @typedef {Object} Map
+ * @typedef {Object} MapType
  * @property {string} title - Map identifier/title
  * @property {Array<Ship>} newFleetForMap - Initial fleet for map
  * @property {Array<Ship>} [extraArmedFleetForMap] - Extra armed ships
  * @property {Array<Weapon>} [weapons] - Weapons available on map
  * @property {Object} [example] - Example ship placement
  * @property {Function} inBounds - Check if coordinates in bounds
+ * @property {Function} [landMask] - Land mask for map
  * @property {number} [rows] - Number of rows on map
  * @property {number} [cols] - Number of columns on map
  */
@@ -216,6 +220,8 @@ export class Waters {
     this.hasAttachedWeapons = false
     /** @type {boolean} */
     this.isRevealed = false
+    /** @type {string|null} */
+    this._oldWeaponLetter = null
     if (playerType) {
       this.steps = new Steps(playerType)
       this.initializeSteps()
@@ -1096,6 +1102,14 @@ export class Waters {
    * @returns {void}
    * @private
    */
+  /**
+   * Updates global ship and weapon ID counters from loaded ships.
+   * Ensures new ships and weapons get higher IDs than loaded ones to prevent collisions.
+   *
+   * @param {ShipPlacement|null} placedShips - The placed ships data with ship array
+   * @returns {void}
+   * @private
+   */
   updateGlobalIds (placedShips) {
     if (!placedShips || !placedShips.ships) return
     const { maxShipId, maxWeaponId } = this._getMaxIdsFromShips(
@@ -1109,9 +1123,11 @@ export class Waters {
 
   /**
    * Calculates the maximum ship and weapon IDs from placed ships.
+   * Iterates through all ships and their weapons to find highest ID values.
+   *
    * @private
    * @param {Ship[]} ships - Array of ships to inspect.
-   * @returns {{maxShipId: number, maxWeaponId: number}} Maximum IDs.
+   * @returns {{maxShipId: number, maxWeaponId: number}} Object with max ship ID and max weapon ID
    */
   _getMaxIdsFromShips (ships) {
     return ships.reduce(
@@ -1122,8 +1138,7 @@ export class Waters {
           // @ts-ignore - Object.values returns Rack[], but reduce returns number
           accumulator.maxWeaponId = /** @type {number} */ (
             Object.values(ship.weapons).reduce(
-              (weaponMax, /** @type {any} */ weapon) => {
-                // @ts-ignore - weapon is WeaponRack type with id property at runtime
+              (weaponMax, /** @type {WeaponRack} */ weapon) => {
                 const weaponId =
                   (typeof weapon === 'object' && weapon?.id ? weapon.id : 1) ||
                   1
@@ -1272,16 +1287,16 @@ export class Waters {
   }
   /**
    * Displays auto-selection warning for weapons.
-   * @param {string} weaponName - Name of the weapon
-   * @param {Object|null} currentShip - The ship with the weapon (may be null or undefined)
+   * Informs the player that a weapon was automatically selected and provides guidance on how
+   * to select a different weapon. Handles missing ship gracefully.
+   *
+   * @param {string} weaponName - Name of the weapon being auto-selected
+   * @param {Object|null|undefined} currentShip - The ship with the weapon (may be null or undefined)
    * @returns {void}
    * @private
-   *
-   * currentShip may be null or undefined in some auto-selection flows,
-   * so this method must safely handle a missing ship shape.
    */
   displayAutoSelectWarning (weaponName, currentShip) {
-    // @ts-ignore - shape() method available at runtime
+    // @ts-ignore - shape() method available at runtime, safely handle null ship
     const shipDescription = currentShip?.shape?.().descriptionText || 'the ship'
     this.displayInfo(
       `Auto-selected ${weaponName}, Click near ${shipDescription} to select a different ${weaponName}`
@@ -1782,7 +1797,8 @@ export class Waters {
   /**
    * Gets the currently selected or active weapon system.
    * Falls back to getCurrentWeaponSystem if selectedWeapon is not available.
-   * @returns {Object|undefined} Current weapon system or undefined
+   *
+   * @returns {WeaponSystemType|undefined} Current weapon system or undefined
    */
   get currentWeaponSystem () {
     // @ts-ignore - selectedWeapon available at runtime
@@ -1793,7 +1809,9 @@ export class Waters {
 
   /**
    * Gets the weapon object from the current weapon system.
-   * @returns {Object|undefined} Current weapon or undefined
+   * Returns undefined if no weapon system is currently selected.
+   *
+   * @returns {Weapon|undefined} Current weapon or undefined
    */
   get currentWeapon () {
     const wps = this.currentWeaponSystem
@@ -1803,11 +1821,13 @@ export class Waters {
 
   /**
    * Fires a weapon at specified coordinates.
+   * Delegates to loadOut.aimWeapon for the actual firing logic.
+   *
    * @param {number} row - Target row coordinate
    * @param {number} col - Target column coordinate
-   * @param {Object} [weaponSystem] - Weapon system to fire (defaults to loadOut.selectedWeapon)
-   * @param {Function} [launch] - Launch function (defaults to loadOut.launch)
-   * @returns {Promise<any>} Fire result
+   * @param {WeaponSystemType|undefined} [weaponSystem] - Weapon system to fire (defaults to loadOut.selectedWeapon)
+   * @param {Function|undefined} [launch] - Launch function (defaults to loadOut.launch)
+   * @returns {Promise<WeaponResult|null>} Fire result or null if no weapon system
    * @private
    */
   async fireWeaponAt (
@@ -1946,13 +1966,15 @@ export class Waters {
   }
   /**
    * Launches weapon system to coordinate from stored source hint.
-   * @param {Object} wps - Weapon system to launch
+   * Uses the source hint coordinates stored in steps for the launch reference.
+   *
+   * @param {WeaponSystemType} wps - Weapon system to launch
    * @param {Array<number>|Object} coords - Target coordinate destination
-   * @returns {Promise<Object|null>} Weapon launch result
+   * @returns {Promise<WeaponResult|null>} Weapon launch result
    * @private
    */
   async launchWeapon (wps, coords) {
-    // @ts-ignore - this.steps available at runtime
+    // @ts-ignore - this.steps available at runtime, default to origin if no hint
     const { r, c } = this.steps?.sourceHint || { r: 0, c: 0 }
     return await this.launchTo(coords, r, c, wps)
   }
@@ -2112,9 +2134,12 @@ export class Waters {
 
   /**
    * Gets all hit candidates for a weapon effect.
-   * @param {Array<Array<number>>} effect - The effect area coordinates
-   * @param {Object} weapon - The weapon being used
-   * @returns {Array<Array<number>>} Array of hit candidates [r, c, power]
+   * Filters effect coordinates for those that could hit a ship.
+   * Applies weapon protection rules and adds wake effects to misses if applicable.
+   *
+   * @param {Array<Array<number>>} effect - The effect area coordinates as [r, c, power] entries
+   * @param {Weapon} weapon - The weapon being used (determines wake and protection vs ship types)
+   * @returns {Array<Array<number>>} Array of hit candidates [r, c, power] that can damage ships
    * @private
    */
   getHitCandidates (effect, weapon) {
@@ -2231,11 +2256,13 @@ export class Waters {
 
   /**
    * Chooses the correct splash effect based on weapon state.
-   * @param {Object} weapon - The weapon.
-   * @param {Array<any>} resolvedTarget - Resolved hit target.
-   * @param {Array<any>} effect - The original effect.
-   * @param {Object} [options] - Additional options.
-   * @returns {Array<any>} The splash effect.
+   * Determines whether to use crash splash or strike splash based on weapon configuration.
+   *
+   * @param {Weapon} weapon - The weapon with splash configuration
+   * @param {Array<number>} resolvedTarget - Resolved hit target [r, c]
+   * @param {Array<Array<number>>} effect - The original effect array
+   * @param {Object} [options] - Additional options (may include crashLoc)
+   * @returns {Array<Array<number>>} The splash effect as [r, c, power] array
    * @private
    */
   selectSplashEffect (weapon, resolvedTarget, effect, options = {}) {
@@ -2603,8 +2630,10 @@ export class Waters {
   }
   /**
    * Gets description text for a sunk ship.
-   * @param {Object} ship - The sunk ship
-   * @returns {string} Description text
+   * Customizes message based on whether this is an opponent ship.
+   *
+   * @param {Object|null|undefined} ship - The sunk ship (may be null)
+   * @returns {string} Description text (e.g., "Your Destroyer was sunk!")
    * @private
    */
   sunkDescription (ship) {
@@ -2631,11 +2660,15 @@ export class Waters {
 
   /**
    * Displays a sunk ship warning.
-   * @param {Object} ship - The sunk ship
+   * Shows a message about a destroyed ship to the player.
+   *
+   * @param {Object|null|undefined} ship - The sunk ship (may be null)
    * @param {string} [info] - Additional info to prepend
    * @returns {void}
    * @private
+   * @deprecated Currently unused, kept for potential external API compatibility
    */
+  // @ts-ignore - currently unused but may be used externally
   sunkWarning (ship, info = '') {
     if (!info) {
       info = ''
@@ -2807,13 +2840,13 @@ export class Waters {
   /**
    * Fires a single shot at a coordinate with specified power level.
    * Checks if target cell contains a ship, applies weapon protection rules,
-   * and marks hits/misses on the board.
+   * and marks hits/misses on the board based on power penetration.
    *
-   * @param {Object} weapon - The weapon firing (with letter property for protection matching)
+   * @param {Weapon} weapon - The weapon firing (with letter property for protection matching)
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @param {number} power - Weapon power level (determines penetration)
-   * @returns {Object} Result object with hits, shots, and sunk ship info
+   * @param {number} power - Weapon power level (determines penetration of protection)
+   * @returns {WeaponResult} Result object with hits, shots, and sunk ship info
    * @private
    */
   fireShot (weapon, r, c, power) {
@@ -3135,12 +3168,15 @@ export class Waters {
   }
   /**
    * Checks if a cell was already shot (double tap).
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @param {number} power - Weapon power
-   * @param {boolean} hasFlame - Whether weapon has flame
-   * @param {boolean} hasFlash - Whether weapon has flash
-   * @returns {boolean} True if double tap
+   * Optionally plays flame animation for weapons with flame effects.
+   * Records shot in score tracking.
+   *
+   * @param {number} r - Row coordinate of shot
+   * @param {number} c - Column coordinate of shot
+   * @param {number} power - Weapon power level
+   * @param {boolean} hasFlame - Whether weapon has flame animation
+   * @param {boolean} hasFlash - Whether weapon has flash effect
+   * @returns {boolean} True if this cell was already shot (double tap), false otherwise
    * @private
    */
   isDTap (r, c, power, hasFlame, hasFlash) {
@@ -3152,10 +3188,12 @@ export class Waters {
 
   /**
    * Applies weapon effect to area of effect.
+   * Iterates through each coordinate in the effect and applies the weapon.
+   *
    * @param {Array<Array<number>>} effect - Array of [r, c, power] coordinates
-   * @param {Object} weapon - The weapon
-   * @param {Object} options - Additional options
-   * @returns {Object} Accumulated results
+   * @param {Weapon} weapon - The weapon being applied
+   * @param {Object} options - Additional options (may include isSplash flag)
+   * @returns {WeaponResult} Accumulated results object
    * @private
    */
   applyToAoE (effect, weapon, options) {
@@ -3170,10 +3208,13 @@ export class Waters {
 
   /**
    * Normalizes an effect into a safely iterable shape array.
-   * @param {Array<Array<number>>} effect - Raw effect payload from a weapon
-   * @param {Object} weapon - The weapon generating the effect
-   * @param {Object} options - Additional options
-   * @returns {Array<Array<number>>} Normalized effect payload
+   * Validates that the effect is iterable and contains [r, c, power] triples.
+   * Logs warning if malformed entries are detected.
+   *
+   * @param {Array<Array<number>>|Iterable} effect - Raw effect payload from a weapon (array of [r, c, power] entries)
+   * @param {Weapon} weapon - The weapon generating the effect
+   * @param {Object} options - Additional options and context
+   * @returns {Array<Array<number>>} Normalized effect payload as [r, c, power] array
    * @private
    */
   normalizeEffect (effect, weapon, options) {
@@ -3206,9 +3247,11 @@ export class Waters {
 
   /**
    * Warns when a weapon effect payload is malformed.
-   * @param {any} effect - Raw effect payload
-   * @param {Object} weapon - The weapon generating the payload
-   * @param {Object} options - Additional options
+   * Only logs warnings when not in test environment to keep test output clean.
+   *
+   * @param {any} effect - Raw effect payload (may be null, invalid type, or malformed array)
+   * @param {Weapon} weapon - The weapon generating the payload
+   * @param {Object} options - Additional options and context
    * @returns {void}
    * @private
    */
@@ -3226,11 +3269,12 @@ export class Waters {
   /**
    * Applies weapon effect to area of effect with hit accumulation.
    * Normalizes effect payload, flashes animation on hits, accumulates double-tap count.
+   * Delegates to applyWeaponEffect for actual effect application.
    *
-   * @param {Object} weapon - The weapon being used
-   * @param {Array<Array<number>>} effect - Array of [row, col, power] cells affected
-   * @param {Object} [options] - Additional firing context and options
-   * @returns {Object} Accumulated result with hits, dtaps, reveals, and sunk ships
+   * @param {Weapon} weapon - The weapon being used (contains splash/crash methods)
+   * @param {Array<Array<number>>} effect - Array of [row, col, power] cells affected by weapon
+   * @param {Object} [options] - Additional firing context and options (may include crashLoc)
+   * @returns {WeaponResult} Accumulated result with hits, dtaps, reveals, and sunk ships
    * @private
    */
   destroy (weapon, effect, options) {
@@ -3240,12 +3284,12 @@ export class Waters {
 
   /**
    * Applies the weapon effect to the area of effect.
-   * Processes each affected cell and accumulates results.
+   * Processes each affected cell and accumulates results from hits/misses.
    *
-   * @param {Object} weapon - The weapon firing
+   * @param {Weapon} weapon - The weapon firing
    * @param {Array<Array<number>>} effect - Array of [row, col, power] coordinates
    * @param {Object} [options] - Additional options for firing
-   * @returns {Object} Accumulated results object
+   * @returns {WeaponResult} Accumulated results object
    * @private
    */
   applyWeaponEffect (weapon, effect, options) {
@@ -3257,13 +3301,15 @@ export class Waters {
   }
 
   /**
-   * Applies weapon effect to a single position.
+   * Applies weapon effect to a single position on the board.
+   * Processes the shot if coordinates are within bounds, then accumulates results.
+   *
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {Object} weapon - The weapon
-   * @param {number} power - Weapon power
-   * @param {Object} acc - Accumulator object
-   * @returns {Object} Updated accumulator
+   * @param {Weapon} weapon - The weapon firing
+   * @param {number} power - Weapon power level
+   * @param {WeaponResult} acc - Accumulator object to update
+   * @returns {WeaponResult} Updated accumulator
    * @private
    */
   applyToPosition (r, c, weapon, power, acc) {
@@ -3275,12 +3321,14 @@ export class Waters {
   }
 
   /**
-   * Processes a single shot.
-   * @param {Object} weapon - The weapon firing
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @param {number} power - Weapon power
-   * @returns {Object} Shot result
+   * Processes a single shot at the given coordinates.
+   * Checks for double-tap, then fires the shot and returns the result.
+   *
+   * @param {Weapon} weapon - The weapon firing (contains letter and animation properties)
+   * @param {number} r - Row coordinate of the shot
+   * @param {number} c - Column coordinate of the shot
+   * @param {number} power - Weapon power level for penetration calculation
+   * @returns {WeaponResult} Shot result with hits, shots fired, and sunk info
    * @private
    */
   processShot (weapon, r, c, power) {

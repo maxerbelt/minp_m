@@ -4,7 +4,15 @@
 
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
+/**
+ * @typedef {import('./ScoreUI.js').ScoreUI} ScoreUI
+ */
+
 // ScoreUI will be imported dynamically after mocks are set up
+/**
+ * Reference to ScoreUI class.
+ * @type {ScoreUI|undefined}
+ */
 let ScoreUI
 
 // Mock dependencies
@@ -14,7 +22,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
     map: {
       subterrainTrackers: {
         setupZoneInfo: jest.fn().mockReturnValue([]),
-        displayDisplacedArea: jest.fn((map, callback) => {
+        displayDisplacedArea: jest.fn((_map, callback) => {
           callback(
             { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
             1000
@@ -50,8 +58,22 @@ jest.unstable_mockModule('../selection/dragndrop.js', () => ({
 }))
 
 describe('ScoreUI', () => {
+  /**
+   * Instance of ScoreUI for testing.
+   * @type {ScoreUI|undefined}
+   */
   let scoreUI
+
+  /**
+   * Mock element references for tests.
+   * @type {Record<string, any>}
+   */
   let mockElements
+
+  /**
+   * Mock bh module instance.
+   * @type {any}
+   */
   let bh
 
   beforeEach(async () => {
@@ -64,7 +86,7 @@ describe('ScoreUI', () => {
     // Restore the mocks to their expected state after jest.clearAllMocks()
     bh.map.subterrainTrackers.setupZoneInfo.mockReturnValue([])
     bh.map.subterrainTrackers.displayDisplacedArea.mockImplementation(
-      (map, callback) => {
+      (_map, callback) => {
         callback(
           { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
           1000
