@@ -205,7 +205,6 @@ describe('ScoreUI', () => {
         })
 
         it('should create entry with label and count', () => {
-          const bag = new Set([1, 2, 3])
           const result = scoreUI.createZoneTextEntry(
             'Test',
             'value',
@@ -216,7 +215,6 @@ describe('ScoreUI', () => {
         })
 
         it('should append entry to zone element', () => {
-          const bag = new Set([1, 2])
           scoreUI.zone.appendChild = jest.fn()
           scoreUI.createZoneTextEntry('Zone', 'value', 'span', '')
           expect(scoreUI.zone.appendChild).toHaveBeenCalled()

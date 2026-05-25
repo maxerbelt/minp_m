@@ -251,7 +251,7 @@ export class WatersUI {
     const currentMap = map || bh.map
     const width =
       mode === 'PRINT' ? 600 : containerWidthOverride || this.containerWidth
-    const divisor = currentMap.getDivisor(currentMap, width)
+    const divisor = config.getDivisor(currentMap)
     return width / divisor
   }
 
@@ -455,7 +455,7 @@ export class WatersUI {
   revealShip (ship) {
     const colorMaps = bh.maps
     // @ts-ignore - ship.cells is iterable coordinate pairs
-    const shipCells = ship.cells()
+    const shipCells = ship.cells
     for (const [column, row] of shipCells) {
       const cell = this.gridCellAt(row, column)
       // @ts-ignore - ship matches Ship type for display

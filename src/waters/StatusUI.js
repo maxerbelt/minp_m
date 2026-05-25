@@ -100,7 +100,9 @@ class StatusUI {
 
     // State tracking
     this.important = false
+    /** @type {Array<ScoreQueueItem>} */
     this.scoreQueue = []
+    /** @type {Array<string>} */
     this.tipsQueue = []
     this.currentNote = null
     this.waiting = false
@@ -316,7 +318,9 @@ class StatusUI {
    * Clears the mode display.
    */
   clearMode () {
-    this.mode.textContent = ''
+    if (this.mode) {
+      this.mode.textContent = ''
+    }
   }
 
   /**
@@ -419,7 +423,9 @@ class StatusUI {
    * @param {string} mode - The mode to display
    */
   showMode (mode) {
-    if (this.mode) this.mode.textContent = mode
+    if (this.mode) {
+      this.mode.textContent = mode
+    }
   }
 
   /**
@@ -482,7 +488,15 @@ class StatusUI {
     this.currentWeapon = weapon
     this._setWeaponMode(weapon)
     this._resetAmmoIcons()
-    this._displayAmmoStepAndHint(wps, maps, numCoords, selectedWps, unattached)
+    if (maps) {
+      this._displayAmmoStepAndHint(
+        wps,
+        maps,
+        numCoords,
+        selectedWps,
+        unattached
+      )
+    }
   }
 
   /**
@@ -492,7 +506,7 @@ class StatusUI {
    */
   _setWeaponMode (weapon) {
     const modeName = weapon?.name || 'Single Shot'
-    gameStatus.showMode(modeName)
+    this.showMode(modeName)
   }
 
   /**
@@ -597,12 +611,16 @@ class StatusUI {
     }
 
     if (weapon.hasExtraSelectCursor) {
-      if (this.icon1) this.icon1.classList.add('hidden')
+      if (this.icon1) {
+        this.icon1.classList.add('hidden')
+      }
       this._displayAimStep(maps, letter, weapon)
       return 1
     }
 
-    if (this.icon2) this.icon2.classList.add('hidden')
+    if (this.icon2) {
+      this.icon2.classList.add('hidden')
+    }
     this._displayLaunchFirstStep(maps, letter, weapon)
     return 0
   }
@@ -637,9 +655,13 @@ class StatusUI {
     maps,
     letter
   ) {
-    const idx = unattached
-      ? (numCoords + (weapon.postUnattached || 0)) % weapon.numStep
-      : weapon.stepIdx(numCoords, selectedWps ? 1 : 0)
+    let idx
+    if (unattached) {
+      idx = (numCoords + (weapon.postUnattached || 0)) % weapon.numStep
+    } else {
+      const stepIdxArg = selectedWps ? 1 : 0
+      idx = weapon.stepIdx(numCoords, stepIdxArg)
+    }
     this._displayWhichLaunchStep(idx)
     this._displayAimStep(maps, letter, weapon)
     this._displayLaunchFirstStep(maps, letter, weapon)
@@ -706,12 +728,10 @@ class StatusUI {
    */
   _noLaunchSteps () {
     if (this.icon1) {
-      this.icon1.classList.remove('off')
-      this.icon1.classList.remove('on')
+      this.icon1.classList.remove('off', 'on')
     }
     if (this.icon2) {
-      this.icon2.classList.remove('off')
-      this.icon2.classList.remove('on')
+      this.icon2.classList.remove('off', 'on')
     }
   }
 
@@ -724,21 +744,21 @@ class StatusUI {
     switch (stepIndex) {
       case 0:
         if (this.icon1) {
-          this.icon1.classList.remove('off')
+          this.icon1.classList.remove('off', 'on')
           this.icon1.classList.add('on')
         }
         if (this.icon2) {
+          this.icon2.classList.remove('on', 'off')
           this.icon2.classList.add('off')
-          this.icon2.classList.remove('on')
         }
         break
       case 1:
         if (this.icon1) {
+          this.icon1.classList.remove('on', 'off')
           this.icon1.classList.add('off')
-          this.icon1.classList.remove('on')
         }
         if (this.icon2) {
-          this.icon2.classList.remove('off')
+          this.icon2.classList.remove('off', 'on')
           this.icon2.classList.add('on')
         }
         break
@@ -785,7 +805,7 @@ class StatusUI {
    */
   flush () {
     this.scoreQueue = this.scoreQueue.filter(({ isImportant }) => isImportant)
-    if (!this.important) {
+    if (!this.important && this.game) {
       this.game.textContent = ''
     }
   }
@@ -817,7 +837,9 @@ class StatusUI {
     if (this.important && this.game?.textContent) {
       this.prependLine(this.game.textContent)
     }
-    if (this.game) this.game.textContent = game
+    if (this.game) {
+      this.game.textContent = game
+    }
   }
 }
 

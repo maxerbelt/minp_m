@@ -81,6 +81,9 @@ import { Random } from '../core/Random.js'
  * @property {Function} cellMiss - Mark cell as miss
  * @property {Function} cellUseAmmo - Mark ammo usage
  * @property {Function} cellHintReveal - Reveal cell via hint
+ * @property {Function} cellSemiReveal - Semi-reveal cell (partial info)
+ * @property {Function} cellSunkAt - Mark cell as sunk with ship letter
+ * @property {Function} cellSize - Get cell size in pixels
  * @property {Function} markPlaced - Mark ship as placed
  * @property {Function} onFleetPlaced - Callback when fleet placed
  * @property {Function} placeTally - Display placement tally
@@ -115,6 +118,7 @@ import { Random } from '../core/Random.js'
  * @property {Function} splash - Get splash effect for hit location
  * @property {Function} crashSplash - Get crash splash effect
  * @property {Function} animateSplashExplode - Animate explosion effect
+ * @property {string} [protectionLevels] - Ship types this weapon protects against
  */
 
 /**
@@ -539,8 +543,8 @@ export class Waters {
     this.resetShipCells()
     this.ensureShipsInitialized()
 
-    // @ts-ignore - map is Map at runtime
-    const mapTyped = /** @type {Map} */ (map)
+    // @ts-ignore - map is MapType at runtime
+    const mapTyped = /** @type {MapType} */ (map)
     if (!mapTyped.example) {
       this.autoPlace()
       return
@@ -1111,7 +1115,7 @@ export class Waters {
    * @private
    */
   updateGlobalIds (placedShips) {
-    if (!placedShips || !placedShips.ships) return
+    if (!placedShips?.ships) return
     const { maxShipId, maxWeaponId } = this._getMaxIdsFromShips(
       placedShips.ships
     )
@@ -1138,7 +1142,7 @@ export class Waters {
           // @ts-ignore - Object.values returns Rack[], but reduce returns number
           accumulator.maxWeaponId = /** @type {number} */ (
             Object.values(ship.weapons).reduce(
-              (weaponMax, /** @type {WeaponRack} */ weapon) => {
+              (weaponMax, /** @type {any} */ weapon) => {
                 const weaponId =
                   (typeof weapon === 'object' && weapon?.id ? weapon.id : 1) ||
                   1
@@ -1251,8 +1255,8 @@ export class Waters {
    */
   createLoadOut (map, ships) {
     ships = ships || this.weaponShips || []
-    // @ts-ignore - map is Map at runtime
-    const mapTyped = /** @type {Map} */ (map)
+    // @ts-ignore - map is MapType at runtime
+    const mapTyped = /** @type {MapType} */ (map)
     const weapons = bh.terrain?.hasUnattachedWeapons
       ? mapTyped?.weapons || []
       : (mapTyped?.weapons || []).filter(
@@ -1467,7 +1471,7 @@ export class Waters {
    */
   createShadowSource (r, c) {
     const opponent = this.opponent
-    if (opponent && opponent.UI) {
+    if (opponent?.UI) {
       // @ts-ignore - opponent.UI is Board at runtime
       const opponentBoard = /** @type {Board} */ (opponent.UI)
       const opponentCell = opponentBoard.gridCellAt?.(r, c)
@@ -1698,7 +1702,7 @@ export class Waters {
    * @returns {boolean} True if a weapon was selected
    */
   prepareTargetedRandomWeaponSelection (autoSelectWarning = !bh.seekingMode) {
-    const current = this.loadOut.getCurrentWeaponSystem()
+    const current = this.loadOut?.getCurrentWeaponSystem()
     if (!current) {
       return false
     }
@@ -1837,17 +1841,16 @@ export class Waters {
     launch = this.loadOut?.launch
   ) {
     // @ts-ignore - loadOut available at runtime, cast weapon system
-    return await this.loadOut?.aimWeapon(bh.map, row, col, weaponSystem, launch)
+    return await /** @type {WeaponResult|null} */ (
+      this.loadOut?.aimWeapon(bh.map, row, col, weaponSystem, launch)
+    )
   }
   /**
    * Launches the selected armed weapon at target coordinates.
-   * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
    *
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {Promise<Object|null>} Fire result or null
-   * @private
-   * @deprecated Not used in current codebase
    */
   // @ts-ignore - unused but may be called externally
   async launchSelectedWeapon (r, c) {
@@ -1885,8 +1888,8 @@ export class Waters {
    *
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @param {Object} sShot - Single shot weapon data with fire configuration
-   * @returns {Promise<void>}
+   * @param {WeaponsSystem} sShot - Single shot weapon data with fire configuration
+   * @returns {Promise<{weapon: Weapon, score: Object}|void>}
    * @private
    * @deprecated Not used in current codebase
    */
@@ -1903,8 +1906,11 @@ export class Waters {
     }
 
     // @ts-ignore - aimSingleShotInfo available at runtime
-    const { fireSingleShot, coordinates, wps } =
-      this.loadOut.aimSingleShotInfo?.(sShot, r, c)
+    const { fireSingleShot, coordinates, wps } = this.loadOut.aimSingleShotInfo(
+      sShot,
+      r,
+      c
+    )
     await this.launchTo(coordinates, bh.map.rows - 1, 0, wps)
 
     const score = fireSingleShot?.()
@@ -1913,7 +1919,7 @@ export class Waters {
 
   /**
    * Gets the unattached weapon system.
-   * @returns {WeaponSystem|null} Unattached weapon system or null
+   * @returns {WeaponSystemType|null} Unattached weapon system or null
    * @private
    */
   getUnattachedWeaponSystem () {
@@ -2002,7 +2008,7 @@ export class Waters {
    * @returns {void}
    */
   _removeAttachedAimListeners (oppo) {
-    if (!oppo || !this.loadOut || !this.loadOut.ships) return
+    if (!oppo || !this.loadOut?.ships) return
     const armedShips = this.loadOut.ships
     for (const ship of armedShips) {
       // @ts-ignore - shipCells method available at runtime
@@ -2029,7 +2035,7 @@ export class Waters {
    * @returns {void}
    */
   _addAttachedAimListeners (oppo) {
-    if (!oppo || !this.loadOut || !this.loadOut.ships) return
+    if (!oppo || !this.loadOut?.ships) return
     const armedShips = this.loadOut.ships
     const cellsToListen = new Set()
 
@@ -2077,8 +2083,8 @@ export class Waters {
    * @private
    */
   setMap (map) {
-    // @ts-ignore - map is Map type at runtime
-    const mapTyped = /** @type {Map} */ (map || bh.map)
+    // @ts-ignore - map is MapType at runtime
+    const mapTyped = /** @type {MapType} */ (map || bh.map)
     if (!mapTyped) return
     if (!this.ships || this.ships.length === 0) {
       // Debug: log map and fleet composition to diagnose missing attached weapons
@@ -2213,17 +2219,17 @@ export class Waters {
   async handleNoHits (weapon, effect, options = {}) {
     // @ts-ignore - options may have crashLoc at runtime
     if (!options?.crashLoc) {
-      return await this.destroy(weapon, effect, options)
+      return this.destroy(weapon, effect, options)
     }
 
     // @ts-ignore - options.crashLoc available at runtime
-    const splashEffect = await this.getCrashSplash(
+    const splashEffect = this.getCrashSplash(
       weapon,
       options.crashLoc,
       effect,
       options
     )
-    const result = await this.destroy(weapon, effect, options)
+    const result = this.destroy(weapon, effect, options)
     // @ts-ignore - add isSplash property at runtime
     options.isSplash = true
     // @ts-ignore - accumulate result properly

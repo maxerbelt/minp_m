@@ -994,6 +994,7 @@ export class PlacementUI extends WatersUI {
   /**
    * Updates cell at specified board coordinates to display placed ship.
    * Convenience method combining grid lookup and display.
+   * Silently skips out-of-bounds coordinates to handle edge cases gracefully.
    *
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
@@ -1001,6 +1002,7 @@ export class PlacementUI extends WatersUI {
    * @returns {void}
    */
   cellPlacedAt (r, c, ship) {
+    if (!bh.map.inBounds(r, c)) return
     const cell = this.gridCellAt(r, c)
     ShipCellDisplayer.displayPlacedCell(cell, ship, r, c)
   }
