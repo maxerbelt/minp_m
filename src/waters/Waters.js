@@ -245,17 +245,6 @@ export class Waters {
   }
 
   /**
-   * Checks if a method exists and is being used in edit mode.
-   * DEPRECATED: Use loadForEdit instead or validate logic before calling.
-   *
-   * @param {Object} [map] - The map to load from
-   * @returns {void}
-   * @private
-   */
-  // loadForEdit intentionally unused - comment preserved for API documentation
-  // This method is referenced in comments but not called in current codebase
-
-  /**
    * Gets the current placed ships data for serialization.
    * CONSOLIDATED: unified data collection for persistence and export.
    *
@@ -533,10 +522,7 @@ export class Waters {
    * Loads ships for edit mode from map example or auto-places.
    * @param {Object} [map] - The map to load from
    * @returns {void}
-   * @private
-   * @deprecated Not currently used in codebase; kept for API compatibility
    */
-  // @ts-ignore - method intentionally unused
   loadForEdit (map) {
     map = map || bh.map
     if (!map) return

@@ -141,13 +141,13 @@ export class Placeable {
    * Performs comprehensive validation including bounds checking, zone validation,
    * and conflict detection against existing ship cells. Creates a temporary placement
    * and delegates to its canPlace method for validation.
-   * @param {number} r - The row coordinate for placement.
-   * @param {number} c - The column coordinate for placement.
+   * @param {number} x - The x (column) coordinate for placement.
+   * @param {number} y - The y (row) coordinate for placement.
    * @param {any} shipCellGrid - The grid containing existing ship cells to check against.
    * @returns {boolean} True if placement is valid, false if any constraint is violated.
    */
-  canPlace (r, c, shipCellGrid) {
-    const placing = this.placeAt(r, c)
+  canPlace (x, y, shipCellGrid) {
+    const placing = this.placeAt(x, y)
     return placing.canPlace(shipCellGrid)
   }
 }

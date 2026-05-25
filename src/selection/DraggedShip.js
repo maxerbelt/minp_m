@@ -231,7 +231,7 @@ export class DraggedShip extends SelectedShip {
   placeCells (row, col, shipCellGrid) {
     const [offsetRow, offsetCol] = this.offsetCell(row, col)
     return this.canPlaceRaw(offsetRow, offsetCol, shipCellGrid)
-      ? this.addCurrentToShipCells(offsetCol, offsetRow, shipCellGrid)
+      ? this.addCurrentToShipCells(offsetRow, offsetCol, shipCellGrid)
       : null
   }
 
@@ -293,35 +293,17 @@ export class DraggedShip extends SelectedShip {
   }
 
   /**
-   * Adds the placeable to ship cells at given position.
-   * Places the variant and adds ship to grid.
-   * @param {Placeable} placeable
-   * @param {number} row
-   * @param {number} col
-   * @param {ShipCellGrid} shipCellGrid
-   * @returns {Array}
-   * @private
-   */
-  addPlaceableToShipCells (placeable, x, y, shipCellGrid) {
-    const placement = placeable.placeAt(x, y)
-    this.ship.addUnplacedShipToGrid(shipCellGrid, placement)
-    return this.ship.cells
-  }
-
-  /**
    * Adds the current variant to ship cells at given position.
-   * @param {number} y
    * @param {number} x
+   * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
    * @returns {Array}
    * @private
    */
   addCurrentToShipCells (x, y, shipCellGrid) {
-    return this.addPlaceableToShipCells(
-      this._currentPlaceable(),
-      x,
-      y,
-      shipCellGrid
-    )
+    const placeable = this._currentPlaceable()
+    const placement = placeable.placeAt(x, y)
+    this.ship.addUnplacedShipToGrid(shipCellGrid, placement)
+    return this.ship.cells
   }
 }

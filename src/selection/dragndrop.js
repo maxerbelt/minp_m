@@ -786,14 +786,14 @@ class DragNDrop {
     if (!state.selection?.ghost) return
 
     const { row, col } = this._getCoordinates(r, c)
-    const { c0, r0 } = this._calculatePlacementPosition(row, col)
-    if (!bh.map.inBounds(c0, r0)) return
+    const { x, y } = this._calculatePlacementPosition(row, col)
+    if (!bh.map.inBounds(y, x)) return
 
     viewModel.removeHighlight()
 
     const { placing, canPlace, cells } = this._getPlacingAndCells(
-      r0,
-      c0,
+      x,
+      y,
       shipCellGrid
     )
     this._applyHighlights(viewModel, cells, canPlace, placing)
@@ -820,20 +820,20 @@ class DragNDrop {
    * @private
    */
   _calculatePlacementPosition (row, col) {
-    const [c0, r0] = state.selection.offsetCell(row, col)
-    return { c0, r0 }
+    const [x, y] = state.selection.offsetCell(row, col)
+    return { x, y }
   }
 
   /**
    * Gets placing object, canPlace flag, and occupied cells.
-   * @param {number} r0 - Offset row
-   * @param {number} c0 - Offset column
+   * @param {number} y - Offset row
+   * @param {number} x - Offset column
    * @param {Object} shipCellGrid - Ship cell grid
    * @returns {Object} Object with placing, canPlace, cells
    * @private
    */
-  _getPlacingAndCells (r0, c0, shipCellGrid) {
-    const placing = state.selection.placeable().placeAt(r0, c0)
+  _getPlacingAndCells (x, y, shipCellGrid) {
+    const placing = state.selection.placeable().placeAt(x, y)
     const canPlace = placing.canPlace(shipCellGrid)
     const cells = [...placing.board.occupiedLocations()]
     return { placing, canPlace, cells }

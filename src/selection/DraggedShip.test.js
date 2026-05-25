@@ -19,15 +19,23 @@ jest.unstable_mockModule('./PlacedShips.js', () => ({
 }))
 
 describe('DraggedShip', () => {
+  /** @type {any} */
   let mockShip
   // let mockSelectedShipVariant
   //  let mockSelectedShipSpecial
+  /** @type {any} */
   let mockPlaceable
+  /** @type {any} */
   let mockContentBuilder
+  /** @type {any} */
   let draggedShip
+  /** @type {any} */
   let Ghost
+  /** @type {any} */
   let mockGhostInstance
+  /** @type {any} */
   let DraggedShip
+  /** @type {any} */
   let mockVariant
 
   beforeEach(async () => {
@@ -44,7 +52,8 @@ describe('DraggedShip', () => {
       moveTo: jest.fn(),
       setVariant: jest.fn()
     }
-    Ghost.mockReturnValue(mockGhostInstance)
+    const ghostCast = /** @type {any} */ (Ghost)
+    ghostCast.mockReturnValue(mockGhostInstance)
 
     // Create mock placeable object
     mockPlaceable = {
@@ -101,7 +110,7 @@ describe('DraggedShip', () => {
       100, // offsetX
       200, // offsetY
       32, // cellSize
-      { type: 'rack' }, // source
+      /** @type {any} */ ({ type: 'rack' }), // source
       0, // variantIndex
       mockContentBuilder
     )
@@ -118,7 +127,7 @@ describe('DraggedShip', () => {
         64, // 2 * 32
         96, // 3 * 32
         32,
-        { type: 'rack' },
+        /** @type {any} */ ({ type: 'rack' }),
         0,
         mockContentBuilder
       )
@@ -126,7 +135,7 @@ describe('DraggedShip', () => {
     })
 
     it('should store source reference', () => {
-      const source = { type: 'placement', id: 5 }
+      const source = /** @type {any} */ ({ type: 'placement', id: 5 })
       const draggedShip2 = new DraggedShip(
         mockShip,
         0,
@@ -161,7 +170,7 @@ describe('DraggedShip', () => {
         0,
         0,
         32,
-        { type: 'rack' },
+        /** @type {any} */ ({ type: 'rack' }),
         0,
         mockContentBuilder
       )
@@ -444,7 +453,7 @@ describe('DraggedShip', () => {
     it('should add placeable to ship cells', () => {
       const shipCellGrid = { grid: 'data' }
       draggedShip.addCurrentToShipCells(3, 3, shipCellGrid)
-      expect(mockShip.placePlacement).toHaveBeenCalledWith(mockPlaceable, 2, 3)
+      expect(mockShip.placePlacement).toHaveBeenCalledWith(mockPlaceable, 3, 3)
     })
 
     it('should add ship to grid', () => {
@@ -517,7 +526,8 @@ describe('DraggedShip', () => {
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(true)
 
-      placedShipsInstance.push.mockReturnValue({ placed: true, id: 123 })
+      const pushCast = /** @type {any} */ (placedShipsInstance.push)
+      pushCast.mockReturnValue({ placed: true, id: 123 })
       const result = draggedShip.place(2, 3, shipCellGrid)
       expect(result).toEqual({ placed: true, id: 123 })
     })
