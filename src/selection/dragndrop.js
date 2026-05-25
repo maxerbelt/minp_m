@@ -661,10 +661,13 @@ class DragNDrop {
    * @private
    */
   _handleShipDrop (cell, model, viewModel, isAddition) {
-    const [r, c] = coordsFromCell(cell)
-    const placed = state.selection.place(r, c, model.shipCellGrid)
+    const [y, x] = coordsFromCell(cell)
+    const placed = state.selection.place(x, y, model.shipCellGrid)
 
-    if (!placed) return
+    if (!placed) {
+      console.log(`Invalid placement at (${y}, ${x})`)
+      return
+    }
 
     if (isAddition) {
       const newId = viewModel.addition(placed, model, state.selection.ship)
@@ -778,15 +781,14 @@ class DragNDrop {
    * Highlights cells showing where ship would be placed.
    * @param {ViewModel} viewModel - The view model
    * @param {Object} shipCellGrid - The ship cell grid
-   * @param {number} [r] - Row coordinate (uses lastEntered if null)
-   * @param {number} [c] - Column coordinate (uses lastEntered if null)
+   * @param {number} [cursorY] - Row coordinate (uses lastEntered if null)
+   * @param {number} [cursorX] - Column coordinate (uses lastEntered if null)
    * @returns {void}
    */
-  highlight (viewModel, shipCellGrid, r, c) {
+  highlight (viewModel, shipCellGrid, cursorX, cursorY) {
     if (!state.selection?.ghost) return
 
-    const { row, col } = this._getCoordinates(r, c)
-    const { x, y } = this._calculatePlacementPosition(row, col)
+    const { x, y } = this._calculatePlacementPosition(cursorY, cursorX)
     if (!bh.map.inBounds(y, x)) return
 
     viewModel.removeHighlight()
@@ -803,24 +805,25 @@ class DragNDrop {
    * Gets coordinates, using lastEntered if null.
    * @param {number|null} r - Row
    * @param {number|null} c - Column
-   * @returns {Object} Object with row and col
+   * @returns {number[]} Object with row and col
    * @private
    */
   _getCoordinates (r, c) {
-    const row = r === null ? state.lastEntered[0] : r
-    const col = c === null ? state.lastEntered[1] : c
-    return { row, col }
+    const y = r === null ? state.lastEntered[0] : r
+    const x = c === null ? state.lastEntered[1] : c
+    return [x, y]
   }
 
   /**
    * Calculates placement position with offset.
-   * @param {number} row - Row
-   * @param {number} col - Column
+   * @param {number[]} y0 - Row
+   * @param {number} x0 - Column
    * @returns {Object} Object with c0 and r0
    * @private
    */
-  _calculatePlacementPosition (row, col) {
-    const [x, y] = state.selection.offsetCell(row, col)
+  _calculatePlacementPosition (r, c) {
+    const [x0, y0] = this._getCoordinates(r, c)
+    const [x, y] = state.selection.offsetCell(x0, y0)
     return { x, y }
   }
 
@@ -867,14 +870,14 @@ class DragNDrop {
    * Determines CSS class for highlighted cell based on placement validity.
    * @param {boolean} isPlacementValid - Whether placement is valid
    * @param {Object} placing - The placement object
-   * @param {number} c - Column coordinate
-   * @param {number} r - Row coordinate
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {string} CSS class name ('good', 'notgood', or 'bad')
    * @private
    */
-  _getHighlightClass (isPlacementValid, placing, c, r) {
+  _getHighlightClass (isPlacementValid, placing, x, y) {
     if (!isPlacementValid) {
-      return this._getInvalidHighlightClass(placing, c, r)
+      return this._getInvalidHighlightClass(placing, x, y)
     }
     return 'good'
   }
@@ -882,13 +885,13 @@ class DragNDrop {
   /**
    * Gets the highlight class for invalid placement.
    * @param {Object} placing - The placement object
-   * @param {number} c - Column coordinate
-   * @param {number} r - Row coordinate
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {string} CSS class name ('notgood' or 'bad')
    * @private
    */
-  _getInvalidHighlightClass (placing, c, r) {
-    if (placing.notGood.at(c, r) > 0) {
+  _getInvalidHighlightClass (placing, x, y) {
+    if (placing.notGood.at(x, y) > 0) {
       return 'notgood'
     }
     return 'bad'
@@ -916,7 +919,7 @@ class DragNDrop {
       if (state.lastEntered[0] === r && state.lastEntered[1] === c) return
 
       state.lastEntered = [r, c]
-      this.highlight(viewModel, model.shipCellGrid, r, c)
+      this.highlight(viewModel, model.shipCellGrid, c, r)
     })
   }
 

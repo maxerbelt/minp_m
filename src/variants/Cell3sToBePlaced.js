@@ -65,20 +65,20 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
    *
    * @param {Placeable3Type} placeable3 - The 3D placeable configuration containing board,
    *   validator, zone detail level, target, and subgroup factories
-   * @param {number} row - The row position for embedding cells (0-based index)
-   * @param {number} col - The column position for embedding cells (0-based index)
+   * @param {number} x - The x-coordinate for embedding cells (0-based index)
+   * @param {number} y - The y-coordinate for embedding cells (0-based index)
    * @throws {Error} If placeable3 lacks required properties or subGroups are invalid
    */
-  constructor (placeable3, row, col) {
+  constructor (placeable3, x, y) {
     super(
       placeable3.board,
-      row,
-      col,
+      x,
+      y,
       placeable3.validator,
       placeable3.zoneDetail,
       placeable3.target
     )
-    this.subGroups = placeable3.subGroups.map(g => g.placeAt(row, col))
+    this.subGroups = placeable3.subGroups.map(g => g.placeAt(x, y))
   }
 
   /**

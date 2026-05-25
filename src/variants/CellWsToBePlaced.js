@@ -41,8 +41,8 @@ export class CellWsToBePlaced extends Cell3sToBePlaced {
     super(placeable3, x, y)
     this.variant = variant
     const special = this.subGroups[1].cells
-    this.weapons = special.reduce((acc, [r, c], i) => {
-      acc[makeKey(r, c)] = weapons[i]
+    this.weapons = special.reduce((acc, [x, y], i) => {
+      acc[makeKey(y, x)] = weapons[i]
       return acc
     }, {})
   }

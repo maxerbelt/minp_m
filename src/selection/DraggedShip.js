@@ -186,26 +186,26 @@ export class DraggedShip extends SelectedShip {
 
   /**
    * Checks if the ship can be placed at the given grid position (without cursor offset).
-   * @param {number} row
-   * @param {number} col
+   * @param {number} x
+   * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
    * @returns {boolean}
    */
-  canPlaceRaw (row, col, shipCellGrid) {
+  canPlaceRaw (x, y, shipCellGrid) {
     const placeable = this._currentPlaceable()
-    return Boolean(this.ghost && placeable?.canPlace(row, col, shipCellGrid))
+    return Boolean(this.ghost && placeable?.canPlace(x, y, shipCellGrid))
   }
 
   /**
    * Calculates grid position offset from cursor.
-   * @param {number} row
-   * @param {number} col
+   * @param {number} x
+   * @param {number} y
    * @returns {CursorPosition}
    */
-  offsetCell (row, col) {
+  offsetCell (x, y) {
     return /** @type {CursorPosition} */ ([
-      row - this.cursor[0],
-      col - this.cursor[1]
+      x - this.cursor[1],
+      y - this.cursor[0]
     ])
   }
 
@@ -216,34 +216,34 @@ export class DraggedShip extends SelectedShip {
    * @param {ShipCellGrid} shipCellGrid
    * @returns {boolean}
    */
-  canPlace (row, col, shipCellGrid) {
-    const [offsetRow, offsetCol] = this.offsetCell(row, col)
-    return this.canPlaceRaw(offsetRow, offsetCol, shipCellGrid)
+  canPlace (x, y, shipCellGrid) {
+    const [offsetX, offsetY] = this.offsetCell(x, y)
+    return this.canPlaceRaw(offsetX, offsetY, shipCellGrid)
   }
 
   /**
    * Places the ship cells at the cursor-adjusted position.
-   * @param {number} row
-   * @param {number} col
+   * @param {number} x
+   * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
    * @returns {Array|null}
    */
-  placeCells (row, col, shipCellGrid) {
-    const [offsetRow, offsetCol] = this.offsetCell(row, col)
-    return this.canPlaceRaw(offsetRow, offsetCol, shipCellGrid)
-      ? this.addCurrentToShipCells(offsetRow, offsetCol, shipCellGrid)
+  placeCells (x, y, shipCellGrid) {
+    const [offsetX, offsetY] = this.offsetCell(x, y)
+    return this.canPlaceRaw(offsetX, offsetY, shipCellGrid)
+      ? this.addCurrentToShipCells(offsetX, offsetY, shipCellGrid)
       : null
   }
 
   /**
    * Places the ship and registers it with placed ships manager.
-   * @param {number} row
-   * @param {number} col
+   * @param {number} x
+   * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
    * @returns {Object|null}
    */
-  place (row, col, shipCellGrid) {
-    const placedCells = this.placeCells(row, col, shipCellGrid)
+  place (x, y, shipCellGrid) {
+    const placedCells = this.placeCells(x, y, shipCellGrid)
     return placedCells ? placedShipsInstance.push(this.ship, placedCells) : null
   }
 

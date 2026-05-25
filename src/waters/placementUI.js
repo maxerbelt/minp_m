@@ -1760,10 +1760,10 @@ export class PlacementUI extends WatersUI {
  * @private
  */
 const CURSOR_DIRECTION_MAP = {
-  ArrowUp: { dx: -1, dy: 0 },
-  ArrowDown: { dx: 1, dy: 0 },
-  ArrowLeft: { dx: 0, dy: -1 },
-  ArrowRight: { dx: 0, dy: 1 }
+  ArrowUp: { dx: -1, dy: -1 },
+  ArrowDown: { dx: 0, dy: 1 },
+  ArrowLeft: { dx: -1, dy: 0 },
+  ArrowRight: { dx: 1, dy: 0 }
 }
 
 /**
@@ -1791,10 +1791,10 @@ function moveGridCursor (event, shipCellGrid, viewModel) {
     cursor.y += direction.dy
 
     // Wrap cursor at board edges
-    if (cursor.x < 0) cursor.x = map.rows - 1
-    if (cursor.x >= map.rows) cursor.x = 0
-    if (cursor.y < 0) cursor.y = map.cols - 1
-    if (cursor.y >= map.cols) cursor.y = 0
+    if (cursor.x < 0) cursor.x = map.cols - 1
+    if (cursor.x >= map.cols) cursor.x = 0
+    if (cursor.y < 0) cursor.y = map.rows - 1
+    if (cursor.y >= map.rows) cursor.y = 0
 
     dragNDrop.highlight(viewModel, shipCellGrid, cursor.x, cursor.y)
   }

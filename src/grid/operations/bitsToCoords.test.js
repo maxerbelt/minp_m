@@ -31,13 +31,13 @@ describe('CoordinateConversion bitsToCoordinates', () => {
 
     it('converts bits with multiple set cells to coordinate array', () => {
       mask.set(0, 0)
-      mask.set(1, 1)
-      mask.set(2, 2)
+      mask.set(1, 2)
+      mask.set(2, 0)
       const coords = conversion.bitsToCoordinates()
       expect(coords.length).toBe(3)
       expect(coords.some(c => c[0] === 0 && c[1] === 0)).toBe(true)
-      expect(coords.some(c => c[0] === 1 && c[1] === 1)).toBe(true)
-      expect(coords.some(c => c[0] === 2 && c[1] === 2)).toBe(true)
+      expect(coords.some(c => c[0] === 1 && c[1] === 2)).toBe(true)
+      expect(coords.some(c => c[0] === 2 && c[1] === 0)).toBe(true)
     })
   })
 })
