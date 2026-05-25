@@ -219,8 +219,7 @@ describe('Waters', () => {
             height: 1,
             width: 1
           }),
-          addToGrid: jest.fn(),
-          placeVariant: jest.fn()
+          addToGrid: jest.fn()
         },
         {
           cells: [3, 4],
@@ -239,8 +238,7 @@ describe('Waters', () => {
             height: 1,
             width: 1
           }),
-          addToGrid: jest.fn(),
-          placeVariant: jest.fn()
+          addToGrid: jest.fn()
         }
       ]
       // @ts-ignore - Mocking Ship type for testing
@@ -262,8 +260,7 @@ describe('Waters', () => {
             minSize: 1
           }),
           minSize: 1,
-          addToGrid: jest.fn(),
-          placeVariant: jest.fn()
+          addToGrid: jest.fn()
         },
         {
           cells: [3, 4],
@@ -277,8 +274,7 @@ describe('Waters', () => {
             minSize: 1
           }),
           minSize: 1,
-          addToGrid: jest.fn(),
-          placeVariant: jest.fn()
+          addToGrid: jest.fn()
         }
       ]
       let result

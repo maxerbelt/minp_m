@@ -212,17 +212,15 @@ describe('DraggedShip integration', () => {
 
   describe('addCurrentToShipCells', () => {
     it('should add placeable to ship cells', () => {
-      draggedShip.addCurrentToShipCells(2, 3, shipCellGrid)
-      //   expect(aircraftCarrier.placeVariant).toHaveBeenCalledWith(mockPlaceable, 2, 3)
+      draggedShip.addCurrentToShipCells(3, 2, shipCellGrid)
     })
 
     it('should add ship to grid', () => {
-      draggedShip.addCurrentToShipCells(2, 3, shipCellGrid)
-      //    expect(aircraftCarrier.addToGrid).toHaveBeenCalledWith(shipCellGrid)
+      draggedShip.addCurrentToShipCells(3, 2, shipCellGrid)
     })
 
     it('should return ship cells', () => {
-      const result = draggedShip.addCurrentToShipCells(2, 3, shipCellGrid)
+      const result = draggedShip.addCurrentToShipCells(3, 2, shipCellGrid)
       expect(result).toEqual(aircraftCarrier.cells)
     })
   })
@@ -232,17 +230,15 @@ describe('DraggedShip integration', () => {
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(true)
 
-      draggedShip.placeCells(2, 3, shipCellGrid)
-      //   expect(aircraftCarrier.placeVariant).toHaveBeenCalled()
-      //  expect(result).toEqual(aircraftCarrier.cells)
+      draggedShip.placeCells(3, 2, shipCellGrid)
     })
 
     it('should return null when placement is invalid', () => {
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(false)
 
-      const result = draggedShip.placeCells(2, 3, shipCellGrid)
-      //   expect(aircraftCarrier.placeVariant).not.toHaveBeenCalled()
+      const result = draggedShip.placeCells(3, 2, shipCellGrid)
+
       expect(result).toBeNull()
     })
 
@@ -251,11 +247,6 @@ describe('DraggedShip integration', () => {
       mockPlaceable.canPlace.mockReturnValue(true)
 
       draggedShip.placeCells(5, 8, shipCellGrid)
-      //    expect(aircraftCarrier.placeVariant).toHaveBeenCalledWith(
-      //      mockPlaceable,
-      //     4, // 5-1
-      //      6 // 8-2
-      //     )
     })
   })
 

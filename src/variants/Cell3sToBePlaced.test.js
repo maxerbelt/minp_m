@@ -42,11 +42,11 @@ describe('Cell3sToBePlaced behaviors', () => {
     const placed = new Cell3sToBePlaced(placable3, 10, 10)
 
     // absolute middle cell is at (10, 11) — validator returns true there
-    expect(placed.isInMatchingZone(10, 11)).toBe(true)
+    expect(placed.isInMatchingZone(11, 10)).toBe(true)
     // both first and middle are candidates that validate true/false depending on subgroup
     expect(placed.isInMatchingZone(10, 10)).toBe(true)
     // a non-candidate cell should be false
-    expect(placed.isInMatchingZone(10, 12)).toBe(false)
+    expect(placed.isInMatchingZone(12, 10)).toBe(false)
   })
 
   it('isWrongZone annotates cells with match flags and returns true when some wrong', () => {

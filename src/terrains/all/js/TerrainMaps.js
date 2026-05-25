@@ -540,13 +540,13 @@ export class TerrainMaps {
 
   /**
    * Gets zone information for the specified coordinates.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {number} zoneDetail - Level of zone detail
    * @returns {Array} Zone information array
    */
-  zoneInfo (r, c, zoneDetail) {
-    return this.current.zoneInfo(r, c, zoneDetail)
+  zoneInfo (x, y, zoneDetail) {
+    return this.current.zoneInfo(x, y, zoneDetail)
   }
 
   /**

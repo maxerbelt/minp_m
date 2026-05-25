@@ -519,23 +519,23 @@ export class Ship {
   }
 
   /**
-   * Record a hit at coordinates (r, c)
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * Record a hit at coordinates (y, x)
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    */
-  recordHit (r, c) {
-    this.hits.set(c, r, 1)
+  recordHit (x, y) {
+    this.hits.set(x, y, 1)
   }
 
   /**
-   * Check if ship has been hit at (r, c)
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * Check if ship has been hit at (y, x)
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {boolean} True if hit has been recorded at this location
    */
-  isHitAt (r, c) {
-    return this.hits.test(c, r)
+  isHitAt (x, y) {
+    return this.hits.test(x, y)
   }
 
   /**
@@ -1023,12 +1023,12 @@ export class Ship {
   _processCellDamage (model, cells) {
     const results = { hits: [], misses: [], dtaps: 0 }
     for (const cell of cells) {
-      const [r, c] = cell
-      if (this.isHitAt(r, c)) {
+      const [y, x] = cell
+      if (this.isHitAt(x, y)) {
         results.dtaps++
         continue // Already hit (double tap)
       }
-      this.processHitAt(model, r, c, results, cell)
+      this.processHitAt(model, x, y, results, cell)
     }
     return results
   }
@@ -1038,15 +1038,15 @@ export class Ship {
    * Checks if cell is on ship board; if yes, marks as hit; if no, marks as miss.
    * Accumulates results in provided DamageResult object.
    * @param {GameModel} model - Game model reference
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {DamageResult} results
    *   Accumulator for hit/miss results (modified in place)
    * @param {CoordinatePair} cell - Cell coordinate pair [row, col]
    * @returns {void}
    * @private
    */
-  processHitAt (model, r, c, results, cell) {
+  processHitAt (model, x, y, results, cell) {
     const board = this.board
     if (
       board &&
@@ -1054,15 +1054,15 @@ export class Ship {
       'test' in board &&
       typeof board.test === 'function'
     ) {
-      if (board.test(c, r)) {
-        const { damaged } = this.hitAt(model, r, c)
+      if (board.test(x, y)) {
+        const { damaged } = this.hitAt(model, x, y)
         results.hits.push({
-          key: `${r},${c}`,
+          key: `${y},${x}`,
           cell,
           damaged: damaged || 'burnt'
         })
       } else {
-        results.misses.push({ key: `${r},${c}`, cell, damaged: 'burnt' })
+        results.misses.push({ key: `${y},${x}`, cell, damaged: 'burnt' })
       }
     }
   }
@@ -1070,20 +1070,20 @@ export class Ship {
   /**
    * Process hit at specific coordinates (record hit, check for weapon damage)
    * @param {GameModel} model - Game model with UI and loadout
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {HitResult} Hit result with {letter, info, damaged, list, misses}
    */
-  hitAt (model, r, c) {
-    this.recordHit(r, c)
-    const weaponAtPosition = this.rackAt(c, r)
+  hitAt (model, x, y) {
+    this.recordHit(x, y)
+    const weaponAtPosition = this.rackAt(x, y)
     let info = null
     let damaged = null
     let hits = []
     let misses = []
 
     if (weaponAtPosition && model) {
-      const result = this._processMagazineHit(weaponAtPosition, model, r, c)
+      const result = this._processMagazineHit(weaponAtPosition, model, x, y)
       if (result) {
         damaged = result.damaged
         info = result.info
@@ -1100,18 +1100,18 @@ export class Ship {
    * Determines whether weapon is loaded and delegates to appropriate handler.
    * @param {Rack} weaponSystem - Weapon system at impact point
    * @param {GameModel} model - Game model
-   * @param {number} r - Row coordinate of hit
-   * @param {number} c - Column coordinate of hit
+   * @param {number} y - Row coordinate of hit
+   * @param {number} x - Column coordinate of hit
    * @returns {MagazineHitResult|null}
    *   Result with {damaged, info, hits, misses} or null if weapon not loaded
    * @private
    */
-  _processMagazineHit (weaponSystem, model, r, c) {
+  _processMagazineHit (weaponSystem, model, x, y) {
     const isLoaded = this._isWeaponLoaded(weaponSystem)
     if (!isLoaded) {
       return this._handleUnloadedWeaponHit(weaponSystem, model)
     }
-    return this._handleLoadedWeaponHit(weaponSystem, model, r, c)
+    return this._handleLoadedWeaponHit(weaponSystem, model, x, y)
   }
 
   /**
@@ -1134,13 +1134,13 @@ export class Ship {
    * Marks weapon as hit, uses ammunition, and checks for volatile detonation.
    * @param {Rack} weaponSystem - Loaded weapon system that was hit
    * @param {GameModel} model - Game model for UI/ammo updates
-   * @param {number} r - Row coordinate of hit
-   * @param {number} c - Column coordinate of hit
+   * @param {number} y - Row coordinate of hit
+   * @param {number} x - Column coordinate of hit
    * @returns {MagazineHitResult}
    *   Damage result with damaged='skull', may include detonation hits/misses
    * @private
    */
-  _handleLoadedWeaponHit (weaponSystem, model, r, c) {
+  _handleLoadedWeaponHit (weaponSystem, model, x, y) {
     weaponSystem.hit = true
     const damaged = 'skull'
     // model.opponent?.updateUI()
@@ -1150,7 +1150,7 @@ export class Ship {
       model.loadOut.useAmmo(weaponSystem)
     }
 
-    const cell = viewModel.gridCellAt(r, c)
+    const cell = viewModel.gridCellAt(y, x)
     viewModel.useAmmoInCell(cell, damaged)
     model.updateUI()
 
@@ -1160,8 +1160,8 @@ export class Ship {
         cell,
         viewModel,
         model,
-        r,
-        c,
+        x,
+        y,
         damaged
       )
     }
@@ -1176,19 +1176,19 @@ export class Ship {
    * @param {any} cell - Grid cell where detonation occurs
    * @param {UIViewModel} viewModel - View model for animation
    * @param {GameModel} model - Game model for processing surrounding damage
-   * @param {number} r - Row coordinate of detonation center
-   * @param {number} c - Column coordinate of detonation center
+   * @param {number} y - Row coordinate of detonation center
+   * @param {number} x - Column coordinate of detonation center
    * @param {string} damaged - Damage type indicator ('skull')
    * @returns {MagazineHitResult}
    *   Detonation result with damaged, info='Magazine Detonated', hits/misses arrays
    * @private
    */
-  _processDetonation (weapon, cell, viewModel, model, r, c, damaged) {
+  _processDetonation (weapon, cell, viewModel, model, x, y, damaged) {
     const detonationInfo = 'Magazine Detonated'
     weapon.animateDetonation(cell, viewModel.cellSize())
     const { hits, misses } = this._processCellDamage(
       model,
-      bh.map.surround(r, c)
+      bh.map.surround(y, x)
     )
     return { damaged, info: detonationInfo, hits, misses }
   }
@@ -1278,18 +1278,6 @@ export class Ship {
     }
     this.board = board
     this.sunk = false
-  }
-
-  /**
-   * Place using variant placement object at given coordinates
-   * @param {{placeAt: (c: number, r: number) => Placement}} placeable - Placeable variant object
-   * @param {number} r - Row coordinate for placement
-   * @param {number} c - Column coordinate for placement
-   * @returns {void}
-   */
-  placeVariant (placeable, r, c) {
-    const placement = placeable.placeAt(c, r)
-    this.placePlacement(placement)
   }
 
   /**
@@ -1504,7 +1492,18 @@ export class Ship {
     }
     return serialized
   }
+  addUnplacedShipToGrid (shipCellGrid, placement) {
+    // Placement succeeded: update ship and mask
+    this.placePlacement(placement)
+    const displacedCells = placement.displacedArea(
+      shipCellGrid._maskedGrid.width,
+      shipCellGrid._maskedGrid.height
+    )
 
+    shipCellGrid._maskedGrid.joinWith(displacedCells)
+
+    this.addToGrid(shipCellGrid)
+  }
   /**
    * Add ship to grid at its current position
    * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to
@@ -1522,14 +1521,17 @@ export class Ship {
     }
     const board = this.board
     if (
-      board &&
-      typeof board === 'object' &&
-      'occupiedLocations' in board &&
-      typeof board.occupiedLocations === 'function'
+      !(
+        board &&
+        typeof board === 'object' &&
+        'occupiedLocations' in board &&
+        typeof board.occupiedLocations === 'function'
+      )
     ) {
-      for (const [x, y] of board.occupiedLocations()) {
-        grid.setCell(x, y, { id: this.id, letter: this.letter })
-      }
+      throw new Error('Invalid ship: board')
+    }
+    for (const [x, y] of board.occupiedLocations()) {
+      grid.setCell(x, y, { id: this.id, letter: this.letter })
     }
   }
 

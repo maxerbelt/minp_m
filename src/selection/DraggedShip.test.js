@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
-
 // DraggedShip will be imported after mocks are configured
 
 // Mock the dependencies
@@ -50,7 +49,8 @@ describe('DraggedShip', () => {
     // Create mock placeable object
     mockPlaceable = {
       canPlace: jest.fn().mockReturnValue(true),
-      inAllBounds: jest.fn().mockReturnValue(true)
+      inAllBounds: jest.fn().mockReturnValue(true),
+      placeAt: jest.fn().mockReturnValue({ placement: 'data' })
     }
     mockVariant = {
       variant: 'mask',
@@ -81,9 +81,10 @@ describe('DraggedShip', () => {
           nextForm: jest.fn().mockReturnValue(mockVariant)
         })
       }),
-
-      placeVariant: jest.fn().mockReturnValue([{ cell: 'data' }]),
+      placeAt: jest.fn().mockReturnValue({}),
+      placePlacement: jest.fn().mockReturnValue([{ cell: 'data' }]),
       addToGrid: jest.fn(),
+      addUnplacedShipToGrid: jest.fn(),
       cells: [{ r: 0, c: 0 }]
     }
 
@@ -442,19 +443,19 @@ describe('DraggedShip', () => {
   describe('addCurrentToShipCells', () => {
     it('should add placeable to ship cells', () => {
       const shipCellGrid = { grid: 'data' }
-      draggedShip.addCurrentToShipCells(2, 3, shipCellGrid)
-      expect(mockShip.placeVariant).toHaveBeenCalledWith(mockPlaceable, 2, 3)
+      draggedShip.addCurrentToShipCells(3, 3, shipCellGrid)
+      expect(mockShip.placePlacement).toHaveBeenCalledWith(mockPlaceable, 2, 3)
     })
 
     it('should add ship to grid', () => {
       const shipCellGrid = { grid: 'data' }
-      draggedShip.addCurrentToShipCells(2, 3, shipCellGrid)
+      draggedShip.addCurrentToShipCells(3, 2, shipCellGrid)
       expect(mockShip.addToGrid).toHaveBeenCalledWith(shipCellGrid)
     })
 
     it('should return ship cells', () => {
       const shipCellGrid = { grid: 'data' }
-      const result = draggedShip.addCurrentToShipCells(2, 3, shipCellGrid)
+      const result = draggedShip.addCurrentToShipCells(3, 2, shipCellGrid)
       expect(result).toEqual(mockShip.cells)
     })
   })
@@ -466,7 +467,7 @@ describe('DraggedShip', () => {
       mockPlaceable.canPlace.mockReturnValue(true)
 
       const result = draggedShip.placeCells(2, 3, shipCellGrid)
-      expect(mockShip.placeVariant).toHaveBeenCalled()
+      expect(mockShip.placePlacement).toHaveBeenCalled()
       expect(result).toEqual(mockShip.cells)
     })
 
@@ -476,7 +477,7 @@ describe('DraggedShip', () => {
       mockPlaceable.canPlace.mockReturnValue(false)
 
       const result = draggedShip.placeCells(2, 3, shipCellGrid)
-      expect(mockShip.placeVariant).not.toHaveBeenCalled()
+      expect(mockShip.placePlacement).not.toHaveBeenCalled()
       expect(result).toBeNull()
     })
 
@@ -486,7 +487,7 @@ describe('DraggedShip', () => {
       mockPlaceable.canPlace.mockReturnValue(true)
 
       draggedShip.placeCells(5, 8, shipCellGrid)
-      expect(mockShip.placeVariant).toHaveBeenCalledWith(
+      expect(mockShip.placePlacement).toHaveBeenCalledWith(
         mockPlaceable,
         4, // 5-1
         6 // 8-2

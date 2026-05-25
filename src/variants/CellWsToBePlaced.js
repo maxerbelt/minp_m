@@ -50,24 +50,24 @@ export class CellWsToBePlaced extends Cell3sToBePlaced {
   /**
    * Checks if a position is in a matching zone for weapon placement.
    * Validates the position against zone requirements inherited from parent class.
-   * @param {number} r - The row coordinate.
-   * @param {number} c - The column coordinate.
+   * @param {number} y - The row coordinate.
+   * @param {number} x - The column coordinate.
    * @returns {boolean} True if the position is in a valid zone for this weapon variant.
    */
-  isInMatchingZone (r, c) {
-    const zoneInfo = this.zoneInfo(r, c)
+  isInMatchingZone (x, y) {
+    const zoneInfo = this.zoneInfo(x, y)
     return this.validator(zoneInfo)
   }
 
   /**
    * Checks if any cell is positioned in an invalid zone.
    * Iterates through all placed cells and validates their zone compliance.
-   * Note: Uses coordinate order [c, r] from cells array iteration.
+   * Note: Uses coordinate order [x, y] from cells array iteration.
    * @returns {boolean} True if any cell is in a zone that fails validation.
    */
   isWrongZone () {
-    const result = this.cells.some(([r, c]) => {
-      return this.isInMatchingZone(r, c) === false
+    const result = this.cells.some(([x, y]) => {
+      return this.isInMatchingZone(x, y) === false
     })
     return result
   }

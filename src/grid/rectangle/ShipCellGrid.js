@@ -213,22 +213,6 @@ export class ShipCellGrid extends GridBase {
   }
 
   /**
-   * Sets a ship cell at the given row/column coordinates.
-   *
-   * Only performs the set operation if coordinates are within valid bounds.
-   *
-   * @param {number} row - Row coordinate (0-indexed from top)
-   * @param {number} col - Column coordinate (0-indexed from left)
-   * @param {ShipCell} cell - Ship cell object to place
-   * @returns {void}
-   */
-  setCellRC (row, col, cell) {
-    if (this.isValidRC(row, col)) {
-      this._grid[row][col] = cell
-    }
-  }
-
-  /**
    * Sets a ship cell at the given x/y coordinates.
    *
    * Delegates to RC-based setter after coordinate conversion.
@@ -239,7 +223,10 @@ export class ShipCellGrid extends GridBase {
    * @returns {void}
    */
   setCell (x, y, cell) {
-    this.setCellRC(y, x, cell)
+    if (!this.isValidRC(y, x)) {
+      throw new Error(`Placing Invalid coordinates on shipgrid: (${x}, ${y})`)
+    }
+    this._grid[y][x] = cell
   }
 
   /**
@@ -523,30 +510,21 @@ export class ShipCellGrid extends GridBase {
    * @private
    * @param {Object} ship - Ship object with placePlacement(), addToGrid() methods
    * @param {Array} placeables - Array of placement variants (different orientations)
-   * @param {number} col - Column to attempt placement (0-indexed from left)
-   * @param {number} row - Row to attempt placement (0-indexed from top)
+   * @param {number} x - Column to attempt placement (0-indexed from left)
+   * @param {number} y - Row to attempt placement (0-indexed from top)
    * @returns {ShipCell[]|null} Array of placed cells on success; null if placement failed
    */
-  _tryPlacementVariants (ship, placeables, col, row) {
+  _tryPlacementVariants (ship, placeables, x, y) {
     const shuffledPlaceables = Random.shuffleArray([...placeables])
 
     for (const placeable of shuffledPlaceables) {
-      const placement = placeable.placeAt(col, row)
+      const placement = placeable.placeAt(x, y)
       const conflict = placement.board.overlap(this.maskedGrid)
-      if (conflict.occupancy > 0 && !placement.canPlace(this)) {
+      if (conflict.occupancy > 0 || !placement.canPlace(this)) {
         continue
       }
 
-      // Placement succeeded: update ship and mask
-      ship.placePlacement(placement)
-      const displacedCells = placement.displacedArea(
-        this._maskedGrid.width,
-        this._maskedGrid.height
-      )
-
-      this._maskedGrid.joinWith(displacedCells)
-
-      ship.addToGrid(this)
+      ship.addUnplacedShipToGrid(this, placement)
       //  console.log(`joined grid:\n`, this.toAscii)
       return ship.cells
     }
@@ -573,19 +551,19 @@ export class ShipCellGrid extends GridBase {
 
     const shapeMinSize = shipShape.minSize
     const gridMap = bh.map
-    const maxRow = gridMap.rows - shapeMinSize + 1
-    const maxCol = gridMap.cols - shapeMinSize + 1
-    const validLocations = this._getValidPlacementLocations(maxRow, maxCol)
+    const maxY = gridMap.rows - shapeMinSize + 1
+    const maxX = gridMap.cols - shapeMinSize + 1
+    const validLocations = this._getValidPlacementLocations(maxY, maxX)
     const placeables = shipShape.placeables()
 
-    for (const [col, row] of validLocations) {
-      if (col >= maxCol || row >= maxRow) {
+    for (const [x, y] of validLocations) {
+      if (x >= maxX || y >= maxY) {
         console.warn(
-          `Skipping invalid placement location (${col}, ${row}) for ship ${ship.letter}`
+          `Skipping invalid placement location (${x}, ${y}) for ship ${ship.letter}`
         )
         continue
       }
-      const placedCells = this._tryPlacementVariants(ship, placeables, col, row)
+      const placedCells = this._tryPlacementVariants(ship, placeables, x, y)
       if (placedCells) {
         return placedCells
       }

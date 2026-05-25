@@ -432,13 +432,13 @@ export class BhMap {
    * Can optionally use provided zone detail instead of calculating it.
    *
    * @public
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {Object} [zoneDetail] - Optional pre-calculated zone detail to use instead of fetching
    * @returns {Object} Zone information object
    */
-  zoneInfo (r, c, zoneDetail) {
-    return this.subterrainTrackers.zoneInfo(r, c, zoneDetail)
+  zoneInfo (x, y, zoneDetail) {
+    return this.subterrainTrackers.zoneInfo(x, y, zoneDetail)
   }
 
   /**

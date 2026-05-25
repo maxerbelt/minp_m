@@ -130,25 +130,25 @@ export class CellsToBePlaced {
   /**
    * Gets zone information for a position using the placement target.
    * Delegates to the placement target's getZone method.
-   * @param {number} r - The row coordinate.
-   * @param {number} c - The column coordinate.
+   * @param {number} y - The row coordinate.
+   * @param {number} x - The column coordinate.
    * @param {number} [zoneDetail] - Optional zone detail level
    *   (defaults to this.zoneDetail if not provided).
    * @returns {ZoneInfo} Zone information for the position.
    */
-  zoneInfo (r, c, zoneDetail) {
-    return this.target.getZone(r, c, zoneDetail ?? this.zoneDetail)
+  zoneInfo (x, y, zoneDetail) {
+    return this.target.getZone(y, x, zoneDetail ?? this.zoneDetail)
   }
 
   /**
    * Checks if a position is in a matching zone according to the validator.
    * Uses the zone validator function to validate the zone at the given position.
-   * @param {number} r - The row coordinate.
-   * @param {number} c - The column coordinate.
+   * @param {number} y - The row coordinate.
+   * @param {number} x - The column coordinate.
    * @returns {boolean} True if the position's zone passes validation, false otherwise.
    */
-  isInMatchingZone (r, c) {
-    const zoneInfo = this.zoneInfo(r, c)
+  isInMatchingZone (x, y) {
+    const zoneInfo = this.zoneInfo(x, y)
     return this.validator(zoneInfo)
   }
 

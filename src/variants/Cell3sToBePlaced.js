@@ -86,16 +86,16 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
    * A position is considered in a matching zone if all subgroups report it as
    * a candidate cell AND their zone validators approve the zone information at that position.
    *
-   * @param {number} r - The row coordinate to check (0-based index)
-   * @param {number} c - The column coordinate to check (0-based index)
+   * @param {number} y - The row coordinate to check (0-based index)
+   * @param {number} x - The column coordinate to check (0-based index)
    * @returns {boolean} True if position is a candidate in all subgroups AND passes validation,
    *   false otherwise
    * @public
    */
-  isInMatchingZone (r, c) {
-    const zoneInfo = this.zoneInfo(r, c, 2)
+  isInMatchingZone (x, y) {
+    const zoneInfo = this.zoneInfo(x, y, 2)
     const result = this.subGroups.some(
-      g => g.isCandidate(c, r) && g.validator(zoneInfo)
+      g => g.isCandidate(x, y) && g.validator(zoneInfo)
     )
     return result
   }
@@ -114,13 +114,13 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
    */
   isWrongZone () {
     const cells = [...this.board.occupiedLocations()]
-    const result = cells.some(([c, r]) => {
-      return this.isInMatchingZone(r, c) === false
+    const result = cells.some(([x, y]) => {
+      return this.isInMatchingZone(x, y) === false
     })
-    for (const [c, r] of cells) {
-      const match = this.isInMatchingZone(r, c) ? 1 : 0
+    for (const [x, y] of cells) {
+      const match = this.isInMatchingZone(x, y) ? 1 : 0
       // @ts-expect-error - notGood is typed as Board in parent but runtime type is MaskBase with set() method
-      this.notGood.set(c, r, match)
+      this.notGood.set(x, y, match)
     }
     return result
   }

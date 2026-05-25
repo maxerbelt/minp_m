@@ -372,7 +372,7 @@ describe('CellsToBePlaced', () => {
       }
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 5, target)
 
-      const result = placing.zoneInfo(2, 3, undefined)
+      const result = placing.zoneInfo(3, 2, undefined)
 
       expect(getZone.mock.calls[0]).toEqual([2, 3, 5])
       expect(result).toEqual({ detail: 'ZONE_VALUE' })
@@ -435,7 +435,7 @@ describe('CellsToBePlaced', () => {
       const validator = z => z.detail === 'VALID_ZONE'
       const placing = new CellsToBePlaced(board, 2, 3, validator, 0, target)
 
-      expect(placing.isInMatchingZone(2, 3)).toBe(true)
+      expect(placing.isInMatchingZone(3, 2)).toBe(true)
     })
 
     /**
@@ -453,7 +453,7 @@ describe('CellsToBePlaced', () => {
       const validator = z => z.detail === 'VALID_ZONE'
       const placing = new CellsToBePlaced(board, 2, 3, validator, 0, target)
 
-      expect(placing.isInMatchingZone(2, 3)).toBe(false)
+      expect(placing.isInMatchingZone(3, 2)).toBe(false)
     })
   })
 

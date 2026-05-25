@@ -64,16 +64,16 @@ export class SubTerrainTrackers {
 
   /**
    * Gets the detailed zone information at the given coordinates.
-   * @param {number} r - Row index
-   * @param {number} c - Column index
+   * @param {number} y - Row index
+   * @param {number} x - Column index
    * @returns {Array} Array with subterrain and zone
    * @throws {Error} If subterrain or zone is unknown
    */
-  zoneDetail (r, c) {
-    const tracker = this._findTracker(r, c)
+  zoneDetail (y, x) {
+    const tracker = this._findTracker(y, x)
     if (!tracker) throw new Error('Unknown subterrain')
 
-    const key = makeKey(r, c)
+    const key = makeKey(y, x)
     if (tracker.margin.has(key)) {
       return [tracker.subterrain, tracker.marginalZone]
     } else if (tracker.core.has(key)) {
@@ -95,20 +95,20 @@ export class SubTerrainTrackers {
 
   /**
    * Gets zone information based on detail level.
-   * @param {number} r - Row index
-   * @param {number} c - Column index
+   * @param {number} y - Row index
+   * @param {number} x - Column index
    * @param {number} zoneDetail - Level of detail (0, 1, or 2)
    * @returns {Array} Zone information array
    * @throws {Error} If zoneDetail is invalid
    */
-  zoneInfo (r, c, zoneDetail) {
+  zoneInfo (x, y, zoneDetail) {
     switch (zoneDetail) {
       case 0:
         return []
       case 1:
-        return [this.subterrain(r, c)]
+        return [this.subterrain(y, x)]
       case 2:
-        return this.zoneDetail(r, c)
+        return this.zoneDetail(y, x)
       default:
         throw new Error(`Invalid zone detail level: ${zoneDetail}`)
     }
