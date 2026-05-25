@@ -393,7 +393,7 @@ describe('DraggedShip', () => {
     it('should handle negative offsets', () => {
       draggedShip.cursor = [5, 7]
       const result = draggedShip.offsetCell(2, 3)
-      expect(result).toEqual([-5, -2]) // [2-7, 3-5]
+      expect(result).toEqual([-3, -4]) // [2-5, 3-7]
     })
 
     it('should handle zero cursor', () => {

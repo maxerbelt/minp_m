@@ -204,15 +204,15 @@ export class DraggedShip extends SelectedShip {
    */
   offsetCell (x, y) {
     return /** @type {CursorPosition} */ ([
-      x - this.cursor[1],
-      y - this.cursor[0]
+      x - this.cursor[0],
+      y - this.cursor[1]
     ])
   }
 
   /**
    * Checks if the ship can be placed at the cursor-adjusted position.
-   * @param {number} row
-   * @param {number} col
+   * @param {number} x
+   * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
    * @returns {boolean}
    */
@@ -302,8 +302,8 @@ export class DraggedShip extends SelectedShip {
    */
   addCurrentToShipCells (x, y, shipCellGrid) {
     const placeable = this._currentPlaceable()
-    const placement = placeable.placeAt(x, y)
-    this.ship.addUnplacedShipToGrid(shipCellGrid, placement)
+    this.ship.placePlacement(placeable, x, y)
+    this.ship.addToGrid(shipCellGrid)
     return this.ship.cells
   }
 }
