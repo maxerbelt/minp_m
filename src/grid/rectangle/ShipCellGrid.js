@@ -520,13 +520,15 @@ export class ShipCellGrid extends GridBase {
     for (const placeable of shuffledPlaceables) {
       const placement = placeable.placeAt(x, y)
       const conflict = placement.board.overlap(this.maskedGrid)
-      if (conflict.occupancy > 0 || !placement.canPlace(this)) {
+      if (conflict.occupancy > 0) {
         continue
       }
 
-      ship.addUnplacedShipToGrid(this, placement)
+      const cells = ship.placeOnGrid(this, placement)
       //  console.log(`joined grid:\n`, this.toAscii)
-      return ship.cells
+      if (cells) {
+        return cells
+      }
     }
 
     return null

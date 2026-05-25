@@ -137,7 +137,7 @@ export class CellsToBePlaced {
    * @returns {ZoneInfo} Zone information for the position.
    */
   zoneInfo (x, y, zoneDetail) {
-    return this.target.getZone(y, x, zoneDetail ?? this.zoneDetail)
+    return this.target.getZone(x, y, zoneDetail ?? this.zoneDetail)
   }
 
   /**
@@ -176,8 +176,8 @@ export class CellsToBePlaced {
    * @returns {boolean} True if any cell is in a zone that fails validation, false if all zones valid.
    */
   isWrongZone () {
-    for (const [c, r] of this.board.occupiedLocations()) {
-      if (!this.isInMatchingZone(r, c)) {
+    for (const [x, y] of this.board.occupiedLocations()) {
+      if (!this.isInMatchingZone(x, y)) {
         return true
       }
     }
@@ -191,8 +191,8 @@ export class CellsToBePlaced {
    * @returns {boolean} True if any cell is out of bounds, false if all cells in bounds.
    */
   isNotInBounds () {
-    for (const [c, r] of this.board.occupiedLocations()) {
-      if (!this.target.boundsChecker(r, c)) {
+    for (const [x, y] of this.board.occupiedLocations()) {
+      if (!this.target.boundsChecker(y, x)) {
         return true
       }
     }

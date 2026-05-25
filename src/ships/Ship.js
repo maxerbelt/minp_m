@@ -1360,6 +1360,14 @@ export class Ship {
     }
     return serialized
   }
+
+  placeOnGrid (shipCellGrid, placement) {
+    if (!placement.canPlace(shipCellGrid)) {
+      return null
+    }
+    this.addUnplacedShipToGrid(shipCellGrid, placement)
+    return this.cells
+  }
   addUnplacedShipToGrid (shipCellGrid, placement) {
     // Placement succeeded: update ship and mask
     this.placePlacement(placement)

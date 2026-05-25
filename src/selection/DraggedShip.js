@@ -229,10 +229,10 @@ export class DraggedShip extends SelectedShip {
    * @returns {Array|null}
    */
   placeCells (x, y, shipCellGrid) {
+    if (!this.ghost) return null
     const [offsetX, offsetY] = this.offsetCell(x, y)
-    return this.canPlaceRaw(offsetX, offsetY, shipCellGrid)
-      ? this.addCurrentToShipCells(offsetX, offsetY, shipCellGrid)
-      : null
+
+    return this.addCurrentToShipCells(offsetX, offsetY, shipCellGrid)
   }
 
   /**
@@ -297,13 +297,12 @@ export class DraggedShip extends SelectedShip {
    * @param {number} x
    * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
-   * @returns {Array}
+   * @returns {null|number[][]} Updated ship cells or null if placement invalid
    * @private
    */
   addCurrentToShipCells (x, y, shipCellGrid) {
     const placeable = this._currentPlaceable()
-    this.ship.placePlacement(placeable, x, y)
-    this.ship.addToGrid(shipCellGrid)
-    return this.ship.cells
+    const placement = placeable.placeAt(x, y)
+    return this.ship.placeOnGrid(shipCellGrid, placement)
   }
 }

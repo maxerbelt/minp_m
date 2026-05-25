@@ -788,7 +788,7 @@ class DragNDrop {
   highlight (viewModel, shipCellGrid, cursorX, cursorY) {
     if (!state.selection?.ghost) return
 
-    const { x, y } = this._calculatePlacementPosition(cursorY, cursorX)
+    const { x, y } = this._calculatePlacementPosition(cursorX, cursorY)
     if (!bh.map.inBounds(y, x)) return
 
     viewModel.removeHighlight()
@@ -803,26 +803,25 @@ class DragNDrop {
 
   /**
    * Gets coordinates, using lastEntered if null.
-   * @param {number|null} r - Row
-   * @param {number|null} c - Column
+   * @param {number|null} cursorX - X coordinate of the cursor
+   * @param {number|null} cursorY - Y coordinate of the cursor
    * @returns {number[]} Object with row and col
-   * @private
    */
-  _getCoordinates (r, c) {
-    const y = r === null ? state.lastEntered[0] : r
-    const x = c === null ? state.lastEntered[1] : c
+  _getCoordinates (cursorX, cursorY) {
+    const y = cursorY === null ? state.lastEntered[0] : cursorY
+    const x = cursorX === null ? state.lastEntered[1] : cursorX
     return [x, y]
   }
 
   /**
    * Calculates placement position with offset.
-   * @param {number[]} y0 - Row
-   * @param {number} x0 - Column
-   * @returns {Object} Object with c0 and r0
+   * @param {number} cursorX - X coordinate of the cursor
+   * @param {number} cursorY - Y coordinate of the cursor
+   * @returns {Object} Object with x and y
    * @private
    */
-  _calculatePlacementPosition (r, c) {
-    const [x0, y0] = this._getCoordinates(r, c)
+  _calculatePlacementPosition (cursorX, cursorY) {
+    const [x0, y0] = this._getCoordinates(cursorX, cursorY)
     const [x, y] = state.selection.offsetCell(x0, y0)
     return { x, y }
   }
