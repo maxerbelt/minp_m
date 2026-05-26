@@ -474,6 +474,7 @@ export class Waters {
             attempt + 1
           }`
         )
+        this.UI.removeDisplayClasses()
         return true
       }
     }

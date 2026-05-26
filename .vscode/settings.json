@@ -1,5 +1,8 @@
 {
   "liveServer.settings.port": 5501,
   "liveServer.settings.root": "/src",
-  "js/ts.validate.enable": true
+  "js/ts.validate.enable": true,
+  "files.watcherExclude": {
+    "**/target": true
+  }
 }

@@ -1316,6 +1316,12 @@ export class WatersUI {
     )
   }
 
+  removeDisplayClasses () {
+    this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
+      CellClassManager.clearDisplayCell(cell)
+    )
+  }
+
   /**
    * Shows/hides unit type containers based on which units exist in the fleet.
    * Only displays UI containers for unit types present in the fleet.
