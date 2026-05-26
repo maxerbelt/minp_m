@@ -93,7 +93,7 @@ describe('DraggedShip', () => {
       placeAt: jest.fn().mockReturnValue({}),
       placePlacement: jest.fn().mockReturnValue([{ cell: 'data' }]),
       addToGrid: jest.fn(),
-      addUnplacedShipToGrid: jest.fn(),
+      placeOnGrid: jest.fn(),
       cells: [{ r: 0, c: 0 }]
     }
 
