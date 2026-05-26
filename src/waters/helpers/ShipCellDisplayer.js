@@ -159,7 +159,7 @@ export class ShipCellDisplayer {
    * @returns {void}
    */
   static displayPlacedCell (cell, ship, row, column) {
-    CellClassManager.clearCell(cell)
+    ///  CellClassManager.clearCell(cell)
     this.#displayShipCell(ship, row, column, cell)
     cell.classList.add(this.#CSS_CLASSES.PLACED)
   }
@@ -523,7 +523,7 @@ export class ShipCellDisplayer {
    */
   static #applyWeaponCursorClass (cell, cursorClass) {
     CellClassManager.clearCellClasses(cell, [
-      CellClassManager.CELL_CLASSES.weapon
+      CellClassManager.CELL_CLASSES.weaponStatus
     ])
     cell.classList.add(cursorClass)
   }

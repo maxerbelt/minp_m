@@ -153,12 +153,12 @@ export class CellsToBePlaced {
       return true
     }
     const result = this.validator(zoneInfo)
-    if (!result) {
-      console.log(
-        `Position (${x}, ${y}) failed zone validation with info:`,
-        zoneInfo
-      )
-    }
+    // if (!result) {
+    ///  console.log(
+    // `Position (${x}, ${y}) failed zone validation with info:`,
+    //  zoneInfo
+    //   )
+    //  }
     return result
   }
 
@@ -203,7 +203,7 @@ export class CellsToBePlaced {
   isNotInBounds () {
     for (const [x, y] of this.board.occupiedLocations()) {
       if (!this.target.boundsChecker(y, x)) {
-        console.log(`Cell at (${x}, ${y}) is out of bounds.`)
+        ///    console.log(`Cell at (${x}, ${y}) is out of bounds.`)
         return true
       }
     }
@@ -220,9 +220,9 @@ export class CellsToBePlaced {
   isOverlapping (shipCellGrid) {
     for (const [x, y] of this.board.occupiedLocations()) {
       if (shipCellGrid.has(x, y)) {
-        console.log(
-          `Cell at (${x}, ${y}) is overlapping with an existing ship.`
-        )
+        ///  console.log(
+        ///    `Cell at (${x}, ${y}) is overlapping with an existing ship.`
+        ///  )
         return true
       }
     }

@@ -462,11 +462,12 @@ export class Waters {
         onShipPlaced,
         onPlacementReset
       )
-      console.log(
+      /*     console.log(
         `Auto placement ${this.steps?.player || 'Unknown'} attempt ${
           attempt + 1
         }: ${placementSuccessful}`
       )
+        */
       if (placementSuccessful) {
         console.log(
           `Successful placement ${this.steps?.player || 'Unknown'} attempt ${

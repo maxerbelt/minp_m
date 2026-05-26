@@ -194,6 +194,11 @@ export class CellClassManager {
       contrast: 'contrast',
       tempHint: 'temp-hint'
     },
+    weaponStatus: {
+      active: 'active',
+      contrast: 'contrast',
+      tempHint: 'temp-hint'
+    },
     damage: {
       burnt: 'burnt',
       damaged: 'damaged',

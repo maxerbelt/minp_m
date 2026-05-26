@@ -572,15 +572,17 @@ export class ShipCellGrid extends GridBase {
         return placedCells
       }
     }
-
+    /*
     const failedMask = Mask.fromCoords(
       validLocations,
       this._maskedGrid.width,
       this._maskedGrid.height
     )
-    console.log(`failed grid for ship ${ship.letter}:\n`, this.toAscii)
-    console.log(`possible placement locations:\n${failedMask.toAsciiWith()}`)
+   // console.log(`failed grid for ship ${ship.letter}:\n`, this.toAscii)
+   // console.log(`possible placement locations:\n${failedMask.toAsciiWith()}`)
     console.log(bh.map.landMask.toAscii)
+
+    */
     return null
   }
 
@@ -599,20 +601,20 @@ export class ShipCellGrid extends GridBase {
     this.reset()
     const shuffledShips = Random.shuffleArray([...ships])
 
-    const numShips = shuffledShips.length
-    let placedCount = 0
+    // const numShips = shuffledShips.length
+    //   let placedCount = 0
 
     for (const ship of shuffledShips) {
       const placedCells = this._randomPlaceShip(ship)
       if (!placedCells) {
-        const numVar = ship.shape()?.placeables().length || 0
+        /*  const numVar = ship.shape()?.placeables().length || 0
         console.warn(
           `Placed (${placedCount}/${numShips}) Failed to place ship ${ship.letter} after trying all locations and ${numVar} orientations. Resetting grid.`
-        )
+        )*/
         return false
       }
       onShipPlaced?.(ship, placedCells)
-      placedCount++
+      //   placedCount++
     }
     return true
   }

@@ -807,7 +807,8 @@ export class WatersUI {
    * @param {Object<string, HTMLElement>} [container] - Optional container object to accumulate results
    * @returns {HTMLElement[]} Array of surrounding cell elements
    */
-  _surroundCellElement (cells, container) {
+
+  surroundCellElement (cells, container) {
     const map = bh.map
     const surroundings = container || {}
     for (const cell of cells) {
