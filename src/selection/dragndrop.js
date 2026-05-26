@@ -789,16 +789,19 @@ class DragNDrop {
     if (!state.selection?.ghost) return
 
     const { x, y } = this._calculatePlacementPosition(cursorX, cursorY)
-    if (!bh.map.inBounds(y, x)) return
+    if (!bh.map.inBounds(y, x)) {
+      console.log(`Placement 1 out of bounds at (${x}, ${y})`)
+      return
+    }
 
     viewModel.removeHighlight()
 
-    const { placing, canPlace, cells } = this._getPlacingAndCells(
+    const { placement, canPlace, cells } = this._getPlacingAndCells(
       x,
       y,
       shipCellGrid
     )
-    this._applyHighlights(viewModel, cells, canPlace, placing)
+    this._applyHighlights(viewModel, cells, canPlace, placement)
   }
 
   /**
@@ -835,28 +838,33 @@ class DragNDrop {
    * @private
    */
   _getPlacingAndCells (x, y, shipCellGrid) {
-    const placing = state.selection.placeable().placeAt(x, y)
-    const canPlace = placing.canPlace(shipCellGrid)
-    const cells = [...placing.board.occupiedLocations()]
-    return { placing, canPlace, cells }
+    const placement = state.selection.placeable().placeAt(x, y)
+    const canPlace = placement.canPlace(shipCellGrid)
+    if (!canPlace) {
+      const warning = placement.cantPlaceReason(shipCellGrid)
+      console.warn('Cannot place ship:', warning)
+      console.log(`Invalid placement 2 at (${x}, ${y})`)
+    }
+    const cells = [...placement.board.occupiedLocations()]
+    return { placement, canPlace, cells }
   }
 
   /**
    * Applies highlight classes to cells.
    * @param {ViewModel} viewModel - The view model
-   * @param {Array} cells - Occupied cells
+   * @param {number[][]} cells - Occupied cells
    * @param {boolean} isPlacementValid - Whether placement is valid
-   * @param {Object} placing - The placement object
+   * @param {Object} placement - The placement object
    * @returns {void}
    * @private
    */
-  _applyHighlights (viewModel, cells, isPlacementValid, placing) {
+  _applyHighlights (viewModel, cells, isPlacementValid, placement) {
     for (const [cc, rr] of cells) {
       if (bh.map.inBounds(rr, cc)) {
         const cell = viewModel.gridCellAt(rr, cc)
         const cellClass = this._getHighlightClass(
           isPlacementValid,
-          placing,
+          placement,
           cc,
           rr
         )
@@ -868,29 +876,29 @@ class DragNDrop {
   /**
    * Determines CSS class for highlighted cell based on placement validity.
    * @param {boolean} isPlacementValid - Whether placement is valid
-   * @param {Object} placing - The placement object
+   * @param {Object} placement - The placement object
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    * @returns {string} CSS class name ('good', 'notgood', or 'bad')
    * @private
    */
-  _getHighlightClass (isPlacementValid, placing, x, y) {
+  _getHighlightClass (isPlacementValid, placement, x, y) {
     if (!isPlacementValid) {
-      return this._getInvalidHighlightClass(placing, x, y)
+      return this._getInvalidHighlightClass(placement, x, y)
     }
     return 'good'
   }
 
   /**
    * Gets the highlight class for invalid placement.
-   * @param {Object} placing - The placement object
+   * @param {Object} placement - The placement object
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    * @returns {string} CSS class name ('notgood' or 'bad')
    * @private
    */
-  _getInvalidHighlightClass (placing, x, y) {
-    if (placing.notGood.at(x, y) > 0) {
+  _getInvalidHighlightClass (placement, x, y) {
+    if (placement.notGood.at(x, y) > 0) {
       return 'notgood'
     }
     return 'bad'

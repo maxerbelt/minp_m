@@ -182,8 +182,6 @@ export class PlacementUI extends WatersUI {
     this.saveBtn = undefined
     /** @type {Array<Object>|undefined} */
     this.ships = undefined
-    /** @type {Function|undefined} */
-    this.gotoNextStageAfterPlacement = undefined
   }
 
   /**

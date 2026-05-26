@@ -389,14 +389,14 @@ export class BhMap {
    * Subterrains represent specific terrain variations (water types, ground types, etc.).
    *
    * @public
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {Object} The subterrain object with properties like isDefault, tag, etc.
    */
-  subterrain (r, c) {
+  subterrain (x, y) {
     return this.subterrainTrackers.subterrain(
-      r,
-      c,
+      x,
+      y,
       this.terrain.defaultSubterrain
     )
   }
@@ -406,12 +406,12 @@ export class BhMap {
    * Zone detail includes information about terrain zones and their properties.
    *
    * @public
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {Object} Zone detail information with zone properties
    */
-  zoneDetail (r, c) {
-    return this.subterrainTrackers.zoneDetail(r, c)
+  zoneDetail (x, y) {
+    return this.subterrainTrackers.zoneDetail(x, y)
   }
 
   /**
@@ -419,12 +419,12 @@ export class BhMap {
    * A zone represents a region of similar terrain properties.
    *
    * @public
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {Object} Zone information object
    */
-  zone (r, c) {
-    return this.subterrainTrackers.zone(r, c)
+  zone (x, y) {
+    return this.subterrainTrackers.zone(x, y)
   }
 
   /**

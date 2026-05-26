@@ -41,24 +41,24 @@ export class SubTerrainTrackers {
   /**
    * Finds the tracker for the given cell coordinates.
    * @private
-   * @param {number} r - Row index
-   * @param {number} c - Column index
+   * @param {number} y - Row index
+   * @param {number} x - Column index
    * @returns {SubTerrainTracker|null} The tracker or null if not found
    */
-  _findTracker (r, c) {
-    const key = makeKey(r, c)
+  _findTracker (x, y) {
+    const key = makeKey(y, x)
     return this.list.find(tracker => tracker.total.has(key)) || null
   }
 
   /**
    * Gets the subterrain at the given coordinates.
-   * @param {number} r - Row index
-   * @param {number} c - Column index
+   * @param {number} y - Row index
+   * @param {number} x - Column index
    * @param {*} defaultValue - Value to return if no subterrain found
    * @returns {*} The subterrain or default value
    */
-  subterrain (r, c, defaultValue = null) {
-    const tracker = this._findTracker(r, c)
+  subterrain (x, y, defaultValue = null) {
+    const tracker = this._findTracker(x, y)
     return tracker ? tracker.subterrain : defaultValue
   }
 
@@ -69,8 +69,8 @@ export class SubTerrainTrackers {
    * @returns {Array} Array with subterrain and zone
    * @throws {Error} If subterrain or zone is unknown
    */
-  zoneDetail (y, x) {
-    const tracker = this._findTracker(y, x)
+  zoneDetail (x, y) {
+    const tracker = this._findTracker(x, y)
     if (!tracker) throw new Error('Unknown subterrain')
 
     const key = makeKey(y, x)
@@ -85,12 +85,12 @@ export class SubTerrainTrackers {
 
   /**
    * Gets the zone at the given coordinates.
-   * @param {number} r - Row index
-   * @param {number} c - Column index
+   * @param {number} y - Row index
+   * @param {number} x - Column index
    * @returns {Object} The zone object
    */
-  zone (r, c) {
-    return this.zoneDetail(r, c)[1]
+  zone (x, y) {
+    return this.zoneDetail(x, y)[1]
   }
 
   /**
@@ -98,7 +98,7 @@ export class SubTerrainTrackers {
    * @param {number} y - Row index
    * @param {number} x - Column index
    * @param {number} zoneDetail - Level of detail (0, 1, or 2)
-   * @returns {Array} Zone information array
+   * @returns {number[][]} Zone information array
    * @throws {Error} If zoneDetail is invalid
    */
   zoneInfo (x, y, zoneDetail) {
@@ -106,9 +106,9 @@ export class SubTerrainTrackers {
       case 0:
         return []
       case 1:
-        return [this.subterrain(y, x)]
+        return [this.subterrain(x, y)]
       case 2:
-        return this.zoneDetail(y, x)
+        return this.zoneDetail(x, y)
       default:
         throw new Error(`Invalid zone detail level: ${zoneDetail}`)
     }

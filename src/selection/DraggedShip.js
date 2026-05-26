@@ -226,7 +226,7 @@ export class DraggedShip extends SelectedShip {
    * @param {number} x
    * @param {number} y
    * @param {ShipCellGrid} shipCellGrid
-   * @returns {Array|null}
+   * @returns {number[][]|null}
    */
   placeCells (x, y, shipCellGrid) {
     if (!this.ghost) return null

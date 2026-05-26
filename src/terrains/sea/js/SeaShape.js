@@ -210,8 +210,8 @@ export class Plane extends SeaShape {
    * @param {string} description - Description of the aircraft
    * @param {string} letter - Shape identifier letter
    * @param {string} symmetry - Symmetry type
-   * @param {Array} cells - Cell configuration
-   * @param {Array} racks - Rack configuration
+   * @param {number[][]} cells - Cell configuration
+   * @param {number[][]} racks - Rack configuration
    */
   constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
