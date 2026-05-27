@@ -176,10 +176,16 @@ export class CellsToBePlaced {
    */
   isInMatchingZone (x, y) {
     const zoneInfo = this.zoneInfo(x, y)
-    if (!zoneInfo) {
+    if (!zoneInfo || zoneInfo.length === 0 || zoneInfo[0] == null) {
       return true
     }
     const result = this.validator(zoneInfo)
+    // if (!result) {
+    ///  console.log(
+    // `Position (${x}, ${y}) failed zone validation with info:`,
+    //  zoneInfo
+    //   )
+    //  }
     return result
   }
 
