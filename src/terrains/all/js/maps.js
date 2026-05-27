@@ -10,7 +10,7 @@ export const terrainsMaps = {
   /** @type {Object|null} The currently active terrain map */
   current: null,
 
-  /** @type {Array} List of all registered terrain maps */
+  /** @type {Array<Object>} List of all registered terrain maps */
   list: [],
 
   /** @type {Function} Callback function called when the current map changes */
