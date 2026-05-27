@@ -1,3 +1,16 @@
+/**
+ * @jest-environment jsdom
+ *
+ * DraggedShip integration tests
+ *
+ * Test suite for ship dragging mechanics including:
+ * - Cursor position calculation from offsets
+ * - Ship rotation, flipping, and transformation
+ * - Placement validation and cell positioning
+ * - Ghost visualization during drag operations
+ * - Integration with ship cell grid and placement system
+ */
+
 import { SeaVessel } from '../terrains/sea/js/SeaShape.js'
 import { Ship } from '../ships/Ship.js'
 import { Orbit4F } from '../variants/Orbit4F.js'
@@ -7,9 +20,27 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 
 // DraggedShip will be imported after mocks are configured
+/**
+ * Test grid for placement operations.
+ * 10x10 grid with null cells for testing ship placement mechanics.
+ *
+ * @type {ShipCellGrid}
+ */
 const shipCellGrid = new ShipCellGrid(
   Array.from({ length: 10 }, () => new Array(10).fill(null))
 )
+
+/**
+ * Mock Ghost class for testing drag visualization.
+ * Provides methods for showing/hiding and updating visual representation during dragging.
+ *
+ * @typedef {Object} MockGhost
+ * @property {jest.Mock} show - Display the ghost ship
+ * @property {jest.Mock} hide - Hide the ghost ship
+ * @property {jest.Mock} remove - Remove the ghost ship from DOM
+ * @property {jest.Mock} moveTo - Move ghost to new position
+ * @property {jest.Mock} setVariant - Update ghost visualization for rotation variant
+ */
 
 // Mock the dependencies
 jest.unstable_mockModule('./Ghost.js', () => ({
@@ -21,12 +52,25 @@ jest.unstable_mockModule('./Ghost.js', () => ({
     setVariant: jest.fn()
   }))
 }))
+
+/**
+ * Mock PlacedShips module for managing placed ships on board.
+ *
+ * @typedef {Object} MockPlacedShips
+ * @property {jest.Mock} push - Add ship to placed ships collection
+ */
 jest.unstable_mockModule('./PlacedShips.js', () => ({
   placedShipsInstance: {
     push: jest.fn().mockReturnValue({ placed: true })
   }
 }))
 
+/**
+ * Aircraft carrier shape for testing.
+ * Uses Sea terrain with T-shaped layout (8 cells total).
+ *
+ * @type {SeaVessel}
+ */
 const aircraftCarrierShape = new SeaVessel(
   'Aircraft Carrier',
   'A',
@@ -44,13 +88,27 @@ const aircraftCarrierShape = new SeaVessel(
   'place Aircraft Carrier in the sea',
   []
 )
-// @ts-ignore - SeaVessel has null weaponSystem which is compatible for testing
+
+/**
+ * Aircraft Carrier ship instance for testing.
+ * Created from SeaVessel shape with T-shaped configuration.
+ * Shape method is set to return the aircraftCarrierShape definition.
+ *
+ * @type {Ship}
+ */
+// Suppress TypeScript error: SeaVessel has null weaponSystem which is compatible at runtime
+// @ts-ignore
 const aircraftCarrier = Ship.createFromShape(aircraftCarrierShape)
-// @ts-ignore - SeaVessel has null weaponSystem which is compatible for testing
+// Suppress TypeScript error: Compatible for testing despite type mismatch
+// @ts-ignore
 aircraftCarrier.shape = () => aircraftCarrierShape
 // Initialize cells for testing
 aircraftCarrier.cells = []
 
+/**
+ * Test suite for DraggedShip integration with mocked dependencies.
+ * Tests drag operations, rotation, flipping, and ship placement mechanics.
+ */
 describe('DraggedShip integration', () => {
   /** @type {any} Mock placeable object */
   let mockPlaceable
@@ -65,11 +123,24 @@ describe('DraggedShip integration', () => {
   /** @type {any} DraggedShip class */
   let DraggedShip
 
+  /**
+   * Setup test fixture before each test.
+   * Initializes mocked Ghost constructor, creates test ship instance,
+   * and prepares DraggedShip for testing with mocked dependencies.
+   *
+   * Creates:
+   * - Ghost constructor mock with tracked instance
+   * - Mock placeable object with placement validation
+   * - DraggedShip instance with aircraft carrier and test parameters
+   *
+   * @returns {Promise<void>}
+   * @public
+   */
   beforeEach(async () => {
     // Import mocked modules before running tests
     const ghostModule = await import('./Ghost.js')
-    // @ts-ignore - Ghost is a mock constructor
-
+    // Suppress TypeScript error: Ghost is a mock constructor function
+    // @ts-ignore
     Ghost = ghostModule.Ghost
 
     // reset mocks then create a single tracked ghost instance
@@ -81,7 +152,8 @@ describe('DraggedShip integration', () => {
       moveTo: jest.fn(),
       setVariant: jest.fn()
     }
-    // @ts-ignore - Ghost is a jest mock
+    // Suppress TypeScript error: Ghost is a jest mock with mockReturnValue
+    // @ts-ignore
     Ghost.mockReturnValue(mockGhostInstance)
 
     // Create mock placeable object
@@ -99,7 +171,8 @@ describe('DraggedShip integration', () => {
 
     // Create DraggedShip instance
 
-    // @ts-ignore - source is a mock element
+    // Suppress TypeScript error: source is a mock element object for testing
+    // @ts-ignore
     draggedShip = new DraggedShip(
       aircraftCarrier,
       100, // offsetX
@@ -112,6 +185,13 @@ describe('DraggedShip integration', () => {
   })
 
   describe('constructor', () => {
+    /**
+     * Test cursor position calculation from offset and cell size.
+     * Verifies that cursor coordinates are correctly derived from pixel offsets divided by cell size.
+     * Formula: cursor[x] = offsetX / cellSize, cursor[y] = offsetY / cellSize
+     *
+     * @returns {void}
+     */
     it('should calculate cursor position from offset and cell size', () => {
       const draggedShip2 = new DraggedShip(
         aircraftCarrier,
@@ -125,8 +205,15 @@ describe('DraggedShip integration', () => {
       expect(draggedShip2.cursor).toEqual([3, 2])
     })
 
+    /**
+     * Test Ghost creation with correct parameters.
+     * Verifies that Ghost constructor is called with variant, special letter, and content builder.
+     *
+     * @returns {void}
+     */
     it('should create a Ghost with current variant and special', () => {
-      // @ts-ignore - Ghost is a jest mock
+      // Suppress TypeScript error: Ghost is a jest mock constructor
+      // @ts-ignore
       expect(Ghost).toHaveBeenCalledWith(
         expect.any(Object), // variant
         'A',
@@ -136,6 +223,12 @@ describe('DraggedShip integration', () => {
   })
 
   describe('rotate', () => {
+    /**
+     * Test offset and cursor reset on rotation.
+     * Verifies that rotation resets both offset and cursor to origin (0, 0).
+     *
+     * @returns {void}
+     */
     it('should reset offset', () => {
       draggedShip.offset = [100, 200]
       draggedShip.cursor = [3, 2]
@@ -144,6 +237,13 @@ describe('DraggedShip integration', () => {
       expect(draggedShip.cursor).toEqual([0, 0])
     })
 
+    /**
+     * Test variant index increment on rotation.
+     * Verifies that rotate() increments the variant index and updates shape properties.
+     * Tests Orbit4F variant switching behavior.
+     *
+     * @returns {void}
+     */
     it('should change index', () => {
       const variants = draggedShip.variants
       expect(variants).toBeInstanceOf(Orbit4F)
@@ -157,13 +257,29 @@ describe('DraggedShip integration', () => {
       expect(variants.index).toBe(1)
     })
 
+    /**
+     * Test Ghost visualization update on rotation.
+     * Verifies that Ghost.setVariant() is called when rotating ship.
+     *
+     * @returns {void}
+     */
     it('should update ghost variant', () => {
       const mockGhost = draggedShip.ghost
       draggedShip.rotate()
       expect(mockGhost.setVariant).toHaveBeenCalled()
     })
   })
+  /**
+   * Ship placement tests.
+   * Tests coordinate conversion and cell occupancy validation.
+   */
   describe('placing', () => {
+    /**
+     * Test placeable object generation and placement at coordinates.
+     * Verifies board dimensions, store configuration, and placed cell locations.
+     *
+     * @returns {void}
+     */
     it('placeable', () => {
       const placeable = draggedShip.placeable()
       const pb = placeable.board
