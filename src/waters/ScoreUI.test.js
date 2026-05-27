@@ -188,8 +188,8 @@ describe('ScoreUI', () => {
 
   describe('display', () => {
     it('should update shots text content', () => {
-      scoreUI.display([], 1, 0, 5)
-      expect(scoreUI.shots.textContent).toBe('5')
+      scoreUI?.display([], 1, 0, 5, 0, 0)
+      expect(scoreUI?.shots?.textContent).toBe('5')
     })
 
     it('should calculate and display hits from ships', () => {
@@ -197,41 +197,48 @@ describe('ScoreUI', () => {
         { getTotalHits: jest.fn(() => 2) },
         { getTotalHits: jest.fn(() => 3) }
       ]
-      scoreUI.display(mockShips, 0, 0)
-      expect(scoreUI.hits.textContent).toBe('5')
+      scoreUI?.display(mockShips, 0, 0, 0, 0, 0)
+      expect(scoreUI?.hits?.textContent).toBe('5')
     })
+
     it('should handle zero shots', () => {
-      scoreUI.display([], 0, 0)
-      expect(scoreUI.shots.textContent).toBe('')
+      scoreUI?.display([], 0, 0, 0, 0, 0)
+      expect(scoreUI?.shots?.textContent).toBe('')
     })
 
     describe('displacementDescription', () => {
       it('should return "empty" for very low ratio', () => {
-        expect(scoreUI.displacementDescription(0.01)).toBe('empty')
+        expect(scoreUI?.displacementDescription(0.01)).toBe('empty')
       })
 
       it('should return "lonely" for low ratio', () => {
-        expect(scoreUI.displacementDescription(0.1)).toBe('lonely')
+        expect(scoreUI?.displacementDescription(0.1)).toBe('lonely')
       })
 
       it('should return "very squeezy" for very high ratio', () => {
-        expect(scoreUI.displacementDescription(0.99)).toBe('very squeezy')
+        expect(scoreUI?.displacementDescription(0.99)).toBe('very squeezy')
       })
 
       describe('createZoneEntry', () => {
         beforeEach(() => {
-          globalThis.document.createElement = jest.fn(tag => ({
-            createElement: jest.fn(),
-            appendChild: jest.fn(),
-            style: {},
-            className: tag,
-            textContent: '',
-            classList: { add: jest.fn() }
-          }))
+          globalThis.document.createElement = jest.fn(
+            /**
+             * @param {string} tag
+             */
+            tag =>
+              /** @type {any} */ ({
+                createElement: jest.fn(),
+                appendChild: jest.fn(),
+                style: {},
+                className: tag,
+                textContent: '',
+                classList: { add: jest.fn() }
+              })
+          )
         })
 
         it('should create entry with label and count', () => {
-          const result = scoreUI.createZoneTextEntry(
+          const result = scoreUI?.createZoneTextEntry(
             'Test',
             'value',
             'b',
@@ -241,92 +248,124 @@ describe('ScoreUI', () => {
         })
 
         it('should append entry to zone element', () => {
-          scoreUI.zone.appendChild = jest.fn()
-          scoreUI.createZoneTextEntry('Zone', 'value', 'span', '')
-          expect(scoreUI.zone.appendChild).toHaveBeenCalled()
+          if (scoreUI?.zone) {
+            scoreUI.zone.appendChild = jest.fn()
+          }
+          scoreUI?.createZoneTextEntry('Zone', 'value', 'span', '')
+          expect(scoreUI?.zone?.appendChild).toHaveBeenCalled()
         })
       })
 
       describe('createZoneTitle', () => {
         beforeEach(() => {
-          globalThis.document.createElement = jest.fn(() => ({
-            appendChild: jest.fn(),
-            style: {},
-            textContent: ''
-          }))
+          globalThis.document.createElement = jest.fn(
+            () =>
+              /** @type {any} */ ({
+                appendChild: jest.fn(),
+                style: {},
+                textContent: ''
+              })
+          )
         })
 
         it('should call createZoneEntry with b tag', () => {
           const zoneData = new Set()
-          scoreUI.zone.appendChild = jest.fn()
-          scoreUI.createZoneTitle('Title', zoneData)
-          expect(scoreUI.zone.appendChild).toHaveBeenCalled()
+          if (scoreUI?.zone) {
+            scoreUI.zone.appendChild = jest.fn()
+          }
+          scoreUI?.createZoneTitle('Title', zoneData)
+          expect(scoreUI?.zone?.appendChild).toHaveBeenCalled()
         })
       })
 
       describe('createZoneItem', () => {
         beforeEach(() => {
-          globalThis.document.createElement = jest.fn(() => ({
-            appendChild: jest.fn(),
-            style: {},
-            textContent: ''
-          }))
+          globalThis.document.createElement = jest.fn(
+            () =>
+              /** @type {any} */ ({
+                appendChild: jest.fn(),
+                style: {},
+                textContent: ''
+              })
+          )
         })
 
         it('should call createZoneEntry with span tag', () => {
           const zoneData = new Set()
-          scoreUI.zone.appendChild = jest.fn()
-          scoreUI.createZoneItem('Item', zoneData)
-          expect(scoreUI.zone.appendChild).toHaveBeenCalled()
+          if (scoreUI?.zone) {
+            scoreUI.zone.appendChild = jest.fn()
+          }
+          scoreUI?.createZoneItem('Item', zoneData)
+          expect(scoreUI?.zone?.appendChild).toHaveBeenCalled()
         })
       })
 
       describe('resetTallyBox', () => {
         it('should clear tallyBox innerHTML', () => {
-          scoreUI.tallyBox.innerHTML = '<div>content</div>'
-          scoreUI.resetTallyBox()
-          expect(scoreUI.tallyBox.innerHTML).toBe('')
+          if (scoreUI?.tallyBox) {
+            scoreUI.tallyBox.innerHTML = '<div>content</div>'
+          }
+          scoreUI?.resetTallyBox()
+          expect(scoreUI?.tallyBox?.innerHTML).toBe('')
         })
       })
 
       describe('buildShipBox', () => {
         beforeEach(() => {
-          globalThis.document.createElement = jest.fn(tag => ({
-            className: tag,
-            textContent: '',
-            style: {},
-            classList: { add: jest.fn() }
-          }))
+          globalThis.document.createElement = jest.fn(
+            /**
+             * @param {string} tag
+             */
+            tag =>
+              /** @type {any} */ ({
+                className: tag,
+                textContent: '',
+                style: {},
+                classList: { add: jest.fn() }
+              })
+          )
         })
 
         it('should create div with ship letter', () => {
           const mockShip = { letter: 'B', sunk: false }
-          const box = scoreUI.buildShipBox(mockShip)
+          const box = scoreUI?.buildShipBox(mockShip)
           expect(box).toBeDefined()
         })
 
         it('should show X for sunk ships', () => {
-          globalThis.document.createElement = jest.fn(tag => ({
-            className: tag,
-            textContent: '',
-            style: { background: '', color: '' },
-            classList: { add: jest.fn() }
-          }))
+          globalThis.document.createElement = jest.fn(
+            /**
+             * @param {string} tag
+             */
+            tag =>
+              /** @type {any} */ ({
+                className: tag,
+                textContent: '',
+                style: { background: '', color: '' },
+                classList: { add: jest.fn() }
+              })
+          )
           const mockShip = { letter: 'B', sunk: true }
-          const box = scoreUI.buildShipBox(mockShip)
-          expect(box.textContent).toBe('X')
+          const box = scoreUI?.buildShipBox(mockShip)
+          expect(box?.textContent).toBe('X')
         })
 
         it('should show letter for unsunk ships', () => {
-          globalThis.document.createElement = jest.fn(tag => ({
-            className: tag,
-            textContent: '',
-            style: { background: '', color: '' },
-            classList: { add: jest.fn() }
-          }))
+          globalThis.document.createElement = jest.fn(
+            /**
+             * @param {string} tag
+             */
+            tag =>
+              /** @type {any} */ ({
+                className: tag,
+                textContent: '',
+                style: { background: '', color: '' },
+                classList: { add: jest.fn() }
+              })
+          )
           const mockShip = { letter: 'D', sunk: false }
-          const box = scoreUI.buildShipBox(mockShip)
-          expect(box.textContent).toBe('D')
+          const box = scoreUI?.buildShipBox(mockShip)
+          expect(box?.textContent).toBe('D')
         })
       })
 
