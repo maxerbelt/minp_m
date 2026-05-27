@@ -1515,8 +1515,22 @@ export class Waters {
 
     this.giveTempHint(weapon, cell, oppo)
     this.addSource(oppo, launchR, launchC, rack, cell)
-    // @ts-ignore - steps.addRack method accepts rack object directly
-    const rackInfo = this.steps?.addRack?.(rack) || { shadowR: 0, shadowC: 0 }
+    // Construct proper params object for addRack with all required properties
+    const addRackParams = {
+      rack,
+      weapon,
+      wletter: letter,
+      weaponId,
+      r: launchR,
+      c: launchC,
+      cell,
+      hintR,
+      hintC
+    }
+    const rackInfo = this.steps?.addRack?.(addRackParams) || {
+      shadowR: 0,
+      shadowC: 0
+    }
     const { shadowR, shadowC } = rackInfo
 
     if (letter && this.loadOut) {

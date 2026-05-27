@@ -1,5 +1,5 @@
 import { bh } from '../terrains/all/js/bh.js'
-import { Placement } from './Placement.js'
+import { Placement } from './placement.js'
 import { customUI } from './customUI.js'
 import { placedShipsInstance } from '../selection/PlacedShips.js'
 

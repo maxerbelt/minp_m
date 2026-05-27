@@ -37,12 +37,15 @@ import { bh } from '../../terrains/all/js/bh.js'
  *
  * @property {CellClassGroup} display - Visual state indicators (hit, miss, semi, wake, placed, sunk)
  * @property {CellClassGroup} weapon - Weapon placement, targeting, and active states
+ * @property {CellClassGroup} weaponStatus - Weapon  targeting, and active states
  * @property {CellClassGroup} damage - Damage type indicators (burnt, damaged, skull)
  * @property {CellClassGroup} placement - Ship placement phase states
  * @property {CellClassGroup} edge - Board edge and terrain types (land, sea, light, dark, edges)
  * @property {CellClassGroup} hint - User hint indicators for suggested locations
  * @property {CellClassGroup} orientation - Ship rotation/orientation states (turn2, turn3, turn4)
  * @property {CellClassGroup} animation - Animated state indicators (marker, portal)
+ *
+ *
  */
 
 /**

@@ -735,7 +735,7 @@ describe('CellsToBePlaced', () => {
       })
 
       const grid = makeGrid(5, 5, null)
-      grid.set(2, 2, 'EXISTING_SHIP')
+      grid.set(2, 2, 102)
       expect(placing.isOverlapping(grid)).toBe(true)
     })
 
@@ -756,7 +756,7 @@ describe('CellsToBePlaced', () => {
       })
 
       const grid = makeGrid(5, 5, null)
-      grid.set(2, 4, 'SHIP') // second cell
+      grid.set(2, 4, 103) // second cell
       expect(placing.isOverlapping(grid)).toBe(true)
     })
   })
@@ -1017,11 +1017,12 @@ describe('CellsToBePlaced', () => {
         [0, 1],
         [0, 2]
       ]
-      /** @type {any} */
+      /** @type {Mask} */
       const board = Mask.fromCoords(shipShape)
       /** @type {any} */
       const target = {
-        boundsChecker: (r, c) => r >= 0 && r < 10 && c >= 0 && c < 10,
+        boundsChecker: (/** @type {number} */ r, /** @type {number} */ c) =>
+          r >= 0 && r < 10 && c >= 0 && c < 10,
         getZone: () => ({ detail: 'WATER' })
       }
       const validator = z => z.detail === 'WATER'
@@ -1056,7 +1057,8 @@ describe('CellsToBePlaced', () => {
       const board = Mask.fromCoords(shipShape)
       /** @type {any} */
       const target = {
-        boundsChecker: (r, c) => r >= 0 && r < 10 && c >= 0 && c < 10,
+        boundsChecker: (/** @type {number} */ r, /** @type {number} */ c) =>
+          r >= 0 && r < 10 && c >= 0 && c < 10,
         getZone: () => ({ detail: 'WATER' })
       }
 

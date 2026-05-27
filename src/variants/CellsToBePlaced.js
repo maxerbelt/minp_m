@@ -137,7 +137,7 @@ export class CellsToBePlaced {
    * @returns {ZoneInfo} Zone information for the position.
    */
   zoneInfo (x, y, zoneDetail) {
-    return this.target.getZone(x, y, zoneDetail ?? this.zoneDetail)
+    return this.target.getZone(y, x, zoneDetail ?? this.zoneDetail)
   }
 
   /**

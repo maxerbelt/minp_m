@@ -40,7 +40,7 @@ import { bh } from '../../terrains/all/js/bh.js'
 /**
  * Callback for making key identifiers
  * @callback MakeKeyIdsCallback
- * @returns {string[]}
+ * @returns {string}
  */
 
 /**

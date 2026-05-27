@@ -43,6 +43,15 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
  * @property {() => boolean} hasFewShips - Method checking if ship count is low
  * @property {() => number} calculateDisplacedArea - Method to calculate total displaced area of ships
  */
+/**
+ * @typedef {Object} Weapon
+ * @property {string} tag - Weapon identifier
+ * @property {string} letter - Weapon letter
+ * @property {string} name - Weapon name
+ * @property {number} splashPower - Splash damage power level (0-3 for vulnerable/normal/hardened/immune)
+ * @property {number[][]} splashCoords - Splash coordinate mappings [x, y, value]
+ * @property {number[][] | undefined} [crashCoords] - Crash coordinate mappings (optional)
+ */
 
 /**
  * Cursor direction delta for arrow key navigation.
@@ -50,7 +59,16 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
  * @property {number} dx - Row delta (-1, 0, or 1)
  * @property {number} dy - Column delta (-1, 0, or 1)
  */
-
+/**
+ * @typedef {Object} ShipShape
+ * Ship shape definition
+ * @property {string} symmetry - Symmetry type
+ * @property {string} letter - Ship letter identifier
+ * @property {Object<string, any>} weaponSystem - Weapon system configuration
+ * @property {string} [tallyGroup] - Tally group identifier
+ * @property {(filter?: Function) => ShipShape[]} [placeables] - Available placement variants
+ * @property {(variant: number, r: number, c: number) => CoordinatePair[]} [placeCells] - Calculate placement cells
+ */
 export class PlacementUI extends WatersUI {
   /**
    * CSS class names for styling and state management.
@@ -416,7 +434,7 @@ export class PlacementUI extends WatersUI {
    * - Calls additionalSetup callback on each cell if provided
    *
    * @param {GameModel} model - Game model containing placement rules and state
-   * @param {Function} [additionalSetup] - Optional callback for additional cell configuration
+   * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration
    * @returns {void}
    */
   #configureBoardCellsForDrop (model, additionalSetup) {
@@ -1033,7 +1051,7 @@ export class PlacementUI extends WatersUI {
    * - Appends splash visualization cells to tray
    *
    * @param {Array<[number, number, number]>} cells - Array of [row, col, power] for splash cells
-   * @param {Object} weapon - Weapon object with tag property
+   * @param {Weapon} weapon - Weapon object with tag property
    * @param {Object<string, string>} legend - Map of power level to legend text
    * @param {string} [splashType='splash'] - Type of splash (splash or crash)
    * @returns {void}
@@ -1082,7 +1100,7 @@ export class PlacementUI extends WatersUI {
    * - Appends container to tray
    * - Calls setDragShipContents to populate drag preview
    *
-   * @param {Object} shape - Shape object with board, letter, and descriptionText properties
+   * @param {ShipShape} shape - Shape object with board, letter, and descriptionText properties
    * @param {number} count - Number of ships of this type/form
    * @param {HTMLElement} tray - Tray element to add item to
    * @returns {void}
