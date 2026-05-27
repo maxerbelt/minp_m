@@ -2,23 +2,36 @@ import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
 import { makeKey } from '../core/utilities.js'
 
 /**
- * @typedef {import('./CellsToBePlaced.js').ZoneInfo} ZoneInfo
- * @typedef {any} Weapon
- *
- * @typedef {Object} SubGroupWithCells
- * @property {Array<[number, number]>} cells - Array of cell coordinates [row, column]
- * @property {(x: number, y: number) => boolean} [isCandidate] - Optional: Checks if position is a candidate cell
- * @property {(zoneInfo: ZoneInfo) => boolean} [validator] - Optional: Validates zone constraints
- *
+ * @typedef {import('./Cell3sToBePlaced.js').ZoneInfo} ZoneInfo
+ * @typedef {import('./Cell3sToBePlaced.js').Placeable3Type} Placeable3Type
+ * @typedef {import('./Cell3sToBePlaced.js').SubGroupPlaced} SubGroupPlaced
+ */
+
+/**
+ * Generic weapon type - represents any weapon object.
+ * Can be extended by consumers to more specific weapon types.
+ * @typedef {Object} Weapon
+ * @property {*} [key] - Weapons may have any properties as determined by the game rules
+ */
+
+/**
+ * Coordinate-keyed mapping of weapons to cell positions.
+ * Maps string keys (created from cell coordinates) to weapon objects.
+ * Enables O(1) lookup of weapons by their grid position.
  * @typedef {Object.<string, Weapon>} WeaponCellMap
  */
 
 /**
- * Represents weapon cells to be placed on the grid with weapon associations.
- * Extends Cell3sToBePlaced to associate weapons with specific cell positions
- * using a coordinate-keyed mapping system. The second subgroup provides the cell
- * positions where weapons will be placed, and weapons are mapped to these positions
- * using coordinate keys for efficient lookup.
+ * Represents weapon cells to be placed on the grid with weapon-to-cell associations.
+ *
+ * This class extends Cell3sToBePlaced to manage weapon placement by:
+ * - Extracting special weapon cell positions from the second subgroup
+ * - Maintaining a coordinate-keyed weapon mapping for efficient lookup
+ * - Validating weapon placement zones using parent class validation methods
+ * - Tracking variant information for different weapon placement strategies
+ *
+ * The weapon mapping uses coordinate keys for efficient O(1) access to find which
+ * weapon is associated with a given cell position.
  *
  * @class CellWsToBePlaced
  * @extends Cell3sToBePlaced
@@ -26,37 +39,52 @@ import { makeKey } from '../core/utilities.js'
 export class CellWsToBePlaced extends Cell3sToBePlaced {
   /**
    * The variant index identifying which weapon variant this represents.
-   * Used to track and distinguish between different weapon placement variants.
-   * Can be null if variant tracking is not required.
+   * Used to distinguish between different weapon placement variants in the game.
+   * When null, variant tracking is disabled.
+   *
    * @type {number | null}
+   * @public
    */
   variant
 
   /**
-   * Map of weapons indexed by cell coordinate key.
-   * Keys are created from cell coordinates using makeKey utility.
-   * Each weapon is associated with a specific cell position for lookup efficiency.
+   * Map of weapons indexed by coordinate key.
+   * Keys are created from cell coordinates using the makeKey utility function.
+   * Provides O(1) lookup of the weapon associated with a cell position.
+   *
+   * Format: Key = makeKey(row, column), Value = Weapon object
+   *
    * @type {WeaponCellMap}
+   * @public
    */
   weapons
 
   /**
    * Creates weapon cells to be placed with weapon-to-cell associations.
-   * Initializes the parent Cell3sToBePlaced and extracts special cells from
-   * the second subgroup. Creates a weapon-to-cell mapping using coordinate keys
-   * for efficient lookup of weapons by position.
    *
-   * @param {import('./Cell3sToBePlaced.js').Placeable3Type} placeable3 - The placeable3 instance
-   *   with board, validator, zone detail, target, and subgroups. Must include at least
-   *   two subgroups where the second contains the special weapon cell positions.
+   * Initializes the parent Cell3sToBePlaced class and creates a weapon-to-cell
+   * mapping using coordinate keys from the second subgroup's cell positions.
+   * Each weapon in the array is associated with the corresponding cell in the
+   * second subgroup by array index.
+   *
+   * @param {Placeable3Type} placeable3 - The 3D placeable configuration
+   *   - board: The board to embed cells into (Board-compatible object)
+   *   - validator: Zone validation function (zoneInfo: ZoneInfo) => boolean
+   *   - zoneDetail: Zone detail level for validation (0=none, 1=subterrain, 2=zone)
+   *   - target: Placement target with bounds and zone info
+   *   - subGroups: Array of subgroup factories; subGroups[1] must contain weapon cells
    * @param {number} x - The x-coordinate (column) position for embedding cells (0-based index)
    * @param {number} y - The y-coordinate (row) position for embedding cells (0-based index)
    * @param {Weapon[]} weapons - Array of weapons to associate with cells.
-   *   Must have length equal to the number of cells in the second subgroup.
-   * @param {number | null} variant - The variant index for tracking which variant this is.
-   *   Can be null if variant tracking is not needed.
-   * @throws {TypeError} If subGroups[1] is missing or lacks cells property
-   * @throws {Error} If weapons array length doesn't match special cells count
+   *   Length MUST equal the number of cells in subGroups[1].cells.
+   *   Index i maps to cell i in the second subgroup.
+   * @param {number | null} variant - The variant index for tracking placement strategy.
+   *   Pass null if variant tracking is not needed.
+   *
+   * @throws {Error} If subGroups[1] is missing or lacks cells property
+   * @throws {Error} If weapons array length does not match special cells count
+   *
+   * @public
    */
   constructor (placeable3, x, y, weapons, variant) {
     super(placeable3, x, y)
@@ -73,13 +101,20 @@ export class CellWsToBePlaced extends Cell3sToBePlaced {
 
   /**
    * Checks if a position is in a matching zone for weapon placement.
-   * Validates the position against zone requirements inherited from parent class.
-   * A position is valid if it passes the zone info validation.
+   *
+   * Validates the position against zone requirements by:
+   * 1. Getting the zone information at the position
+   * 2. Passing it to the inherited validator function
+   * 3. Returning the validation result
+   *
+   * A position is valid if the zone validator approves it for weapon placement.
    *
    * @param {number} x - The x-coordinate (column) to check (0-based index)
    * @param {number} y - The y-coordinate (row) to check (0-based index)
+   *
    * @returns {boolean} True if the position is in a valid zone for this weapon variant,
-   *   false otherwise
+   *   false if the position fails zone validation
+   *
    * @public
    */
   isInMatchingZone (x, y) {
@@ -89,11 +124,18 @@ export class CellWsToBePlaced extends Cell3sToBePlaced {
 
   /**
    * Checks if any cell is positioned in an invalid zone.
-   * Iterates through all placed cells and validates their zone compliance.
-   * Returns true if any single cell fails zone validation.
+   *
+   * Validates all placed cells against zone requirements by:
+   * 1. Iterating through this.cells (inherited from parent CellsToBePlaced)
+   * 2. Checking each cell with isInMatchingZone()
+   * 3. Returning true if any cell fails validation
+   *
+   * This is a simplified zone validation method that differs from the parent
+   * Cell3sToBePlaced.isWrongZone() in that it does not update the notGood mask.
    *
    * @returns {boolean} True if any cell is in a zone that fails validation,
-   *   false if all cells pass validation
+   *   false if all cells pass zone validation
+   *
    * @public
    */
   isWrongZone () {
