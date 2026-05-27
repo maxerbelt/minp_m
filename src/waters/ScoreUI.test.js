@@ -5,15 +5,18 @@
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 /**
- * @typedef {import('./ScoreUI.js').ScoreUI} ScoreUI
+ * @typedef {import('./ScoreUI.js').ScoreUI} ScoreUIType
  */
 
-// ScoreUI will be imported dynamically after mocks are set up
 /**
- * Reference to ScoreUI class.
- * @type {ScoreUI|undefined}
+ * Reference to ScoreUI class (constructor).
+ * @type {typeof import('./ScoreUI.js').ScoreUI}
  */
 let ScoreUI
+
+/**
+ * @typedef {(zone: any) => void} DisplayDisplacedAreaCallback
+ */
 
 // Mock dependencies
 // Provide a fake bh module used by ScoreUI (imports from ../terrains/all/js/bh.js)
@@ -22,6 +25,10 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
     map: {
       subterrainTrackers: {
         setupZoneInfo: jest.fn().mockReturnValue([]),
+        /**
+         * @param {any} _map - The map to display
+         * @param {DisplayDisplacedAreaCallback} callback - Callback function
+         */
         displayDisplacedArea: jest.fn((_map, callback) => {
           callback(
             { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
@@ -39,6 +46,8 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
 
 // terrain.js is also imported by ScoreUI but only the terrain-related exports
 // are needed here; keep the existing mocks for those.
+// terrain.js is also imported by ScoreUI but only the terrain-related exports
+// are needed here; keep the existing mocks for those.
 jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   all: { title: 'All Terrain' },
   mixed: { title: 'Mixed Terrain' },
@@ -51,8 +60,15 @@ jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   }
 }))
 
+/**
+ * @typedef {(tag: string, options?: any) => HTMLElement} CreateElementFn
+ */
+
 jest.unstable_mockModule('../selection/dragndrop.js', () => ({
   dragNDrop: {
+    /**
+     * @param {any} _element - Element to make draggable
+     */
     makeDraggable: jest.fn()
   }
 }))
@@ -60,13 +76,13 @@ jest.unstable_mockModule('../selection/dragndrop.js', () => ({
 describe('ScoreUI', () => {
   /**
    * Instance of ScoreUI for testing.
-   * @type {ScoreUI|undefined}
+   * @type {InstanceType<typeof ScoreUI>|undefined}
    */
   let scoreUI
 
   /**
    * Mock element references for tests.
-   * @type {Record<string, any>}
+   * @type {Record<string, {textContent?: string, innerHTML?: string, appendChild?: jest.Mock, style?: Record<string, string>, className?: string, classList?: {add?: jest.Mock}}>}
    */
   let mockElements
 
@@ -86,6 +102,10 @@ describe('ScoreUI', () => {
     // Restore the mocks to their expected state after jest.clearAllMocks()
     bh.map.subterrainTrackers.setupZoneInfo.mockReturnValue([])
     bh.map.subterrainTrackers.displayDisplacedArea.mockImplementation(
+      /**
+       * @param {any} _map
+       * @param {DisplayDisplacedAreaCallback} callback
+       */
       (_map, callback) => {
         callback(
           { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
@@ -120,36 +140,42 @@ describe('ScoreUI', () => {
     }
 
     // Mock document.getElementById
-    globalThis.document.getElementById = jest.fn(id => mockElements[id])
+    globalThis.document.getElementById = jest.fn(
+      /**
+       * @param {string} id
+       */
+      id => mockElements[id]
+    )
 
     scoreUI = new ScoreUI('player1')
   })
 
   describe('constructor', () => {
     it('should initialize element references', () => {
-      expect(scoreUI.shots).toBe(mockElements['player1-shots'])
-      expect(scoreUI.hits).toBe(mockElements['player1-hits'])
-      expect(scoreUI.sunk).toBe(mockElements['player1-sunk'])
+      expect(scoreUI?.shots).toBe(mockElements['player1-shots'])
+      expect(scoreUI?.hits).toBe(mockElements['player1-hits'])
+      expect(scoreUI?.sunk).toBe(mockElements['player1-sunk'])
     })
 
     it('should initialize all element properties', () => {
-      expect(scoreUI.placed).toBe(mockElements['player1-placed'])
-      expect(scoreUI.weaponsPlaced).toBe(mockElements['player1-weapons'])
-      expect(scoreUI.zone).toBe(mockElements['player1-zone'])
+      expect(scoreUI?.placed).toBe(mockElements['player1-placed'])
+      expect(scoreUI?.weaponsPlaced).toBe(mockElements['player1-weapons'])
+      expect(scoreUI?.zone).toBe(mockElements['player1-zone'])
     })
 
     it('should initialize label references', () => {
-      expect(scoreUI.shotsLabel).toBe(mockElements['player1-shots-label'])
-      expect(scoreUI.hitsLabel).toBe(mockElements['player1-hits-label'])
-      expect(scoreUI.sunkLabel).toBe(mockElements['player1-sunk-label'])
+      expect(scoreUI?.shotsLabel).toBe(mockElements['player1-shots-label'])
+      expect(scoreUI?.hitsLabel).toBe(mockElements['player1-hits-label'])
+      expect(scoreUI?.sunkLabel).toBe(mockElements['player1-sunk-label'])
     })
 
     it('should initialize zoneSync as empty array', () => {
-      expect(scoreUI.zoneSync).toEqual([])
+      expect(scoreUI?.zoneSync).toEqual([])
     })
 
     it('should use provided prefix for element IDs', () => {
-      const _newScoreUI = new ScoreUI('player2')
+      // eslint-disable-next-line no-new
+      new ScoreUI('player2')
 
       expect(globalThis.document.getElementById).toHaveBeenCalledWith(
         'player2-shots'
