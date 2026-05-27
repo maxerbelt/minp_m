@@ -2193,7 +2193,7 @@ export class Waters {
    */
   addWake (cell, r, c, weapon) {
     // @ts-ignore - weapon is Weapon at runtime with hasWake property
-    if (!weapon || !weapon?.hasWake) return
+    if (!weapon?.hasWake) return
     if (
       !cell?.classList?.contains('frd-hit') &&
       !cell?.classList?.contains('miss') &&
@@ -2236,10 +2236,7 @@ export class Waters {
     // @ts-ignore - add isSplash property at runtime
     options.isSplash = true
     // @ts-ignore - accumulate result properly
-    this.accumulateResult(
-      await this.destroy(weapon, splashEffect, options),
-      result
-    )
+    this.accumulateResult(this.destroy(weapon, splashEffect, options), result)
     return result
   }
 
