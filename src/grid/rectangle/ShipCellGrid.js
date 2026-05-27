@@ -359,11 +359,11 @@ export class ShipCellGrid extends GridBase {
    *
    * @param {number} row - Row coordinate of center cell (0-indexed from top)
    * @param {number} col - Column coordinate of center cell (0-indexed from left)
-   * @param {(row: number, col: number) => boolean} _boundsChecker - Bounds validation callback
+   * @param {(row: number, col: number) => boolean} boundsChecker - Bounds validation callback
    * @returns {boolean} True if all 8 surrounding cells are empty
    */
-  isAreaClearAroundRowCol (row, col, _boundsChecker) {
-    /*  for (let nr = row - 1; nr <= row + 1; nr++) {
+  isAreaClearAroundRowCol (row, col, boundsChecker) {
+    for (let nr = row - 1; nr <= row + 1; nr++) {
       for (let nc = col - 1; nc <= col + 1; nc++) {
         if (boundsChecker(nr, nc) && this.hasRC(nr, nc)) {
           return false
@@ -371,8 +371,6 @@ export class ShipCellGrid extends GridBase {
       }
     }
     return true
-    */
-    return !this.hasRC(row, col)
   }
 
   /**

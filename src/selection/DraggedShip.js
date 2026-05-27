@@ -230,6 +230,7 @@ export class DraggedShip extends SelectedShip {
    */
   placeCells (x, y, shipCellGrid) {
     if (!this.ghost) return null
+    if (!this.canPlaceRaw(x, y, shipCellGrid)) return null
     const [offsetX, offsetY] = this.offsetCell(x, y)
 
     return this.addCurrentToShipCells(offsetX, offsetY, shipCellGrid)
@@ -302,7 +303,8 @@ export class DraggedShip extends SelectedShip {
    */
   addCurrentToShipCells (x, y, shipCellGrid) {
     const placeable = this._currentPlaceable()
-    const placement = placeable.placeAt(x, y)
-    return this.ship.placeOnGrid(shipCellGrid, placement)
+    this.ship.placePlacement(placeable, x, y)
+    this.ship.addToGrid(shipCellGrid)
+    return this.ship.cells
   }
 }
