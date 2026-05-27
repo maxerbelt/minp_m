@@ -14,7 +14,47 @@ import { Waters } from './Waters.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 import { bh } from '../terrains/all/js/bh.js'
 
-/**\n * Mock UI object for testing game interactions.\n * Provides Jest mock functions for all UI operations needed by Waters class.\n *\n * @typedef {Object} MockUI\n * @property {jest.Mock} placement - Mock placement callback\n * @property {jest.Mock} placeTally - Mock tally update\n * @property {jest.Mock} displayShipInfo - Mock ship info display\n * @property {jest.Mock} clearPlaceVisuals - Mock visual clear for placement\n * @property {jest.Mock} clearVisuals - Mock general visual clear\n * @property {Object} board - Mock board DOM element with classList and children\n * @property {jest.Mock} displayFleetSunk - Mock sunk fleet display\n * @property {jest.Mock} displaySurround - Mock surround display\n * @property {jest.Mock} cellHit - Mock cell hit callback\n * @property {jest.Mock} cellMiss - Mock cell miss callback\n * @property {jest.Mock} cellSunkAt - Mock cell sunk at callback\n * @property {jest.Mock} gridCellAt - Mock cell lookup by coordinates\n * @property {Object} trayManager - Mock ship tray manager\n * @property {jest.Mock} removeDragShip - Mock drag removal\n * @property {jest.Mock} cellSize - Mock cell size getter\n * @property {jest.Mock} surroundCells - Mock surround cells\n * @property {jest.Mock} surroundCellElement - Mock surround cell element\n * @property {jest.Mock} makeDroppable - Mock draggable setup\n * @property {jest.Mock} reset - Mock reset callback\n * @property {jest.Mock} buildBoard - Mock board construction\n * @property {jest.Mock} buildTrays - Mock tray construction\n * @property {jest.Mock} showStatus - Mock status display\n * @property {jest.Mock} showTips - Mock tips display\n * @property {jest.Mock} hideTips - Mock tips hiding\n * @property {jest.Mock} displayInfo - Mock info display\n * @property {jest.Mock} showTransformBtns - Mock transform buttons show\n * @property {jest.Mock} hideTransformBtns - Mock transform buttons hide\n * @property {jest.Mock} showTestBtns - Mock test buttons show\n * @property {jest.Mock} hideTestBtns - Mock test buttons hide\n * @property {jest.Mock} standardPanels - Mock standard panels\n * @property {Object} newPlacementBtn - Mock new placement button\n * @property {Object} testBtn - Mock test button\n * @property {Object} seekBtn - Mock seek button\n * @property {Object} stopBtn - Mock stop button\n * @property {Object} score - Mock score display system\n */
+/**
+ * Mock UI object for testing game interactions.
+ * Provides Jest mock functions for all UI operations needed by Waters class.
+ *
+ * @typedef {Object} MockUI
+ * @property {jest.Mock} placement - Mock placement callback
+ * @property {jest.Mock} placeTally - Mock tally update
+ * @property {jest.Mock} displayShipInfo - Mock ship info display
+ * @property {jest.Mock} clearPlaceVisuals - Mock visual clear for placement
+ * @property {jest.Mock} clearVisuals - Mock general visual clear
+ * @property {Object} board - Mock board DOM element with classList and children
+ * @property {jest.Mock} displayFleetSunk - Mock sunk fleet display
+ * @property {jest.Mock} displaySurround - Mock surround display
+ * @property {jest.Mock} cellHit - Mock cell hit callback
+ * @property {jest.Mock} cellMiss - Mock cell miss callback
+ * @property {jest.Mock} cellSunkAt - Mock cell sunk at callback
+ * @property {jest.Mock} gridCellAt - Mock cell lookup by coordinates
+ * @property {Object} trayManager - Mock ship tray manager
+ * @property {jest.Mock} removeDragShip - Mock drag removal
+ * @property {jest.Mock} cellSize - Mock cell size getter
+ * @property {jest.Mock} surroundCells - Mock surround cells
+ * @property {jest.Mock} surroundCellElement - Mock surround cell element
+ * @property {jest.Mock} makeDroppable - Mock draggable setup
+ * @property {jest.Mock} reset - Mock reset callback
+ * @property {jest.Mock} buildBoard - Mock board construction
+ * @property {jest.Mock} buildTrays - Mock tray construction
+ * @property {jest.Mock} showStatus - Mock status display
+ * @property {jest.Mock} showTips - Mock tips display
+ * @property {jest.Mock} hideTips - Mock tips hiding
+ * @property {jest.Mock} displayInfo - Mock info display
+ * @property {jest.Mock} showTransformBtns - Mock transform buttons show
+ * @property {jest.Mock} hideTransformBtns - Mock transform buttons hide
+ * @property {jest.Mock} showTestBtns - Mock test buttons show
+ * @property {jest.Mock} hideTestBtns - Mock test buttons hide
+ * @property {jest.Mock} standardPanels - Mock standard panels
+ * @property {Object} newPlacementBtn - Mock new placement button
+ * @property {Object} testBtn - Mock test button
+ * @property {Object} seekBtn - Mock seek button
+ * @property {Object} stopBtn - Mock stop button
+ * @property {Object} score - Mock score display system
+ */
 const mockUI = {
   placement: jest.fn(),
   placeTally: jest.fn(),
