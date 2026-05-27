@@ -528,7 +528,7 @@ describe('DraggedShip', () => {
 
       const pushCast = /** @type {any} */ (placedShipsInstance.push)
       pushCast.mockReturnValue({ placed: true, id: 123 })
-      const result = draggedShip.place(2, 3, shipCellGrid)
+      const result = draggedShip.place(3, 2, shipCellGrid)
       expect(result).toEqual({ placed: true, id: 123 })
     })
 
@@ -575,7 +575,7 @@ describe('DraggedShip', () => {
       // Place it
       draggedShip.cursor = [0, 0]
       mockPlaceable.canPlace.mockReturnValue(true)
-      const result = draggedShip.place(5, 7, shipCellGrid)
+      const result = draggedShip.place(7, 5, shipCellGrid)
       expect(result).not.toBeNull()
     })
 
