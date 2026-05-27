@@ -10,12 +10,12 @@ import { CellsToBePlaced } from './CellsToBePlaced.js'
 /**
  * Subgroup placement cell for 3D placement validation.
  * Represents a subgroup of cells with placement and validation methods.
- * Can optionally include an array of cell coordinates.
+ * Each subgroup validates placement constraints for a specific placement area.
  *
  * @typedef {Object} SubGroupPlaced
  * @property {Array<[number, number]>} [cells] - Optional array of cell coordinates [row, column]
- * @property {(x: number, y: number) => boolean} [isCandidate] - Optional: Checks if position is a candidate cell
- * @property {(zoneInfo: ZoneInfo) => boolean} [validator] - Optional: Validates zone constraints for the position
+ * @property {(x: number, y: number) => boolean} isCandidate - Checks if position is a candidate cell
+ * @property {(zoneInfo: ZoneInfo) => boolean} validator - Validates zone constraints for the position
  */
 
 /**
@@ -24,23 +24,15 @@ import { CellsToBePlaced } from './CellsToBePlaced.js'
  * The board parameter must be compatible with Board interface (see CellsToBePlaced.js).
  *
  * @typedef {Object} Placeable3Type
- * @property {Object} board - The board to embed cells into (Board-compatible object)
- * @property {(x: number, y: number) => Object} board.embed - Creates embedded board at offset
- * @property {Object} board.emptyMask - Empty board at same position and size
- * @property {(x: number, y: number, depth?: number) => number|null} board.at - Gets value at coordinates
- * @property {() => Generator<[number, number]>} board.occupiedLocations - Generator of occupied cell positions
- * @property {() => Generator<[number, number, *]>} board.occupiedLocationsAndValues - Generator of occupied cells with values
- * @property {Array<[number, number, number]>} board.toCoords - Array of coordinate tuples
- * @property {(width: number, height: number) => Object} board.toMask - Creates new mask at specified dimensions
- * @property {(mask: Object) => void} board.copyToMask - Copies occupied cells to another mask
- * @property {() => Object} board.flatDilate - Returns dilated version
- * @property {number} board.width - Grid width
- * @property {number} board.height - Grid height
- * @property {number} board.occupancy - Count or percentage of occupied cells
+ * @property {any} board - The board to embed cells into (Board-compatible object)
+ *   Expected to have: embed(x, y), emptyMask, at(x, y, depth?), occupiedLocations(),
+ *   occupiedLocationsAndValues(), toCoords, toMask(w, h), copyToMask(m), flatDilate(),
+ *   width, height, occupancy
  * @property {(zoneInfo: ZoneInfo) => boolean} validator - Zone validation function
- * @property {number} zoneDetail - Zone detail level for validation queries
+ * @property {number} zoneDetail - Zone detail level for validation queries (0=none, 1=subterrain, 2=zone)
  * @property {PlacementTarget} target - Placement target with bounds checking and zone info
  * @property {Array<{placeAt:(r:number,c:number)=>SubGroupPlaced}>} subGroups - Array of subgroup factories
+ *   Each factory returns a SubGroupPlaced with isCandidate and validator methods
  */
 
 /**
@@ -72,6 +64,7 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
    * @throws {Error} If placeable3 lacks required properties or subGroups are invalid
    */
   constructor (placeable3, x, y) {
+    // @ts-ignore - placeable3.board is Board-compatible at runtime
     super(
       placeable3.board,
       x,
@@ -97,6 +90,7 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
   isInMatchingZone (x, y) {
     const zoneInfo = this.zoneInfo(x, y, 2)
     const result = this.subGroups.some(
+      // @ts-ignore - SubGroupPlaced guarantees isCandidate and validator exist
       g => g.isCandidate(x, y) && g.validator(zoneInfo)
     )
     return result
@@ -105,13 +99,14 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
   /**
    * Validates that all occupied cells are in matching zones for subgroups.
    * Identifies cells that are in wrong zones and marks them in the notGood mask.
-   * A cell is considered in a wrong zone if it does not satisfy subgroup placement constraints.
+   * A cell is considered in a wrong zone if it does not satisfy any subgroup placement constraint.
    *
    * The notGood mask is updated with:
-   * - 1 for cells in matching zone (good placement)
-   * - 0 for cells in wrong zone (invalid placement)
+   * - 1 for cells in matching zone (passes subgroup validation)
+   * - 0 for cells in wrong zone (fails subgroup validation)
    *
-   * @returns {boolean} True if any cell is found to be in a wrong zone, false if all cells pass validation
+   * @returns {boolean} True if any cell is found to be in a wrong zone,
+   *   false if all cells pass subgroup validation
    * @public
    */
   isWrongZone () {

@@ -18,7 +18,6 @@ import { placedShipsInstance } from './PlacedShips.js'
  * @property {string} letter
  * @property {Function} shape
  * @property {Function} placeAt
- * @property {Function} placePlacement
  * @property {Function} addToGrid
  * @property {Function} placeAtCells
  * @property {Function} removeFromPlacement
@@ -185,18 +184,6 @@ export class DraggedShip extends SelectedShip {
   }
 
   /**
-   * Checks if the ship can be placed at the given grid position (without cursor offset).
-   * @param {number} x
-   * @param {number} y
-   * @param {ShipCellGrid} shipCellGrid
-   * @returns {boolean}
-   */
-  canPlaceRaw (x, y, shipCellGrid) {
-    const placeable = this._currentPlaceable()
-    return Boolean(this.ghost && placeable?.canPlace(x, y, shipCellGrid))
-  }
-
-  /**
    * Calculates grid position offset from cursor.
    * @param {number} x
    * @param {number} y
@@ -207,18 +194,6 @@ export class DraggedShip extends SelectedShip {
       x - this.cursor[0],
       y - this.cursor[1]
     ])
-  }
-
-  /**
-   * Checks if the ship can be placed at the cursor-adjusted position.
-   * @param {number} x
-   * @param {number} y
-   * @param {ShipCellGrid} shipCellGrid
-   * @returns {boolean}
-   */
-  canPlace (x, y, shipCellGrid) {
-    const [offsetX, offsetY] = this.offsetCell(x, y)
-    return this.canPlaceRaw(offsetX, offsetY, shipCellGrid)
   }
 
   /**

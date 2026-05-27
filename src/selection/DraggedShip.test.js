@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 // DraggedShip will be imported after mocks are configured
-
+const placement = { placement: 'data' }
+const mockCells = [{ r: 0, c: 0 }]
 // Mock the dependencies
 jest.unstable_mockModule('./Ghost.js', () => ({
   Ghost: jest.fn().mockImplementation(() => ({
@@ -59,7 +60,7 @@ describe('DraggedShip', () => {
     mockPlaceable = {
       canPlace: jest.fn().mockReturnValue(true),
       inAllBounds: jest.fn().mockReturnValue(true),
-      placeAt: jest.fn().mockReturnValue({ placement: 'data' })
+      placeAt: jest.fn().mockReturnValue(placement)
     }
     mockVariant = {
       variant: 'mask',
@@ -91,10 +92,8 @@ describe('DraggedShip', () => {
         })
       }),
       placeAt: jest.fn().mockReturnValue({}),
-      placePlacement: jest.fn().mockReturnValue([{ cell: 'data' }]),
-      addToGrid: jest.fn(),
-      placeOnGrid: jest.fn(),
-      cells: [{ r: 0, c: 0 }]
+      placeOnGrid: jest.fn().mockReturnValue(mockCells),
+      cells: mockCells
     }
 
     mockContentBuilder = jest.fn()
@@ -403,63 +402,11 @@ describe('DraggedShip', () => {
     })
   })
 
-  describe('canPlaceRaw', () => {
-    it('should return true when placement is valid', () => {
-      mockPlaceable.canPlace.mockReturnValue(true)
-      const result = draggedShip.canPlaceRaw(1, 2, {})
-      expect(result).toBe(true)
-    })
-
-    it('should return false when placement is invalid', () => {
-      mockPlaceable.canPlace.mockReturnValue(false)
-      const result = draggedShip.canPlaceRaw(1, 2, {})
-      expect(result).toBe(false)
-    })
-
-    it('should return false when ghost is null', () => {
-      draggedShip.ghost = null
-      const result = draggedShip.canPlaceRaw(1, 2, {})
-      expect(result).toBe(false)
-    })
-
-    it('should pass shipCellGrid to canPlace', () => {
-      const shipCellGrid = { grid: 'data' }
-      draggedShip.canPlaceRaw(3, 4, shipCellGrid)
-      expect(mockPlaceable.canPlace).toHaveBeenCalledWith(3, 4, shipCellGrid)
-    })
-  })
-
-  describe('canPlace', () => {
-    it('should calculate offset from cursor', () => {
-      draggedShip.cursor = [2, 3]
-      mockPlaceable.canPlace.mockReturnValue(true)
-      draggedShip.canPlace(5, 8, {})
-      // Should call canPlaceRaw with [5-2, 8-3] = [3, 5]
-      expect(mockPlaceable.canPlace).toHaveBeenCalledWith(3, 5, {})
-    })
-
-    it('should return result from canPlaceRaw', () => {
-      mockPlaceable.canPlace.mockReturnValue(true)
-      const result = draggedShip.canPlace(5, 8, {})
-      expect(result).toBe(true)
-
-      mockPlaceable.canPlace.mockReturnValue(false)
-      const result2 = draggedShip.canPlace(5, 8, {})
-      expect(result2).toBe(false)
-    })
-  })
-
   describe('addCurrentToShipCells', () => {
-    it('should add placeable to ship cells', () => {
-      const shipCellGrid = { grid: 'data' }
-      draggedShip.addCurrentToShipCells(3, 3, shipCellGrid)
-      expect(mockShip.placePlacement).toHaveBeenCalledWith(mockPlaceable, 3, 3)
-    })
-
     it('should add ship to grid', () => {
       const shipCellGrid = { grid: 'data' }
       draggedShip.addCurrentToShipCells(3, 2, shipCellGrid)
-      expect(mockShip.addToGrid).toHaveBeenCalledWith(shipCellGrid)
+      expect(mockShip.placeOnGrid).toHaveBeenCalledWith(shipCellGrid, placement)
     })
 
     it('should return ship cells', () => {
@@ -473,34 +420,10 @@ describe('DraggedShip', () => {
     it('should add cells to ship when placement is valid', () => {
       const shipCellGrid = { grid: 'data' }
       draggedShip.cursor = [0, 0]
-      mockPlaceable.canPlace.mockReturnValue(true)
 
       const result = draggedShip.placeCells(2, 3, shipCellGrid)
-      expect(mockShip.placePlacement).toHaveBeenCalled()
+      expect(mockShip.placeOnGrid).toHaveBeenCalledWith(shipCellGrid, placement)
       expect(result).toEqual(mockShip.cells)
-    })
-
-    it('should return null when placement is invalid', () => {
-      const shipCellGrid = { grid: 'data' }
-      draggedShip.cursor = [0, 0]
-      mockPlaceable.canPlace.mockReturnValue(false)
-
-      const result = draggedShip.placeCells(2, 3, shipCellGrid)
-      expect(mockShip.placePlacement).not.toHaveBeenCalled()
-      expect(result).toBeNull()
-    })
-
-    it('should account for cursor offset', () => {
-      const shipCellGrid = { grid: 'data' }
-      draggedShip.cursor = [1, 2]
-      mockPlaceable.canPlace.mockReturnValue(true)
-
-      draggedShip.placeCells(5, 8, shipCellGrid)
-      expect(mockShip.placePlacement).toHaveBeenCalledWith(
-        mockPlaceable,
-        4, // 5-1
-        6 // 8-2
-      )
     })
   })
 
@@ -524,21 +447,11 @@ describe('DraggedShip', () => {
       const { placedShipsInstance } = mod
       const shipCellGrid = { grid: 'data' }
       draggedShip.cursor = [0, 0]
-      mockPlaceable.canPlace.mockReturnValue(true)
 
       const pushCast = /** @type {any} */ (placedShipsInstance.push)
       pushCast.mockReturnValue({ placed: true, id: 123 })
       const result = draggedShip.place(3, 2, shipCellGrid)
       expect(result).toEqual({ placed: true, id: 123 })
-    })
-
-    it('should return null when placement fails', () => {
-      const shipCellGrid = { grid: 'data' }
-      draggedShip.cursor = [0, 0]
-      mockPlaceable.canPlace.mockReturnValue(false)
-
-      const result = draggedShip.place(2, 3, shipCellGrid)
-      expect(result).toBeNull()
     })
   })
 

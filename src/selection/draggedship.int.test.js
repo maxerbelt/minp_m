@@ -153,10 +153,6 @@ describe('DraggedShip integration', () => {
       expect(variants.list[0].width).toBe(2)
       expect(variants.list[0].height).toBe(5)
       expect(variants.list[0].toAscii).toBe('1.\n11\n11\n11\n.1')
-
-      //  expect(variants.variant().toAscii).toBe(
-      //    '1....\n11...\n11...\n11...\n.1...'
-      // )
       draggedShip.rotate()
       expect(variants.index).toBe(1)
     })

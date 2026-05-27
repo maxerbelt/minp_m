@@ -153,40 +153,36 @@ export class CellsToBePlaced {
   /**
    * Gets zone information for a position using the placement target.
    * Delegates to the placement target's getZone method with specified detail level.
-   * Returns [subterrain, zone] tuple or similar based on zone detail level.
+   * Zone structure depends on map configuration and detail level.
+   * Note: Parameters are swapped when passed to getZone (y, x order expected by target).
    *
    * @param {number} x - The x-coordinate (column)
    * @param {number} y - The y-coordinate (row)
    * @param {number} [zoneDetail] - Optional zone detail level override
    *   If not provided, uses this.zoneDetail (0=no detail, 1=subterrain, 2=zone)
-   * @returns {ZoneInfo} Zone information tuple [subterrain, zone] for the position
+   * @returns {ZoneInfo} Zone information object for the position
    */
   zoneInfo (x, y, zoneDetail) {
-    //  don
+    //  don't swap x and y here, target.getZone expects (x, y) format which is (column, row)
     return this.target.getZone(x, y, zoneDetail ?? this.zoneDetail)
   }
 
   /**
    * Checks if a position is in a matching zone according to the validator.
    * Uses the zone validator function to validate the zone at the given position.
-   * Handles null zone info gracefully (treats as valid).
+   * Handles null zone info gracefully by returning true (assumes valid if no zone info).
    *
    * @param {number} x - The x-coordinate (column)
    * @param {number} y - The y-coordinate (row)
-   * @returns {boolean} True if the position's zone passes validation, false otherwise
+   * @returns {boolean} True if the position's zone passes validation or no zone info available,
+   *   false if zone validation explicitly fails
    */
   isInMatchingZone (x, y) {
     const zoneInfo = this.zoneInfo(x, y)
-    if (!zoneInfo || zoneInfo.length === 0 || zoneInfo[0] == null) {
+    if (!zoneInfo) {
       return true
     }
     const result = this.validator(zoneInfo)
-    // if (!result) {
-    ///  console.log(
-    // `Position (${x}, ${y}) failed zone validation with info:`,
-    //  zoneInfo
-    //   )
-    //  }
     return result
   }
 
@@ -213,8 +209,10 @@ export class CellsToBePlaced {
    * Checks if any cell is placed in an invalid zone.
    * Iterates through all occupied cells and validates each zone independently.
    * Returns true on first zone validation failure for fail-fast behavior.
+   * If no validator is set, always returns false (all zones considered valid).
    *
-   * @returns {boolean} True if any cell is in a zone that fails validation, false if all zones valid
+   * @returns {boolean} True if any cell is in a zone that fails validation,
+   *   false if all zones valid or no validator configured
    */
   isWrongZone () {
     for (const [x, y] of this.board.occupiedLocations()) {
@@ -229,6 +227,7 @@ export class CellsToBePlaced {
    * Checks if any cell is positioned outside the valid bounds.
    * Iterates through all occupied cells and validates each is within bounds
    * according to the target's boundsChecker. Returns true on first out-of-bounds cell.
+   * Note: boundsChecker expects (row, column) parameter order.
    *
    * @returns {boolean} True if any cell is out of bounds, false if all cells are in bounds
    */
@@ -239,7 +238,6 @@ export class CellsToBePlaced {
         return true
       }
     }
-
     return false
   }
 
@@ -247,6 +245,7 @@ export class CellsToBePlaced {
    * Checks if any cell overlaps with existing ship cells.
    * Overlapping occurs when a candidate cell position already contains a ship cell.
    * Returns true on first overlapping cell detected for fail-fast behavior.
+   * Uses ShipCellGrid.has() to check for existing cells at each position.
    *
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells to check against
    * @returns {boolean} True if any cell overlaps with existing cells, false if no overlaps
@@ -265,6 +264,7 @@ export class CellsToBePlaced {
    * Iterates through all occupied cells and checks 3×3 neighborhood for conflicts
    * with existing ship cells. A cell is considered "touching" if any adjacent position
    * (including diagonals) contains an existing ship cell. Returns true on first touch.
+   * Delegates to isAreaClearAroundXY() for neighborhood validation.
    *
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells to check against
    * @returns {boolean} True if any cells are touching other ship cells, false if no touches detected
@@ -286,6 +286,12 @@ export class CellsToBePlaced {
    * This order is optimized to fail fast on the most common violations.
    * All constraints must pass for placement to be valid.
    *
+   * Validation sequence:
+   * 1. isNotInBounds() - Checks if any cell is outside grid boundaries
+   * 2. isWrongZone() - Validates zone constraints for all cells
+   * 3. isOverlapping() - Checks for overlap with existing ship cells
+   * 4. isTouching() - Enforces 3×3 no-touch constraint
+   *
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells
    * @returns {boolean} True if all placement constraints are satisfied, false on any violation
    */
@@ -304,6 +310,13 @@ export class CellsToBePlaced {
    * Checks are performed in order: bounds → zone → overlaps → touches.
    * This helps diagnose placement failures for debugging and UI feedback.
    * The returned reason corresponds to which constraint was first violated.
+   *
+   * Validation order (same as canPlace()):
+   * 1. out of bounds - Cell is outside valid grid area
+   * 2. wrong Zone - Cell fails zone validation constraints
+   * 3. overlapping - Cell overlaps with existing ship cells
+   * 4. touching - Cell violates 3×3 no-touch rule
+   * 5. good - All constraints pass
    *
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells
    * @returns {'out of bounds'|'wrong Zone'|'overlapping'|'touching'|'good'}

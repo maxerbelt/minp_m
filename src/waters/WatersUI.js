@@ -15,15 +15,15 @@
  * @property {number} variant - Ship variant index
  * @property {boolean} hasWeapon - Whether ship has weapon
  * @property {boolean} sunk - Whether ship is sunk
- * @property {Function} type - Get ship type: () => string
- * @property {Function} shape - Get ship shape: () => Object
- * @property {Function} cells - Get cells occupied: () => Iterable<[col, row]>
- * @property {Function} reset - Reset ship state: () => void
+ * @property {() => string} type - Get ship type: () => string
+ * @property {() => Object} shape - Get ship shape: () => Object
+ * @property {Iterable<[number, number]>} cells - Get cells occupied: Iterable of [col, row] tuples
+ * @property {() => void} reset - Reset ship state: () => void
  */
 
 /**
  * @typedef {Object} SurroundingStrategy
- * @property {Function} getDivisor - Get cell size divisor: (map: GridMap, width?: number) => number
+ * @property {(map: GridMap, width?: number) => number} getDivisor - Get cell size divisor
  */
 
 import { bh } from '../terrains/all/js/bh.js'
@@ -51,7 +51,7 @@ const startCharCode = 65
 /**
  * Retrieves all child elements from a board element.
  * @param {HTMLElement|null} board - The board element
- * @returns {HTMLCollection|never[]} Child elements or empty collection
+ * @returns {HTMLCollection|Array<never>} Child elements or empty collection
  * @private
  */
 const getBoardChildren = (/** @type {HTMLElement|null} */ board) =>
@@ -172,7 +172,8 @@ export class WatersUI {
    */
   _forEachBoardCell (callback) {
     for (const cell of getBoardChildren(this.board)) {
-      callback(cell)
+      // @ts-ignore - child elements are HTMLElement at runtime
+      callback(/** @type {HTMLElement} */ (cell))
     }
   }
 
@@ -370,7 +371,7 @@ export class WatersUI {
   /**
    * Applies async effects to multiple cells with random delays.
    * @param {Array<[HTMLDivElement, number, number, any]>} cells - Cells with coordinates and power
-   * @param {(cell: HTMLDivElement, power: any) => Promise<void>} effect - Async callback
+   * @param {(cell: HTMLDivElement, power: any) => Promise<void>} effect - Async callback for each cell
    * @param {number} [mindelay=380] - Minimum delay in milliseconds
    * @param {number} [maxdelay=730] - Maximum delay in milliseconds
    * @returns {Promise<PromiseSettledResult<void>[]>} Results of all async operations
@@ -454,9 +455,8 @@ export class WatersUI {
    */
   revealShip (ship) {
     const colorMaps = bh.maps
-    // @ts-ignore - ship.cells is iterable coordinate pairs
-    const shipCells = ship.cells
-    for (const [column, row] of shipCells) {
+    // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
+    for (const [column, row] of ship.cells) {
       const cell = this.gridCellAt(row, column)
       // @ts-ignore - ship matches Ship type for display
       ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
@@ -1187,10 +1187,12 @@ export class WatersUI {
   buildBoardHover (onEnter, onLeave, thisRef, weaponSource) {
     this._forEachBoardCell((/** @type {HTMLElement} */ el) => {
       const [row, column] = coordsFromCell(el)
+      // @ts-ignore - addEventListener signature compatible at runtime
       el.addEventListener(
         'mouseenter',
         onEnter.bind(null, weaponSource, row, column)
       )
+      // @ts-ignore - addEventListener signature compatible at runtime
       el.addEventListener('mouseleave', onLeave.bind(thisRef, row, column))
     })
   }
@@ -1200,14 +1202,14 @@ export class WatersUI {
    * Generic method applying custom clearing callback and detail level to all cells.
    *
    * @param {'none'|'content'|'all'} details - What to clear: 'none', 'content', or 'all'
-   * @param {(cell: HTMLDivElement) => void} [classClearer] - Function to clear cell classes
+   * @param {(cell: HTMLElement) => void} [classClearer] - Function to clear cell classes
    * @returns {void}
    */
   _clearAllCellVisuals (details, classClearer) {
     const clear =
       classClearer || CellClassManager.clearCell.bind(CellClassManager)
-    this._forEachBoardCell((/** @type {HTMLDivElement} */ el) =>
-      this.clearCellVisuals(el, details, clear)
+    this._forEachBoardCell((/** @type {HTMLElement} */ el) =>
+      this.clearCellVisuals(/** @type {HTMLDivElement} */ (el), details, clear)
     )
   }
 
