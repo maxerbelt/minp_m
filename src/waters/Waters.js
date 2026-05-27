@@ -175,7 +175,7 @@ export class Waters {
    * and optional turn-based step tracking. Sets up default message preambles for
    * UI display and game event logging.
    *
-   * @param {Object} ui - The user interface instance for rendering board and interactions
+   * @param {import('./watersUI.js').WaterUI} ui - The user interface instance for rendering board and interactions
    * @param {string|null} [playerType] - Type of player (e.g., 'AI', 'Human', null for local)
    *
    * @property {Ship[]} ships - Array of ships in this player's fleet
@@ -204,6 +204,7 @@ export class Waters {
     this.score = new Score()
     /** @type {Waters|null} */
     this.opponent = null
+    /** @type {import('./watersUI.js').WatersUI} */
     this.UI = ui
     this.shipCellGrid = new ShipCellGrid()
     this.boardDestroyed = false

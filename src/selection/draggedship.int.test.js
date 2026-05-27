@@ -44,20 +44,32 @@ const aircraftCarrierShape = new SeaVessel(
   'place Aircraft Carrier in the sea',
   []
 )
+// @ts-ignore - SeaVessel has null weaponSystem which is compatible for testing
 const aircraftCarrier = Ship.createFromShape(aircraftCarrierShape)
+// @ts-ignore - SeaVessel has null weaponSystem which is compatible for testing
 aircraftCarrier.shape = () => aircraftCarrierShape
+// Initialize cells for testing
+aircraftCarrier.cells = []
 
 describe('DraggedShip integration', () => {
+  /** @type {any} Mock placeable object */
   let mockPlaceable
+  /** @type {jest.Mock} Mock content builder function */
   let mockContentBuilder
+  /** @type {any} DraggedShip instance */
   let draggedShip
+  /** @type {jest.Mock} Ghost constructor mock */
   let Ghost
+  /** @type {any} Mock Ghost instance */
   let mockGhostInstance
+  /** @type {any} DraggedShip class */
   let DraggedShip
 
   beforeEach(async () => {
     // Import mocked modules before running tests
     const ghostModule = await import('./Ghost.js')
+    // @ts-ignore - Ghost is a mock constructor
+
     Ghost = ghostModule.Ghost
 
     // reset mocks then create a single tracked ghost instance
@@ -69,6 +81,7 @@ describe('DraggedShip integration', () => {
       moveTo: jest.fn(),
       setVariant: jest.fn()
     }
+    // @ts-ignore - Ghost is a jest mock
     Ghost.mockReturnValue(mockGhostInstance)
 
     // Create mock placeable object
@@ -85,12 +98,14 @@ describe('DraggedShip integration', () => {
     DraggedShip = dsModule.DraggedShip
 
     // Create DraggedShip instance
+
+    // @ts-ignore - source is a mock element
     draggedShip = new DraggedShip(
       aircraftCarrier,
       100, // offsetX
       200, // offsetY
       32, // cellSize
-      { type: 'rack' }, // source
+      { type: 'rack' }, // source - mock element type
       0, // variantIndex
       mockContentBuilder
     )
@@ -111,6 +126,7 @@ describe('DraggedShip integration', () => {
     })
 
     it('should create a Ghost with current variant and special', () => {
+      // @ts-ignore - Ghost is a jest mock
       expect(Ghost).toHaveBeenCalledWith(
         expect.any(Object), // variant
         'A',

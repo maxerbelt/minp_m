@@ -46,6 +46,7 @@ const mockUI = {
   showTips: jest.fn(),
   hideTips: jest.fn(),
   displayInfo: jest.fn(),
+  removeDisplayClasses: jest.fn(),
 
   showTransformBtns: jest.fn(),
   hideTransformBtns: jest.fn(),
@@ -86,18 +87,37 @@ describe('Waters', () => {
    */
   beforeEach(() => {
     waters = new Waters(mockUI)
+    // @ts-ignore - Test mock ship objects don't need full Ship type
     waters.ships = [
+      // @ts-ignore
       {
-        cells: [1, 2],
+        cells: [
+          [0, 0],
+          [0, 1]
+        ],
         letter: 'A',
-        shape: () => ({ displacement: 2 }),
+        shape: () => ({
+          displacement: 2,
+          symmetry: 'SYMMETRY_NONE',
+          letter: 'A',
+          weaponSystem: []
+        }),
         weapons: {},
         sunk: false
       },
+      // @ts-ignore
       {
-        cells: [3, 4],
+        cells: [
+          [1, 0],
+          [1, 1]
+        ],
         letter: 'B',
-        shape: () => ({ displacement: 3 }),
+        shape: () => ({
+          displacement: 3,
+          symmetry: 'SYMMETRY_NONE',
+          letter: 'B',
+          weaponSystem: []
+        }),
         weapons: {},
         sunk: true
       }
@@ -203,7 +223,10 @@ describe('Waters', () => {
     it.skip('attemptToPlaceShips returns true if all ships placed', () => {
       const ships = [
         {
-          cells: [1, 2],
+          cells: [
+            [0, 0],
+            [0, 1]
+          ],
           letter: 'A',
           shape: () => ({
             placeables: () => [
@@ -221,8 +244,12 @@ describe('Waters', () => {
           }),
           addToGrid: jest.fn()
         },
+        // @ts-ignore
         {
-          cells: [3, 4],
+          cells: [
+            [1, 0],
+            [1, 1]
+          ],
           letter: 'B',
           shape: () => ({
             placeables: () => [
@@ -262,8 +289,12 @@ describe('Waters', () => {
           minSize: 1,
           addToGrid: jest.fn()
         },
+        // @ts-ignore
         {
-          cells: [3, 4],
+          cells: [
+            [1, 0],
+            [1, 1]
+          ],
           letter: 'B',
           shape: () => ({
             placeables: () => [
@@ -332,6 +363,7 @@ describe('Waters', () => {
         shape: () => ({ descriptionText: 'the enemy ship' })
       }
 
+      // @ts-ignore - Testing private method
       waters.displayAutoSelectWarning('Torpedo', currentShip)
 
       expect(waters.displayInfo).toHaveBeenCalledWith(
@@ -349,6 +381,7 @@ describe('Waters', () => {
       // @ts-ignore - Mocking display method for testing
       waters.displayInfo = jest.fn()
 
+      // @ts-ignore - Testing private method
       waters.displayAutoSelectWarning('Depth Charge', undefined)
 
       expect(waters.displayInfo).toHaveBeenCalledWith(
@@ -379,6 +412,8 @@ describe('Waters', () => {
       const terrainSpy = jest.spyOn(bh, 'terrain', 'get').mockReturnValue({
         hasUnattachedWeapons: false
       })
+      // @ts-ignore - Testing private method
+
       const loadOut = waters.createLoadOut(map, [])
 
       expect(loadOut.unattachedWeapons).toEqual([
@@ -407,6 +442,8 @@ describe('Waters', () => {
       const terrainSpy = jest.spyOn(bh, 'terrain', 'get').mockReturnValue({
         hasUnattachedWeapons: false
       })
+      // @ts-ignore - Testing private method
+
       const loadOut = waters.createLoadOut(map, [])
 
       // Limited weapons should NOT be in unattachedWeapons for firing
@@ -458,8 +495,20 @@ describe('Waters', () => {
       const mockMap = {
         example: {
           ships: [
-            { cells: [1, 2], letter: 'A' },
-            { cells: [3, 4], letter: 'B' }
+            {
+              cells: [
+                [0, 0],
+                [0, 1]
+              ],
+              letter: 'A'
+            },
+            {
+              cells: [
+                [1, 0],
+                [1, 1]
+              ],
+              letter: 'B'
+            }
           ]
         }
       }
@@ -479,8 +528,20 @@ describe('Waters', () => {
       const mockMap = {
         example: {
           ships: [
-            { cells: [1, 2], letter: 'A' },
-            { cells: [3, 4], letter: 'B' }
+            {
+              cells: [
+                [0, 0],
+                [0, 1]
+              ],
+              letter: 'A'
+            },
+            {
+              cells: [
+                [1, 0],
+                [1, 1]
+              ],
+              letter: 'B'
+            }
           ]
         }
       }
@@ -522,7 +583,15 @@ describe('Waters', () => {
 
       const mockMap = {
         example: {
-          ships: [{ cells: [1, 2], letter: 'A' }]
+          ships: [
+            {
+              cells: [
+                [0, 0],
+                [0, 1]
+              ],
+              letter: 'A'
+            }
+          ]
         }
       }
 
@@ -604,7 +673,16 @@ describe('Waters', () => {
           JSON.stringify({
             map: currentMapTitle,
             ships: [
-              { id: 1, cells: [1, 2], letter: 'A', weapons: {}, variant: 0 }
+              {
+                id: 1,
+                cells: [
+                  [0, 0],
+                  [0, 1]
+                ],
+                letter: 'A',
+                weapons: {},
+                variant: 0
+              }
             ]
           })
         ),
@@ -792,6 +870,8 @@ describe('Waters', () => {
      */
     it('handlePlacementFailure is called when attemptToPlaceShips fails', () => {
       // Spy on handlePlacementFailure
+      // @ts-ignore - Testing private method
+
       const failureSpy = jest.spyOn(waters, 'handlePlacementFailure')
 
       // Create a mock shipCellGrid that returns false (failed placement)
@@ -843,10 +923,14 @@ describe('Waters', () => {
      */
     it('handlePlacementFailure calls resetShipCells', () => {
       // Spy on resetShipCells
+      // @ts-ignore - Testing private method
+
       const resetCellsSpy = jest.spyOn(waters, 'resetShipCells')
 
       // Call handlePlacementFailure
       const onPlacementReset = jest.fn()
+      // @ts-ignore - Testing private method
+
       waters.handlePlacementFailure(onPlacementReset)
 
       // Verify resetShipCells was called

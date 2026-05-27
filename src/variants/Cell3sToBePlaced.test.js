@@ -32,7 +32,7 @@ describe('Cell3sToBePlaced behaviors', () => {
         // second subgroup: matches only at column offset 1 (the middle cell)
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 + 1 && c === c0,
+            isCandidate: (r, c) => r === r0 && c === c0 + 1,
             validator: z => z === 'OK'
           })
         }
@@ -57,7 +57,7 @@ describe('Cell3sToBePlaced behaviors', () => {
     ]
     const board = Mask.fromCoords(cells)
     const target = {
-      getZone: (r, _c, z) => (r === 21 && z === 2 ? 'YES' : 'NO')
+      getZone: (r, _c, z) => (r === 20 && z === 2 ? 'YES' : 'NO')
     }
 
     const placable3 = {
@@ -69,13 +69,13 @@ describe('Cell3sToBePlaced behaviors', () => {
       subGroups: [
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (c, r) => r === r0 && c === c0,
+            isCandidate: (r, c) => r === r0 && c === c0,
             validator: z => z === 'X'
           })
         },
         {
           placeAt: (r0, c0) => ({
-            isCandidate: (c, r) => r === r0 + 1 && c === c0,
+            isCandidate: (r, c) => r === r0 && c === c0 + 1,
             validator: z => z === 'YES'
           })
         }

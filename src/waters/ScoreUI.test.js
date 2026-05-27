@@ -149,7 +149,7 @@ describe('ScoreUI', () => {
     })
 
     it('should use provided prefix for element IDs', () => {
-      void new ScoreUI('player2')
+      const _newScoreUI = new ScoreUI('player2')
 
       expect(globalThis.document.getElementById).toHaveBeenCalledWith(
         'player2-shots'
@@ -231,9 +231,9 @@ describe('ScoreUI', () => {
         })
 
         it('should call createZoneEntry with b tag', () => {
-          const bag = new Set()
+          const zoneData = new Set()
           scoreUI.zone.appendChild = jest.fn()
-          scoreUI.createZoneTitle('Title', bag)
+          scoreUI.createZoneTitle('Title', zoneData)
           expect(scoreUI.zone.appendChild).toHaveBeenCalled()
         })
       })
@@ -248,9 +248,9 @@ describe('ScoreUI', () => {
         })
 
         it('should call createZoneEntry with span tag', () => {
-          const bag = new Set()
+          const zoneData = new Set()
           scoreUI.zone.appendChild = jest.fn()
-          scoreUI.createZoneItem('Item', bag)
+          scoreUI.createZoneItem('Item', zoneData)
           expect(scoreUI.zone.appendChild).toHaveBeenCalled()
         })
       })

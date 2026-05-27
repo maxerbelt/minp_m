@@ -10,10 +10,12 @@ import { CellsToBePlaced } from './CellsToBePlaced.js'
 /**
  * Subgroup placement cell for 3D placement validation.
  * Represents a subgroup of cells with placement and validation methods.
+ * Can optionally include an array of cell coordinates.
  *
  * @typedef {Object} SubGroupPlaced
- * @property {(c: number, r: number) => boolean} isCandidate - Checks if position is a candidate cell
- * @property {(zoneInfo: ZoneInfo) => boolean} validator - Validates zone constraints for the position
+ * @property {Array<[number, number]>} [cells] - Optional array of cell coordinates [row, column]
+ * @property {(x: number, y: number) => boolean} [isCandidate] - Optional: Checks if position is a candidate cell
+ * @property {(zoneInfo: ZoneInfo) => boolean} [validator] - Optional: Validates zone constraints for the position
  */
 
 /**
@@ -86,8 +88,8 @@ export class Cell3sToBePlaced extends CellsToBePlaced {
    * A position is considered in a matching zone if all subgroups report it as
    * a candidate cell AND their zone validators approve the zone information at that position.
    *
-   * @param {number} y - The row coordinate to check (0-based index)
    * @param {number} x - The column coordinate to check (0-based index)
+   * @param {number} y - The row coordinate to check (0-based index)
    * @returns {boolean} True if position is a candidate in all subgroups AND passes validation,
    *   false otherwise
    * @public
