@@ -24,15 +24,15 @@ describe('Cell3sToBePlaced behaviors', () => {
       subGroups: [
         // first subgroup: matches only at column offset 0
         {
-          placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0,
+          placeAt: (x0, y0) => ({
+            isCandidate: (x, y) => x === x0 && y === y0,
             validator: z => z === 'NO'
           })
         },
         // second subgroup: matches only at column offset 1 (the middle cell)
         {
-          placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0 + 1,
+          placeAt: (x0, y0) => ({
+            isCandidate: (x, y) => x === x0 + 1 && y === y0,
             validator: z => z === 'OK'
           })
         }
@@ -68,14 +68,14 @@ describe('Cell3sToBePlaced behaviors', () => {
       target,
       subGroups: [
         {
-          placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0,
+          placeAt: (x0, y0) => ({
+            isCandidate: (x, y) => x === x0 && y === y0,
             validator: z => z === 'X'
           })
         },
         {
-          placeAt: (r0, c0) => ({
-            isCandidate: (r, c) => r === r0 && c === c0 + 1,
+          placeAt: (x0, y0) => ({
+            isCandidate: (x, y) => x === x0 && y === y0 + 1,
             validator: z => z === 'YES'
           })
         }
