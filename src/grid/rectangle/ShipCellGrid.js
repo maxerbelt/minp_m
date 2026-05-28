@@ -37,6 +37,37 @@ const NOOP = () => {}
  */
 
 /**
+ * @typedef {Object} Ship
+ * @property {string} letter - Ship identifier letter
+ * @property {Function} shape - Returns ship shape information
+ * @property {Function} placeOnGrid - Places ship cells on grid
+ */
+
+/**
+ * @typedef {Object} Placement
+ * @property {Object} board - Board bitboard representation with overlap() method
+ */
+
+/**
+ * @typedef {Object} Placeable
+ * @property {Function} placeAt - Places ship at given coordinates, returns Placement
+ */
+
+/**
+ * @typedef {Object} ShapeInfo
+ * @property {number} minSize - Minimum bounding box size
+ * @property {Function} placeables - Returns array of placement variants
+ */
+
+/**
+ * @typedef {(cell: ShipCell, rowIndex: number, colIndex: number) => void} CellIteratorCallback
+ */
+
+/**
+ * @typedef {(cell: ShipCell) => boolean} CellPredicateCallback
+ */
+
+/**
  * Manages a 2D sparse ship cell grid with placement mask synchronization
  * and ship placement helpers. Provides methods for querying, setting, and
  * iterating ship cells, as well as random ship placement with conflict detection.
@@ -287,7 +318,7 @@ export class ShipCellGrid extends GridBase {
    * that satisfy the given predicate.
    *
    * @private
-   * @param {(cell: ShipCell) => boolean} predicate - Filter function returning true to include cell
+   * @param {CellPredicateCallback} predicate - Filter function returning true to include cell
    * @returns {ShipCell[]} Array of matching cells
    */
   _filterCells (predicate) {
@@ -363,15 +394,6 @@ export class ShipCellGrid extends GridBase {
    * @returns {boolean} True if all 8 surrounding cells are empty
    */
   isAreaClearAroundRowCol (row, col, _boundsChecker) {
-    /*  for (let nr = row - 1; nr <= row + 1; nr++) {
-      for (let nc = col - 1; nc <= col + 1; nc++) {
-        if (boundsChecker(nr, nc) && this.hasRC(nr, nc)) {
-          return false
-        }
-      }
-    }
-    return true
-    */
     return !this.hasRC(row, col)
   }
 
@@ -421,7 +443,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Calls the provided callback for each non-null cell in the grid.
    *
-   * @param {(cell: ShipCell, rowIndex: number, colIndex: number) => void} callback - Called for each cell with (cell, rowIndex, colIndex)
+   * @param {CellIteratorCallback} callback - Called for each cell with (cell, rowIndex, colIndex)
    * @returns {void}
    */
   forEachCell (callback) {
@@ -510,8 +532,8 @@ export class ShipCellGrid extends GridBase {
    * if no variant fits at the location.
    *
    * @private
-   * @param {Object} ship - Ship object with placePlacement(), addToGrid() methods
-   * @param {Array} placeables - Array of placement variants (different orientations)
+   * @param {Ship} ship - Ship object with placeOnGrid() method
+   * @param {Placeable[]} placeables - Array of placement variants (different orientations)
    * @param {number} x - Column to attempt placement (0-indexed from left)
    * @param {number} y - Row to attempt placement (0-indexed from top)
    * @returns {ShipCell[]|null} Array of placed cells on success; null if placement failed
@@ -540,10 +562,10 @@ export class ShipCellGrid extends GridBase {
    * Helper: Attempts to randomly place a single ship on the board.
    *
    * Tries valid locations with different orientations until success or exhaustion.
-   * Logs failure diagnostics if placement cannot be completed.
+   * Returns placed cells on success, or null if no valid placement found.
    *
    * @private
-   * @param {Object} ship - Ship object with shape(), placePlacement(), addToGrid() methods
+   * @param {Ship} ship - Ship object with shape() method that returns ShapeInfo
    * @returns {ShipCell[]|null} Placed cells on success; null if no valid placement found
    * @throws {Error} If ship has no shape available
    */
@@ -572,17 +594,6 @@ export class ShipCellGrid extends GridBase {
         return placedCells
       }
     }
-    /*
-    const failedMask = Mask.fromCoords(
-      validLocations,
-      this._maskedGrid.width,
-      this._maskedGrid.height
-    )
-   // console.log(`failed grid for ship ${ship.letter}:\n`, this.toAscii)
-   // console.log(`possible placement locations:\n${failedMask.toAsciiWith()}`)
-    console.log(bh.map.landMask.toAscii)
-
-    */
     return null
   }
 
@@ -593,28 +604,20 @@ export class ShipCellGrid extends GridBase {
    * Attempts placement in random order for variety. On success, calls the
    * onShipPlaced callback for each successfully placed ship.
    *
-   * @param {Array<Object>} ships - Array of ship objects to place
-   * @param {Function} [onShipPlaced] - Callback when ship placed successfully (ship, cells) => void
+   * @param {Ship[]} ships - Array of ship objects to place
+   * @param {(ship: Ship, cells: ShipCell[]) => void} [onShipPlaced] - Callback when ship placed successfully
    * @returns {boolean} True if all ships placed; false if placement failed
    */
   attemptToPlaceShips (ships, onShipPlaced = NOOP) {
     this.reset()
     const shuffledShips = Random.shuffleArray([...ships])
 
-    // const numShips = shuffledShips.length
-    //   let placedCount = 0
-
     for (const ship of shuffledShips) {
       const placedCells = this._randomPlaceShip(ship)
       if (!placedCells) {
-        /*  const numVar = ship.shape()?.placeables().length || 0
-        console.warn(
-          `Placed (${placedCount}/${numShips}) Failed to place ship ${ship.letter} after trying all locations and ${numVar} orientations. Resetting grid.`
-        )*/
         return false
       }
       onShipPlaced?.(ship, placedCells)
-      //   placedCount++
     }
     return true
   }

@@ -1114,6 +1114,9 @@ export class Ship {
   }
   /**
    * Create a clone of this ship
+   * Creates a new ship with the same shape definition and increments the static ID counter.
+   * Useful for duplicating ship configurations without modifying the original.
+   * @returns {Ship} New ship instance with identical shape properties
    */
   clone () {
     const shape = this.shape()
@@ -1340,7 +1343,9 @@ export class Ship {
   }
 
   /**
-   * Remove ship from placement
+   * Remove ship from placement and reset state
+   * Clears board and marks ship as not placed. Used when canceling or restarting placement.
+   * @returns {void}
    */
   removeFromPlacement () {
     this.resetBoard()
@@ -1430,7 +1435,9 @@ export class Ship {
 
   /**
    * Get available placement variants for this ship
-   * @returns {any[]} Array of available placement variants
+   * Retrieves placement variants (different orientations/rotations) from ship shape definition.
+   * Each variant represents a different way to place the ship on the board.
+   * @returns {Placement[]} Array of available placement variants (empty if no shape)
    */
   getAvailablePlacements () {
     const shape = this.shape()

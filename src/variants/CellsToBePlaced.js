@@ -116,7 +116,9 @@ export class CellsToBePlaced {
    * Returns coordinates in world space (after embedding transformation).
    * Each entry is [x, y, value] where value represents cell occupancy.
    * Used to iterate over all placed cells for validation checks.
+   * This getter is read-only; use constructor to set cells.
    *
+   * @readonly
    * @returns {Array<[number, number, number]>} Array of [x, y, value] coordinate tuples in world space
    */
   get cells () {
@@ -128,10 +130,11 @@ export class CellsToBePlaced {
    * Represents the combined footprint of placed cells plus a one-cell border (dilation).
    * Useful for determining which areas are affected by or adjacent to the placement.
    * The dilation accounts for no-touch constraints around placed cells.
+   * The returned board includes all dilated occupied locations and their neighbors.
    *
-   * @param {number} width - The target grid width in cells
-   * @param {number} height - The target grid height in cells
-   * @returns {Board} Mask representing the displaced area with dilation applied
+   * @param {number} width - The target grid width in cells for the returned mask
+   * @param {number} height - The target grid height in cells for the returned mask
+   * @returns {Board} New mask representing the displaced area with dilation applied
    */
   displacedArea (width, height) {
     return this.board.toMask(width, height).flatDilate()
@@ -141,9 +144,10 @@ export class CellsToBePlaced {
    * Checks if a position contains a candidate cell to be placed.
    * A candidate cell is one with a value greater than 0.
    * Used to identify occupied positions within the placement area.
+   * The position is checked in world-relative coordinates (after embedding).
    *
-   * @param {number} r - The row coordinate (y-axis)
-   * @param {number} c - The column coordinate (x-axis)
+   * @param {number} r - The row coordinate (y-axis) in world space
+   * @param {number} c - The column coordinate (x-axis) in world space
    * @returns {boolean} True if the position has a candidate cell (value > 0), false otherwise
    */
   isCandidate (r, c) {
@@ -153,13 +157,14 @@ export class CellsToBePlaced {
   /**
    * Gets zone information for a position using the placement target.
    * Delegates to the placement target's getZone method with specified detail level.
-   * Zone structure depends on map configuration and detail level.
+   * Coordinates are in world space (after embedding transformation).
    * Note: Parameters are swapped when passed to getZone (y, x order expected by target).
    *
-   * @param {number} x - The x-coordinate (column)
-   * @param {number} y - The y-coordinate (row)
+   * @param {number} x - The x-coordinate (column) in world space
+   * @param {number} y - The y-coordinate (row) in world space
    * @param {number} [zoneDetail] - Optional zone detail level override
    *   If not provided, uses this.zoneDetail (0=no detail, 1=subterrain, 2=zone)
+   * @returns {ZoneInfo} Zone information object for the position or null if unavailableerrain, 2=zone)
    * @returns {ZoneInfo} Zone information object for the position
    */
   zoneInfo (x, y, zoneDetail) {
@@ -170,9 +175,10 @@ export class CellsToBePlaced {
   /**
    * Checks if a position is in a matching zone according to the validator.
    * Uses the zone validator function to validate the zone at the given position.
-   * Handles null zone info gracefully by returning true (assumes valid if no zone info).
+   * Coordinates are in world space (after embedding transformation).
    *
-   * @param {number} x - The x-coordinate (column)
+   * @param {number} x - The x-coordinate (column) in world space
+   * @param {number} y - The y-coordinate (row) in world spacemn)
    * @param {number} y - The y-coordinate (row)
    * @returns {boolean} True if the position's zone passes validation or no zone info available,
    *   false if zone validation explicitly fails
@@ -190,9 +196,10 @@ export class CellsToBePlaced {
    * Checks if cells don't touch other ship cells (enforces 3×3 no-touch rule).
    * Delegates to shipCellGrid.isAreaClearAroundXY() with bounds validation.
    * Positions are considered "touching" if they are adjacent (including diagonally)
-   * to any existing ship cell. The 3×3 neighborhood around the position is checked.
+   * Coordinates are in world space (after embedding transformation).
    *
-   * @param {number} x - The x-coordinate (column)
+   * @param {number} x - The x-coordinate (column) in world space
+   * @param {number} y - The y-coordinate (row) in world spacemn)
    * @param {number} y - The y-coordinate (row)
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells to check against
    * @returns {boolean} True if there is no touching with other cells in 3×3 neighborhood, false otherwise
@@ -209,6 +216,7 @@ export class CellsToBePlaced {
    * Checks if any cell is placed in an invalid zone.
    * Iterates through all occupied cells and validates each zone independently.
    * Returns true on first zone validation failure for fail-fast behavior.
+   * Uses world-relative coordinates from the embedded board.
    * If no validator is set, always returns false (all zones considered valid).
    *
    * @returns {boolean} True if any cell is in a zone that fails validation,
@@ -225,6 +233,7 @@ export class CellsToBePlaced {
 
   /**
    * Checks if any cell is positioned outside the valid bounds.
+   * Uses world-relative coordinates from the embedded board.
    * Iterates through all occupied cells and validates each is within bounds
    * according to the target's boundsChecker. Returns true on first out-of-bounds cell.
    * Note: boundsChecker expects (row, column) parameter order.
@@ -244,6 +253,7 @@ export class CellsToBePlaced {
   /**
    * Checks if any cell overlaps with existing ship cells.
    * Overlapping occurs when a candidate cell position already contains a ship cell.
+   * Coordinates are in world space (after embedding transformation).
    * Returns true on first overlapping cell detected for fail-fast behavior.
    * Uses ShipCellGrid.has() to check for existing cells at each position.
    *
@@ -263,6 +273,7 @@ export class CellsToBePlaced {
    * Checks if any cell is touching existing ship cells (violates no-touch rule).
    * Iterates through all occupied cells and checks 3×3 neighborhood for conflicts
    * with existing ship cells. A cell is considered "touching" if any adjacent position
+   * Uses world-relative coordinates from the embedded board.
    * (including diagonals) contains an existing ship cell. Returns true on first touch.
    * Delegates to isAreaClearAroundXY() for neighborhood validation.
    *
@@ -291,7 +302,7 @@ export class CellsToBePlaced {
    * 2. isWrongZone() - Validates zone constraints for all cells
    * 3. isOverlapping() - Checks for overlap with existing ship cells
    * 4. isTouching() - Enforces 3×3 no-touch constraint
-   *
+   * to check against
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells
    * @returns {boolean} True if all placement constraints are satisfied, false on any violation
    */
@@ -312,13 +323,13 @@ export class CellsToBePlaced {
    * The returned reason corresponds to which constraint was first violated.
    *
    * Validation order (same as canPlace()):
-   * 1. out of bounds - Cell is outside valid grid area
-   * 2. wrong Zone - Cell fails zone validation constraints
-   * 3. overlapping - Cell overlaps with existing ship cells
-   * 4. touching - Cell violates 3×3 no-touch rule
-   * 5. good - All constraints pass
+   * 1. 'out of bounds' - Cell is outside valid grid area
+   * 2. 'wrong Zone' - Cell fails zone validation constraints
+   * 3. 'overlapping' - Cell overlaps with existing ship cells
+   * 4. 'touching' - Cell violates 3×3 no-touch rule
+   * 5. 'good' - All constraints pass successfully
    *
-   * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells
+   * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells to check against
    * @returns {'out of bounds'|'wrong Zone'|'overlapping'|'touching'|'good'}
    *   Reason for placement failure, or 'good' if placement is valid
    */

@@ -53,6 +53,12 @@ import { Zip } from '../core/Zip.js'
 export const token = 'geoffs-hidden-battle'
 
 export class Shape {
+  /**
+   * Map of symmetry type codes to variant constructor classes
+   * Used to instantiate appropriate variant generator for each symmetry type.
+   * @static
+   * @type {Object<string, Function>}
+   */
   static variantConstructors = {
     D: Asymmetric,
     A: Orbit4F,
@@ -63,8 +69,10 @@ export class Shape {
   }
 
   /**
-   * Creates a ship shape with specified properties and variant generation
+   * Creates a ship shape with specified properties and variant generation.
    * Shape manages placement variants, weapon systems, and damage properties.
+   *
+   * @constructor
    * @param {string} letter - Ship letter identifier (A-Z, e.g., 'A', 'B', 'C')
    * @param {string} symmetry - Symmetry type for variant generation
    *   ('D'=Asymmetric, 'A'=Orbit4F, 'S'=Invariant, 'H'=Orbit4R, 'L'=Blinker, 'G'=Diagonal)
@@ -101,8 +109,10 @@ export class Shape {
     this.size = area
   }
   /**
-   * Weapons attached to this shape's racks
+   * Weapons attached to this shape's racks.
    * Only populated after attachWeapon() is called.
+   *
+   * @readonly
    * @returns {WeaponMap} Attached weapons indexed by coordinate key
    *   Empty object if no weapons attached
    */
@@ -119,8 +129,10 @@ export class Shape {
   }
 
   /**
-   * Tip/styling information for this shape
+   * Tip/styling information for this shape.
    * Used for UI display during ship placement selection.
+   *
+   * @readonly
    * @returns {Object} Tip configuration object
    */
   get tip () {
@@ -136,7 +148,9 @@ export class Shape {
   }
 
   /**
-   * Shape displacement (average of area and footprint)
+   * Shape displacement (average of area and footprint).
+   *
+   * @readonly
    * @returns {number} Displacement value (calculated property)
    */
   get displacement () {
@@ -144,9 +158,10 @@ export class Shape {
   }
 
   /**
-   * Setting displacement is not allowed as it's calculated
-   * @param {number} _newDisplacement
-   * @throws {Error} Displacement is calculated from area and footprint
+   * Setting displacement is not allowed as it's calculated.
+   *
+   * @param {number} _newDisplacement - Ignored parameter
+   * @throws {Error} Always throws - displacement is calculated from area and footprint
    */
   set displacement (_newDisplacement) {
     throw new Error(
@@ -155,8 +170,10 @@ export class Shape {
   }
 
   /**
-   * Cells vulnerable to specific weapons
-   * @returns {Array} Vulnerable cells array
+   * Cells vulnerable to specific weapons.
+   *
+   * @readonly
+   * @returns {Array<string>} Vulnerable weapon codes array
    */
   get vulnerable () {
     return this._getOrInitArrayProperty('_vulnerable')
@@ -171,8 +188,10 @@ export class Shape {
   }
 
   /**
-   * Cells hardened against weapon damage
-   * @returns {Array} Hardened cells array
+   * Cells hardened against weapon damage.
+   *
+   * @readonly
+   * @returns {Array<string>} Hardened weapon codes array
    */
   get hardened () {
     return this._getOrInitArrayProperty('_hardened')
@@ -187,8 +206,10 @@ export class Shape {
   }
 
   /**
-   * Cells immune to weapon damage
-   * @returns {Array} Immune cells array
+   * Cells immune to weapon damage.
+   *
+   * @readonly
+   * @returns {Array<string>} Immune weapon codes array
    */
   get immune () {
     return this._getOrInitArrayProperty('_immune')
@@ -203,12 +224,13 @@ export class Shape {
   }
 
   /**
-   * Internal: Get or initialize a named array property
+   * Internal: Get or initialize a named array property.
    * Lazily initializes empty array on first access.
    * Used for vulnerable, hardened, and immune cell arrays.
-   * @param {string} property - Internal property name (e.g., '_vulnerable')
-   * @returns {Array} Array value stored in property (auto-initialized if undefined)
+   *
    * @private
+   * @param {string} property - Internal property name (e.g., '_vulnerable')
+   * @returns {Array<string>} Array value stored in property (auto-initialized if undefined)
    */
   _getOrInitArrayProperty (property) {
     if (this[property]) return this[property]
@@ -217,11 +239,12 @@ export class Shape {
   }
 
   /**
-   * Internal: Normalize a rack coordinate value into a row/column pair
+   * Internal: Normalize a rack coordinate value into a row/column pair.
    * Handles string ("r,c" format) and array ([r, c]) coordinate formats.
+   *
+   * @private
    * @param {string|CoordinatePair|any} value - Coordinate value in various formats
    * @returns {CoordinatePair} Valid [row, column] pair or [NaN, NaN] if invalid
-   * @private
    */
   _parseRackCoordinate (value) {
     if (typeof value === 'string') {
@@ -234,12 +257,13 @@ export class Shape {
   }
 
   /**
-   * Internal: Normalize rack coordinates from various input formats
+   * Internal: Normalize rack coordinates from various input formats.
    * Converts all rack input types to validated [row, col] coordinate pairs.
    * Filters out invalid/NaN coordinates.
+   *
+   * @private
    * @param {RackInput} racks - Rack coordinates in various formats
    * @returns {CoordinatePair[]} Array of valid [row, col] coordinate pairs
-   * @private
    */
   _normalizeRackCoordinates (racks) {
     if (!this._hasValidRackInput(racks)) return []
@@ -250,11 +274,12 @@ export class Shape {
   }
 
   /**
-   * Internal: Check whether the rack input contains any coordinates
+   * Internal: Check whether the rack input contains any coordinates.
    * Validates that racks container is not empty and not null.
+   *
+   * @private
    * @param {RackInput} racks - Rack input container (Set, Array, or null)
    * @returns {boolean} True if racks container has at least one coordinate
-   * @private
    */
   _hasValidRackInput (racks) {
     if (!racks) return false
@@ -263,28 +288,32 @@ export class Shape {
   }
 
   /**
-   * Internal: Validate coordinate pair values
+   * Internal: Validate coordinate pair values.
    * Used to filter out invalid/NaN coordinates from normalized coordinates.
+   *
+   * @private
    * @param {CoordinatePair} coord - Coordinate pair [row, col]
    * @returns {boolean} True if both row and column are finite numbers
-   * @private
    */
   _isFiniteCoordinate ([r, c]) {
     return Number.isFinite(r) && Number.isFinite(c)
   }
 
   /**
-   * Internal: Build Set of coordinate keys from rack positions mask
+   * Internal: Build Set of coordinate keys from rack positions mask.
    * Converts mask occupancy to coordinate key format.
-   * @returns {Set<string>} Set of coordinate keys in "r,c" format
+   *
    * @private
+   * @returns {Set<string>} Set of coordinate keys in "r,c" format
    */
   _buildRacksFromPositions () {
     return new Set(this.rackPositions.toCoords.map(([r, c]) => makeKey(r, c)))
   }
 
   /**
-   * Height of shape bounding box
+   * Height of shape bounding box.
+   *
+   * @readonly
    * @returns {number} Height in cells
    */
   get height () {
@@ -292,7 +321,9 @@ export class Shape {
   }
 
   /**
-   * Width of shape bounding box
+   * Width of shape bounding box.
+   *
+   * @readonly
    * @returns {number} Width in cells
    */
   get width () {
@@ -300,8 +331,10 @@ export class Shape {
   }
 
   /**
-   * Board mask defining shape occupancy
+   * Board mask defining shape occupancy.
    * Returns cached board or generates from variant index 1.
+   *
+   * @readonly
    * @returns {Mask} Occupancy mask representing ship shape
    */
   get board () {
@@ -318,8 +351,10 @@ export class Shape {
   }
 
   /**
-   * Square board representation (W×H square containing board)
+   * Square board representation (W×H square containing board).
    * Used for generating placement variants.
+   *
+   * @readonly
    * @returns {Mask} Squared board mask with padding
    */
   get boardSquare () {
@@ -327,7 +362,9 @@ export class Shape {
   }
 
   /**
-   * Minimum dimension of shape (width or height)
+   * Minimum dimension of shape (width or height).
+   *
+   * @readonly
    * @returns {number} Minimum size in cells
    */
   get minSize () {
@@ -335,7 +372,9 @@ export class Shape {
   }
 
   /**
-   * Maximum dimension of shape (width or height)
+   * Maximum dimension of shape (width or height).
+   *
+   * @readonly
    * @returns {number} Maximum size in cells
    */
   get maxSize () {
@@ -343,7 +382,9 @@ export class Shape {
   }
 
   /**
-   * Original cell coordinates defining shape
+   * Original cell coordinates defining shape.
+   *
+   * @readonly
    * @returns {CoordinatePair[]} Array of [row, col] coordinate pairs
    */
   get cells () {
@@ -361,8 +402,10 @@ export class Shape {
   }
 
   /**
-   * Weapon rack positions
+   * Weapon rack positions.
    * Returns null if no racks were provided in constructor.
+   *
+   * @readonly
    * @returns {Set<string>|null} Set of "r,c" coordinate keys or null
    */
   get racks () {
@@ -372,8 +415,9 @@ export class Shape {
   }
 
   /**
-   * Check if shape can exist on given subterrain
+   * Check if shape can exist on given subterrain.
    * Validates terrain compatibility for ship placement.
+   *
    * @param {SubTerrain} subterrain - Subterrain type to check
    * @returns {boolean} True if shape's subterrain matches given type
    */
@@ -382,8 +426,9 @@ export class Shape {
   }
 
   /**
-   * Get protection level against weapon type
+   * Get protection level against weapon type.
    * Checks vulnerability/hardening/immunity status for damage calculation.
+   *
    * @param {string} weapon - Weapon type code to check protection against
    * @returns {number} Protection level:
    *   0=vulnerable (extra damage),
@@ -399,8 +444,9 @@ export class Shape {
   }
 
   /**
-   * Attach weapons to all rack positions on this shape
+   * Attach weapons to all rack positions on this shape.
    * Creates weapon system at each rack position using provided factory.
+   *
    * @param {AmmoBuilder} ammoBuilder
    *   Factory function called once per rack to create ammunition payload
    * @returns {WeaponMap} Attached weapons indexed by "r,c" coordinate key
@@ -416,9 +462,10 @@ export class Shape {
   }
 
   /**
-   * Internal: Verify shape has weapon rack positions
-   * @throws {Error} If shape has no racks available for weapons
+   * Internal: Verify shape has weapon rack positions.
+   *
    * @private
+   * @throws {Error} If shape has no racks available for weapons
    */
   _assertCanAttachWeapons () {
     if (!this.canAttachWeapons) {
@@ -427,10 +474,11 @@ export class Shape {
   }
 
   /**
-   * Internal: Verify weapon not already attached
+   * Internal: Verify weapon not already attached.
    * Ensures attachWeapon() is called at most once per shape.
-   * @throws {Error} If weapon already attached to this shape
+   *
    * @private
+   * @throws {Error} If weapon already attached to this shape
    */
   _assertWeaponNotAttached () {
     if (this.isAttachedToRack) {
@@ -439,12 +487,13 @@ export class Shape {
   }
 
   /**
-   * Internal: Build weapon objects at all rack positions
+   * Internal: Build weapon objects at all rack positions.
    * Calls ammoBuilder once per rack coordinate to create payload.
+   *
+   * @private
    * @param {AmmoBuilder} ammoBuilder
    *   Factory function creating ammunition for each rack position
    * @returns {WeaponMap} Weapons indexed by "r,c" coordinate key
-   * @private
    */
   _buildAttachedWeapons (ammoBuilder) {
     const attached = {}
@@ -455,8 +504,10 @@ export class Shape {
   }
 
   /**
-   * Get weapon system representation with all rack positions
+   * Get weapon system representation with all rack positions.
    * Wraps attached weapons in WeaponSystem instances for game use.
+   *
+   * @readonly
    * @returns {WeaponMap|null}
    *   Object mapping "r,c" coordinates to WeaponSystem instances, or null if not attached
    */
@@ -473,8 +524,9 @@ export class Shape {
   }
 
   /**
-   * Get board mask for specific variant index
+   * Get board mask for specific variant index.
    * Delegates to variant factory's boardFor method.
+   *
    * @param {number} variantIndex - Variant index (1-based) to get board for
    * @returns {Mask} Board mask for specified variant
    */
@@ -484,8 +536,9 @@ export class Shape {
   }
 
   /**
-   * Get variant factory for this shape's symmetry type
+   * Get variant factory for this shape's symmetry type.
    * Creates appropriate variant generator based on symmetry value.
+   *
    * @returns {VariantFactory}
    *   Variant factory (Invariant, Orbit4F, Asymmetric, Orbit4R, Blinker, or Diagonal)
    * @throws {Error} If symmetry type is unknown or not registered
@@ -499,8 +552,9 @@ export class Shape {
   }
 
   /**
-   * Get number of available placement variants
+   * Get number of available placement variants.
    * Total count depends on symmetry type.
+   *
    * @returns {number} Total variant count for this shape's symmetry
    */
   numVariants () {
@@ -508,17 +562,19 @@ export class Shape {
   }
 
   /**
-   * Get all placeable variant objects for this shape
+   * Get all placeable variant objects for this shape.
    * Each variant represents a unique placement configuration.
-   * @returns {Array} Placeable variant objects with placement methods
+   *
+   * @returns {Array<Object>} Placeable variant objects with placement methods
    */
   placeables () {
     return this.variants().placeables()
   }
 
   /**
-   * Check if shape shrinks under given cell height
+   * Check if shape shrinks under given cell height.
    * Used for responsive display scaling at small cell sizes.
+   *
    * @param {number} cellHeight - Cell height threshold in pixels
    * @returns {Object} Shrink information for display scaling
    */
@@ -527,8 +583,9 @@ export class Shape {
   }
 
   /**
-   * Get ship type from terrain configuration
+   * Get ship type from terrain configuration.
    * Returns type code (e.g., 'G' for ground, 'S' for sea).
+   *
    * @returns {string} Ship type code from terrain.ships.types
    */
   type () {
@@ -536,8 +593,9 @@ export class Shape {
   }
 
   /**
-   * Get ship color from terrain configuration
+   * Get ship color from terrain configuration.
    * Used for ship display and UI rendering.
+   *
    * @returns {string} Ship color value from terrain.ships.colors
    */
   color () {
@@ -545,8 +603,9 @@ export class Shape {
   }
 
   /**
-   * Get letter color scheme from terrain
+   * Get letter color scheme from terrain.
    * Provides color configuration for ship letter display.
+   *
    * @returns {Object} Letter color configuration from terrain.ships.letterColors
    */
   letterColors () {
@@ -554,8 +613,9 @@ export class Shape {
   }
 
   /**
-   * Get ship description text
+   * Get ship description text.
    * Human-readable text describing the ship type.
+   *
    * @returns {string} Ship description from terrain.ships.description
    */
   description () {
@@ -563,8 +623,9 @@ export class Shape {
   }
 
   /**
-   * Get sunk ship description with optional separator
+   * Get sunk ship description with optional separator.
    * Combines ship name with sunk status text.
+   *
    * @param {string} [middle=' '] - Separator between ship name and status
    * @returns {string} Full sunk description text
    */
@@ -573,8 +634,9 @@ export class Shape {
   }
 
   /**
-   * Get sunk status descriptions for ship type
+   * Get sunk status descriptions for ship type.
    * Returns status text appropriate for this ship's type.
+   *
    * @returns {string} Sunk status text for this ship's type from terrain config
    */
   shipSunkDescriptions () {

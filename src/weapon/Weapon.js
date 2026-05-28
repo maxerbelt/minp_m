@@ -54,6 +54,20 @@ import { Random } from '../core/Random.js'
  */
 
 export class Weapon {
+  /**
+   * Base class for all weapon types in the game.
+   * Abstract class that cannot be instantiated directly - must be extended by weapon subclasses.
+   * Handles weapon properties, animations, and launch mechanics.
+   *
+   * @constructor
+   * @abstract
+   * @param {string} name - Display name of the weapon
+   * @param {string} letter - Single letter identifier for keyboard shortcuts
+   * @param {boolean} isLimited - Whether ammunition is limited
+   * @param {boolean} destroys - Whether weapon destroys terrain
+   * @param {number} points - Victory points awarded when hitting enemy
+   * @throws {Error} If instantiated directly rather than through subclass
+   */
   constructor (name, letter, isLimited, destroys, points) {
     if (new.target === Weapon) {
       throw new Error(
@@ -89,9 +103,12 @@ export class Weapon {
     this.classname = this.name.toLowerCase().replaceAll(' ', '-')
   }
   /**
-   * Applies a weapon configuration object to a weapon instance
-   * Centralizes duplicate configuration initialization logic across all weapon types
+   * Applies a weapon configuration object to a weapon instance.
+   * Centralizes duplicate configuration initialization logic across all weapon types.
+   *
+   * @protected
    * @param {Object} config - Configuration properties to apply
+   * @returns {void}
    */
   _applyWeaponConfig (config) {
     Object.entries(config).forEach(([key, value]) => {
@@ -99,14 +116,16 @@ export class Weapon {
     })
   }
   /**
-   * Gets the audio file for Warning sound
+   * Gets the audio file for warning sound.
+   *
+   * @readonly
    * @returns {URL} URL to warning sound asset
    */
   get warnSound () {
     return new URL('../terrains/all/sounds/woodblock.mp3', import.meta.url)
   }
   /**
-   * Play the flight sound for this weapon if available.
+   * Play the warning sound for this weapon.
    * Plays sound after loading from configured URL.
    *
    * @returns {void}
@@ -120,7 +139,7 @@ export class Weapon {
    * Eliminates duplicate clone() implementations in subclasses.
    *
    * @param {Function} weaponClass - Constructor for the weapon type to instantiate
-   * @param {number} [ammoOverride=this.ammo] - Optional ammo count for cloned weapon
+   * @param {number} [ammoOverride] - Optional ammo count for cloned weapon (defaults to this.ammo)
    * @returns {Weapon} New weapon instance with specified ammo
    */
   createClone (weaponClass, ammoOverride) {
@@ -181,11 +200,12 @@ export class Weapon {
    * Internal: Determine source cell based on weapon state and view models.
    * Consolidates duplicate grid cell selection logic across launch methods.
    *
+   * @private
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @param {any} viewModel - Primary view model
+   * @param {any} viewModel - Primary view model with gridCellAt method
    * @param {any} [opposingViewModel] - Optional opposing player view model
-   * @returns {any} Selected grid cell element
+   * @returns {any} Selected grid cell DOM element
    */
   #getSourceCell (r, c, viewModel, opposingViewModel) {
     if (this.nonAttached) {
@@ -204,7 +224,7 @@ export class Weapon {
    * Internal: Calculate splash size modifier based on power.
    * Extracted from duplicated splash size calculation logic.
    *
-   * @param {number} [power] - Explosion power value
+   * @param {number|null} [power] - Explosion power value
    * @returns {number} Modifier value (1 if no power, 0.5 + power/2 otherwise)
    */
   calculateSplashModifier (power) {
@@ -216,6 +236,7 @@ export class Weapon {
    * Get flight sound URL for this weapon.
    * Override in subclasses to provide weapon-specific sound.
    *
+   * @readonly
    * @returns {URL|null} URL to flight sound file, or null if silent
    */
   get flightSound () {
@@ -226,6 +247,7 @@ export class Weapon {
    * Get CSS class name for weapon selection button.
    * Automatically generated from weapon tag.
    *
+   * @readonly
    * @returns {string} CSS class identifier for button
    */
   get btnClass () {
@@ -248,6 +270,7 @@ export class Weapon {
    * Get boom/explosion sound URL for this weapon.
    * Override in subclasses to provide weapon-specific boom sound.
    *
+   * @readonly
    * @returns {URL|null} URL to boom sound file, or null for default
    */
   get boomSound () {
@@ -255,11 +278,12 @@ export class Weapon {
   }
 
   /**
-   * Determines turn phase for missile variant
-   * Maps variant ID to turn duration classes for animation pacing
+   * Determines turn phase for missile variant.
+   * Maps variant ID to turn duration classes for animation pacing.
+   *
    * @param {number} _variant - Weapon variant identifier (0, 2, 3)
-   * @param {number} _y - Row coordinate for turn calculation
    * @param {number} _x - Column coordinate for turn calculation
+   * @param {number} _y - Row coordinate for turn calculation
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string
    */
   getTurn (_variant, _x, _y) {
@@ -269,10 +293,12 @@ export class Weapon {
 
   /**
    * Get current step index for cursor animation.
-   * Adjusts for seeking mode and multi-step launch sequences.\n   *
+   * Adjusts for seeking mode and multi-step launch sequences.
+   *
    * @param {number} numCoords - Base coordinate count
    * @param {number} select - Selection cursor position
-   * @returns {number} Adjusted step index for animation\n   */
+   * @returns {number} Adjusted step index for animation
+   */
   stepIdx (numCoords, select) {
     if (bh.seekingMode) {
       return numCoords
@@ -288,7 +314,7 @@ export class Weapon {
   /**
    * Get hint text for weapon step.
    *
-   * @param {number} idx - Step index (0 for initial, 1+ for targeting)
+   * @param {number} idx - Step index (0 for initial selection, 1+ for targeting)
    * @returns {string} Help text describing the action for this step
    */
   stepHint (idx) {
@@ -304,6 +330,7 @@ export class Weapon {
   /**
    * Get total number of steps for weapon targeting sequence.
    *
+   * @readonly
    * @returns {number} Number of targeting steps (seeking mode: cursor count, else: total cursors)
    */
   get numStep () {
@@ -314,6 +341,7 @@ export class Weapon {
    * Check if weapon has extra/secondary selection cursor.
    * Differentiates between single-step and multi-step launch sequences.
    *
+   * @readonly
    * @returns {boolean} True if launchCursor exists and differs from first cursor
    */
   get hasExtraSelectCursor () {
@@ -323,7 +351,7 @@ export class Weapon {
   /**
    * Get current ammunition status description.
    *
-   * @param {number} _ammoLeft - Remaining ammunition (parameter kept for API compatibility)
+   * @param {number} [_ammoLeft] - Remaining ammunition (parameter kept for API compatibility)
    * @returns {string} Current weapon mode description
    */
   ammoStatus (_ammoLeft) {
@@ -339,11 +367,12 @@ export class Weapon {
     return `${this.name} (${this.letter})`
   }
   /**
-   * Get area-of-effect pattern
+   * Get area-of-effect pattern.
+   * Base implementation returns single target cell with default power.
    *
-   * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * @param {Object} _map - Game map for bounds checking
+   * @param {number[][]} coords - Source and target coordinates [row, col]
+   * @returns {Array<[number, number, number]>} Damage cells as [row, col, power] tuples
    */
   aoe (_map, coords) {
     return [[coords[0][0], coords[0][1], 4]]
@@ -354,20 +383,20 @@ export class Weapon {
    * Delegates to aoe() for standard implementations.
    *
    * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Target coordinates
-   * @returns {Array<[number, number, number]>} Damage cells with power levels
+   * @param {number[][]} coords - Target coordinates [row, col]
+   * @returns {Array<[number, number, number]>} Damage cells as [row, col, power] tuples
    */
   splashAoe (map, coords) {
     return this.aoe(map, coords)
   }
 
   /**
-   * Get area-of-effect plus options for splash damage.
+   * Get area-of-effect with additional options for splash damage.
    * Delegates to aoe() for standard implementations.
    *
    * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Target coordinates
-   * @returns {Object} AOE pattern or damage locations
+   * @param {number[][]} coords - Target coordinates [row, col]
+   * @returns {{affectedArea: Array<[number, number, number]>, options: Object}} AOE pattern and options
    */
   aoePlus (map, coords) {
     const affectedArea = this.aoe(map, coords)
@@ -375,23 +404,27 @@ export class Weapon {
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point
+   * Calculates splash/secondary damage pattern around a point.
+   * Base implementation returns empty (no splash).
+   *
    * @param {Object} _map - Game map
    * @param {Array} _resolvedTarget - Impact coordinate [row, col]
    * @param {Array} _effect - Damage effect coordinates and power
    * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
+   * @returns {Array<[number, number, number]>} Splash pattern cells as [row, col, power] tuples
    */
   splash (_map, _resolvedTarget, _effect, _options) {
     return []
   }
 
   /**
-   * Calculates crash splash damage pattern around a terminal point when no hits are registered
-   * @param {Object} map - Game map
-   * @param {Array} coords - Impact coordinate [row, col]
+   * Calculates crash splash damage pattern around a terminal point when no hits are registered.
+   * Base implementation returns empty (no splash).
+   *
+   * @param {Object} _map - Game map
+   * @param {Array} _coords - Impact coordinate [row, col]
    * @param {Object} _options - Additional options
-   * @returns {Array} Splash pattern
+   * @returns {Array<[number, number, number]>} Splash pattern cells as [row, col, power] tuples
    */
   crashSplash (_map, _coords, _options) {
     return []
@@ -399,12 +432,13 @@ export class Weapon {
   /**
    * Add splash damage for fish weapons by pushing valid cells into the effect list.
    * Used by addOrthogonal and addDiagonal during splash coordinate initialization.
+   *
    * @param {Object|null} map - Game map for bounds checking
    * @param {number} row - Target row coordinate
    * @param {number} col - Target column coordinate
    * @param {number} power - Damage power level
-   * @param {Array} newEffect - Accumulating effect array
-   * @returns {Array} Updated effect array
+   * @param {Array<[number, number, number]>} newEffect - Accumulating effect array
+   * @returns {Array<[number, number, number]>} Updated effect array
    */
   addSplash (map, row, col, power, newEffect) {
     if (!map || map.inBounds(row, col)) {
@@ -420,10 +454,10 @@ export class Weapon {
    * @param {any} map - Game map
    * @param {number} r - Center row coordinate
    * @param {number} c - Center column coordinate
-   * @param {number} p1 - Power for orthogonal neighbors
-   * @param {number} p2 - Power for diagonal neighbors
-   * @param {any} newEffect - Effect accumulator object
-   * @returns {any} Updated effect with neighbor damage added
+   * @param {number} p1 - Power for orthogonal neighbors (4 directions)
+   * @param {number} p2 - Power for diagonal neighbors (4 directions)
+   * @param {Array<[number, number, number]>} newEffect - Effect accumulator array
+   * @returns {Array<[number, number, number]>} Updated effect with neighbor damage added
    */
   addNeighbours (map, r, c, p1, p2, newEffect) {
     this.addOrthogonal(map, r, c, p1, newEffect)
@@ -438,8 +472,8 @@ export class Weapon {
    * @param {number} r - Center row coordinate
    * @param {number} c - Center column coordinate
    * @param {number} power - Damage power for diagonal cells
-   * @param {any} newEffect - Effect accumulator object
-   * @returns {any} Updated effect with diagonal damage added
+   * @param {Array<[number, number, number]>} newEffect - Effect accumulator array
+   * @returns {Array<[number, number, number]>} Updated effect with diagonal damage added
    */
   addDiagonal (map, r, c, power, newEffect) {
     this.addSplash(map, r + 1, c + 1, power, newEffect)
@@ -456,8 +490,8 @@ export class Weapon {
    * @param {number} r - Center row coordinate
    * @param {number} c - Center column coordinate
    * @param {number} power - Damage power for orthogonal cells
-   * @param {any} newEffect - Effect accumulator object
-   * @returns {any} Updated effect with orthogonal damage added
+   * @param {Array<[number, number, number]>} newEffect - Effect accumulator array
+   * @returns {Array<[number, number, number]>} Updated effect with orthogonal damage added
    */
   addOrthogonal (map, r, c, power, newEffect) {
     this.addSplash(map, r + 1, c, power, newEffect)
@@ -471,10 +505,10 @@ export class Weapon {
    * Transform coordinates through optional game model processing.
    * Default implementation returns source and target coordinates with first target element.
    *
-   * @param {any} map - Game map object
+   * @param {any} _map - Game map object
    * @param {number[]} base - Base coordinates [row, col]
-   * @param {number[][]} coords - Target coordinates [row, col]
-   * @returns {number[][]} Transformed [base, coords[0]] pair
+   * @param {number[][]} coords - Target coordinates array
+   * @returns {number[][]} Transformed coordinate pair [base, coords[0]]
    */
   redoCoords (_map, base, coords) {
     return [base, coords[0]]
@@ -485,7 +519,7 @@ export class Weapon {
    * Combines cursor flight animation with ripple effect before actual launch.
    *
    * @async
-   * @param {number[]} coords - Target coordinates for launch
+   * @param {number[]} coords - Target coordinates for launch [row, col]
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
    * @param {any} map - Game map object
@@ -542,11 +576,11 @@ export class Weapon {
    * Handles post-targeting launch with optional game model processing.
    *
    * @async
-   * @param {number[]} coords - Target coordinates
+   * @param {number[]} coords - Target coordinates [row, col]
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
    * @param {LaunchContext} context - Launch context containing map, view models, and handlers
-   * @returns {Promise<Object>} Launch result
+   * @returns {Promise<Object>} Launch result from launchToRaw or custom launch handler
    */
   async launchRightTo (coords, rr, cc, context) {
     const { map, viewModel, opposingViewModel, model, launch } = context
@@ -568,9 +602,9 @@ export class Weapon {
    *
    * @param {any} map - Game map object
    * @param {number[]} base - Base/source coordinates [row, col]
-   * @param {number[][]} coords - Target coordinates [row, col]
+   * @param {number[][]} coords - Target coordinates array [row, col]
    * @param {any} model - Game model for target lookup
-   * @returns {number[][]} Processed coordinate pair with candidate flag
+   * @returns {number[]|[number[], number[], boolean]} Processed coordinate pair or triple with candidate flag
    */
   processCoords (map, [rr, cc], coords, model) {
     const effect = this.aoe(map, coords)
@@ -587,7 +621,7 @@ export class Weapon {
    * Routes to launchToRaw with optional coordinate processing.
    *
    * @async
-   * @param {number[]} coords - Target coordinates
+   * @param {number[]} coords - Target coordinates [row, col]
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
    * @param {LaunchContext} context - Launch context
@@ -602,10 +636,10 @@ export class Weapon {
    * Consolidated method handling grid cell selection and animation for all launch types.
    *
    * @async
-   * @param {number[]} coords - Target coordinates
+   * @param {number[]} coords - Target coordinates [row, col]
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
-   * @param {LaunchContext} context - Launch context
+   * @param {LaunchContext} context - Launch context with map, view models, and processors
    * @returns {Promise<Object>} Result object with optional {target} if hasCandidates
    */
   async launchToRaw (coords, rr, cc, context) {
@@ -633,7 +667,7 @@ export class Weapon {
    * Calculates the midpoint of element's bounding rectangle.
    *
    * @param {HTMLElement} el - DOM element to measure
-   * @returns {{x: number, y: number}} Center coordinates
+   * @returns {{x: number, y: number}} Center coordinates in pixels
    */
   centerOf (el) {
     const r = el.getBoundingClientRect()
@@ -665,7 +699,7 @@ export class Weapon {
    * @async
    * @param {any} target - Target element for detonation
    * @param {number} cellSize - Grid cell size in pixels
-   * @returns {Promise<void>} Resolves when animation completes
+   * @returns {Promise<void>} Resolves when detonation animation completes
    */
   async animateDetonation (target, cellSize) {
     await this.animateExplodeRaw(target, cellSize, 'plasma', 1, 'shake-heavy')
@@ -677,7 +711,7 @@ export class Weapon {
    *
    * @async
    * @param {any} target - Target element
-   * @param {any} [container] - Optional animation container
+   * @param {any} [container] - Optional animation container element
    * @param {{x: number, y: number}} [end] - Optional end coordinates; defaults to target center
    * @returns {Promise<void>} Resolves when ripple animation completes
    */
@@ -699,6 +733,17 @@ export class Weapon {
     await animator.run()
   }
 
+  /**
+   * Convenience wrapper for animateExplode with animator instance.
+   *
+   * @async
+   * @param {any} target - Target element
+   * @param {{x: number, y: number}} end - End position
+   * @param {number} cellSize - Cell size in pixels
+   * @param {Animator} [animator] - Optional animator instance to reuse
+   * @param {any} [viewModel] - Optional view model
+   * @returns {Promise<void>} Resolves when explosion animation completes
+   */
   async animateExplodeWithAnimator (
     target,
     end,
@@ -713,6 +758,18 @@ export class Weapon {
     })
   }
 
+  /**
+   * Convenience wrapper for animateExplode with individual parameters.
+   *
+   * @async
+   * @param {any} target - Target element
+   * @param {number} cellSize - Cell size in pixels
+   * @param {string} type - Terrain type for explosion styling
+   * @param {number} power - Explosion power level
+   * @param {string} [shake] - Shake animation type (default: 'shake')
+   * @param {any} [viewModel] - Optional view model
+   * @returns {Promise<void>} Resolves when explosion animation completes
+   */
   async animateExplodeRaw (
     target,
     cellSize,
@@ -747,7 +804,6 @@ export class Weapon {
       power,
       shake = 'shake',
       animator: reuseAnimator,
-      viewModel,
       id
     } = options || {}
     let end = endPos || this.centerOf(target)
@@ -792,7 +848,7 @@ export class Weapon {
    * @param {any} source - Source element
    * @param {any} target - Target element
    * @param {any} viewModel - View model providing cell size and context
-   * @returns {Promise<{container: any, end: {x: number, y: number}, cellSize: number}>} Animation container and end coordinates
+   * @returns {Promise<AnimationResult>} Animation container and end coordinates
    */
   async animateFlyingOnVM (source, target, viewModel) {
     return await this.animateFlying(
@@ -808,7 +864,8 @@ export class Weapon {
    * Get default animation options for flying weapon.
    * Creates base configuration for weapon flight animations.
    *
-   * @returns {{rotation: number, duration: number, classname: string, doesExplode: boolean, animateOnTarget: boolean}} Default animation parameters
+   * @readonly
+   * @returns {AnimationOptions} Default animation parameters
    */
   get defaultAnimateOptions () {
     return {
@@ -828,14 +885,9 @@ export class Weapon {
    * @param {any} source - Source element
    * @param {any} target - Target element
    * @param {number} cellSz - Cell size in pixels
-   * @param {Object} [options] - Animation options
-   * @param {number} [options.rotation] - Rotation angle (auto-calculated if 0)
-   * @param {number} [options.duration] - Animation duration in seconds
-   * @param {string} [options.classname] - CSS class name for weapon
-   * @param {boolean} [options.doesExplode] - Whether weapon explodes on impact
-   * @param {boolean} [options.animateOnTarget] - Whether to animate on target hit
+   * @param {AnimationOptions} [options] - Animation options
    * @param {any} [viewModel] - Optional view model for event handling
-   * @returns {Promise<{container: any, end: {x: number, y: number}, cellSize: number}>} Animation context with container, end coords, and cell size
+   * @returns {Promise<AnimationResult>} Animation context with container, end coords, and cell size
    */
   async animateFlying (
     source,
@@ -925,8 +977,9 @@ export class Weapon {
    * @param {Animator} animator - Animation instance
    * @param {{x: number, y: number}} end - End position
    * @param {number} cellSize - Cell size in pixels
-   * @param {boolean} doesExplode - Whether weapon explodes\n   * @param {any} [viewModel] - Optional view model
-   * @returns {Promise<boolean>} Always returns true
+   * @param {boolean} doesExplode - Whether weapon explodes on landing
+   * @param {any} [_viewModel] - Optional view model (unused in early exit path)
+   * @returns {Promise<boolean>} True if not animating on target, false if explosion applied
    */
   async checkAnimate (
     target,
@@ -934,7 +987,7 @@ export class Weapon {
     end,
     cellSize,
     doesExplode,
-    viewModel = null
+    _viewModel = null
   ) {
     if (!this.animateOnTarget) {
       if (doesExplode) {
@@ -943,7 +996,7 @@ export class Weapon {
           end,
           cellSize,
           animator,
-          viewModel
+          _viewModel
         )
         return false
       }
@@ -959,7 +1012,7 @@ export class Weapon {
    * @param {any} target - Target element
    * @param {any} source - Source element
    * @param {string} className - CSS classes for animator
-   * @returns {{animator: Animator, end: {x: number, y: number}, start: {x: number, y: number}, cellSize: number}} Animation context
+   * @returns {AnimatorContext} Animation context with animator and coordinates
    */
   initAnimate (cellSize, target, source, className) {
     cellSize = cellSize || 30
@@ -983,10 +1036,10 @@ export class Weapon {
    * Set up base flying animation properties.
    * Configures CSS custom properties for flight trajectory and rotation.
    *
-   * @param {{x: number, y: number}} end - End coordinates
-   * @param {{x: number, y: number}} start - Start coordinates
+   * @param {{x: number, y: number}} end - End coordinates in pixels
+   * @param {{x: number, y: number}} start - Start coordinates in pixels
    * @param {Animator} animator - Animator instance
-   * @param {number} [rotation] - Rotation angle (auto-calculated if 0 or falsy)
+   * @param {number} [rotation] - Rotation angle in degrees (auto-calculated if 0 or falsy)
    * @param {number} [duration] - Animation duration in seconds (default: 0.7)
    * @returns {void}
    */
@@ -1004,7 +1057,18 @@ export class Weapon {
   }
 }
 
+/**
+ * Standard single-shot weapon.
+ * Basic weapon that fires once to target location with no splash damage.
+ *
+ * @class
+ */
 export class StandardShot extends Weapon {
+  /**
+   * Create a standard shot weapon.
+   *
+   * @constructor
+   */
   constructor () {
     super('Standard Shot', '-', false, true, 1)
     this.cursors = ['']
@@ -1013,36 +1077,49 @@ export class StandardShot extends Weapon {
     this.hints = ['Click On Square To Fire']
     this.buttonHtml = '<span class="shortcut">S</span>ingle Shot'
   }
+  /**
+   * Get flight sound URL for standard shot.
+   *
+   * @readonly
+   * @returns {URL} URL to standard shot flight sound
+   */
   get flightSound () {
     const url = new URL('../terrains/all/sounds/shot.mp3', import.meta.url)
     return url
   }
 
   /**
-   * Get area-of-effect pattern
+   * Get area-of-effect pattern for standard shot.
+   * Single cell impact with standard power.
    *
-   * @param {Object} map - Game map for bounds checking
-   * @param {number[][]} coords - Source and Target coordinates
-   * @returns {any} AOE pattern or damage locations
+   * @param {Object} _map - Game map for bounds checking
+   * @param {number[][]} coords - Source and target coordinates
+   * @returns {Array<[number, number, number]>} Single impact cell [row, col, power]
    */
   aoe (_map, coords) {
     return [[coords[0][0], coords[0][1], 4]]
   }
 
+  /**
+   * Get ammunition status description for standard shot.
+   *
+   * @returns {string} Weapon mode description
+   */
   ammoStatus () {
     return `Single Shot Mode`
   }
   /**
    * Apply splash damage at specific map location.
+   * Standard shot does not support splash damage - throws error if attempted.
+   *
+   * @throws {Error} Always throws - splash damage not applicable for standard shot
    * @param {Object|null} _map - Game map for bounds checking
    * @param {number} _row - Target row coordinate
    * @param {number} _col - Target column coordinate
    * @param {number} _power - Damage power level
-   * @param {Array} _newEffect - Accumulating effect array
-   * @returns {Array} Updated effect array
-   * @throws {Error} Always throws
+   * @param {Array<[number, number, number]>} _newEffect - Accumulating effect array
+   * @returns {Array<[number, number, number]>} Never returns - always throws
    */
-
   addSplash (_map, _row, _col, _power, _newEffect) {
     throw new Error('Not Applicable: Standard Shot does not have splash damage')
   }
