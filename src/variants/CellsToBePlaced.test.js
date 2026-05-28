@@ -518,7 +518,10 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid.set(3, 2, 'SHIP')
+
+      const placedDot = placeableDot.placeAt(3, 2)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[3, 2]])
       expect(placing.isAreaClearAroundXY(2, 2, grid)).toBe(false)
     })
 
