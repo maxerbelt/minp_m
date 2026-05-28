@@ -1,5 +1,5 @@
 import { CellsToBePlaced } from './CellsToBePlaced.js'
-import { placingTarget } from './makeCell3.js'
+import { placingTarget } from './placingTarget.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**

@@ -19,9 +19,10 @@
  * @typedef {Object} SubTerrainZone
  * @property {string} title
  *   Display title of the zone (e.g., "Deep Water", "Shoreline", "Mountain Peak")
- * @property {boolean} [isMarginal]
+ * @property {boolean} [isMarginal=false]
  *   Whether this zone represents a marginal boundary transition (true) or core terrain (false).
  *   When true, this zone marks the edge/boundary; when false or undefined, marks core area.
+ *   @default false
  * @description Zone configuration for terrain area classification and placement validation
  */
 
@@ -33,6 +34,7 @@
  *
  * @typedef {(zoneInfo: [SubTerrainBase, unknown]) => boolean} TerrainValidator
  * @description Predicate function checking zone/subterrain compatibility
+ */
 
 /**
  * Base class for a subterrain type with visual properties, zones, and validation.
@@ -49,7 +51,8 @@
  * - Validation hooks: canBe() and validator() predicates for custom placement logic
  *
  * @class SubTerrainBase
- * @description Base implementation for terrain subtype descriptors used in map generation, terrain validation, and placement rules
+ * @classdesc Base implementation for terrain subtype descriptors used in map generation, terrain validation, and placement rules
+ * @public
  * @see Terrain for the parent terrain container
  * @see Matcher for zone validation patterns
  *
@@ -81,6 +84,7 @@ export class SubTerrainBase {
    * - Stores references in this.margin and this.core for quick lookup
    * - If zones not provided or missing entries, margin and/or core will be undefined
    *
+   * @constructor
    * @param {string} title
    *   Display title of the subterrain (e.g., "Mountain", "Deep Water", "Asteroid Field")
    * @param {string} lightColor
@@ -92,12 +96,15 @@ export class SubTerrainBase {
    * @param {boolean} [isDefault=false]
    *   Whether this is the default/primary subterrain for its terrain category.
    *   If multiple subterrains exist and one is marked true, it's selected first.
+   *   @default false
    * @param {boolean} [isTheLand=false]
    *   Special classification flag for the main/base terrain type. Used to distinguish
    *   primary terrain from variants. Typically only one per terrain category.
+   *   @default false
    * @param {SubTerrainZone[]} [zones=[]]
    *   Array of zone descriptors dividing this subterrain into core and marginal areas.
    *   Optional entries for zone definitions.
+   *   @default []
    *
    * @throws {TypeError} If title is not a string or letter is not a single character
    * @public
@@ -229,6 +236,7 @@ export class SubTerrainBase {
      * Default implementation returns false (prohibit by default).
      *
      * @type {(subterrain: SubTerrainBase) => boolean}
+     * @default () => false
      * @public
      *
      * @remarks
@@ -236,6 +244,7 @@ export class SubTerrainBase {
      * - Should implement terrain-specific rules (e.g., mountains only on high elevation)
      * - Access this.title, this.zones, etc. within predicate
      * - Default false means placement is prohibited unless overridden
+     * - Pure function with no side effects
      *
      * @example
      * mountain.canBe = (subterrain) => subterrain === mountain
@@ -249,14 +258,16 @@ export class SubTerrainBase {
      * Default implementation returns false (invalid by default).
      *
      * @type {TerrainValidator}
+     * @default () => false
      * @public
      *
      * @remarks
      * - Called during placement validation and zone compatibility checks
-     * - Receives zone information as [SubTerrainBase, unknown] tuple
+     * - Receives zone information as [SubTerrainBase, unknown] tuple tuple
      * - Should implement terrain-specific zone rules
      * - Default false means validation fails unless overridden
      * - Used in Matcher pattern for advanced validation
+     * - Pure function with no side effects recommended
      *
      * @example
      * terrain.validator = (zoneInfo) => {
@@ -272,6 +283,7 @@ export class SubTerrainBase {
      * Values typically range from 0 (simple) to 3+ (detailed).
      * Used by rendering systems to determine zone visualization complexity.
      * @type {number}
+     * @default 0
      * @public
      */
     this.zoneDetail = 0
@@ -282,9 +294,10 @@ export class SubTerrainBase {
    *
    * Provides a human-readable representation of the subterrain instance.
    * Called automatically by console.log, debuggers, and object inspection tools.
+   * This is the standard Object.toString() override method.
    *
    * @returns {string} The subterrain's display title
-   *
+   * @memberof SubTerrainBase
    * @public
    * @example
    * const terrain = new SubTerrainBase('Mountain', '#8B8B8B', '#4A4A4A', 'M')

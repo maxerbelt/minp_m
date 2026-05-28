@@ -2,8 +2,8 @@ import { CellsToBePlaced } from './CellsToBePlaced.js'
 
 /**
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
- * @typedef {import('./makeCell3.js').ZoneInfo} ZoneInfo
- * @typedef {import('./makeCell3.js').PlacementTarget} PlacementTarget
+ * @typedef {import('./placingTarget.js').ZoneInfo} ZoneInfo
+ * @typedef {import('./placingTarget.js').PlacementTarget} PlacementTarget
  * @typedef {import('../grid/MaskBase.js').MaskBase} MaskBase
  */
 

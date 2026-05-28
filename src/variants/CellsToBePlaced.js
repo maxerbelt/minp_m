@@ -1,9 +1,9 @@
-import { placingTarget } from './makeCell3.js'
+import { placingTarget } from './placingTarget.js'
 
 /** @typedef {import('../grid/subBoard.js').SubBoard} SubBoard */
 /** @typedef {import('../grid/rectangle/ShipCellGrid.js').ShipCellGrid} ShipCellGridType */
-/** @typedef {import('./makeCell3.js').ZoneInfo} ZoneInfo */
-/** @typedef {import('./makeCell3.js').PlacementTarget} PlacementTarget */
+/** @typedef {import('./placingTarget.js').ZoneInfo} ZoneInfo */
+/** @typedef {import('./placingTarget.js').PlacementTarget} PlacementTarget */
 
 /**
  * Board object with grid manipulation methods (typically a SubBoard instance).

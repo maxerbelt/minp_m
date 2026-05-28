@@ -9,7 +9,7 @@ import { describe, it, expect, jest } from '@jest/globals'
 
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Mask } from '../grid/rectangle/mask.js'
-import { placingTarget } from './makeCell3.js'
+import { placingTarget } from './placingTarget.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 /**

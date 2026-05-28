@@ -1,4 +1,3 @@
-// @ts-nocheck - Complex JSDoc typing with object literals and terrains import compatibility
 import { terrains } from './terrains.js'
 
 /**
@@ -10,9 +9,70 @@ import { terrains } from './terrains.js'
  */
 
 /**
+ * Configuration object for terrain maps with state management.
+ * @typedef {Object} TerrainMapContainer
+ * @property {Object|null} [current] - The currently active terrain map
+ * @property {(map: Object) => void} [setCurrent] - Sets the active terrain map
+ * @property {(title: string) => Terrain|undefined} [setByTitle] - Sets terrain by title
+ * @property {(tag: string) => Terrain|undefined} [setByTag] - Sets terrain by tag
+ * @property {() => Terrain|undefined} [setToDefault] - Sets to default terrain
+ * @property {(index: number) => Terrain|undefined} [setByIndex] - Sets terrain by index
+ * @property {(shapesByLetter: Object) => void} [setShapesByLetter] - Sets ship shapes
+ * @property {Object.<string, Object>} [shapesByLetter] - Ship shapes by letter
+ * @property {Array} [list] - List of available terrain maps
+ */
+
+/**
+ * Ship configuration and type definitions.
+ * @typedef {Object} ShipConfig
+ * @property {Object.<string, string>} [descriptions] - Ship type descriptions by letter
+ * @property {Object.<string, Object>} [types] - Ship type definitions by letter
+ */
+
+/**
+ * Sound effect configuration mapping damage types to URLs.
+ * @typedef {Object.<string, string>} SoundConfig
+ */
+
+/**
  * Audio manager for playing terrain-specific sound effects.
  * @typedef {Object} AudioManager
- * @property {(id: string, url: string) => void} playAfterLoad - Plays a sound after loading
+ * @property {(id: string, url: string) => void} playAfterLoad - Plays a sound after loading from URL
+ */
+
+/**
+ * Function signature for checking coordinates in bounds.
+ * @typedef {(row: number, column: number) => boolean} BoundsCheckFunction
+ */
+
+/**
+ * Function signature for building ship instances.
+ * @typedef {(...args: any[]) => Object} ShipBuilderFunction
+ */
+
+/**
+ * Function signature for building fleet instances.
+ * @typedef {(...args: any[]) => Object} FleetBuilderFunction
+ */
+
+/**
+ * Function signature for retrieving shapes by ship letter.
+ * @typedef {(letter: string) => Object|undefined} ShapesByLetterFunction
+ */
+
+/**
+ * Splash damage classification tags for UI rendering.
+ * @typedef {Object.<number, string>} SplashTagsMap
+ */
+
+/**
+ * Custom unit display descriptions.
+ * @typedef {Object.<string, string>} UnitDescriptions
+ */
+
+/**
+ * Callback for customizing unit UI elements.
+ * @typedef {(letter: string, description: string, element: HTMLElement, key: string) => void} CustomizeUnitCallback
  */
 
 /**
@@ -27,49 +87,46 @@ const typedTerrains = /** @type {TerrainManager} */ (terrains)
  * and utilities for theme switching, bounds checking, and unit customization.
  *
  * @typedef {Object} BattleHandler
- * @property {Object.<string, any>} terrainMaps - Current terrain map container
+ * @property {TerrainMapContainer} terrainMaps - Current terrain map container with state management
  * @property {HTMLElement|null} widthUI - UI element for width display
  * @property {HTMLElement|null} heightUI - UI element for height display
  * @property {Terrain} terrain - Current active terrain (getter)
- * @property {string} terrainTitle - Title of current terrain (getter)
- * @property {string} mapHeading - Map heading from current terrain (getter)
- * @property {string} fleetHeading - Fleet heading from current terrain (getter)
- * @property {Object|undefined} sounds - Sound configuration from current terrain (getter)
- * @property {Function} playBoom - Plays terrain-specific boom sound
- * @property {boolean} hasTransforms - Whether current terrain has transforms (getter)
+ * @property {string|undefined} terrainTitle - Title of current terrain (getter)
+ * @property {string|undefined} mapHeading - Map heading from current terrain (getter)
+ * @property {string|undefined} fleetHeading - Fleet heading from current terrain (getter)
+ * @property {SoundConfig|undefined} sounds - Sound configuration from current terrain (getter)
+ * @property {(type: string) => void} playBoom - Plays terrain-specific boom sound
+ * @property {boolean|undefined} hasTransforms - Whether current terrain has transforms (getter)
  * @property {Terrain|null} defaultTerrain - Default terrain fallback (getter)
- * @property {Function} terrainByTitle - Finds terrain by title
- * @property {Function} shipSunkText - Gets sunk ship description
- * @property {Function} shipDescription - Gets ship type description
+ * @property {(title: string) => Terrain} terrainByTitle - Finds terrain by title
+ * @property {(letter: string, middle: boolean) => string|undefined} shipSunkText - Gets sunk ship description
+ * @property {(letter: string) => string|undefined} shipDescription - Gets ship type description
  * @property {Terrain[]} terrainList - Array of all terrains (getter)
- * @property {Object} ships - Ship configuration from current terrain (getter)
- * @property {Object} shipTypes - Ship type definitions (getter)
+ * @property {ShipConfig|undefined} ships - Ship configuration from current terrain (getter)
+ * @property {Object.<string, Object>|undefined} shipTypes - Ship type definitions (getter)
  * @property {Object[]} subTerrains - Subterrain array (getter)
  * @property {string[]} subTerrainTags - Subterrain tag strings (getter)
- * @property {Function} subTerrainTagFromCell - Finds subterrain tag from element
- * @property {Function} shipType - Gets ship type by letter
+ * @property {(cell: HTMLElement) => string|undefined} subTerrainTagFromCell - Finds subterrain tag from element
+ * @property {(letter: string) => Object|undefined} shipType - Gets ship type by letter
  * @property {Object|null} terrainMap - Current terrain map (getter/setter)
- * @property {Object|null} maps - Current maps container (getter/setter)
+ * @property {Object} maps - Current maps container (getter/setter)
  * @property {Object|null} map - Current active map (getter/setter)
- * @property {Function} inBounds - Checks if position is in bounds
- * @property {Function} isLand - Checks if position is land terrain
- * @property {Function} shapesByLetter - Gets shapes for a ship letter
- * @property {Function} shipBuilder - Ship builder function
- * @property {Function} fleetBuilder - Fleet builder function
- * @property {Function} setTheme - Applies terrain theme to UI
- * @property {Function} setTest - Configures test mode from URL parameters
+ * @property {BoundsCheckFunction} inBounds - Checks if position is in bounds
+ * @property {BoundsCheckFunction} isLand - Checks if position is land terrain
+ * @property {ShapesByLetterFunction} shapesByLetter - Gets shapes for a ship letter
+ * @property {ShipBuilderFunction} shipBuilder - Ship builder function
+ * @property {FleetBuilderFunction} fleetBuilder - Fleet builder function
+ * @property {() => void} setTheme - Applies terrain theme to UI
+ * @property {(urlParams: URLSearchParams) => void} setTest - Configures test mode from URL parameters
  * @property {string[]} terrainTitleList - Array of terrain titles (getter)
- * @property {Function} setTerrainByTitle - Sets terrain by title
- * @property {Function} setTerrainByTag - Sets terrain by tag
- * @property {Function} getTerrainByTag - Gets terrain by tag without changing current
- * @property {Object} splashTags - Damage/effect classification tags (getter)
+ * @property {(title: string|null|undefined) => Terrain|undefined} setTerrainByTitle - Sets terrain by title
+ * @property {(tag: string|null|undefined) => Terrain|undefined} setTerrainByTag - Sets terrain by tag
+ * @property {(tag: string|null|undefined) => Terrain|null} getTerrainByTag - Gets terrain by tag without changing current
+ * @property {SplashTagsMap} splashTags - Damage/effect classification tags (getter)
  * @property {Object.<string, string>} typeDescriptions - Ship type descriptions
- * @property {Object.<string, string>} unitDescriptions - Unit type descriptions
- * @property {Function} customizeUnits - Customizes unit elements
+ * @property {UnitDescriptions} unitDescriptions - Unit type descriptions
+ * @property {(elementTag: string, customize?: CustomizeUnitCallback) => void} customizeUnits - Customizes unit elements
  * @property {AudioManager} audio - Audio playback manager
- * @property {boolean} [test] - Test mode flag
- */
-
 /**
  * Global battle handler singleton.
  * Manages terrain configurations, maps, theme switching, and game state.
@@ -83,9 +140,9 @@ try {
   // eslint-disable-next-line no-undef
   const terrainModule = /** @type {any} */ (require('./terrain.js'))
   if (terrainModule?.bh) bhLocal = terrainModule.bh
-} catch {
+} catch (error) {
   // Fallback when terrain module is not available (common in test environments)
-  console.debug('Terrain module not available, using default terrain')
+  console.debug('Terrain module not available, using default terrain:', error)
 }
 
 if (!bhLocal)

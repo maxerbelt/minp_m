@@ -11,9 +11,11 @@
  * support for custom map dimensions and terrain lookup by tag.
  *
  * The terrains singleton uses an object literal pattern to maintain a unified
- * public API for terrain management across the application.
+ * public API for terrain management across the application. This pattern allows
+ * for method binding with 'this' context while maintaining a clean namespace.
  *
  * @module terrains/all/js/terrains
+ * @see {@link module:terrains/all/js/terrain} for Terrain type definition
  */
 
 import { BhConstants } from './constants.js'
@@ -99,10 +101,11 @@ const {
  * It also exposes custom map dimension constraints for validation purposes.
  *
  * Design Pattern:
- * - Uses object literal singleton pattern with bound methods
+ * - Uses object literal singleton pattern with bound methods for clean namespace
  * - Maintains mutable state properties: current, terrains, default
- * - Exposes dimension constraints via getter properties
+ * - Exposes dimension constraints via getter properties for read-only access
  * - All state modifications go through dedicated methods to maintain consistency
+ * - Acts as the central point for terrain state management in the application
  *
  * Usage Example:
  * ```javascript
@@ -115,39 +118,47 @@ const {
  * ```
  *
  * @type {TerrainManager}
- * @public
  * @global
+ * @singleton
+ * @public
  */
 export const terrains = {
   /**
    * The currently active terrain instance.
    * Updated via setCurrent() and setByTag() methods.
+   *
    * @type {Terrain|null}
-   * @private
+   * @public
    */
   current: null,
 
   /**
    * Registry of all available terrain instances.
    * Populated via add() and setCurrent() methods.
+   * Accessed by setByTag() and getByTag() for lookups.
+   *
    * @type {Terrain[]}
-   * @private
+   * @public
    */
   terrains: [],
 
   /**
    * The default terrain to fallback to.
-   * Set via setDefault() method.
+   * Set via setDefault() method during application initialization.
+   * Used as a sensible default when no specific terrain is requested.
+   *
    * @type {Terrain|null}
-   * @private
+   * @public
    */
   default: null,
 
   /**
    * Gets the minimum width for custom maps.
    * Exposes the MIN_CUSTOM_WIDTH constant for validation purposes.
+   * Used to enforce lower bounds on custom map generation.
    *
-   * @returns {number} The minimum custom map width constraint
+   * @returns {number} The minimum custom map width constraint (read-only)
+   * @public
    */
   get minWidth () {
     return MIN_CUSTOM_WIDTH
@@ -156,8 +167,10 @@ export const terrains = {
   /**
    * Gets the maximum width for custom maps.
    * Exposes the MAX_CUSTOM_WIDTH constant for validation purposes.
+   * Used to enforce upper bounds on custom map generation.
    *
-   * @returns {number} The maximum custom map width constraint
+   * @returns {number} The maximum custom map width constraint (read-only)
+   * @public
    */
   get maxWidth () {
     return MAX_CUSTOM_WIDTH
@@ -166,8 +179,10 @@ export const terrains = {
   /**
    * Gets the minimum height for custom maps.
    * Exposes the MIN_CUSTOM_HEIGHT constant for validation purposes.
+   * Used to enforce lower bounds on custom map generation.
    *
-   * @returns {number} The minimum custom map height constraint
+   * @returns {number} The minimum custom map height constraint (read-only)
+   * @public
    */
   get minHeight () {
     return MIN_CUSTOM_HEIGHT
@@ -176,8 +191,10 @@ export const terrains = {
   /**
    * Gets the maximum height for custom maps.
    * Exposes the MAX_CUSTOM_HEIGHT constant for validation purposes.
+   * Used to enforce upper bounds on custom map generation.
    *
-   * @returns {number} The maximum custom map height constraint
+   * @returns {number} The maximum custom map height constraint (read-only)
+   * @public
    */
   get maxHeight () {
     return MAX_CUSTOM_HEIGHT
@@ -188,15 +205,17 @@ export const terrains = {
    *
    * This method prevents duplicate terrain instances in the registry by checking
    * for the terrain's existence before adding. It's a no-op if the terrain is
-   * already registered.
+   * already registered, ensuring idempotent behavior.
    *
    * @param {Terrain} newT - The terrain instance to add to the registry
    * @returns {void}
+   * @public
    *
    * @remarks
    * - Side effect: May modify this.terrains array by appending newT
-   * - If terrain already exists, no change occurs
+   * - If terrain already exists, no change occurs (idempotent)
    * - Used by setCurrent() and setDefault() to ensure registry consistency
+   * - Does not change the current active terrain
    */
   add: function (newT) {
     if (!this.terrains.includes(newT)) {
@@ -209,16 +228,18 @@ export const terrains = {
    *
    * This method updates the current property and ensures the terrain is registered
    * in the terrains array by calling add(). Used throughout the application to
-   * activate terrain configurations.
+   * activate terrain configurations for gameplay or UI purposes.
    *
    * @param {Terrain} newCurrent - The terrain instance to set as the active terrain
-   * @returns {Terrain} The terrain that was set as current
+   * @returns {Terrain} The terrain that was set as current (same as input)
+   * @public
    *
    * @remarks
    * - Side effects: Updates this.current and may modify this.terrains array
    * - Always registers the terrain via add() before setting as current
    * - Returns the same terrain passed in for method chaining
-   * - Called by setDefault() and setByTag() for consistency
+   * - Called by setDefault() and setByTag() for consistent state management
+   * - Use this method to activate a terrain for the game session
    */
   setCurrent: function (newCurrent) {
     this.add(newCurrent)
@@ -231,15 +252,18 @@ export const terrains = {
    *
    * Convenience method for initialization that updates both the default and current
    * properties in a single call. The terrain is registered in the registry via setCurrent().
+   * Useful during application startup to establish the baseline terrain.
    *
    * @param {Terrain} newCurrent - The terrain instance to set as default and current
-   * @returns {Terrain} The terrain that was set as default
+   * @returns {Terrain} The terrain that was set as default (same as input)
+   * @public
    *
    * @remarks
    * - Side effects: Updates this.default and this.current via setCurrent()
-   * - Typically called during application initialization
+   * - Typically called during application initialization phase
    * - Delegates to setCurrent() for consistent registration and activation
    * - Returns the same terrain passed in for method chaining
+   * - Once set, this becomes the fallback terrain if none is explicitly selected
    */
   setDefault: function (newCurrent) {
     this.default = this.setCurrent(newCurrent)
@@ -251,14 +275,17 @@ export const terrains = {
    *
    * Collects the bodyTag property from each terrain in the registry. Useful for
    * UI rendering, validation, and terrain identification across the application.
+   * This method provides a convenient way to list all available terrain options.
    *
-   * @returns {string[]} Array of body tag strings from all registered terrains
+   * @returns {string[]} Array of body tag strings from all registered terrains (in registration order)
+   * @public
    *
    * @remarks
    * - Pure function: No side effects, depends only on this.terrains
    * - Returns an array in the same order as terrains are registered
    * - Used for populating terrain selection menus and validations
    * - Returns empty array if no terrains registered
+   * - Each element is a bodyTag string from the corresponding terrain
    */
   allBodyTags () {
     return this.terrains.map(t => t.bodyTag)
@@ -270,19 +297,22 @@ export const terrains = {
    * Searches the registry for a terrain matching the provided tag (case-sensitive).
    * If found, sets it as the current active terrain via setCurrent().
    * Returns null for falsy tags, undefined if tag not found in registry.
+   * This is useful for restoring terrain state from URLs or saved configurations.
    *
    * @param {string|null|undefined} tag - The terrain tag to search for (case-sensitive)
    * @returns {Terrain|null|undefined}
    *   - Returns the Terrain if found and set as current
    *   - Returns undefined if tag is truthy but not found in registry
    *   - Returns null if tag is falsy (null, undefined, empty string)
+   * @public
    *
    * @remarks
    * - Side effects: Updates this.current and may register terrain via setCurrent()
    * - Tag comparison is case-sensitive
    * - Only sets current if terrain is found (no error on missing terrain)
-   * - Falsy tags (null, undefined) are treated as explicit null returns
-   * - Useful for URL routing and UI state restoration
+   * - Falsy tags (null, undefined, empty string) are treated as explicit null returns
+   * - Useful for URL routing, saved game state restoration, and user selections
+   * - Chain-safe: returns the found terrain or null/undefined
    */
   setByTag (tag) {
     if (tag) {
@@ -300,12 +330,14 @@ export const terrains = {
    * Pure lookup method that searches the registry for a terrain matching the provided tag.
    * Unlike setByTag(), this method has no side effects and does not modify state.
    * Returns null for falsy tags, undefined if tag not found in registry.
+   * Useful for validation before activation or for read-only lookups.
    *
    * @param {string|null|undefined} tag - The terrain tag to search for (case-sensitive)
    * @returns {Terrain|null|undefined}
    *   - Returns the Terrain if found in registry
    *   - Returns undefined if tag is truthy but not found in registry
    *   - Returns null if tag is falsy (null, undefined, empty string)
+   * @public
    *
    * @remarks
    * - Pure function: No side effects, only reads state
@@ -313,6 +345,7 @@ export const terrains = {
    * - Parallel to setByTag() but without the terrain activation
    * - Useful for validation and existence checks before activation
    * - Safe to call repeatedly without modifying application state
+   * - Use for checking if a terrain exists before attempting to activate it
    */
   getByTag (tag) {
     if (tag) {
