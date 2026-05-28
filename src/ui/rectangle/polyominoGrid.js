@@ -15,32 +15,63 @@ const EMPTY_CELL_VALUE = 0 // Value for empty cells
 const POLYOMINO_ID_START = 1 // Starting ID for polyominoes
 
 /**
+ * @typedef {Object} Polyomino
+ * @property {number} width - Width of polyomino bounding box
+ * @property {number} height - Height of polyomino bounding box
+ * @property {Function} allXYlocations - Generator yielding [x,y] coordinates
+ * @property {Function} at - Method to check if cell at (x,y) is part of polyomino
+ */
+
+/**
  * @typedef {Object} PlacedPolyomino
- * @property {Object} poly - The polyomino object
- * @property {number} x - X position on grid
- * @property {number} y - Y position on grid
- * @property {number} id - Unique ID of the polyomino
+ * @property {Polyomino} poly - The polyomino object with shape data
+ * @property {number} x - X position on grid (top-left of bounding box)
+ * @property {number} y - Y position on grid (top-left of bounding box)
+ * @property {number} id - Unique ID of the polyomino (1-15)
  */
 
 /**
  * @typedef {Object} PlacementResult
  * @property {number} placed - Number of polyominoes placed
  * @property {number} total - Total number of polyominoes available
- * @property {boolean} allFitted - Whether all polyominoes fit
+ * @property {boolean} allFitted - Whether all polyominoes fit on grid
+ */
+
+/**
+ * @typedef {Object} PlacementStatistics
+ * @property {number} placedCount - Number of polyominoes successfully placed
+ * @property {number} firstPlacedIndex - Index of first placed polyomino (-1 if none)
+ * @property {number} lastPlacedIndex - Index of last placed polyomino (-1 if none)
  */
 
 /**
  * PolyominoGridManager - Manages polyomino placement, display, and constraints using 4-bit Mask
- * Uses RectDrawColor for rendering
+ *
+ * This class handles:
+ * - Polyomino placement on a grid using a Mask-based bitboard storage (GRID_DEPTH=16)
+ * - 8-connectivity constraint enforcement (no polyominoes touching)
+ * - Rendering using RectDrawColor with color-mapped display
+ * - Pagination for navigating large polyomino sets (MAX_POLYOMINOES_PER_PAGE=15)
+ * - Fill mode (greedy placement) and single mode (display one polyomino)
+ *
+ * Storage: 4 bits per cell = 16 possible values (0-15), where 0=empty, 1-15=polyomino IDs
+ *
+ * @class
+ * @example
+ * const manager = new PolyominoGridManager('canvas-id', 10, 10, 50, 50, 50);
+ * manager.loadPolyominoes();
+ * const result = manager.fillGrid();
+ * if (result.allFitted) { console.log('All polyominoes fit!'); }
  */
 export class PolyominoGridManager {
   /**
-   * @param {string} canvasId - ID of the canvas element
+   * @param {string} canvasId - ID of the canvas element for rendering
    * @param {number} [width=10] - Grid width in cells
    * @param {number} [height=10] - Grid height in cells
    * @param {number} [cellSize=50] - Size of each cell in pixels
-   * @param {number} [offsetX=50] - X offset for drawing
-   * @param {number} [offsetY=50] - Y offset for drawing
+   * @param {number} [offsetX=50] - X offset for canvas drawing
+   * @param {number} [offsetY=50] - Y offset for canvas drawing
+   * @throws {Error} If canvas element cannot be initialized (gracefully handled in test env)
    */
   constructor (
     canvasId,
@@ -50,40 +81,55 @@ export class PolyominoGridManager {
     offsetX = 50,
     offsetY = 50
   ) {
+    /** @type {string} */
     this.canvasId = canvasId
+    /** @type {number} */
     this.width = width
+    /** @type {number} */
     this.height = height
+    /** @type {number} */
     this.cellSize = cellSize
+    /** @type {number} */
     this.offsetX = offsetX
+    /** @type {number} */
     this.offsetY = offsetY
 
     // Grid state using depth=16 Mask with 4 bits per cell (supports polyomino IDs 0-15)
+    /** @type {Mask} */
     this.gridMask = new Mask(width, height, null, null, GRID_DEPTH)
 
     // RectDrawColor for rendering (4-bit to display polyomino colors)
+    /** @type {RectDrawColor|null} */
     this.rectDrawColor = null
 
-    /** @type {PlacedPolyomino[]} */
-    this.polyominoes = [] // Placed polyominoes
-    /** @type {Object[]} */
-    this.availablePolyominoes = [] // All available polyominoes from generator
+    /** @type {PlacedPolyomino[]} - Array of placed polyominoes */
+    this.polyominoes = []
+    /** @type {Polyomino[]} - All available polyominoes from generator */
+    this.availablePolyominoes = []
 
-    // Settings
+    /** @type {string} - Connectivity mode: '4', '4diag', or '8' */
     this.connectivity = '4'
+    /** @type {number} - Size of polyominoes to generate (number of cells) */
     this.polyominoSize = 4
 
-    // Track range for next/prev pagination
+    // Track range for pagination
+    /** @type {number} - Current index in the polyomino list */
     this.currentPolyominoIndex = 0
-    this.displayMode = 'fill' // 'fill' or 'single'
+    /** @type {'fill'|'single'} - Current display mode */
+    this.displayMode = 'fill'
 
     // Track range for next/prev pagination (-1 means uninitialized)
+    /** @type {number} - Index of first placed polyomino in current view (-1 if none) */
     this.lastFirstPlacedIndex = -1
+    /** @type {number} - Index of last placed polyomino in current view (-1 if none) */
     this.lastLastPlacedIndex = -1
 
     // Polyomino ID counter (1-based, 0 = empty)
+    /** @type {number} - Next polyomino ID to assign (starts at POLYOMINO_ID_START) */
     this.nextPolyId = POLYOMINO_ID_START
 
     // Color palette for rendering polyominoes
+    /** @type {string[]} - Array of hex color codes for polyomino rendering */
     this.polyominoColors = [
       '#ff6b6b',
       '#4ecdc4',
@@ -107,7 +153,12 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Initialize the renderer
+   * Initialize the canvas renderer
+   *
+   * Attempts to create RectDrawColor instance for rendering grid to canvas.
+   * Silently fails if canvas is not available (e.g., in test environment).
+   *
+   * @returns {void}
    * @private
    */
   initialize () {
@@ -122,13 +173,18 @@ export class PolyominoGridManager {
         GRID_DEPTH // depth=16 gives 4 bits per cell for 16-color rendering (polyomino IDs 1-15)
       )
     } catch {
-      // Canvas not available in test environment
+      // Canvas not available in test environment - silently continue
     }
   }
 
   /**
-   * Load polyominoes from generator based on current settings
-   * @returns {Object[]} Array of available polyominoes
+   * Load polyominoes from generator based on current connectivity settings
+   *
+   * Creates an appropriate polyomino generator (ortho, diagonal, or king connectivity)
+   * and generates all polyominoes of the configured size. Results are cached in
+   * availablePolyominoes for later use.
+   *
+   * @returns {Polyomino[]} Array of available polyominoes of current size and connectivity
    */
   loadPolyominoes () {
     const generator =
@@ -144,12 +200,17 @@ export class PolyominoGridManager {
 
   /**
    * Check if a polyomino can be placed at the given position
-   * Respects 8-connectivity constraint (no polyominoes touching)
-   * @param {Object} poly - The polyomino to place
-   * @param {number} startX - Starting X position
-   * @param {number} startY - Starting Y position
-   * @param {number} [excludeId=-1] - Polyomino ID to exclude from adjacency check
-   * @returns {boolean} True if placement is valid
+   *
+   * Validates:
+   * - Bounding box is within grid bounds
+   * - All occupied cells are empty in gridMask
+   * - No 8-connectivity adjacency to other polyominoes (no touching allowed)
+   *
+   * @param {Polyomino} poly - The polyomino to check
+   * @param {number} startX - Starting X position (top-left of bounding box)
+   * @param {number} startY - Starting Y position (top-left of bounding box)
+   * @param {number} [excludeId=-1] - Polyomino ID to exclude from adjacency check (for moving)
+   * @returns {boolean} True if placement is valid at this position
    */
   canPlacePolyomino (poly, startX, startY, excludeId = -1) {
     // Check bounds
@@ -201,11 +262,15 @@ export class PolyominoGridManager {
 
   /**
    * Place a polyomino on the grid
-   * @param {Object} poly - The polyomino to place
-   * @param {number} startX - Starting X position
-   * @param {number} startY - Starting Y position
-   * @param {number} polyId - Unique ID for the polyomino
-   * @returns {boolean} True if placement was successful
+   *
+   * Updates both gridMask (stores polyomino IDs) and RectDrawColor (stores color values).
+   * Adds the placed polyomino to the polyominoes array for tracking.
+   *
+   * @param {Polyomino} poly - The polyomino to place
+   * @param {number} startX - Starting X position (top-left of bounding box)
+   * @param {number} startY - Starting Y position (top-left of bounding box)
+   * @param {number} polyId - Unique ID for the polyomino (1-15)
+   * @returns {boolean} True if placement was successful (includes validation)
    */
   placePolyomino (poly, startX, startY, polyId) {
     if (!this.canPlacePolyomino(poly, startX, startY, polyId)) {
@@ -239,8 +304,13 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Remove a polyomino by ID
-   * @param {number} polyId - ID of the polyomino to remove
+   * Remove a polyomino from the grid by its ID
+   *
+   * Clears all cells occupied by the polyomino in both gridMask and RectDrawColor.
+   * Removes the polyomino entry from the polyominoes array.
+   *
+   * @param {number} polyId - ID of the polyomino to remove (1-15)
+   * @returns {void}
    */
   removePolyomino (polyId) {
     for (const [x, y] of this.gridMask.allXYlocations()) {
@@ -255,7 +325,12 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Clear the entire grid and reset state
+   * Clear the entire grid and reset all state
+   *
+   * Removes all placed polyominoes, resets grid mask, clears renderer,
+   * and resets polyomino ID counter and pagination tracking.
+   *
+   * @returns {void}
    * @private
    */
   _clearGrid () {
@@ -269,9 +344,14 @@ export class PolyominoGridManager {
 
   /**
    * Attempt to place polyominoes greedily from the given list
-   * @param {Object[]} polyominoes - List of polyominoes to place
+   *
+   * Iterates through polyominoes and tries to place each one at the first valid
+   * position found. Stops when maximum polyominoes reached or a polyomino cannot
+   * be placed.
+   *
+   * @param {Polyomino[]} polyominoes - List of polyominoes to place
    * @param {number} [maxToPlace=MAX_POLYOMINOES_PER_PAGE] - Maximum number to place
-   * @returns {Object} Placement statistics
+   * @returns {PlacementStatistics} Object with placedCount, firstPlacedIndex, lastPlacedIndex
    * @private
    */
   _placePolyominoesGreedily (
@@ -309,16 +389,22 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Try to fill the grid with polyominoes greedily
-   * @returns {PlacementResult} Result of the placement operation
+   * Try to fill the grid with polyominoes using greedy placement
+   *
+   * Clears the grid, loads polyominoes with current settings, and places as many
+   * as possible. Updates display and pagination state. Returns statistics on
+   * placement success.
+   *
+   * @returns {PlacementResult} Result including placed count, total, and whether all fit
    */
   fillGrid () {
     this._clearGrid()
     this.lastFirstPlacedIndex = POLYOMINO_ID_START
     this.lastLastPlacedIndex = POLYOMINO_ID_START
     const polyominoes = this.loadPolyominoes()
-    if (polyominoes.length === 0)
+    if (polyominoes.length === 0) {
       return { placed: 0, total: 0, allFitted: true }
+    }
 
     const { placedCount } = this._placePolyominoesGreedily(
       polyominoes,
@@ -343,7 +429,12 @@ export class PolyominoGridManager {
 
   /**
    * Show a single polyomino at the specified index
-   * @param {number} index - Index of the polyomino to show
+   *
+   * Clears grid, loads available polyominoes (if not already loaded), and displays
+   * the polyomino at the given index positioned at grid (0,0). Updates display
+   * to show single-mode information.
+   *
+   * @param {number} index - Index of the polyomino to show (0-based)
    * @returns {boolean} True if the polyomino was placed successfully
    */
   showPolyomino (index) {
@@ -379,7 +470,12 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Show next polyomino - starts at 1 + previous end, wraps to beginning
+   * Show next set of polyominoes - starts at 1 + previous end, wraps to beginning
+   *
+   * For fill mode pagination: displays the next batch starting after the last
+   * displayed polyomino. For single mode: displays the next individual polyomino.
+   * Wraps around when reaching the end of the list.
+   *
    * @returns {boolean} True if any polyominoes were placed
    */
   nextPolyomino () {
@@ -401,7 +497,12 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Show previous polyomino - goes back before first displayed
+   * Show previous set of polyominoes - goes back before first displayed
+   *
+   * For fill mode pagination: displays the previous batch ending before the first
+   * displayed polyomino. For single mode: displays the previous individual polyomino.
+   * Wraps around when reaching the beginning of the list.
+   *
    * @returns {boolean} True if any polyominoes were placed
    */
   prevPolyomino () {
@@ -429,8 +530,12 @@ export class PolyominoGridManager {
 
   /**
    * Fill grid with polyominoes starting from a specific index
-   * Places as many polyominoes as possible, up to MAX_POLYOMINOES_PER_PAGE total
-   * @param {number} startIndex - Index to start placing from
+   *
+   * Clears grid, rotates polyomino list to start at startIndex, and places as many
+   * as possible (up to MAX_POLYOMINOES_PER_PAGE). Updates pagination tracking for
+   * next/prev navigation. Used internally by nextPolyomino() and prevPolyomino().
+   *
+   * @param {number} startIndex - Index to start placing from (0-based)
    * @returns {boolean} True if any polyominoes were placed
    * @private
    */
@@ -484,11 +589,16 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Update the polyomino info display with range
-   * Shows polyominoes [start+1]-[end+1] of [total]
+   * Update the polyomino info display with range info
+   *
+   * Updates the DOM element with ID 'rect-poly-more' to show which polyominoes
+   * are currently displayed (e.g., "Showing polyominoes 1-5 of 100").
+   * Silently fails if element not available (test environment).
+   *
    * @param {number} startIndex - Starting index (0-based)
    * @param {number} endIndex - Ending index (0-based)
-   * @param {number} total - Total number of polyominoes
+   * @param {number} total - Total number of polyominoes available
+   * @returns {void}
    * @private
    */
   _updateDisplayForRange (startIndex, endIndex, total) {
@@ -512,8 +622,14 @@ export class PolyominoGridManager {
 
   /**
    * Update the polyomino info display for fill mode
-   * @param {number} placed - Number placed
-   * @param {number} total - Total available
+   *
+   * Updates the DOM element with ID 'rect-poly-more' to show fill mode statistics
+   * (e.g., "Showing all 100 polyominoes" or "Showing 15 of 100 - not all fit").
+   * Silently fails if element not available (test environment).
+   *
+   * @param {number} placed - Number of polyominoes placed
+   * @param {number} total - Total number of polyominoes available
+   * @returns {void}
    * @private
    */
   _updateDisplayForFill (placed, total) {
@@ -535,8 +651,14 @@ export class PolyominoGridManager {
 
   /**
    * Update display when showing a single polyomino
-   * @param {number} index - Index of the polyomino
-   * @param {number} total - Total number of polyominoes
+   *
+   * Updates the DOM element with ID 'rect-poly-more' to show single polyomino display
+   * information (e.g., "Polyomino 5 of 100").
+   * Silently fails if element not available (test environment).
+   *
+   * @param {number} index - Index of the polyomino being displayed (0-based)
+   * @param {number} total - Total number of polyominoes available
+   * @returns {void}
    * @private
    */
   _updateDisplayForSingle (index, total) {
@@ -553,7 +675,11 @@ export class PolyominoGridManager {
   }
 
   /**
-   * Check if pagination is needed (i.e., not all polyominoes fit in one page)
+   * Check if pagination is needed
+   *
+   * Pagination is needed when the total number of polyominoes exceeds
+   * MAX_POLYOMINOES_PER_PAGE.
+   *
    * @returns {boolean} True if pagination is needed
    * @private
    */
@@ -563,6 +689,11 @@ export class PolyominoGridManager {
 
   /**
    * Update pagination button states based on whether pagination is needed
+   *
+   * Enables/disables the 'next-poly-grid' and 'prev-poly-grid' buttons and adjusts
+   * their opacity. Silently fails if buttons not available (test environment).
+   *
+   * @returns {void}
    * @private
    */
   _updatePaginationButtons () {
@@ -586,6 +717,11 @@ export class PolyominoGridManager {
 
   /**
    * Draw the grid using RectDrawColor
+   *
+   * Triggers a redraw of the canvas through the RectDrawColor renderer.
+   * Safe to call if rectDrawColor is null (checks before drawing).
+   *
+   * @returns {void}
    */
   draw () {
     if (this.rectDrawColor) {

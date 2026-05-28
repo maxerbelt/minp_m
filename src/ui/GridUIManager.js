@@ -1,26 +1,110 @@
 /**
+ * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
+ */
+
+/**
+ * @typedef {'r90'|'r180'|'r270'|'fx'|'fy'|'fxy'} TransformMapName
+ */
+
+/**
+ * @typedef {'empty'|'full'|'inverse'} MaskAction
+ */
+
+/**
+ * @typedef {Object} ButtonConfig
+ * @property {string} id - HTML element ID
+ */
+
+/**
+ * @typedef {Object} MorphologyButtonConfig
+ * @property {string} id - HTML element ID
+ * @property {MorphologyOperation} operation - Operation type
+ */
+
+/**
+ * @typedef {Object} TransformButtonConfig
+ * @property {string} id - HTML element ID
+ * @property {TransformMapName} mapName - Transform map name
+ */
+
+/**
+ * @typedef {Object} ActionButtonConfig
+ * @property {string} id - HTML element ID
+ * @property {MaskAction} action - Action type
+ */
+
+/**
+ * @typedef {Object} MorphologyConfig
+ * @property {string} [dilateBtn] - Dilate button ID
+ * @property {string} [erodeBtn] - Erode button ID
+ * @property {string} [crossBtn] - Cross button ID
+ */
+
+/**
+ * @typedef {Object} TransformConfig
+ * @property {string} [rotateBtn] - Rotate button ID
+ * @property {TransformMapName} [rotateMap] - Default rotate map
+ * @property {string|Array} [flipButtons] - Flip button selector or array
+ */
+
+/**
+ * @typedef {Object} ActionConfig
+ * @property {string} [emptyBtn] - Empty button ID
+ * @property {string} [fullBtn] - Full button ID
+ * @property {string} [inverseBtn] - Inverse button ID
+ */
+
+/**
+ * @typedef {Object} GridUIConfig
+ * @property {MorphologyConfig} [morphology] - Morphology button configuration
+ * @property {TransformConfig} [transform] - Transform button configuration
+ * @property {ActionConfig} [action] - Action button configuration
+ */
+
+/**
+ * @typedef {Object} HandlerEntry
+ * @property {HTMLElement} btn - The button element
+ * @property {Function} handler - The event handler function
+ */
+
+/**
  * GridUIManager - Manages grid-specific UI button patterns
  * Encapsulates morphology, transform, and action button wiring
  *
- * Usage:
+ * @class GridUIManager
+ * @example
  *   const gridUI = new GridUIManager(hexCanvas, {
  *     morphology: { dilateBtn: 'dilateBtn', erodeBtn: 'erodeBtn' },
  *     transform: { rotateBtn: 'rotateBtn', flipButtons: '.flipBtn' }
  *   })
  *   gridUI.wireMorphologyButtons()
  *   gridUI.wireTransformButtons()
+ *   gridUI.cleanup()
  */
 export class GridUIManager {
   /**
    * Initialize manager with canvas and button configurations
-   * @param {GridCanvas} gridCanvas - The canvas controller
-   * @param {Object} config - Configuration for button patterns
+   * @param {Object} gridCanvas - The canvas controller
+   * @param {Object} gridCanvas.grid - Grid data structure
+   * @param {Function} [gridCanvas.applyMorphology] - Apply morphology operation
+   * @param {Function} [gridCanvas.applyTransform] - Apply transform operation
+   * @param {Function} [gridCanvas.updateButtonStates] - Update button UI state
+   * @param {GridUIConfig} [config={}] - Configuration for button patterns
    */
   constructor (gridCanvas, config = {}) {
+    /** @type {Object} Reference to grid canvas */
     this.canvas = gridCanvas
+
+    /** @type {MorphologyConfig} Morphology button configuration */
     this.morphologyConfig = config.morphology || {}
+
+    /** @type {TransformConfig} Transform button configuration */
     this.transformConfig = config.transform || {}
+
+    /** @type {ActionConfig} Action button configuration */
     this.actionConfig = config.action || {}
+
+    /** @type {Map<string, HandlerEntry>} Map of button handlers for cleanup */
     this.buttonHandlers = new Map()
   }
 
@@ -31,9 +115,10 @@ export class GridUIManager {
   /**
    * Wire a set of buttons with consistent event handling
    * @private
-   * @param {Array<{id: string}>} buttonConfigs - Button configuration objects
+   * @param {ButtonConfig[]} buttonConfigs - Button configuration objects
    * @param {string} prefix - Prefix for handler storage keys
    * @param {Function} handlerFactory - Function that creates event handler from config item
+   * @returns {void}
    */
   _wireButtons (buttonConfigs, prefix, handlerFactory) {
     for (const config of buttonConfigs) {
@@ -53,11 +138,11 @@ export class GridUIManager {
    * @param {Object} config - Configuration object
    * @param {Object<string, {prop: string, value: any}>} mappings - Property to value mappings
    * @param {string} valueKey - Key to use for the value in result objects
-   * @returns {Array<{id: string, [valueKey]: any}>} Button configurations
+   * @returns {ButtonConfig[]} Button configurations
    */
   _extractButtons (config, mappings, valueKey) {
     const buttons = []
-    for (const [key, { prop, value }] of Object.entries(mappings)) {
+    for (const [, { prop, value }] of Object.entries(mappings)) {
       if (config[prop]) {
         buttons.push({ id: config[prop], [valueKey]: value })
       }
@@ -68,7 +153,8 @@ export class GridUIManager {
   /**
    * Wire morphology buttons (dilate, erode, cross)
    * Provides consistent button handling for grid types
-   * @param {Array<{id, operation}>} buttons - Button configurations
+   * @param {MorphologyButtonConfig[]} [buttons=[]] - Button configurations
+   * @returns {void}
    */
   wireMorphologyButtons (buttons = []) {
     const buttonConfigs =
@@ -83,7 +169,8 @@ export class GridUIManager {
   /**
    * Wire transform buttons (rotate, flip)
    * Handles both single rotate and multiple flip buttons
-   * @param {Array<{id, mapName}>} buttons - Button configurations
+   * @param {TransformButtonConfig[]} [buttons=[]] - Button configurations
+   * @returns {void}
    */
   wireTransformButtons (buttons = []) {
     const buttonConfigs =
@@ -97,7 +184,8 @@ export class GridUIManager {
 
   /**
    * Wire action buttons (empty, full, inverse, etc.)
-   * @param {Array<{id, action}>} buttons - Button configurations
+   * @param {ActionButtonConfig[]} [buttons=[]] - Button configurations
+   * @returns {void}
    */
   wireActionButtons (buttons = []) {
     const buttonConfigs =
@@ -112,9 +200,11 @@ export class GridUIManager {
   /**
    * Apply a mask action (empty, full, inverse)
    * @private
+   * @param {MaskAction} action - Action to apply
+   * @returns {void}
    */
   _applyAction (action) {
-    if (!this.canvas.grid || !this.canvas.grid.mask) return
+    if (!this.canvas.grid?.mask) return
 
     const mask = this.canvas.grid.mask
     switch (action) {
@@ -139,6 +229,7 @@ export class GridUIManager {
   /**
    * Extract morphology button configs from canvas configuration
    * @private
+   * @returns {MorphologyButtonConfig[]}
    */
   _extractMorphologyButtons () {
     const mappings = {
@@ -152,6 +243,7 @@ export class GridUIManager {
   /**
    * Extract transform button configs from canvas configuration
    * @private
+   * @returns {TransformButtonConfig[]}
    */
   _extractTransformButtons () {
     const buttons = []
@@ -181,6 +273,7 @@ export class GridUIManager {
   /**
    * Extract action button configs from canvas configuration
    * @private
+   * @returns {ActionButtonConfig[]}
    */
   _extractActionButtons () {
     const mappings = {
@@ -194,7 +287,8 @@ export class GridUIManager {
   /**
    * Clean up all event listeners
    * Removes all registered listeners and clears the handler map
-   * Safe and idempotent
+   * Safe and idempotent - can be called multiple times
+   * @returns {void}
    */
   cleanup () {
     for (const [, { btn, handler }] of this.buttonHandlers) {
