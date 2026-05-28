@@ -443,12 +443,12 @@ export class Missile extends Bomb {
    * Determines turn phase for missile variant.
    * Maps variant ID to turn duration classes for animation pacing.
    * @param {number} variant - Weapon variant identifier (0, 2, 3)
-   * @param {number} _r - Row coordinate (unused for missile)
-   * @param {number} _c - Column coordinate (unused for missile)
+   * @param {number} _y - Row coordinate (unused for missile)
+   * @param {number} _x - Column coordinate (unused for missile)
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
    * @public
    */
-  getTurn (variant, _r, _c) {
+  getTurn (variant, _x, _y) {
     const turnMap = {
       0: 'turn3',
       1: 'turn4',
@@ -544,27 +544,27 @@ export class RailBolt extends Strike {
    * Determines turn phase for rail bolt based on position relative to trajectory line.
    * Complex geometric calculation for animation pacing based on diagonal/orthogonal position.
    * @param {number} variant - Weapon variant identifier (0, 1, 2, 3)
-   * @param {number} r - Row offset from line origin
-   * @param {number} c - Column offset from line origin
+   * @param {number} y - Row offset from line origin
+   * @param {number} x - Column offset from line origin
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
    * @public
    */
-  getTurn (variant, r, c) {
-    if (r === 0 && c === 0) {
+  getTurn (variant, x, y) {
+    if (y === 0 && x === 0) {
       return variant === 0 ? 'turn4' : ''
     }
-    if (r === 0) return 'turn4'
-    if (c === 0) return 'turn3'
-    if (r === c) return 'turn2'
-    if (r === -c) return ''
+    if (y === 0) return 'turn4'
+    if (x === 0) return 'turn3'
+    if (y === x) return 'turn2'
+    if (y === -x) return ''
     if (variant === 0) {
-      const r0 = Math.abs(r)
-      const c0 = Math.abs(c)
-      return c0 < r0 ? 'turn3' : 'turn4'
+      const y0 = Math.abs(y)
+      const x0 = Math.abs(x)
+      return x0 < y0 ? 'turn3' : 'turn4'
     }
 
-    const d0 = Math.abs(r + c)
-    const d1 = Math.abs(c - r)
+    const d0 = Math.abs(y + x)
+    const d1 = Math.abs(x - y)
     return d1 < d0 ? 'turn2' : ''
   }
   /**
@@ -885,12 +885,12 @@ export class GaussRound extends Fish {
    * Determines turn phase for Gauss round variant.
    * Maps variant ID to turn duration classes for animation pacing.
    * @param {number} variant - Weapon variant identifier (1, 3)
-   * @param {number} _r - Row coordinate (unused for Gauss round)
-   * @param {number} _c - Column coordinate (unused for Gauss round)
+   * @param {number} _y - Row coordinate (unused for Gauss round)
+   * @param {number} _x - Column coordinate (unused for Gauss round)
    * @returns {string} CSS turn class name ('turn2') or empty string if no mapping
    * @public
    */
-  getTurn (variant, _r, _c) {
+  getTurn (variant, _x, _y) {
     const turnMap = {
       1: 'turn2',
       3: 'turn2'

@@ -454,11 +454,11 @@ export class Ship {
   /**
    * Get turn information at given coordinates from primary weapon
    * Adjusts coordinates for hit mask offset before delegating to weapon.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {string} Turn information string from weapon (empty string if no weapon)
    */
-  getTurn (r, c) {
+  getTurn (x, y) {
     // hits is a SubBoard/SubMask with offsetY, windowHeight, offsetX, windowWidth properties
     const hits = this.hits
     const offsetY = Number(
@@ -481,9 +481,9 @@ export class Ship {
         ? hits.windowWidth || 1
         : 1
     )
-    const r0 = r - offsetY - (windowHeight - 1) / 2
-    const c0 = c - offsetX - (windowWidth - 1) / 2
-    return this.getPrimaryWeapon()?.getTurn(this.variant, r0, c0) || ''
+    const y0 = y - offsetY - (windowHeight - 1) / 2
+    const x0 = x - offsetX - (windowWidth - 1) / 2
+    return this.getPrimaryWeapon()?.getTurn(this.variant, x0, y0) || ''
   }
   reset () {
     this.resetHits()
