@@ -2,7 +2,7 @@
  * @fileoverview Sea and Land Terrain Configuration
  *
  * Defines the classic "Sea and Land" game terrain with two distinct subterrains:
- * - Sea: Water-based environment with littoral and deep zones
+ * - Sea: Water-based environment with littoral (shallow) and deep zones
  * - Land: Ground-based environment with coastal and inland zones
  *
  * The terrain system supports zone-specific gameplay rules where units can only be
@@ -13,11 +13,25 @@
  * - Marginal zones (isMarginal=true): Touch both sea and land terrains
  * - Non-marginal zones (isMarginal=false): Exist entirely within one terrain
  *
+ * Terrain Structure:
+ * ```
+ * SeaAndLand
+ * ├── Sea (water environment, letter='S')
+ * │   ├── Littoral (L) - marginal, shallow water at interface
+ * │   └── Deep (D) - non-marginal, open ocean
+ * └── Land (ground environment, letter='G')
+ *     ├── Coast (C) - marginal, shoreline
+ *     └── Inland (I) - non-marginal, interior land
+ * ```
+ *
  * @module terrains/sea/js/seaAndLand
+ * @author Game Development Team
+ * @version 1.0.0
  * @see {@link https://github.com/battlesnake/minp_m} for game architecture
- * @see {@link Zone} for zone definition
- * @see {@link SubTerrain} for subterrain definition
- * @see {@link Terrain} for terrain definition
+ * @see {@link Zone} for zone definition and structure
+ * @see {@link SubTerrain} for subterrain definition and structure
+ * @see {@link Terrain} for terrain definition and structure
+ * @see {@link seaWeaponSounds} for sound effect mappings
  */
 
 import { terrains } from '../../all/js/terrains.js'
@@ -31,43 +45,75 @@ import { seaWeaponSounds } from './seaWeaponSounds.js'
  *
  * Represents the deepest water locations in the sea terrain. Non-marginal zone
  * that exists entirely within sea areas. Used for unit placement validation and
- * terrain-specific restrictions (e.g., only sea vessels can occupy deep zones).
+ * terrain-specific restrictions (e.g., only deep-water sea vessels can occupy
+ * deep zones). Provides the furthest-from-shore naval positioning for strategic depth.
+ *
+ * Zone Configuration:
+ * - title: "Depths" - display name for zone selection menus
+ * - letter: "D" - single character identifier for map encoding and storage
+ * - isMarginal: false - zone is non-boundary, entirely within sea terrain
+ * - usage: Deep-water naval units, submarines, deep-sea vessels
+ * - restrictions: Cannot accept land-based or coastal units
  *
  * @type {Zone}
  * @constant
  * @readonly
  * @static
- * @property {string} title - "Depths" - human-readable zone name
- * @property {string} letter - "D" - zone abbreviation for encoding/display
- * @property {boolean} isMarginal - false - zone is entirely within sea terrain
+ * @public
+ *
+ * @property {string} title - "Depths" - human-readable zone name for UI display
+ * @property {string} letter - "D" - zone abbreviation character for encoding/map storage
+ * @property {boolean} isMarginal - false - zone is entirely within sea terrain (non-boundary)
  *
  * @returns {Zone} A new Zone instance representing deep ocean areas
+ * @see {@link sea} for sea subterrain that contains this zone
+ * @see {@link littoral} for shallow water alternative zone
+ *
  * @example
- * // Deep zones only accept sea vessels, not coastal units
- * const isDeepZone = zoneInfo.zone === deep
+ * // Deep zones only accept deep-water sea vessels, not coastal units
+ * const isDeepZone = zoneInfo[1] === deep
+ * if (isDeepZone && vessel.type() === 'S') {
+ *   allowPlacement = DeepSeaVessel.validator(zoneInfo)
+ * }
  */
 export const deep = new Zone('Depths', 'D', false)
 
 /**
  * Littoral (shallow water) zone descriptor.
  *
- * Represents shallow water areas where sea and land meet. Marginal zone that
- * touches both sea and land terrains, allowing for unique gameplay mechanics.
- * Units from both terrains may be placed in littoral zones, depending on their
- * type-specific restrictions.
+ * Represents shallow water areas where sea and land meet at the sea/land interface.
+ * Marginal zone that touches both sea and land terrains, allowing for unique gameplay
+ * mechanics where units from both environments interact. Examples include naval units
+ * operating near shore and land-based coastal defenses.
+ *
+ * Zone Configuration:
+ * - title: "Shallows" - display name for zone selection menus
+ * - letter: "L" - single character identifier for map encoding (L for Littoral)
+ * - isMarginal: true - zone is at boundary between sea and land terrains
+ * - usage: Coastal ships, shallow-water vessels, some land units near water
+ * - interactions: Allows cross-terrain unit placement and interactions
  *
  * @type {Zone}
  * @constant
  * @readonly
  * @static
- * @property {string} title - "Shallows" - human-readable zone name
- * @property {string} letter - "L" - zone abbreviation for encoding/display
- * @property {boolean} isMarginal - true - zone is at sea/land boundary
+ * @public
+ *
+ * @property {string} title - "Shallows" - human-readable zone name for UI display
+ * @property {string} letter - "L" - zone abbreviation character for encoding/map storage (L for Littoral)
+ * @property {boolean} isMarginal - true - zone is at sea/land boundary (marginal)
  *
  * @returns {Zone} A new Zone instance representing shallow water areas
+ * @see {@link sea} for sea subterrain containing this zone
+ * @see {@link coast} for the corresponding land-side marginal zone
+ * @see {@link deep} for deep-water alternative zone
+ *
  * @example
- * // Littoral zones may accept both sea and land units
- * const isShallowZone = zoneInfo.zone === littoral
+ * // Littoral zones may accept both shallow-water vessels and some land units
+ * const isShallowZone = zoneInfo[1] === littoral
+ * if (isShallowZone && vessel.type() === 'S') {
+ *   allowPlacement = ShallowDock.validator(zoneInfo) // coastal vessels only
+ * }
  */
 export const littoral = new Zone('Shallows', 'L', true)
 
@@ -78,15 +124,28 @@ export const littoral = new Zone('Shallows', 'L', true)
  * both land and sea terrains. Used for units that must be positioned at the
  * intersection of land and water, such as port buildings or coastal defenses.
  *
+ * Zone Configuration:
+ * - title: "Coast" - display name for zone menus and UI
+ * - letter: "C" - single character identifier for encoding
+ * - isMarginal: true - zone is at land/sea boundary (marginal)
+ * - usage: Port structures, coastal defense, amphibious units
+ * - interactions: Allows both land and sea unit placement
+ *
  * @type {Zone}
  * @constant
  * @readonly
  * @static
+ * @public
+ *
  * @property {string} title - "Coast" - human-readable zone name
  * @property {string} letter - "C" - zone abbreviation for encoding/display
  * @property {boolean} isMarginal - true - zone is at land/sea boundary
  *
  * @returns {Zone} A new Zone instance representing coastal areas
+ * @see {@link land} for land subterrain containing this zone
+ * @see {@link littoral} for the corresponding sea-side marginal zone
+ * @see {@link inland} for inland alternative zone
+ *
  * @example
  * // Coastal zones may accept land and some sea units
  * const isCoastalZone = zoneInfo.zone === coast
@@ -100,15 +159,28 @@ export const coast = new Zone('Coast', 'C', true)
  * entirely within land areas. Used for unit placement validation where only
  * land-based units (buildings, aircraft) can be placed.
  *
+ * Zone Configuration:
+ * - title: "Highlands" - display name for zone menus
+ * - letter: "I" - single character identifier for encoding
+ * - isMarginal: false - zone is non-boundary, entirely within land terrain
+ * - usage: Land buildings, aircraft bases, interior fortifications
+ * - restrictions: Cannot accept sea-based or naval units
+ *
  * @type {Zone}
  * @constant
  * @readonly
  * @static
+ * @public
+ *
  * @property {string} title - "Highlands" - human-readable zone name
  * @property {string} letter - "I" - zone abbreviation for encoding/display
  * @property {boolean} isMarginal - false - zone is entirely within land terrain
  *
  * @returns {Zone} A new Zone instance representing inland areas
+ * @see {@link land} for land subterrain containing this zone
+ * @see {@link coast} for coastal alternative zone
+ * @see {@link deep} for deep ocean equivalent on sea side
+ *
  * @example
  * // Inland zones only accept land units, not sea vessels
  * const isInlandZone = zoneInfo.zone === inland
@@ -123,10 +195,29 @@ export const inland = new Zone('Highlands', 'I', false)
  * and placement rules. Sea units (ships, submarines) are restricted to this subterrain
  * through type validation in the placement system.
  *
+ * Subterrain Configuration:
+ * - title: "Sea" - display name for terrain selection and UI
+ * - letter: "S" - unique identifier for sea subterrain
+ * - isDefault: true - sea is the starting/default subterrain
+ * - isTheLand: false - sea is not the land environment
+ * - zones: [littoral, deep] - both marginal and non-marginal zones
+ * - colors: Light (#1a78d6) and dark (#1761b0) water shades
+ *
+ * Visual Properties:
+ * - lightColor: "#1a78d6" - Bright water blue for main rendering
+ * - darkColor: "#1761b0" - Darker blue for shadows and depth effect
+ * - Provides visual contrast between shallow and deep water
+ *
+ * Zone Structure:
+ * - Littoral (L): Marginal zone at sea/land interface, shallow water
+ * - Deep (D): Non-marginal zone entirely within sea, open ocean
+ *
  * @type {SubTerrain}
  * @constant
  * @readonly
  * @static
+ * @public
+ *
  * @property {string} title - "Sea" - display name for the water terrain
  * @property {string} lightColor - "#1a78d6" - bright water color for rendering
  * @property {string} darkColor - "#1761b0" - dark water color for shadows/depth
@@ -140,6 +231,7 @@ export const inland = new Zone('Highlands', 'I', false)
  * @returns {SubTerrain} A new SubTerrain instance for the water environment
  * @see {@link deep} for the deep zone definition
  * @see {@link littoral} for the littoral zone definition
+ * @see {@link seaAndLand} for the parent terrain
  */
 export const sea = new SubTerrain(
   'Sea',
@@ -159,10 +251,29 @@ export const sea = new SubTerrain(
  * and placement rules. Land units (buildings, aircraft) are restricted to this
  * subterrain through type validation in the placement system.
  *
+ * Subterrain Configuration:
+ * - title: "Land" - display name for terrain selection and UI
+ * - letter: "G" - unique identifier for land subterrain (G for Ground)
+ * - isDefault: false - land is not the starting terrain
+ * - isTheLand: true - land is designated as the official land environment
+ * - zones: [coast, inland] - both marginal and non-marginal zones
+ * - colors: Light (#348239) and dark (#296334) green shades
+ *
+ * Visual Properties:
+ * - lightColor: "#348239" - Bright grass green for main rendering
+ * - darkColor: "#296334" - Darker green for shadows and terrain depth
+ * - Provides visual contrast between coastal and interior land areas
+ *
+ * Zone Structure:
+ * - Coast (C): Marginal zone at land/sea interface, shoreline areas
+ * - Inland (I): Non-marginal zone entirely within land, interior regions
+ *
  * @type {SubTerrain}
  * @constant
  * @readonly
  * @static
+ * @public
+ *
  * @property {string} title - "Land" - display name for the ground terrain
  * @property {string} lightColor - "#348239" - bright grass/ground color for rendering
  * @property {string} darkColor - "#296334" - dark ground color for shadows/depth
@@ -176,6 +287,7 @@ export const sea = new SubTerrain(
  * @returns {SubTerrain} A new SubTerrain instance for the ground environment
  * @see {@link coast} for the coastal zone definition
  * @see {@link inland} for the inland zone definition
+ * @see {@link seaAndLand} for the parent terrain
  */
 export const land = new SubTerrain(
   'Land',
@@ -208,36 +320,63 @@ export const land = new SubTerrain(
  * - Aircraft place in land zones only
  * - Some units (ports, docks) may have zone-specific restrictions
  *
+ * Terrain Properties:
+ * - title: "Sea and Land" - display name for terrain selection
+ * - key: "sea-and-land" - normalized identifier for lookups
+ * - ships: null - uses default ship catalogue from game config
+ * - weapons: null - uses default weapon effects
+ * - sounds: seaWeaponSounds - terrain-specific audio configuration
+ * - subterrains: [sea, land] - both water and ground environments
+ * - hasTransforms: false - standard placement without transformations
+ *
  * @type {Terrain}
  * @constant
  * @readonly
  * @static
- * @property {string} title - "Sea and Land" - terrain display name
- * @property {null} shipInfo - null, uses default ship catalogue
- * @property {SubTerrain[]} subterrains - [sea, land] array containing both environments
- * @property {string} name - "SeaAndLand" - identifier for terrain storage/lookup
- * @property {null} sunkDescriptionMaker - null, uses default sunk descriptions
- * @property {null} shipShapes - null, uses default ship shapes
- * @property {TerrainSoundConfig} sounds - weapon sound effects for sea terrain
+ * @public
  *
- * @returns {Terrain} A new Terrain instance for Sea and Land gameplay
- * @see {@link sea} for sea subterrain configuration
- * @see {@link land} for land subterrain configuration
- * @see {@link seaWeaponSounds} for sound effect mappings
+ * @property {string} title - "Sea and Land" - terrain display name for UI
+ * @property {string} key - "sea-and-land" - normalized identifier derived from title
+ * @property {TerrainShipCatalogue|null} ships - null indicates default ship catalogue usage
+ * @property {WeaponCatalogue|null} weapons - null indicates default weapon effects
+ * @property {SubTerrain[]} subterrains - Array of two subterrains: [sea, land]
+ * @property {string} tag - "SeaAndLand" - unique tag for terrain storage and lookup
+ * @property {TerrainSoundConfig} sounds - Sound configuration object mapping weapon types to audio
+ * @property {boolean} hasTransforms - false - this terrain does not use terrain transforms
+ *
+ * @returns {Terrain} A new Terrain instance for Sea and Land gameplay with full configuration
+ * @see {@link sea} for sea subterrain configuration and zones
+ * @see {@link land} for land subterrain configuration and zones
+ * @see {@link seaWeaponSounds} for sound effect mappings and audio configuration
  *
  * @example
  * // Access the Sea and Land terrain
  * import { seaAndLand } from './seaAndLand.js'
  * const terrain = seaAndLand
  * console.log(terrain.title) // "Sea and Land"
+ * console.log(terrain.key) // "sea-and-land"
+ * console.log(terrain.subterrains.length) // 2
  */
 export const seaAndLand = new Terrain(
   'Sea and Land',
   null,
   [sea, land],
   'SeaAndLand',
-  null,
-  null,
+  undefined,
+  undefined,
   seaWeaponSounds
 )
+
+/**
+ * Set Sea and Land as the default terrain for game initialization.
+ *
+ * Assigns the seaAndLand terrain instance to terrains.default so it can be
+ * accessed during game startup. This designation means that when a new game
+ * is created without explicit terrain selection, the Sea and Land terrain
+ * will be used by default.
+ *
+ * @type {Terrain}
+ * @public
+ */
+// @ts-expect-error - terrains object allows dynamic property assignment for terrain defaults
 terrains.default = seaAndLand
