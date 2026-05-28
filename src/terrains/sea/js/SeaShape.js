@@ -78,9 +78,13 @@ class SeaShape extends Shape {
   /**
    * Returns the raw sunk description for this shape.
    * Base implementation used by subclasses that override behavior.
+   * Subclasses may override this method to provide terrain-specific descriptions.
    *
    * @returns {string} Always returns 'Destroyed' as base class default
    * @public
+   * @example
+   * const shape = new SeaShape('Test', 'T', 'S', [[0,0]], 'Test', 'tip')
+   * shape.sunkDescriptionRaw() // 'Destroyed'
    */
   sunkDescriptionRaw () {
     return 'Destroyed'
@@ -89,9 +93,14 @@ class SeaShape extends Shape {
   /**
    * Returns the description text for this shape.
    * Provides human-readable name of the shape for UI display.
+   * This is the primary identifier shown in the game UI for the shape.
    *
-   * @returns {string} The shape's description
+   * @returns {string} The shape's human-readable description
    * @public
+   * @see descriptionText for the underlying property
+   * @example
+   * const shape = new SeaShape('Battleship', 'B', 'S', [[0,0]], 'Naval', 'Place in sea')
+   * shape.description() // 'Battleship'
    */
   description () {
     return this.descriptionText
@@ -149,17 +158,23 @@ export class Building extends SeaShape {
   /**
    * Creates a new building instance.
    * Initializes building with land-based terrain constraints and placement rules.
+   * Buildings can only be placed on land terrain and are immune to Z and + terrains.
    *
-   * @param {string} description - Description of the building
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for building layout
-   * @param {string} [tip] - Placement tip for user guidance (optional)
-   * @param {Array<[number, number]>} [racks] - Rack configuration (optional)
+   * @param {string} description - Human-readable name of the building (e.g., 'Guard Tower')
+   * @param {string} letter - Single character identifier for the building (e.g., 'G')
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining building shape
+   * @param {string} [tip] - Placement tip text for user guidance (optional, default: 'place {description} on the land')
+   * @param {Array<[number, number]>} [racks] - Array of rack positions for weapon placement (optional)
    *
    * @returns {void}
    * @public
+   * @example
+   * const tower = new Building('Tower', 'T', 'S', [[0,0], [1,0]], 'Place tower on highlands')
+   * tower.canBeOn(land) // true
+   * tower.type() // 'G'
    */
+
   constructor (
     description,
     letter,
@@ -186,9 +201,13 @@ export class Building extends SeaShape {
   /**
    * Returns the shape type identifier.
    * Identifies this shape as a ground-based (building) unit.
+   * Used for game mechanics to determine unit category and behavior.
    *
-   * @returns {string} Always returns 'G' for ground/building
+   * @returns {string} Always returns 'G' for ground/building type
    * @public
+   * @example
+   * const building = new Building('Tower', 'T', 'S', [[0,0]])
+   * building.type() // 'G'
    */
   type () {
     return 'G'
@@ -197,10 +216,15 @@ export class Building extends SeaShape {
   /**
    * Checks if this building can be placed on the given subterrain.
    * Validates that placement is only on land terrain.
+   * Buildings cannot be placed on sea or mixed terrains.
    *
-   * @param {SubTerrain} subterrain - The subterrain to check
-   * @returns {boolean} True if placement is valid (land only)
+   * @param {SubTerrain} subterrain - The subterrain type to validate for placement
+   * @returns {boolean} True if subterrain is land type, false otherwise
    * @public
+   * @example
+   * const building = new Building('Tower', 'T', 'S', [[0,0]])
+   * building.canBeOn(land) // true
+   * building.canBeOn(sea) // false
    */
   canBeOn (subterrain) {
     return subterrain === land
@@ -272,13 +296,17 @@ class ZoneValidatedBuilding extends Building {
 
   /**
    * Checks if this zone-validated building can be placed on the given subterrain and zone.
-   * Validates both terrain type and specific zone match.
+   * Validates both terrain type and specific zone match using the class's zone property.
+   * This is a stricter validation than parent Building class, requiring zone match.
    *
    * @static
-   * @param {SubTerrain} subterrain - The subterrain to check
-   * @param {Zone} zone - The zone to check
-   * @returns {boolean} True if placement is valid for the specific zone
+   * @param {SubTerrain} subterrain - The subterrain to check for terrain type match
+   * @param {Zone} zone - The zone to check against this.zone property
+   * @returns {boolean} True if both subterrain and zone match, false otherwise
    * @public
+   * @example
+   * HillFort.canBe(land, inland) // true
+   * HillFort.canBe(land, coast) // false
    */
   static canBe (subterrain, zone) {
     return subterrain === this.subterrain && zone === this.zone
@@ -322,16 +350,21 @@ export class HillFort extends ZoneValidatedBuilding {
   /**
    * Creates a new hill fort instance.
    * Initializes with inland zone constraints and placement rules.
+   * Hill forts cannot touch sea squares and must be completely surrounded by land.
    *
-   * @param {string} description - Description of the hill fort
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for fort layout
-   * @param {Array<[number, number]>} [racks] - Rack configuration (optional)
+   * @param {string} description - Human-readable name of the hill fort (e.g., 'Stone Fort')
+   * @param {string} letter - Single character identifier for the hill fort
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining fort shape
+   * @param {Array<[number, number]>} [racks] - Array of rack positions for weapon placement (optional)
    *
    * @returns {void}
    * @public
+   * @example
+   * const fort = new HillFort('Stone Fort', 'F', 'S', [[0,0], [1,0]])
+   * fort.zone // inland
    */
+
   constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
@@ -379,16 +412,21 @@ export class CoastalPort extends ZoneValidatedBuilding {
   /**
    * Creates a new coastal port instance.
    * Initializes with coastal zone constraints and placement rules.
+   * Coastal ports must be touching sea squares for maritime trading operations.
    *
-   * @param {string} description - Description of the coastal port
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for port layout
-   * @param {Array<[number, number]>} [racks] - Rack configuration (optional)
+   * @param {string} description - Human-readable name of the coastal port (e.g., 'Trading Post')
+   * @param {string} letter - Single character identifier for the coastal port
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining port shape
+   * @param {Array<[number, number]>} [racks] - Array of rack positions for weapon placement (optional)
    *
    * @returns {void}
    * @public
+   * @example
+   * const port = new CoastalPort('Trading Post', 'P', 'S', [[0,0], [1,0]])
+   * port.zone // coast
    */
+
   constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
@@ -478,17 +516,22 @@ export class Plane extends SeaShape {
 
   /**
    * Creates a new plane instance.
-   * Initializes with unrestricted placement rules.
+   * Initializes with unrestricted placement rules across all terrain types.
+   * Planes can be placed anywhere on the map without terrain constraints.
    *
-   * @param {string} description - Description of the aircraft
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for aircraft layout
-   * @param {Array<[number, number]>} [racks] - Rack configuration (optional)
+   * @param {string} description - Human-readable name of the aircraft (e.g., 'Fighter Jet')
+   * @param {string} letter - Single character identifier for the aircraft
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining aircraft shape
+   * @param {Array<[number, number]>} [racks] - Array of rack positions for weapon placement (optional)
    *
    * @returns {void}
    * @public
+   * @example
+   * const plane = new Plane('Fighter Jet', 'F', 'S', [[0,0], [1,0]])
+   * plane.type() // 'A'
    */
+
   constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
@@ -507,9 +550,13 @@ export class Plane extends SeaShape {
   /**
    * Returns the shape type identifier.
    * Identifies this shape as an aerial (plane) unit.
+   * Used for game mechanics to distinguish air units from sea and land units.
    *
-   * @returns {string} Always returns 'A' for air
+   * @returns {string} Always returns 'A' for air/aircraft type
    * @public
+   * @example
+   * const plane = new Plane('Fighter', 'F', 'S', [[0,0]])
+   * plane.type() // 'A'
    */
   type () {
     return 'A'
@@ -518,9 +565,13 @@ export class Plane extends SeaShape {
   /**
    * Returns the sunk description for aerial units.
    * Describes what happens when this aircraft is destroyed.
+   * Overrides SeaShape.sunkDescriptionRaw() with aircraft-specific terminology.
    *
-   * @returns {string} Always returns 'Shot Down'
+   * @returns {string} Always returns 'Shot Down' for aircraft destruction
    * @public
+   * @example
+   * const plane = new Plane('Fighter', 'F', 'S', [[0,0]])
+   * plane.sunkDescription() // 'Shot Down'
    */
   sunkDescription () {
     return 'Shot Down'
@@ -528,11 +579,16 @@ export class Plane extends SeaShape {
 
   /**
    * Checks if this plane can be placed on the given subterrain.
-   * Planes have no terrain restrictions.
+   * Planes have no terrain restrictions and can be placed anywhere.
+   * The subterrain parameter is accepted for interface compatibility but is not used.
    *
-   * @param {SubTerrain} _subterrain - The subterrain to check (unused)
-   * @returns {boolean} Always returns true (planes can be placed anywhere)
+   * @param {SubTerrain} _subterrain - The subterrain to check (unused in planes)
+   * @returns {boolean} Always returns true (planes unrestricted by terrain)
    * @public
+   * @example
+   * const plane = new Plane('Fighter', 'F', 'S', [[0,0]])
+   * plane.canBeOn(sea) // true
+   * plane.canBeOn(land) // true
    */
   canBeOn (_subterrain) {
     return true
@@ -562,10 +618,13 @@ export class Plane extends SeaShape {
 
   /**
    * Validator function for zone checking.
-   * Delegates to all subterrain's canBe method (always true for planes).
+   * Delegates to all subterrain's canBe method, always returns true for planes.
+   * Planes accept any zone without restrictions during placement validation.
    *
    * @static
    * @type {(subterrain: SubTerrain) => boolean}
+   * @example
+   * Plane.validator({subterrain: sea, zone: deep}) // true
    */
   static validator = /** @type {(subterrain: SubTerrain) => boolean} */ (
     all.canBe.bind(all)
@@ -623,17 +682,22 @@ export class SeaVessel extends SeaShape {
   /**
    * Creates a new sea vessel instance.
    * Initializes vessel with sea-based terrain constraints and placement rules.
+   * Vessels can only be placed on sea terrain and use validator for zone checking.
    *
-   * @param {string} description - Description of the vessel
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for vessel layout
-   * @param {string} [tip] - Placement tip for user guidance (optional)
-   * @param {Array<[number, number]>} [racks] - Rack configuration (optional)
+   * @param {string} description - Human-readable name of the vessel (e.g., 'Battleship')
+   * @param {string} letter - Single character identifier for the vessel (e.g., 'B')
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining vessel shape
+   * @param {string} [tip] - Placement tip text for user guidance (optional, default: 'place {description} in the sea')
+   * @param {Array<[number, number]>} [racks] - Array of rack positions for weapon placement (optional)
    *
    * @returns {void}
    * @public
+   * @example
+   * const ship = new SeaVessel('Battleship', 'B', 'S', [[0,0], [1,0]], 'Place in deep water')
+   * ship.type() // 'S'
    */
+
   constructor (
     description,
     letter,
@@ -659,9 +723,13 @@ export class SeaVessel extends SeaShape {
   /**
    * Returns the shape type identifier.
    * Identifies this shape as a sea-based (vessel) unit.
+   * Used for game mechanics to determine unit category and naval behavior.
    *
-   * @returns {string} Always returns 'S' for sea
+   * @returns {string} Always returns 'S' for sea/vessel type
    * @public
+   * @example
+   * const ship = new SeaVessel('Battleship', 'B', 'S', [[0,0]])
+   * ship.type() // 'S'
    */
   type () {
     return 'S'
@@ -670,9 +738,13 @@ export class SeaVessel extends SeaShape {
   /**
    * Returns the sunk description for sea vessels.
    * Describes what happens when this ship is destroyed.
+   * Overrides SeaShape.sunkDescriptionRaw() with maritime-specific terminology.
    *
-   * @returns {string} Always returns 'Sunk'
+   * @returns {string} Always returns 'Sunk' for naval vessel destruction
    * @public
+   * @example
+   * const ship = new SeaVessel('Battleship', 'B', 'S', [[0,0]])
+   * ship.sunkDescription() // 'Sunk'
    */
   sunkDescription () {
     return 'Sunk'
@@ -681,9 +753,13 @@ export class SeaVessel extends SeaShape {
   /**
    * Returns the description text for this vessel.
    * Provides human-readable name of the vessel for UI display.
+   * Inherits from SeaShape parent class implementation.
    *
-   * @returns {string} The vessel's description
+   * @returns {string} The vessel's human-readable description
    * @public
+   * @example
+   * const ship = new SeaVessel('Battleship', 'B', 'S', [[0,0]])
+   * ship.description() // 'Battleship'
    */
   description () {
     return this.descriptionText
@@ -692,10 +768,15 @@ export class SeaVessel extends SeaShape {
   /**
    * Checks if this sea vessel can be placed on the given subterrain.
    * Validates that placement is only on sea terrain.
+   * Vessels cannot be placed on land or mixed terrain types.
    *
-   * @param {SubTerrain} subterrain - The subterrain to check
-   * @returns {boolean} True if placement is valid (sea only)
+   * @param {SubTerrain} subterrain - The subterrain type to validate for placement
+   * @returns {boolean} True if subterrain is sea type, false otherwise
    * @public
+   * @example
+   * const ship = new SeaVessel('Battleship', 'B', 'S', [[0,0]])
+   * ship.canBeOn(sea) // true
+   * ship.canBeOn(land) // false
    */
   canBeOn (subterrain) {
     return subterrain === sea
@@ -726,9 +807,12 @@ export class SeaVessel extends SeaShape {
   /**
    * Validator function for zone checking.
    * Delegates to sea subterrain's validator method.
+   * Ensures vessels are placed in valid sea zones based on zone configuration.
    *
    * @static
    * @type {(zoneInfo: ZoneInfo) => boolean}
+   * @example
+   * SeaVessel.validator([sea, deep]) // true
    */
   static validator = /** @type {(zoneInfo: ZoneInfo) => boolean} */ (
     sea.validator.bind(sea)
@@ -767,13 +851,17 @@ class ZoneValidatedSeaVessel extends SeaVessel {
 
   /**
    * Checks if this zone-validated sea vessel can be placed on the given subterrain and zone.
-   * Validates both terrain type and specific zone match.
+   * Validates both terrain type and specific zone match using the class's zone property.
+   * This is a stricter validation than parent SeaVessel class, requiring zone match.
    *
    * @static
-   * @param {SubTerrain} subterrain - The subterrain to check
-   * @param {Zone} zone - The zone to check
-   * @returns {boolean} True if placement is valid for the specific zone
+   * @param {SubTerrain} subterrain - The subterrain to check for terrain type match
+   * @param {Zone} zone - The zone to check against this.zone property
+   * @returns {boolean} True if both subterrain and zone match, false otherwise
    * @public
+   * @example
+   * DeepSeaVessel.canBe(sea, deep) // true
+   * DeepSeaVessel.canBe(sea, littoral) // false
    */
   static canBe (subterrain, zone) {
     return subterrain === this.subterrain && zone === this.zone
@@ -817,16 +905,21 @@ export class DeepSeaVessel extends ZoneValidatedSeaVessel {
   /**
    * Creates a new deep sea vessel instance.
    * Initializes with deep zone constraints and placement rules.
+   * Deep sea vessels cannot touch land squares and must be surrounded by sea.
    *
-   * @param {string} description - Description of the deep sea vessel
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for vessel layout
-   * @param {Array<[number, number]>} [racks] - Rack configuration (optional)
+   * @param {string} description - Human-readable name of the deep sea vessel (e.g., 'Battleship')
+   * @param {string} letter - Single character identifier for the vessel
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining vessel shape
+   * @param {Array<[number, number]>} [racks] - Array of rack positions for weapon placement (optional)
    *
    * @returns {void}
    * @public
+   * @example
+   * const warship = new DeepSeaVessel('Battleship', 'B', 'S', [[0,0], [1,0]])
+   * warship.zone // deep
    */
+
   constructor (description, letter, symmetry, cells, racks = undefined) {
     super(
       description,
@@ -854,8 +947,12 @@ export class DeepSeaVessel extends ZoneValidatedSeaVessel {
 /**
  * Validator function for DeepSeaVessel zone checking.
  * Bound to DeepSeaVessel class for use in placement validation.
+ * Ensures deep sea vessels are only placed in deep zones of sea terrain.
  *
  * @type {(zoneInfo: ZoneInfo) => boolean}
+ * @example
+ * DeepSeaVessel.validator([sea, deep]) // true
+ * DeepSeaVessel.validator([sea, littoral]) // false
  */
 DeepSeaVessel.validator = DeepSeaVessel.validator.bind(DeepSeaVessel)
 
@@ -874,16 +971,21 @@ export class ShallowDock extends ZoneValidatedSeaVessel {
   /**
    * Creates a new shallow dock instance.
    * Initializes with littoral zone constraints and placement rules.
+   * Shallow docks must be touching land squares for supply and trade operations.
    *
-   * @param {string} description - Description of the shallow dock
-   * @param {string} letter - Shape identifier letter
-   * @param {string} symmetry - Symmetry type (S, A, G, X, W)
-   * @param {Array<[number, number]>} cells - Cell configuration for dock layout
-   * @param {Array<[number, number]>} racks - Rack configuration
+   * @param {string} description - Human-readable name of the shallow dock (e.g., 'Naval Base')
+   * @param {string} letter - Single character identifier for the dock
+   * @param {string} symmetry - Symmetry type: S (single), A (asymmetric), G (group), X (no), W (wide)
+   * @param {Array<[number, number]>} cells - Array of [row, column] cell offsets defining dock shape
+   * @param {Array<[number, number]>} racks - Array of rack positions for weapon placement
    *
    * @returns {void}
    * @public
+   * @example
+   * const dock = new ShallowDock('Naval Base', 'N', 'S', [[0,0], [1,0]], [[1,1]])
+   * dock.zone // littoral
    */
+
   constructor (description, letter, symmetry, cells, racks) {
     super(
       description,
@@ -909,7 +1011,11 @@ export class ShallowDock extends ZoneValidatedSeaVessel {
 /**
  * Validator function for ShallowDock zone checking.
  * Bound to ShallowDock class for use in placement validation.
+ * Ensures shallow docks are only placed in littoral zones of sea terrain.
  *
  * @type {(zoneInfo: ZoneInfo) => boolean}
+ * @example
+ * ShallowDock.validator([sea, littoral]) // true
+ * ShallowDock.validator([sea, deep]) // false
  */
 ShallowDock.validator = ShallowDock.validator.bind(ShallowDock)
