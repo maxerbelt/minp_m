@@ -1,19 +1,75 @@
+/**
+ * @fileoverview Terrain Configuration Module
+ *
+ * Provides core terrain management with support for multiple subterrains, ship/weapon catalogues,
+ * custom map storage, and terrain-specific customizations. Terrains represent distinct game
+ * environments (e.g., Sea and Land, Space) with their own rules, units, and visual properties.
+ *
+ * @module terrains/all/js/terrain
+ */
+
 import { SubTerrainBase } from './SubTerrainBase.js'
 import { bh } from './bh.js'
 
 /**
  * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
+ * @description A distinct terrain environment (water, land, space, etc.) within a terrain
+ */
+
+/**
  * @typedef {import('../../../weapon/WeaponCatelogue.js').Weapon} Weapon
- * @typedef {import('../../../weapon/WeaponCatelogue.js').WeaponCatelogue} WeaponCatalogue
+ * @description Single weapon configuration with letter, name, ammo, and damage properties
+ */
+
+/**
+ * @typedef {import('../../../weapon/WeaponCatelogue.js').WeaponCatalogue} WeaponCatalogue
+ * @description Container for all weapons with lookup and indexing methods
+ */
+
+/**
  * @typedef {import('../../../ships/ShipGroups.js').ShipCatalogue|null} TerrainShipCatalogue
+ * @description Ship definitions and catalogues for a terrain (or null if not available)
+ */
+
+/**
  * @typedef {Record<string, string|URL>} TerrainSoundConfig
+ * @description Sound effect configuration mapping (e.g., { hit: "sound.mp3", miss: "miss.mp3" })
+ */
+
+/**
  * @typedef {(letter: string, middle: string) => string} SunkDescriptionFn
+ * @description Function that generates sunk ship descriptions
+ */
+
+/**
  * @typedef {(shapes: unknown) => void} AddShapesFn
+ * @description Function that adds ship shapes to a catalogue
+ */
+
+/**
  * @typedef {(weapons: unknown) => void} AddWeaponsFn
+ * @description Function that adds weapons to a catalogue
+ */
+
+/**
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string | null} TextContentRenderer
+ * @description Renders unit text content. Returns string to set, or null to skip
+ */
+
+/**
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string) => string} InnerHTMLRenderer
+ * @description Renders unit inner HTML content
+ */
+
+/**
  * @typedef {(letter: string, description: string, el: HTMLElement, key: string, className: string) => boolean} ClassPredicate
- * @typedef {{ title: string }} CustomMap
+ * @description Predicate function determining if CSS class should be applied to unit element
+ */
+
+/**
+ * @typedef {Object} CustomMap
+ * @property {string} title - The custom map's display title
+ * @description A custom map configuration with a title property
  */
 
 /**
@@ -198,16 +254,23 @@ export class Terrain {
 
   /**
    * Gets a new fleet for the terrain.
-   * Creates a fresh fleet instance using the terrain's base ship shapes.
-   * Used to initialize a player's fleet at game start.
    *
-   * @returns {*} A new fleet object built from the terrain's ship base shapes
-   * @throws {Error} If ships catalogue is null or lacks baseShapes
+   * Creates a fresh fleet instance using the terrain's base ship shapes. Typically called
+   * at game initialization to set up a player's starting fleet. The fleet is built from
+   * the ship catalogue's base shapes which are specific to this terrain.
+   *
+   * @type {*}
+   * @throws {Error} If ships catalogue is null or lacks baseShapes property
    *
    * @public
    * @example
    * const playerFleet = terrain.newFleetForTerrain
    * console.log('Fleet created with', playerFleet.ships.length, 'ships')
+   *
+   * @remarks
+   * - Pure getter: No side effects, creates new fleet each time
+   * - Fleet composition varies by terrain (sea vs space vs air)
+   * - Requires ships catalogue to be initialized
    */
   get newFleetForTerrain () {
     return bh.fleetBuilder(this.ships?.baseShapes || [])
@@ -215,49 +278,76 @@ export class Terrain {
 
   /**
    * Gets the subterrain tag based on land status.
-   * Selects between the land subterrain tag or default subterrain tag.
    *
-   * @param {boolean} isLand - Whether to use land subterrain (true) or default (false)
-   * @returns {string} The corresponding subterrain tag
+   * Returns either the land subterrain's tag or the default subterrain's tag
+   * depending on the isLand parameter. Used for UI rendering, CSS class selection,
+   * and terrain-specific behavior branching.
+   *
+   * @param {boolean} isLand - Whether to return land subterrain tag (true) or default (false)
+   * @returns {string} The corresponding subterrain tag (e.g., "water", "land", "space")
    *
    * @public
    * @example
    * const waterTag = terrain.subterrainTag(false) // e.g., "water"
    * const landTag = terrain.subterrainTag(true)   // e.g., "land"
+   * document.body.className = terrain.subterrainTag(isLand)
+   *
+   * @remarks
+   * - Pure function: No side effects
+   * - Tags are used for CSS body class and terrain-specific styling
+   * - Always returns a non-empty string from initialized subterrains
    */
   subterrainTag (isLand) {
     return isLand ? this.landSubterrain.tag : this.defaultSubterrain.tag
   }
 
   /**
-   * Gets all subterrain tags.
-   * Returns an array of tags for all subterrains in this terrain.
-   * Useful for UI rendering or terrain-wide operations.
+   * Gets all subterrain tags for this terrain.
    *
-   * @returns {string[]} Array of all subterrain tags in order
+   * Returns an array of all subterrain tags in the terrain's registry. Useful for
+   * UI rendering (dropdowns, selections), validation, and terrain-wide operations
+   * that need to iterate over all available subterrains.
+   *
+   * @returns {string[]} Array of all subterrain tags in registration order
    *
    * @public
    * @example
    * const allTags = terrain.allSubterrainTag()
    * console.log(allTags) // e.g., ["water", "land", "ice"]
+   * allTags.forEach(tag => console.log(`Available: ${tag}`))
+   *
+   * @remarks
+   * - Pure function: No side effects
+   * - Returns tags in the order subterrains are registered
+   * - Empty array if no subterrains registered (should not occur in practice)
    */
   allSubterrainTag () {
     return this.subterrains.map(st => st.tag)
   }
 
   /**
-   * Gets a weapon by letter from the weapon catalogue.
-   * Searches the terrain's weapon collection for a weapon matching the given letter.
+   * Gets a weapon by its letter from the weapon catalogue.
    *
-   * @param {string} letter - The weapon letter to search for
+   * Searches the terrain's weapon collection for a weapon matching the given letter.
+   * Handles both modern public method interface and legacy direct property access for
+   * backward compatibility. Returns null if weapon not found or catalogue unavailable.
+   *
+   * @param {string} letter - The weapon letter to search for (case-sensitive, typically uppercase)
    * @returns {Weapon|null} The weapon object if found, null otherwise
    *
    * @public
    * @example
    * const sword = terrain.getWeapon('S')
    * if (sword) {
-   *   console.log('Found weapon:', sword)
+   *   console.log('Found weapon:', sword.name)
    * }
+   *
+   * @remarks
+   * - Pure function: No side effects, only reads state
+   * - Letter matching is case-sensitive
+   * - Returns null if weapons catalogue is unavailable
+   * - Gracefully handles both API and direct property access patterns
+   * - Safe to call repeatedly
    */
   getWeapon (letter) {
     // Access weapons through public interface if available
@@ -276,19 +366,27 @@ export class Terrain {
   }
 
   /**
-   * Gets a new weapon instance with specified ammo.
-   * Creates a clone of the weapon for the given letter with custom ammo configuration.
+   * Gets a new weapon instance with custom ammo configuration.
    *
-   * @param {string} letter - The weapon letter
-   * @param {unknown} ammo - The ammo configuration for the new weapon
-   * @returns {Weapon|null} A cloned weapon instance or null if not found
+   * Creates a clone of a weapon for the given letter with the specified ammo
+   * configuration. Returns null if the weapon is not found or cannot be cloned.
+   *
+   * @param {string} letter - The weapon letter to clone
+   * @param {unknown} ammo - The ammo configuration for the new weapon instance
+   * @returns {Weapon|null} A cloned weapon instance, or null if not found or not clonable
    *
    * @public
    * @example
    * const newWeapon = terrain.getNewWeapon('S', { count: 5 })
    * if (newWeapon) {
-   *   console.log('Created new weapon')
+   *   console.log('Created new weapon with ammo count:', newWeapon.ammo.count)
    * }
+   *
+   * @remarks
+   * - Creates a new instance via clone() method on the weapon
+   * - Requires weapon to have a clone(ammo) method
+   * - Returns null if weapon not found or doesn't support cloning
+   * - Safe to call repeatedly; each call creates independent instance
    */
   getNewWeapon (letter, ammo) {
     const weapon = this.getWeapon(letter)
@@ -592,12 +690,61 @@ export class Terrain {
     }
   }
 }
+/**
+ * Minimum custom map width constraint in cells.
+ * @type {number}
+ * @constant
+ * @public
+ */
 export const MIN_CUSTOM_WIDTH = 16
+
+/**
+ * Maximum custom map width constraint in cells.
+ * @type {number}
+ * @constant
+ * @public
+ */
 export const MAX_CUSTOM_WIDTH = 22
+
+/**
+ * Minimum custom map height constraint in cells.
+ * @type {number}
+ * @constant
+ * @public
+ */
 export const MIN_CUSTOM_HEIGHT = 6
+
+/**
+ * Maximum custom map height constraint in cells.
+ * @type {number}
+ * @constant
+ * @public
+ */
 export const MAX_CUSTOM_HEIGHT = 12
+
+/**
+ * Legacy storage token key used for localStorage operations.
+ * Prefix for all custom map storage keys (deprecated but maintained for backward compatibility).
+ * @type {string}
+ * @constant
+ * @private
+ * @example
+ * // Used internally by terrains for localStorage operations
+ * const key = `${oldToken}.map-name`
+ */
 export const oldToken = 'geoffs-battleship'
 
+/**
+ * Generic Air/Universal subterrain that accepts any placement.
+ * Used for shapes not constrained to specific terrain types (water, land, space).
+ * This subterrain has permissive validation to prevent arbitrary zone rejection.
+ * @type {SubTerrainBase}
+ * @constant
+ * @public
+ * @example
+ * // Matches any subterrain for universal shapes
+ * terrain.subterrains.includes(all)
+ */
 export const all = new SubTerrainBase(
   'Air',
   '#a77',
@@ -614,6 +761,16 @@ export const all = new SubTerrainBase(
 all.canBe = () => true
 all.validator = () => true
 
+/**
+ * Mixed-terrain subterrain for hybrid terrain maps.
+ * Allows shapes and placements that span multiple terrain types.
+ * @type {SubTerrainBase}
+ * @constant
+ * @public
+ * @example
+ * // Used for maps combining multiple terrain types
+ * terrain.subterrains.includes(mixed)
+ */
 export const mixed = new SubTerrainBase(
   'Mixed',
   '#888',
@@ -625,13 +782,32 @@ export const mixed = new SubTerrainBase(
 )
 
 /**
- * A matcher for subterrain validation.
+ * Subterrain validator matcher for zone-based placement validation.
+ *
+ * Represents a validation matcher for subterrains, combining a validator function,
+ * zone detail level, and specific subterrain reference. Used in placement rules
+ * to determine if shapes can be placed at specific locations within zones.
+ *
+ * @class Matcher
+ * @public
+ * @example
+ * const matcher = new Matcher(
+ *   (zone) => zone.depth < 5,
+ *   2,
+ *   waterSubterrain
+ * )
  */
 export class Matcher {
   /**
-   * @param {Function} validator - The validator function
-   * @param {number} zoneDetail - The zone detail level
-   * @param {SubTerrain} subterrain - The subterrain
+   * Creates a new Matcher instance.
+   *
+   * Initializes the matcher with a validation function, zone detail requirement,
+   * and target subterrain reference.
+   *
+   * @param {Function} validator - Predicate function to validate zone eligibility
+   * @param {number} zoneDetail - Zone detail level requirement (typically 0-3)
+   * @param {SubTerrain} subterrain - The subterrain this matcher applies to
+   * @public
    */
   constructor (validator, zoneDetail, subterrain) {
     /** @type {Function} */
@@ -643,9 +819,19 @@ export class Matcher {
   }
 
   /**
-   * Checks if a subterrain can be matched.
+   * Checks if a subterrain matches this matcher's subterrain.
+   *
+   * Simple equality check to determine if a given subterrain is the one this
+   * matcher was configured for.
+   *
    * @param {SubTerrain} subterrain - The subterrain to check
-   * @returns {boolean} Whether it can be
+   * @returns {boolean} True if the subterrain matches this matcher's subterrain, false otherwise
+   *
+   * @public
+   * @example
+   * if (matcher.canBe(waterSubterrain)) {
+   *   console.log('This matcher applies to water terrain')
+   * }
    */
   canBe (subterrain) {
     return subterrain === this.subterrain
@@ -653,19 +839,41 @@ export class Matcher {
 }
 
 /**
- * Makes a key from row and column.
- * @param {number} r - Row
- * @param {number} c - Column
- * @returns {string} The key
+ * Creates a string key from row and column coordinates.
+ *
+ * Generates a comma-separated coordinate string suitable for use as object keys
+ * or storage identifiers. Used throughout the system for position tracking.
+ *
+ * @param {number} r - The row coordinate (0-based)
+ * @param {number} c - The column coordinate (0-based)
+ * @returns {string} Comma-separated coordinate key (e.g., "5,3")
+ *
+ * @public
+ * @example
+ * const key = makeKey(5, 3)
+ * console.log(key) // "5,3"
+ *
+ * @see parsePair For the inverse operation
  */
 export function makeKey (r, c) {
   return `${r},${c}`
 }
 
 /**
- * Parses a key into row and column.
- * @param {string} key - The key
- * @returns {[number, number]} Array with row and column
+ * Parses a coordinate string key into row and column numbers.
+ *
+ * Inverse operation of makeKey(). Converts comma-separated coordinate strings
+ * back into numeric row and column values with base-10 parsing.
+ *
+ * @param {string} key - The coordinate key (e.g., "5,3")
+ * @returns {[number, number]} Array with [row, column] as numeric values
+ *
+ * @public
+ * @example
+ * const [row, col] = parsePair("5,3")
+ * console.log(row, col) // 5 3
+ *
+ * @see makeKey For the inverse operation
  */
 export function parsePair (key) {
   const pair = key.split(',')
@@ -675,10 +883,31 @@ export function parsePair (key) {
 }
 
 /**
- * Adds cells to the footprint around a given cell.
- * @param {number} r - Row
- * @param {number} c - Column
- * @param {Set<string>} fp - The footprint set
+ * Adds all cells in a 3x3 grid around a center cell to a footprint set.
+ *
+ * Expands a footprint to include the center cell and all 8 neighbors (including
+ * diagonals). Used for calculating placement constraints and collision detection
+ * around a position.
+ *
+ * The 3x3 grid includes:
+ * - The center cell (r, c)
+ * - All 4 orthogonal neighbors (up, down, left, right)
+ * - All 4 diagonal neighbors
+ *
+ * @param {number} r - The center row coordinate
+ * @param {number} c - The center column coordinate
+ * @param {Set<string>} fp - The footprint set to add cells to. Cells are added as strings via makeKey()
+ * @returns {void}
+ *
+ * @public
+ * @example
+ * const footprint = new Set()
+ * addCellToFootPrint(5, 5, footprint)
+ * console.log(footprint.size) // 9 (center + 8 neighbors)
+ * console.log(footprint.has('5,5')) // true
+ * console.log(footprint.has('4,4')) // true (diagonal)
+ *
+ * @see makeKey For understanding the key format
  */
 export function addCellToFootPrint (r, c, fp) {
   for (let i = -1; i <= 1; i++) {
