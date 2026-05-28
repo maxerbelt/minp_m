@@ -1,12 +1,34 @@
 /**
+ * @typedef {Object} LineToolConfig
+ * @property {string|null} currentTool - Active line tool type ('single', 'segment', 'ray', 'full', or null)
+ * @property {*} lineStart - Stored line start point coordinates
+ * @property {string} currentAction - Current action type ('set', 'clear', 'toggle')
+ * @property {string} coverType - Coverage type ('normal', 'half', 'super', 'superCover', 'halfCover')
+ */
+
+/**
+ * @typedef {Object} GridCanvasConfig
+ * @property {Object} [indexer] - Optional grid indexer for coordinate operations
+ * @property {*} [_] - Additional grid-specific configuration properties
+ */
+
+/**
  * Base class for grid canvas UI controllers
  * Provides common infrastructure for hex, rect, and triangular grid UIs
+ *
+ * Subclasses must implement coordinate-specific logic for line tools,
+ * hit testing, and button wiring. Canvas lifecycle:
+ * 1. Constructor initializes properties
+ * 2. initialize() sets up DOM and event listeners
+ * 3. wireButtons() connects UI element handlers
+ * 4. Line tools manage preview state and completion
  */
 export class GridCanvas {
   /**
-   * @param {string} canvasId - ID of the canvas element
-   * @param {Object} gridInstance - The grid instance with canvas and mask
-   * @param {Object} config - Configuration object for grid-specific settings
+   * Initialize a GridCanvas controller
+   * @param {string} canvasId - ID of the canvas element in the DOM
+   * @param {Object} gridInstance - Grid instance with canvas and mask properties
+   * @param {GridCanvasConfig} [config={}] - Grid-specific configuration including indexer
    */
   constructor (canvasId, gridInstance, config = {}) {
     this.canvasId = canvasId
@@ -147,39 +169,39 @@ export class GridCanvas {
   /**
    * Get hit test result from canvas event
    * Subclasses must implement coordinate-specific logic
-   * @param {MouseEvent} e - The mouse event
-   * @returns {*} The hit test result (coordinates or null)
+   * @param {MouseEvent} _e - The mouse event
+   * @returns {*|null} The hit test result (coordinates or null)
    */
-  hitTest (e) {
+  hitTest (_e) {
     throw new Error('Must implement hitTest')
   }
 
   /**
    * Update line preview cells based on tool and endpoints
    * Subclasses must implement coordinate-specific line algorithms
-   * @param {*} start - The starting point
-   * @param {*} end - The ending point
+   * @param {*} _start - The starting point
+   * @param {*} _end - The ending point
    */
-  updateLinePreview (start, end) {
+  updateLinePreview (_start, _end) {
     throw new Error('Must implement updateLinePreview')
   }
 
   /**
    * Complete line drawing operation
    * Subclasses must implement action-specific logic
-   * @param {*} start - The starting point
-   * @param {*} end - The ending point
+   * @param {*} _start - The starting point
+   * @param {*} _end - The ending point
    */
-  completeLine (start, end) {
+  completeLine (_start, _end) {
     throw new Error('Must implement completeLine')
   }
 
   /**
    * Update hover info display
    * Subclasses must implement coordinate-specific formatting
-   * @param {MouseEvent} e - The mouse event
+   * @param {MouseEvent} _e - The mouse event
    */
-  updateHoverInfo (e) {
+  updateHoverInfo (_e) {
     throw new Error('Must implement updateHoverInfo')
   }
 
@@ -195,18 +217,18 @@ export class GridCanvas {
   /**
    * Apply a transform operation
    * Subclasses must implement transform-specific logic
-   * @param {string} mapName - The name of the transform map
+   * @param {string} _mapName - The name of the transform map
    */
-  applyTransform (mapName) {
+  applyTransform (_mapName) {
     throw new Error('Must implement applyTransform')
   }
 
   /**
    * Apply morphology operation
    * Subclasses must implement morphology-specific logic
-   * @param {string} operation - The morphology operation type
+   * @param {string} _operation - The morphology operation type
    */
-  applyMorphology (operation) {
+  applyMorphology (_operation) {
     throw new Error('Must implement applyMorphology')
   }
 
@@ -261,7 +283,7 @@ export class GridCanvas {
    * @param {string} property - The property name to set on this instance
    */
   _syncValue (element, validValues, property) {
-    if (!element || !element.value) return
+    if (!element?.value) return
     const value = element.value
     if (validValues.includes(value)) {
       this[property] = value
@@ -278,7 +300,7 @@ export class GridCanvas {
   _syncRadioValue (selector, validValues, property) {
     if (typeof document === 'undefined') return
     const checked = document.querySelector(selector + ':checked')
-    if (checked && checked.value) {
+    if (checked?.value) {
       const value = checked.value
       if (validValues.includes(value)) {
         this[property] = value
