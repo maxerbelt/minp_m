@@ -659,16 +659,13 @@ export class WeapponWithPath extends Weapon {
   async launchTo (...args) {
     const [coords, rr, cc, map, viewModel, opposingViewModel, model, launch] =
       args
-    return await this.launchRightTo(
-      coords,
-      rr,
-      cc,
+    return await this.launchRightTo(coords, rr, cc, {
       map,
       viewModel,
       opposingViewModel,
       model,
       launch
-    )
+    })
   }
 }
 // ============================================================================

@@ -172,16 +172,13 @@ async function launchWithDualBoardAnimation (
 ) {
   const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
 
-  return await weapon.launchRightTo(
-    coords,
-    sourceRow,
-    sourceCol,
+  return await weapon.launchRightTo(coords, sourceRow, sourceCol, {
     map,
     viewModel,
     opposingViewModel,
-    gameModel,
-    animationCallback
-  )
+    model: gameModel,
+    launch: animationCallback
+  })
 }
 
 /**
@@ -234,15 +231,12 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
   const { sourceRow, sourceCol, viewModel, opposingViewModel } = context
 
   if (!opposingViewModel) {
-    return await weapon.launchRightTo(
-      coords,
-      sourceRow,
-      sourceCol,
+    return await weapon.launchRightTo(coords, sourceRow, sourceCol, {
       map,
       viewModel,
       opposingViewModel,
-      gameModel
-    )
+      model: gameModel
+    })
   }
 
   // Resolve the full infinite line endpoints for portal/marker placement.
@@ -825,15 +819,12 @@ export class GaussRound extends Fish {
     gameModel
   ) {
     if (!opposingViewModel) {
-      return await this.launchRightTo(
-        coords,
-        sourceRow,
-        sourceCol,
+      return await this.launchRightTo(coords, sourceRow, sourceCol, {
         map,
         viewModel,
         opposingViewModel,
-        gameModel
-      )
+        model: gameModel
+      })
     }
     const [, targetCoord, hasCandidates] = this.processCoords(
       map,
