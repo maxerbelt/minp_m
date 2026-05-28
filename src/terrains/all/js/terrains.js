@@ -16,12 +16,14 @@
  * @module terrains/all/js/terrains
  */
 
-import {
+import { BhConstants } from './constants.js'
+
+const {
   MIN_CUSTOM_WIDTH,
   MAX_CUSTOM_WIDTH,
   MIN_CUSTOM_HEIGHT,
   MAX_CUSTOM_HEIGHT
-} from './terrain.js'
+} = BhConstants
 
 /**
  * @typedef {import('./terrain.js').Terrain} Terrain

@@ -10,6 +10,14 @@
 
 import { SubTerrainBase } from './SubTerrainBase.js'
 import { bh } from './bh.js'
+import { BhConstants } from './constants.js'
+
+const {
+  MIN_CUSTOM_WIDTH,
+  MAX_CUSTOM_WIDTH,
+  MIN_CUSTOM_HEIGHT,
+  MAX_CUSTOM_HEIGHT
+} = BhConstants
 
 /**
  * @typedef {import('./SubTerrainBase.js').SubTerrainBase} SubTerrain
@@ -690,37 +698,6 @@ export class Terrain {
     }
   }
 }
-/**
- * Minimum custom map width constraint in cells.
- * @type {number}
- * @constant
- * @public
- */
-export const MIN_CUSTOM_WIDTH = 16
-
-/**
- * Maximum custom map width constraint in cells.
- * @type {number}
- * @constant
- * @public
- */
-export const MAX_CUSTOM_WIDTH = 22
-
-/**
- * Minimum custom map height constraint in cells.
- * @type {number}
- * @constant
- * @public
- */
-export const MIN_CUSTOM_HEIGHT = 6
-
-/**
- * Maximum custom map height constraint in cells.
- * @type {number}
- * @constant
- * @public
- */
-export const MAX_CUSTOM_HEIGHT = 12
 
 /**
  * Legacy storage token key used for localStorage operations.

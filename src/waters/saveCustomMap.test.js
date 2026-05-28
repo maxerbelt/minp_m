@@ -2,9 +2,16 @@
  * @jest-environment
  */
 
-
 // We'll import saveCustomMap and storeShips after setting up mocks
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
+import { BhConstants } from '../terrains/all/js/constants.js'
+
+const {
+  MIN_CUSTOM_WIDTH,
+  MAX_CUSTOM_WIDTH,
+  MIN_CUSTOM_HEIGHT,
+  MAX_CUSTOM_HEIGHT
+} = BhConstants
 
 let saveCustomMap, storeShips, gtag
 
@@ -19,11 +26,6 @@ const testModulePromise = import('./saveCustomMap.js')
 
 jest.unstable_mockModule('../terrains/all/js/terrain.js', () => ({
   // provide any exports used by modules that import terrain.js
-  MIN_CUSTOM_WIDTH: 16,
-  MAX_CUSTOM_WIDTH: 22,
-  MIN_CUSTOM_HEIGHT: 6,
-  MAX_CUSTOM_HEIGHT: 12,
-  // other helpers may be added if tests require them
 
   bh: {
     maps: {
