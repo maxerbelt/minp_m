@@ -10,6 +10,34 @@ import { CellClassManager } from './helpers/CellClassManager.js'
  * @returns {void}
  */
 
+/**
+ * @typedef {Object} UIModesEnum
+ * @property {string} PLACING - Ship placement phase
+ * @property {string} READY - Game mode selection phase
+ * @property {string} TESTING - Placement testing phase
+ * @property {string} SEEKING - Active game play phase
+ */
+
+/**
+ * @typedef {Object} UISelectorEnum
+ * @property {string} CHOOSE_CONTROLS - CSS selector for game mode choice controls
+ * @property {string} TAB_HIDE - CSS selector for hide game tab element
+ */
+
+/**
+ * @typedef {Object} UIClassEnum
+ * @property {string} HIDDEN - Hidden visibility class
+ * @property {string} DESTROYED - Fleet destroyed state class
+ * @property {string} HIT - Cell hit indicator class
+ * @property {string} PLACED - Ship placed indicator class
+ * @property {string} ACTIVE - Active element class
+ * @property {string} EMPTY - Empty ammo cell class
+ * @property {string} WEAPON - Armed weapon indicator class
+ * @property {string} MEDIUM - Medium size style class
+ * @property {string} SMALL - Small size style class
+ * @property {string} ALT - Alternate panel styling class
+ */
+
 /** @enum {string} */
 const UI_MODES = {
   PLACING: 'placing',
@@ -62,6 +90,18 @@ const UI_CLASSES = {
  * @property {boolean} hints - Show hints used count label
  */
 
+/**
+ * @typedef {Object} ShipObject
+ * @property {Array<Array<number>>} [cells] - Array of [column, row] cell positions for ship
+ * @property {Function} [rackAt] - Method to check weapon slot at coordinates
+ */
+
+/**
+ * Mode-to-tab-text mapping for UI display.
+ * Maps each game mode to its corresponding tab label.
+ * @type {Object<string, string>}
+ * @readonly
+ */
 const MODE_TAB_TEXT = {
   [UI_MODES.PLACING]: 'Hide and Seek Game',
   [UI_MODES.READY]: 'Hide Game',
@@ -69,8 +109,20 @@ const MODE_TAB_TEXT = {
   [UI_MODES.SEEKING]: 'Hide and Seek Game'
 }
 
+/**
+ * Score label keys for iteration and lookup.
+ * Defines the order and names of score label properties.
+ * @type {string[]}
+ * @readonly
+ */
 const SCORE_LABEL_KEYS = ['placed', 'shots', 'hits', 'sunk', 'reveals', 'hints']
 
+/**
+ * Mode-to-score-label visibility mapping.
+ * Defines which score labels are visible in each game mode.
+ * @type {Object<string, ScoreLabelVisibility>}
+ * @readonly
+ */
 const MODE_SCORE_LABELS = {
   [UI_MODES.PLACING]: {
     placed: true,
@@ -102,6 +154,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Initializes the FriendUI with default mode and UI elements.
    * Sets up all necessary properties for friendly game mode management.
+   * Caches DOM references and configures initial game state.
    *
    * @constructor
    */
@@ -139,6 +192,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Initializes UI elements by caching DOM references.
    * Queries the DOM once and stores references for performance.
+   * Uses type assertions for accurate element typing.
    *
    * @private
    * @returns {void}
@@ -156,10 +210,10 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Sets the text content of the tab element.
-   * Updates the game mode display in the tab.
+   * Updates the game mode display in the tab to reflect current mode.
    *
    * @public
-   * @param {string} text - The text to set for the tab
+   * @param {string} text - The text to set for the tab element
    * @returns {void}
    */
   setTabText (text) {
@@ -170,10 +224,10 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Applies or removes CSS classes on an element based on a class map.
-   * Safely handles null elements using optional chaining.
+   * Safely handles null elements using optional chaining for robustness.
    *
    * @public
-   * @param {HTMLElement|null} element - The element to modify, nullable
+   * @param {HTMLElement|null} element - The element to modify, nullable for safety
    * @param {Object<string, boolean>} classMap - Map of class names to boolean flags (true to add, false to remove)
    * @returns {void}
    */
@@ -189,11 +243,11 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Toggles visibility of multiple elements.
-   * Adds or removes the hidden CSS class from each element.
+   * Adds or removes the hidden CSS class from each element in the array.
    *
    * @public
-   * @param {Array<HTMLElement>} elements - Array of elements to toggle
-   * @param {boolean} isVisible - True to show elements, false to hide
+   * @param {Array<HTMLElement>} elements - Array of elements to toggle visibility on
+   * @param {boolean} isVisible - True to show elements (removes hidden class), false to hide
    * @returns {void}
    */
   toggleElements (elements, isVisible) {
@@ -206,7 +260,8 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Sets the current UI mode and applies the corresponding configuration.
-   * Dispatcher that routes to appropriate mode setup method.
+   * Dispatcher that routes to appropriate mode setup method based on newMode.
+   * Only changes mode if handler exists for the specified mode.
    *
    * @public
    * @param {string} newMode - The mode to switch to (must be a value from UI_MODES enum)
@@ -229,7 +284,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Synchronizes the tab text based on the current mode.
-   * Updates tab display to reflect active game mode.
+   * Updates tab display to reflect active game mode from MODE_TAB_TEXT mapping.
    *
    * @public
    * @returns {void}
@@ -241,6 +296,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Applies common UI configuration for modes.
    * Central configuration handler for all mode transitions.
+   * Applies visibility, button, and panel state based on config object.
    *
    * @private
    * @param {FriendUIConfig} config - Configuration object with UI state flags
@@ -280,6 +336,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Calls the selected method based on a boolean feature flag.
    * Applies conditional method invocation with proper context binding.
+   * Ensures 'this' context is maintained in called methods.
    *
    * @private
    * @param {boolean} active - Whether the feature is active
@@ -295,6 +352,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Executes a method when a feature flag is enabled.
    * Conditional method invocation for feature gates.
+   * Safely calls method with correct 'this' binding.
    *
    * @private
    * @param {boolean} active - Whether the feature flag is active
@@ -310,6 +368,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Applies the placing mode configuration.
    * Shows ship placement controls and trays during setup phase.
+   * Configures UI for initial fleet placement workflow.
    *
    * @private
    * @returns {void}
@@ -332,6 +391,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Applies the ready mode configuration.
    * Shows game mode selection controls after ship placement.
+   * Displays options to test or play against computer.
    *
    * @private
    * @returns {void}
@@ -358,6 +418,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Applies the testing mode configuration.
    * Displays game status during placement testing phase.
+   * Shows mode, game, and line status elements.
    *
    * @private
    * @returns {void}
@@ -384,6 +445,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Applies the seeking mode configuration.
    * Activates alternate panel styling for seeking game phase.
+   * Prepares UI for active multiplayer game play.
    *
    * @private
    * @returns {void}
@@ -410,7 +472,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Shows the placing-related controls.
-   * Displays placement button and controls panel.
+   * Displays placement button and controls panel for ship placement.
    *
    * @private
    * @returns {void}
@@ -421,7 +483,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Hides the placing-related controls.
-   * Hides placement button and controls panel.
+   * Hides placement button and controls panel during other modes.
    *
    * @private
    * @returns {void}
@@ -432,7 +494,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Shows the game-related controls.
-   * Displays test and seek mode buttons.
+   * Displays test and seek mode buttons for gameplay selection.
    *
    * @private
    * @returns {void}
@@ -443,7 +505,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Hides the game-related controls.
-   * Hides test and seek mode buttons.
+   * Hides test and seek mode buttons during placement phase.
    *
    * @private
    * @returns {void}
@@ -454,7 +516,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Toggles the visibility of game controls.
-   * Shows or hides test/seek buttons and stop button.
+   * Shows or hides test/seek buttons and stop button based on isVisible flag.
    *
    * @private
    * @param {boolean} isVisible - True to show controls, false to hide
@@ -469,7 +531,8 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Updates the visibility of score labels based on the current mode.
-   * Shows/hides score UI elements according to mode configuration.
+   * Shows/hides score UI elements according to MODE_SCORE_LABELS configuration.
+   * Iterates through all score label keys and applies visibility settings.
    *
    * @private
    * @param {string} mode - The game mode to configure labels for
@@ -494,6 +557,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Clears hit and placed classes from all board cells.
    * Removes visual state indicators from all cells for mode transitions.
+   * Safely checks for board existence before querying cells.
    *
    * @private
    * @returns {void}
@@ -509,6 +573,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Adds the 'alt' class to all panel elements.
    * Applies alternate styling for seeking game mode.
+   * Iterates through all panel elements in the DOM.
    *
    * @private
    * @returns {void}
@@ -524,7 +589,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Switches to placing mode and updates score labels.
-   * Entry point for ship placement phase.
+   * Entry point for ship placement phase. Configures UI for initial setup.
    *
    * @public
    * @returns {void}
@@ -536,7 +601,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Switches to ready mode and updates score labels.
-   * Transitions to game mode selection after placement.
+   * Transitions to game mode selection after placement complete.
    *
    * @public
    * @returns {void}
@@ -572,7 +637,8 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Displays the fleet sunk state and tracks level end.
-   * Updates UI to show game over state with tracking.
+   * Updates UI to show game over state with tracking for analytics.
+   * Flushes previous messages and shows defeat/enemy reveal messages.
    *
    * @public
    * @returns {void}
@@ -591,10 +657,11 @@ export class FriendUI extends PlacementUI {
   /**
    * Marks a cell as hit or damaged (override of parent method).
    * Applies visual state to friendly board cell indicating hit/damage status.
+   * Delegates to CellClassManager for consistent cell state management.
    *
    * @public
-   * @param {number} r - Row index of the cell
-   * @param {number} c - Column index of the cell
+   * @param {number} r - Row index of the cell (0-based)
+   * @param {number} c - Column index of the cell (0-based)
    * @param {string} [damageType] - Type of damage or empty string (matches parent signature)
    * @returns {void}
    */
@@ -608,8 +675,8 @@ export class FriendUI extends PlacementUI {
    * Applies ammo depletion visual state to specified cell.
    *
    * @public
-   * @param {number} r - Row index of the cell
-   * @param {number} c - Column index of the cell
+   * @param {number} r - Row index of the cell (0-based)
+   * @param {number} c - Column index of the cell (0-based)
    * @param {string} damage - Damage type classification or empty string
    * @returns {void}
    */
@@ -621,6 +688,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Applies ammo usage to a cell element.
    * Updates cell state to reflect ammo consumption.
+   * Delegates to internal ammo state application method.
    *
    * @public
    * @param {HTMLElement} cell - The cell DOM element to update
@@ -633,7 +701,8 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Applies ammo state classes and dataset values for an ammo cell.
-   * Updates cell classes based on damage state.
+   * Updates cell classes based on damage state and removes active/active status.
+   * Sets ammo dataset to '0' when consumed.
    *
    * @private
    * @param {HTMLElement} cell - The cell DOM element to modify
@@ -657,7 +726,7 @@ export class FriendUI extends PlacementUI {
    * Called during game initialization to visually distinguish weapon-equipped cells.
    *
    * @public
-   * @param {Array<{cells?: Array<Array<number>>, rackAt?: Function}>} ships - Array of ship objects with cells and rackAt method
+   * @param {Array<ShipObject>} ships - Array of ship objects with cells and rackAt method
    * @returns {void}
    */
   markWeaponCellsOnFriendlyBoard (ships) {
@@ -681,6 +750,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Proceeds to the next stage after ship placement.
    * Transitions to ready or seeking mode based on test environment status.
+   * In production, fires onFleetPlaced callback and launches battle game.
    *
    * @public
    * @returns {void}
@@ -697,7 +767,7 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Checks if the current environment is a test environment.
-   * Queries board helper test flag.
+   * Queries board helper test flag to determine execution context.
    *
    * @public
    * @returns {boolean} True if in test mode
@@ -709,6 +779,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Sets ready mode after placement.
    * Transitions UI to ready state without seeking mode.
+   * Used for test environment transitions.
    *
    * @public
    * @returns {void}
@@ -720,6 +791,7 @@ export class FriendUI extends PlacementUI {
   /**
    * Sets ready and seek modes after placement.
    * Transitions to seeking mode and fires onFleetPlaced callback if defined.
+   * Used for production environment transitions to active gameplay.
    *
    * @public
    * @returns {void}

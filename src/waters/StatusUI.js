@@ -40,32 +40,43 @@ import { Delay } from '../core/Delay.js'
 /**
  * Manages game status, tips, and ammo display UI.
  * Uses async/await patterns with Delay for timer management.
+ * Handles weapon status display, ammo counters, tips queue, and score announcements.
+ *
+ * @class StatusUI
+ * @description Coordinates display of game state including active weapon mode, ammo counts,
+ *              targeting step indicators, and queued status messages with automatic cycling.
  */
 class StatusUI {
   /**
    * Creates a StatusUI instance.
-   * @property {HTMLElement|null} mode - Mode display element
-   * @property {HTMLElement|null} game - Game status element
-   * @property {HTMLElement|null} right - Right status element
-   * @property {HTMLElement|null} counter - Ammo counter element
-   * @property {HTMLElement|null} total - Total ammo element
-   * @property {HTMLElement|null} left - Remaining ammo element
-   * @property {HTMLElement|null} icon1 - Mode icon 1 element
-   * @property {HTMLElement|null} icon2 - Mode icon 2 element
+   * Initializes all DOM element references and state tracking for status display.
+   *
+   * @constructor
+   * @description Sets up HTML element caching for performance and initializes
+   *              async queue management state for status message display.
+   *
+   * @property {HTMLElement|null} mode - Mode display element (weapon name)
+   * @property {HTMLElement|null} game - Game status element (current status message)
+   * @property {HTMLElement|null} right - Right status section element
+   * @property {HTMLElement|null} counter - Ammo counter container element
+   * @property {HTMLElement|null} total - Total ammo capacity display element
+   * @property {HTMLElement|null} left - Remaining ammo count display element
+   * @property {HTMLElement|null} icon1 - Mode icon 1 (launch step indicator)
+   * @property {HTMLElement|null} icon2 - Mode icon 2 (aim step indicator)
    * @property {HTMLElement|null} line - Status line element
    * @property {HTMLElement|null} line2 - Status line 2 element
-   * @property {HTMLElement|null} list - Status list element
-   * @property {HTMLElement|null} chevronBox - Chevron box element
-   * @property {HTMLElement|null} chevron - Chevron element
-   * @property {boolean} important - Whether current status is important
-   * @property {Array<ScoreQueueItem>} scoreQueue - Queue of score items
-   * @property {Array<string>} tipsQueue - Queue of tips
-   * @property {string|null} currentNote - Current note being displayed
-   * @property {boolean} waiting - Whether waiting for queue processing
-   * @property {Weapon|null} currentWeapon - Currently active weapon
-   * @property {string|null} current - Current item being displayed
-   * @property {boolean} _shouldCancelQueueLoop - Flag to cancel queue loop
-   * @property {boolean} _queueLoopActive - Whether queue loop is active
+   * @property {HTMLElement|null} list - Status list container (scrollable history)
+   * @property {HTMLElement|null} chevronBox - Chevron box element (dropdown indicator)
+   * @property {HTMLElement|null} chevron - Chevron element (collapsible indicator)
+   * @property {boolean} important - Whether current status message is important (preserved on flush)
+   * @property {Array<ScoreQueueItem>} scoreQueue - Queue of score/status items to display
+   * @property {Array<string>} tipsQueue - Queue of tips to show during idle periods
+   * @property {string|null} currentNote - Current note being displayed (deprecated)
+   * @property {boolean} waiting - Whether waiting between queue items
+   * @property {Weapon|null} currentWeapon - Currently active weapon reference
+   * @property {string|null} current - Current item being displayed in status area
+   * @property {boolean} _shouldCancelQueueLoop - Flag to cancel ongoing queue loop
+   * @property {boolean} _queueLoopActive - Whether queue loop is currently executing
    */
   constructor () {
     /**
@@ -119,6 +130,10 @@ class StatusUI {
 
   /**
    * Clears the current status display.
+   * Resets both mode and game status to empty strings.
+   *
+   * @public
+   * @returns {void}
    */
   clear () {
     this.display('', '')
@@ -126,7 +141,10 @@ class StatusUI {
 
   /**
    * Stops any pending queue processing loop.
+   * Sets cancellation flag without immediately terminating async operations.
+   *
    * @private
+   * @returns {void}
    */
   _cancelQueueLoop () {
     this._shouldCancelQueueLoop = true
@@ -134,6 +152,8 @@ class StatusUI {
 
   /**
    * Handles a delay with potential cancellation.
+   * Waits for specified milliseconds (can be cancelled via _cancelQueueLoop).
+   *
    * @private
    * @async
    * @param {number} ms - Milliseconds to wait
@@ -145,6 +165,9 @@ class StatusUI {
 
   /**
    * Gets a random tip from the queue.
+   * Returns null if tips queue is empty.
+   *
+   * @public
    * @returns {string|null} A random tip or null if queue is empty
    */
   get newTip () {
@@ -154,6 +177,9 @@ class StatusUI {
 
   /**
    * Processes the next item in the score queue.
+   * Displays the item and waits before returning.
+   * Continues with queue loop if more items exist.
+   *
    * @private
    * @async
    * @returns {Promise<void>}
@@ -173,9 +199,13 @@ class StatusUI {
 
   /**
    * Runs the main queue processing loop with tip display.
+   * Cycles through queued items and tips with delays, cancellable at any time.
+   * Continues indefinitely until cancelled or an error occurs.
+   *
    * @private
    * @async
    * @returns {Promise<void>}
+   * @throws {Error} Caught and logged to console on queue loop error
    */
   async _runQueueLoop () {
     this._queueLoopActive = true
@@ -213,7 +243,10 @@ class StatusUI {
 
   /**
    * Initiates async tip queue processing if not already running.
+   * Safe to call repeatedly - will only start one loop instance.
+   *
    * @private
+   * @returns {void}
    */
   _startQueueLoopIfNeeded () {
     if (!this._queueLoopActive) {
@@ -224,8 +257,13 @@ class StatusUI {
   }
 
   /**
-   * Shows a new item immediately, clearing any pending timers.
+   * Shows an item immediately, clearing any pending timers.
+   * Cancels the queue loop and displays the item as important.
+   * Useful for urgent notifications that need immediate display.
+   *
+   * @public
    * @param {string} newItem - The item to show
+   * @returns {void}
    */
   showImmediately (newItem) {
     if (this.current === newItem) return
@@ -235,9 +273,14 @@ class StatusUI {
 
   /**
    * Shows an item soon if not currently displayed or queued.
+   * Avoids duplicate displays by checking against current item.
+   * Routes through queue if items are already pending.
+   *
+   * @public
    * @param {string} newItem - The item to show
    * @param {boolean} [isImportant=false] - Whether this is important
    * @param {number} [duration=2500] - Duration to display in milliseconds
+   * @returns {void}
    */
   showSoonish (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem) return
@@ -249,8 +292,12 @@ class StatusUI {
 
   /**
    * Adds an item to the score queue.
+   * If queue loop is waiting, cancels it to process new item immediately.
+   *
+   * @public
    * @param {string} newItem - The item to queue
-   * @param {boolean} [isImportant=false] - Whether this is important
+   * @param {boolean} [isImportant=false] - Whether this is important (preserved on flush)
+   * @returns {void}
    */
   addToQueue (newItem, isImportant = false) {
     this.scoreQueue.push({ item: newItem, isImportant })
@@ -263,9 +310,13 @@ class StatusUI {
 
   /**
    * Shows an item soon with automatic queue handling.
+   * If queue loop is active, adds to queue; otherwise displays immediately.
+   *
+   * @public
    * @param {string} newItem - The item to show
    * @param {boolean} [isImportant=false] - Whether this is important
    * @param {number} [duration=2500] - Duration to display in milliseconds
+   * @returns {void}
    */
   showSoon (newItem, isImportant = false, duration = 2500) {
     if (this.current === newItem && !isImportant) return
@@ -279,8 +330,11 @@ class StatusUI {
 
   /**
    * Schedules async queue processing after a display duration.
+   * Cancels current loop and starts new delayed one with error handling.
+   *
    * @private
    * @param {number} duration - Duration in milliseconds
+   * @returns {void}
    */
   _scheduleQueueProcessingAsync (duration) {
     this._cancelQueueLoop()
@@ -291,6 +345,8 @@ class StatusUI {
 
   /**
    * Shows display item with delay, then starts queue loop.
+   * Clears current item after delay unless cancellation is signaled.
+   *
    * @private
    * @async
    * @param {number} duration - Duration to display in milliseconds
@@ -306,6 +362,11 @@ class StatusUI {
 
   /**
    * Clears all queues and timers.
+   * Removes all pending items from both score and tips queues,
+   * stops the async queue loop, and clears the info display.
+   *
+   * @public
+   * @returns {void}
    */
   clearQueue () {
     this.scoreQueue = []
@@ -316,6 +377,10 @@ class StatusUI {
 
   /**
    * Clears the mode display.
+   * Sets the mode element text content to empty string.
+   *
+   * @public
+   * @returns {void}
    */
   clearMode () {
     if (this.mode) {
@@ -332,7 +397,11 @@ class StatusUI {
    * we must clear the selected coordinate AND reset the UI to show we're
    * back in selection mode (not targeting mode). This method handles that.
    *
+   * Special case: One-step weapons with extra select cursor show step 1 icon active.
+   *
    * @public
+   * @param {Weapon} [weapon=this.currentWeapon] - The weapon to reset for
+   * @returns {void}
    */
   resetToSelectionMode (weapon = this.currentWeapon) {
     // If the current weapon is a one-step weapon using an extra select cursor,
@@ -349,8 +418,12 @@ class StatusUI {
 
   /**
    * Shows an item in the status display.
+   * Updates current item reference and importance flag.
+   *
+   * @public
    * @param {string} newItem - The item to show
    * @param {boolean} [isImportant=false] - Whether this is important
+   * @returns {void}
    */
   show (newItem, isImportant) {
     this.current = newItem
@@ -360,7 +433,11 @@ class StatusUI {
 
   /**
    * Adds a score update to the queue.
+   * Queues a non-important score display item.
+   *
+   * @public
    * @param {string} scoreText - The score text to display
+   * @returns {void}
    */
   addScore (scoreText) {
     this.scoreQueue.push({ item: scoreText, isImportant: false })
@@ -368,8 +445,12 @@ class StatusUI {
 
   /**
    * Sets the tips queue and optionally shows the first tip.
-   * @param {Array<string>} tips - Array of tips
+   * Replaces the entire tips queue and displays specified or first available tip.
+   *
+   * @public
+   * @param {Array<string>} tips - Array of tips to add to queue
    * @param {string} [showFirst] - Optional specific tip to show first
+   * @returns {void}
    */
   setTips (tips, showFirst) {
     this.tipsQueue = tips || []
@@ -381,7 +462,11 @@ class StatusUI {
 
   /**
    * Adds a single tip to the tips queue.
+   * Appends to existing tips without clearing queue.
+   *
+   * @public
    * @param {string} tip - The tip to add
+   * @returns {void}
    */
   addTip (tip) {
     this.tipsQueue.push(tip)
@@ -389,7 +474,13 @@ class StatusUI {
 
   /**
    * Adds a line of text to the status list, with automatic scrolling.
+   * Prepends to top of list and removes excess lines from bottom (maintains MAX_LINES limit).
+   * Ignores empty strings and "Single Shot Mode" text.
+   * Updates chevron visibility based on whether list has content.
+   *
+   * @public
    * @param {string} text - The text to display
+   * @returns {void}
    */
   prependLine (text) {
     if (!text || text === '' || text === 'Single Shot Mode') return
@@ -410,8 +501,11 @@ class StatusUI {
 
   /**
    * Sets the visibility of the status list.
+   * Toggles 'hidden' class on chevron and list elements.
+   *
    * @private
    * @param {boolean} isVisible - Whether the list should be visible
+   * @returns {void}
    */
   _setListVisibility (isVisible) {
     if (this.chevron) this.chevron.classList.toggle('hidden', !isVisible)
@@ -420,7 +514,11 @@ class StatusUI {
 
   /**
    * Shows the mode text.
+   * Updates the mode display element with weapon or mode name.
+   *
+   * @public
    * @param {string} mode - The mode to display
+   * @returns {void}
    */
   showMode (mode) {
     if (this.mode) {
@@ -430,8 +528,12 @@ class StatusUI {
 
   /**
    * Displays mode and game status.
-   * @param {string} mode - The mode text
-   * @param {string} game - The game status text
+   * Shows mode text in mode element and queues game status for display.
+   *
+   * @public
+   * @param {string} mode - The mode text to display
+   * @param {string} game - The game status text to queue
+   * @returns {void}
    */
   display (mode, game) {
     this.showMode(mode)
@@ -441,10 +543,15 @@ class StatusUI {
   }
   /**
    * Updates the weapon status display.
+   * Sets current weapon, displays mode name, resets ammo icons, and shows ammo status.
+   * Called when weapon selection changes or game state transitions.
+   *
+   * @public
    * @param {WeaponSystem|null|undefined} weaponSystem - The weapon system
-   * @param {GameMaps|null|undefined} maps - The game maps
-   * @param {number} numCoords - Number of coordinates
-   * @param {boolean} unattached - Whether there is an unattached weapon
+   * @param {GameMaps|null|undefined} maps - The game maps configuration
+   * @param {number} numCoords - Number of current coordinates (for step calculation)
+   * @param {boolean} unattached - Whether there is an unattached weapon system
+   * @returns {void}
    */
   updateWeaponStatus (weaponSystem, maps, numCoords, unattached) {
     const weapon = weaponSystem?.weapon
@@ -465,11 +572,16 @@ class StatusUI {
   }
   /**
    * Displays ammo status for a weapon system.
+   * Updates weapon mode, resets icons, and queues step hints if maps provided.
+   * Skips display if weapon doesn't match selectedWps parameter.
+   *
+   * @public
    * @param {WeaponSystem|null|undefined} wps - The weapon system
    * @param {GameMaps|null|undefined} maps - The maps configuration
-   * @param {number} [numCoords=-1] - Number of coordinates
-   * @param {WeaponSystem|null|undefined} [selectedWps] - Selected weapon system
+   * @param {number} [numCoords=-1] - Number of coordinates (for step calculation)
+   * @param {WeaponSystem|null|undefined} [selectedWps] - Selected weapon system (filter)
    * @param {boolean} [unattached=false] - Whether there is an unattached weapon system
+   * @returns {void}
    */
   displayAmmoStatus (
     wps,
@@ -501,8 +613,11 @@ class StatusUI {
 
   /**
    * Sets the weapon mode display.
+   * Displays weapon name or "Single Shot" if weapon is not provided.
+   *
    * @private
    * @param {Weapon|null|undefined} weapon - The weapon object
+   * @returns {void}
    */
   _setWeaponMode (weapon) {
     const modeName = weapon?.name || 'Single Shot'
@@ -511,12 +626,15 @@ class StatusUI {
 
   /**
    * Displays the current ammo step and enqueues the weapon step hint.
+   * Calculates step index based on weapon configuration and queues step hint.
+   *
    * @private
    * @param {WeaponSystem} wps - The weapon system
    * @param {GameMaps} maps - The maps configuration
    * @param {number} numCoords - Number of coordinates
    * @param {WeaponSystem|null|undefined} selectedWps - Selected weapon system
    * @param {boolean} unattached - Whether there is an unattached weapon system
+   * @returns {void}
    */
   _displayAmmoStepAndHint (wps, maps, numCoords, selectedWps, unattached) {
     const weapon = wps.weapon
@@ -535,7 +653,11 @@ class StatusUI {
 
   /**
    * Displays ammo count for a weapon.
-   * @param {WeaponSystem} wps - The weapon system
+   * Shows either limited ammo count or infinite indicator based on weapon properties.
+   *
+   * @public
+   * @param {WeaponSystem} wps - The weapon system with ammo methods
+   * @returns {void}
    */
   displayAmmo (wps) {
     const weapon = wps.weapon
@@ -548,8 +670,11 @@ class StatusUI {
 
   /**
    * Displays the ammo count for the weapon system.
+   * Calls _displayAmmoCounter with capacity and remaining values.
+   *
    * @private
    * @param {WeaponSystem} wps - The weapon system
+   * @returns {void}
    */
   _displayAmmoCount (wps) {
     this._displayAmmoCounter(wps.ammoCapacity(), wps.ammoRemaining())
@@ -557,6 +682,8 @@ class StatusUI {
 
   /**
    * Displays limited ammo status with step indicators.
+   * Shows ammo count and determines current targeting step.
+   *
    * @private
    * @param {WeaponSystem} wps - The weapon system
    * @param {GameMaps} maps - The maps configuration
@@ -582,6 +709,8 @@ class StatusUI {
 
   /**
    * Displays weapon steps based on weapon properties.
+   * Routes to appropriate step display based on weapon.numStep and special cursors.
+   *
    * @private
    * @param {Weapon} weapon - The weapon object
    * @param {GameMaps} maps - The maps configuration
@@ -627,6 +756,8 @@ class StatusUI {
 
   /**
    * Displays single shot (unlimited) ammo status.
+   * Shows infinite ammo icon and single shot styling.
+   *
    * @private
    * @returns {number} Always returns 0
    */
@@ -638,6 +769,8 @@ class StatusUI {
 
   /**
    * Displays launch steps for multi-step weapons.
+   * Calculates current step, shows which step is active, and displays aim step.
+   *
    * @private
    * @param {boolean} unattached - Whether there is an unattached weapon system
    * @param {number} numCoords - Number of coordinates
@@ -670,7 +803,10 @@ class StatusUI {
 
   /**
    * Resets ammo icon styling.
+   * Clears className to 'mode-icon tally-box' (removes weapon class and on/off state).
+   *
    * @private
+   * @returns {void}
    */
   _resetAmmoIcons () {
     if (this.icon1) this.icon1.className = 'mode-icon tally-box'
@@ -679,10 +815,13 @@ class StatusUI {
 
   /**
    * Displays the launch (first) step icon.
+   * Sets icon appearance with weapon color and styling.
+   *
    * @private
    * @param {GameMaps} maps - The maps configuration
    * @param {string} letter - The weapon letter
    * @param {Weapon} weapon - The weapon object
+   * @returns {void}
    */
   _displayLaunchFirstStep (maps, letter, weapon) {
     if (!this.icon1) return
@@ -695,10 +834,13 @@ class StatusUI {
 
   /**
    * Displays the aim (second) step icon.
+   * Sets icon appearance with weapon color and styling.
+   *
    * @private
    * @param {GameMaps} maps - The maps configuration
    * @param {string} letter - The weapon letter
    * @param {Weapon} weapon - The weapon object
+   * @returns {void}
    */
   _displayAimStep (maps, letter, weapon) {
     if (!this.icon2) return
@@ -711,10 +853,13 @@ class StatusUI {
 
   /**
    * Updates icon styling and appearance.
+   * Clears content, sets background color, and adds styling classes.
+   *
    * @private
    * @param {HTMLElement} icon - The icon element
    * @param {string} background - The background color
    * @param {Weapon} weapon - The weapon object
+   * @returns {void}
    */
   _updateIconAppearance (icon, background, weapon) {
     icon.textContent = ''
@@ -724,7 +869,10 @@ class StatusUI {
 
   /**
    * Removes on/off state classes from icons.
+   * Clears 'on' and 'off' classes from both icon elements.
+   *
    * @private
+   * @returns {void}
    */
   _noLaunchSteps () {
     if (this.icon1) {
@@ -737,8 +885,11 @@ class StatusUI {
 
   /**
    * Displays which launch step is currently active.
+   * Toggles 'on' and 'off' classes on icons based on step index.
+   *
    * @private
    * @param {number} stepIndex - The step index (0 or 1)
+   * @returns {void}
    */
   _displayWhichLaunchStep (stepIndex) {
     switch (stepIndex) {
@@ -770,9 +921,12 @@ class StatusUI {
 
   /**
    * Displays remaining ammo count.
+   * Shows ammo counter container and updates total/remaining displays.
+   *
    * @private
    * @param {string|number} total - Total ammo capacity
    * @param {string|number} ammo - Remaining ammo count
+   * @returns {void}
    */
   _displayAmmoCounter (total, ammo) {
     if (this.counter) this.counter.classList.remove('hidden')
@@ -782,7 +936,10 @@ class StatusUI {
 
   /**
    * Displays single shot mode icon.
+   * Sets icon1 background to white and adds 'single' class, hides icon2.
+   *
    * @private
+   * @returns {void}
    */
   _displaySShotIcon () {
     if (this.icon1) {
@@ -794,7 +951,10 @@ class StatusUI {
 
   /**
    * Displays infinite ammo indicator.
+   * Shows ∞ symbol for both total and remaining ammo.
+   *
    * @private
+   * @returns {void}
    */
   _displayInfiniteAmmo () {
     this._displayAmmoCounter('∞', '∞')
@@ -802,6 +962,10 @@ class StatusUI {
 
   /**
    * Flushes the queue, keeping only important items.
+   * Filters out non-important items and clears game display if current item is not important.
+   *
+   * @public
+   * @returns {void}
    */
   flush () {
     this.scoreQueue = this.scoreQueue.filter(({ isImportant }) => isImportant)
@@ -812,7 +976,11 @@ class StatusUI {
 
   /**
    * Shows info with non-important flag.
+   * Updates status display without preserving history on flush.
+   *
+   * @public
    * @param {string} game - The game status text
+   * @returns {void}
    */
   info (game) {
     this._updateStatusDisplay(game)
@@ -821,7 +989,11 @@ class StatusUI {
 
   /**
    * Shows info with important flag.
+   * Updates status display and preserves current line in history on flush.
+   *
+   * @public
    * @param {string} game - The game status text
+   * @returns {void}
    */
   info2 (game) {
     this._updateStatusDisplay(game)
@@ -830,8 +1002,11 @@ class StatusUI {
 
   /**
    * Updates the status display with optional history prepending.
+   * If current status is important, saves to history before updating.
+   *
    * @private
    * @param {string} game - The game status text
+   * @returns {void}
    */
   _updateStatusDisplay (game) {
     if (this.important && this.game?.textContent) {
