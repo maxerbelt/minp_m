@@ -381,7 +381,7 @@ describe('CellsToBePlaced', () => {
 
       const result = placing.zoneInfo(3, 2, undefined)
 
-      expect(getZone.mock.calls[0]).toEqual([2, 3, 5])
+      expect(getZone.mock.calls[0]).toEqual([3, 2, 5])
       expect(result).toEqual({ detail: 'ZONE_VALUE' })
     })
 
