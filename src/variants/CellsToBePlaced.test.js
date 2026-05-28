@@ -6,11 +6,12 @@
  */
 
 import { describe, it, expect, jest } from '@jest/globals'
-
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 import { Mask } from '../grid/rectangle/mask.js'
 import { placingTarget } from './placingTarget.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
+import { Plane } from '../terrains/sea/js/SeaShape.js'
+import { Ship } from '../ships/Ship.js'
 
 /**
  * Creates a ShipCellGrid test fixture with specified dimensions and initial fill value.
@@ -26,6 +27,12 @@ function makeGrid (rows, cols, fill = null) {
   )
 }
 
+const targetAnywhere = { boundsChecker: () => true, getZone: () => ({}) }
+
+const dot = new Plane('Dot', 'D', 'S', [[0, 0]])
+const placeableDot = dot.placeables()[0]
+placeableDot.target = targetAnywhere
+const dotShip = Ship.createFromShape(dot)
 /**
  * Test suite for CellsToBePlaced class functionality.
  * Validates ship placement constraints and zone matching logic.
@@ -484,11 +491,18 @@ describe('CellsToBePlaced', () => {
       /** @type {any} */
       const board = Mask.fromCoords(variant)
       /** @type {any} */
-      const target = { boundsChecker: () => true, getZone: () => ({}) }
-      const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
-
+      const placing = new CellsToBePlaced(
+        board,
+        2,
+        2,
+        () => true,
+        0,
+        targetAnywhere
+      )
+      const placedDot = placeableDot.placeAt(1, 2)
       const grid = makeGrid(5, 5, null)
-      grid.set(1, 2, 'SHIP')
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[1, 2]])
       expect(placing.isAreaClearAroundXY(2, 2, grid)).toBe(false)
     })
 
@@ -515,12 +529,20 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       /** @type {any} */
       const board = Mask.fromCoords(variant)
-      /** @type {any} */
-      const target = { boundsChecker: () => true, getZone: () => ({}) }
-      const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
+      const placing = new CellsToBePlaced(
+        board,
+        2,
+        2,
+        () => true,
+        0,
+        targetAnywhere
+      )
 
       const grid = makeGrid(5, 5, null)
-      grid.set(2, 1, 'SHIP')
+
+      const placedDot = placeableDot.placeAt(2, 1)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[2, 1]])
       expect(placing.isAreaClearAroundXY(2, 2, grid)).toBe(false)
     })
 
@@ -531,12 +553,20 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       /** @type {any} */
       const board = Mask.fromCoords(variant)
-      /** @type {any} */
-      const target = { boundsChecker: () => true, getZone: () => ({}) }
-      const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
+      const placing = new CellsToBePlaced(
+        board,
+        2,
+        2,
+        () => true,
+        0,
+        targetAnywhere
+      )
 
       const grid = makeGrid(5, 5, null)
-      grid.set(2, 3, 'SHIP')
+
+      const placedDot = placeableDot.placeAt(2, 3)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[2, 3]])
       expect(placing.isAreaClearAroundXY(2, 2, grid)).toBe(false)
     })
 
@@ -547,12 +577,18 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       /** @type {any} */
       const board = Mask.fromCoords(variant)
-      /** @type {any} */
-      const target = { boundsChecker: () => true, getZone: () => ({}) }
-      const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
-
+      const placing = new CellsToBePlaced(
+        board,
+        2,
+        2,
+        () => true,
+        0,
+        targetAnywhere
+      )
       const grid = makeGrid(5, 5, null)
-      grid.set(1, 1, 'SHIP') // diagonal up-left
+      const placedDot = placeableDot.placeAt(1, 1)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[1, 1]])
       expect(placing.isAreaClearAroundXY(2, 2, grid)).toBe(false)
     })
 
@@ -563,9 +599,14 @@ describe('CellsToBePlaced', () => {
       const variant = [[0, 0]]
       /** @type {any} */
       const board = Mask.fromCoords(variant)
-      /** @type {any} */
-      const target = { boundsChecker: () => true, getZone: () => ({}) }
-      const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
+      const placing = new CellsToBePlaced(
+        board,
+        2,
+        2,
+        () => true,
+        0,
+        targetAnywhere
+      )
 
       // Test each of the 8 neighbors
       /** @type {[number, number][]} */
@@ -582,7 +623,10 @@ describe('CellsToBePlaced', () => {
 
       for (const [r, c] of neighbors) {
         const grid = makeGrid(5, 5, null)
-        grid.set(r, c, 'SHIP')
+
+        const placedDot = placeableDot.placeAt(c, r)
+        const cells = dotShip.placeOnGrid(grid, placedDot)
+        expect(cells).toStrictEqual([[c, r]])
         expect(placing.isAreaClearAroundXY(2, 2, grid)).toBe(false)
       }
     })
@@ -792,7 +836,9 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 2, () => true, 0, target)
 
       const grid = makeGrid(5, 5, null)
-      grid.set(1, 2, 'SHIP') // neighbor of cell at (2,2)
+      const placedDot = placeableDot.placeAt(1, 2)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[1, 2]])
       expect(placing.isTouching(grid)).toBe(true)
     })
 
@@ -811,7 +857,9 @@ describe('CellsToBePlaced', () => {
       const placing = new CellsToBePlaced(board, 2, 3, () => true, 0, target)
 
       const grid = makeGrid(6, 6, null)
-      grid.set(2, 5, 'SHIP') // neighbor of second cell at (2,4)
+      const placedDot = placeableDot.placeAt(2, 5)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[2, 5]])
       expect(placing.isTouching(grid)).toBe(true)
     })
   })
@@ -920,7 +968,9 @@ describe('CellsToBePlaced', () => {
       )
 
       const grid = makeGrid(5, 5, null)
-      grid.set(1, 2, 'SHIP') // neighbor occupied
+      const placedDot = placeableDot.placeAt(1, 2)
+      const cells = dotShip.placeOnGrid(grid, placedDot)
+      expect(cells).toStrictEqual([[1, 2]])
       expect(placing.canPlace(grid)).toBe(false)
     })
 
@@ -1039,7 +1089,9 @@ describe('CellsToBePlaced', () => {
 
       // Invalid due to neighboring ship
       const neighborGrid = makeGrid(10, 10, null)
-      neighborGrid.set(2, 3, 'SHIP') // diagonal
+      const placedDot = placeableDot.placeAt(2, 3)
+      const cells = dotShip.placeOnGrid(neighborGrid, placedDot)
+      expect(cells).toStrictEqual([[2, 3]])
       expect(placing.canPlace(neighborGrid)).toBe(false)
 
       // Valid when far enough from other ship

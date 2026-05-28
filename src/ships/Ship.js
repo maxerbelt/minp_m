@@ -1504,8 +1504,6 @@ export class Ship {
    */
   placeOnGrid (shipCellGrid, placement) {
     if (!placement.canPlace(shipCellGrid)) {
-      //  const warning = placement.cantPlaceReason(shipCellGrid)
-      //  console.warn('Cannot place ship:', warning)
       return null
     }
     this.addUnplacedShipToGrid(shipCellGrid, placement)
