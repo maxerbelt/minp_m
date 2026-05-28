@@ -1331,6 +1331,12 @@ export class WatersUI {
     )
   }
 
+  /**
+   * Removes all display-related CSS classes from board cells.
+   * Clears visual indicators used during display/reveal phases.
+   *
+   * @returns {void}
+   */
   removeDisplayClasses () {
     this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
       CellClassManager.clearDisplayCell(cell)

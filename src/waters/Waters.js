@@ -2000,6 +2000,15 @@ export class Waters {
     return await this.launchTo(coords, r, c, wps)
   }
 
+  /**
+   * Sets up aim listeners for attached weapons on opponent ships.
+   * Configures click handlers on cells surrounding opponent armed ships
+   * to allow player to target weapon effects. Automatically removes old listeners
+   * and adds new ones for current armed ships configuration.
+   *
+   * @returns {void}
+   * @private
+   */
   setupAttachedAim () {
     const oppo = this.opponent
     if (

@@ -94,7 +94,11 @@ jest.unstable_mockModule('./Waters.js', () => ({
       this.steps = {}
       this.loadOut = { SShot: () => ({}) }
       this.ships = []
-      this.score = { createShotKey: () => null, newShotKey: () => null }
+      this.score = {
+        createShotKey: () => null,
+        newShotKey: () => null,
+        reset: () => {}
+      }
     }
     hasFewShips () {
       return !!(this.ships && this.ships.length > 0)
@@ -231,20 +235,20 @@ describe('Friend', () => {
     expect(typeof friend.hasPlayableShips()).toBe('boolean')
   })
 
-  it('restartBoard calls resetBase and UI.clearVisuals', () => {
-    friend.resetBase = jest.fn()
+  it('restartBoard calls score.reset and UI.clearVisuals', () => {
+    friend.score.reset = jest.fn()
     friend.armWeapons = jest.fn()
     friend.restartBoard()
-    expect(friend.resetBase).toHaveBeenCalled()
+    expect(friend.score.reset).toHaveBeenCalled()
     expect(friend.UI.clearVisuals).toHaveBeenCalled()
     expect(friend.armWeapons).toHaveBeenCalled()
   })
 
-  it('restartFriendBoard calls resetBase and UI.clearFriendVisuals', () => {
-    friend.resetBase = jest.fn()
+  it('restartFriendBoard calls score.reset and UI.clearFriendVisuals', () => {
+    friend.score.reset = jest.fn()
     friend.armWeapons = jest.fn()
     friend.restartBoard(true)
-    expect(friend.resetBase).toHaveBeenCalled()
+    expect(friend.score.reset).toHaveBeenCalled()
     expect(friend.UI.clearFriendVisuals).toHaveBeenCalled()
     expect(friend.armWeapons).toHaveBeenCalled()
   })

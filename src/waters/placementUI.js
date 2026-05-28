@@ -652,7 +652,7 @@ export class PlacementUI extends WatersUI {
    */
   moveAssignByCursor (arrowKey, clickedShip) {
     const shipnode = clickedShip?.source
-    if (!shipnode || !shipnode.dataset) return null
+    if (!shipnode?.dataset) return null
     const shipId = Number.parseInt(
       shipnode.dataset[PlacementUI.#DATA_ATTRIBUTES.ID] || ''
     )
@@ -1286,7 +1286,7 @@ export class PlacementUI extends WatersUI {
     )
     brush.dataset[PlacementUI.#DATA_ATTRIBUTES.SIZE] = String(size)
     brush.dataset[PlacementUI.#DATA_ATTRIBUTES.ID] =
-      subterrain + size.toString()
+      subterrain.letter + size.toString()
     this.setBrushContents(brush, size, subterrain)
     dragNDrop.makeBrushDraggable(brush, size, subterrain)
     UIElementBuilder.appendTrayItem(tray, brushContainer, brush, null)
