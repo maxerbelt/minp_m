@@ -328,9 +328,9 @@ export class Waters {
       // @ts-ignore - UI is Board at runtime
       const board = /** @type {Board} */ (this.UI)
       board.onFleetPlaced?.()
-      return result
+    } else {
+      this.handlePlacementFailure(onPlacementReset)
     }
-    this.handlePlacementFailure(onPlacementReset)
     return result
   }
 
@@ -1939,20 +1939,14 @@ export class Waters {
 
   /**
    * Launches weapon system to given coordinate destination.
+   * Routes weapon firing through the appropriate board UI with opponent targeting support.
+   * Handles dual-board animation and weapon effect resolution.
+   *
    * @param {Array<number>|Object} coords - Target coordinate as array [r,c] or object {r,c}
-   * @param {number} rr - Reference row position for launch fallback
-   * @param {number} cc - Reference column position for launch fallback
-   * @param {Object} currentWps - Current weapon system with weapon reference
-   * @returns {Promise<Object|null>} Weapon launch result
-   * @private
-   */
-  /**
-   * Launches weapon system to given coordinate destination.
-   * @param {Array<number>|Object} coords - Target coordinate as array [r,c] or object {r,c}
-   * @param {number} rr - Reference row position for launch fallback
-   * @param {number} cc - Reference column position for launch fallback
-   * @param {Object} currentWps - Current weapon system with weapon reference
-   * @returns {Promise<Object|null>} Weapon launch result
+   * @param {number} rr - Reference row position for launch fallback (usually source row)
+   * @param {number} cc - Reference column position for launch fallback (usually source column)
+   * @param {Object} currentWps - Current weapon system with weapon and ID reference
+   * @returns {Promise<Object|null>} Weapon launch result with hit/miss information
    * @private
    */
   async launchTo (coords, rr, cc, currentWps) {
@@ -3262,7 +3256,6 @@ export class Waters {
    * @private
    */
   warnInvalidEffect (effect, weapon, options) {
-    /* global process */
     if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'test') {
       console.warn('Invalid weapon effect payload:', {
         effect,

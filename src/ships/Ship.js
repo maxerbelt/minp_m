@@ -244,6 +244,12 @@ export class Ship {
   set weapons (weapons) {
     this._createOrUpdateWeapons(weapons)
   }
+  /**
+   * Internal: Convert weapon ID map to coordinate-keyed object
+   * Transforms weaponsById Map to weapons object indexed by coordinate key.
+   * @returns {Object<string, Rack>} Weapon object indexed by coordinate keys ("row,col")
+   * @private
+   */
   _idWeaponMapToWeaponPositionObject () {
     return this._weaponEntriesFromIdMap().reduce(
       /**
@@ -257,6 +263,16 @@ export class Ship {
       {}
     )
   }
+  /**
+   * Internal: Create or update weapons from various input formats
+   * Converts input to appropriate internal format (weaponsById Map or raw entries).
+   * Delegates to specialized handlers based on input type (array, set, map, object).
+   * @param {Map<number, Rack>|Array<Rack>|Array<[string, Rack]>|Set<any>|Object<string, Rack>} weapons
+   *   Weapons in various input formats
+   * @returns {void}
+   * @throws {Error} If weapons format is unrecognized
+   * @private
+   */
   _createOrUpdateWeapons (weapons) {
     const type = Zip.getType(weapons)
     switch (type) {
@@ -276,6 +292,15 @@ export class Ship {
         )
     }
   }
+  /**
+   * Internal: Import weapons and route to appropriate handler
+   * Routes to either shape import or placement import based on existing weapons.
+   * @param {Map<number, Rack>|Array<[string, Rack]>|Object<string, Rack>} weapons
+   *   Weapons data in raw format
+   * @returns {{weaponsById: Map<number, Rack>, weaponArray: Rack[]}}
+   *   Object with {weaponsById, weaponArray} after processing
+   * @private
+   */
   _importWeapons (weapons) {
     const numWeapon = this.numWeapons
     if (numWeapon === 0) {
@@ -284,6 +309,15 @@ export class Ship {
       return this._weaponsFromPlacement(weapons)
     }
   }
+  /**
+   * Internal: Create or update weapons from array input
+   * Distinguishes between arrays of entries and arrays of weapon objects.
+   * If all items are arrays, treats as coordinate-key pairs; otherwise stores as weapon array.
+   * @param {Array<Rack>|Array<[string, Rack]>} weapons
+   *   Array of weapons or [coordKey, weapon] pairs
+   * @returns {void}
+   * @private
+   */
   _createOrUpdateWeaponsArray (weapons) {
     const allAreArrays = weapons.every(Array.isArray)
     if (allAreArrays) {
@@ -292,6 +326,15 @@ export class Ship {
     }
     this._weaponArray = weapons
   }
+  /**
+   * Internal: Create or update weapons from raw entries (coordinate-keyed pairs)
+   * Processes coordinate-keyed weapon entries and imports them appropriately.
+   * Skips empty weapon lists. Updates internal weaponsById and weaponArray.
+   * @param {Array<[string, Rack]>} weapons
+   *   Array of [coordKey, weaponSystem] pairs
+   * @returns {void}
+   * @private
+   */
   _createOrUpdateWeaponsRaw (weapons) {
     const numNew = weapons.length
     if (numNew === 0) {
@@ -305,6 +348,12 @@ export class Ship {
     this._weaponArray = weaponArray
     this._weapons = this._idWeaponMapToWeaponPositionObject()
   }
+  /**
+   * Internal: Get cached weapon array or initialize from default
+   * Lazily initializes weaponArray from weaponsById on first access.
+   * @returns {Rack[]} Array of weapon systems
+   * @private
+   */
   get _weaponArray () {
     if (this.__weaponArray) {
       return this.__weaponArray
@@ -312,10 +361,23 @@ export class Ship {
     this.__weaponArray = this._defaultWeaponArray
     return this.__weaponArray
   }
+  /**
+   * Internal: Generate default weapon array from weaponsById Map
+   * Creates array of all weapons from weaponsById Map values.
+   * @returns {Rack[]} Array of all weapons or empty array if no weaponsById
+   * @private
+   */
   get _defaultWeaponArray () {
     const values = this._weaponsById?.values()
     return values ? Array.from(values) : []
   }
+  /**
+   * Internal: Set cached weapon array
+   * Creates a copy of the weapons array to maintain independence.
+   * @param {Rack[]} weapons - Array of weapon systems to cache
+   * @returns {void}
+   * @private
+   */
   set _weaponArray (weapons) {
     this.__weaponArray = Array.isArray(weapons) ? [...weapons] : []
   }
@@ -336,7 +398,8 @@ export class Ship {
 
   /**
    * Get ship cells
-   * @returns {[number, number][]} Array of cell coordinates
+   * Returns cached cells if available, otherwise extracts from board.
+   * @returns {CoordinatePair[]} Array of [row, col] cell coordinates (empty if no board)
    */
   get cells () {
     if (this._cellsArray && this._cellsArray.length > 0) {
@@ -357,19 +420,28 @@ export class Ship {
   }
   /**
    * Set cells and update board
-   * @param {CoordinatePair[]} cells - Cells to set
+   * Normalizes cells to standard format and creates board from cell coordinates.
+   * @param {CoordinatePair[]} cells - Array of cells to set in [row, col] format
+   * @returns {void}
    */
   set cells (cells) {
     const normalizedCells = this._normalizeCells(cells)
     this._cellsArray = normalizedCells
     this.board = Mask.fromCoordsSquare(normalizedCells)
   }
+  /**
+   * Get ship board (Mask representing occupied cells)
+   * Returns empty Mask if no board is set.
+   * @returns {SubBoard|Mask} Board representing ship placement
+   */
   get board () {
     return this._board || Mask.empty(0, 0)
   }
   /**
-   * Set board
-   * @param {SubBoard|Mask|unknown} board
+   * Set board and update ship properties
+   * Updates size from board occupancy and resets hit tracking to board's empty mask.
+   * @param {SubBoard|Mask|unknown} board - Board to assign
+   * @returns {void}
    */
   set board (board) {
     /** @type {any} */
@@ -387,12 +459,20 @@ export class Ship {
       }
     }
   }
+  /**
+   * Get ship board height
+   * @returns {number} Height of board (0 if no board)
+   */
   get height () {
     const board = this.board
     return board && typeof board === 'object' && 'height' in board
       ? board.height
       : 0
   }
+  /**
+   * Get ship board width
+   * @returns {number} Width of board (0 if no board)
+   */
   get width () {
     const board = this.board
     return board && typeof board === 'object' && 'width' in board
@@ -419,6 +499,11 @@ export class Ship {
     return Math.max(h, w)
   }
 
+  /**
+   * Reset ship board and placement state
+   * Clears ship cells and sets board to empty Mask, marking ship as not yet placed.
+   * @returns {void}
+   */
   resetBoard () {
     /**
      * @type {any[]}
@@ -428,8 +513,19 @@ export class Ship {
     this.board = Mask.empty(0, 0)
   }
 
+  /**
+   * Static counter for unique ship identifiers
+   * Incremented by next() method to ensure each ship gets a unique ID.
+   * @type {number}
+   */
   static id = 1
 
+  /**
+   * Increment static ship ID counter
+   * Called after creating each new ship to prepare for the next one.
+   * @returns {void}
+   * @static
+   */
   static next () {
     Ship.id++
   }
@@ -485,6 +581,11 @@ export class Ship {
     const x0 = x - offsetX - (windowWidth - 1) / 2
     return this.getPrimaryWeapon()?.getTurn(this.variant, x0, y0) || ''
   }
+  /**
+   * Reset ship to initial state
+   * Clears all hits, unsinks ship, and resets all weapons to their default state.
+   * @returns {void}
+   */
   reset () {
     this.resetHits()
     this.sunk = false
@@ -559,6 +660,12 @@ export class Ship {
     return this.getTotalHits() === boardOccupancy
   }
 
+  /**
+   * Internal: Get [coordKey, weapon] entries from weapons ID map
+   * Converts weaponsById Map to array of [coordKey, weapon] pairs.
+   * @returns {Array<[string, any]>} Array of [coordinate key, weapon] pairs
+   * @private
+   */
   _weaponEntriesFromIdMap () {
     if (!this._weaponsById) return []
     return Array.from(this._weaponsById, ([, weapon]) => {
@@ -645,6 +752,8 @@ export class Ship {
 
   /**
    * Get first weapon system from all weapons
+   * Returns the primary (first) weapon system or undefined if no weapons.
+   * @returns {Rack|undefined} First weapon system or undefined
    */
   getPrimaryWeaponSystem () {
     return firstElement(this._weaponArray)
@@ -652,14 +761,18 @@ export class Ship {
 
   /**
    * Get primary weapon from first weapon system
+   * Returns weapon object from primary weapon system or undefined if no weapons.
+   * @returns {any|undefined} Weapon instance from primary system or undefined
    */
   getPrimaryWeapon () {
     return this.getPrimaryWeaponSystem()?.weapon
   }
   /**
    * Find closest loaded weapon rack to given coordinates
-   * @param {number} r
-   * @param {number} c
+   * Searches among all loaded (ammunition-carrying) weapons for the closest one by distance.
+   * @param {number} r - Row coordinate to measure distance from
+   * @param {number} c - Column coordinate to measure distance from
+   * @returns {Array<[string, Rack]>|null} [coordKey, weapon] pair of closest loaded weapon or null if none
    */
   findClosestLoadedRack (r, c) {
     const loadedRacks = this.getLoadedWeaponEntries()
@@ -668,15 +781,20 @@ export class Ship {
   }
 
   /**
-   * Internal: Calculate closest rack from list by distance
-   * @param {any[]} entries
-   * @param {number} r
-   * @param {number} c
+   * Internal: Calculate closest rack from list by Euclidean distance
+   * Compares distances from given point to all racks and returns the closest one.
+   * @param {Array<[string, Rack]>} entries - Array of [coordKey, weapon] entries
+   * @param {number} r - Row coordinate to measure distance from
+   * @param {number} c - Column coordinate to measure distance from
+   * @returns {Array<[string, Rack]>|null} Closest [coordKey, weapon] pair or null if entries empty
+   * @private
    */
   _findClosestRack (entries, r, c) {
-    const noKey = '999,999'
-    const result = entries.reduce(
-      (/** @type {[any]} */ closest, /** @type {[any]} */ current) => {
+    if (entries.length === 0) return null
+    if (entries.length === 1) return entries[0]
+    const result = entries
+      .slice(1)
+      .reduce((/** @type {[any]} */ closest, /** @type {[any]} */ current) => {
         const [closestKey] = closest
         const [currentKey] = current
         const [closestR, closestC] = closestKey.split(',').map(Number)
@@ -684,14 +802,14 @@ export class Ship {
         const closestDist = Math.hypot(closestR - r, closestC - c)
         const currentDist = Math.hypot(currentR - r, currentC - c)
         return currentDist < closestDist ? current : closest
-      },
-      noKey
-    )
-    return result === noKey ? null : result
+      }, entries[0])
+    return result
   }
   /**
    * Find weapon system by its unique ID
-   * @param {number} id
+   * Searches both weaponsById Map and weaponArray for weapon with matching ID.
+   * @param {number} id - Weapon system unique identifier
+   * @returns {Rack|undefined} Weapon system with matching ID or undefined if not found
    */
   getWeaponBySystemId (id) {
     if (this.weaponsById.has(id)) {
@@ -768,6 +886,8 @@ export class Ship {
   }
   /**
    * Get all equipped weapons as array
+   * Returns weapons in order from weaponArray.
+   * @returns {Rack[]} Array of all weapon systems
    */
   getAllWeapons () {
     return this._weaponArray
@@ -775,6 +895,8 @@ export class Ship {
 
   /**
    * Get first loaded weapon from all weapons
+   * Returns first weapon with available ammunition.
+   * @returns {Rack|null} First loaded weapon or null if none
    */
   getFirstLoadedWeapon () {
     return firstElement(this.getLoadedWeapons())
@@ -782,6 +904,8 @@ export class Ship {
 
   /**
    * Get all loaded weapons
+   * Filters weapons to return only those with available ammunition.
+   * @returns {Rack[]} Array of loaded weapon systems
    */
   getLoadedWeapons () {
     return this.getAllWeapons().filter(w => this._isWeaponLoaded(w))
@@ -1225,8 +1349,10 @@ export class Ship {
 
   /**
    * Internal: Normalize cells to standard [row, col] format
+   * Converts various cell formats (arrays, objects with r/c or [0]/[1]) to standard pairs.
    * @param {CoordinatePair[]|any[]} cells - Array of cells in various formats
    * @returns {[number, number][]} Normalized cells as [row, col] pairs
+   * @private
    */
   _normalizeCells (cells) {
     if (!Array.isArray(cells)) return []
@@ -1245,6 +1371,12 @@ export class Ship {
     return result
   }
 
+  /**
+   * Place ship at cells with board creation
+   * Creates a SubBoard from normalized cell coordinates and places ship at that board.
+   * @param {CoordinatePair[]} cells - Array of [row, col] cells to place ship at
+   * @returns {[number, number][]} Normalized cells that were placed
+   */
   placeAtCells (cells) {
     const normalizedCells = this._normalizeCells(cells)
     const board = SubBoard.fromCoords(normalizedCells, null, new Mask(0, 0))
@@ -1326,7 +1458,9 @@ export class Ship {
   }
 
   /**
-   * Serialize ship state for JSON
+   * Serialize ship state to JSON-compatible object
+   * Converts ship data to a serializable format excluding non-JSON objects.
+   * @returns {Object} Ship state with id, symmetry, letter, size, sunk, variant, cells, weapons, hitPositions
    */
   toJSON () {
     return {
@@ -1361,6 +1495,13 @@ export class Ship {
     return serialized
   }
 
+  /**
+   * Place ship at grid with validation
+   * Checks if placement is valid before placing ship and updating grid.
+   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to
+   * @param {Placement} placement - Placement configuration to validate and apply
+   * @returns {CoordinatePair[]|null} Ship cells if placement succeeded, null if validation failed
+   */
   placeOnGrid (shipCellGrid, placement) {
     if (!placement.canPlace(shipCellGrid)) {
       //  const warning = placement.cantPlaceReason(shipCellGrid)
@@ -1370,6 +1511,14 @@ export class Ship {
     this.addUnplacedShipToGrid(shipCellGrid, placement)
     return this.cells
   }
+  /**
+   * Internal: Add unplaced ship to grid during placement
+   * Updates ship placement state, computes displaced area, and adds ship to grid.
+   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to modify
+   * @param {Placement} placement - Placement configuration to apply
+   * @returns {void}
+   * @private
+   */
   addUnplacedShipToGrid (shipCellGrid, placement) {
     // Placement succeeded: update ship and mask
     this.placePlacement(placement)

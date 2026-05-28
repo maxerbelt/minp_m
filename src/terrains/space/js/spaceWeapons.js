@@ -295,15 +295,18 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
 // ============================================================================
 
 /**
- * Missile - A targeted explosive weapon dealing splash damage
- * Extends Bomb with cross-board animation support
+ * Missile - A targeted explosive weapon dealing splash damage.
+ * Extends Bomb with cross-board animation support for dual-board gameplay.
+ * Single-target area-of-effect explosive with 3-layer splash pattern.
  * @extends Bomb
+ * @class Missile
  */
 export class Missile extends Bomb {
   /**
    * Initializes missile with configuration.
    * Sets up targeting cursors, animation sequence, and splash damage pattern.
    * @param {number} ammo - Number of missiles available
+   * @public
    */
   constructor (ammo) {
     super(ammo, 'Missile', '+')
@@ -365,7 +368,7 @@ export class Missile extends Bomb {
   /**
    * Normalizes launch coordinates for missile targeting.
    * Maps source and first target coordinate to launch pair format.
-   * @param {Object} _map - Game map (unused for missile)
+   * @param {TerrainMap} _map - Game map (unused for missile)
    * @param {number[]} baseCoords - Source coordinates [row, col]
    * @param {number[][]} targetCoords - Array of target coordinates
    * @returns {number[][]} Transformed coordinate pair [baseCoords, targetCoords[0]]
@@ -378,7 +381,7 @@ export class Missile extends Bomb {
   /**
    * Calculates area-of-effect damage pattern from target coordinates.
    * Delegates to inherited boom() method for standard explosion pattern.
-   * @param {Object} _map - Game map (unused for missile)
+   * @param {TerrainMap} _map - Game map (unused for missile)
    * @param {number[][]} coords - Target coordinates [[row, col], ...]
    * @returns {AoePattern} Damage cells with power levels [row, col, power]
    * @public
@@ -442,9 +445,9 @@ export class Missile extends Bomb {
   /**
    * Determines turn phase for missile variant.
    * Maps variant ID to turn duration classes for animation pacing.
-   * @param {number} variant - Weapon variant identifier (0, 2, 3)
-   * @param {number} _y - Row coordinate (unused for missile)
+   * @param {number} variant - Weapon variant identifier (0, 1, 3)
    * @param {number} _x - Column coordinate (unused for missile)
+   * @param {number} _y - Row coordinate (unused for missile)
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
    * @public
    */
@@ -473,15 +476,18 @@ export class Missile extends Bomb {
 // ============================================================================
 
 /**
- * RailBolt - A two-point targeting weapon with portal-style cross-board animation
- * Extends Strike with specialized dual-animation launch sequence
+ * RailBolt - A two-point targeting weapon with portal-style cross-board animation.
+ * Extends Strike with specialized dual-animation launch sequence displaying line trajectory.
+ * Renders portal markers at line endpoints for visual feedback across dual boards.
  * @extends Strike
+ * @class RailBolt
  */
 export class RailBolt extends Strike {
   /**
    * Initializes rail bolt with configuration.
    * Sets up two-point targeting cursors, portal animation support, and splash pattern.
    * @param {number} ammo - Number of rail bolts available
+   * @public
    */
   constructor (ammo) {
     super(ammo, 'Rail Bolt', '|')
@@ -604,7 +610,7 @@ export class RailBolt extends Strike {
   /**
    * Calculates splash/secondary damage pattern around a point.
    * Creates cross-shaped splash with directional forward/backward damaging cells.
-   * @param {Object} _map - Game map (unused)
+   * @param {TerrainMap} _map - Game map (unused)
    * @param {Coord} resolvedTarget - Impact coordinate [row, col]
    * @param {AoePattern} effect - Damage effect coordinates (full trajectory line)
    * @param {{fullLine: AoePattern}} options - Additional options with trajectory line
@@ -626,7 +632,7 @@ export class RailBolt extends Strike {
       const idx = fullLine.findIndex(
         ([r, c]) => r === resolvedTarget[0] && c === resolvedTarget[1]
       )
-      if (idx !== undefined) {
+      if (idx >= 0) {
         // Determine next point based on position in trajectory line
         if (idx === last) {
           next = fullLine[idx - 1]
@@ -699,15 +705,18 @@ export class RailBolt extends Strike {
 // ============================================================================
 
 /**
- * GaussRound - A projectile weapon that stops at terrain boundaries
- * Extends Fish with land-detection trajectory and dual-animation launch
+ * GaussRound - A projectile weapon that stops at terrain boundaries.
+ * Extends Fish with land-detection trajectory and dual-animation launch.
+ * Implements crash damage mechanics on terrain collision with secondary splash patterns.
  * @extends Fish
+ * @class GaussRound
  */
 export class GaussRound extends Fish {
   /**
    * Initializes Gauss round with configuration.
    * Sets up land-detection projectile with crash damage and dual-animation launch.
    * @param {number} ammo - Number of Gauss rounds available
+   * @public
    */
   constructor (ammo) {
     super(ammo, 'Gauss Round', '^')
@@ -796,7 +805,7 @@ export class GaussRound extends Fish {
    * then from source on primary board to target on primary board.
    * Portal markers appear at source coordinates on both boards.
    * @async
-   * @param {number[][]} coords - Target coordinates
+   * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate (portal source on both boards)
    * @param {number} sourceCol - Source column coordinate (portal source on both boards)
    * @param {TerrainMap} map - Game map object
@@ -863,12 +872,13 @@ export class GaussRound extends Fish {
   /**
    * Process launch coordinates through game model targeting logic.
    * Allows model to transform target location based on game state.
-   *
-   * @param {any} map - Game map object
+   * Returns source, resolved target, and flag indicating candidate availability.
+   * @param {TerrainMap} map - Game map object
    * @param {number[]} base - Base/source coordinates [row, col]
    * @param {number[]} coords - Target coordinates [row, col]
-   * @param {any} model - Game model for target lookup
-   * @returns {number[][]} Processed coordinate pair with candidate flag
+   * @param {GameModel} model - Game model for target lookup
+   * @returns {[number[], Coord, boolean]} Tuple with [source, resolvedTarget, hasCandidates]
+   * @private
    */
   processCoords (map, [rr, cc], coords, model) {
     const normalizedCoords = normalizeWeaponCoordinates(coords, rr, cc)
@@ -937,6 +947,7 @@ export class GaussRound extends Fish {
    * @param {TerrainMap} map - Game map for bounds/terrain checking
    * @param {number[][]} coords - Source and Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @returns {AoePattern} Cells along trajectory path with damage power [row, col, power]
+   * @override
    * @public
    */
   aoe (map, coords) {
@@ -951,7 +962,7 @@ export class GaussRound extends Fish {
    * Returns affected area plus full line and crash location for damage determination.
    * @param {TerrainMap} map - Game map object
    * @param {number[][]} coords - Target coordinates [[row1, col1], [row2, col2]]
-   * @returns {{affectedArea: AoePattern, options: {crashLoc: Coord|null, fullLine: AoePattern}}} Effect data with trajectory info
+   * @returns {{affectedArea: AoePattern, options: {crashLoc: (Coord|null), fullLine: AoePattern}}} Effect data with trajectory info
    * @public
    */
   aoePlus (map, coords) {
@@ -964,11 +975,12 @@ export class GaussRound extends Fish {
   /**
    * Calculates splash/secondary damage pattern around a point.
    * Creates directional splash based on trajectory position (start, middle, end).
-   * @param {Object} _map - Game map (unused)
+   * @param {TerrainMap} _map - Game map (unused)
    * @param {Coord} resolvedTarget - Impact coordinate [row, col]
    * @param {AoePattern} effect - Damage effect coordinates along trajectory
    * @param {{fullLine: AoePattern}} options - Additional options with full trajectory line
    * @returns {AoePattern} Splash pattern [row, col, power] tuples
+   * @override
    * @public
    */
   splash (_map, resolvedTarget, effect, options) {
@@ -1022,6 +1034,7 @@ export class GaussRound extends Fish {
    * @param {AoePattern} _effect - Damage effect coordinates (unused)
    * @param {Object} _options - Additional options (unused)
    * @returns {AoePattern} Crash splash pattern [row, col, power] tuples
+   * @override
    * @public
    */
   crashSplash (map, target, _effect, _options) {
@@ -1059,6 +1072,7 @@ export class GaussRound extends Fish {
    * @param {OpposingViewModel} [opposingViewModel] - Optional opposing player view model
    * @param {GameModel} [gameModel] - Optional game model for coordinate transformation
    * @returns {Promise<{target: Coord}|{}>} Animation result with resolved target or empty object
+   * @override
    * @public
    */
   async launchTo (
@@ -1104,15 +1118,16 @@ export class GaussRound extends Fish {
 /**
  * Laser - A projectile weapon that stops at terrain boundaries.
  * Extends Fish with land-detection trajectory and dual-animation launch.
- * Implements separate blast mechanics from GaussRound despite similar trajectory.
+ * Implements identical crash mechanics and damage patterns to GaussRound.
  * @extends Fish
  * @class Laser
  */
 export class Laser extends Fish {
   /**
    * Initializes Laser with configuration.
-   * Sets up land-detection projectile with separate crash mechanics from GaussRound.
+   * Sets up land-detection projectile with identical crash mechanics to GaussRound.
    * @param {number} ammo - Number of Laser Blasts available
+   * @public
    */
   constructor (ammo) {
     super(ammo, 'Laser Blast', '!')
@@ -1201,6 +1216,7 @@ export class Laser extends Fish {
    * Implements weapon cloning protocol.
    * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
    * @returns {Laser} New Laser instance with specified ammo
+   * @override
    * @public
    */
   clone (ammo) {
@@ -1209,7 +1225,9 @@ export class Laser extends Fish {
 
   /**
    * Gets the audio file for Laser blast flight sound.
+   * Returns different audio URL from Gauss round for distinct weapon audio feedback.
    * @returns {URL} URL to Laser blast flight sound asset (relative to this module)
+   * @override
    * @public
    */
   get flightSound () {
@@ -1234,6 +1252,7 @@ export class Laser extends Fish {
 /**
  * Scan - A detection/scanning weapon generating pie-segment patterns.
  * Extends Sensor for radar-like sweep visualization with sweep animation.
+ * Used for terrain scanning with two-point targeting sweep across dual boards.
  * @extends Sensor
  * @class Scan
  */
@@ -1242,6 +1261,7 @@ export class Scan extends Sensor {
    * Initializes radar scan with configuration.
    * Sets up two-point targeting sweep with pie-segment detection pattern.
    * @param {number} ammo - Number of scans available
+   * @public
    */
   constructor (ammo) {
     super(ammo)
@@ -1268,6 +1288,7 @@ export class Scan extends Sensor {
    * Implements weapon cloning protocol.
    * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
    * @returns {Scan} New scan instance with specified ammo
+   * @override
    * @public
    */
   clone (ammo) {
