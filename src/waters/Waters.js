@@ -1,3 +1,21 @@
+/**
+ * Core game logic module for Battleship game.
+ *
+ * Manages ship placement, weapon systems, targeting, firing mechanics, and battle state.
+ * Coordinates interactions between player state, opponent state, and UI presentation.
+ * Handles turn-based progression, scoring, and game status updates.
+ *
+ * Key Responsibilities:
+ * - Ship fleet initialization and placement validation
+ * - Weapon system loading, selection, and firing
+ * - Hit/miss detection and damage resolution
+ * - Fleet destruction tracking and game end conditions
+ * - Persistent storage of ship placements
+ * - Optional turn-based step tracking for game progression
+ *
+ * @module waters/Waters
+ */
+
 import { bh } from '../terrains/all/js/bh.js'
 import {
   randomElement,

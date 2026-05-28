@@ -1,10 +1,25 @@
+/**
+ * Sea and land ships catalogue configuration module.
+ * Provides comprehensive ship data including visual styling, naming, and symmetry information.
+ *
+ * @module seaShipsCatalogue
+ */
+
 import { seaAndLandGroups } from './seaAndLandGroups.js'
 import { ShipCatalogue } from '../../../ships/ShipGroups.js'
 
 /**
  * Color mapping for sea and land ship types.
- * Maps ship letter identifiers to their display colors.
+ * Maps ship letter identifiers to their display colors used in UI rendering.
+ *
+ * Ship Categories:
+ * - Naval Vessels: A, B, C, D, E, O, S, T (sea-based)
+ * - Aircraft: H, J, P, Q (air-based)
+ * - Structures: G, L, N, R, U, Y, I (land-based)
+ * - Weapons: M, K, W, +, %, F, Z (abstract)
+ *
  * @type {Object<string, string>}
+ * @readonly
  */
 const SEA_SHIP_COLORS = {
   A: '#ff6666', // coral red
@@ -37,8 +52,13 @@ const SEA_SHIP_COLORS = {
 
 /**
  * Display names for sea and land ship types.
- * Maps ship letter identifiers to their human-readable names.
+ * Maps ship letter identifiers to their human-readable names for UI display.
+ *
+ * These names are used in tooltips, status messages, and selection dialogs.
+ * Follows game terminology for naval vessels, aircraft, and structures.
+ *
  * @type {Object<string, string>}
+ * @readonly
  */
 const SEA_SHIP_NAMES = {
   A: 'Aircraft Carrier',
@@ -64,8 +84,17 @@ const SEA_SHIP_NAMES = {
 
 /**
  * Symmetry types for sea and land ship types.
- * Maps ship letter identifiers to their symmetry classifications.
+ * Maps ship letter identifiers to their symmetry classifications used in placement.
+ *
+ * Symmetry values:
+ * - 'S' (Symmetric): Vertical line of symmetry, can be flipped horizontally
+ * - 'A' (Asymmetric): No symmetry, rotations allowed
+ * - 'G' (Grid): Grid-based placement with symmetry
+ * - 'X' (Cross): Symmetric across both axes
+ * - 'W' (Weapon): Abstract weapon type, special rules apply
+ *
  * @type {Object<string, string>}
+ * @readonly
  */
 const SEA_SHIP_SYMMETRIES = {
   A: 'S',
@@ -98,8 +127,15 @@ const SEA_SHIP_SYMMETRIES = {
 
 /**
  * Background styling for sea and land ship types.
- * Maps ship letter identifiers to their background colors/styles.
+ * Maps ship letter identifiers to their background colors/styles used in rendering.
+ *
+ * Supports:
+ * - RGBA colors for ship cells with transparency (0.3-0.4 alpha)
+ * - Hex colors for weapons and special effects
+ * - Variants for weapon effects (e.g., K, K1, K2 for different strike zones)
+ *
  * @type {Object<string, string>}
+ * @readonly
  */
 const SEA_SHIP_BACKGROUNDS = {
   A: 'rgba(255,102,102,0.3)',
@@ -138,8 +174,18 @@ const SEA_SHIP_BACKGROUNDS = {
 
 /**
  * Sea and land ships catalogue containing all ship configurations for sea and land terrain.
- * Provides color mapping, naming, symmetry rules, and background styling for all ship types.
+ *
+ * Provides comprehensive ship data including:
+ * - Color mapping for visual rendering in UI and game board
+ * - Human-readable names for display in tooltips and selections
+ * - Symmetry rules for placement validation and rotation
+ * - Background styling for visual distinction between ship types
+ *
+ * Integrates with `seaAndLandGroups` to organize ships by category and provides
+ * complete configuration for the ShipCatalogue system used throughout the game.
+ *
  * @type {ShipCatalogue}
+ * @readonly
  */
 export const seaAndLandShipsCatalogue = new ShipCatalogue(
   [],

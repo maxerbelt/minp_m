@@ -493,8 +493,8 @@ export class Friend extends Placement {
         return this.noResult
       }
       if (this.isHitValid(loc[1], loc[0])) {
-        // @ts-ignore - launchSingleShot is defined in base Placement class at runtime
-        return await this.launchSingleShot(loc[1], loc[0])
+        // @ts-ignore - launchCurrentWeapon is method defined in this class at runtime
+        return await this.launchCurrentWeapon(loc[1], loc[0])
       }
     }
     return null
@@ -766,8 +766,8 @@ export class Friend extends Placement {
     this.loadOut.switchToSingleShot()
     // @ts-ignore - candidate.randomOccupied is [col, row] tuple at runtime
     const [c, r] = candidate.randomOccupied
-    // @ts-ignore - launchSingleShot is method defined in base Placement class at runtime
-    return await this.launchSingleShot(r, c, false)
+    // @ts-ignore - launchCurrentWeapon is method defined in this class at runtime
+    return await this.launchCurrentWeapon(r, c)
   }
 
   /**
@@ -810,8 +810,12 @@ export class Friend extends Placement {
    * @returns {void}
    */
   restartBoard (friendlyMode = false) {
-    // @ts-ignore - resetBase is method defined in base Placement class at runtime
-    this.resetBase()
+    // Reset board state (replaces deprecated resetBase())
+    this.boardDestroyed = false
+    // @ts-ignore - this.UI.board is HTMLElement at runtime with classList property
+    this.UI.board?.classList?.remove('destroyed')
+    // @ts-ignore - score.reset is method defined in Score class at runtime
+    this.score.reset()
     // @ts-ignore - UI.clearVisuals is method defined in Board class at runtime
     this.UI.clearVisuals()
     if (friendlyMode) {
@@ -1220,8 +1224,12 @@ export class Friend extends Placement {
    * @returns {void}
    */
   resetUI (ships) {
-    // @ts-ignore - resetBase is method defined in base Placement class at runtime
-    this.resetBase()
+    // Reset board state (replaces deprecated resetBase())
+    this.boardDestroyed = false
+    // @ts-ignore - this.UI.board is HTMLElement at runtime with classList property
+    this.UI.board?.classList?.remove('destroyed')
+    // @ts-ignore - score.reset is method defined in Score class at runtime
+    this.score.reset()
     ships = ships || this.ships
     // @ts-ignore - UI.reset is method defined in Board class at runtime
     this.UI.reset(ships)

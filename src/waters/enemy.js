@@ -588,7 +588,9 @@ class Enemy extends Waters {
    */
   cursorChange (oldCursor, newCursorInfo) {
     const newCursor = newCursorInfo?.cursor
-    if (newCursor === oldCursor) return
+    // Handle case where cursor hasn't changed
+    if (newCursor == null) return
+    if (oldCursor === newCursor) return
 
     // @ts-ignore - this.UI is typed as Object but has board property
     const boardElement = /** @type {HTMLElement|undefined} */ (this.UI?.board)
@@ -596,6 +598,27 @@ class Enemy extends Waters {
 
     if (!board) return
 
+    this._updateBoardCursorDisplay(newCursor, oldCursor, board)
+
+    const wps = /** @type {WeaponSystem|undefined} */ (newCursorInfo?.wps)
+    if (wps) {
+      // @ts-ignore - Parent class updateMode is private but we call it here
+      this.updateMode(wps, newCursorInfo)
+    }
+  }
+
+  /**
+   * Updates the board cursor display when the cursor changes.
+   * Handles adding new cursor classes and removing stale ones.
+   * Extracted from cursorChange() to reduce cognitive complexity.
+   *
+   * @private
+   * @param {string} newCursor - The new cursor class (may be empty string)
+   * @param {string|null} oldCursor - The old cursor class (may be null)
+   * @param {DOMTokenList} board - The board classList element
+   * @returns {void}
+   */
+  _updateBoardCursorDisplay (newCursor, oldCursor, board) {
     // When switching to a new non-empty cursor, remove any stale cursor classes
     // from the board before adding the new one. This prevents multiple cursor
     // classes from accumulating during weapon/step changes.
@@ -603,21 +626,7 @@ class Enemy extends Waters {
       if (oldCursor) {
         board.remove(oldCursor)
       }
-      const staleCursorClasses = /** @type {string[]} */ ([])
-      for (const cls of board) {
-        if (
-          cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) ||
-          cls.includes('cursor')
-        ) {
-          staleCursorClasses.push(cls)
-        }
-      }
-      const uniqueStaleClasses = [...new Set(staleCursorClasses)].filter(
-        Boolean
-      )
-      if (uniqueStaleClasses.length) {
-        board.remove(...uniqueStaleClasses)
-      }
+      this._removeStaleCursorClasses(board)
       if (newCursor) {
         board.add(newCursor)
       }
@@ -626,11 +635,27 @@ class Enemy extends Waters {
       // state; empty cursor is a transient firing-ready state and should leave
       // the previous weapon cursor visible.
     }
+  }
 
-    const wps = /** @type {WeaponSystem|undefined} */ (newCursorInfo?.wps)
-    if (wps) {
-      // @ts-ignore - Parent class updateMode is private but we call it here
-      this.updateMode(wps, newCursorInfo)
+  /**
+   * Removes all stale cursor classes from the board.
+   * Identifies and removes classes that match cursor patterns.
+   * Extracted from cursorChange() to reduce cognitive complexity.
+   *
+   * @private
+   * @param {DOMTokenList} board - The board classList element
+   * @returns {void}
+   */
+  _removeStaleCursorClasses (board) {
+    const staleCursorClasses = /** @type {string[]} */ ([])
+    for (const cls of board) {
+      if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
+        staleCursorClasses.push(cls)
+      }
+    }
+    const uniqueStaleClasses = [...new Set(staleCursorClasses)].filter(Boolean)
+    if (uniqueStaleClasses.length) {
+      board.remove(...uniqueStaleClasses)
     }
   }
 
@@ -1168,7 +1193,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate
    * @returns {void}
    */
-  // eslint-disable-next-line no-unused-vars
   _onFirstClickSelection (r, c) {
     this._selectCurrentWeaponOnRandomShip(r, c)
     gameStatus.addToQueue(MESSAGES.ENEMY_SELECTING_TARGET, true)
@@ -1182,7 +1206,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
    */
-  // eslint-disable-next-line no-unused-vars
   async _onSecondClickFire (r, c) {
     // Ensure fire handlers are attached before firing.
     // This is required for the two-click Hide/Seek path because the selected
@@ -1234,7 +1257,6 @@ class Enemy extends Waters {
    * @returns {Promise<void>} Resolves when cell click handling completes
    * @throws {void} Does not throw; instead handles errors via game status messages
    */
-  // eslint-disable-next-line no-unused-vars
   async onClickCell (r, c) {
     if (!this.canTakeTurn()) return
 
@@ -1281,7 +1303,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate (0-indexed)
    * @returns {Promise<void>} Resolves when single-shot handling completes
    */
-  // eslint-disable-next-line no-unused-vars
   async _handleSingleShotClick (r, c) {
     // CRITICAL: Ensure fire handlers are attached before firing.
     // Without this call, the shot animates but never delivers hit/miss results.
@@ -1311,7 +1332,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
    */
-  // eslint-disable-next-line no-unused-vars
   async _handleAttachedWeaponClick (r, c) {
     if (this.loadOut?.selectedWeapon) {
       // REGRESSION GUARD: Check if selectedWeapon is a seek-mode missile before firing
@@ -1364,7 +1384,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
    */
-  // eslint-disable-next-line no-unused-vars
   async _fireWeaponViaSetup (r, c) {
     const result = await this.setupWeapon(r, c)
     if (this._shouldWaitForWeaponResult(result)) return
@@ -1380,7 +1399,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
    */
-  // eslint-disable-next-line no-unused-vars
   async _fireCurrentWeaponImmediately (r, c) {
     const { r0, c0 } = bh.map.nearestCornerTo(r, c)
 
@@ -1407,7 +1425,6 @@ class Enemy extends Waters {
    * @param {number} c - Target column coordinate
    * @returns {boolean} True if warning should be played
    */
-  // eslint-disable-next-line no-unused-vars
   _shouldWarnOnGaussAsteroid (currentWeapon, r, c) {
     const isGaussRound =
       currentWeapon?.weapon?.name === 'Gauss Round' ||
@@ -1486,7 +1503,6 @@ class Enemy extends Waters {
    * @param {number} hintC - Hint column coordinate (0-indexed)
    * @returns {void}
    */
-  // eslint-disable-next-line no-unused-vars
   onClickOppoCell (hintR, hintC) {
     // @ts-ignore - opponent type compatibility
     const opponent = this.opponent
@@ -1536,7 +1552,6 @@ class Enemy extends Waters {
    * @returns {Object|Symbol} The weapon effect result or LoadOut.noResult sentinel
    */
   // @ts-ignore - Intentionally overrides parent's private destroy with public implementation
-  // eslint-disable-next-line no-unused-vars
   destroy (weapon, effect, options) {
     if (!options?.isSplash) {
       if (this._isInvalidShot(effect)) {
@@ -1690,7 +1705,6 @@ class Enemy extends Waters {
    * @param {Object} _cursorInfo - Cursor information (unused)
    * @returns {void}
    */
-  // eslint-disable-next-line no-unused-vars
   updateWeaponStatus (_rack, _cursorInfo) {
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
     const weaponSystem = loadOut?.getCurrentWeaponSystem?.()
