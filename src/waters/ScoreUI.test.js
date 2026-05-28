@@ -30,9 +30,9 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
          * @param {DisplayDisplacedAreaCallback} callback - Callback function
          */
         displayDisplacedArea: jest.fn((_map, callback) => {
-          callback(
-            { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
-            1000
+          const typedCallback = /** @type {DisplayDisplacedAreaCallback} */ (callback)
+          typedCallback(
+            { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) }
           )
         })
       }
@@ -107,9 +107,9 @@ describe('ScoreUI', () => {
        * @param {DisplayDisplacedAreaCallback} callback
        */
       (_map, callback) => {
-        callback(
-          { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) },
-          1000
+        const typedCallback = /** @type {DisplayDisplacedAreaCallback} */ (callback)
+        typedCallback(
+          { title: 'Water', displacementFor: jest.fn().mockReturnValue(0) }
         )
       }
     )
@@ -140,12 +140,13 @@ describe('ScoreUI', () => {
     }
 
     // Mock document.getElementById
-    globalThis.document.getElementById = jest.fn(
+    globalThis.document.getElementById = /** @type {any} */ (jest.fn(
       /**
        * @param {string} id
+       * @returns {HTMLElement|null}
        */
-      id => mockElements[id]
-    )
+      id => /** @type {any} */ (mockElements[id] || null)
+    ))
 
     scoreUI = new ScoreUI('player1')
   })
@@ -174,8 +175,7 @@ describe('ScoreUI', () => {
     })
 
     it('should use provided prefix for element IDs', () => {
-      // eslint-disable-next-line no-new
-      new ScoreUI('player2')
+      const _unused = new ScoreUI('player2')
 
       expect(globalThis.document.getElementById).toHaveBeenCalledWith(
         'player2-shots'
@@ -193,10 +193,10 @@ describe('ScoreUI', () => {
     })
 
     it('should calculate and display hits from ships', () => {
-      const mockShips = [
+      const mockShips = /** @type {any} */ ([
         { getTotalHits: jest.fn(() => 2) },
         { getTotalHits: jest.fn(() => 3) }
-      ]
+      ])
       scoreUI?.display(mockShips, 0, 0, 0, 0, 0)
       expect(scoreUI?.hits?.textContent).toBe('5')
     })
@@ -249,7 +249,7 @@ describe('ScoreUI', () => {
 
         it('should append entry to zone element', () => {
           if (scoreUI?.zone) {
-            scoreUI.zone.appendChild = jest.fn()
+            scoreUI.zone.appendChild = jest.fn() as any
           }
           scoreUI?.createZoneTextEntry('Zone', 'value', 'span', '')
           expect(scoreUI?.zone?.appendChild).toHaveBeenCalled()
@@ -271,7 +271,7 @@ describe('ScoreUI', () => {
         it('should call createZoneEntry with b tag', () => {
           const zoneData = new Set()
           if (scoreUI?.zone) {
-            scoreUI.zone.appendChild = jest.fn()
+            scoreUI.zone.appendChild = jest.fn() as any
           }
           scoreUI?.createZoneTitle('Title', zoneData)
           expect(scoreUI?.zone?.appendChild).toHaveBeenCalled()
@@ -293,7 +293,7 @@ describe('ScoreUI', () => {
         it('should call createZoneEntry with span tag', () => {
           const zoneData = new Set()
           if (scoreUI?.zone) {
-            scoreUI.zone.appendChild = jest.fn()
+            scoreUI.zone.appendChild = jest.fn() as any
           }
           scoreUI?.createZoneItem('Item', zoneData)
           expect(scoreUI?.zone?.appendChild).toHaveBeenCalled()
@@ -327,7 +327,7 @@ describe('ScoreUI', () => {
         })
 
         it('should create div with ship letter', () => {
-          const mockShip = { letter: 'B', sunk: false }
+          const mockShip = /** @type {any} */ ({ letter: 'B', sunk: false })
           const box = scoreUI?.buildShipBox(mockShip)
           expect(box).toBeDefined()
         })
@@ -344,8 +344,8 @@ describe('ScoreUI', () => {
                 style: { background: '', color: '' },
                 classList: { add: jest.fn() }
               })
-          )
-          const mockShip = { letter: 'B', sunk: true }
+          ) as any
+          const mockShip = /** @type {any} */ ({ letter: 'B', sunk: true })
           const box = scoreUI?.buildShipBox(mockShip)
           expect(box?.textContent).toBe('X')
         })
@@ -362,8 +362,8 @@ describe('ScoreUI', () => {
                 style: { background: '', color: '' },
                 classList: { add: jest.fn() }
               })
-          )
-          const mockShip = { letter: 'D', sunk: false }
+          ) as any
+          const mockShip = /** @type {any} */ ({ letter: 'D', sunk: false })
           const box = scoreUI?.buildShipBox(mockShip)
           expect(box?.textContent).toBe('D')
         })
@@ -385,18 +385,18 @@ describe('ScoreUI', () => {
         })
 
         it('should create a tally row', () => {
-          const mockShips = [
+          const mockShips = /** @type {any} */ ([
             {
               letter: 'B',
               sunk: false,
               isInTallyGroup: jest.fn().mockReturnValue(true)
             }
-          ]
-          const mockRowList = {
+          ])
+          const mockRowList = /** @type {any} */ ({
             appendChild: jest.fn(),
             classList: { add: jest.fn() }
-          }
-          scoreUI.buildTallyRow(mockShips, 'B', mockRowList, null, 'S')
+          })
+          scoreUI!.buildTallyRow(mockShips, 'B', mockRowList, null, 'S')
           expect(mockRowList.appendChild).toHaveBeenCalled()
         })
 
@@ -409,33 +409,33 @@ describe('ScoreUI', () => {
             },
             appendChild: jest.fn(),
             style: {}
-          }))
-          const mockShips = [
+          })) as any
+          const mockShips = /** @type {any} */ ([
             { letter: 'B', sunk: false, isInTallyGroup: jest.fn() }
-          ]
-          const mockRowList = { appendChild: jest.fn() }
-          scoreUI.buildTallyRow(mockShips, 'B', mockRowList, null, 'S')
+          ])
+          const mockRowList = /** @type {any} */ ({ appendChild: jest.fn() })
+          scoreUI!.buildTallyRow(mockShips, 'B', mockRowList, null, 'S')
           // The row's classList.add should have been called
         })
       })
 
       describe('setupZoneInfo', () => {
         it('should clear zone HTML', () => {
-          scoreUI.zone.innerHTML = '<div>old</div>'
-          scoreUI.setupZoneInfo()
-          expect(scoreUI.zone.innerHTML).toBe('')
+          scoreUI!.zone!.innerHTML = '<div>old</div>'
+          scoreUI!.setupZoneInfo()
+          expect(scoreUI!.zone!.innerHTML).toBe('')
         })
 
         it('should call setupZoneInfo on subterrain trackers', () => {
-          scoreUI.setupZoneInfo()
+          scoreUI!.setupZoneInfo()
           expect(bh.map.subterrainTrackers.setupZoneInfo).toHaveBeenCalled()
         })
 
         it('should set zoneSync to result', () => {
           const mockResult = [{ zone: 1 }, { zone: 2 }]
           bh.map.subterrainTrackers.setupZoneInfo.mockReturnValue(mockResult)
-          scoreUI.setupZoneInfo()
-          expect(scoreUI.zoneSync).toEqual(mockResult)
+          scoreUI!.setupZoneInfo()
+          expect(scoreUI!.zoneSync).toEqual(mockResult)
         })
       })
 
@@ -453,8 +453,8 @@ describe('ScoreUI', () => {
               { textContent: '' }
             ]
           }
-          scoreUI.zoneSync = [mockEntry]
-          scoreUI.displayZoneInfo()
+          scoreUI!.zoneSync = [mockEntry]
+          scoreUI!.displayZoneInfo()
           expect(mockTracker.recalc).toHaveBeenCalled()
         })
 
@@ -470,8 +470,8 @@ describe('ScoreUI', () => {
               { textContent: '' }
             ]
           }
-          scoreUI.zoneSync = [mockEntry]
-          scoreUI.displayZoneInfo()
+          scoreUI!.zoneSync = [mockEntry]
+          scoreUI!.displayZoneInfo()
           expect(mockEntry.counts[0].textContent).toBe('100')
           expect(mockEntry.counts[1].textContent).toBe('20')
           expect(mockEntry.counts[2].textContent).toBe('80')
@@ -480,26 +480,26 @@ describe('ScoreUI', () => {
 
       describe('hasZoneInfo', () => {
         it('should return false when no zone info', () => {
-          scoreUI.zoneSync = [{ tracker: { recalc: jest.fn(), totalSize: 0 } }]
-          const result = scoreUI.hasZoneInfo()
+          scoreUI!.zoneSync = [{ tracker: { recalc: jest.fn(), totalSize: 0 } }]
+          const result = scoreUI!.hasZoneInfo()
           expect(result).toBe(false)
         })
 
         it('should return true when zone info exists', () => {
-          scoreUI.zoneSync = [
+          scoreUI!.zoneSync = [
             { tracker: { recalc: jest.fn(), totalSize: 0 } },
             { tracker: { recalc: jest.fn(), totalSize: 50 } }
           ]
-          const result = scoreUI.hasZoneInfo()
+          const result = scoreUI!.hasZoneInfo()
           expect(result).toBe(true)
         })
       })
 
       describe('resetTallyBox', () => {
         it('should clear innerHTML', () => {
-          scoreUI.tallyBox.innerHTML = 'something'
-          scoreUI.resetTallyBox()
-          expect(scoreUI.tallyBox.innerHTML).toBe('')
+          scoreUI!.tallyBox!.innerHTML = 'something'
+          scoreUI!.resetTallyBox()
+          expect(scoreUI!.tallyBox!.innerHTML).toBe('')
         })
       })
     })
