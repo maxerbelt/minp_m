@@ -164,6 +164,7 @@ export class TerrainMaps {
   /**
    * Saves the current custom map to localStorage.
    * @param {Object} [example] - Optional example data
+   * @returns {void}
    */
   addCurrentCustomMap (example) {
     if (
@@ -204,6 +205,7 @@ export class TerrainMaps {
    * Sets the current map to a default blank map with land from a template.
    * @param {number} r - Number of rows
    * @param {number} c - Number of columns
+   * @returns {void}
    */
   setToDefaultBlank (r, c) {
     this.clearBlankWith(r, c)
@@ -456,9 +458,10 @@ export class TerrainMaps {
   /**
    * Stores the last custom height in localStorage.
    * @param {number} height - The height to store
+   * @returns {void}
    */
   storeLastHeight (height) {
-    if (height !== undefined && height !== null) {
+    if (height != null) {
       localStorage.setItem(this._getLastHeightKey(), String(height))
     }
   }
@@ -466,9 +469,10 @@ export class TerrainMaps {
   /**
    * Stores the last custom width in localStorage.
    * @param {number} width - The width to store
+   * @returns {void}
    */
   storeLastWidth (width) {
-    if (width !== undefined && width !== null) {
+    if (width != null) {
       localStorage.setItem(this._getLastWidthKey(), String(width))
     }
   }
@@ -477,6 +481,7 @@ export class TerrainMaps {
    * Stores both last custom width and height in localStorage.
    * @param {number} width - The width to store
    * @param {number} height - The height to store
+   * @returns {void}
    */
   storeLastCustomSize (width, height) {
     this.storeLastWidth(width)

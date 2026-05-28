@@ -8,7 +8,7 @@
  * @module terrains/all/js/maps
  */
 
-import { placingTarget } from '../../../variants/makeCell3.js'
+import { placingTarget } from '../../../variants/placingTarget.js'
 import { terrains } from './terrains.js'
 import { bh } from './bh.js'
 

@@ -21,8 +21,24 @@ import { spaceAndAsteroidsMaps } from '../../space/js/spaceAndAsteroidsMaps.js'
 
 /**
  * @typedef {import('./TerrainMaps.js').TerrainMaps} TerrainMapsType
+ */
+
+/**
  * @typedef {Object} TerrainMapType
  * @description Terrain map type from TerrainMaps configuration
+ * @property {number} rows - The number of rows in the map
+ * @property {number} cols - The number of columns in the map
+ * @property {string} title - The map title
+ * @property {Function} isLand - Method to check if a cell is land
+ * @property {Function} inBounds - Method to check if coordinates are in bounds
+ * @property {Function} zoneInfo - Method to get zone information
+ */
+
+/**
+ * @typedef {Object} GameMapsRegistry
+ * @description Registry of available terrain configurations
+ * @property {TerrainMapsType} seaAndLand - Sea terrain with land overlay
+ * @property {TerrainMapsType} spaceAndAsteroids - Space terrain with asteroids
  */
 
 /**
@@ -35,7 +51,7 @@ import { spaceAndAsteroidsMaps } from '../../space/js/spaceAndAsteroidsMaps.js'
  *
  * These are loaded and registered during initialization via assembleTerrains().
  *
- * @type {Record<string, TerrainMapsType>}
+ * @type {GameMapsRegistry}
  * @private
  * @constant
  * @remarks
@@ -68,7 +84,7 @@ const DEFAULT_TERRAIN_MAPS = {
  * @public
  *
  * @example
- * // Called during application initialization
+ * // Called during application initialization during app startup
  * assembleTerrains()
  * // Now TerrainMaps.currentTerrainMaps() returns seaAndLand by default
  *
@@ -204,9 +220,8 @@ function _ensureDefaultMaps (currentMaps) {
  * @public
  *
  * @example
- * // Get current terrain maps
+ * // Get current terrain maps - returns seaAndLand by default
  * const current = gameMaps()
- * // Returns seaAndLand by default
  *
  * @example
  * // Switch to space terrain maps
@@ -264,9 +279,8 @@ export function gameMaps (maps) {
  * @public
  *
  * @example
- * // Get current map
+ * // Get current map - returns active map from active terrain maps
  * const current = gameMap()
- * // Returns the active map from active terrain maps
  *
  * @example
  * // Switch to a specific map

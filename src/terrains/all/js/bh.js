@@ -127,6 +127,8 @@ const typedTerrains = /** @type {TerrainManager} */ (terrains)
  * @property {UnitDescriptions} unitDescriptions - Unit type descriptions
  * @property {(elementTag: string, customize?: CustomizeUnitCallback) => void} customizeUnits - Customizes unit elements
  * @property {AudioManager} audio - Audio playback manager
+ */
+
 /**
  * Global battle handler singleton.
  * Manages terrain configurations, maps, theme switching, and game state.

@@ -3,7 +3,26 @@ import { ChooseFromListUI } from '../../../navbar/chooseUI.js'
 import { ParameterManager } from '../../../navbar/ParameterManager.js'
 
 /**
+ * @typedef {Object} DimensionResult
+ * @property {string} height - The map height as a string
+ * @property {string} width - The map width as a string
+ * @property {string} x - The separator character 'x' or empty string
+ */
+
+/**
+ * @typedef {Object} UrlParams
+ * @property {string} mode - The game mode ('create' or 'edit')
+ * @property {string} mapName - The selected map name
+ * @property {string} height - The map height
+ * @property {string} width - The map width
+ * @property {string} x - The separator character
+ * @property {string} terrain - The terrain body tag (e.g., 'sea', 'space')
+ * @property {string} mapType - The map type identifier
+ */
+
+/**
  * Show the terrain selection UI.
+ * Displays available terrains and handles terrain switching with map dimension preservation.
  * @returns {void}
  */
 export function terrainSelect () {
@@ -21,6 +40,13 @@ export function terrainSelect () {
 
   const terrainUI = new ChooseFromListUI(terrainTitles, 'chooseTerrain')
   terrainUI.setup(
+    /**
+     * Callback when a terrain is selected from the UI.
+     * Preserves map dimensions if they exist, updates URL parameters, and reloads the page.
+     * @param {number} _index - The index of the selected terrain (unused)
+     * @param {string} title - The title of the selected terrain
+     * @returns {void}
+     */
     function (_index, title) {
       const old = bh.map
       const height = old?.rows
@@ -43,7 +69,8 @@ export function terrainSelect () {
 
 /**
  * Configure terrain selection from URL search parameters.
- * @param {URLSearchParams} urlParams
+ * Validates the terrain tag from URL and switches to the appropriate terrain if needed.
+ * @param {URLSearchParams} urlParams - URL query parameters
  * @returns {void}
  */
 export function setupTerrain (urlParams) {
@@ -58,7 +85,10 @@ export function setupTerrain (urlParams) {
 
 /**
  * Update URL parameters to reflect the selected terrain and map.
- * @param {Object|null} newTerrainMap
+ * Updates browser history with the new terrain, map name, and dimensions.
+ * @param {Object|null} newTerrainMap - The new terrain map configuration
+ * @param {Object} newTerrainMap.terrain - The terrain configuration object
+ * @param {string} newTerrainMap.terrain.bodyTag - The terrain body tag identifier
  * @returns {void}
  */
 export function setTerrainParams (newTerrainMap) {
@@ -97,10 +127,12 @@ export function setTerrainParams (newTerrainMap) {
 
 /**
  * Determine final height/width values for URL parameters.
- * @param {number|null|undefined} height
- * @param {number|null|undefined} width
- * @param {string} mapName
- * @returns {{height:string,width:string,x:string}}
+ * Validates dimensions and falls back to current map dimensions if needed.
+ * @param {number|null|undefined} height - The requested map height
+ * @param {number|null|undefined} width - The requested map width
+ * @param {string} mapName - The selected map name
+ * @returns {DimensionResult} Object with height, width, and separator
+ * @private
  */
 function getFinalDimensions (height, width, mapName) {
   let finalHeight = height
@@ -130,9 +162,11 @@ function getFinalDimensions (height, width, mapName) {
 
 /**
  * Set multiple query parameters on the current URL.
- * @param {URLSearchParams} urlParams
- * @param {Record<string,string>} params
+ * Updates the URLSearchParams object with all provided parameter key-value pairs.
+ * @param {URLSearchParams} urlParams - The URL search parameters to update
+ * @param {Record<string,string>} params - The parameters to set
  * @returns {void}
+ * @private
  */
 function updateUrlParameters (urlParams, params) {
   Object.entries(params).forEach(([key, value]) => {
@@ -142,8 +176,10 @@ function updateUrlParameters (urlParams, params) {
 
 /**
  * Replace current history state without forcing a reload.
- * @param {URL} url
+ * Uses history.replaceState to update the browser URL and history without triggering navigation.
+ * @param {URL} url - The new URL to set in browser history
  * @returns {void}
+ * @private
  */
 function updateBrowserHistory (url) {
   try {

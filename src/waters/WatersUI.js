@@ -1,29 +1,33 @@
 /**
  * @typedef {Object} GridMap
- * @property {number} rows - Number of rows
- * @property {number} cols - Number of columns
- * @property {(row: number, col: number) => boolean} isLand - Check if cell is land
- * @property {(row: number, col: number) => boolean} isWater - Check if cell is water
- * @property {(classList: DOMTokenList, row: number, col: number) => void} tagCell - Apply terrain tag to cell
- * @property {string} title - Map title
+ * Represents a game map configuration with terrain and cell query methods.
+ * @property {number} rows - Number of rows in the grid (y-dimension; 0 to rows-1)
+ * @property {number} cols - Number of columns in the grid (x-dimension; 0 to cols-1)
+ * @property {(row: number, col: number) => boolean} isLand - Predicate: true if cell contains land terrain
+ * @property {(row: number, col: number) => boolean} isWater - Predicate: true if cell contains water/default terrain
+ * @property {(classList: DOMTokenList, row: number, col: number) => void} tagCell - Applies terrain CSS classes to element's classList
+ * @property {string} title - Display title/name of the map for UI
  */
 
 /**
  * @typedef {Object} Ship
- * @property {string} id - Unique ship identifier
- * @property {string} letter - Ship type letter (A, S, M, T, F, D, R, etc.)
- * @property {number} variant - Ship variant index
- * @property {boolean} hasWeapon - Whether ship has weapon
- * @property {boolean} sunk - Whether ship is sunk
- * @property {() => string} type - Get ship type: () => string
- * @property {() => Object} shape - Get ship shape: () => Object
- * @property {Iterable<[number, number]>} cells - Get cells occupied: Iterable of [col, row] tuples
- * @property {() => void} reset - Reset ship state: () => void
+ * Represents a game ship with state, shape, and cell occupation.
+ * @property {string} id - Unique ship identifier for game tracking and state management
+ * @property {string} letter - Ship type letter: A=Plane, S=Ship, M=Missile, T=Torpedo, F=Fighter, D=Destroyer, R=Runner, etc.
+ * @property {number} variant - Ship variant index (0-based) for visual differentiation within ship type
+ * @property {boolean} hasWeapon - Whether ship has attached weapon capabilities for special attacks
+ * @property {boolean} sunk - Whether ship has been sunk (destroyed in combat)
+ * @property {() => string} type - Method: returns ship type letter identifier for classification
+ * @property {() => Object} shape - Method: returns ship shape/geometry object with cell offset mappings
+ * @property {Iterable<[number, number]>} cells - Iterable yielding all occupied cells as [column, row] coordinate tuples
+ * @property {() => void} reset - Method: resets ship to initial state (unsunk, no damage, repairs)
  */
 
 /**
  * @typedef {Object} SurroundingStrategy
- * @property {(map: GridMap, width?: number) => number} getDivisor - Get cell size divisor
+ * Strategy configuration for calculating cell sizes by display mode.
+ * Used by CELL_SIZE_CONFIG to determine divisor for cellSize = containerWidth / divisor.
+ * @property {(map: GridMap, width?: number) => number} getDivisor - Returns divisor for cell size calculation
  */
 
 import { bh } from '../terrains/all/js/bh.js'
@@ -91,35 +95,44 @@ const NOTES_TYPE_MAP = {
  * Manages game board UI state and rendering for a player's waters/territory.
  *
  * **Responsibilities:**
- * - Render grid cells with proper terrain and edge coloring
- * - Handle ship display and weapon positioning
- * - Manage battle state visualization (hits, misses, sunk ships)
- * - Coordinate cell clearing and highlighting
- * - Manage board size calculations for different display modes
- * - Support ship placement and weapon targeting UI
+ * - Render grid cells with proper terrain and edge coloring for visual accuracy
+ * - Handle ship display and weapon positioning during game states
+ * - Manage battle state visualization (hits, misses, sunk ships, status indicators)
+ * - Coordinate cell clearing and highlighting for UI state transitions
+ * - Manage board size calculations for screen, list, and print display modes
+ * - Support ship placement and weapon targeting UI interactions
  *
- * **Design:** Stateful utility class tracking board state, size calculations,
- * and player territory context. Delegates specialized tasks to helper classes:
- * - CellClassManager: Cell CSS state management
- * - ShipCellDisplayer: Ship visual representation
- * - BoardConfigurator: DOM layout and sizing
- * - SurroundingCellsHelper: Neighbor cell computation
+ * **Design Patterns:**
+ * - Stateful utility class tracking board state, container sizing, and player territory context
+ * - Delegates specialized tasks to helper classes (composition pattern):
+ *   * CellClassManager: Cell CSS state and class management
+ *   * ShipCellDisplayer: Ship visual representation and attributes
+ *   * BoardConfigurator: DOM layout and responsive sizing
+ *   * SurroundingCellsHelper: Neighbor cell computation and collection
+ * - Configuration-driven cell sizing (CELL_SIZE_CONFIG) eliminates duplicated logic
+ * - Strategy pattern for surrounding cell collection with flexible result formats
  *
- * **Key Patterns:**
- * - CELL_SIZE_CONFIG: Configuration-driven cell size calculations (eliminates 3× duplicated methods)
- * - _addSurroundingCells(): Generic strategy pattern for surrounding cell collection
- * - _clearAllCellVisuals(): Unified clearing logic for different contexts
- * - _detectAndApplyEdges(): Extracted edge detection from colorizeCell
- * - _displaySurroundingMisses/_displayCenterCells: Decomposed displaySurround for clarity
+ * **Key Methods:**
+ * - cellSize() / cellSizeString(): Responsive sizing for display modes
+ * - gridCellAt() / gridCellRawAt(): Cell element access with/without validation
+ * - buildBoard() / buildBoardPrint(): Grid initialization for interactive/print display
+ * - colorizeCell() / _detectAndApplyEdges(): Terrain coloring and edge detection
+ * - displaySurround() / _displaySurroundingMisses(): Area-of-effect visualization
  *
  * @class WatersUI
+ * @classdesc Board UI manager for player territories with state, sizing, and rendering capabilities
  */
 export class WatersUI {
   /**
-   * Initializes the UI manager for a player's territory.
+   * Initializes the UI manager for a player's territory/board.
+   * Sets up DOM references, score tracking, and display configuration.
    *
-   * @param {string} territory - Territory identifier (e.g., 'friend', 'enemy')
-   * @param {string} title - Display title for this territory's board
+   * @constructor
+   * @param {string} territory - Territory identifier (e.g., 'friend', 'enemy') used for DOM element IDs
+   * @param {string} title - Display title for this territory's board shown in UI header
+   * @returns {void}
+   * @description Creates references to board DOM element, score UI, and initializes state flags.
+   * Board element ID format: "{territory}-board", Title element: "{territory}-title"
    */
   constructor (territory, title) {
     this.board = document.getElementById(territory + '-board')

@@ -1,5 +1,4 @@
 /**
- * @jest-environment
  * @fileoverview Test suite for saveCustomMap module
  *
  * Tests the save functionality for custom map configurations, including:
@@ -31,14 +30,8 @@
 
 // We'll import saveCustomMap and storeShips after setting up mocks
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
-import { BhConstants } from '../terrains/all/js/constants.js'
 
-const {
-  MIN_CUSTOM_WIDTH,
-  MAX_CUSTOM_WIDTH,
-  MIN_CUSTOM_HEIGHT,
-  MAX_CUSTOM_HEIGHT
-} = BhConstants
+// Note: BhConstants from '../terrains/all/js/constants.js' contains MIN_CUSTOM_WIDTH,
 
 /** @type {Function} saveCustomMap - Main export under test */
 let saveCustomMap

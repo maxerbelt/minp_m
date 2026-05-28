@@ -1,18 +1,34 @@
+/**
+ * @fileoverview Weapon printing display module for battle information.
+ * Handles splash damage visualization, power group categorization, and weapon
+ * information display in the print view. Manages translation of damage values
+ * and legend generation based on fleet composition.
+ */
+
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
 import { toTitleCase } from '../core/utils.js'
 import { enemy } from '../waters/enemy.js'
 
-// Constants for splash damage states
+/** @type {number} Constant for splash damage weapon path value */
 const SPLASH_WEAPON_PATH = 20
+/** @type {number} Constant for splash damage weapon path + effect value */
 const SPLASH_WEAPON_PLUS = 30
+/** @type {number} Constant for splash damage weapon path + double effect value */
 const SPLASH_WEAPON_PLUS2 = 31
+/** @type {number} Constant for hardened ship destroyed in splash damage */
 const SPLASH_HARDENED_DESTROYED = 2
+/** @type {number} Constant for hardened ship revealed in splash damage */
 const SPLASH_HARDENED_REVEALED = 12
+/** @type {number} Constant for normal ship destroyed in splash damage */
 const SPLASH_NORMAL_DESTROYED = 1
+/** @type {number} Constant for normal ship revealed in splash damage */
 const SPLASH_NORMAL_REVEALED = 11
+/** @type {number} Constant for vulnerable ship destroyed in splash damage */
 const SPLASH_VULNERABLE_DESTROYED = 0
+/** @type {number} Constant for vulnerable ship revealed in splash damage */
 const SPLASH_VULNERABLE_REVEALED = 10
+/** @type {number} Constant for no splash damage effect */
 const SPLASH_NO_EFFECT = -1
 
 /**

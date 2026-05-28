@@ -100,7 +100,7 @@ export class CellsToBePlaced {
    * @param {number} [zoneDetail=0] - Optional zone detail level for granular validation
    *   0=no zone detail, 1=subterrain level, 2=zone level
    * @param {PlacementTarget} [target] - Optional placement target with bounds and zone info
-   *   If not provided, defaults to placingTarget from makeCell3.js
+   *   If not provided, defaults to placingTarget from placingTarget.js
    * @throws {Error} If board does not have required embed() method or is invalid
    */
   constructor (board, x, y, validator, zoneDetail, target) {
