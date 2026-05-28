@@ -1,3 +1,12 @@
+/**
+ * @file Shape.js - Ship shape definition and variant generation system
+ * @description Core Shape class managing ship geometry, weapon systems, damage properties,
+ * and variant placement generation. Handles multi-format rack coordinate parsing, damage
+ * protection levels (vulnerable/hardened/immune), and delegation to terrain-specific
+ * variant factories for placement generation. Supports various symmetry types: Asymmetric,
+ * Orbit4F, Invariant, Orbit4R, Blinker, and Diagonal.
+ */
+
 import { bh } from '../terrains/all/js/bh.js'
 import { Invariant } from '../variants/Invariant.js'
 import { Orbit4R } from '../variants/Orbit4R.js'
@@ -11,53 +20,118 @@ import { Mask } from '../grid/rectangle/mask.js'
 import { Zip } from '../core/Zip.js'
 
 /**
+ * Coordinate pair representing grid position
  * @typedef {[number, number]} CoordinatePair
- * Array coordinate pair [row, column]
+ * @property {number} 0 - Row index (0-based)
+ * @property {number} 1 - Column index (0-based)
  */
 
 /**
+ * Weapon rack position input in various formats
+ *
+ * Flexible input format accepting multiple representations of rack coordinates:
+ * - **Set<string>**: Set of "r,c" coordinate string keys (compact representation)
+ * - **Array<string>**: Array of "r,c" coordinate string keys
+ * - **Array<Array<number>>**: Array of [row, col] numeric coordinate pairs
+ * - **null**: No racks available (immutable once set in constructor)
+ *
  * @typedef {Set<string>|Array<string|Array<number>>|null} RackInput
- * Weapon rack position input in various formats:
- * - Set<string>: Set of "r,c" coordinate keys
- * - Array<string>: Array of "r,c" coordinate keys
- * - Array<Array<number>>: Array of [r, c] coordinate pairs
- * - null: No racks available
+ * @example
+ * new Shape('A', 'D', cells, 'Cruisers', tip, new Set(['0,1', '1,0']))
+ * new Shape('B', 'S', cells, 'Destroyers', tip, ['0,1', '1,0'])
+ * new Shape('C', 'H', cells, 'Carriers', tip, [[0,1], [1,0]])
  */
 
 /**
+ * Weapons indexed by coordinate key
+ * Maps "r,c" coordinate strings to WeaponSystem instances
  * @typedef {Object<string, WeaponSystem>} WeaponMap
- * Weapons indexed by coordinate key ("r,c" format)
+ * @example
+ * {
+ *   '0,1': WeaponSystem { weapon: Missile, ... },
+ *   '1,0': WeaponSystem { weapon: Laser, ... }
+ * }
  */
 
 /**
- * @typedef {Object} SubTerrain
  * Subterrain type for shape validation
- * Used to determine valid terrain types for ship placement
+ * Represents a specific terrain type (water, asteroid, land, etc.)
+ * Used to determine valid placement terrains for ships
+ * @typedef {Object} SubTerrain
+ * @property {string} name - Terrain name identifier
+ * @property {Object} terrain - Parent terrain configuration
  */
 
 /**
- * @callback AmmoBuilder
  * Factory function for creating ammunition payload at weapon racks
- * @returns {any} Ammunition payload for a weapon rack
+ * Called once per rack position to generate ammunition for that weapon
+ * @callback AmmoBuilder
+ * @returns {any} Ammunition payload for weapon at rack position
+ * @example
+ * const ammo = () => ({ rounds: 10, type: 'explosive' })
  */
 
 /**
+ * Variant factory for generating ship placement variants
+ * Encapsulates variant generation logic for a specific symmetry type.
+ * Caches boards and provides lazy evaluation of placement options.
  * @typedef {Object} VariantFactory
- * Factory for generating ship placement variants
- * @property {(variantIndex: number) => Mask} boardFor - Get board for variant
- * @property {() => number} numVariants - Get variant count
- * @property {() => Array} placeables - Get placeable variants
- * @property {(cellHeight: number) => any} shrunkUnder - Get shrink information
+ * @property {(variantIndex: number) => Mask} boardFor - Get board mask for variant index
+ * @property {() => number} numVariants - Get total number of available variants
+ * @property {() => Array<Object>} placeables - Get all placeable variant objects
+ * @property {(cellHeight: number) => any} shrunkUnder - Get shrink information for cell height
  */
 
 export const token = 'geoffs-hidden-battle'
 
+/**
+ * Ship shape definition with geometry, variants, and weapon systems
+ *
+ * Manages core ship properties including placement geometry, damage profile (vulnerable/hardened/immune),
+ * weapon attachment points, and variant generation. Shape acts as a template that can be instantiated
+ * into actual Ship objects on game boards.
+ *
+ * **Key Responsibilities:**
+ * - Store ship geometry (cells, board mask, footprint)
+ * - Manage weapon attachment racks and constraint validation
+ * - Track damage properties (vulnerability, hardening, immunity)
+ * - Delegate variant generation to terrain-specific factories
+ * - Support flexible rack coordinate input formats
+ *
+ * **Variant Generation:** Creates variant placement options using symmetry-specific factories:
+ * - D (Asymmetric): No symmetry, all rotations/reflections
+ * - A (Orbit4F): 4-fold rotation symmetry
+ * - S (Invariant): Single unchanging variant
+ * - H (Orbit4R): 4-fold rotation with reflection
+ * - L (Blinker): Alternating placement patterns
+ * - G (Diagonal): Diagonal symmetry
+ *
+ * @class Shape
+ * @example
+ * const shape = new Shape(
+ *   'A',                          // letter
+ *   'D',                          // symmetry (Asymmetric)
+ *   [[0,0], [0,1], [1,0]],       // cells
+ *   'Cruisers',                   // tally group
+ *   { text: 'Placement tip' },    // tip
+ *   new Set(['0,1', '1,0'])       // racks
+ * )
+ */
 export class Shape {
   /**
    * Map of symmetry type codes to variant constructor classes
-   * Used to instantiate appropriate variant generator for each symmetry type.
+   *
+   * Maps single-character symmetry codes to their corresponding variant factory classes.
+   * Each factory generates unique placement variants based on symmetry properties.
+   *
    * @static
    * @type {Object<string, Function>}
+   * @property {Function} D - Asymmetric variant factory (no symmetry)
+   * @property {Function} A - Orbit4F factory (4-fold rotational symmetry)
+   * @property {Function} S - Invariant factory (single fixed variant)
+   * @property {Function} H - Orbit4R factory (4-fold rotation with reflection)
+   * @property {Function} L - Blinker factory (alternating patterns)
+   * @property {Function} G - Diagonal factory (diagonal symmetry)
    */
   static variantConstructors = {
     D: Asymmetric,
@@ -69,18 +143,37 @@ export class Shape {
   }
 
   /**
-   * Creates a ship shape with specified properties and variant generation.
-   * Shape manages placement variants, weapon systems, and damage properties.
+   * Creates a ship shape with specified properties and variant generation
+   *
+   * Initializes a ship shape template with geometry, weapon racks, and variant generation.
+   * Normalizes rack coordinates from flexible input formats and prepares board representation.
+   * Establishes terrain and damage properties for terrain validation and damage calculations.
+   *
+   * **Initialization Steps:**
+   * 1. Store basic ship properties (letter, symmetry)
+   * 2. Create board mask from cell coordinates
+   * 3. Normalize and validate rack coordinates from flexible inputs
+   * 4. Build rack position mask for weapon attachment
+   * 5. Calculate ship displacement from area and footprint
+   * 6. Initialize damage property arrays (vulnerable, hardened, immune)
    *
    * @constructor
-   * @param {string} letter - Ship letter identifier (A-Z, e.g., 'A', 'B', 'C')
-   * @param {string} symmetry - Symmetry type for variant generation
-   *   ('D'=Asymmetric, 'A'=Orbit4F, 'S'=Invariant, 'H'=Orbit4R, 'L'=Blinker, 'G'=Diagonal)
-   * @param {CoordinatePair[]} cells - Array of [row, col] coordinates defining ship shape
-   * @param {string} tallyGroup - Grouping identifier for tally calculations (e.g., 'Cruisers')
-   * @param {Object} tip - UI tip/styling information for ship placement visual display
-   * @param {RackInput} [racks] - Weapon rack positions (Set, Array, or null)
-   *   If provided, enables weapon attachment at specified coordinates
+   * @param {string} letter - Single character ship identifier (A-Z, e.g., 'A', 'B', 'C')
+   * @param {string} symmetry - Symmetry type code for variant generation:
+   *   - 'D' = Asymmetric (all rotations/reflections)
+   *   - 'A' = Orbit4F (4-fold rotational symmetry)
+   *   - 'S' = Invariant (single fixed variant)
+   *   - 'H' = Orbit4R (4-fold rotation with reflection)
+   *   - 'L' = Blinker (alternating placement patterns)
+   *   - 'G' = Diagonal (diagonal symmetry)
+   * @param {CoordinatePair[]} cells - Array of [row, col] coordinates defining ship occupancy
+   * @param {string} tallyGroup - Grouping identifier for tally point calculations (e.g., 'Cruisers', 'Destroyers')
+   * @param {Object} tip - UI tip/styling information for placement display (typically contains text and styling)
+   * @param {RackInput} [racks] - Weapon attachment racks in flexible format:
+   *   - Set<string>: Set of "r,c" coordinate keys
+   *   - Array<string>: Array of "r,c" keys
+   *   - Array<Array<number>>: Array of [r, c] pairs
+   *   - null: No weapon racks available (immutable)
    */
   constructor (letter, symmetry, cells, tallyGroup, tip, racks) {
     this.letter = letter
@@ -109,12 +202,15 @@ export class Shape {
     this.size = area
   }
   /**
-   * Weapons attached to this shape's racks.
-   * Only populated after attachWeapon() is called.
+   * Weapons attached to this shape's racks
+   *
+   * Contains WeaponSystem instances mapped by rack coordinate keys ("r,c" format).
+   * Only populated after attachWeapon() is called with an ammoBuilder factory.
+   * Remains empty until explicit weapon attachment occurs.
    *
    * @readonly
-   * @returns {WeaponMap} Attached weapons indexed by coordinate key
-   *   Empty object if no weapons attached
+   * @returns {WeaponMap} Attached weapons indexed by "r,c" coordinate keys
+   *   Returns empty object {} if no weapons attached
    */
   get attachedWeapons () {
     return this._attachedWeapons || {}
@@ -122,18 +218,23 @@ export class Shape {
 
   /**
    * Set weapons attached to shape's racks
-   * @param {WeaponMap} weapons - Weapons object indexed by coordinate
+   *
+   * Typically called internally by attachWeapon() method rather than directly.
+   *
+   * @param {WeaponMap} weapons - Weapons object indexed by coordinate keys ("r,c" format)
    */
   set attachedWeapons (weapons) {
     this._attachedWeapons = weapons
   }
 
   /**
-   * Tip/styling information for this shape.
-   * Used for UI display during ship placement selection.
+   * Tip/styling information for this shape
+   *
+   * Contains UI hint text and styling configuration for ship placement interface.
+   * Typically includes placement instructions or strategic information.
    *
    * @readonly
-   * @returns {Object} Tip configuration object
+   * @returns {Object} Tip configuration with text and styling properties
    */
   get tip () {
     return this._tip
@@ -141,27 +242,37 @@ export class Shape {
 
   /**
    * Set tip/styling information
-   * @param {Object} newTip - New tip value for UI display
+   *
+   * Updates UI hint text and styling for placement display.
+   *
+   * @param {Object} newTip - New tip configuration object
    */
   set tip (newTip) {
     this._tip = newTip
   }
 
   /**
-   * Shape displacement (average of area and footprint).
+   * Shape displacement (calculated from area and footprint)
+   *
+   * Represents the effective "weight" or "volume" of the ship for game mechanics.
+   * Calculated as average of cell area and footprint (including dilation).
+   * Formula: (area + footPrint) / 2
    *
    * @readonly
-   * @returns {number} Displacement value (calculated property)
+   * @returns {number} Displacement value (always calculated, never stored)
    */
   get displacement () {
     return (this.area + this.footPrint) / 2
   }
 
   /**
-   * Setting displacement is not allowed as it's calculated.
+   * Setting displacement is not allowed (read-only calculated property)
+   *
+   * Displacement is automatically calculated from area and footprint.
+   * To change displacement, modify the ship's cell coordinates instead.
    *
    * @param {number} _newDisplacement - Ignored parameter
-   * @throws {Error} Always throws - displacement is calculated from area and footprint
+   * @throws {Error} Always throws - displacement is read-only and calculated
    */
   set displacement (_newDisplacement) {
     throw new Error(
@@ -170,67 +281,81 @@ export class Shape {
   }
 
   /**
-   * Cells vulnerable to specific weapons.
+   * Weapon types this ship is vulnerable to
+   *
+   * Array of weapon codes for which this ship takes extra damage.
+   * Checked in protectionAgainst() to return protection level 0.
+   * Lazily initialized as empty array on first access.
    *
    * @readonly
-   * @returns {Array<string>} Vulnerable weapon codes array
+   * @returns {Array<string>} Weapon codes causing extra damage to this ship
    */
   get vulnerable () {
     return this._getOrInitArrayProperty('_vulnerable')
   }
 
   /**
-   * Set vulnerable cells
-   * @param {Array} newVulnerable - New vulnerable array
+   * Set weapon vulnerability profile
+   * @param {Array<string>} newVulnerable - Weapon codes for vulnerability
    */
   set vulnerable (newVulnerable) {
     this._vulnerable = newVulnerable
   }
 
   /**
-   * Cells hardened against weapon damage.
+   * Weapon types this ship is hardened against
+   *
+   * Array of weapon codes for which this ship takes reduced damage.
+   * Checked in protectionAgainst() to return protection level 2.
+   * Lazily initialized as empty array on first access.
    *
    * @readonly
-   * @returns {Array<string>} Hardened weapon codes array
+   * @returns {Array<string>} Weapon codes dealing reduced damage to this ship
    */
   get hardened () {
     return this._getOrInitArrayProperty('_hardened')
   }
 
   /**
-   * Set hardened cells
-   * @param {Array} newHardened - New hardened array
+   * Set weapon hardening profile
+   * @param {Array<string>} newHardened - Weapon codes for hardening
    */
   set hardened (newHardened) {
     this._hardened = newHardened
   }
 
   /**
-   * Cells immune to weapon damage.
+   * Weapon types this ship is immune to
+   *
+   * Array of weapon codes for which this ship takes no damage.
+   * Checked first in protectionAgainst() to return protection level 3.
+   * Lazily initialized as empty array on first access.
    *
    * @readonly
-   * @returns {Array<string>} Immune weapon codes array
+   * @returns {Array<string>} Weapon codes dealing no damage to this ship
    */
   get immune () {
     return this._getOrInitArrayProperty('_immune')
   }
 
   /**
-   * Set immune cells
-   * @param {Array} newImmune - New immune array
+   * Set weapon immunity profile
+   * @param {Array<string>} newImmune - Weapon codes for immunity
    */
   set immune (newImmune) {
     this._immune = newImmune
   }
 
   /**
-   * Internal: Get or initialize a named array property.
-   * Lazily initializes empty array on first access.
-   * Used for vulnerable, hardened, and immune cell arrays.
+   * Get or initialize a named array property with lazy initialization
+   *
+   * Returns existing array or creates and caches a new empty array.
+   * Used for damage profiles (vulnerable, hardened, immune) to support
+   * lazy initialization pattern and reduce memory for unused properties.
    *
    * @private
-   * @param {string} property - Internal property name (e.g., '_vulnerable')
-   * @returns {Array<string>} Array value stored in property (auto-initialized if undefined)
+   * @param {string} property - Internal property name (e.g., '_vulnerable', '_hardened', '_immune')
+   * @returns {Array<string>} Array value stored in property, auto-initialized if undefined
    */
   _getOrInitArrayProperty (property) {
     if (this[property]) return this[property]
@@ -239,11 +364,15 @@ export class Shape {
   }
 
   /**
-   * Internal: Normalize a rack coordinate value into a row/column pair.
-   * Handles string ("r,c" format) and array ([r, c]) coordinate formats.
+   * Parse a rack coordinate value into a standard [row, col] pair
+   *
+   * Handles multiple input formats for rack coordinates:
+   * - String "r,c" format (parsed via parsePair utility)
+   * - Array format [r, c] with at least 2 elements (first 2 extracted)
+   * - Invalid formats return [NaN, NaN] for filtering
    *
    * @private
-   * @param {string|CoordinatePair|any} value - Coordinate value in various formats
+   * @param {string|CoordinatePair|any} value - Coordinate in various formats
    * @returns {CoordinatePair} Valid [row, column] pair or [NaN, NaN] if invalid
    */
   _parseRackCoordinate (value) {
@@ -257,13 +386,14 @@ export class Shape {
   }
 
   /**
-   * Internal: Normalize rack coordinates from various input formats.
-   * Converts all rack input types to validated [row, col] coordinate pairs.
-   * Filters out invalid/NaN coordinates.
+   * Normalize rack coordinates from various input formats to standard pairs
+   *
+   * Processes all rack input types (Set, Array, or null) into validated coordinate pairs.
+   * Pipeline: input validation → array conversion → parsing → NaN filtering
    *
    * @private
-   * @param {RackInput} racks - Rack coordinates in various formats
-   * @returns {CoordinatePair[]} Array of valid [row, col] coordinate pairs
+   * @param {RackInput} racks - Rack coordinates in flexible format
+   * @returns {CoordinatePair[]} Array of valid [row, col] coordinate pairs only
    */
   _normalizeRackCoordinates (racks) {
     if (!this._hasValidRackInput(racks)) return []
@@ -274,12 +404,14 @@ export class Shape {
   }
 
   /**
-   * Internal: Check whether the rack input contains any coordinates.
-   * Validates that racks container is not empty and not null.
+   * Check if rack input contains at least one coordinate
+   *
+   * Validates that racks container exists and is not empty.
+   * Handles Set, Array, and null input types.
    *
    * @private
-   * @param {RackInput} racks - Rack input container (Set, Array, or null)
-   * @returns {boolean} True if racks container has at least one coordinate
+   * @param {RackInput} racks - Rack input container (Set<string>, Array, or null)
+   * @returns {boolean} True if racks exists and has at least one coordinate
    */
   _hasValidRackInput (racks) {
     if (!racks) return false
@@ -288,11 +420,13 @@ export class Shape {
   }
 
   /**
-   * Internal: Validate coordinate pair values.
-   * Used to filter out invalid/NaN coordinates from normalized coordinates.
+   * Validate that coordinate pair has finite numeric values
+   *
+   * Used in filter pipeline to exclude invalid/NaN coordinates.
+   * Both row and column must be finite numbers.
    *
    * @private
-   * @param {CoordinatePair} coord - Coordinate pair [row, col]
+   * @param {CoordinatePair} coord - Coordinate pair [row, col] to validate
    * @returns {boolean} True if both row and column are finite numbers
    */
   _isFiniteCoordinate ([r, c]) {
@@ -300,11 +434,13 @@ export class Shape {
   }
 
   /**
-   * Internal: Build Set of coordinate keys from rack positions mask.
-   * Converts mask occupancy to coordinate key format.
+   * Build Set of coordinate keys from rack positions mask
+   *
+   * Converts rackPositions mask occupancy into a Set of "r,c" coordinate keys.
+   * Used when original rack input was not a Set (recovers Set format for racks getter).
    *
    * @private
-   * @returns {Set<string>} Set of coordinate keys in "r,c" format
+   * @returns {Set<string>} Set of "r,c" coordinate string keys
    */
   _buildRacksFromPositions () {
     return new Set(this.rackPositions.toCoords.map(([r, c]) => makeKey(r, c)))
@@ -331,18 +467,23 @@ export class Shape {
   }
 
   /**
-   * Board mask defining shape occupancy.
-   * Returns cached board or generates from variant index 1.
+   * Board mask defining shape occupancy
+   *
+   * Returns cached board mask or generates from variant index 1.
+   * Represents which cells are occupied by this ship shape.
    *
    * @readonly
-   * @returns {Mask} Occupancy mask representing ship shape
+   * @returns {Mask} Occupancy mask representing ship shape (never null/undefined)
    */
   get board () {
     return this._board || this.boardFor(1) || Mask.empty(0, 0)
   }
 
   /**
-   * Set board mask and update size
+   * Set board mask and update cached size
+   *
+   * Updates the cached board representation and recalculates ship size.
+   *
    * @param {Mask} board - New board mask
    */
   set board (board) {
@@ -382,18 +523,24 @@ export class Shape {
   }
 
   /**
-   * Original cell coordinates defining shape.
+   * Original cell coordinates defining ship shape
+   *
+   * Returns immutable reference to the cell array passed to constructor.
+   * Use this to access raw coordinate data for serialization or validation.
    *
    * @readonly
-   * @returns {CoordinatePair[]} Array of [row, col] coordinate pairs
+   * @returns {CoordinatePair[]} Array of [row, col] coordinate pairs (immutable)
    */
   get cells () {
     return this._originalCells
   }
 
   /**
-   * Set cell coordinates (updates board representation)
-   * Recalculates board mask from new coordinates.
+   * Set cell coordinates and update board representation
+   *
+   * Updates both cell storage and board mask for complete geometry update.
+   * Triggers board recalculation from new coordinates.
+   *
    * @param {CoordinatePair[]} cells - New cell coordinates
    */
   set cells (cells) {
@@ -402,11 +549,13 @@ export class Shape {
   }
 
   /**
-   * Weapon rack positions.
-   * Returns null if no racks were provided in constructor.
+   * Weapon rack positions as coordinate key set
+   *
+   * Returns Set of "r,c" coordinate keys for available weapon attachment points.
+   * Returns null if no racks were provided to constructor (immutable once set).
    *
    * @readonly
-   * @returns {Set<string>|null} Set of "r,c" coordinate keys or null
+   * @returns {Set<string>|null} Set of "r,c" coordinate keys, or null if no racks
    */
   get racks () {
     if (this._racksWasNull) return null
@@ -426,15 +575,23 @@ export class Shape {
   }
 
   /**
-   * Get protection level against weapon type.
-   * Checks vulnerability/hardening/immunity status for damage calculation.
+   * Get protection level against a specific weapon type
+   *
+   * Determines damage mitigation based on damage profile arrays.
+   * Checks in priority order: Immune → Hardened → Vulnerable → Normal
+   *
+   * **Protection Levels:**
+   * - 3 = Immune: No damage taken
+   * - 2 = Hardened: Reduced damage taken
+   * - 1 = Normal: Standard damage taken
+   * - 0 = Vulnerable: Extra damage taken
    *
    * @param {string} weapon - Weapon type code to check protection against
    * @returns {number} Protection level:
-   *   0=vulnerable (extra damage),
-   *   1=normal (standard damage),
-   *   2=hardened (reduced damage),
-   *   3=immune (no damage)
+   *   - 0 = Vulnerable (extra damage),
+   *   - 1 = Normal (standard damage),
+   *   - 2 = Hardened (reduced damage),
+   *   - 3 = Immune (no damage)
    */
   protectionAgainst (weapon) {
     if (this.immune.includes(weapon)) return 3
@@ -444,12 +601,19 @@ export class Shape {
   }
 
   /**
-   * Attach weapons to all rack positions on this shape.
-   * Creates weapon system at each rack position using provided factory.
+   * Attach weapons to all rack positions on this shape
+   *
+   * Creates weapon systems at each rack coordinate using the provided factory function.
+   * Pipeline validates racks exist, no weapons already attached, then builds WeaponMap.
+   *
+   * **Constraints:**
+   * - Can only be called once per shape (enforced by isAttachedToRack flag)
+   * - Shape must have racks (canAttachWeapons must be true)
+   * - ammoBuilder called once per rack coordinate
    *
    * @param {AmmoBuilder} ammoBuilder
    *   Factory function called once per rack to create ammunition payload
-   * @returns {WeaponMap} Attached weapons indexed by "r,c" coordinate key
+   * @returns {WeaponMap} Attached weapons indexed by "r,c" coordinate keys
    * @throws {Error} If no racks available or weapon already attached
    */
   attachWeapon (ammoBuilder) {
@@ -462,10 +626,12 @@ export class Shape {
   }
 
   /**
-   * Internal: Verify shape has weapon rack positions.
+   * Verify shape has weapon racks available
+   *
+   * Internal validation ensuring weapon attachment is possible.
    *
    * @private
-   * @throws {Error} If shape has no racks available for weapons
+   * @throws {Error} If shape has no valid racks for weapon attachment
    */
   _assertCanAttachWeapons () {
     if (!this.canAttachWeapons) {
@@ -474,8 +640,10 @@ export class Shape {
   }
 
   /**
-   * Internal: Verify weapon not already attached.
-   * Ensures attachWeapon() is called at most once per shape.
+   * Verify weapon not already attached to this shape
+   *
+   * Ensures attachWeapon() called at most once per shape instance.
+   * Prevents duplicate/conflicting weapon attachments.
    *
    * @private
    * @throws {Error} If weapon already attached to this shape
@@ -487,13 +655,14 @@ export class Shape {
   }
 
   /**
-   * Internal: Build weapon objects at all rack positions.
-   * Calls ammoBuilder once per rack coordinate to create payload.
+   * Build weapon objects at all rack positions
+   *
+   * Iterates through rack coordinates and calls ammoBuilder factory
+   * once per position to create weapons map.
    *
    * @private
-   * @param {AmmoBuilder} ammoBuilder
-   *   Factory function creating ammunition for each rack position
-   * @returns {WeaponMap} Weapons indexed by "r,c" coordinate key
+   * @param {AmmoBuilder} ammoBuilder - Factory function creating ammunition for each rack
+   * @returns {WeaponMap} Weapons indexed by "r,c" coordinate keys
    */
   _buildAttachedWeapons (ammoBuilder) {
     const attached = {}

@@ -42,5 +42,14 @@ export default class CustomEnvironment extends JsdomEnvironment {
     if (HistoryProto && !HistoryProto.pushState?._isMockFunction) {
       HistoryProto.pushState = fn()
     }
+
+    //
+    // 4️⃣ Add structuredClone polyfill for compatibility
+    //
+    if (!this.global.structuredClone) {
+      this.global.structuredClone = obj => {
+        return JSON.parse(JSON.stringify(obj))
+      }
+    }
   }
 }

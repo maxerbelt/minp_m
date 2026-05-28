@@ -1,3 +1,9 @@
+/**
+ * @file Ship.test.js - Comprehensive test suite for Ship class
+ * @description Tests core Ship functionality including construction, weapon management,
+ * state management, and grid operations. Validates ship placement, hit recording,
+ * cloning, and integration with weapons systems.
+ */
 
 import { describe, it, expect, jest } from '@jest/globals'
 
@@ -7,7 +13,15 @@ import { SubBoard } from '../grid/SubBoard.js'
 import { Shape } from './Shape.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
+/**
+ * Ship basic behaviors test suite
+ * @test {Ship} Constructor defaults and basic properties
+ */
 describe('Ship basic behaviors', () => {
+  /**
+   * Test constructor initialization with default values
+   * @test {Ship#constructor} Sets default values for all properties
+   */
   it('constructor sets defaults', () => {
     const s = new Ship(5, 'sym', 'X')
     expect(s.id).toBe(5)
@@ -19,6 +33,11 @@ describe('Ship basic behaviors', () => {
     expect(s.variant).toBe(0)
   })
 
+  /**
+   * Test static methods for ship ID management and creation from shape
+   * @test {Ship.createFromShape} Creates ship from shape with correct properties
+   * @test {Ship.id} Static ID counter increments correctly
+   */
   it('static id next and createFromShape', () => {
     const saved = Ship.id
     Ship.id = 100
@@ -30,6 +49,15 @@ describe('Ship basic behaviors', () => {
     Ship.id = saved
   })
 
+  /**
+   * Test weapon system accessor methods and key generation
+   * @test {Ship#getAllWeapons} Retrieves all weapons from ship
+   * @test {Ship#getAllWeaponEntries} Gets all weapon entries
+   * @test {Ship#hasWeapon} Checks if ship has weapons
+   * @test {Ship#getPrimaryWeaponSystem} Gets primary weapon system
+   * @test {Ship#getPrimaryWeapon} Gets primary weapon
+   * @test {Ship#makeKeyIds} Generates weapon key IDs string
+   */
   it('getAllWeapons, weaponEntries, hasWeapon, weaponSystem, weapon, makeKeyIds', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
@@ -62,6 +90,11 @@ describe('Ship basic behaviors', () => {
     expect(s.makeKeyIds()).toBe('1,2:10|2,3:11')
   })
 
+  /**
+   * Test ammo state changes based on ship sunk status
+   * @test {Ship#ammoCapacityTotal} Returns 0 when ship is sunk
+   * @test {Ship#ammoRemainingTotal} Returns 0 when ship is sunk
+   */
   it('ammoRemaining and ammoCapacityTotal reflect sunk state', () => {
     const s = new Ship(2, 'y', 'B')
     s.weapons = {
@@ -75,6 +108,12 @@ describe('Ship basic behaviors', () => {
     expect(s.ammoCapacityTotal()).toBe(0)
   })
 
+  /**
+   * Test ship placement, grid operations, and removal
+   * @test {Ship#placeAtCells} Places ship at specified cells
+   * @test {Ship#addToGrid} Adds ship to grid
+   * @test {Ship#removeFromPlacement} Removes ship from placement
+   */
   it('place, removeFromPlacement and addToGrid', () => {
     const s = new Ship(3, 'z', 'C')
     const cells = [
@@ -106,6 +145,10 @@ describe('Ship basic behaviors', () => {
     expect(s.sunk).toBe(false)
   })
 
+  /**
+   * Test normalization of triple-valued placement coordinates to cell pairs
+   * @test {Ship#placeAtCells} Normalizes [x, y, value] coordinates to [x, y] pairs
+   */
   it('normalizes triple-valued placement coordinates to cell pairs', () => {
     const s = new Ship(4, 'z', 'D')
     const cells = [
@@ -126,6 +169,10 @@ describe('Ship basic behaviors', () => {
     expect(s.board.depth).toBe(1)
   })
 
+  /**
+   * Test cell preservation when board has color depth
+   * @test {Ship#placeAtBoard} Keeps cells as pairs when board has depth
+   */
   it('keeps cells as pairs when board placement has color depth', () => {
     const s = new Ship(5, 'z', 'E')
     const board = SubBoard.fromCoords(
@@ -143,20 +190,32 @@ describe('Ship basic behaviors', () => {
       [0, 0],
       [0, 1]
     ])
-    // NOSONAR - Using JSON.parse/stringify for compatibility with older Node.js/Jest environments
-    expect(JSON.parse(JSON.stringify(s)).cells).toEqual([
+    // Using structuredClone for deep cloning instead of JSON.parse(JSON.stringify(...))
+    expect(structuredClone(s).cells).toEqual([
       [0, 0],
       [0, 1]
     ])
   })
 })
+/**
+ * Ship constructor cell size calculation test suite
+ * @test {Ship} Constructor size calculation based on cell array
+ */
 describe('Ship - constructor cell size calculation', () => {
+  /**
+   * Test size initialization with empty cells
+   * @test {Ship#size} Defaults to 1 when cells array is empty
+   */
   it('constructor sets size based on empty cells', () => {
     const s = new Ship(1, 'x', 'A')
     // cells array is empty by default
     expect(s.size).toBe(1) // max of undefined defaults to 0, so 0 + 1 = 1
   })
 
+  /**
+   * Test ship properties initialization from constructor parameters
+   * @test {Ship#constructor} Initializes all properties correctly
+   */
   it('ship properties initialized as expected', () => {
     const weaponsObj = { '1,1': { id: 1 } }
     const s = new Ship(42, 'diagonal', 'B', weaponsObj)
@@ -169,6 +228,10 @@ describe('Ship - constructor cell size calculation', () => {
 })
 
 describe('Ship - state management (reset, clone)', () => {
+  /**
+   * Test reset clears all hits and sunk state
+   * @test {Ship#reset} Clears hits, sunk status, and resets weapons
+   */
   it('reset clears hits and sunk state', () => {
     const s = new Ship(1, 'x', 'A')
     s.recordHit(1, 1)
@@ -195,6 +258,10 @@ describe('Ship - state management (reset, clone)', () => {
     s.weapons['2,2'].reset()
   })
 
+  /**
+   * Test reset works correctly without weapons
+   * @test {Ship#reset} Clears hits and sunk state when no weapons present
+   */
   it('reset without weapons', () => {
     const s = new Ship(1, 'x', 'A')
     s.recordHit(1, 1)
@@ -204,6 +271,10 @@ describe('Ship - state management (reset, clone)', () => {
     expect(s.sunk).toBe(false)
   })
 
+  /**
+   * Test cloning creates new ship with incremented ID
+   * @test {Ship#clone} Creates new ship from shape with incremented ID
+   */
   it('clone creates new ship with incremented id', () => {
     const saved = Ship.id
     Ship.id = 10
@@ -221,7 +292,15 @@ describe('Ship - state management (reset, clone)', () => {
   })
 })
 
+/**
+ * Ship static methods test suite
+ * @test {Ship} Static factory methods for creating ships from shapes
+ */
 describe('Ship - static methods with shapes', () => {
+  /**
+   * Test ship ID counter reset when creating ships from shapes
+   * @test {Ship.createShipsFromShapes} Resets ID counter and creates multiple ships
+   */
   it('createShipsFromShapes resets ship id counter', () => {
     const shape1 = {
       symmetry: 'S',
@@ -239,6 +318,14 @@ describe('Ship - static methods with shapes', () => {
     expect(ships[1].id).toBe(2)
   })
 
+  /**
+   * Test filtering shapes during ship creation
+   * @test {Ship.extraShipsFromShapes} Creates ships with filter applied
+   */
+  /**
+   * Test filtering shapes during ship creation
+   * @test {Ship.extraShipsFromShapes} Creates ships with filter applied
+   */
   it('extraShipsFromShapes with filter', () => {
     const shape1 = { symmetry: 'S', letter: 'A', weaponSystem: {} }
     const shape2 = { symmetry: 'D', letter: 'B', weaponSystem: {} }
@@ -249,6 +336,10 @@ describe('Ship - static methods with shapes', () => {
     expect(ships.map(s => s.letter)).toEqual(['A', 'C'])
   })
 
+  /**
+   * Test correct ID incrementing during filtered ship creation
+   * @test {Ship.extraShipsFromShapes} Increments ID correctly for multiple ships
+   */
   it('extraShipsFromShapes increments ship id correctly', () => {
     const saved = Ship.id
     Ship.id = 5
@@ -264,7 +355,15 @@ describe('Ship - static methods with shapes', () => {
   })
 })
 
+/**
+ * Ship getTurn test suite
+ * @test {Ship#getTurn} Delegation to weapon getTurn method
+ */
 describe('Ship - getTurn', () => {
+  /**
+   * Test getTurn with no weapon system
+   * @test {Ship#getTurn} Returns undefined when no weapons present
+   */
   it('getTurn returns empty string when no weapon system', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {}
@@ -274,6 +373,10 @@ describe('Ship - getTurn', () => {
     expect(result).toBeUndefined() // Verify behavior when no weapons
   })
 
+  /**
+   * Test getTurn delegates to weapon getTurn method with correct parameters
+   * @test {Ship#getTurn} Delegates to weapon and passes variant and coordinates
+   */
   it('getTurn delegates to weapon getTurn', () => {
     const s = new Ship(1, 'x', 'A')
     const mockWeapon = {
@@ -299,8 +402,15 @@ describe('Ship - getTurn', () => {
     expect(mockWeapon.getTurn).toHaveBeenCalledWith(2, 5, 5)
   })
 })
-
+/**
+ * Ship placement and grid operations test suite
+ * @test {Ship} Ship placement, grid addition, and removal operations
+ */
 describe('Ship - placement and grid operations', () => {
+  /**
+   * Test adding ship with multiple cells to grid
+   * @test {Ship#addToGrid} Adds all ship cells to grid at correct positions
+   */
   it('addToGrid with multiple cells', () => {
     const s = new Ship(7, 'x', 'G')
     const cells = [
@@ -320,6 +430,10 @@ describe('Ship - placement and grid operations', () => {
     expect(grid.cellAt(1, 1)).toEqual({ id: 7, letter: 'G' })
   })
 
+  /**
+   * Test placement resets hit and sunk state
+   * @test {Ship#placeAtCells} Resets hits and sunk status on new placement
+   */
   it('place resets hits and sunk state', () => {
     const s = new Ship(1, 'x', 'A')
     s.recordHit(1, 1)
@@ -331,6 +445,10 @@ describe('Ship - placement and grid operations', () => {
     expect(s.sunk).toBe(false)
   })
 
+  /**
+   * Test removal clears all placement state
+   * @test {Ship#removeFromPlacement} Clears cells, hits, and sunk state
+   */
   it('removeFromPlacement clears all state', () => {
     const s = new Ship(1, 'x', 'A')
     s.cells = [
@@ -349,7 +467,15 @@ describe('Ship - placement and grid operations', () => {
   })
 })
 
+/**
+ * Ship state isolation test suite
+ * @test {Ship} Multiple ships maintain independent state
+ */
 describe('Ship - state isolation between instances', () => {
+  /**
+   * Test multiple ships maintain independent state
+   * @test {Ship} Creating multiple ships does not share state
+   */
   it('multiple ships maintain independent state', () => {
     const s1 = new Ship(1, 'x', 'A')
     const s2 = new Ship(2, 'y', 'B')
@@ -361,6 +487,10 @@ describe('Ship - state isolation between instances', () => {
     expect(s2.hasWeapon).toBe(false)
   })
 
+  /**
+   * Test multiple ships have independent cell storage
+   * @test {Ship} Cell arrays are not shared between instances
+   */
   it('multiple ships have independent cells', () => {
     const s1 = new Ship(1, 'x', 'A')
     const s2 = new Ship(2, 'y', 'B')
@@ -383,7 +513,15 @@ describe('Ship - state isolation between instances', () => {
   })
 })
 
+/**
+ * Ship static next method test suite
+ * @test {Ship.next} Static ID increment method
+ */
 describe('Ship - static next method', () => {
+  /**
+   * Test Ship.next increments static ID counter
+   * @test {Ship.next} Increments Ship.id by 1
+   */
   it('Ship.next increments id', () => {
     const saved = Ship.id
     Ship.id = 100

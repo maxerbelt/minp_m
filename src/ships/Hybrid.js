@@ -1,3 +1,10 @@
+/**
+ * @file Hybrid.js - Multi-terrain hybrid ship implementation
+ * @description Represents hybrid ships that span multiple terrain types (e.g., part water, part asteroid).
+ * Extends Shape to handle composite ships with primary and secondary terrain-specific sub-components.
+ * Manages displacement calculations across different terrain types and variant generation.
+ */
+
 import { errorMsg } from '../core/errorMsg.js'
 import { mixed } from '../terrains/all/js/terrain.js'
 import { Variant3 } from '../variants/Variant3.js'
@@ -7,37 +14,59 @@ import { Shape } from './Shape.js'
 /** @typedef {import('../grid/rectangle/mask.js').Mask} Mask */
 
 /**
+ * Coordinate pair representing [x, y] position
  * @typedef {[number, number]} CoordinatePair
  */
 
 /**
+ * Sub-shape component within a hybrid ship
  * @typedef {Object} SubShape
- * @property {Mask} board - Board representing the sub-shape occupancy
- * @property {SubTerrain} subterrain - Terrain type object for this sub-shape
- * @property {number} [faction] - Fractional area contribution after dimension fix
- * @property {Function} [setBoardFromSecondary] - Method to attach secondary board into primary shape
- * @property {Function} [expand] - Optional board expand method when resizing is required
+ * @property {Mask} board - Board mask representing occupancy for this sub-shape component
+ * @property {SubTerrain} subterrain - Terrain type (water, asteroid, etc.) for this component
+ * @property {number} [faction] - Calculated fractional area contribution (occupancy / total area) after dimension normalization
+ * @property {Function} [setBoardFromSecondary] - Method to merge secondary board into primary shape board
+ * @property {Function} [expand] - Optional board expansion method for dimension matching during resize
  */
 
 /**
+ * Array of layer boards for multi-bit depth storage
  * @typedef {Array<Mask>} LayerBoards
  */
 
 /**
- * Hybrid - A ship that combines multiple sub-shapes with different terrain requirements
- * Extends Shape to handle composite ships with primary and secondary components
+ * Hybrid ship combining multiple sub-shapes across different terrain types
+ *
+ * Extends Shape to support composite ships that span multiple terrain regions.
+ * Examples: Ships that occupy both water and asteroid, or sea and land areas.
+ * Each sub-shape has its own terrain type and board representation.
+ *
+ * @class Hybrid
  * @extends Shape
+ * @example
+ * const hybrid = new Hybrid(
+ *   'Amphibious Cruiser',
+ *   'X',
+ *   'diagonal',
+ *   [[0,0], [0,1], [1,0], [1,1]],
+ *   [primarySubShape, secondarySubShape]
+ * )
  */
 export class Hybrid extends Shape {
   /**
-   * Creates a hybrid ship with multiple sub-groups
-   * @param {string} description - Human-readable description of the hybrid ship
-   * @param {string} letter - Single character identifier for the ship
-   * @param {string} symmetry - Symmetry type for variant generation
-   * @param {Array<[number, number]>} cells - Cell coordinates defining ship shape
-   * @param {Array<SubShape>} subGroups - Array of sub-shapes with different terrain requirements
-   * @param {string} [tip] - Optional placement tip
-   * @param {Set<string>|Array<string>|Array<[number, number]>|null} [racks] - Weapon rack coordinates
+   * Creates a hybrid ship with multiple sub-groups spanning different terrain types
+   *
+   * Initializes sub-group references, processes boards for dimensional consistency,
+   * and applies layer board merging. Sets ship type to 'mixed' terrain.
+   *
+   * @constructor
+   * @param {string} description - Human-readable description (e.g., 'Amphibious Cruiser')
+   * @param {string} letter - Single character identifier for ship type
+   * @param {string} symmetry - Symmetry type: 'single', 'diagonal', 'orthogonal', etc.
+   * @param {Array<CoordinatePair>} cells - Cell coordinates defining composite ship shape
+   * @param {Array<SubShape>} subGroups - Sub-shape components with terrain-specific boards (first is primary)
+   * @param {string} [tip] - Optional placement instruction text
+   * @param {Set<string>|Array<string>|Array<CoordinatePair>|null} [racks] - Weapon rack positions
+   * @throws {Error} If sub-group boards cannot be expanded to match primary dimensions
    */
   constructor (description, letter, symmetry, cells, subGroups, tip, racks) {
     super(
@@ -56,8 +85,16 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Initializes and processes all sub-groups
-   * @param {Array<SubShape>} subGroups - Array of sub-shapes to process
+   * Initializes and processes all sub-groups for dimensional consistency
+   *
+   * Orchestrates the entire sub-group initialization pipeline:
+   * 1. Separates primary (first) and secondary sub-groups
+   * 2. Processes secondary groups and builds layer boards
+   * 3. Applies layer boards to primary board for multi-color support
+   * 4. Processes primary sub-group
+   * 5. Stores references for later access
+   *
+   * @param {Array<SubShape>} subGroups - All sub-shape components (first is primary)
    * @private
    */
   _initializeSubGroups (subGroups) {
@@ -70,10 +107,14 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Builds processed layer boards for secondary sub-groups.
-   * @param {Array<SubShape>} secondaryGroups - Secondary sub-groups
-   * @param {SubShape} primaryGroup - Primary group for board reference
-   * @returns {LayerBoards} Array of layer boards
+   * Builds processed layer boards for secondary sub-groups
+   *
+   * Transforms secondary groups into layer boards by processing each against
+   * the primary group board. Used for multi-color bitboard representation.
+   *
+   * @param {Array<SubShape>} secondaryGroups - Secondary sub-shape components to process
+   * @param {SubShape} primaryGroup - Primary sub-shape for reference board dimensions
+   * @returns {LayerBoards} Array of processed layer boards ready for application
    * @private
    */
   _buildSecondaryLayerBoards (secondaryGroups, primaryGroup) {
@@ -83,10 +124,15 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Processes a secondary sub-group and returns its board.
-   * @param {SubShape} subGroup - Secondary sub-group to process
-   * @param {SubShape} primaryGroup - Primary sub-group for board reference
-   * @returns {Mask} The processed secondary board
+   * Processes a secondary sub-group and returns its board
+   *
+   * Fixes dimensions and merges the secondary board into the primary board
+   * using the sub-group's setBoardFromSecondary method. Returns the processed
+   * secondary board for layer application.
+   *
+   * @param {SubShape} subGroup - Secondary sub-shape to process
+   * @param {SubShape} primaryGroup - Primary sub-shape containing target board
+   * @returns {Mask} The processed secondary board after board merging
    * @private
    */
   _processSecondaryGroup (subGroup, primaryGroup) {
@@ -96,8 +142,12 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Processes the primary sub-group
-   * @param {SubShape} primaryGroup - Primary sub-group to process
+   * Processes the primary sub-group dimensions
+   *
+   * Ensures primary sub-group board dimensions match the main ship board.
+   * Sets the faction value for displacement calculations.
+   *
+   * @param {SubShape} primaryGroup - Primary sub-shape to process
    * @private
    */
   _processPrimarySubGroup (primaryGroup) {
@@ -105,8 +155,12 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Fixes sub-group board dimensions to match main board
-   * @param {SubShape} subGroup - Sub-group whose board needs dimension fixing
+   * Fixes sub-group board dimensions to match main ship board
+   *
+   * Expands or validates sub-group board to match main board width/height.
+   * Calculates and stores faction (area ratio) for displacement calculations.
+   *
+   * @param {SubShape} subGroup - Sub-group board needing dimension normalization
    * @private
    */
   _fixSubGroupDimensions (subGroup) {
@@ -122,9 +176,13 @@ export class Hybrid extends Shape {
 
   /**
    * Validates and expands sub-group board to required dimensions
+   *
+   * Checks that the sub-group board has an expand method, then resizes
+   * the board to match the main ship board dimensions.
+   *
    * @param {SubShape} subGroup - Sub-group to expand
-   * @param {number} width - Required width
-   * @param {number} height - Required height
+   * @param {number} width - Required board width in cells
+   * @param {number} height - Required board height in cells
    * @private
    */
   _validateAndExpandSubGroupBoard (subGroup, width, height) {
@@ -133,9 +191,13 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Internal: Assert that the subgroup board supports expansion.
-   * @param {SubShape} subGroup - Subgroup being validated
-   * @throws {Error} If the subgroup board cannot be expanded
+   * Validates that sub-group board supports expansion
+   *
+   * Ensures the sub-group board has an expand method required for
+   * dimension matching. Throws error if expansion is not supported.
+   *
+   * @param {SubShape} subGroup - Sub-group board to validate
+   * @throws {Error} If board lacks expand method or is invalid
    * @private
    */
   _assertBoardCanExpand (subGroup) {
@@ -151,8 +213,13 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Applies a set of layer boards to the hybrid main board.
-   * @param {LayerBoards} layerBoards - Layer boards to attach to the main board
+   * Applies layer boards to the main hybrid board
+   *
+   * Merges multiple layer boards (representing different terrain types)
+   * into the main board for multi-color bitboard representation.
+   * Called when layer boards exist and need to be integrated.
+   *
+   * @param {LayerBoards} layerBoards - Layer boards to merge into main board
    * @private
    */
   _applyLayerBoards (layerBoards) {
@@ -162,10 +229,14 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Store subgroup references for later hybrid behavior.
-   * @param {SubShape} primaryGroup - Primary subgroup
-   * @param {Array<SubShape>} secondaryGroups - Secondary subgroups
-   * @param {Array<SubShape>} subGroups - Original subgroup list
+   * Stores sub-group references for later hybrid operations
+   *
+   * Saves primary, secondary, and all sub-groups for use in
+   * displacement calculations and variant generation.
+   *
+   * @param {SubShape} primaryGroup - Primary sub-shape (index 0)
+   * @param {Array<SubShape>} secondaryGroups - Secondary sub-shapes (index 1+)
+   * @param {Array<SubShape>} subGroups - Complete list of all sub-shapes
    * @private
    */
   _saveSubGroupReferences (primaryGroup, secondaryGroups, subGroups) {
@@ -175,9 +246,17 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Calculates displacement contribution for a specific subterrain type
-   * @param {Object} subterrain - Subterrain type to calculate displacement for
-   * @returns {number} Displacement contribution from matching sub-groups
+   * Calculates displacement contribution for a specific terrain type
+   *
+   * Sums displacement contributions from all sub-groups matching the given terrain type.
+   * Used to determine ship displacement when partially on different terrain types.
+   * Formula: sum(group.faction * this.displacement) for matching groups
+   *
+   * @param {SubTerrain} subterrain - Terrain type to calculate displacement for
+   * @returns {number} Total displacement contribution from matching sub-groups (0 if none match)
+   * @example
+   * const waterDisplacement = hybrid.displacementFor(waterTerrain)
+   * const asteroidDisplacement = hybrid.displacementFor(asteroidTerrain)
    */
   displacementFor (subterrain) {
     const groups = this.subGroups.filter(g => g.subterrain === subterrain)
@@ -188,8 +267,12 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * Gets variant factory for hybrid ship
-   * @returns {Variant3} Variant factory with primary and secondary sub-groups
+   * Gets variant factory for generating hybrid ship rotations
+   *
+   * Creates or returns cached Variant3 factory for generating ship variants
+   * based on primary and secondary sub-groups. Caches result for performance.
+   *
+   * @returns {Variant3} Variant factory supporting primary/secondary transformations
    */
   variants () {
     if (this._variants) return this._variants
@@ -202,8 +285,13 @@ export class Hybrid extends Shape {
   }
 
   /**
-   * @param {SubTerrain} _subterrain - Subterrain to match (ignored for hybrid)
-   * @returns {boolean} True for all subterrain types in hybrid ships
+   * Checks if hybrid ship can be placed on a terrain type
+   *
+   * Hybrid ships can be placed on any terrain type since they span
+   * multiple terrain regions with terrain-specific sub-components.
+   *
+   * @param {SubTerrain} _subterrain - Terrain type (unused, hybrid works on all terrains)
+   * @returns {boolean} Always returns true for hybrid ships
    */
   canBeOn (_subterrain) {
     return true
@@ -211,23 +299,26 @@ export class Hybrid extends Shape {
 
   /**
    * Gets hybrid ship type identifier
-   * @returns {string} Type code 'M' for mixed/hybrid
+   *
+   * @returns {string} Type code 'M' for mixed/hybrid terrain ship
    */
   type () {
     return 'M'
   }
 
   /**
-   * Gets sunk description for hybrid ships
-   * @returns {string} Sunk status description
+   * Gets sunk status description for hybrid ships
+   *
+   * @returns {string} Status description when hybrid ship is destroyed ('Destroyed')
    */
   sunkDescription () {
     return 'Destroyed'
   }
 
   /**
-   * Gets human-readable description
-   * @returns {string} Ship description text
+   * Gets human-readable description of the hybrid ship
+   *
+   * @returns {string} Description text (e.g., 'Amphibious Cruiser')
    */
   description () {
     return this.descriptionText
