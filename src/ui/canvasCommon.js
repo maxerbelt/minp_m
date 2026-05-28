@@ -177,23 +177,23 @@ export function getCanvasState (canvasInstance, localState) {
  */
 export function setCanvasState (canvasInstance, localState, state) {
   if (!canvasInstance) return
-  if ('currentTool' in state && state.currentTool !== undefined) {
+  if ('currentTool' in state) {
     canvasInstance.currentTool = state.currentTool
     localState.currentTool = state.currentTool
   }
-  if ('currentAction' in state && state.currentAction !== undefined) {
+  if ('currentAction' in state) {
     canvasInstance.currentAction = state.currentAction
     localState.currentAction = state.currentAction
   }
-  if ('coverType' in state && state.coverType !== undefined) {
+  if ('coverType' in state) {
     canvasInstance.coverType = state.coverType
     localState.coverType = state.coverType
   }
-  if ('lineStart' in state && state.lineStart !== undefined) {
+  if ('lineStart' in state) {
     canvasInstance.lineStart = state.lineStart
     localState.lineStart = state.lineStart
   }
-  if ('currentColor' in state && state.currentColor !== undefined) {
+  if ('currentColor' in state) {
     canvasInstance.currentColor = state.currentColor
     localState.currentColor = state.currentColor
   }
