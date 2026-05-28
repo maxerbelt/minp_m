@@ -1,15 +1,37 @@
 /**
+ * @typedef {Function} EventListener
+ * @param {*} data - Data passed from emitter
+ * @returns {void}
+ */
+
+/**
+ * @typedef {Object.<string, EventListener[]>} ListenerMap
+ */
+
+/**
  * SimpleEventBus - Lightweight event emitter for decoupling components
+ * Provides pub/sub functionality for loose coupling between UI elements and game logic
+ *
+ * @class SimpleEventBus
+ * @example
+ *   const bus = new SimpleEventBus()
+ *   bus.on('gameStart', (data) => console.log('Game started:', data))
+ *   bus.emit('gameStart', { level: 1 })
  */
 export class SimpleEventBus {
+  /**
+   * Create a new event bus instance
+   */
   constructor () {
+    /** @type {ListenerMap} Mapping of event names to listener arrays */
     this.listeners = {}
   }
 
   /**
    * Register a listener for an event
-   * @param {string} eventName - Name of the event
-   * @param {Function} callback - Function to call when event is emitted
+   * @param {string} eventName - Name of the event to listen for
+   * @param {EventListener} callback - Function to call when event is emitted
+   * @returns {void}
    */
   on (eventName, callback) {
     if (!this.listeners[eventName]) {
@@ -19,9 +41,10 @@ export class SimpleEventBus {
   }
 
   /**
-   * Register a one-time listener
-   * @param {string} eventName - Name of the event
-   * @param {Function} callback - Function to call once
+   * Register a one-time listener that automatically unsubscribes after first call
+   * @param {string} eventName - Name of the event to listen for
+   * @param {EventListener} callback - Function to call once and then remove
+   * @returns {void}
    */
   once (eventName, callback) {
     const wrapper = (...args) => {
@@ -32,9 +55,11 @@ export class SimpleEventBus {
   }
 
   /**
-   * Emit an event to all listeners
-   * @param {string} eventName - Name of the event
-   * @param {*} data - Data to pass to listeners
+   * Emit an event to all registered listeners
+   * Errors in individual listeners are caught and logged to prevent cascade failures
+   * @param {string} eventName - Name of the event to emit
+   * @param {*} [data] - Data to pass to all listeners
+   * @returns {void}
    */
   emit (eventName, data) {
     if (!this.listeners[eventName]) {
@@ -50,9 +75,10 @@ export class SimpleEventBus {
   }
 
   /**
-   * Remove a listener
+   * Remove a specific listener from an event
    * @param {string} eventName - Name of the event
-   * @param {Function} callback - The callback to remove
+   * @param {EventListener} callback - The exact callback reference to remove
+   * @returns {void}
    */
   off (eventName, callback) {
     if (!this.listeners[eventName]) {
@@ -64,8 +90,9 @@ export class SimpleEventBus {
   }
 
   /**
-   * Clear all listeners
-   * @param {string} [eventName] - Optional: only clear listeners for this event
+   * Clear all listeners for an event or all events
+   * @param {string} [eventName] - Optional: if provided, only clear listeners for this event
+   * @returns {void}
    */
   clear (eventName) {
     if (eventName) {
@@ -76,8 +103,8 @@ export class SimpleEventBus {
   }
 
   /**
-   * Get all event names with listeners
-   * @returns {string[]}
+   * Get all event names that have active listeners
+   * @returns {string[]} Array of event names with one or more listeners
    */
   eventNames () {
     return Object.keys(this.listeners).filter(
@@ -86,9 +113,9 @@ export class SimpleEventBus {
   }
 
   /**
-   * Get count of listeners for an event
-   * @param {string} eventName - Name of the event
-   * @returns {number}
+   * Get the number of listeners registered for an event
+   * @param {string} eventName - Name of the event to check
+   * @returns {number} Number of listeners, 0 if event has no listeners
    */
   listenerCount (eventName) {
     return this.listeners[eventName]?.length || 0

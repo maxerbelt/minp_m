@@ -65,6 +65,7 @@ export class GridCanvas {
   /**
    * Initialize DOM element references and event listeners
    * Subclasses should call super.initialize() then set custom buttons
+   * @returns {void}
    */
   initialize () {
     if (!this.canvas || typeof document === 'undefined') return
@@ -75,6 +76,9 @@ export class GridCanvas {
 
   /**
    * Attach canvas event listeners for line tools and hover
+   * Sets up listeners for mousemove, mouseleave, and click events
+   * Prevents duplicate listener attachment with _canvasListenersAttached flag
+   * @returns {void}
    */
   attachCanvasListeners () {
     if (!this.canvas) return
@@ -94,7 +98,9 @@ export class GridCanvas {
 
   /**
    * Handle canvas mouse move - update line preview and hover info
-   * @param {MouseEvent} e - The mouse event
+   * Updates grid hover location and line preview if tool is active
+   * @param {MouseEvent} e - The mouse event from canvas
+   * @returns {void}
    */
   onCanvasMouseMove (e) {
     if (!this.grid) return
@@ -118,7 +124,9 @@ export class GridCanvas {
 
   /**
    * Handle canvas click - start or complete line drawing
-   * @param {MouseEvent} e - The mouse event
+   * For single clicks without tool: toggles cell. For line tools: starts or completes line
+   * @param {MouseEvent} e - The mouse event from canvas
+   * @returns {void}
    */
   onCanvasClick (e) {
     if (!this.grid) return
@@ -143,7 +151,9 @@ export class GridCanvas {
 
   /**
    * Set line tool start point and clear preview
-   * @param {*} point - The starting point coordinates
+   * Initializes line drawing state and resets preview cells
+   * @param {*} point - The starting point coordinates (format depends on grid type)
+   * @returns {void}
    */
   setLineStartPoint (point) {
     this.lineStart = point

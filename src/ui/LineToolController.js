@@ -1,4 +1,25 @@
 /**
+ * @typedef {'single'|'segment'|'ray'|'full'} ToolType
+ */
+
+/**
+ * @typedef {[number, number]} Coordinates
+ */
+
+/**
+ * @typedef {Object} LineToolState
+ * @property {ToolType|null} currentTool - Currently selected tool
+ * @property {Coordinates|null} lineStart - Starting coordinates of current line
+ * @property {boolean} isActive - Whether a tool is currently active
+ */
+
+/**
+ * @typedef {Object} LineCompletedEvent
+ * @property {Coordinates} start - Starting coordinates
+ * @property {Coordinates} end - Ending coordinates
+ */
+
+/**
  * LineToolController - Manages line drawing state and operations
  * Used by both RectCanvas and ColorPackedRectCanvas
  *
@@ -7,23 +28,43 @@
  * - Line start/end points
  * - Preview cell computation
  * - Line completion and mask mutation
+ *
+ * @class LineToolController
+ * @example
+ *   const controller = new LineToolController(canvas, eventBus)
+ *   controller.setTool('segment')
+ *   controller.onCanvasClick([0, 0])
+ *   controller.onCanvasClick([5, 5])
  */
 export class LineToolController {
   /**
    * Initialize the line tool controller
-   * @param {GridCanvas} gridCanvas - The canvas instance (RectCanvas, etc.)
-   * @param {EventEmitter} eventBus - Event bus for emitting state changes
+   * @param {Object} gridCanvas - The canvas instance (RectCanvas, ColorPackedRectCanvas, etc.)
+   * @param {Object} gridCanvas.grid - Grid data structure with previewCells, hoverLocation
+   * @param {Function} [gridCanvas.completeLine] - Method to complete line drawing
+   * @param {Function} [gridCanvas.updateLinePreview] - Method to update line preview
+   * @param {Function} [gridCanvas.redraw] - Optional redraw method
+   * @param {Object} eventBus - Event bus for emitting state changes
+   * @param {Function} eventBus.emit - Method to emit events
    */
   constructor (gridCanvas, eventBus) {
+    /** @type {Object} Reference to canvas instance */
     this.canvas = gridCanvas
+
+    /** @type {Object} Reference to event bus */
     this.eventBus = eventBus
-    this.currentTool = null // null | 'single' | 'segment' | 'ray' | 'full'
+
+    /** @type {ToolType|null} Currently selected tool (single, segment, ray, full, or null) */
+    this.currentTool = null
+
+    /** @type {Coordinates|null} Starting coordinates of current line operation */
     this.lineStart = null
   }
 
   /**
    * Clear preview cells on the grid
    * @private
+   * @returns {void}
    */
   _clearGridPreview () {
     if (this.canvas?.grid) {
@@ -32,8 +73,9 @@ export class LineToolController {
   }
 
   /**
-   * Set the current tool
-   * @param {string|null} tool - null | 'single' | 'segment' | 'ray' | 'full'
+   * Set the current tool and reset line state
+   * @param {ToolType|null} tool - Tool name or null to deactivate
+   * @returns {void}
    */
   setTool (tool) {
     this.currentTool = tool
@@ -44,15 +86,16 @@ export class LineToolController {
 
   /**
    * Check if a line tool is currently active
-   * @returns {boolean}
+   * @returns {boolean} True if a tool is selected, false if no tool is active
    */
   isActive () {
-    return this.currentTool !== null && this.currentTool !== undefined
+    return this.currentTool !== null
   }
 
   /**
-   * Clear grid preview and hover state
+   * Clear grid preview and hover state, then request redraw
    * @private
+   * @returns {void}
    */
   _clearGridPreviewAndHover () {
     if (this.canvas?.grid) {
@@ -66,7 +109,8 @@ export class LineToolController {
 
   /**
    * Set the starting point for line drawing
-   * @param {[number, number]} point - [x, y] coordinates
+   * @param {Coordinates} point - [x, y] coordinates
+   * @returns {void}
    */
   setLineStart (point) {
     this.lineStart = point
@@ -75,7 +119,8 @@ export class LineToolController {
   }
 
   /**
-   * Clear the line start point
+   * Clear the line start point and preview
+   * @returns {void}
    */
   clearLineStart () {
     this.lineStart = null
@@ -86,8 +131,8 @@ export class LineToolController {
   /**
    * Handle canvas click for line tool operations
    * Manages the state machine: idle -> start point set -> line drawn
-   * @param {[number, number]} hit - Hit test result [x, y]
-   * @returns {boolean} - Whether the click was handled
+   * @param {Coordinates|null} hit - Hit test result [x, y] or null if miss
+   * @returns {boolean} True if click was handled, false if no tool active or invalid hit
    */
   onCanvasClick (hit) {
     if (!this.isActive() || hit == null) {
@@ -107,8 +152,9 @@ export class LineToolController {
   /**
    * Complete the line drawing operation
    * Delegates to canvas for grid-specific mutation and preview computation
-   * @param {[number, number]} start - Starting coordinates
-   * @param {[number, number]} end - Ending coordinates
+   * @param {Coordinates} start - Starting coordinates
+   * @param {Coordinates} end - Ending coordinates
+   * @returns {void}
    */
   completeLine (start, end) {
     if (!this.canvas?.completeLine) {
@@ -121,7 +167,8 @@ export class LineToolController {
 
   /**
    * Update the preview for the current line being drawn
-   * @param {[number, number]} end - Current cursor position
+   * @param {Coordinates} end - Current cursor position
+   * @returns {void}
    */
   updatePreview (end) {
     if (!this.isActive() || this.lineStart == null) {
@@ -141,7 +188,8 @@ export class LineToolController {
   }
 
   /**
-   * Reset all line tool state
+   * Reset all line tool state to initial values
+   * @returns {void}
    */
   reset () {
     this.currentTool = null
@@ -151,8 +199,8 @@ export class LineToolController {
   }
 
   /**
-   * Get the current state for serialization/debugging
-   * @returns {Object}
+   * Get the current state for serialization or debugging
+   * @returns {LineToolState} Current tool state and active status
    */
   getState () {
     return {
