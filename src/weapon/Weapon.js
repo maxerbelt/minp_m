@@ -2,6 +2,57 @@ import { bh } from '../terrains/all/js/bh.js'
 import { furtherestFrom } from '../core/utilities.js'
 import { Animator } from '../core/Animator.js'
 import { Random } from '../core/Random.js'
+
+/**
+ * @typedef {Object} AnimationOptions
+ * Configuration for weapon flight animations
+ * @property {number} [rotation] - Rotation angle in degrees
+ * @property {number} [duration] - Duration in seconds
+ * @property {string} [classname] - CSS class name for weapon
+ * @property {boolean} [doesExplode] - Whether to explode on impact
+ * @property {boolean} [animateOnTarget] - Whether to animate on target hit
+ */
+
+/**
+ * @typedef {Object} LaunchContext
+ * Context for weapon launch operations
+ * @property {any} map - Game map
+ * @property {any} viewModel - Primary view model
+ * @property {any} [opposingViewModel] - Opposing player's view model
+ * @property {any} [model] - Optional game model
+ * @property {Function} [processCoords] - Optional coordinate processor
+ */
+
+/**
+ * @typedef {Object} AnimationResult
+ * Result of animation operation
+ * @property {any} container - Animation container element
+ * @property {{x: number, y: number}} end - End coordinates
+ * @property {number} cellSize - Cell size in pixels
+ */
+
+/**
+ * @typedef {Object} AnimatorContext
+ * Animator initialization context
+ * @property {Animator} animator - Animator instance
+ * @property {{x: number, y: number}} end - End coordinates
+ * @property {{x: number, y: number}} start - Start coordinates
+ * @property {number} cellSize - Cell size in pixels
+ */
+
+/**
+ * @typedef {Object} ExplodeOptions
+ * Explosion animation options
+ * @property {any} [container] - Animation container element
+ * @property {{x: number, y: number}} [end] - End position coordinates
+ * @property {string} [type] - Explosion type (terrain tag)
+ * @property {number} [power] - Explosion power level
+ * @property {string} [shake] - Shake animation type
+ * @property {Animator} [animator] - Reusable animator instance
+ * @property {any} [viewModel] - Optional view model
+ * @property {string|null} [id] - Optional explosion ID
+ */
+
 export class Weapon {
   constructor (name, letter, isLimited, destroys, points) {
     if (new.target === Weapon) {
@@ -235,19 +286,20 @@ export class Weapon {
   }
 
   /**
-   * Get hint text for weapon step.\n   *
-   * @param {number} idx - Step index (0 for initial, 1+ for targeting)\n   * @returns {string} Help text describing the action for this step\n   */
+   * Get hint text for weapon step.
+   *
+   * @param {number} idx - Step index (0 for initial, 1+ for targeting)
+   * @returns {string} Help text describing the action for this step
+   */
   stepHint (idx) {
-    switch (idx) {
-      case 0:
-        return this.launchCursor
-          ? 'Click on square in Friendly ' + bh.mapHeading + ' to select weapon'
-          : 'Click on square in Enemy ' +
-              bh.mapHeading +
-              ' to select launch point'
-      default:
-        return 'Click on square in Enemy ' + bh.mapHeading + ' to aim and fire'
+    if (idx === 0) {
+      return this.launchCursor
+        ? 'Click on square in Friendly ' + bh.mapHeading + ' to select weapon'
+        : 'Click on square in Enemy ' +
+            bh.mapHeading +
+            ' to select launch point'
     }
+    return 'Click on square in Enemy ' + bh.mapHeading + ' to aim and fire'
   }
   /**
    * Get total number of steps for weapon targeting sequence.
@@ -355,7 +407,7 @@ export class Weapon {
    * @returns {Array} Updated effect array
    */
   addSplash (map, row, col, power, newEffect) {
-    if (map === null || map === undefined || map.inBounds(row, col)) {
+    if (!map || map.inBounds(row, col)) {
       newEffect.push([row, col, power])
     }
     return newEffect
@@ -493,44 +545,21 @@ export class Weapon {
    * @param {number[]} coords - Target coordinates
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
-   * @param {any} map - Game map object
-   * @param {any} viewModel - Primary view model
-   * @param {any} [opposingViewModel] - Optional opposing player view model
-   * @param {any} [model] - Optional game model for coordinate transformation
-   * @param {Function} [launch] - Optional launch function (defaults to launchToRaw)
+   * @param {LaunchContext} context - Launch context containing map, view models, and handlers
    * @returns {Promise<Object>} Launch result
    */
-  async launchRightTo (
-    coords,
-    rr,
-    cc,
-    map,
-    viewModel,
-    opposingViewModel,
-    model,
-    launch
-  ) {
+  async launchRightTo (coords, rr, cc, context) {
+    const { map, viewModel, opposingViewModel, model, launch } = context
     if (!launch) {
-      return await this.launchToRaw(
-        coords,
-        rr,
-        cc,
+      return await this.launchToRaw(coords, rr, cc, {
         map,
         viewModel,
         opposingViewModel,
         model,
-        this.processCoords.bind(this)
-      )
+        processCoords: this.processCoords.bind(this)
+      })
     }
-    return await launch(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model
-    )
+    return await launch(coords, rr, cc, context)
   }
 
   /**
@@ -561,33 +590,11 @@ export class Weapon {
    * @param {number[]} coords - Target coordinates
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
-   * @param {any} map - Game map object
-   * @param {any} viewModel - Primary view model
-   * @param {any} [opposingViewModel] - Optional opposing player view model
-   * @param {any} [model] - Optional target model
-   * @param {Function} [processCoords] - Optional coordinate processor
+   * @param {LaunchContext} context - Launch context
    * @returns {Promise<Object>} Launch result with optional {target}
    */
-  async launchTo (
-    coords,
-    rr,
-    cc,
-    map,
-    viewModel,
-    opposingViewModel,
-    model,
-    processCoords
-  ) {
-    return await this.launchToRaw(
-      coords,
-      rr,
-      cc,
-      map,
-      viewModel,
-      opposingViewModel,
-      model,
-      processCoords
-    )
+  async launchTo (coords, rr, cc, context) {
+    return await this.launchToRaw(coords, rr, cc, context)
   }
 
   /**
@@ -598,24 +605,18 @@ export class Weapon {
    * @param {number[]} coords - Target coordinates
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
-   * @param {any} map - Game map object
-   * @param {any} viewModel - Primary view model
-   * @param {any} [opposingViewModel] - Optional opposing player view model
-   * @param {any} [model] - Optional target model for coordinate transformation
-   * @param {Function} [processCoords] - Optional coordinate processor function
+   * @param {LaunchContext} context - Launch context
    * @returns {Promise<Object>} Result object with optional {target} if hasCandidates
    */
-  async launchToRaw (
-    coords,
-    rr,
-    cc,
-    map,
-    viewModel,
-    opposingViewModel,
-    model,
-    processCoords
-  ) {
-    processCoords = processCoords || this.redoCoords.bind(this)
+  async launchToRaw (coords, rr, cc, context) {
+    const {
+      map,
+      viewModel,
+      opposingViewModel,
+      model,
+      processCoords: processor
+    } = context
+    const processCoords = processor || this.redoCoords.bind(this)
     const [[r, c], target, hasCandidates] = processCoords(
       map,
       [rr, cc],
@@ -705,18 +706,13 @@ export class Weapon {
     animator = null,
     viewModel = null
   ) {
-    return await this.animateExplode(
-      target,
-      animator?.container,
+    return await this.animateExplode(target, cellSize, {
       end,
-      cellSize,
-      null,
-      null,
-      null,
-      null,
+      animator,
       viewModel
-    )
+    })
   }
+
   async animateExplodeRaw (
     target,
     cellSize,
@@ -725,45 +721,49 @@ export class Weapon {
     shake = 'shake',
     viewModel = null
   ) {
-    return await this.animateExplode(
-      target,
-      null,
-      null,
-      cellSize,
+    return await this.animateExplode(target, cellSize, {
       type,
       power,
       shake,
-      null,
       viewModel
-    )
+    })
   }
 
-  async animateExplode (
-    target,
-    container,
-    end,
-    cellSize,
-    type,
-    power,
-    shake = 'shake',
-    animator = null,
-    _viewModel = null,
-    id = null
-  ) {
-    end = end || this.centerOf(target)
+  /**
+   * Animate explosion with options object.
+   * Consolidated method handling all explosion animation parameters.
+   *
+   * @async
+   * @param {any} target - Target element
+   * @param {number} cellSize - Cell size in pixels
+   * @param {ExplodeOptions} [options] - Explosion animation options
+   * @returns {Promise<void>} Resolves when animation completes
+   */
+  async animateExplode (target, cellSize, options = {}) {
+    const {
+      container = null,
+      end: endPos,
+      type,
+      power,
+      shake = 'shake',
+      animator: reuseAnimator,
+      viewModel,
+      id
+    } = options || {}
+    let end = endPos || this.centerOf(target)
     const idTag = id ? ' explode-at-' + id : ''
-    type = type || bh.subTerrainTagFromCell(target)
-    bh.playBoom(type)
-    // CREATE wrapper
-    animator =
-      animator ||
+    let typeTag = type || bh.subTerrainTagFromCell(target)
+    bh.playBoom(typeTag)
+
+    let animator =
+      reuseAnimator ||
       new Animator(
         'explosion-wrapper' + idTag,
         'battleship-game-container',
         container,
         true,
         'explosion',
-        type
+        typeTag
       )
 
     let mod = 1

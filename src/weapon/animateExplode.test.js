@@ -3,12 +3,13 @@
  */
 
 import { standardShot } from './Weapon.js'
+import { Animator } from '../core/Animator.js'
 
 describe('Weapon.animateExplode', () => {
-  it('appends wrapper with container-relative coordinates', () => {
+  it('appends wrapper with container-relative coordinates', async () => {
     document.body.innerHTML =
-      '<div id="container"></div><div id="target"></div>'
-    const container = document.getElementById('container')
+      '<div id="battleship-game-container"></div><div id="target"></div>'
+    const container = document.getElementById('battleship-game-container')
     const target = document.getElementById('target')
 
     // Mock bounding rects
@@ -29,24 +30,47 @@ describe('Weapon.animateExplode', () => {
       bottom: 160
     })
 
-    // Call animateExplode (synchronous DOM append)
-    standardShot.animateExplode(target, container, null, 32, null, 'space')
+    // Mock bh object for terrain tag and audio
+    window.bh = {
+      subTerrainTagFromCell: () => 'space',
+      playBoom: () => {}
+    }
 
-    const wrapper = container.querySelector('.explosion-wrapper')
-    expect(wrapper).not.toBeNull()
+    // Mock Animator.run to not remove the element (for testing)
+    const originalRun = Animator.prototype.run
+    Animator.prototype.run = async function () {
+      this._startAnimation('play')
+      await Animator.wait(this.playable)
+      // Don't remove the element so the test can verify it
+    }
 
-    const targetRect = target.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
+    try {
+      // Call animateExplode with new signature
+      await standardShot.animateExplode(target, 32, {
+        container: container,
+        type: 'space'
+      })
 
-    const expectedX =
-      targetRect.left + targetRect.width / 2 - containerRect.left
-    const expectedY = targetRect.top + targetRect.height / 2 - containerRect.top
+      const wrapper = container.querySelector('.explosion-wrapper')
+      expect(wrapper).not.toBeNull()
 
-    expect(wrapper.style.getPropertyValue('--x')).toBe(`${expectedX}px`)
-    expect(wrapper.style.getPropertyValue('--y')).toBe(`${expectedY}px`)
+      const targetRect = target.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
 
-    // Ensure inner explosion element exists
-    const inner = wrapper.querySelector('.explosion')
-    expect(inner).not.toBeNull()
+      const expectedX =
+        targetRect.left + targetRect.width / 2 - containerRect.left
+      const expectedY =
+        targetRect.top + targetRect.height / 2 - containerRect.top
+
+      expect(wrapper.style.getPropertyValue('--x')).toBe(`${expectedX}px`)
+      expect(wrapper.style.getPropertyValue('--y')).toBe(`${expectedY}px`)
+
+      // Ensure inner explosion element exists
+      const inner = wrapper.querySelector('.explosion')
+      expect(inner).not.toBeNull()
+    } finally {
+      // Restore original run method
+      Animator.prototype.run = originalRun
+    }
   })
 })
