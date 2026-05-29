@@ -12,7 +12,7 @@
  */
 
 import { SpaceVessel, DeepSpaceVessel, ArmedVessel } from './spaceShapes.js'
-import { GaussRound } from './spaceWeapons.js'
+import { GaussRound, Laser } from './spaceWeapons.js'
 
 /**
  * Coordinate pair representing a single cell in a vessel's footprint.
@@ -206,13 +206,14 @@ const VESSEL_RACKS = {
  * Vulnerabilities:
  * - Missiles (+): Direct and adjacent cells destroyed
  * - Rail Bolts (|): Direct and orthogonal adjacent cells destroyed
- * - Warheads (^): Direct and adjacent cells destroyed
+ * - Gauss Roundx (^): Direct and adjacent cells destroyed
  *
  * Role: Aerial reconnaissance and light attack.
  *
- * @type {SpaceVessel}
+ * @type {ArmedVessel}
  * @const
- * @see {@link SpaceVessel} for vessel structure
+ * @see {@link ArmedVessel} for vessel structure with weapon capabilities
+ * @see {@link Laser} for weapon specifications
  */
 export const attackCraft = new SpaceVessel(
   'Attack Craft',
@@ -222,9 +223,13 @@ export const attackCraft = new SpaceVessel(
 )
 attackCraft.vulnerable = ['+', '|', '^']
 attackCraft.notes = [
-  `The ${attackCraft.descriptionText} is vulnerable against missiles.`,
+  `The ${attackCraft.descriptionText} is vulnerable against missiles, rail bolts, and gauss rounds.`,
+  `The ${attackCraft.descriptionText} is armed with a laser weapon.`,
   `The squares of the ${attackCraft.descriptionText} adjacent to the missiles detonation will also be destroyed.`
 ]
+attackCraft.attachWeapon(() => {
+  return Laser.single
+})
 
 /**
  * Gun Boat - Armed shuttle with light gauss weapons.
@@ -253,7 +258,11 @@ export const gunBoat = new ArmedVessel(
   null, // tip - use default
   VESSEL_RACKS.GUN_BOAT
 )
-
+gunBoat.vulnerable = ['!']
+gunBoat.notes = [
+  `The ${gunBoat.descriptionText} is vulnerable against lasers.`,
+  `The ${gunBoat.descriptionText} is armed with a gauss weapon.`
+]
 gunBoat.attachWeapon(() => {
   return GaussRound.single
 })
