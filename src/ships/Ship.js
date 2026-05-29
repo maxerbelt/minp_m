@@ -340,8 +340,6 @@ export class Ship {
     if (numNew === 0) {
       return
     }
-    // const weaponIDs = weapons.map(w => w.id)
-    // console.trace('Setting weaponsById:', weaponIDs, weapons)
     const { weaponsById, weaponArray } = this._importWeapons(weapons)
     if (!weaponsById?.size) return {}
     this._weaponsById = weaponsById
@@ -1613,7 +1611,6 @@ export class Ship {
   isInTallyGroup (tallyGroup) {
     const shape = this.shape()
     if (!shape) {
-      console.log('shape not found for', this)
       return false
     }
     return shape && typeof shape === 'object' && shape.tallyGroup === tallyGroup

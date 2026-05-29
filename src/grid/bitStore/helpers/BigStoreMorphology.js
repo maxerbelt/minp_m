@@ -1,4 +1,41 @@
 /**
+ * @typedef {Object} StoreBigInstance
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {number} bitsPerCell - Bits used per cell (color depth)
+ * @property {bigint} fullBits - Mask covering all bits
+ * @property {Object} all - Iterator object with occupiedIndexAndValues method
+ * @property {Function} setIdx - Set value at index
+ * @property {Function} getIdx - Get value at index
+ * @property {Function} shiftBits - Perform bitwise shift operation
+ * @property {Function} combineMasked - Combine masked bitboard values
+ * @property {Function} prepareSrcForUpExpansion - Prepare source for up expansion
+ * @property {Function} prepareSrcForDownExpansion - Prepare source for down expansion
+ * @property {Function} cellSurvivesHorizontalErosion - Check horizontal erosion survival
+ * @property {Function} cellSurvivesVerticalErosion - Check vertical erosion survival
+ */
+
+/**
+ * @typedef {Object} EdgeMasks
+ * @property {bigint|number|null} [notTop] - Mask preventing expansion beyond top edge
+ * @property {bigint|number|null} [notBottom] - Mask preventing expansion beyond bottom edge
+ * @property {bigint|number|null} [notLeft] - Mask preventing expansion beyond left edge
+ * @property {bigint|number|null} [notRight] - Mask preventing expansion beyond right edge
+ */
+
+/**
+ * @typedef {Object} ConstraintPair
+ * @property {bigint} leftConstraint - Left/up neighbor constraint
+ * @property {bigint} rightConstraint - Right/down neighbor constraint
+ */
+
+/**
+ * @typedef {Object} ErosionConstraints
+ * @property {bigint} upConstraint - Constraint for cells above
+ * @property {bigint} downConstraint - Constraint for cells below
+ */
+
+/**
  * BigStoreMorphology - Helper utilities for BigInt store morphology.
  *
  * Isolates morphology-specific operations from StoreBig to maintain separation
@@ -21,8 +58,10 @@ export class BigStoreMorphology {
   /**
    * Normalize an edge mask value for BigInt bitwise calculations.
    * Converts numbers and other primitives to BigInt for consistent operations.
+   *
+   * @static
    * @param {bigint|number|null|undefined} maskValue - Value to normalize
-   * @returns {bigint} Normalized edge mask as BigInt
+   * @returns {bigint} Normalized edge mask as BigInt (0n if falsy)
    */
   static normalizeEdgeMask (maskValue) {
     return typeof maskValue === 'bigint' ? maskValue : BigInt(maskValue || 0n)
@@ -33,7 +72,8 @@ export class BigStoreMorphology {
    * Per-cell dilation for multi-bit stores: propagates color values left and right.
    * Does not use edge masks (relies on grid boundaries via iteration).
    *
-   * @param {Object} store - StoreBig instance with width, height properties
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with width, height properties
    * @param {bigint} bitboard - Input colored bitboard
    * @returns {bigint} Bitboard with colors expanded to adjacent columns
    */
@@ -55,9 +95,10 @@ export class BigStoreMorphology {
    * Per-cell dilation for multi-bit stores: propagates color values up and down.
    * Does not use edge masks (relies on grid boundaries via iteration).
    *
-   * @param {Object} store - StoreBig instance with width, height properties
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with width, height properties
    * @param {bigint} bitboard - Input colored bitboard
-   * @param {number} gridWidth - Width of grid (for row offset calculation)
+   * @param {number} gridWidth - Width of grid in cells (for row offset calculation)
    * @returns {bigint} Bitboard with colors expanded to adjacent rows
    */
   static propagateAdjacentCellsVertically (store, bitboard, gridWidth) {
@@ -79,12 +120,11 @@ export class BigStoreMorphology {
    * Optimized shift-based operation for single-bit grids (occupancy only).
    * Applies edge masks to prevent cells from expanding beyond grid boundaries.
    *
-   * @param {Object} store - StoreBig instance with shiftBits and combineMasked methods
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with shiftBits and combineMasked methods
    * @param {bigint} bitboard - Input 1-bit occupancy bitboard
    * @param {number} gridWidth - Width in cells (shift amount for vertical operations)
-   * @param {Object} [edgeMasks] - Edge masks to restrict boundary expansion
-   * @param {bigint} [edgeMasks.notTop] - Mask preventing expansion beyond top edge
-   * @param {bigint} [edgeMasks.notBottom] - Mask preventing expansion beyond bottom edge
+   * @param {EdgeMasks} [edgeMasks] - Edge masks to restrict boundary expansion
    * @returns {bigint} Bitboard with vertical expansion (up and down shifts)
    */
   static propagateVerticalShift (store, bitboard, gridWidth, edgeMasks) {
@@ -102,7 +142,8 @@ export class BigStoreMorphology {
    * Per-cell operation that removes colors from cells without horizontal neighbors.
    * A cell survives only if it has an occupied neighbor on both left and right.
    *
-   * @param {Object} store - StoreBig instance with cellSurvivesHorizontalErosion method
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with cellSurvivesHorizontalErosion method
    * @param {bigint} bitboard - Input colored bitboard
    * @returns {bigint} Eroded bitboard with edge colors removed
    */
@@ -122,9 +163,10 @@ export class BigStoreMorphology {
    * Per-cell operation that removes colors from cells without vertical neighbors.
    * A cell survives only if it has an occupied neighbor on both top and bottom.
    *
-   * @param {Object} store - StoreBig instance with cellSurvivesVerticalErosion method
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with cellSurvivesVerticalErosion method
    * @param {bigint} bitboard - Input colored bitboard
-   * @param {number} gridWidth - Grid width (used for neighbor offset calculation)
+   * @param {number} gridWidth - Grid width in cells (used for neighbor offset calculation)
    * @returns {bigint} Eroded bitboard with edge colors removed
    */
   static erodeVerticalCells (store, bitboard, gridWidth) {
@@ -143,10 +185,13 @@ export class BigStoreMorphology {
 
   /**
    * Build an inverted edge mask for horizontal erosion constraints.
-   * @param {Object} store - StoreBig instance
-   * @param {Object} edgeMasks
-   * @param {string} maskKey
-   * @returns {bigint}
+   * Inverts a specific edge mask and applies full-mask AND operation.
+   *
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with fullBits property
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration
+   * @param {string} maskKey - Key of mask to invert (e.g., 'notLeft', 'notRight')
+   * @returns {bigint} Inverted edge mask value
    */
   static computeInvertedEdgeMask (store, edgeMasks, maskKey) {
     const fullMask = store.fullBits
@@ -156,11 +201,14 @@ export class BigStoreMorphology {
 
   /**
    * Create horizontal erosion constraints from a shift and inverted mask.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {number} bitShift
-   * @param {bigint} invertedMask
-   * @returns {bigint}
+   * Shifts bitboard and combines with inverted mask for erosion boundary.
+   *
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance with shiftBits method
+   * @param {bigint} bitboard - Input bitboard to shift
+   * @param {number} bitShift - Number of bits to shift
+   * @param {bigint} invertedMask - Inverted edge mask to apply
+   * @returns {bigint} Constraint bitboard for erosion
    */
   static computeHorizontalConstraintFromShift (
     store,
@@ -174,11 +222,14 @@ export class BigStoreMorphology {
 
   /**
    * Compute horizontal erosion constraints for BigInt stores.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {Object} edgeMasks
-   * @param {number} bitShift
-   * @returns {{leftConstraint: bigint, rightConstraint: bigint}}
+   * Calculates left and right neighbor constraints for erosion operation.
+   *
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance
+   * @param {bigint} bitboard - Input bitboard
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration
+   * @param {number} bitShift - Bit shift amount
+   * @returns {ConstraintPair} Left and right neighbor constraints
    */
   static computeHorizontalErodeConstraints (
     store,
@@ -217,10 +268,13 @@ export class BigStoreMorphology {
 
   /**
    * Apply horizontal erosion for 1-bit BigInt stores.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {Object} edgeMasks
-   * @returns {bigint}
+   * Removes cells that lack horizontal neighbors using shift-based constraints.
+   *
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance
+   * @param {bigint} bitboard - Input 1-bit bitboard
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
+   * @returns {bigint} Eroded bitboard
    */
   static erodeHorizontalShift (store, bitboard, edgeMasks) {
     if (!edgeMasks) return bitboard
@@ -239,11 +293,14 @@ export class BigStoreMorphology {
 
   /**
    * Compute vertical erosion constraints for BigInt stores.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {number} gridWidth
-   * @param {Object} edgeMasks
-   * @returns {{upConstraint: bigint, downConstraint: bigint}}
+   * Calculates up and down neighbor constraints for vertical erosion.
+   *
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance
+   * @param {bigint} bitboard - Input bitboard
+   * @param {number} gridWidth - Width in cells (for shift calculation)
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
+   * @returns {ErosionConstraints} Up and down neighbor constraints
    */
   static computeVerticalErodeConstraints (
     store,
@@ -274,11 +331,14 @@ export class BigStoreMorphology {
 
   /**
    * Apply vertical erosion for 1-bit BigInt stores.
-   * @param {Object} store - StoreBig instance
-   * @param {bigint} bitboard
-   * @param {number} gridWidth
-   * @param {Object} edgeMasks
-   * @returns {bigint}
+   * Removes cells that lack vertical neighbors using shift-based constraints.
+   *
+   * @static
+   * @param {StoreBigInstance} store - StoreBig instance
+   * @param {bigint} bitboard - Input 1-bit bitboard
+   * @param {number} gridWidth - Width in cells (for neighbor offset)
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
+   * @returns {bigint} Eroded bitboard
    */
   static erodeVerticalShift (store, bitboard, gridWidth, edgeMasks) {
     const { upConstraint, downConstraint } =

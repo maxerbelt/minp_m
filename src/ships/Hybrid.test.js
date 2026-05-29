@@ -257,7 +257,7 @@ describe('Hybrid', () => {
         faction: 0,
         setBoardFromSecondary: jest.fn()
       }
-      new Hybrid(
+      const testHybrid = new Hybrid(
         'Test',
         'T',
         'D',
@@ -271,6 +271,8 @@ describe('Hybrid', () => {
         null,
         {}
       )
+      // Constructor sets faction proportions on groups based on their areas
+      expect(testHybrid.subGroups.length).toBe(2)
       expect(group1.faction).toBe(0.25)
       expect(group2.faction).toBe(0.75)
     })

@@ -1,17 +1,61 @@
 /**
+ * @typedef {Object} Store32Instance
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {number} size - Total grid size (width × height)
+ * @property {number} bitsPerCell - Bits allocated per cell (1, 2, 4, 8)
+ * @property {Uint32Array} fullBits - Mask array covering all bits
+ * @property {Function} getIdx - Get cell value at index
+ * @property {Function} setAtIdx - Set cell value at index (mutating)
+ * @property {Function} shiftBits - Perform bitwise shift on bitboard
+ * @property {Function} bitAnd - Bitwise AND operation
+ * @property {Function} bitOr - Bitwise OR operation
+ * @property {Function} createEmptyBitboard - Create zeroed bitboard array
+ * @property {Function} cellSurvivesHorizontalErosion - Check horizontal erosion survival
+ * @property {Function} cellSurvivesVerticalErosion - Check vertical erosion survival
+ * @property {Function} _createInvertedMask - Create inverted edge mask
+ * @property {Function} _computeVerticalConstraintFromShift - Compute vertical constraint
+ * @property {Function} _calculateVerticalBitShift - Calculate vertical shift amount
+ */
+
+/**
+ * @typedef {Object} EdgeMasks
+ * @property {Uint32Array} [notTop] - Mask preventing expansion beyond top edge
+ * @property {Uint32Array} [notBottom] - Mask preventing expansion beyond bottom edge
+ * @property {Uint32Array} [notLeft] - Mask preventing expansion beyond left edge
+ * @property {Uint32Array} [notRight] - Mask preventing expansion beyond right edge
+ */
+
+/**
+ * @typedef {Object} ConstraintPair
+ * @property {Uint32Array} leftConstraint - Left/up neighbor constraint
+ * @property {Uint32Array} rightConstraint - Right/down neighbor constraint
+ */
+
+/**
+ * @typedef {Object} VerticalConstraints
+ * @property {Uint32Array} upShifted - Constraint for cells above
+ * @property {Uint32Array} downShifted - Constraint for cells below
+ */
+
+/**
  * Store32Morphology - Helper utilities for Store32 (Uint32Array) morphology.
  *
  * Isolates morphology-specific operations from Store32 to maintain separation
  * of concerns. Store32 focuses on Uint32Array storage semantics while this class
  * handles morphological operation logic.
  *
+ * Key differences from BigStoreMorphology:
+ * - Works with Uint32Array instead of monolithic BigInt
+ * - Requires word-by-word processing and boundary handling
+ * - Respects 32-bit word boundaries throughout
+ * - Uses store helper methods for bitwise operations
+ *
  * Operations are split by storage type:
  * - Shift-based: for 1-bit (occupancy) grids using fast bit operations
  * - Cell-wise: for multi-bit (colored) grids using per-cell iteration
  *
- * Uint32Array operations require word-by-word processing, unlike BigInt's
- * monolithic representation. All array operations respect word boundaries.
- *
+ * @class Store32Morphology
  * @example
  * // 1-bit dilation using shifts
  * const dilated = Store32Morphology.propagateVerticalShift(store, bits, width, masks)
@@ -24,8 +68,11 @@ export class Store32Morphology {
   /**
    * Normalize an edge mask value for Uint32Array bitwise calculations.
    * Converts primitives to Uint32Array for consistent word-wise operations.
+   * Handles both scalar and array inputs gracefully.
+   *
+   * @static
    * @param {Uint32Array|number|null|undefined} maskValue - Value to normalize
-   * @returns {Uint32Array} Normalized edge mask
+   * @returns {Uint32Array} Normalized edge mask as single-word array (or 0 if falsy)
    */
   static normalizeEdgeMask (maskValue) {
     if (maskValue instanceof Uint32Array) return maskValue
@@ -37,7 +84,11 @@ export class Store32Morphology {
    * Per-cell dilation for multi-bit stores: propagates color values left and right.
    * Does not use edge masks (relies on grid boundaries via iteration).
    *
-   * @param {Object} store - Store32 instance with width, height properties
+   * Algorithm: For each non-zero cell, set value in current and adjacent columns
+   * if within bounds. Creates new array with expanded colors.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with width, height, size properties
    * @param {Uint32Array} bitboard - Input colored bitboard
    * @returns {Uint32Array} Bitboard with colors expanded to adjacent columns
    */
@@ -62,9 +113,13 @@ export class Store32Morphology {
    * Per-cell dilation for multi-bit stores: propagates color values up and down.
    * Does not use edge masks (relies on grid boundaries via iteration).
    *
-   * @param {Object} store - Store32 instance with width, height properties
+   * Algorithm: For each non-zero cell, set value in current and adjacent rows
+   * if within bounds. Creates new array with expanded colors.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with width, height, size properties
    * @param {Uint32Array} bitboard - Input colored bitboard
-   * @param {number} gridWidth - Width of grid (for row offset calculation)
+   * @param {number} gridWidth - Width in cells (for row offset calculation = gridWidth * bitsPerCell)
    * @returns {Uint32Array} Bitboard with colors expanded to adjacent rows
    */
   static propagateAdjacentCellsVertically (store, bitboard, gridWidth) {
@@ -89,12 +144,17 @@ export class Store32Morphology {
    * Applies edge masks to prevent cells from expanding beyond grid boundaries.
    * Processes word-by-word to respect Uint32Array structure.
    *
-   * @param {Object} store - Store32 instance with shiftBits and combineMasked methods
+   * Algorithm:
+   * 1. Optionally apply edge masks to restrict expansion
+   * 2. Shift bitboard up and down by gridWidth bits
+   * 3. OR all three versions (original, up-shifted, down-shifted)
+   * 4. Apply full-bits mask to each word
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with shiftBits and combineMasked methods
    * @param {Uint32Array} bitboard - Input 1-bit occupancy bitboard
-   * @param {number} gridWidth - Width in cells (shift amount for vertical operations)
-   * @param {Object} [edgeMasks] - Edge masks to restrict boundary expansion
-   * @param {Uint32Array} [edgeMasks.notTop] - Mask preventing expansion beyond top edge
-   * @param {Uint32Array} [edgeMasks.notBottom] - Mask preventing expansion beyond bottom edge
+   * @param {number} gridWidth - Width in cells (shift amount = gridWidth * bitsPerCell)
+   * @param {EdgeMasks} [edgeMasks] - Edge masks to restrict boundary expansion (optional)
    * @returns {Uint32Array} Bitboard with vertical expansion (up and down shifts)
    */
   static propagateVerticalShift (store, bitboard, gridWidth, edgeMasks) {
@@ -123,7 +183,10 @@ export class Store32Morphology {
    * Per-cell operation that removes colors from cells without horizontal neighbors.
    * A cell survives only if it has an occupied neighbor on both left and right.
    *
-   * @param {Object} store - Store32 instance with cellSurvivesHorizontalErosion method
+   * Algorithm: Iterate all cells, test survival condition, clear non-surviving cells.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with cellSurvivesHorizontalErosion method
    * @param {Uint32Array} bitboard - Input colored bitboard
    * @returns {Uint32Array} Eroded bitboard with edge colors removed
    */
@@ -144,9 +207,12 @@ export class Store32Morphology {
    * Per-cell operation that removes colors from cells without vertical neighbors.
    * A cell survives only if it has an occupied neighbor on both top and bottom.
    *
-   * @param {Object} store - Store32 instance with cellSurvivesVerticalErosion method
+   * Algorithm: Iterate all cells, test survival condition, clear non-surviving cells.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with cellSurvivesVerticalErosion method
    * @param {Uint32Array} bitboard - Input colored bitboard
-   * @param {number} gridWidth - Grid width (used for neighbor offset calculation)
+   * @param {number} gridWidth - Grid width in cells (used for neighbor offset calculation)
    * @returns {Uint32Array} Eroded bitboard with edge colors removed
    */
   static erodeVerticalCells (store, bitboard, gridWidth) {
@@ -166,10 +232,13 @@ export class Store32Morphology {
 
   /**
    * Build an inverted edge mask for horizontal erosion constraints.
-   * @param {Object} store - Store32 instance
-   * @param {Object} edgeMasks
-   * @param {string} maskKey
-   * @returns {Uint32Array}
+   * Delegates to store helper for format-specific mask generation and inversion.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with _createInvertedMask method
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration
+   * @param {string} maskKey - Key of mask to invert (e.g., 'notLeft', 'notRight')
+   * @returns {Uint32Array} Inverted edge mask value
    */
   static computeInvertedEdgeMask (store, edgeMasks, maskKey) {
     return store._createInvertedMask(edgeMasks, maskKey)
@@ -177,11 +246,14 @@ export class Store32Morphology {
 
   /**
    * Create horizontal erosion constraints from a shift and inverted mask.
-   * @param {Object} store - Store32 instance
-   * @param {Uint32Array} bitboard
-   * @param {number} bitShift
-   * @param {Uint32Array} invertedMask
-   * @returns {Uint32Array}
+   * Shifts bitboard and combines with inverted mask for erosion boundary.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance with shiftBits and bitOr methods
+   * @param {Uint32Array} bitboard - Input bitboard to shift
+   * @param {number} bitShift - Number of bits to shift per word
+   * @param {Uint32Array} invertedMask - Inverted edge mask to apply
+   * @returns {Uint32Array} Constraint bitboard for erosion
    */
   static computeHorizontalConstraintFromShift (
     store,
@@ -195,11 +267,14 @@ export class Store32Morphology {
 
   /**
    * Compute horizontal erosion constraints for Store32.
-   * @param {Object} store - Store32 instance
-   * @param {Uint32Array} bitboard
-   * @param {Object} edgeMasks
-   * @param {number} bitShift
-   * @returns {{leftConstraint: Uint32Array, rightConstraint: Uint32Array}}
+   * Calculates left and right neighbor constraints for erosion operation.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance
+   * @param {Uint32Array} bitboard - Input bitboard
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration
+   * @param {number} bitShift - Bit shift amount (usually bitsPerCell)
+   * @returns {ConstraintPair} Left and right neighbor constraints
    */
   static computeHorizontalErodeConstraints (
     store,
@@ -238,10 +313,18 @@ export class Store32Morphology {
 
   /**
    * Apply horizontal erosion for 1-bit Store32.
-   * @param {Object} store - Store32 instance
-   * @param {Uint32Array} bitboard
-   * @param {Object} edgeMasks
-   * @returns {Uint32Array}
+   * Removes cells that lack horizontal neighbors using shift-based constraints.
+   *
+   * Algorithm:
+   * 1. If no edge masks, return unmodified bitboard
+   * 2. Compute left and right neighbor constraints
+   * 3. AND bitboard with both constraints to keep only cells with both neighbors
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance
+   * @param {Uint32Array} bitboard - Input 1-bit bitboard
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
+   * @returns {Uint32Array} Eroded bitboard
    */
   static erodeHorizontalShift (store, bitboard, edgeMasks) {
     if (!edgeMasks) return bitboard
@@ -260,12 +343,17 @@ export class Store32Morphology {
 
   /**
    * Compute vertical erosion constraints for Store32.
-   * @param {Object} store - Store32 instance
-   * @param {Uint32Array} bitboard
-   * @param {number} gridWidth
-   * @param {Object} edgeMasks
-   * @param {number} bitShift
-   * @returns {{upShifted: Uint32Array, downShifted: Uint32Array}}
+   * Calculates up and down neighbor constraints for vertical erosion.
+   *
+   * Algorithm: Delegates to store helpers for constraint calculation at specific shifts.
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance
+   * @param {Uint32Array} bitboard - Input bitboard
+   * @param {number} gridWidth - Width in cells (for shift calculation)
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
+   * @param {number} bitShift - Bit shift amount (gridWidth * bitsPerCell)
+   * @returns {VerticalConstraints} Up and down neighbor constraints
    */
   static computeVerticalErodeConstraints (
     store,
@@ -291,11 +379,20 @@ export class Store32Morphology {
 
   /**
    * Apply vertical erosion for 1-bit Store32.
-   * @param {Object} store - Store32 instance
-   * @param {Uint32Array} bitboard
-   * @param {number} gridWidth
-   * @param {Object} edgeMasks
-   * @returns {Uint32Array}
+   * Removes cells that lack vertical neighbors using shift-based constraints.
+   *
+   * Algorithm:
+   * 1. Calculate vertical bit shift (gridWidth * bitsPerCell)
+   * 2. Compute up and down neighbor constraints
+   * 3. AND bitboard with both constraints to keep only cells with both neighbors
+   * 4. Apply full-bits mask to each word
+   *
+   * @static
+   * @param {Store32Instance} store - Store32 instance
+   * @param {Uint32Array} bitboard - Input 1-bit bitboard
+   * @param {number} gridWidth - Width in cells (for neighbor offset)
+   * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
+   * @returns {Uint32Array} Eroded bitboard
    */
   static erodeVerticalShift (store, bitboard, gridWidth, edgeMasks) {
     const bitShift = store._calculateVerticalBitShift(gridWidth)
