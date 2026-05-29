@@ -1,15 +1,17 @@
 /**
- * @typedef {import('./types/shared.types.js').ValueMap} ValueMap
- * @typedef {import('./types/config.types.js').ValueValidator} ValueValidator
- * @typedef {import('./types/callbacks.types.js').ValueChangeCallback} ValueChangeCallback
- * @typedef {import('./types/config.types.js').MapValueStrategyOptions} MapValueStrategyOptions
- * @typedef {import('./types/config.types.js').MapEditStrategyOptions} MapEditStrategyOptions
+ * @typedef {import('./types/shared.types.ts').ValueMap} ValueMap
+ * @typedef {import('./types/config.types.ts').ValueValidator} ValueValidator
+ * @typedef {import('./types/config.types.ts').MapValueStrategyOptions} MapValueStrategyOptions
+ * @typedef {import('./types/config.types.ts').MapEditStrategyOptions} MapEditStrategyOptions
+ * @typedef {import('./types/callbacks.types.ts').ValueChangeCallback} ValueChangeCallback
+ * @typedef {import('./types/callbacks.types.ts').MapSelectCallback} MapSelectCallback
+ * @typedef {import('./types/domain.types.ts').MapObject} MapObject
  */
 
 /**
  * Safely invoke a callback if it is a function.
  * @private
- * @param {Function} callback - Callback to invoke.
+ * @param {Function|null|undefined} callback - Callback to invoke.
  * @param {*} arg - Argument to pass to the callback.
  * @param {string} description - Description used for logging.
  */
@@ -31,11 +33,12 @@ function _safeInvokeCallback (callback, arg, description) {
  *
  * @class MapValueStrategy
  * @description Provides generic value selection with optional validation and callbacks.
+ * This class serves as a base for terrain, water, and other value-based selection strategies.
  */
 export class MapValueStrategy {
   /**
    * Initialize map value strategy.
-   * @param {MapValueStrategyOptions} [options={}] - Configuration options.
+   * @param {MapValueStrategyOptions} [options={}] - Configuration options with valueMap, defaultValue, onValueChange, and validator.
    */
   constructor (options = {}) {
     const {
@@ -63,7 +66,7 @@ export class MapValueStrategy {
 
   /**
    * Get all available value identifiers.
-   * @returns {Array<string>} Array of value keys.
+   * @returns {Array<string>} Array of value keys from the value map.
    */
   getValues () {
     return Object.keys(this.valueMap)
@@ -71,8 +74,10 @@ export class MapValueStrategy {
 
   /**
    * Get display name for a value.
-   * @param {*} value - Value identifier.
-   * @returns {string} Display name or original value.
+   * Returns the mapped display name or the original value if not in map.
+   *
+   * @param {*} value - Value identifier to get display name for.
+   * @returns {string} Display name or string representation of original value.
    */
   getDisplayName (value) {
     return this.valueMap[value] || value
@@ -80,8 +85,10 @@ export class MapValueStrategy {
 
   /**
    * Select a value with validation and change notification.
+   * If a validator is provided, the value must pass validation.
+   *
    * @param {*} value - Value to select.
-   * @returns {boolean} True if value was selected successfully.
+   * @returns {boolean} True if value was selected successfully, false if validation failed.
    */
   selectValue (value) {
     if (!this._isValidValue(value)) {
@@ -94,9 +101,11 @@ export class MapValueStrategy {
 
   /**
    * Validate a value for selection.
+   * Uses custom validator if provided, otherwise checks if value exists in valueMap.
+   *
    * @private
    * @param {*} value - Value to validate.
-   * @returns {boolean} True if value is valid.
+   * @returns {boolean} True if value is valid for selection.
    */
   _isValidValue (value) {
     if (typeof this.validator === 'function') {
@@ -108,6 +117,8 @@ export class MapValueStrategy {
 
   /**
    * Update the current selected value and notify listeners.
+   * Safely invokes the onValueChange callback with error handling.
+   *
    * @private
    * @param {*} value - Value to set as current.
    */
@@ -130,15 +141,21 @@ export class TerrainStrategy extends MapValueStrategy {
    * Initialize terrain strategy.
    * @param {Object} [options={}] - Configuration options.
    * @param {Array<string>} [options.terrainTypes=[]] - Available terrain identifiers.
-   * @param {Object} [options.valueMap={}] - Inherited from MapValueStrategy.
+   * @param {ValueMap} [options.valueMap] - Inherited from MapValueStrategy.
    * @param {ValueValidator|null} [options.validator] - Validator: (terrain, mapSize?) => boolean.
    * @param {ValueChangeCallback} [options.onValueChange] - Inherited from MapValueStrategy.
+   * @param {*} [options.defaultValue] - Default selected value.
    */
   constructor (options = {}) {
-    super(options)
+    const { terrainTypes = [], valueMap = {}, ...rest } = options
+
+    super({
+      valueMap: /** @type {ValueMap} */ (valueMap),
+      ...rest
+    })
 
     /** @type {Array<string>} */
-    this.terrainTypes = options.terrainTypes || []
+    this.terrainTypes = terrainTypes
   }
 }
 
@@ -155,15 +172,21 @@ export class WaterStrategy extends MapValueStrategy {
    * Initialize water strategy.
    * @param {Object} [options={}] - Configuration options.
    * @param {Array<string>} [options.waterTypes=[]] - Available water type identifiers.
-   * @param {Object} [options.valueMap={}] - Inherited from MapValueStrategy.
+   * @param {ValueMap} [options.valueMap] - Inherited from MapValueStrategy.
    * @param {ValueValidator|null} [options.validator] - Inherited from MapValueStrategy.
    * @param {ValueChangeCallback} [options.onValueChange] - Inherited from MapValueStrategy.
+   * @param {*} [options.defaultValue] - Default selected value.
    */
   constructor (options = {}) {
-    super(options)
+    const { waterTypes = [], valueMap = {}, ...rest } = options
+
+    super({
+      valueMap: /** @type {ValueMap} */ (valueMap),
+      ...rest
+    })
 
     /** @type {Array<string>} */
-    this.waterTypes = options.waterTypes || []
+    this.waterTypes = waterTypes
   }
 
   /**
@@ -190,7 +213,7 @@ export class MapEditStrategy {
   constructor (options = {}) {
     const { maps = [], onMapSelect = () => {} } = options
 
-    /** @type {Array<Object>} */
+    /** @type {Array<MapObject>} */
     this.maps = maps
 
     /** @type {MapSelectCallback} */
@@ -199,7 +222,7 @@ export class MapEditStrategy {
 
   /**
    * Get all maps that can be edited.
-   * @returns {Array<Object>} Maps with edit permission.
+   * @returns {Array<MapObject>} Maps with edit permission.
    */
   getEditableMaps () {
     return this.maps.filter(map => this._canEdit(map))
@@ -208,7 +231,7 @@ export class MapEditStrategy {
   /**
    * Find map by name.
    * @param {string} name - Map name to find.
-   * @returns {Object|undefined} Map if found.
+   * @returns {MapObject|undefined} Map if found.
    */
   getMapByName (name) {
     return this._findMapByName(name)
@@ -234,7 +257,7 @@ export class MapEditStrategy {
    * Find a map by its name.
    * @private
    * @param {string} name - Map name.
-   * @returns {Object|undefined} Map if found.
+   * @returns {MapObject|undefined} Map if found.
    */
   _findMapByName (name) {
     return this.maps.find(map => map?.name === name)
@@ -243,7 +266,7 @@ export class MapEditStrategy {
   /**
    * Check if map has edit permission.
    * @private
-   * @param {Object} map - Map to check.
+   * @param {MapObject|undefined} map - Map to check.
    * @returns {boolean} True if map is editable.
    */
   _canEdit (map) {
@@ -253,8 +276,13 @@ export class MapEditStrategy {
 
 /**
  * Factory function to create a terrain strategy with predefined types.
+ * Creates a terrain strategy with a valueMap derived from terrain identifiers.
+ *
  * @param {Array<string>} terrainTypes - Available terrain identifiers.
  * @param {Object} [options={}] - Additional configuration options.
+ * @param {ValueValidator|null} [options.validator] - Custom validator function.
+ * @param {ValueChangeCallback} [options.onValueChange] - Change notification callback.
+ * @param {*} [options.defaultValue] - Default selected value.
  * @returns {TerrainStrategy} New terrain strategy instance.
  */
 export function createTerrainStrategy (terrainTypes, options = {}) {
@@ -272,8 +300,13 @@ export function createTerrainStrategy (terrainTypes, options = {}) {
 
 /**
  * Factory function to create a water strategy with predefined types.
+ * Creates a water strategy with a valueMap derived from water type identifiers.
+ *
  * @param {Array<string>} waterTypes - Available water type identifiers.
  * @param {Object} [options={}] - Additional configuration options.
+ * @param {ValueValidator|null} [options.validator] - Custom validator function.
+ * @param {ValueChangeCallback} [options.onValueChange] - Change notification callback.
+ * @param {*} [options.defaultValue] - Default selected value.
  * @returns {WaterStrategy} New water strategy instance.
  */
 export function createWaterStrategy (waterTypes, options = {}) {
@@ -291,8 +324,11 @@ export function createWaterStrategy (waterTypes, options = {}) {
 
 /**
  * Factory function to create a map edit strategy.
- * @param {Array<Object>} maps - Map objects to manage.
+ * Creates a map edit strategy instance for managing map editing and selection.
+ *
+ * @param {Array<MapObject>} maps - Map objects to manage.
  * @param {Object} [options={}] - Additional configuration options.
+ * @param {MapSelectCallback} [options.onMapSelect] - Map selection callback.
  * @returns {MapEditStrategy} New map edit strategy instance.
  */
 export function createMapEditStrategy (maps, options = {}) {

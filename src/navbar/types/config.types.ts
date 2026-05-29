@@ -5,13 +5,9 @@
 
 import type {
   StringMap,
-  Factory,
-  Validator,
-  ValueChangeCallback,
-  ErrorHandler,
-  Nullable
+  ValueMap
 } from './shared.types.js';
-import type { VoidCallback, BeforeCallback, AfterCallback } from './callbacks.types.js';
+import type { VoidCallback, BeforeCallback, AfterCallback, ValueChangeCallback } from './callbacks.types.js';
 import type { MapObject } from './domain.types.js';
 
 // ============================================================================
@@ -71,14 +67,8 @@ export interface MapSelectionOptions extends MapProviderOptions {
 // Value Strategy Configuration
 // ============================================================================
 
-/** Value mapping for strategies */
-export type ValueMap = StringMap<string>;
-
 /** Value validator for strategies */
 export type ValueValidator = (value: any) => boolean;
-
-/** Value change callback */
-export type ValueChangeCallback = (value: any) => void;
 
 /** Map value strategy options */
 export interface MapValueStrategyOptions {
@@ -96,6 +86,12 @@ export interface TerrainStrategyOptions extends MapValueStrategyOptions {
 /** Water strategy options */
 export interface WaterStrategyOptions extends MapValueStrategyOptions {
   readonly waterTypes?: string[];
+}
+
+/** Map edit strategy options */
+export interface MapEditStrategyOptions {
+  readonly maps?: MapObject[];
+  readonly onMapSelect?: (map: MapObject) => void;
 }
 
 // ============================================================================

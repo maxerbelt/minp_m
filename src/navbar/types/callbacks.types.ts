@@ -3,8 +3,6 @@
  * Used throughout navbar components for event handling and UI interactions
  */
 
-import type { Nullable } from './shared.types.js';
-
 // ============================================================================
 // Generic Callbacks
 // ============================================================================
@@ -39,6 +37,9 @@ export type StringChangeCallback = (value: string) => void;
 
 /** Generic value change handler */
 export type ValueChangeCallback<T = any> = (value: T) => void;
+
+/** Map selection callback */
+export type MapSelectCallback = (map: any) => void;
 
 // ============================================================================
 // Component Loader Callbacks

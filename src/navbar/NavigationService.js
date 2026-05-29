@@ -2,9 +2,9 @@ import { storeShips } from '../waters/saveCustomMap.js'
 import { trackTab, trackClick } from './gtag.js'
 
 /**
- * @typedef {import('./types/config.types.js').NavigationModeConfig} NavigationModeConfig
- * @typedef {import('./types/domain.types.js').MapProvider} MapProvider
- * @typedef {import('./types/domain.types.js').MapObject} MapObject
+ * @typedef {import('./types/config.types.ts').NavigationModeConfig} NavigationModeConfig
+ * @typedef {import('./types/domain.types.ts').MapProvider} MapProvider
+ * @typedef {import('./types/domain.types.ts').MapObject} MapObject
  */
 
 /**
@@ -37,14 +37,19 @@ import { trackTab, trackClick } from './gtag.js'
 /**
  * NavigationService - Centralized game mode switching and page navigation.
  * Manages navigation between different game modes with state preservation.
+ * Handles map import, external navigation, and analytics tracking.
  *
  * @class NavigationService
- * @description Handles mode switching, file import, and external navigation.
+ * @description Core service for navigating between game modes (Seek, Hide, Build, List, Rules, Print)
+ * with automatic state preservation and URL parameter management.
  */
 export class NavigationService {
   /**
    * Predefined game mode configurations.
+   * Maps mode identifiers to page names and tracking labels.
+   *
    * @static
+   * @readonly
    * @type {Object<string, NavigationModeConfig>}
    */
   static MODES = {
@@ -58,7 +63,10 @@ export class NavigationService {
 
   /**
    * Mapping of page names to navigation modes.
+   * Used to look up mode configuration from page identifiers.
+   *
    * @static
+   * @readonly
    * @type {Record<string, NavigationModeConfig>}
    */
   static MODE_BY_PAGE = {
@@ -72,6 +80,8 @@ export class NavigationService {
 
   /**
    * Initialize navigation service.
+   * Sets up dependencies for state management and map access.
+   *
    * @param {Object} paramManager - Parameter manager for state tracking.
    * @param {MapProviderInterface} mapProvider - Map provider for current map access.
    */
@@ -85,57 +95,69 @@ export class NavigationService {
 
   /**
    * Switch to seek/hunt mode.
-   * @param {string|boolean} [huntMode] - Whether in hunt mode.
+   * Preserves current game state and navigates to seek battle page.
+   *
+   * @param {string|boolean} [huntMode=''] - Whether in hunt mode or mode identifier.
    * @returns {void}
    */
-  switchToSeek (huntMode) {
+  switchToSeek (huntMode = '') {
     this._switchToMode(NavigationService.MODES.SEEK, huntMode)
   }
 
   /**
    * Switch to hide/play mode.
-   * @param {string|boolean} [huntMode] - Whether in hunt mode.
+   * Preserves current game state and navigates to hide battle page.
+   *
+   * @param {string|boolean} [huntMode=''] - Whether in hunt mode or mode identifier.
    * @returns {void}
    */
-  switchToHide (huntMode) {
+  switchToHide (huntMode = '') {
     this._switchToMode(NavigationService.MODES.HIDE, huntMode)
   }
 
   /**
    * Switch to build/edit mode.
-   * @param {string|boolean} [huntMode] - Whether in hunt mode.
+   * Preserves current game state and navigates to build battle page.
+   *
+   * @param {string|boolean} [huntMode=''] - Whether in hunt mode or mode identifier.
    * @returns {void}
    */
-  switchToBuild (huntMode) {
+  switchToBuild (huntMode = '') {
     this._switchToMode(NavigationService.MODES.BUILD, huntMode)
   }
 
   /**
    * Switch to map list mode.
-   * @param {string|boolean} [huntMode] - Whether in hunt mode.
+   * Preserves current game state and navigates to map list page.
+   *
+   * @param {string|boolean} [huntMode=''] - Whether in hunt mode or mode identifier.
    * @returns {void}
    */
-  switchToList (huntMode) {
+  switchToList (huntMode = '') {
     this._switchToMode(NavigationService.MODES.LIST, huntMode)
   }
 
   /**
    * Switch to rules/help mode.
-   * @param {string|boolean} [huntMode] - Whether in hunt mode.
+   * Navigates to rules documentation page.
+   *
+   * @param {string|boolean} [huntMode=''] - Whether in hunt mode or mode identifier.
    * @returns {void}
    */
-  switchToRules (huntMode) {
+  switchToRules (huntMode = '') {
     this._switchToMode(NavigationService.MODES.RULES, huntMode)
   }
 
   /**
    * Switch to mode by target page name.
-   * @param {string} target - Target page ('index', 'battleseek', 'battlebuild', 'maplist', 'rules', 'print').
-   * @param {string|boolean} [huntMode] - Whether in hunt mode or mode identifier.
-   * @param {string|null} [mapName] - Optional specific map name.
+   * Resolves page name to mode configuration and performs navigation.
+   *
+   * @param {string} target - Target page identifier: 'index', 'battleseek', 'battlebuild', 'maplist', 'rules', or 'print'.
+   * @param {string|boolean} [huntMode=''] - Whether in hunt mode or mode identifier.
+   * @param {string|null} [mapName=null] - Optional specific map name for navigation.
    * @returns {void}
    */
-  switchToMode (target, huntMode, mapName) {
+  switchToMode (target, huntMode = '', mapName = null) {
     const modeConfig = NavigationService.MODE_BY_PAGE[target]
     if (modeConfig) {
       this._switchToMode(modeConfig, huntMode, mapName)
@@ -144,8 +166,10 @@ export class NavigationService {
 
   /**
    * Handle importing a map from JSON file.
-   * Prompts user to select JSON file, validates format, and saves map.
-   * @param {*} SavedCustomMapClass - Constructor for custom map class.
+   * Prompts user to select JSON file, validates format, saves map to storage,
+   * and provides user feedback on success or error.
+   *
+   * @param {*} SavedCustomMapClass - Constructor for custom map class for validation.
    * @param {MapProviderInterface} mapProvider - Map provider for storing imported map.
    * @returns {void}
    */
@@ -162,9 +186,11 @@ export class NavigationService {
   }
 
   /**
-   * Navigate to external URL with optional tracking.
-   * @param {string} url - URL to navigate to.
-   * @param {string} [trackingLabel] - Label for analytics tracking.
+   * Navigate to external URL with optional analytics tracking.
+   * Updates browser location and optionally logs navigation event.
+   *
+   * @param {string} url - Full URL to navigate to.
+   * @param {string} [trackingLabel] - Optional label for analytics tracking.
    * @returns {void}
    */
   navigateExternal (url, trackingLabel) {
@@ -177,6 +203,8 @@ export class NavigationService {
 
   /**
    * Open browser print dialog.
+   * Logs print action to analytics before opening dialog.
+   *
    * @returns {void}
    */
   printPage () {
@@ -186,6 +214,8 @@ export class NavigationService {
 
   /**
    * Navigate to project blog.
+   * External link to blog post about the game.
+   *
    * @returns {void}
    */
   navigateToBlog () {
@@ -197,6 +227,8 @@ export class NavigationService {
 
   /**
    * Navigate to project source code repository.
+   * External link to GitHub repository.
+   *
    * @returns {void}
    */
   navigateToSource () {
@@ -208,10 +240,13 @@ export class NavigationService {
 
   /**
    * Switch to game mode with state preservation.
+   * Builds navigation parameters from current map, stores state via storeShips,
+   * and updates browser location to new page.
+   *
    * @private
-   * @param {NavigationModeConfig} modeConfig - Mode configuration.
-   * @param {string|boolean} huntMode - Hunt mode flag or identifier.
-   * @param {string|null} [mapName] - Optional specific map name.
+   * @param {NavigationModeConfig} modeConfig - Mode configuration with page and tracking info.
+   * @param {string|boolean} huntMode - Hunt mode flag or mode identifier string.
+   * @param {string|null} [mapName=null] - Optional specific map name for navigation.
    * @returns {void}
    */
   _switchToMode (modeConfig, huntMode, mapName = null) {
@@ -224,9 +259,12 @@ export class NavigationService {
 
   /**
    * Build URL parameters for mode switch.
+   * Extracts map metadata and constructs URLSearchParams for navigation.
+   * Includes map dimensions, terrain type, and map name when available.
+   *
    * @private
-   * @param {string|null} [mapName] - Optional map name.
-   * @returns {URLSearchParams} Navigation parameters.
+   * @param {string|null} [mapName=null] - Optional map name to override current map.
+   * @returns {URLSearchParams} Navigation parameters ready for URL.
    */
   _buildModeParams (mapName = null) {
     const params = new URLSearchParams()
@@ -244,8 +282,10 @@ export class NavigationService {
 
   /**
    * Return the current map from the provider.
+   * Safely accesses the map provider's current map method.
+   *
    * @private
-   * @returns {MapWithTerrain|null} Current map or null.
+   * @returns {MapWithTerrain|null} Current map object or null if none selected.
    */
   _getCurrentMap () {
     return this.mapProvider?.getCurrentMap?.() || null
@@ -253,9 +293,11 @@ export class NavigationService {
 
   /**
    * Append width and height parameters for a map.
+   * Sets 'height' and 'width' URL parameters from map row/col properties.
+   *
    * @private
-   * @param {URLSearchParams} params - URL parameters.
-   * @param {MapWithTerrain} map - Map object.
+   * @param {URLSearchParams} params - URL parameters to modify.
+   * @param {MapWithTerrain} map - Map object with dimensions.
    * @returns {void}
    */
   _appendMapDimensions (params, map) {
@@ -267,9 +309,12 @@ export class NavigationService {
 
   /**
    * Append terrain parameter for a map.
+   * Extracts terrain identifier from map terrain property.
+   * Handles both string and object terrain configurations.
+   *
    * @private
-   * @param {URLSearchParams} params - URL parameters.
-   * @param {MapWithTerrain} map - Map object.
+   * @param {URLSearchParams} params - URL parameters to modify.
+   * @param {MapWithTerrain} map - Map object with terrain info.
    * @returns {void}
    */
   _appendTerrainParam (params, map) {
@@ -288,9 +333,11 @@ export class NavigationService {
 
   /**
    * Append map name parameter when available.
+   * Sets 'mapName' URL parameter if provided or from current map.
+   *
    * @private
-   * @param {URLSearchParams} params - URL parameters.
-   * @param {string|null} [mapName] - Optional map name.
+   * @param {URLSearchParams} params - URL parameters to modify.
+   * @param {string|null} [mapName=null] - Optional map name to append.
    * @returns {void}
    */
   _appendMapName (params, mapName) {
@@ -301,8 +348,11 @@ export class NavigationService {
 
   /**
    * Store game state and navigate to new page.
+   * Calls storeShips to persist game state and updates browser location.
+   * Handles errors with console logging.
+   *
    * @private
-   * @param {URLSearchParams} params - URL parameters.
+   * @param {URLSearchParams} params - URL parameters for navigation.
    * @param {string|boolean} huntMode - Hunt mode flag or mode identifier.
    * @param {string} targetPage - Target page identifier.
    * @returns {void}
@@ -311,7 +361,7 @@ export class NavigationService {
     try {
       const map = this._getCurrentMap()
       const huntModeStr = String(huntMode)
-      const url = storeShips(params, huntModeStr, targetPage, map)
+      const url = storeShips(params, huntModeStr, targetPage, map || {})
       if (typeof url === 'string') {
         globalThis.location.href = url
       }
@@ -322,6 +372,8 @@ export class NavigationService {
 
   /**
    * Create file input element for JSON import.
+   * Constructs a hidden input element configured for JSON file selection.
+   *
    * @private
    * @returns {HTMLInputElement} Configured file input element.
    */
@@ -334,10 +386,14 @@ export class NavigationService {
 
   /**
    * Handle map file import with validation and storage.
+   * Reads file, parses JSON, validates as map, confirms overwrite if duplicate,
+   * saves to local storage, and shows user feedback.
+   * Catches and displays any errors encountered.
+   *
    * @private
-   * @param {Event} event - File input change event.
-   * @param {*} SavedCustomMapClass - Custom map constructor class.
-   * @param {MapProviderInterface} mapProvider - Map provider for storage.
+   * @param {Event} event - File input change event with file data.
+   * @param {*} SavedCustomMapClass - Custom map constructor class for validation.
+   * @param {MapProviderInterface} mapProvider - Map provider for storage access.
    * @returns {Promise<void>}
    */
   async _handleImportFile (event, SavedCustomMapClass, mapProvider) {
@@ -356,9 +412,11 @@ export class NavigationService {
 
   /**
    * Get the selected file from a file change event.
+   * Safely extracts the first file from the input element.
+   *
    * @private
    * @param {Event} event - File input change event.
-   * @returns {File|null} Selected file or null.
+   * @returns {File|null} Selected file or null if none found.
    */
   _getSelectedFile (event) {
     const target = /** @type {HTMLInputElement} */ (event.target)
@@ -367,10 +425,14 @@ export class NavigationService {
 
   /**
    * Parse and validate JSON file contents as map object.
+   * Reads file text, parses JSON, and constructs map instance.
+   * Throws error if file format is invalid.
+   *
    * @private
    * @param {File} file - JSON file to parse.
-   * @param {*} SavedCustomMapClass - Map class constructor.
-   * @returns {Promise<MapWithTerrain|null>} Parsed map or null if invalid.
+   * @param {*} SavedCustomMapClass - Map class constructor for instantiation.
+   * @returns {Promise<MapWithTerrain|null>} Parsed map instance or null if invalid.
+   * @throws {Error} If file parsing or JSON validation fails.
    */
   async _parseMapFromFile (file, SavedCustomMapClass) {
     try {
@@ -385,9 +447,12 @@ export class NavigationService {
 
   /**
    * Validate map uniqueness and save to storage with conflict resolution.
+   * Checks for duplicate map titles, prompts for overwrite confirmation if needed,
+   * saves map to local storage, and shows success feedback.
+   *
    * @private
    * @param {MapWithTerrain} map - Map object to validate and save.
-   * @param {MapProviderInterface} mapProvider - Map provider for storage access.
+   * @param {MapProviderInterface} mapProvider - Map provider for storage access and duplication check.
    * @returns {Promise<void>}
    */
   async _validateAndSaveMap (map, mapProvider) {
@@ -411,9 +476,11 @@ export class NavigationService {
 
   /**
    * Confirm whether to overwrite an existing map.
+   * Prompts user with confirmation dialog for duplicate map titles.
+   *
    * @private
-   * @param {string} title - Title of the map.
-   * @returns {boolean} True if user confirms overwrite.
+   * @param {string} title - Title of the map being imported.
+   * @returns {boolean} True if user confirms overwrite, false otherwise.
    */
   _confirmOverwrite (title) {
     return confirm(`A map with title "${title}" already exists. Overwrite it?`)
@@ -421,6 +488,8 @@ export class NavigationService {
 
   /**
    * Display import error to user.
+   * Shows alert dialog with error message from import process.
+   *
    * @private
    * @param {Error} error - Error object from import process.
    * @returns {void}
