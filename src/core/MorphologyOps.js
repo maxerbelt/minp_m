@@ -1,16 +1,89 @@
 /**
- * Pure morphology operations and bit manipulation utilities
- * No side effects - all functions return new values
+ * Pure morphology operations and bit manipulation utilities.
+ *
+ * Provides efficient bitboard-based morphological operations (dilate, erode, cross)
+ * and bit manipulation helpers for grid-based games. All functions are pure:
+ * they return new values without side effects on inputs.
+ *
+ * Supports multiple bitboard representations: single number/BigInt, arrays, and
+ * typed arrays (Uint32Array, Uint16Array, Uint8Array, Int32Array). Handles complex
+ * mask objects with optional clone, store, and indexer helpers.
+ *
+ * @module MorphologyOps
+ * @example
+ * // Check if dilate would change a mask
+ * const willChange = checkMorphologyState(mask, 'dilate');
+ *
+ * @example
+ * // Get what cells would be added/removed
+ * const {added, removed} = getMorphologyDifferences(occupancy, 'dilate');
  */
 
 /**
  * @typedef {bigint|number|Array<number>|Uint32Array|Uint16Array|Uint8Array|Int32Array} Bitboard
+ * Flexible bitboard representation: scalar (number/BigInt) or array of words (32-bit or 8-bit).
+ * Enables efficient grid representation for up to thousands of cells.
+ */
+
+/**
  * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
- * @typedef {{ bits: Bitboard, width:number, height:number, depth?:number, store?:StoreLike, indexer?:any, clone?:any }} MaskLike
- * @typedef {{ bits: Bitboard, width:number, height:number, store?:StoreLike, indexer?:any, clone?:any, at?:Function, set?:Function }} PackedLike
- * @typedef {{ newWords: Function, clone: Function, bitSub: Function, setIdx?: Function, value: Function, words?:number, set?:Function, getIdx?:Function }} StoreLike
- * @typedef {{ bits: Bitboard, clone?:any, cloneBits?:any, store?:StoreLike }} CloneSource
- * @typedef {{ bits: Bitboard, clone?:any, store?:StoreLike, indexer?:any }} MorphologyMask
+ * Morphological operation type: dilate (expand), erode (shrink), or cross (both combined).
+ */
+
+/**
+ * @typedef {Object} MaskLike
+ * Mask object compatible with morphology operations.
+ * @property {Bitboard} bits - Bitboard state of the mask
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {number} [depth] - Optional depth/color layers (for multi-bit masks)
+ * @property {StoreLike} [store] - Optional store for advanced bitboard operations
+ * @property {*} [indexer] - Optional grid indexer (rect, hex, etc.)
+ * @property {*} [clone] - Optional pre-allocated clone for mutation
+ */
+
+/**
+ * @typedef {Object} PackedLike
+ * Packed grid object with per-cell access methods.
+ * @property {Bitboard} bits - Bitboard state
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {StoreLike} [store] - Optional store for advanced operations
+ * @property {*} [indexer] - Optional grid indexer
+ * @property {*} [clone] - Optional pre-allocated clone
+ * @property {Function} [at] - Function(x, y) to get cell value
+ * @property {Function} [set] - Function(x, y, value) to set cell
+ */
+
+/**
+ * @typedef {Object} StoreLike
+ * Store object providing bitboard manipulation operations.
+ * @property {Function} newWords - Creates new word array for this store type
+ * @property {Function} clone - Clones a bitboard value
+ * @property {Function} bitSub - Bitwise subtraction (remove bits)
+ * @property {Function} [setIdx] - Function(bits, index, value) to set at index
+ * @property {Function} value - Gets value from store
+ * @property {number} [words] - Word count for this store's bitboards
+ * @property {Function} [set] - Sets value in store
+ * @property {Function} [getIdx] - Function(bits, index) to get at index
+ */
+
+/**
+ * @typedef {Object} CloneSource
+ * Object that may provide cloning helpers for bitboards.
+ * @property {Bitboard} bits - Bitboard to clone
+ * @property {*} [clone] - Optional pre-cloned value
+ * @property {*} [cloneBits] - Optional pre-cloned bitboard
+ * @property {StoreLike} [store] - Optional store with clone method
+ */
+
+/**
+ * @typedef {Object} MorphologyMask
+ * Mask object for morphology operations with bits and clone.
+ * @property {Bitboard} bits - Current bitboard state
+ * @property {*} [clone] - Optional pre-allocated clone for mutation
+ * @property {StoreLike} [store] - Optional store for operations
+ * @property {*} [indexer] - Optional grid indexer
  */
 
 // ============================================================================
@@ -18,15 +91,23 @@
 // ============================================================================
 
 /**
- * Compare two bitboards for equality
- * Handles primitives (BigInt, number), arrays, typed arrays, and objects
- * @param {Bitboard} a
- * @param {Bitboard} b
- * @returns {boolean}
+ * Compare two bitboards for equality.
+ *
+ * Returns true if bitboards differ, false if identical. Handles primitives (BigInt, number),
+ * arrays, typed arrays, and objects with array-like interfaces. Uses reference equality first,
+ * then element-wise comparison for array-like structures.
+ *
+ * @param {Bitboard} a - First bitboard to compare
+ * @param {Bitboard} b - Second bitboard to compare
+ * @returns {boolean} True if bitboards differ, false if identical
+ * @example
+ * bitsChanged(123n, 123n); // false (same value)
+ * bitsChanged([1, 2], [1, 2]); // false (same contents)
+ * bitsChanged(123n, 124n); // true (different values)
  */
 export function bitsChanged (a, b) {
   if (a === b) return false
-  if (typeof a !== 'object' || a === null) return true
+  if (a == null || typeof a !== 'object') return true
   const aWithLength = /** @type {{length?: number}} */ (a)
   if (
     Array.isArray(a) ||
@@ -45,13 +126,19 @@ export function bitsChanged (a, b) {
 }
 
 /**
- * Helper to make a safe, detached copy of bits for comparison or mutation.
- * Tries known clone helpers on the mask/store, otherwise falls back to
- * sensible shallow-copy strategies for arrays, typed arrays, BigInts and
- * numbers.
+ * Clone a bitboard value safely for mutation or comparison.
+ *
+ * Creates a detached copy of bitboard bits. Tries to use pre-computed clone helpers on the
+ * mask or store first, then falls back to standard cloning strategies: shallow copy for arrays,
+ * typed arrays, and identity for primitives (number, BigInt).
+ *
+ * @private
  * @param {Bitboard} bits - Bits value to clone
- * @param {CloneSource|MaskLike|PackedLike} [mask] - Optional mask/packed instance that may provide clone helpers
+ * @param {CloneSource|MaskLike|PackedLike} [mask] - Optional mask/packed instance with clone helpers
  * @returns {Bitboard} Detached copy of `bits`
+ * @example
+ * const cloned = cloneBitsValue([1, 2, 3], packed); // Returns new array [1, 2, 3]
+ * const cloned2 = cloneBitsValue(123n, mask); // Returns same 123n (primitive)
  */
 function cloneBitsValue (bits, mask) {
   if (mask && 'cloneBits' in mask && mask.cloneBits !== undefined) {
@@ -79,10 +166,18 @@ function cloneBitsValue (bits, mask) {
 }
 
 /**
- * Check if a bitboard is completely full
- * @param {Bitboard} bits
- * @param {Bitboard|number} fullBits
- * @returns {boolean}
+ * Check if a bitboard matches the full state (all cells occupied).
+ *
+ * Compares a bitboard against a full reference bitboard using reference equality or element-wise
+ * comparison depending on the bitboard type (scalar vs. array-like).
+ *
+ * @param {Bitboard} bits - Bitboard to check
+ * @param {Bitboard|number} fullBits - Full bitboard reference or scalar value
+ * @returns {boolean} True if bits equals fullBits (fully occupied), false otherwise
+ * @example
+ * isBitboardFull(0xFF, 0xFF); // true (all bits set)
+ * isBitboardFull([0xFFFFFFFF], [0xFFFFFFFF]); // true (all words full)
+ * isBitboardFull([0xFF, 0x00], [0xFF, 0xFF]); // false (second word not full)
  */
 export function isBitboardFull (bits, fullBits) {
   if (typeof bits === 'bigint' || typeof bits === 'number') {
@@ -107,11 +202,18 @@ export function isBitboardFull (bits, fullBits) {
 // ============================================================================
 
 /**
- * Normalize bitboard to correct word count for a Packed of same size
- * Handles BigInt masks by splitting into words
- * @param {Bitboard} bb
- * @param {{store: StoreLike}} templatePacked
- * @returns {Bitboard}
+ * Normalize bitboard to match the word count of a template store.
+ *
+ * Converts bitboards to the correct word-array format for a given store. Handles BigInt by
+ * extracting 32-bit words, small scalars by creating a single-word array, and array/typed-array
+ * inputs by padding or trimming to match the target word count.
+ *
+ * @param {Bitboard} bb - Bitboard to normalize
+ * @param {{store: StoreLike}} templatePacked - Template with store defining target word count
+ * @returns {Bitboard} Normalized bitboard matching template store's word format
+ * @example
+ * const packed = new Packed(5, 5, 2); // 2-bit cells
+ * const normalized = normalizeBits(0x123456789ABCDEFn, packed); // BigInt split into words
  */
 export function normalizeBits (bb, templatePacked) {
   if (typeof bb === 'bigint') {
@@ -123,7 +225,7 @@ export function normalizeBits (bb, templatePacked) {
     }
     return out
   }
-  if (typeof bb !== 'object' || bb === null) {
+  if (bb == null || typeof bb !== 'object') {
     const out = templatePacked.store.newWords()
     out[0] = Number(bb)
     return out
@@ -151,11 +253,17 @@ export function normalizeBits (bb, templatePacked) {
 }
 
 /**
- * Copy per-cell occupancy from multi-bit Packed into 1-bit Packed
- * Avoids word-size/endianness normalization issues
- * @param {Bitboard|PackedLike} sourcePacked
- * @param {{store: StoreLike, indexer?:any, bits?:Bitboard}} targetPacked
- * @returns {Bitboard}
+ * Copy occupancy bits from a multi-bit grid to a 1-bit occupancy grid.
+ *
+ * Transfers occupancy information (whether cells are occupied, regardless of color) from a
+ * multi-bit grid to a 1-bit grid. Uses per-cell indexing when available to avoid word-size
+ * and endianness issues. Falls back to bitboard normalization if indexer unavailable.
+ *
+ * @param {Bitboard|PackedLike} sourcePacked - Source grid (may be multi-bit)
+ * @param {{store: StoreLike, indexer?: any, bits?: Bitboard}} targetPacked - Target 1-bit occupancy grid
+ * @returns {Bitboard} New bitboard with occupancy copied to target format
+ * @example
+ * const occupancy = copyOccupancyBitsExact(coloredGrid, occupancyGrid);
  */
 export function copyOccupancyBitsExact (sourcePacked, targetPacked) {
   let out = /** @type {any} */ (targetPacked.store.newWords())
@@ -193,10 +301,18 @@ export function copyOccupancyBitsExact (sourcePacked, targetPacked) {
 // ============================================================================
 
 /**
- * Create an occupancy grid (1-bit) from a multi-bit packed grid
- * @param {PackedLike} packed
- * @param {Function} Packed
- * @returns {any}
+ * Create a 1-bit occupancy grid from a multi-bit packed grid.
+ *
+ * Instantiates a new 1-bit Packed grid with same width/height/indexer as source, then copies
+ * occupancy data (ignoring color information). Used to create binary masks for morphology
+ * operations on colored grids.
+ *
+ * @param {PackedLike} packed - Source packed grid (may be multi-bit)
+ * @param {Function} Packed - Constructor function for Packed grid (e.g., RectPacked)
+ * @returns {any} New 1-bit Packed grid with occupancy from source
+ * @example
+ * const coloredGrid = new RectPacked(10, 10, null, null, 3); // 3-bit colors
+ * const occupancy = createOccupancyGrid(coloredGrid, RectPacked); // 1-bit occupancy
  */
 export function createOccupancyGrid (packed, Packed) {
   const Constructor = /** @type {new(...args:any[]) => any} */ (Packed)
@@ -211,14 +327,18 @@ export function createOccupancyGrid (packed, Packed) {
 // ============================================================================
 
 /**
- * Check if morphology operation would change the mask bits
- * Returns true if operation changes the bits, false if no change
+ * Check if a morphology operation would change a mask without mutation.
  *
- * Check if a morphology operation will change a mask's bits without
- * mutating the original mask.
- * @param {MorphologyMask} mask - Mask/packed object with `bits`, `clone` and optional clone helpers
- * @param {MorphologyOperation} operation - Morphology operation to test
- * @returns {boolean} True when the operation would change the bits
+ * Tests whether applying a morphology operation (dilate, erode, cross) would result in
+ * a different mask. Uses cloning to avoid mutating the original mask or its clone.
+ *
+ * @param {MorphologyMask} mask - Mask object with `bits` and `clone` properties
+ * @param {MorphologyOperation} operation - Morphology operation: 'dilate', 'erode', or 'cross'
+ * @returns {boolean} True if operation would change the bits, false if no effect
+ * @example
+ * if (checkMorphologyState(mask, 'dilate')) {
+ *   // Dilate would expand the mask
+ * }
  */
 export function checkMorphologyState (mask, operation) {
   const original = cloneBitsValue(mask.bits, mask)
@@ -231,14 +351,18 @@ export function checkMorphologyState (mask, operation) {
 }
 
 /**
- * Check if morphology operation would change occupancy grid
- * Returns true if operation changes the bits, false if no change
+ * Check if a morphology operation would change an occupancy grid without mutation.
  *
- * Check if a morphology operation will change an occupancy grid without
- * mutating the original.
- * @param {MorphologyMask} occupancy - Packed/occupancy object with `bits` and `clone`
- * @param {MorphologyOperation} operation - Morphology operation to test
- * @returns {boolean} True when the operation would change the occupancy bits
+ * Tests whether applying a morphology operation would change the occupancy bits of a grid.
+ * Uses bitwise comparison to detect any differences, making it efficient for large grids.
+ *
+ * @param {MorphologyMask} occupancy - Occupancy object with `bits` and `clone` properties
+ * @param {MorphologyOperation} operation - Morphology operation: 'dilate', 'erode', or 'cross'
+ * @returns {boolean} True if operation would change occupancy bits, false if no effect
+ * @example
+ * if (checkMorphologyChange(occupancy, 'erode')) {
+ *   // Erode would shrink the occupancy
+ * }
  */
 export function checkMorphologyChange (occupancy, operation) {
   const before = cloneBitsValue(occupancy.bits, occupancy)
@@ -251,9 +375,14 @@ export function checkMorphologyChange (occupancy, operation) {
 }
 
 /**
- * Apply a morphology operation to a clone object.
- * @param {MorphologyOperation} operation
- * @param {any} clone
+ * Apply a morphology operation to a clone object in-place.
+ *
+ * Mutates the clone's bits by calling the appropriate method based on operation type.
+ *
+ * @private
+ * @param {MorphologyOperation} operation - Operation to apply: 'dilate', 'erode', or 'cross'
+ * @param {any} clone - Clone object with dilate(), erode(), dilateCross() methods
+ * @throws {Error} If clone lacks required morphology methods
  */
 function applyOperation (operation, clone) {
   if (operation === 'dilate') clone.dilate()
@@ -262,15 +391,17 @@ function applyOperation (operation, clone) {
 }
 
 /**
- * Check if morphology operation would change a masked object
- * Uses provided comparison function
- */
-/**
- * Compute whether an operation changes a masked object using a custom comparer.
- * @param {MorphologyMask} maskObj - Mask or packed object
- * @param {MorphologyOperation} operation - Operation to apply
- * @param {(a: Bitboard, b: Bitboard) => boolean} bitsComparer - Comparison function
- * @returns {boolean} Result of `bitsComparer(original, after)`
+ * Compute whether an operation changes a masked object using a custom comparison function.
+ *
+ * Applies a morphology operation to a clone and uses the provided comparer function to
+ * determine if the bits changed. Allows custom comparison logic (e.g., bitsChanged for arrays).
+ *
+ * @param {MorphologyMask} maskObj - Mask or packed object with bits and clone
+ * @param {MorphologyOperation} operation - Operation to apply: 'dilate', 'erode', or 'cross'
+ * @param {Function} bitsComparer - Comparison function(originalBits, newBits) returning boolean
+ * @returns {boolean} Result of `bitsComparer(originalBits, resultBits)`
+ * @example
+ * const changed = computeMorphologyState(mask, 'dilate', bitsChanged);
  */
 export function computeMorphologyState (maskObj, operation, bitsComparer) {
   const original = cloneBitsValue(maskObj.bits, maskObj)
@@ -281,11 +412,19 @@ export function computeMorphologyState (maskObj, operation, bitsComparer) {
 }
 
 /**
- * Get bitmap differences (added/removed cells) from morphology operation
- * Returns {added, removed, after} where after is the modified clone
- * @param {MorphologyMask} occupancy
- * @param {MorphologyOperation} operation
- * @returns {{added:any, removed:any, after:any}}
+ * Get bitmap differences (added and removed cells) from a morphology operation.
+ *
+ * Applies a morphology operation and computes which cells were added and which were removed
+ * using bitwise subtraction. Returns the modified clone for further operations.
+ *
+ * @param {MorphologyMask} occupancy - Occupancy object with bits, clone, and store
+ * @param {MorphologyOperation} operation - Operation to apply: 'dilate', 'erode', or 'cross'
+ * @returns {{added: any, removed: any, after: any}} Object with added cells, removed cells, and modified clone
+ * @example
+ * const {added, removed, after} = getMorphologyDifferences(occ, 'dilate');
+ * // added: cells that become occupied
+ * // removed: cells that become empty
+ * // after: modified occupancy grid
  */
 export function getMorphologyDifferences (occupancy, operation) {
   const before = cloneBitsValue(occupancy.bits, occupancy)
@@ -301,10 +440,15 @@ export function getMorphologyDifferences (occupancy, operation) {
 }
 
 /**
- * Small helper to test bit equality using existing helpers.
- * @param {Bitboard} a
- * @param {Bitboard} b
- * @returns {boolean}
+ * Test bit equality using existing helper functions.
+ *
+ * Returns true if two bitboards are equal, false if they differ.
+ * Handles all bitboard types (scalar, array, typed array).
+ *
+ * @private
+ * @param {Bitboard} a - First bitboard
+ * @param {Bitboard} b - Second bitboard
+ * @returns {boolean} True if equal, false if different
  */
 function areBitsEqual (a, b) {
   if (a === b) return true
@@ -316,12 +460,18 @@ function areBitsEqual (a, b) {
 // ============================================================================
 
 /**
- * Find a colored neighbor for a given empty cell
- * Checks cardinal directions (up, down, left, right)
- * @param {PackedLike} packed
- * @param {number} x
- * @param {number} y
- * @returns {number}
+ * Find the color of a neighboring occupied cell.
+ *
+ * Checks cardinal neighbors (up, down, left, right) for a given cell position
+ * and returns the color of the first occupied neighbor found. Returns 0 if no
+ * occupied neighbors exist. Useful for color propagation during morphology operations.
+ *
+ * @param {PackedLike} packed - Grid with at() method and width/height properties
+ * @param {number} x - Column coordinate
+ * @param {number} y - Row coordinate
+ * @returns {number} Color value of first occupied neighbor, or 0 if none found
+ * @example
+ * const color = findNeighborColor(grid, 5, 5); // Gets color from adjacent cell
  */
 export function findNeighborColor (packed, x, y) {
   for (const [nx, ny] of [
@@ -347,10 +497,18 @@ export function findNeighborColor (packed, x, y) {
 }
 
 /**
- * Color newly added cells based on adjacent occupied cells
- * Modifies packed grid in place
- * @param {PackedLike} packed
- * @param {*} addedCells
+ * Color newly added cells based on adjacent occupied cells.
+ *
+ * Iterates through newly added cells and assigns colors from neighboring occupied cells.
+ * Mutates the packed grid in-place. Used after dilation to propagate colors into expanded regions.
+ * Requires packed to have indexer.bitsToCoords(), at(), and set() methods.
+ *
+ * @param {PackedLike} packed - Grid with indexer, at(), and set() methods
+ * @param {*} addedCells - Bitboard of newly added cells to color
+ * @returns {void} Modifies packed in-place
+ * @example
+ * const {added} = getMorphologyDifferences(grid, 'dilate');
+ * colorAddedCells(grid, added); // Colors new cells from neighbors
  */
 export function colorAddedCells (packed, addedCells) {
   if (!packed.indexer?.bitsToCoords || !packed.at || !packed.set) return
@@ -366,10 +524,18 @@ export function colorAddedCells (packed, addedCells) {
 }
 
 /**
- * Remove colors from cells that are no longer occupied
- * Modifies packed grid in place
- * @param {PackedLike} packed
- * @param {*} removedCells
+ * Clear colors from cells that are no longer occupied.
+ *
+ * Iterates through removed cells and sets their values to 0 (empty). Mutates the packed grid
+ * in-place. Used after erosion to clear colors from cells that are no longer occupied.
+ * Requires packed to have indexer.bitsToCoords() and set() methods.
+ *
+ * @param {PackedLike} packed - Grid with indexer and set() method
+ * @param {*} removedCells - Bitboard of cells to clear
+ * @returns {void} Modifies packed in-place
+ * @example
+ * const {removed} = getMorphologyDifferences(grid, 'erode');
+ * clearRemovedCells(grid, removed); // Clears colors from eroded cells
  */
 export function clearRemovedCells (packed, removedCells) {
   if (!packed.indexer?.bitsToCoords || !packed.set) return

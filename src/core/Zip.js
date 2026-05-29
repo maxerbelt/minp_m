@@ -2,10 +2,24 @@
 
 /**
  * @typedef {'null'|'undefined'|'array'|'object'|'map'|'set'|'date'|'regexp'|'error'|'weakmap'|'weakset'|'promise'|'arraybuffer'|'dataview'|'string'|'number'|'nan'|'boolean'|'function'|'bigint'|'symbol'|'uint8array'|'float32array'} TypeString
+ * Comprehensive type identification string covering all JavaScript types including primitives, built-ins, and typed arrays.
+ *
  * @typedef {[any, any]} Pair
+ * A tuple containing exactly two elements for binary zip operations.
+ *
  * @typedef {any[]} Tuple
+ * A variable-length tuple containing N elements from N input collections in zip operations.
  */
 
+/**
+ * Utility class for zipping multiple arrays or iterables into tuples.
+ * Provides both strict (minimum-length) and lenient (maximum-length) zipping strategies,
+ * with automatic type coercion via toArray() for flexible input handling.
+ * Supports pairing, N-ary zipping, and optional size-matching validation.
+ *
+ * @class Zip
+ * @static
+ */
 export class Zip {
   /**
    * Determines the JavaScript type of a value
@@ -102,11 +116,15 @@ export class Zip {
   }
 
   /**
-   * Core zip implementation supporting both strict (min length) and lenient (max length) modes
+   * Core zip implementation supporting both strict (min length) and lenient (max length) modes.
+   * Handles type coercion via toArray() and provides optional size validation.
+   *
    * @private
-   * @param {any[]} arrays - Array of inputs to convert and zip
-   * @param {boolean} padToLongest - true to pad to max length, false to stop at min length
+   * @param {any[]} arrays - Array of inputs to convert and zip via toArray()
+   * @param {boolean} padToLongest - true to pad tuples to max length, false to stop at min length
+   * @param {boolean} [match=false] - If true, throws Error if input sizes don't match exactly
    * @returns {Tuple[]} Array of tuples where each tuple is [element0, element1, ...elementN]
+   * @throws {Error} When match=true and input collections have different sizes
    */
   static _zip (arrays, padToLongest, match = false) {
     if (arrays.length === 0) return []
@@ -187,9 +205,35 @@ export class Zip {
   static lenientN (...arrays) {
     return Zip._zip(arrays, true)
   }
+  /**
+   * Zips two inputs into pairs, requiring both inputs to have equal length.
+   * Throws an error if the input sizes don't match exactly.
+   *
+   * @static
+   * @param {any} a - First input (will be converted to array via toArray)
+   * @param {any} b - Second input (will be converted to array via toArray)
+   * @returns {Pair[]} Array of pairs [a[i], b[i]], where len(a) === len(b)
+   * @throws {Error} If input collections do not match in sizes
+   * @example
+   * Zip.match([1, 2, 3], ['a', 'b', 'c']) // [[1, 'a'], [2, 'b'], [3, 'c']]
+   * Zip.match([1, 2], ['a', 'b', 'c']) // Error: input collections do not match in sizes
+   */
   static match (a, b) {
     return Zip.matchN(a, b)
   }
+
+  /**
+   * Zips multiple inputs into tuples, requiring all inputs to have equal length.
+   * Throws an error if any input has a different size than the others.
+   *
+   * @static
+   * @param {...any} arrays - Inputs to zip (each will be converted to array via toArray)
+   * @returns {Tuple[]} Array of tuples where each tuple contains one element from each input, all inputs same length
+   * @throws {Error} If input collections do not match in sizes
+   * @example
+   * Zip.matchN([1, 2, 3], ['a', 'b', 'c'], [true, false, true]) // [[1, 'a', true], [2, 'b', false], [3, 'c', true]]
+   * Zip.matchN([1, 2], ['a', 'b', 'c']) // Error: input collections do not match in sizes
+   */
   static matchN (...arrays) {
     return Zip._zip(arrays, false, true)
   }
