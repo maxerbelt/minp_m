@@ -8,7 +8,7 @@ import { StandardCells, SpecialCells } from '../../../ships/SubShape.js'
 let missileBoat
 
 describe('Armed shape', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     missileBoat = new ArmedShuttle(
       'Missile Boat',
       'M',

@@ -3,7 +3,7 @@
  * Defines interfaces for placement data, constraints, and validation.
  */
 
-import type { Board, PlacedShip, ShipCellGrid } from './domain.types';
+import type { Board,  ShipCellGrid } from './domain.types';
 
 /**
  * Placement data for validation and board information.

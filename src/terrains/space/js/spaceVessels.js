@@ -194,7 +194,11 @@ const VESSEL_CELLS = {
  * @const
  */
 const VESSEL_RACKS = {
-  GUN_BOAT: [[0, 0]]
+  GUN_BOAT: [[0, 0]],
+  ATTACK_CRAFT: [
+    [0, 0],
+    [2, 0]
+  ]
 }
 
 /**
@@ -219,7 +223,9 @@ export const attackCraft = new SpaceVessel(
   'Attack Craft',
   'A',
   'H',
-  VESSEL_CELLS.ATTACK_CRAFT
+  VESSEL_CELLS.ATTACK_CRAFT,
+  null, // tip - use default
+  VESSEL_RACKS.ATTACK_CRAFT
 )
 attackCraft.vulnerable = ['+', '|', '^']
 attackCraft.notes = [
