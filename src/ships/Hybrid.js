@@ -202,10 +202,6 @@ export class Hybrid extends Shape {
    */
   _assertBoardCanExpand (subGroup) {
     if (typeof subGroup?.board?.expand !== 'function') {
-      console.warn(
-        'Subgroup board does not have an expand method:',
-        subGroup.board
-      )
       throw new Error(
         errorMsg('Subgroup board must have an expand method', subGroup.board)
       )
