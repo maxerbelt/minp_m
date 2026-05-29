@@ -72,10 +72,10 @@ export class Zip {
 
     // Typed arrays
     if (ArrayBuffer.isView(value)) {
-      return tag.toLowerCase() // e.g. 'uint8array', 'float32array'
+      return /** @type {TypeString} */ (tag.toLowerCase()) // e.g. 'uint8array', 'float32array'
     }
 
-    return tag.toLowerCase() // fallback for anything else
+    return /** @type {TypeString} */ (tag.toLowerCase()) // fallback for anything else
   }
 
   /**
@@ -163,7 +163,7 @@ export class Zip {
    * Zip.strict('abc', [1, 2]) // [['a', 1], ['b', 2]]
    */
   static strict (a, b) {
-    return Zip.strictN(a, b)
+    return /** @type {Pair[]} */ (Zip.strictN(a, b))
   }
 
   /**
@@ -177,7 +177,7 @@ export class Zip {
    * Zip.lenient('a', [1, 2, 3]) // [['a', 1], [undefined, 2], [undefined, 3]]
    */
   static lenient (a, b) {
-    return Zip.lenientN(a, b)
+    return /** @type {Pair[]} */ (Zip.lenientN(a, b))
   }
 
   /**
@@ -219,7 +219,7 @@ export class Zip {
    * Zip.match([1, 2], ['a', 'b', 'c']) // Error: input collections do not match in sizes
    */
   static match (a, b) {
-    return Zip.matchN(a, b)
+    return /** @type {Pair[]} */ (Zip.matchN(a, b))
   }
 
   /**

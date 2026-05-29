@@ -2,6 +2,7 @@ import { Random } from './Random.js'
 
 /**
  * Callback function to check if loop should be cancelled
+ * (See types/async.types.ts#CancellationCheck for canonical TypeScript definition)
  *
  * @typedef {Function} CancellationCheck
  * @returns {boolean} True if loop should cancel, false to continue
@@ -9,6 +10,7 @@ import { Random } from './Random.js'
 
 /**
  * Callback function invoked when loop is cancelled by CancellationCheck
+ * (See types/async.types.ts#CancellationCallback for canonical TypeScript definition)
  *
  * @typedef {Function} CancellationCallback
  * @returns {void}
@@ -16,6 +18,7 @@ import { Random } from './Random.js'
 
 /**
  * Callback function invoked when loop encounters an error
+ * (See types/async.types.ts#ErrorCallback for canonical TypeScript definition)
  *
  * @typedef {Function} ErrorCallback
  * @param {Error} error - The caught error from iterationTask
@@ -24,6 +27,7 @@ import { Random } from './Random.js'
 
 /**
  * Callback function invoked when loop completes (cancel, error, or natural end)
+ * (See types/async.types.ts#CompletionCallback for canonical TypeScript definition)
  *
  * @typedef {Function} CompletionCallback
  * @returns {void}
@@ -31,6 +35,7 @@ import { Random } from './Random.js'
 
 /**
  * Async iteration task function executed in loop
+ * (See types/async.types.ts#IterationTask for canonical TypeScript definition)
  *
  * @typedef {Function} IterationTask
  * @returns {Promise<void>} Promise that resolves when iteration completes

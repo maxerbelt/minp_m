@@ -6,6 +6,7 @@ import {
 
 /**
  * @typedef {Object} MorphologyCapabilities
+ * (See types/grid.types.ts#MorphologyCapabilities for canonical TypeScript definition)
  * Indicates which morphological operations would have an effect on the current mask.
  * @property {boolean} canDilate - Whether dilate operation would expand mask (add boundary cells)
  * @property {boolean} canErode - Whether erode operation would shrink mask (remove boundary cells)
@@ -14,6 +15,7 @@ import {
 
 /**
  * @typedef {Object} TransformCapabilities
+ * (See types/grid.types.ts#TransformCapabilities for canonical TypeScript definition)
  * Indicates which geometric transforms would have an effect on the current mask.
  * @property {boolean} canRotateCW - Whether 90° clockwise rotation would change mask
  * @property {boolean} canRotateCCW - Whether 90° counter-clockwise rotation would change mask
@@ -23,11 +25,13 @@ import {
 
 /**
  * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
+ * (See types/grid.types.ts#MorphologyOperation for canonical TypeScript definition)
  * Standard morphological operation type: dilate (expand), erode (shrink), or cross (both).
  */
 
 /**
  * @typedef {Object} GridMask
+ * (See types/grid.types.ts#GridMask for canonical TypeScript definition)
  * Complete mask object containing bitboard representation and transformation metadata.
  * @property {*} bits - Bitboard representing current mask state (number, bigint, or bitboard object)
  * @property {*} [fullMask] - Full mask bitboard for capacity checking (all cells occupied)
@@ -38,6 +42,7 @@ import {
 
 /**
  * @typedef {Object} TransformActions
+ * (See types/grid.types.ts#TransformActions for canonical TypeScript definition)
  * Actions object containing transform maps and methods for symmetry/transform operations.
  * @property {Object<string, *>} transformMaps - Map keys to transformation data (e.g., 'r90', 'r270', 'fx', 'fy')
  * @property {*} template - Template bitboard used for transform comparison

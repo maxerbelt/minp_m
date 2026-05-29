@@ -10,12 +10,14 @@ import { Random } from './Random.js'
 
 /**
  * @typedef {[number|bigint, number|bigint, number?]} Coordinate
+ * (See types/common.types.ts#Coordinate for canonical TypeScript definition)
  * 2D or 3D coordinate tuple where first two elements are row and column,
  * optional third element represents depth/color/z-value (may be number or bigint).
  */
 
 /**
  * @typedef {Object} MinMaxBounds
+ * (See types/common.types.ts#MinMaxBounds for canonical TypeScript definition)
  * Bounding box information computed from coordinate arrays.
  * @property {number} minX - Minimum x (column) coordinate across all points
  * @property {number} maxX - Maximum x (column) coordinate across all points
@@ -455,14 +457,19 @@ export function findClosestCoordKey (coordsList, refRow, refCol) {
  * @param {T[]} coordsList - List of coordinates (raw or opaque)
  * @param {number} refRow - Reference row coordinate
  * @param {number} refCol - Reference column coordinate
- * @param {function(T):[number, number]} [getter] - Function to extract [row, col] from coordinate.
+ * @param {Function} [getter] - Function to extract [row, col] from coordinate.
  *   If omitted, assumes coordinate is directly [number, number].
  * @returns {T|null} Closest coordinate from list, or null if list empty
  * @example
  * findClosestCoord([[0, 0], [5, 5], [10, 10]], 6, 6) // [5, 5]
  * findClosestCoord(['0,0', '5,5'], 6, 6, parsePair) // '5,5' (with getter)
  */
-export function findClosestCoord (coordsList, refRow, refCol, getter) {
+export function findClosestCoord (
+  coordsList,
+  refRow,
+  refCol,
+  getter = /** @type {any} */ (undefined)
+) {
   let closestCoord = null
   let minDistance = Infinity
   for (const coord of coordsList) {
@@ -489,7 +496,7 @@ export function findClosestCoord (coordsList, refRow, refCol, getter) {
  * On first access, invokes fn to compute the value, then replaces the getter with a data property.
  * Subsequent accesses return the cached value without recomputation.
  *
- * @param {Object} obj - The object to define property on
+ * @param {Record<string, any>} obj - The object to define property on
  * @param {string} prop - Property name to create
  * @param {Function} fn - Function to compute the value (called with `this` context)
  * @returns {void}
@@ -585,8 +592,9 @@ export function minMaxXY (arr) {
  * Does nothing if node has no parent element.
  *
  * @param {HTMLElement} node - Element to clone (must have parentElement)
- * @param {number} count - Number of clones to create
+ * @param {number} count - Number of clones to create (should be non-negative)
  * @returns {void}
+ * @since 1.0.0
  * @example
  * // <div id="template">Content</div>
  * cloneWithSuffix(templateEl, 3);
@@ -619,9 +627,10 @@ export function cloneWithSuffix (node, count) {
  * Inserts all clones immediately after the original node.
  * Does nothing if node has no parent element or clone is not an HTMLElement.
  *
- * @param {HTMLElement} node - Element to clone (must have parentElement)
- * @param {number} count - Number of clones to create
+ * @param {HTMLElement} node - Element to clone (must have parentElement and id)
+ * @param {number} count - Number of clones to create (should be non-negative)
  * @returns {void}
+ * @since 1.0.0
  * @example
  * // <div id="wrapper"><span id="child">Content</span></div>
  * cloneWithSuffixDeep(wrapperEl, 2);
@@ -664,8 +673,9 @@ export function cloneWithSuffixDeep (node, count) {
  * Does nothing if node has no parent element or clone is not an HTMLElement.
  *
  * @param {HTMLElement} node - Element to clone (must have id and parentElement)
- * @param {number} count - Number of clones to create
+ * @param {number} count - Number of clones to create (should be non-negative)
  * @returns {void}
+ * @since 1.0.0
  * @example
  * // <div id="template"><span id="item">Content</span></div>
  * cloneWithLifecycle(templateEl, 2);

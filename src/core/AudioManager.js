@@ -1,10 +1,12 @@
 /**
  * @typedef {Object} PlaybackOptions
+ * (See types/audio.types.ts#PlaybackOptions for canonical TypeScript definition)
  * @property {number} [volume=1] - Volume level (0-1, clamped to valid range)
  */
 
 /**
  * @typedef {Object} AudioNodes
+ * (See types/audio.types.ts#AudioNodes for canonical TypeScript definition)
  * @property {AudioBufferSourceNode} bufferSource - The audio buffer source node for playback
  * @property {GainNode} gain - The gain/volume control node connected to destination
  */

@@ -1,4 +1,78 @@
 /**
+ * @typedef {bigint|number|Array<number>|Uint32Array|Uint16Array|Uint8Array|Int32Array} Bitboard
+ * (See types/grid.types.ts#Bitboard for canonical TypeScript definition)
+ * Flexible bitboard representation: scalar (number/BigInt) or array of words (32-bit or 8-bit).
+ * Enables efficient grid representation for up to thousands of cells.
+ */
+
+/**
+ * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
+ * (See types/grid.types.ts#MorphologyOperation for canonical TypeScript definition)
+ * Morphological operation type: dilate (expand), erode (shrink), or cross (both combined).
+ */
+
+/**
+ * @typedef {Object} MaskLike
+ * (See types/grid.types.ts#MaskLike for canonical TypeScript definition)
+ * Mask object compatible with morphology operations.
+ * @property {Bitboard} bits - Bitboard state of the mask
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {number} [depth] - Optional depth/color layers (for multi-bit masks)
+ * @property {StoreLike} [store] - Optional store for advanced bitboard operations
+ * @property {*} [indexer] - Optional grid indexer (rect, hex, etc.)
+ * @property {*} [clone] - Optional pre-allocated clone for mutation
+ */
+
+/**
+ * @typedef {Object} PackedLike
+ * (See types/grid.types.ts#PackedLike for canonical TypeScript definition)
+ * Packed grid object with per-cell access methods.
+ * @property {Bitboard} bits - Bitboard state
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {StoreLike} [store] - Optional store for advanced operations
+ * @property {*} [indexer] - Optional grid indexer
+ * @property {*} [clone] - Optional pre-allocated clone
+ * @property {Function} [at] - Function(x, y) to get cell value
+ * @property {Function} [set] - Function(x, y, value) to set cell
+ */
+
+/**
+ * @typedef {Object} StoreLike
+ * (See types/grid.types.ts#StoreLike for canonical TypeScript definition)
+ * Store object providing bitboard manipulation operations.
+ * @property {Function} newWords - Creates new word array for this store type
+ * @property {Function} clone - Clones a bitboard value
+ * @property {Function} bitSub - Bitwise subtraction (remove bits)
+ * @property {Function} [setIdx] - Function(bits, index, value) to set at index
+ * @property {Function} value - Gets value from store
+ * @property {number} [words] - Word count for this store's bitboards
+ * @property {Function} [set] - Sets value in store
+ * @property {Function} [getIdx] - Function(bits, index) to get at index
+ */
+
+/**
+ * @typedef {Object} CloneSource
+ * (See types/grid.types.ts#CloneSource for canonical TypeScript definition)
+ * Object that may provide cloning helpers for bitboards.
+ * @property {Bitboard} bits - Bitboard to clone
+ * @property {*} [clone] - Optional pre-cloned value
+ * @property {*} [cloneBits] - Optional pre-cloned bitboard
+ * @property {StoreLike} [store] - Optional store with clone method
+ */
+
+/**
+ * @typedef {Object} MorphologyMask
+ * (See types/grid.types.ts#MorphologyMask for canonical TypeScript definition)
+ * Mask object for morphology operations with bits and clone.
+ * @property {Bitboard} bits - Current bitboard state
+ * @property {*} [clone] - Optional pre-allocated clone for mutation
+ * @property {StoreLike} [store] - Optional store for operations
+ * @property {*} [indexer] - Optional grid indexer
+ */
+
+/**
  * Pure morphology operations and bit manipulation utilities.
  *
  * Provides efficient bitboard-based morphological operations (dilate, erode, cross)
@@ -17,73 +91,6 @@
  * @example
  * // Get what cells would be added/removed
  * const {added, removed} = getMorphologyDifferences(occupancy, 'dilate');
- */
-
-/**
- * @typedef {bigint|number|Array<number>|Uint32Array|Uint16Array|Uint8Array|Int32Array} Bitboard
- * Flexible bitboard representation: scalar (number/BigInt) or array of words (32-bit or 8-bit).
- * Enables efficient grid representation for up to thousands of cells.
- */
-
-/**
- * @typedef {'dilate'|'erode'|'cross'} MorphologyOperation
- * Morphological operation type: dilate (expand), erode (shrink), or cross (both combined).
- */
-
-/**
- * @typedef {Object} MaskLike
- * Mask object compatible with morphology operations.
- * @property {Bitboard} bits - Bitboard state of the mask
- * @property {number} width - Grid width in cells
- * @property {number} height - Grid height in cells
- * @property {number} [depth] - Optional depth/color layers (for multi-bit masks)
- * @property {StoreLike} [store] - Optional store for advanced bitboard operations
- * @property {*} [indexer] - Optional grid indexer (rect, hex, etc.)
- * @property {*} [clone] - Optional pre-allocated clone for mutation
- */
-
-/**
- * @typedef {Object} PackedLike
- * Packed grid object with per-cell access methods.
- * @property {Bitboard} bits - Bitboard state
- * @property {number} width - Grid width in cells
- * @property {number} height - Grid height in cells
- * @property {StoreLike} [store] - Optional store for advanced operations
- * @property {*} [indexer] - Optional grid indexer
- * @property {*} [clone] - Optional pre-allocated clone
- * @property {Function} [at] - Function(x, y) to get cell value
- * @property {Function} [set] - Function(x, y, value) to set cell
- */
-
-/**
- * @typedef {Object} StoreLike
- * Store object providing bitboard manipulation operations.
- * @property {Function} newWords - Creates new word array for this store type
- * @property {Function} clone - Clones a bitboard value
- * @property {Function} bitSub - Bitwise subtraction (remove bits)
- * @property {Function} [setIdx] - Function(bits, index, value) to set at index
- * @property {Function} value - Gets value from store
- * @property {number} [words] - Word count for this store's bitboards
- * @property {Function} [set] - Sets value in store
- * @property {Function} [getIdx] - Function(bits, index) to get at index
- */
-
-/**
- * @typedef {Object} CloneSource
- * Object that may provide cloning helpers for bitboards.
- * @property {Bitboard} bits - Bitboard to clone
- * @property {*} [clone] - Optional pre-cloned value
- * @property {*} [cloneBits] - Optional pre-cloned bitboard
- * @property {StoreLike} [store] - Optional store with clone method
- */
-
-/**
- * @typedef {Object} MorphologyMask
- * Mask object for morphology operations with bits and clone.
- * @property {Bitboard} bits - Current bitboard state
- * @property {*} [clone] - Optional pre-allocated clone for mutation
- * @property {StoreLike} [store] - Optional store for operations
- * @property {*} [indexer] - Optional grid indexer
  */
 
 // ============================================================================

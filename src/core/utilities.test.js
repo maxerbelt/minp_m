@@ -116,24 +116,31 @@ describe('utilities', () => {
     })
 
     it('should handle null input', () => {
-      expect(parseTriple(null)).toBe(null)
-      expect(parseTriple(undefined)).toBe(null)
+      expect(
+        parseTriple(/** @type {string} */ (/** @type {unknown} */ (null)))
+      ).toBe(null)
+      expect(
+        parseTriple(/** @type {string} */ (/** @type {unknown} */ (undefined)))
+      ).toBe(null)
     })
 
     it('should return numbers not strings', () => {
-      const [r, c, id] = parseTriple('3,7:42')
-      expect(typeof r).toBe('number')
-      expect(typeof c).toBe('number')
-      expect(typeof id).toBe('number')
+      const result = parseTriple('3,7:42')
+      if (result) {
+        const [r, c, id] = result
+        expect(typeof r).toBe('number')
+        expect(typeof c).toBe('number')
+        expect(typeof id).toBe('number')
+      }
     })
   })
 
   describe('minMaxXY', () => {
     it('should handle BigInt coordinates without mixing types', () => {
-      const coords = [
+      const coords = /** @type {any} */ ([
         [1n, 2n, 1n],
         [3n, 4n, 2n]
-      ]
+      ])
       const result = minMaxXY(coords)
 
       expect(result).toEqual({
@@ -147,10 +154,10 @@ describe('utilities', () => {
     })
 
     it('should ignore empty or falsy color values', () => {
-      const coords = [
+      const coords = /** @type {any} */ ([
         [1n, 2n, 0n],
         [3n, 4n, 0n]
-      ]
+      ])
       const result = minMaxXY(coords)
 
       expect(result).toEqual({
@@ -175,11 +182,15 @@ describe('utilities', () => {
     })
 
     it('should return null for null input', () => {
-      expect(first(null)).toBe(null)
+      expect(first(/** @type {any[]} */ (/** @type {unknown} */ (null)))).toBe(
+        null
+      )
     })
 
     it('should return null for undefined input', () => {
-      expect(first(undefined)).toBe(null)
+      expect(
+        first(/** @type {any[]} */ (/** @type {unknown} */ (undefined)))
+      ).toBe(null)
     })
   })
 
@@ -200,7 +211,7 @@ describe('utilities', () => {
         { r: 5, c: 5 },
         { r: 10, c: 10 }
       ]
-      const getter = item => [item.r, item.c]
+      const getter = (/** @type {any} */ item) => [item.r, item.c]
       const closest = findClosestCoord(coords, 4, 4, getter)
       expect(closest).toEqual({ r: 5, c: 5 })
     })
@@ -254,6 +265,7 @@ describe('utilities', () => {
 
   describe('lazy', () => {
     it('should compute property lazily', () => {
+      /** @type {Record<string, any>} */
       const obj = {}
       let computeCount = 0
       lazy(obj, 'prop', function () {
@@ -267,6 +279,7 @@ describe('utilities', () => {
     })
 
     it('should cache the computed value', () => {
+      /** @type {Record<string, any>} */
       const obj = {}
       let computeCount = 0
       lazy(obj, 'prop', function () {
@@ -281,22 +294,28 @@ describe('utilities', () => {
     })
 
     it('should work with this context', () => {
+      /** @type {Record<string, any>} */
       const obj = { x: 10 }
-      lazy(obj, 'computed', function () {
-        return this.x * 2
-      })
+      lazy(
+        obj,
+        'computed',
+        /** @this {Record<string, any>} */ function () {
+          return this.x * 2
+        }
+      )
 
       expect(obj.computed).toBe(20)
     })
   })
 
   describe('cell utilities', () => {
+    /** @type {HTMLElement} */
     let mockCell
 
     beforeEach(() => {
-      mockCell = {
+      mockCell = /** @type {HTMLElement} */ ({
         dataset: {}
-      }
+      })
     })
 
     describe('coordsFromCell', () => {
@@ -353,7 +372,7 @@ describe('utilities', () => {
         addKeyToCell(mockCell, 'tags', 'tag1')
         addKeyToCell(mockCell, 'tags', 'tag2')
         addKeyToCell(mockCell, 'tags', 'tag1')
-        const parts = mockCell.dataset.tags.split('|')
+        const parts = (mockCell.dataset.tags ?? '').split('|')
         expect(parts).toContain('tag1')
         expect(parts).toContain('tag2')
         expect(parts.length).toBe(2)

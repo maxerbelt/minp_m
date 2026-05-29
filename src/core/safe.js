@@ -30,6 +30,7 @@
 
 /**
  * @typedef {Object} StringifyOptions
+ * (See types/common.types.ts#StringifyOptions for canonical TypeScript definition)
  * Configuration options for safe stringification.
  * @property {number} [space=2] - Number of spaces for indentation (0 for compact, >= 0)
  * @property {number} [depth=Infinity] - Maximum recursion depth for objects (non-negative or Infinity)

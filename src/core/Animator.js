@@ -2,6 +2,7 @@ import { Delay } from './Delay.js'
 
 /**
  * @typedef {Object} Position
+ * (See types/common.types.ts#Position for canonical TypeScript definition)
  * @property {number} x - X coordinate in pixels
  * @property {number} y - Y coordinate in pixels
  */

@@ -8,6 +8,7 @@ describe('safeStringify', () => {
   })
 
   it('renders circular references as [Circular]', () => {
+    /** @type {Record<string, any>} */
     const obj = { a: 1 }
     obj.self = obj
     expect(safeStringify(obj)).toContain('"self": "[Circular]"')
