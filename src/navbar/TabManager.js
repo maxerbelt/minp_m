@@ -1,4 +1,11 @@
 /**
+ * @fileoverview Tab management system for navigation UI control.
+ * Provides Tab and TabManager classes for managing navigation tabs, event listeners,
+ * and mode-based tab visibility/behavior in the game UI.
+ * @module navbar/TabManager
+ */
+
+/**
  * @typedef {import('./types/ui.types.js').TabConfig} TabConfig
  * @typedef {import('./types/ui.types.js').TabInstance} TabInstance
  * @typedef {import('./types/ui.types.js').TabManagerInstance} TabManagerInstance
@@ -14,7 +21,15 @@
 class Tab {
   /**
    * Creates a new Tab instance.
+   * Initializes the tab with a reference to its DOM element and an empty listener registry.
+   * The element is found by ID using the pattern `tab-{name}`.
+   *
    * @param {string} name - Tab name (used to find element with id `tab-{name}`).
+   * @throws {Error} Silently handles missing elements (element will be null).
+   *
+   * @example
+   * const buildTab = new Tab('build')
+   * // Looks for element with id="tab-build"
    */
   constructor (name) {
     /** @type {string} Tab name identifier */
@@ -27,9 +42,14 @@ class Tab {
 
   /**
    * Add click listener while tracking it for later removal.
-   * Listener is attached to DOM and registered for cleanup.
+   * Listener is attached to DOM and registered for cleanup on cleanup() or removeAllListeners().
+   * Maintains a Set of handlers for proper event listener lifecycle management.
+   *
    * @param {EventListener} handler - Click event handler function.
    * @returns {void}
+   *
+   * @example
+   * tab.addClickListener(() => console.log('Tab clicked'))
    */
   addClickListener (handler) {
     this._attachEventListener(handler)
@@ -39,9 +59,13 @@ class Tab {
   /**
    * Replace all listeners with a single new one.
    * Removes all existing handlers and attaches the new one.
-   * Useful for switching between different interaction modes.
+   * Useful for switching between different interaction modes or changing tab behavior.
+   *
    * @param {EventListener} handler - New click event handler function.
    * @returns {void}
+   *
+   * @example
+   * tab.overrideClickListener(() => navigateToRules())
    */
   overrideClickListener (handler) {
     this._removeAllListeners()
@@ -129,7 +153,12 @@ class Tab {
 class TabManager {
   /**
    * Creates a new TabManager instance.
-   * Initializes empty tab registry and sets no initial mode.
+   * Initializes an empty tab registry and sets no initial mode.
+   * Use initializeTabs() or the createTabManager() factory to populate with tabs.
+   *
+   * @example
+   * const manager = new TabManager()
+   * manager.initializeTabs(['build', 'hide', 'seek'])
    */
   constructor () {
     /** @type {Object.<string, Tab>} Map of tab names to Tab instances */
@@ -140,9 +169,15 @@ class TabManager {
 
   /**
    * Initialize all tabs for the application.
-   * Creates Tab instances for each name provided and registers them.
+   * Creates Tab instances for each name provided and registers them in the manager.
+   * Each tab is stored in the tabs registry with its name as the key.
+   *
    * @param {string[]} tabNames - Names of tabs to initialize.
    * @returns {void}
+   *
+   * @example
+   * manager.initializeTabs(['build', 'hide', 'seek', 'rules'])
+   * const buildTab = manager.getTab('build')
    */
   initializeTabs (tabNames) {
     for (const name of tabNames) {
@@ -152,9 +187,14 @@ class TabManager {
 
   /**
    * Get a specific tab instance.
-   * Retrieves a previously registered Tab instance by name.
+   * Retrieves a previously registered Tab instance by name from the registry.
+   *
    * @param {string} name - Tab name to retrieve.
    * @returns {Tab|undefined} Tab instance or undefined if not found.
+   *
+   * @example
+   * const tab = manager.getTab('build')
+   * if (tab) tab.markAsCurrent()
    */
   getTab (name) {
     return this.tabs[name]
@@ -181,9 +221,15 @@ class TabManager {
 
   /**
    * Check if a given mode matches the current mode.
-   * Useful for conditional logic based on active mode.
+   * Useful for conditional logic based on active mode in configuration and UI updates.
+   *
    * @param {string} mode - Mode identifier to check against current.
    * @returns {boolean} True if mode matches current mode, false otherwise.
+   *
+   * @example
+   * if (manager.isMode('build')) {
+   *   console.log('Currently in build mode')
+   * }
    */
   isMode (mode) {
     return this.currentMode === mode
@@ -193,9 +239,19 @@ class TabManager {
    * Configure tab behavior for a specific mode.
    * Marks current tabs with visual indicator and adds listeners to inactive tabs.
    * Enables mode-specific tab behavior and navigation patterns.
+   * Tabs marked as 'current' receive the 'you-are-here' CSS class.
+   *
    * @param {string} _mode - Mode identifier (for future mode-specific logic).
    * @param {TabConfig} tabConfig - Configuration with current tabs and handlers.
+   * @param {string[]} [tabConfig.current=[]] - Tab names to mark as current.
+   * @param {Object.<string, EventListener>} [tabConfig.handlers={}] - Tab handlers map.
    * @returns {void}
+   *
+   * @example
+   * manager.configureForMode('build', {
+   *   current: ['build'],
+   *   handlers: { hide: () => navigateToHide(), seek: () => navigateToSeek() }
+   * })
    */
   configureForMode (_mode, tabConfig) {
     const { current = [], handlers = {} } = tabConfig
@@ -214,10 +270,14 @@ class TabManager {
   /**
    * Add event listener to tab if it exists.
    * Public API for adding listeners to specific tabs.
-   * Silently ignores if tab does not exist.
+   * Silently ignores if tab does not exist (no error thrown).
+   *
    * @param {string} tabName - Name of tab to add listener to.
    * @param {EventListener} handler - Click event handler function.
    * @returns {void}
+   *
+   * @example
+   * manager.addListener('rules', () => navigateToRules())
    */
   addListener (tabName, handler) {
     const tab = this.getTab(tabName)
@@ -229,10 +289,14 @@ class TabManager {
   /**
    * Replace event listener for tab.
    * Removes all existing listeners and adds a new one.
-   * Useful for switching between interaction modes.
+   * Useful for switching between interaction modes or changing tab behavior.
+   *
    * @param {string} tabName - Name of tab to replace listener for.
    * @param {EventListener} handler - New click event handler function.
    * @returns {void}
+   *
+   * @example
+   * manager.replaceListener('build', () => switchToEditMode())
    */
   replaceListener (tabName, handler) {
     const tab = this.getTab(tabName)
@@ -243,9 +307,13 @@ class TabManager {
 
   /**
    * Clean up all tabs and their resources.
-   * Detaches all listeners and clears internal state.
-   * Should be called when TabManager is no longer needed.
+   * Detaches all listeners and clears internal state for all managed tabs.
+   * Should be called when TabManager is no longer needed or on page unload.
+   *
    * @returns {void}
+   *
+   * @example
+   * window.addEventListener('beforeunload', () => manager.cleanup())
    */
   cleanup () {
     for (const tab of Object.values(this.tabs)) {
@@ -291,8 +359,18 @@ class TabManager {
 
 /**
  * Create TabManager pre-configured with standard game tabs.
- * Factory function for creating fully initialized TabManager.
+ * Factory function for creating a fully initialized TabManager with all standard game tabs.
+ * Provides a convenient way to set up the tab system without manual configuration.
+ *
  * @returns {TabManager} TabManager instance with all standard tabs initialized.
+ *
+ * @example
+ * const manager = createTabManager()
+ * manager.setCurrentMode('build')
+ * manager.configureForMode('build', {
+ *   current: ['build'],
+ *   handlers: { hide: () => switchToHide(), seek: () => switchToSeek() }
+ * })
  */
 export function createTabManager () {
   const manager = new TabManager()

@@ -157,26 +157,7 @@ describe('setupTabs and switchTo', () => {
 
   // NOSONAR
   async function _setupBhAndTabs () {
-    try {
-      Object.defineProperty(globalThis, 'location', {
-        value: { href: '', search: '' },
-        configurable: true
-      })
-      // eslint-disable-next-line no-unused-vars
-    } catch (_e) {
-      //NOSONAR
-      // Ignore errors when setting location (may be read-only in some environments)
-      if (origLocation && typeof origLocation === 'object') {
-        try {
-          // avoid mutating location.href/search to prevent jsdom navigation
-          globalThis.location.reload = origLocation.reload || undefined
-          globalThis.location.assign = origLocation.assign || undefined
-        } catch {
-          // location may be read-only in this environment; continue without mocking
-        }
-      }
-    }
-
+    await _tryMockLocation()
     // reset modules and load bh so it and module share same instance
     jest.resetModules()
     const bhModule = await import('../terrains/all/js/bh.js')
@@ -212,6 +193,43 @@ describe('setupTabs and switchTo', () => {
     }
   }
 
+  /**
+   * Try to mock location object for testing.
+   * Handles read-only location in some environments gracefully.
+   * @returns {Promise<void>}
+   */
+  async function _tryMockLocation () {
+    try {
+      Object.defineProperty(globalThis, 'location', {
+        value: { href: '', search: '' },
+        configurable: true
+      })
+    } catch (_error) {
+      // Location may be read-only in some environments
+      if (origLocation && typeof origLocation === 'object') {
+        _attemptRestoreLocationFunctions(origLocation)
+      }
+      // Silently continue in test environment where location may be read-only
+    }
+  }
+
+  /**
+   * Attempt to restore location functions without mutating href/search.
+   * @private
+   * @param {Object} location - Original location object
+   * @returns {void}
+   */
+  function _attemptRestoreLocationFunctions (location) {
+    try {
+      // avoid mutating location.href/search to prevent jsdom navigation
+      globalThis.location.reload = location.reload || undefined
+      globalThis.location.assign = location.assign || undefined
+    } catch (_error) {
+      // Location may be fully read-only; continue without changes
+      // no-op: silently continue in test environment
+    }
+  }
+
   async function _initSetup () {
     _createElements()
     _mockURLConstructors()
@@ -223,44 +241,71 @@ describe('setupTabs and switchTo', () => {
   afterEach(() => {
     globalThis.document = origDoc
     if (origURL) globalThis.URL = origURL
-    try {
-      if (origLocation && typeof origLocation === 'object') {
-        try {
-          // restore functions only to avoid navigation
-          try {
-            globalThis.location.reload = origLocation.reload
-          } catch {
-            // ignore read-only location in this environment
-          }
-          try {
-            globalThis.location.assign = origLocation.assign
-          } catch {
-            // ignore read-only location in this environment
-          }
-        } catch {
-          // ignore read-only location in this environment
-        }
-      } else {
-        try {
-          Object.defineProperty(globalThis, 'location', {
-            value: origLocation,
-            configurable: true
-          })
-        } catch (e) {
-          console.warn(
-            'Could not restore location; its may cause navigation',
-            e
-          )
-        }
-      }
-    } catch (e) {
-      console.warn('Could not restore location; its may cause navigation', e)
-    }
+    _restoreLocation()
     delete globalThis.print
     jest.clearAllMocks()
     if (origURLSearchParams !== undefined)
       globalThis.URLSearchParams = origURLSearchParams
   })
+
+  /**
+   * Restore location object to its original state.
+   * Handles read-only location gracefully in different environments.
+   * @private
+   * @returns {void}
+   */
+  function _restoreLocation () {
+    try {
+      if (origLocation && typeof origLocation === 'object') {
+        _restoreLocationFunctions(origLocation)
+      } else {
+        _restoreLocationObject()
+      }
+    } catch (_error) {
+      // no-op: silently continue in test environment
+    }
+  }
+
+  /**
+   * Restore location functions (reload, assign) only.
+   * Avoids mutating href/search to prevent navigation.
+   * @private
+   * @param {Object} location - Original location object
+   * @returns {void}
+   */
+  function _restoreLocationFunctions (location) {
+    try {
+      // restore functions only to avoid navigation
+      try {
+        globalThis.location.reload = location.reload
+      } catch (_error) {
+        // ignore read-only location in this environment
+      }
+      try {
+        globalThis.location.assign = location.assign
+      } catch (_error) {
+        // ignore read-only location in this environment
+      }
+    } catch (_error) {
+      // ignore read-only location in this environment
+    }
+  }
+
+  /**
+   * Restore location object property definition.
+   * @private
+   * @returns {void}
+   */
+  function _restoreLocationObject () {
+    try {
+      Object.defineProperty(globalThis, 'location', {
+        value: origLocation,
+        configurable: true
+      })
+    } catch (_error) {
+      // no-op: silently continue in test environment
+    }
+  }
 
   it('setupTabs attaches handlers and print/about/source behaviors', () => {
     _checkPrintAboutSource()
@@ -269,7 +314,16 @@ describe('setupTabs and switchTo', () => {
   // NOSONAR
   function _checkPrintAboutSource () {
     setupTabs('other')
-    // simulate clicking print
+    _checkPrintTab()
+    _checkAboutTab()
+    _checkSourceTab()
+  }
+
+  /**
+   * Check print tab behavior.
+   * @returns {void}
+   */
+  function _checkPrintTab () {
     const printEl = elements.get('tab-print')
     // invoke registered handlers (may be stored on the Tab instance or the mock element)
     const printHandlers =
@@ -282,8 +336,13 @@ describe('setupTabs and switchTo', () => {
       globalThis.print()
       expect(globalThis.print).toHaveBeenCalled()
     }
+  }
 
-    // about click should have a handler attached (navigation may be restricted)
+  /**
+   * Check about tab behavior.
+   * @returns {void}
+   */
+  function _checkAboutTab () {
     const aboutEl = elements.get('tab-about')
     const aboutHandlers =
       (tabs.about?.handlers && Array.from(tabs.about.handlers)) || []
@@ -292,6 +351,18 @@ describe('setupTabs and switchTo', () => {
     } else {
       aboutEl.trigger('click')
     }
+    // assert that about handlers existed or were attached
+    const aboutAttached =
+      aboutHandlers.length > 0 ||
+      (aboutEl.listeners && (aboutEl.listeners.click || []).length > 0)
+    expect(aboutAttached).toBe(true)
+  }
+
+  /**
+   * Check source tab behavior.
+   * @returns {void}
+   */
+  function _checkSourceTab () {
     const sourceEl = elements.get('tab-source')
     const sourceHandlers =
       (tabs.source?.handlers && Array.from(tabs.source.handlers)) || []
@@ -300,14 +371,10 @@ describe('setupTabs and switchTo', () => {
     } else {
       sourceEl.trigger('click')
     }
-    // assert that handlers existed on at least one of the tab sources
-    const aboutAttached =
-      aboutHandlers.length > 0 ||
-      (aboutEl.listeners && (aboutEl.listeners.click || []).length > 0)
+    // assert that source handlers existed or were attached
     const sourceAttached =
       sourceHandlers.length > 0 ||
       (sourceEl.listeners && (sourceEl.listeners.click || []).length > 0)
-    expect(aboutAttached).toBe(true)
     expect(sourceAttached).toBe(true)
   }
 
