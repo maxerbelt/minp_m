@@ -1,11 +1,61 @@
 /**
- * BlitOperation - Encapsulates bitwise blitting operations
- * Handles copying/combining rectangular regions with various blend modes
- * Supports blend modes: 'copy' (replace), 'or' (union), 'and' (intersect), 'xor' (toggle)
+ * @module BlitOperation
+ * @description Encapsulates bitwise blitting operations for rectangular region copying/combining.
+ * Provides efficient bit-level transfer and blending of rectangular regions from source to
+ * destination using various blend modes. Core functionality for grid-based spatial operations.
+ * Supports blend modes: 'copy' (replace), 'or' (union), 'and' (intersect), 'xor' (toggle).
+ */
+
+/**
+ * @typedef {Object} MaskInstance
+ * @description A mask object with bitboard storage and operations.
+ * @property {bigint} bits - The bitboard storage (BigInt representation of grid state)
+ * @property {Object} store - Storage backend providing bit operations (bitOr, bitAnd, bitPos, etc.)
+ * @property {number} width - Width of the grid in cells
+ * @property {Function} clone - Factory method to create a copy of this mask
+ */
+
+/**
+ * @typedef {Object} SourceGrid
+ * @description Grid-like object that provides row data for blitting.
+ * @property {Function} sliceRow - Method to extract row bits: sliceRow(row, startCol, endCol) => bigint
+ */
+
+/**
+ * @typedef {Object} BlitOptions
+ * @description Complete configuration for blit operations.
+ * @property {SourceGrid} src - Source grid/mask with sliceRow method
+ * @property {number} [srcX=0] - Column offset in source grid
+ * @property {number} [srcY=0] - Row offset in source grid
+ * @property {number} [width=0] - Width of region to copy in cells
+ * @property {number} [height=0] - Height of region to copy in cells
+ * @property {number} [dstX=0] - Destination column in this mask
+ * @property {number} [dstY=0] - Destination row in this mask
+ * @property {string} [mode='copy'] - Blend mode: 'copy'|'or'|'and'|'xor'
+ */
+
+/**
+ * BlitOperation - Encapsulates bitwise blitting operations.
+ * Handles copying/combining rectangular regions with various blend modes.
+ * Provides both destructive (blit) and non-destructive (blitToMask) operations.
+ * @class
  */
 export class BlitOperation {
   /**
-   * @param {Object} maskInstance - Mask instance with bits, store, width, emptyMask properties
+   * Constructor - Initialize blitter with target mask.
+   *
+   * Sets up the BlitOperation facade around a specific mask instance,
+   * caching the store reference for efficient row blitting operations.
+   * All blit operations will modify this mask's bits in-place or create
+   * new masks derived from it.
+   *
+   * @param {MaskInstance} maskInstance - Target mask for blitting operations.
+   * Must have bits (bigint), store (backend), width (number), and clone method.
+   * @throws {TypeError} If maskInstance lacks required properties.
+   *
+   * @example
+   * const blitter = new BlitOperation(targetMask);
+   * // Now ready to perform blit operations on targetMask
    */
   constructor (maskInstance) {
     this.mask = maskInstance
@@ -15,10 +65,41 @@ export class BlitOperation {
   // ==================== PUBLIC BLIT OPERATIONS ====================
 
   /**
-   * Blit a source region into the mask at given destination
-   * Modifies this.mask.bits in-place by applying blend mode row-by-row
-   * @param {{src: Object, srcX?: number, srcY?: number, width?: number, height?: number, dstX?: number, dstY?: number, mode?: string}} options - Options object describing the blit
-   * @returns {void} Updates this.mask.bits in-place
+   * Blit a source region into the mask at given destination (destructive).
+   *
+   * Performs in-place modification of this.mask.bits by copying/blending a rectangular
+   * region from the source grid. Processes the region row-by-row, applying the selected
+   * blend mode (copy, or, and, xor) for each row. Efficient for direct mask manipulation.
+   *
+   * Blend modes:
+   *   - 'copy': Replace destination with source (clear then set)
+   *   - 'or': Set destination bits where source is set (union)
+   *   - 'and': Keep destination bits only where source is set (intersect)
+   *   - 'xor': Toggle destination bits where source is set (symmetric difference)
+   *
+   * Use cases: Grid composition, obstacle placement, mask updates, combined terrain.
+   *
+   * @param {BlitOptions} options - Complete blit configuration.
+   * Defaults: srcX=0, srcY=0, width=0, height=0, dstX=0, dstY=0, mode='copy'.
+   * @returns {void} Modifies this.mask.bits in-place; no return value.
+   *
+   * @example
+   * // Copy 5x5 region from source at (0,0) to destination at (10, 10)
+   * blitter.blit({
+   *   src: sourceGrid,
+   *   srcX: 0, srcY: 0, width: 5, height: 5,
+   *   dstX: 10, dstY: 10,
+   *   mode: 'copy'
+   * });
+   *
+   * @example
+   * // Union blit: merge source pattern into destination
+   * blitter.blit({
+   *   src: sourceGrid,
+   *   srcX: 0, srcY: 0, width: 3, height: 3,
+   *   dstX: 5, dstY: 5,
+   *   mode: 'or'
+   * });
    */
   blit ({
     src,
@@ -48,11 +129,30 @@ export class BlitOperation {
   }
 
   /**
-   * Create a mask containing blit result (non-destructive)
-   * Returns a new mask with the blitted region; original unchanged
-   * @param {Object} src - Source mask/grid with sliceRow method
-   * @param {Object} [opts] - Options object with blit parameters (srcX, srcY, width, height, dstX, dstY, mode)
-   * @returns {Object} New mask with blit operation applied
+   * Create a mask containing blit result (non-destructive).
+   *
+   * Performs blit operation on a cloned copy of this mask, leaving the original
+   * unchanged. Returns a new mask with the blitted region applied. Useful for
+   * non-destructive operations, previewing blits, or building composite masks.
+   *
+   * Process: Clone mask → Apply blit to clone → Return cloned result.
+   * Use cases: Preview operations, mask composition, conditional blitting.
+   *
+   * @param {SourceGrid} src - Source grid/mask with sliceRow method.
+   * Must provide sliceRow(row, startCol, endCol) => bigint for row extraction.
+   * @param {BlitOptions} [opts] - Optional blit parameters.
+   * Defaults: srcX=0, srcY=0, width=0, height=0, dstX=0, dstY=0, mode='copy'.
+   * @returns {MaskInstance} New mask instance with blit operation applied.
+   * Original this.mask remains unchanged.
+   *
+   * @example
+   * // Create a composite mask without modifying original
+   * const resultMask = blitter.blitToMask(sourceGrid, {
+   *   srcX: 0, srcY: 0, width: 4, height: 4,
+   *   dstX: 8, dstY: 8,
+   *   mode: 'or'
+   * });
+   * // resultMask has the union applied; original mask unchanged
    */
   blitToMask (src, opts = {}) {
     const {
@@ -82,16 +182,29 @@ export class BlitOperation {
   // ==================== PRIVATE HELPERS ====================
 
   /**
-   * Apply blend mode to a single row, accounting for destination position
-   * Transforms 2D destination coords (dstY, dstX) to bit position and applies blend
+   * Apply blend mode to a single row, accounting for destination position (private).
+   *
+   * Intermediate step between blit() and _applyBlitMode().
+   * Transforms 2D destination coordinates (dstY, dstX) into a linear bit position,
+   * then delegates to _applyBlitMode for the actual blend operation.
+   *
+   * Coordinate transformation: bitPos = store.bitPos(dstY * mask.width + dstX)
+   * This linearizes the 2D grid coordinates into the 1D bitboard index.
+   *
    * @private
-   * @param {bigint} currentBits - Current bit pattern
-   * @param {bigint} rowBits - Bits from source row
-   * @param {number} dstY - Destination row index
-   * @param {number} dstX - Destination column index
-   * @param {number} width - Row width in bits
-   * @param {string} mode - Blend mode name
-   * @returns {bigint} Result bits after blend operation
+   * @param {bigint} currentBits - Current bit pattern (mask state before blend).
+   * @param {bigint} rowBits - Bits extracted from source row.
+   * @param {number} dstY - Destination row index (0-based from grid origin).
+   * @param {number} dstX - Destination column index (0-based from grid origin).
+   * @param {number} width - Number of bits in the row to blend.
+   * @param {string} mode - Blend mode: 'copy'|'or'|'and'|'xor'.
+   * @returns {bigint} Result bits after blend operation applied to that row.
+   *
+   * @example
+   * // Apply blend to row 5, starting at column 3, width 8
+   * const result = this._applyRowBlitMode(
+   *   currentBits, rowBits, 5, 3, 8, 'or'
+   * );
    */
   _applyRowBlitMode (currentBits, rowBits, dstY, dstX, width, mode) {
     const bitPosition = this.store.bitPos(dstY * this.mask.width + dstX)
@@ -99,20 +212,46 @@ export class BlitOperation {
   }
 
   /**
-   * Apply blend mode given pre-computed bit position
-   * Shifts row bits to destination and applies selected blend operation
+   * Apply blend mode given pre-computed bit position (private core operation).
+   *
+   * Core blitting engine. Shifts row bits to the destination bit position,
+   * computes the blend mask, and applies the selected blend mode.
+   *
+   * Bit operations:
+   *   1. Shift source bits: rowBits << bitPosition (align to destination)
+   *   2. Create blend mask: ((1n << width) - 1n) << bitPosition (region to affect)
+   *   3. Apply blend mode using bitwise operations
+   *
    * Blend modes:
-   *   - 'copy': Replace destination with source (clear then set)
-   *   - 'or': Set destination bits where source is set (union)
-   *   - 'and': Keep destination bits only where source is set (intersect)
-   *   - 'xor': Toggle destination bits where source is set (symmetric diff)
+   *   - 'copy': (currentBits & ~blitMask) | shiftedBits
+   *     Clear destination region, then set source bits (replace)
+   *   - 'or': currentBits | shiftedBits
+   *     Set destination bits where source is set (union)
+   *   - 'and': currentBits & shiftedBits
+   *     Keep destination bits only where source is set (intersect)
+   *   - 'xor': currentBits ^ shiftedBits
+   *     Toggle destination bits where source is set (symmetric difference)
+   *
    * @private
-   * @param {bigint} currentBits - Current bit pattern
-   * @param {bigint} rowBits - Source row bits
-   * @param {number} bitPosition - Pre-calculated bit position in mask
-   * @param {number} width - Row width in bits
-   * @param {string} mode - Blend mode: 'copy'|'or'|'and'|'xor'
-   * @returns {bigint} Result bits after blend operation
+   * @param {bigint} currentBits - Current bit pattern (mask state before blend).
+   * @param {bigint} rowBits - Source row bits (0-based, not shifted).
+   * @param {number} bitPosition - Pre-calculated destination bit position in mask.
+   * Computed from 2D coords via store.bitPos().
+   * @param {number} width - Number of bits in the row to blend (1-based width).
+   * @param {string} mode - Blend mode name: 'copy'|'or'|'and'|'xor'.
+   * Default behavior for unknown modes: return unchanged currentBits (no-op).
+   * @returns {bigint} Result bits after blend operation.
+   * Same size as currentBits with the blitted row applied.
+   *
+   * @example
+   * // Blit 8-bit row at bit position 1024 using 'or' mode
+   * const result = this._applyBlitMode(
+   *   currentBits,
+   *   0xFFn,  // 8 bits set
+   *   1024,   // destination bit position
+   *   8,      // width
+   *   'or'    // union blend
+   * );
    */
   _applyBlitMode (currentBits, rowBits, bitPosition, width, mode) {
     const shiftedBits = rowBits << BigInt(bitPosition)

@@ -1,24 +1,71 @@
 /**
- * RectMorphologyOps - Morphological operations for rectangular grids
+ * @typedef {Object} MaskInstance
+ * @property {bigint|Uint32Array} bits - Bitboard representation
+ * @property {Object} store - Bit storage backend
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {Object} indexer - Coordinate-to-index converter
+ * @property {number} depth - Color depth (bits per cell)
+ * @property {Function} emptyMaskOfSize - Create empty mask of given size
+ * @property {Function} isValid - Check coordinate validity
+ * @property {Function} set - Set value at coordinate
+ * @property {Function} occupiedLocationsAndValues - Iterator of [x, y, value]
+ */
+
+/**
+ * @typedef {Object} StoreBackend
+ * @property {boolean} isMultiBit - True if store handles multi-bit (colored) cells
+ * @property {boolean} isSingleBit - True if store handles single-bit (occupancy) cells
+ * @property {Function} dilate1D_horizontal - Horizontal dilation (1D)
+ * @property {Function} dilate1D_vertical - Vertical dilation (1D)
+ * @property {Function} dilateCrossStep - Cross-pattern dilation step
+ * @property {Function} expandHorizontallyCellwise - Per-cell horizontal expansion
+ * @property {Function} propagateVerticalCellwise - Per-cell vertical propagation
+ * @property {Function} erodeHorizontalClamp - Horizontal erosion with clamping
+ * @property {Function} erodeVerticalClamp - Vertical erosion with clamping
+ * @property {Function} erodeHorizontalCellwise - Per-cell horizontal erosion
+ * @property {Function} erodeVerticalCellwise - Per-cell vertical erosion
+ * @property {Function} _createDefaultEdgeMasks - Create boundary masks
+ */
+
+/**
+ * @typedef {Object} EdgeMaskCollection
+ * @property {bigint|Uint32Array} top - Mask for top edge
+ * @property {bigint|Uint32Array} bottom - Mask for bottom edge
+ * @property {bigint|Uint32Array} left - Mask for left edge
+ * @property {bigint|Uint32Array} right - Mask for right edge
+ */
+
+/**
+ * RectMorphologyOps - Morphological operations orchestration for rectangular grids.
+ * Separates morphological operation logic from storage classes.
+ * Handles both 1-bit (occupancy) and multi-bit (colored) morphology using strategy pattern.
+ * Delegates to store-specific helpers (StoreBigMorphology, Store32Morphology) for low-level
+ * bitwise operations, while this class manages orchestration, edge mask handling, and higher-level patterns.
  *
- * Separates morphological operation logic from storage classes. Handles both
- * 1-bit (occupancy) and multi-bit (colored) morphology. Uses the existing
- * helper classes (StoreBigMorphology, Store32Morphology) for low-level
- * bitwise operations, while this class manages orchestration and higher-level
- * patterns.
+ * Morphological operations supported:
+ * - **Dilation**: Expand regions by expanding each occupied cell to neighbors
+ * - **Erosion**: Shrink regions by removing edge cells (cells without all neighbors present)
+ * - **Cross dilation**: Expand in cardinal directions only (4-connectivity)
+ * - **Expand & dilate**: Create larger grid with border and dilate into it
  *
- * Morphological operations:
- * - Dilation: expand regions by 1 cell
- * - Erosion: shrink regions by removing edge cells
- * - Cross dilation: expand in cardinal directions only
+ * Strategy patterns:
+ * - **1-bit stores**: Use fast separable (horizontal + vertical) bit shifts with edge masks
+ * - **Multi-bit stores**: Use per-cell expansion/erosion with color propagation
  *
+ * @class RectMorphologyOps
+ * @description High-level morphological operations orchestration for rectangular grids
  * @see BigStoreMorphology for BigInt morphology helpers
  * @see Store32Morphology for Uint32Array morphology helpers
+ * @see SingleBitMorphology for 1-bit specialization
  */
 export class RectMorphologyOps {
   /**
    * Create a morphology operation handler for rectangular grids
-   * @param {MaskBase|Packed} mask - Mask or packed grid instance
+   * Caches mask dimensions and store reference for all morphological operations
+   *
+   * @param {MaskInstance} mask - Mask or packed grid instance with required properties
+   * @throws {Error} If mask is missing required properties (store, width, height, indexer)
    */
   constructor (mask) {
     this.mask = mask
@@ -34,9 +81,12 @@ export class RectMorphologyOps {
   // ============================================================================
 
   /**
-   * Dilate (expand) the occupied cells by 1 unit.
-   * Returns this for method chaining.
-   * @returns {MaskBase|Packed} this for chaining
+   * Dilate (expand) the occupied cells by expanding into neighbors.
+   * Mutating variant - modifies this.mask.bits and returns mask for chaining.
+   * Uses strategy pattern: separable bit shifts for 1-bit stores, per-cell expansion for multi-bit.
+   *
+   * @param {number} [radius=1] - Number of dilation steps (non-negative integer)
+   * @returns {MaskInstance} This mask instance (mutated) for method chaining
    */
   dilate (radius = 1) {
     this.mask.bits = this.dilateBits(radius)
@@ -45,8 +95,11 @@ export class RectMorphologyOps {
 
   /**
    * Perform dilation and return the bits without mutating the mask
-   * @param {number} [radius=1] - Number of steps to dilate
-   * @returns {bigint|Uint32Array} dilated bits
+   * Non-mutating variant - original mask unchanged, new bits returned
+   * Selects strategy based on store type (isMultiBit vs single-bit)
+   *
+   * @param {number} [radius=1] - Number of dilation steps (non-negative integer)
+   * @returns {bigint|Uint32Array} Dilated bits
    */
   dilateBits (radius = 1) {
     if (radius <= 0) return this.bits
@@ -64,9 +117,12 @@ export class RectMorphologyOps {
 
   /**
    * Multi-bit dilation: expand each colored cell into neighbors.
-   * Uses per-cell expansion rather than bit shifts.
+   * Uses per-cell expansion rather than bit shifts (respects color per cell).
+   * Processes each radius step sequentially: horizontal then vertical.
+   *
    * @private
-   * @returns {bigint|Uint32Array} dilated bits
+   * @param {number} radius - Number of dilation steps
+   * @returns {bigint|Uint32Array} Dilated bits with color information preserved
    */
   _dilateMultiBit (radius) {
     let result = this.bits
@@ -85,9 +141,13 @@ export class RectMorphologyOps {
 
   /**
    * 1-bit dilation: separable (horizontal + vertical) using bit shifts.
-   * Respects edge masks to prevent wrap-around.
+   * Respects edge masks to prevent wrap-around at grid boundaries.
+   * More efficient than multi-bit: uses fast bit operations instead of per-cell processing.
+   *
    * @private
-   * @returns {bigint|Uint32Array} dilated bits
+   * @param {number} radius - Number of dilation steps
+   * @param {EdgeMaskCollection|undefined} edgeMasks - Pre-computed boundary masks
+   * @returns {bigint|Uint32Array} Dilated bits
    */
   _dilateSeparable1Bit (radius, edgeMasks) {
     let result = this.bits
@@ -115,9 +175,11 @@ export class RectMorphologyOps {
   }
 
   /**
-   * Cross dilation: expand in cardinal directions (up, down, left, right) only
-   * Returns this for method chaining.
-   * @returns {MaskBase|Packed} this for chaining
+   * Cross dilation: expand in cardinal directions (up, down, left, right) only.
+   * Single expansion step using 4-connectivity (excludes diagonals).
+   * Mutating variant - modifies this.mask.bits and returns mask for chaining.
+   *
+   * @returns {MaskInstance} This mask instance (mutated) for method chaining
    */
   dilateCross () {
     this.mask.bits = this.dilateCrossBits()
@@ -125,8 +187,10 @@ export class RectMorphologyOps {
   }
 
   /**
-   * Cross dilation: return bits without mutation
-   * @returns {bigint|Uint32Array} cross-dilated bits
+   * Cross dilation: return bits without mutation.
+   * Non-mutating variant - original mask unchanged, cross-dilated bits returned.
+   *
+   * @returns {bigint|Uint32Array} Cross-dilated bits (4-connectivity)
    */
   dilateCrossBits () {
     const edgeMasks = this._getEdgeMasks()
@@ -145,9 +209,10 @@ export class RectMorphologyOps {
   /**
    * Erode (shrink) occupied cells by removing edge cells.
    * Cells survive only if they have neighbors on all sides (within grid bounds).
-   * Returns this for method chaining.
-   * @param {number} [radius=1] - Number of erosion steps
-   * @returns {MaskBase|Packed} this for chaining
+   * Mutating variant - modifies this.mask.bits and returns mask for chaining.
+   *
+   * @param {number} [radius=1] - Number of erosion steps (non-negative integer)
+   * @returns {MaskInstance} This mask instance (mutated) for method chaining
    */
   erode (radius = 1) {
     this.mask.bits = this.erodeBits(radius)
@@ -156,8 +221,11 @@ export class RectMorphologyOps {
 
   /**
    * Perform erosion and return bits without mutation
-   * @param {number} [radius=1] - Number of erosion steps
-   * @returns {bigint|Uint32Array} eroded bits
+   * Non-mutating variant - original mask unchanged, eroded bits returned.
+   * Selects strategy based on store type (isMultiBit vs single-bit).
+   *
+   * @param {number} [radius=1] - Number of erosion steps (non-negative integer)
+   * @returns {bigint|Uint32Array} Eroded bits
    */
   erodeBits (radius = 1) {
     if (radius <= 0) return this.bits
@@ -175,9 +243,12 @@ export class RectMorphologyOps {
 
   /**
    * Multi-bit erosion: remove colors from cells without neighbors.
-   * Cells must have occupied neighbors in all cardinal directions.
+   * Cells must have occupied neighbors in all cardinal directions to survive.
+   * Processes each radius step sequentially: horizontal then vertical.
+   *
    * @private
-   * @returns {bigint|Uint32Array} eroded bits
+   * @param {number} radius - Number of erosion steps
+   * @returns {bigint|Uint32Array} Eroded bits with color information
    */
   _erodeMultiBit (radius) {
     let result = this.bits
@@ -195,10 +266,14 @@ export class RectMorphologyOps {
   }
 
   /**
-   * 1-bit erosion: remove bits at grid edges (clamped at boundaries).
-   * Uses edge masks to correctly handle boundary conditions.
+   * 1-bit erosion: remove bits at grid edges with clamping at boundaries.
+   * Uses edge masks to correctly handle boundary conditions (no erosion beyond grid).
+   * More efficient than multi-bit: uses fast bit operations.
+   *
    * @private
-   * @returns {bigint|Uint32Array} eroded bits
+   * @param {number} radius - Number of erosion steps
+   * @param {EdgeMaskCollection|undefined} edgeMasks - Pre-computed boundary masks
+   * @returns {bigint|Uint32Array} Eroded bits
    */
   _erodeClamped1Bit (radius, edgeMasks) {
     let result = this.bits
@@ -231,10 +306,13 @@ export class RectMorphologyOps {
 
   /**
    * Expand the grid with a border of empty cells and dilate into them.
-   * Creates a larger grid with this mask at an offset.
-   * @param {number} [borderSize=1] - Border size to add
-   * @param {number} [_fillValue=0] - Color to fill new border cells with
-   * @returns {MaskBase} New expanded & dilated mask
+   * Creates a larger grid with this mask positioned at an offset from edges.
+   * Useful for preventing edge effects when dilating near boundaries.
+   * Takes an optional fill value parameter for future extension to color dilation.
+   *
+   * @param {number} [borderSize=1] - Border size to add on all sides (non-negative)
+   * @param {number} [_fillValue=0] - Color value for border cells (reserved for future use)
+   * @returns {MaskInstance} New expanded and dilated mask (original unchanged)
    */
   dilateExpand (borderSize = 1, _fillValue = 0) {
     const newWidth = this.width + 2 * borderSize
@@ -255,10 +333,14 @@ export class RectMorphologyOps {
   }
 
   /**
-   * Expand and dilate, but fill new cells with background (occupancy only).
-   * Used for footprint/shadow calculations.
-   * @param {number} [borderSize=1] - Border size to add
-   * @returns {MaskBase} New expanded & dilated mask
+   * Expand and dilate for footprint/shadow calculations.
+   * Semantically distinct from dilateExpand: intended for calculating spatial footprints.
+   * Expands the grid with a border but does NOT dilate into the border area.
+   * Used when background context (empty space boundaries) is relevant to the morphological operation.
+   * Useful for shadow/footprint analysis without expansion effects.
+   *
+   * @param {number} [borderSize=1] - Border size to add on all sides (non-negative)
+   * @returns {MaskInstance} New expanded mask without dilation (original unchanged)
    */
   flatDilateExpand (borderSize = 1) {
     const newWidth = this.width + 2 * borderSize
@@ -269,16 +351,21 @@ export class RectMorphologyOps {
       this.mask.depth
     )
 
-    // Copy and dilate
+    // Copy to center but do NOT dilate - just expand grid boundaries
     this._copyToCenter(expanded, borderSize)
-    expanded.bits = this._dilateExpandedMask(expanded.bits, expanded.store)
 
     return expanded
   }
 
   /**
    * Copy this mask's bits to the center of a larger expanded mask.
+   * Positions original mask at offset (borderSize, borderSize) in the new grid.
+   * Only copies cells that fit within the expanded mask bounds.
+   *
    * @private
+   * @param {MaskInstance} expandedMask - Target expanded mask to copy into
+   * @param {number} borderSize - Offset/border size from edges
+   * @returns {void} Modifies expandedMask in-place
    */
   _copyToCenter (expandedMask, borderSize) {
     for (const [
@@ -296,7 +383,12 @@ export class RectMorphologyOps {
 
   /**
    * Dilate an expanded mask by one step into empty border area.
+   * Single dilation step applied to the expanded grid.
+   *
    * @private
+   * @param {bigint|Uint32Array} bits - Input bits for expanded mask
+   * @param {StoreBackend} store - Store backend for dilation operation
+   * @returns {bigint|Uint32Array} Dilated bits
    */
   _dilateExpandedMask (bits, store) {
     const edgeMasks = store._createDefaultEdgeMasks?.() || {}
@@ -309,9 +401,13 @@ export class RectMorphologyOps {
 
   /**
    * Get or create edge masks that prevent expansion across grid boundaries.
-   * Edge masks mark which cells can expand in each direction.
+   * Edge masks mark which cells can expand in each direction without wrapping.
+   * Different strategies for 1-bit vs multi-bit stores:
+   * - **1-bit stores**: Create and cache boundary masks for efficient bit shift operations
+   * - **Multi-bit stores**: Return undefined (use per-cell expansion, no masks needed)
+   *
    * @private
-   * @returns {Object|undefined} Edge masks object or undefined if using per-cell expansion
+   * @returns {EdgeMaskCollection|undefined} Edge masks object or undefined for per-cell expansion
    */
   _getEdgeMasks () {
     // Multi-bit stores don't use edge masks (per-cell expansion)

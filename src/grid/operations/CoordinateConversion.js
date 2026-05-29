@@ -1,11 +1,46 @@
 /**
- * CoordinateConversion - Encapsulates coordinate/bit conversion operations
- * Bridges between coordinate space and bit positions
+ * @typedef {[number, number]} CoordinatePair
+ * @description 2D coordinate tuple [x, y]
+ */
+
+/**
+ * @typedef {[number, number, number]} CoordinateWithValue
+ * @description 3D coordinate tuple [x, y, value] where value is optional/replaceable
+ */
+
+/**
+ * @typedef {Object} BoundingBox
+ * @property {Array<number>} min - Minimum extent coordinates [minX, minY, ...]
+ * @property {Array<number>} max - Maximum extent coordinates [maxX, maxY, ...]
+ */
+
+/**
+ * @typedef {Object} MaskInstance
+ * @property {Object} indexer - Coordinate indexer with isValid(), index(), location() methods
+ * @property {bigint|Array} bits - Bitboard representation
+ * @property {Object} store - Bit storage backend with setIdx(), empty, one, storeType()
+ * @property {Function} index - Method to convert coordinates to bit index
+ * @property {Function} emptyMask - Property/method to create empty mask instances
+ */
+
+/**
+ * CoordinateConversion - Encapsulates coordinate/bit conversion operations.
+ * Bridges between coordinate space and bit positions, providing bidirectional conversion.
+ * Handles validation, transformation, and iteration over coordinate sets with flexible
+ * bit value handling (default or per-coordinate values).
+ *
+ * @class CoordinateConversion
+ * @description Encapsulates coordinate/bit conversion operations
  * Provides bidirectional conversion: coordinates ↔ bit patterns
  */
 export class CoordinateConversion {
   /**
-   * @param {Object} maskInstance - Mask with indexer, bits, store, and index() method
+   * Constructs a CoordinateConversion helper for a mask instance.
+   * Maintains references to mask structure, indexer, and bit storage backend
+   * for performing coordinate-to-bit and bit-to-coordinate transformations.
+   *
+   * @param {MaskInstance} maskInstance - Mask instance with indexer, bits, store, and index() method
+   * @throws {Error} If maskInstance is missing required properties (indexer, store, bits)
    */
   constructor (maskInstance) {
     this.mask = maskInstance
@@ -168,7 +203,7 @@ export class CoordinateConversion {
     const bitIndex = this.coordinateToBitIndex(...coord)
     const providedValue = coord.at(2)
     const normalizedValue =
-      providedValue === undefined || providedValue === null
+      providedValue === undefined
         ? defaultValue
         : this.store.storeType(providedValue)
 

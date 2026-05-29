@@ -73,7 +73,6 @@ export class ShapeBase {
    * Linear indices range from [0, size).
    * @type {number}
    */
-  size
   /**
    * Helper to enforce abstract base class pattern.
    * Throws if attempting to instantiate an abstract class directly.
