@@ -1,19 +1,33 @@
 /**
- * Bit helper utilities for mixed number and BigInt storage.
+ * @fileoverview Bit helper utilities for mixed number and BigInt storage.
+ *
+ * Provides three utility classes for low-level bit manipulation operations:
+ * - Bits: Basic operations on mixed number/BigInt types
+ * - BigBits: Multi-bit and color/layer encoding operations
+ * - BigOne: Single-bit manipulation with multiple return formats
  *
  * These helpers are intentionally minimal wrappers around native BigInt
- * operations so that the rest of the bit store code can remain simple.
+ * operations so that the rest of the bit store code can remain simple and efficient.
+ * All methods support mixed number and BigInt input types for flexibility.
+ *
  * @module grid/bitStore/helpers/bigbits
  */
 
 /**
  * Utility class for basic bit manipulation operations supporting mixed number and BigInt types.
- * @class
+ *
+ * @class Bits
+ * @description Provides minimal bit manipulation operations that work with both number and BigInt types.
+ * Used for fundamental bitwise operations like clearing bits from patterns.
  */
 export class Bits {
   /**
    * Clear bits from a pattern using a mask.
+   *
    * Performs a bitwise AND operation with the complement of the mask to clear specified bits.
+   * Clears all bits where mask has a 1, preserves all bits where mask has a 0.
+   *
+   * @function clear
    * @static
    * @param {number|bigint} bits - The input bit pattern to modify.
    * @param {number|bigint} mask - The bit mask indicating which bits to clear (1 = clear, 0 = keep).
@@ -30,13 +44,20 @@ export class Bits {
 
 /**
  * Utility class for BigInt bit manipulation with color/layer encoding.
- * Provides methods for shifting, masking, and managing bit positions in arbitrary-precision integers.
- * @class
+ *
+ * @class BigBits
+ * @description Provides methods for shifting, masking, and managing bit positions in arbitrary-precision
+ * BigInt values. Designed for color/layer encoding where multiple bits represent different channels.
+ * Supports both positive and negative shifts through unified shiftBits() method.
  */
 export class BigBits {
   /**
    * Create a mask for a color value at a given bit position.
+   *
    * Shifts a color or layer value to occupy bits starting at the specified position.
+   * This is used to encode color/layer values at specific bit offsets in a bitboard.
+   *
+   * @function setMask
    * @static
    * @param {number|bigint} pos - Bit position where the color value should begin.
    * @param {number|bigint} color - Color value or layer bits to shift into position.
@@ -50,7 +71,11 @@ export class BigBits {
 
   /**
    * Shift BigInt bits to the right.
+   *
    * Performs an arithmetic right shift operation on the source bitboard.
+   * Positive shift values move bits toward less significant positions.
+   *
+   * @function shiftRight
    * @static
    * @param {bigint|number} src - The source bitboard to shift.
    * @param {number|bigint} shift - Number of bit positions to shift right.
@@ -65,7 +90,11 @@ export class BigBits {
 
   /**
    * Shift BigInt bits to the left.
+   *
    * Performs a left shift operation on the source bitboard.
+   * Negative shift values move bits toward more significant positions.
+   *
+   * @function shiftLeft
    * @static
    * @param {bigint|number} src - The source bitboard to shift.
    * @param {number|bigint} shift - Number of bit positions to shift left.
@@ -80,9 +109,12 @@ export class BigBits {
 
   /**
    * Shift BigInt bits by a signed offset.
+   *
    * Automatically selects left or right shift based on the sign of the shift parameter.
    * Positive values are left shifts, negative values are right shifts.
    * Zero returns the original source unchanged, avoiding unnecessary operations.
+   *
+   * @function shiftBits
    * @static
    * @param {bigint|number} src - The source bitboard.
    * @param {number|bigint} shift - Signed shift amount (positive = left, negative = right, 0 = no-op).
@@ -100,8 +132,11 @@ export class BigBits {
 
   /**
    * Generate a mask of all bits set within a given width.
+   *
    * Creates a BigInt with all bits from position 0 to width-1 set to 1.
-   * Equivalent to (2^width) - 1.
+   * Equivalent to (2^width) - 1. Used to create width-specific bit masks.
+   *
+   * @function fullBitsForWidth
    * @static
    * @param {number|bigint} width - The number of bits to set (width >= 0).
    * @returns {bigint} A mask with width contiguous bits set to 1.
@@ -136,13 +171,19 @@ export class BigBits {
 
 /**
  * Utility class for single-bit manipulation operations on BigInt values.
- * Provides methods for setting, clearing, reading, and testing individual bits within a bitboard.
- * @class
+ *
+ * @class BigOne
+ * @description Provides methods for setting, clearing, reading, and testing individual bits within a bitboard.
+ * Supports multiple return formats (boolean, number, BigInt) for flexibility in different contexts.
  */
 export class BigOne {
   /**
    * Build a single-bit mask at a given position.
+   *
    * Creates a BigInt with only one bit set at the specified position (value = 2^pos).
+   * Commonly used to create masks for testing or setting individual bits.
+   *
+   * @function bitMaskByPos
    * @static
    * @param {number|bigint} pos - Bit position to activate (0 is the rightmost bit).
    * @returns {bigint} A BigInt with exactly one bit set at position pos.
@@ -156,7 +197,11 @@ export class BigOne {
 
   /**
    * Test whether a bit is set at a specific position.
+   *
    * Returns true (as a boolean) if the bit at the given index is 1.
+   * Useful for conditional logic and control flow based on individual bits.
+   *
+   * @function isBitSet
    * @static
    * @param {bigint|number} bitboard - The bitboard to examine.
    * @param {number|bigint} index - The bit position to test (0 is the rightmost bit).
@@ -171,7 +216,11 @@ export class BigOne {
 
   /**
    * Get the bit value at a specific position.
+   *
    * Returns the raw BigInt bit value (0n or 1n) at the given position.
+   * Useful for continuing BigInt chain operations without type conversion.
+   *
+   * @function getBitAtPos
    * @static
    * @param {bigint|number} bitboard - The bitboard to examine.
    * @param {number|bigint} pos - The bit position to read (0 is the rightmost bit).
@@ -186,7 +235,11 @@ export class BigOne {
 
   /**
    * Set a bit at a specific position to 1.
+   *
    * Performs an OR operation to set the bit without affecting other bits.
+   * Leaves all other bits unchanged.
+   *
+   * @function setBitPos
    * @static
    * @param {bigint|number} bitboard - The input bitboard.
    * @param {number|bigint} pos - The bit position to set (0 is the rightmost bit).
@@ -198,13 +251,30 @@ export class BigOne {
   static setBitPos (bitboard, pos) {
     return BigInt(bitboard) | (1n << BigInt(pos))
   }
+
+  /**
+   * Toggle a bit at a specific position.
+   *
+   * Performs an XOR operation to flip the bit state (0 becomes 1, 1 becomes 0).
+   * All other bits remain unchanged.
+   *
+   * @function toggleBitPos
+   * @static
+   * @param {bigint|number} bitboard - The input bitboard.
+   * @param {number|bigint} pos - The bit position to toggle (0 is the rightmost bit).
+   * @returns {bigint} The bitboard with the bit at pos toggled.
+   */
   static toggleBitPos (bitboard, pos) {
     return BigInt(bitboard) ^ (1n << BigInt(pos))
   }
 
   /**
    * Set or clear a bit at a specific position based on a value.
+   *
    * If value is truthy, sets the bit to 1; if falsy, clears the bit to 0.
+   * Allows conditional bit manipulation without branching in calling code.
+   *
+   * @function setBitAtPos
    * @static
    * @param {bigint|number} bitboard - The input bitboard.
    * @param {number|bigint} pos - The bit position to modify (0 is the rightmost bit).
@@ -222,7 +292,11 @@ export class BigOne {
 
   /**
    * Clear a bit at a specific position, setting it to 0.
+   *
    * Performs an AND operation with the complement of a single-bit mask.
+   * All other bits remain unchanged.
+   *
+   * @function clearBitAtPos
    * @static
    * @param {bigint|number} bitboard - The input bitboard.
    * @param {number|bigint} pos - The bit position to clear (0 is the rightmost bit).
@@ -237,8 +311,12 @@ export class BigOne {
 
   /**
    * Read the numeric boolean value of a single bit.
+   *
    * Extracts a single bit and returns it as a JavaScript number (0 or 1).
    * Useful for conditions or arithmetic operations requiring a number type.
+   * Avoids type coercion overhead of boolean checks.
+   *
+   * @function numValue
    * @static
    * @param {bigint|number} bits - The source bitboard.
    * @param {number|bigint} pos - Position of the bit to read (0 is the rightmost bit).
@@ -253,8 +331,12 @@ export class BigOne {
 
   /**
    * Read the BigInt value of a single bit.
+   *
    * Extracts a single bit and returns it as a BigInt (0n or 1n).
    * Useful when continuing BigInt operations without type conversion overhead.
+   * Preferred for chaining BigInt calculations.
+   *
+   * @function value
    * @static
    * @param {bigint|number} bits - The source bitboard.
    * @param {number|bigint} pos - Position of the bit to read (0 is the rightmost bit).
