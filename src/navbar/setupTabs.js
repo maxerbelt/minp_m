@@ -6,37 +6,59 @@ import { NavigationService } from './NavigationService.js'
 
 /**
  * @typedef {import('./types/domain.types.js').MapProvider} MapProvider
+ * Map provider abstraction for accessing current map and terrain state.
+ * Enables dependency injection and testability of map-dependent services.
+ */
+
+/**
  * @typedef {import('./types/ui.types.js').TabManagerInstance} TabManager
+ * Tab manager instance for managing UI tabs and their visibility/handlers.
+ * Handles tab configuration, listeners, and mode-specific setup.
+ */
+
+/**
  * @typedef {import('./types/callbacks.types.js').VoidCallback} NavigationServiceInstance
+ * Navigation service instance for handling mode switches and page navigation.
+ * Manages transitions between different game modes (build, hide, seek, etc.).
+ */
+
+/**
  * @typedef {import('./types/config.types.js').ModeConfig} ModeConfig
+ * Configuration object for a specific hunt mode.
+ * @property {string[]} current - Currently active tabs for this mode.
+ * @property {Object.<string, Function>} handlers - Event handlers for available tabs.
  */
 
 /**
  * MapProvider adapter that provides access to the global bh map/terrain.
- * Abstracts access to singleton bh object for better testability.
+ * Abstracts access to singleton bh object for better testability and loose coupling.
+ * Implements MapProvider interface to decouple dependencies from global state.
  * @class
  * @implements {MapProvider}
  */
 class BhMapProvider {
   /**
-   * Get current map instance.
-   * @returns {Object} Current map object.
+   * Get current map instance from global bh singleton.
+   * Returns the map currently being displayed or edited.
+   * @returns {Object} Current map object with rows, cols, and ship data.
    */
   getCurrentMap () {
     return bh.map
   }
 
   /**
-   * Get maps manager instance.
-   * @returns {Object} Maps manager instance.
+   * Get maps manager instance from global bh singleton.
+   * Returns the manager that stores and provides access to all available maps.
+   * @returns {Object} Maps manager with methods to get/set/create maps.
    */
   getMaps () {
     return bh.maps
   }
 
   /**
-   * Get current terrain instance.
-   * @returns {Object} Current terrain object.
+   * Get current terrain instance from global bh singleton.
+   * Returns the currently active terrain configuration (sea, space, etc.).
+   * @returns {Object} Current terrain object with shape definitions and rules.
    */
   getTerrain () {
     return bh.terrain
@@ -45,12 +67,16 @@ class BhMapProvider {
 
 /**
  * ImportHandler - Handles map import functionality.
- * Encapsulates file input creation, parsing, and saving logic.
+ * Encapsulates file input creation, JSON parsing, validation, and storage logic.
+ * Provides user feedback via browser dialogs for success/error cases.
  * @class
  */
 class ImportHandler {
   /**
    * Handle map import from JSON file.
+   * Creates file input, parses JSON, validates for duplicates, and saves to storage.
+   * Shows confirmation dialog if map with same title exists, alert on success/error.
+   * @static
    * @returns {void}
    */
   static handleImport () {
@@ -90,7 +116,12 @@ class ImportHandler {
 }
 
 // Mode configurations - extracted to reduce duplication and complexity
-/** @type {Object.<string, string[]>} Current tabs for each mode */
+/**
+ * Current tabs for each hunt mode.
+ * Maps mode identifiers to arrays of active tab names for that mode.
+ * Keys: 'build', 'hide', 'seek', 'list', 'rules', 'print'
+ * @type {Object.<string, string[]>}
+ */
 const MODE_CURRENT_TABS = {
   build: ['build', 'add'],
   hide: ['hide'],
@@ -100,7 +131,13 @@ const MODE_CURRENT_TABS = {
   print: ['print']
 }
 
-/** @type {Object.<string, string[]>} Available handlers for each mode */
+/**
+ * Available navigation handlers for each hunt mode.
+ * Maps mode identifiers to arrays of handler names accessible from that mode.
+ * Each handler corresponds to a navigation method in NavigationService.
+ * Keys: 'build', 'hide', 'seek', 'list', 'rules', 'print'
+ * @type {Object.<string, string[]>}
+ */
 const MODE_AVAILABLE_HANDLERS = {
   build: ['hide', 'seek', 'list', 'rules', 'import'],
   hide: ['build', 'add', 'seek', 'list', 'rules', 'import'],
@@ -110,16 +147,33 @@ const MODE_AVAILABLE_HANDLERS = {
   print: ['build', 'add', 'hide', 'seek', 'list', 'rules', 'import']
 }
 
-// Module-level tab and navigation management
-/** @type {TabManager|null} Tab manager instance */
+/**
+ * Tab manager instance for managing tab visibility and event handling.
+ * Initialized in setupTabs() and persists for the session.
+ * @type {TabManager|null}
+ */
 let tabManager = null
-/** @type {NavigationServiceInstance|null} Navigation service instance */
+
+/**
+ * Navigation service instance for handling mode transitions and navigation.
+ * Initialized in setupTabs() and persists for the session.
+ * Manages navigation between build/hide/seek/list/rules/print modes.
+ * @type {NavigationServiceInstance|null}
+ */
 let navigationService = null
-/** @type {BhMapProvider} Map provider instance */
+
+/**
+ * Map provider instance for accessing current map/terrain state.
+ * Created as new BhMapProvider() and used by NavigationService.
+ * Provides abstraction layer over global bh singleton.
+ * @type {BhMapProvider}
+ */
 const mapProvider = new BhMapProvider()
 
 /**
- * Exported tabs object for backward compatibility.
+ * Exported tabs object for backward compatibility with legacy code.
+ * Populated in _populateTabsExport() with references to all tab DOM elements.
+ * Allows direct access to tab instances without going through tabManager.
  * @type {Object.<string, Object|null>}
  */
 export const tabs = {
@@ -136,10 +190,12 @@ export const tabs = {
 }
 
 /**
- * Legacy switchTo function - maintained for backward compatibility.
- * @param {string} target - Target tab/mode to switch to.
- * @param {string} huntMode - Hunt mode identifier.
- * @param {string} [mapName] - Optional map name.
+ * Legacy switchTo function - maintained for backward compatibility with old code.
+ * Delegates to navigationService if available and target is provided.
+ * Used by legacy code that needs to switch modes without refactoring.
+ * @param {string} target - Target mode/tab to switch to ('build', 'hide', etc.).
+ * @param {string} huntMode - Current hunt mode identifier for context.
+ * @param {string} [mapName] - Optional map name to load in target mode.
  * @returns {void}
  */
 export function switchTo (target, huntMode, mapName) {
@@ -150,10 +206,12 @@ export function switchTo (target, huntMode, mapName) {
 
 /**
  * Create handlers object for a given hunt mode.
- * Maps tab names to navigation handler functions.
+ * Maps tab names (hide, seek, list, rules, build, add, import) to their handler functions.
+ * Handler functions invoke appropriate navigationService methods or ImportHandler.
+ * Only creates handlers needed by the mode; others are filtered in _getModeConfig.
  * @private
- * @param {string} mode - Current hunt mode.
- * @returns {Object.<string, Function>} Map of tab names to handler functions.
+ * @param {string} mode - Current hunt mode identifier.
+ * @returns {Object.<string, Function>} Map of tab names to navigation handler functions.
  */
 function _createModeHandlers (mode) {
   return {
@@ -169,10 +227,14 @@ function _createModeHandlers (mode) {
 
 /**
  * Get mode-specific configuration with current tabs and handlers.
- * Dynamically generates handler subsets based on mode-specific needs.
+ * Builds configuration by:
+ * 1. Creating all possible handlers for the mode
+ * 2. Filtering to only include handlers available for this mode
+ * 3. Including the current tabs from MODE_CURRENT_TABS
+ * Returns object ready for tabManager.configureForMode().
  * @private
- * @param {string} mode - Hunt mode identifier.
- * @returns {ModeConfig} Mode configuration with current tabs and handlers.
+ * @param {string} mode - Hunt mode identifier ('build', 'hide', 'seek', etc.).
+ * @returns {ModeConfig} Mode configuration with current tabs and filtered handlers.
  */
 function _getModeConfig (mode) {
   const allHandlers = _createModeHandlers(mode)
@@ -193,6 +255,9 @@ function _getModeConfig (mode) {
 
 /**
  * Initialize tab manager and navigation service.
+ * Creates new instances of TabManager and NavigationService.
+ * Sets up global state for tab/navigation management.
+ * Must be called before any tab operations.
  * @private
  * @returns {void}
  */
@@ -203,8 +268,12 @@ function _initializeServices () {
 
 /**
  * Setup tabs and navigation for the application.
- * Initializes tab manager, navigation service, and configures UI based on mode.
- * @param {string} huntMode - Initial hunt mode ('build', 'hide', 'seek', etc.).
+ * Main entry point that orchestrates the initialization sequence:
+ * 1. Initializes TabManager and NavigationService
+ * 2. Populates exported tabs object for backward compatibility
+ * 3. Configures tabs based on the initial hunt mode
+ * Should be called once during application startup.
+ * @param {string} huntMode - Initial hunt mode ('build', 'hide', 'seek', 'list', 'rules', 'print').
  * @returns {void}
  */
 export function setupTabs (huntMode) {
@@ -215,8 +284,9 @@ export function setupTabs (huntMode) {
 
 /**
  * Configure tabs for the given hunt mode.
+ * Sets current mode in TabManager and triggers tab configuration for that mode.
  * @private
- * @param {string} huntMode - Hunt mode to configure for.
+ * @param {string} huntMode - Hunt mode to configure for ('build', 'hide', 'seek', etc.).
  * @returns {void}
  */
 function _configureForHuntMode (huntMode) {
@@ -226,7 +296,9 @@ function _configureForHuntMode (huntMode) {
 
 /**
  * Populate exported tabs object with manager instances.
- * Provides backward compatibility by exposing tab instances.
+ * Retrieves all tab DOM elements from tabManager and assigns to tabs export object.
+ * Provides backward compatibility by exposing tab instances directly.
+ * Enables legacy code to access tabs.build, tabs.hide, etc. without tabManager.
  * @private
  * @returns {void}
  */
@@ -249,10 +321,14 @@ function _populateTabsExport () {
 }
 
 /**
- * Configure tab handlers and visibility based on mode.
- * Sets up event listeners and visual states for all tabs.
+ * Configure tab handlers and visibility based on hunt mode.
+ * Performs complete mode-specific setup:
+ * 1. Gets mode configuration (tabs and handlers)
+ * 2. Configures TabManager with mode-specific settings
+ * 3. Adds special listeners for print/about/source tabs
+ * 4. Handles import tab visibility logic
  * @private
- * @param {string} huntMode - Current hunt mode.
+ * @param {string} huntMode - Current hunt mode ('build', 'hide', 'seek', etc.).
  * @returns {void}
  */
 function _configureTabsForMode (huntMode) {
@@ -265,6 +341,10 @@ function _configureTabsForMode (huntMode) {
 
 /**
  * Add special handlers for print, about, and source tabs.
+ * These tabs are not standard mode handlers and require special navigation logic.
+ * Print: opens print dialog via NavigationService.printPage()
+ * About: navigates to blog via NavigationService.navigateToBlog()
+ * Source: navigates to source code via NavigationService.navigateToSource()
  * @private
  * @returns {void}
  */
@@ -276,8 +356,11 @@ function _addSpecialTabListeners () {
 
 /**
  * Handle import tab for non-import modes.
+ * When not in import mode, adds listener to import tab that triggers ImportHandler.
+ * If in import mode, import is already handled by other configuration.
+ * Ensures import functionality is available in all modes.
  * @private
- * @param {string} huntMode - Current hunt mode.
+ * @param {string} huntMode - Current hunt mode identifier.
  * @returns {void}
  */
 function _handleImportTabForNonImportMode (huntMode) {

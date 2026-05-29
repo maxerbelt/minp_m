@@ -277,7 +277,7 @@ export function setupMapSelection (_boardSetup, _refresh) {
   const paramManager = new ParameterManager(urlParams)
 
   const placedShips = paramManager.hasPlacedShips()
-  setupMapControl(urlParams, boardSetup, refresh)
+  setupMapControl(urlParams)
 
   return placedShips
 }

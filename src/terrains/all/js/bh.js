@@ -1,4 +1,7 @@
 import { terrains } from './terrains.js'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 /**
  * @typedef {import('./terrain.js').Terrain} Terrain
