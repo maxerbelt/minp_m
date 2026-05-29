@@ -1,5 +1,3 @@
-
-
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 // Variables for dynamically imported modules
@@ -259,7 +257,7 @@ describe('Hybrid', () => {
         faction: 0,
         setBoardFromSecondary: jest.fn()
       }
-      const h = new Hybrid(
+      new Hybrid(
         'Test',
         'T',
         'D',

@@ -3,51 +3,101 @@ import { RectangleShape } from './RectangleShape.js'
 import { AsciiRepresentation } from '../AsciiRepresentation.js'
 
 /**
- * Symbol representation mapping for grid display.
- * For simple empty/full representation, use two-element array: [emptyChar, fullChar]
- * For multi-value grids, use longer array mapping each value to a character.
- * @typedef {Array<string>} SymbolMap
+ * @typedef {Object} RectangleShape
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
  */
 
 /**
- * Mask-like object interface for grid compatibility.
- * Any object providing these properties and methods can be used as a grid-like mask.
+ * @typedef {Array<string>} SymbolMap
+ * Symbol representation mapping for grid display.
+ * Maps numeric cell values to single-character representations.
+ *
+ * For simple empty/full: [emptyChar, fullChar] = ['.', '#']
+ * For multi-value: ['.', '1', '2', '3'] maps 0→'.', 1→'1', 2→'2', 3→'3'
+ *
+ * @example
+ * const binary = ['.', '#']
+ * const intensity = ['·', 'o', 'O', '●']
+ */
+
+/**
  * @typedef {Object} MaskLike
  * @property {number} width - Grid width in cells (positive integer, immutable)
  * @property {number} height - Grid height in cells (positive integer, immutable)
- * @property {Function} occupiedLocationsAndValues - Generator/iterator yielding [x, y, color] tuples for all non-empty cells
+ * @property {Function} occupiedLocationsAndValues - Generator yielding [x, y, color] tuples
+ *
+ * Mask-like object interface for grid compatibility.
+ * Any object with these properties and methods can be used as a grid-like mask.
+ * The occupiedLocationsAndValues() method should yield [x, y, color] tuples:
+ * - x: column (0 to width-1)
+ * - y: row (0 to height-1)
+ * - color: truthy for occupied, falsy for empty
+ *
+ * @example
+ * const maskLike = {
+ *   width: 5,
+ *   height: 3,
+ *   *occupiedLocationsAndValues() {
+ *     yield [1, 0, 1]
+ *     yield [2, 1, 1]
+ *   }
+ * }
  */
 
 /**
  * ASCII string-based grid with newline-separated rows.
  *
- * Stores grid state as a string where each row is separated by '\n'.
- * Cells are represented as characters: fillChar for empty cells, '#' for occupied/set cells.
+ * Stores grid state as an immutable string where rows are separated by '\n' newlines.
+ * Each cell is a single character: fillChar for empty, any other for occupied.
  *
- * String Format: 'row1\nrow2\nrow3' where newlines are included in index calculations.
- * This allows direct string manipulation while maintaining 2D coordinate semantics.
- * Each row is (width) characters followed by a newline, except the last row.
+ * ## String Format
+ * Multi-line text: 'row0\nrow1\nrow2...rowN'
+ * - Each row: exactly (width) characters
+ * - Separator: '\n' between rows (no newline after last row)
+ * - Total length: height * (width + 1) - 1
  *
- * Index Calculation: For coordinate (x, y), linear index = y * (width + 1) + x
- * The +1 accounts for newline character at the end of each row.
+ * ## Index Calculation
+ * 2D (x, y) to linear string index: index = y * (width + 1) + x
  *
- * Useful for: Simple grid visualization, text-based game boards, ASCII art rendering,
- * memory-efficient grid storage as immutable strings.
+ * ## Example Grid (5x3)
+ * .....\n#.#..\n..### (14 chars total)
+ * Row 0: indices 0-4 ('.' chars) + index 5 (newline)
+ * Row 1: indices 6-10 + index 11 (newline)
+ * Row 2: indices 12-16 (no newline after last row)
+ * Accessing (2,1): index = 1*6 + 2 = 8 ← character '#'
+ *
+ * ## Memory Profile
+ * - Immutable strings (new string created on each set)
+ * - No cell array; cells stored as characters
+ * - Efficient for visualization and text rendering
+ * - Fast coordinate-to-index conversion
+ *
+ * ## Use Cases
+ * - Text-based UI grids and boards
+ * - ASCII art generation
+ * - Game board visualization
+ * - Debug output and logging
  *
  * @extends GridBase
  * @class AsciiGrid
- * @example
- * const grid = new AsciiGrid(5, 3);
- * // Creates 5-wide, 3-tall grid filled with '.'
- * // Internal representation: '.....\n.....\n.....' (14 chars + 2 newlines)
  */
 export class AsciiGrid extends GridBase {
   /**
-   * Width stride (column count + 1 for newline character).
-   * Used in index calculation since each row includes a trailing newline.
-   * Formula: rowStride = width + 1 (the +1 is for the newline character)
+   * Width stride: characters per row including newline.
+   * Used in index calculations to map 2D (x, y) to linear string index.
+   *
+   * ## Calculation
+   * rowStride = width + 1
+   * - width: number of cell characters per row
+   * - +1: newline character at end of row (except last row)
+   *
+   * ## Usage in index(x, y)
+   * Linear index = y * rowStride + x
    *
    * @type {number}
+   * @private
+   * @readonly
    */
   #rowStride
 
@@ -84,19 +134,13 @@ export class AsciiGrid extends GridBase {
   }
 
   /**
-   * Calculates linear index for 2D coordinates, accounting for newline characters.
+   * Calculates linear string index for 2D grid coordinates.
    *
-   * Converts (x, y) grid coordinates to a linear position in the internal ASCII string.
-   * Each row occupies (width + 1) characters due to the trailing newline.
-   * Formula: index = y * (width + 1) + x
+   * Converts 2D grid coordinates (x, y) to a linear position in the internal ASCII string,
+   * accounting for newline characters that separate rows.
    *
-   * @param {number} x - Column coordinate (0-based, should be in [0, width))
-   * @param {number} y - Row coordinate (0-based, should be in [0, height))
-   * @returns {number} Linear position in the ASCII string (non-negative integer)
-   * @example
-   * const idx = grid.index(2, 1);  // Get string index for column 2, row 1
-   * // On 5-wide grid: 1 * 6 + 2 = 8
-   */
+   * ## Algorithm
+   * index = y * rowStride + x = y * (width + 1) + x\n   *\n   * Where:\n   * - y * rowStride: offset to start of target row\n   * - + x: offset within row to column x\n   *\n   * ## Example (5-wide grid)\n   * Row 0: indices 0-4 (cells), 5 (newline)\n   * Row 1: indices 6-10 (cells), 11 (newline)\n   * Row 2: indices 12-16 (cells, no newline)\n   * index(2, 1) = 1 * 6 + 2 = 8\n   *\n   * @param {number} x - Column coordinate (0-based, range [0, width))\n   * @param {number} y - Row coordinate (0-based, range [0, height))\n   * @returns {number} Linear string index (0-based)\n   *\n   * @see #rowStride\n   * @see #indexMax\n   */
   index (x, y) {
     return y * this.#rowStride + x
   }
