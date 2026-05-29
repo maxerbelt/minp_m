@@ -1,15 +1,7 @@
 /**
- * @typedef {HTMLSelectElement} ChooseUISelectElement
- */
-
-/**
- * @callback ChooseUIChangeCallback
- * @param {string} value
- * @param {string} text
- */
-
-/**
- * @typedef {HTMLOptionElement} ChooseUIOptionElement
+ * @typedef {import('./types/ui.types.js').SelectElement} ChooseUISelectElement
+ * @typedef {import('./types/callbacks.types.js').ChooseUIChangeCallback} ChooseUIChangeCallback
+ * @typedef {import('./types/ui.types.js').OptionElement} ChooseUIOptionElement
  */
 
 /**

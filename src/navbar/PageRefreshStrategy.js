@@ -1,14 +1,41 @@
 /**
- * @typedef {() => void} RefreshCallback
- * @typedef {() => void} ErrorableCallback
- *
- * @typedef {Object} RefreshStrategyOptions
- * @property {RefreshCallback} [beforeRefresh] - Callback before refresh.
- * @property {RefreshCallback} [afterRefresh] - Callback after refresh.
+ * @typedef {import('./types/callbacks.types.js').RefreshCallback} RefreshCallback
+ * @typedef {import('./types/callbacks.types.js').VoidCallback} VoidCallback
+ * @typedef {import('./types/callbacks.types.js').BeforeCallback} BeforeCallback
+ * @typedef {import('./types/callbacks.types.js').AfterCallback} AfterCallback
+ * @typedef {import('./types/config.types.js').RefreshStrategyOptions} RefreshStrategyOptions
  */
 
 /**
- * @typedef {import('./ParameterManager.js').ParameterManager} ParameterManager
+ * @typedef {Object} StateRefreshCallbacks
+ * @property {VoidCallback} [boardSetup] - Board setup callback.
+ * @property {VoidCallback} [clearStarfield] - Starfield clear callback.
+ */
+
+/**
+ * @typedef {Object} StateRefreshOptions
+ * @property {BeforeCallback} [beforeRefresh] - Callback before refresh.
+ * @property {AfterCallback} [afterRefresh] - Callback after refresh.
+ * @property {VoidCallback} [boardSetup] - Board setup callback.
+ * @property {VoidCallback} [clearStarfield] - Starfield clear callback.
+ */
+
+/**
+ * @typedef {Object} NavigationServiceInterface
+ * @property {(targetMode: string, huntMode?: string|undefined, mapName?: string|null) => void} switchToMode - Switch to target mode.
+ */
+
+/**
+ * @typedef {Object} ParameterManagerInterface
+ * @property {(paramMap: Object) => void} setAll - Set all parameters at once.
+ * @property {() => void} updateHistoryState - Update browser history state.
+ */
+
+/**
+ * @typedef {Object} NavStateManagerOptionsObj
+ * @property {ParameterManagerInterface} [paramManager] - Parameter manager instance.
+ * @property {PageRefreshStrategy} [refreshStrategy] - Refresh strategy instance.
+ * @property {NavigationServiceInterface} [navigationService] - Navigation service instance.
  */
 
 /**
@@ -94,7 +121,7 @@ export class PageRefreshStrategy {
   /**
    * Safely invoke a callback and log any errors.
    * @private
-   * @param {ErrorableCallback} callback - Callback to invoke.
+   * @param {RefreshCallback} callback - Callback to invoke.
    * @param {string} description - Context description for error logging.
    * @returns {void}
    */
@@ -112,14 +139,6 @@ export class PageRefreshStrategy {
 }
 
 /**
- * @typedef {Object} StateRefreshOptions
- * @property {RefreshCallback} [beforeRefresh] - Callback before refresh.
- * @property {RefreshCallback} [afterRefresh] - Callback after refresh.
- * @property {RefreshCallback} [boardSetup] - Board setup callback.
- * @property {RefreshCallback} [clearStarfield] - Starfield clear callback.
- */
-
-/**
  * StateRefreshStrategy - Specifically for refreshing game state.
  * Extends PageRefreshStrategy with board and starfield management.
  *
@@ -129,15 +148,15 @@ export class PageRefreshStrategy {
 export class StateRefreshStrategy extends PageRefreshStrategy {
   /**
    * Creates a new StateRefreshStrategy instance.
-   * @param {StateRefreshOptions} options - Configuration options.
+   * @param {StateRefreshCallbacks & RefreshStrategyOptions} options - Configuration options.
    */
   constructor (options = {}) {
     super(options)
 
-    /** @type {RefreshCallback} Callback to setup board. */
+    /** @type {VoidCallback} Callback to setup board. */
     this.boardSetupCallback = options.boardSetup || (() => {})
 
-    /** @type {RefreshCallback} Callback to clear starfield. */
+    /** @type {VoidCallback} Callback to clear starfield. */
     this.clearStarfieldCallback = options.clearStarfield || (() => {})
   }
 
@@ -189,13 +208,6 @@ export class StateRefreshStrategy extends PageRefreshStrategy {
 }
 
 /**
- * @typedef {Object} NavStateManagerOptions
- * @property {ParameterManager} [paramManager] - Parameter manager instance.
- * @property {PageRefreshStrategy} [refreshStrategy] - Refresh strategy instance.
- * @property {Object} [navigationService] - Navigation service instance.
- */
-
-/**
  * NavStateManager - Manages navigation and refresh state together.
  * Coordinates parameter management, navigation, and refresh strategies.
  *
@@ -204,16 +216,16 @@ export class StateRefreshStrategy extends PageRefreshStrategy {
 export class NavStateManager {
   /**
    * Creates a new NavStateManager instance.
-   * @param {NavStateManagerOptions} options - Configuration options.
+   * @param {NavStateManagerOptionsObj} options - Configuration options.
    */
   constructor (options = {}) {
-    /** @type {ParameterManager} */
+    /** @type {ParameterManagerInterface|undefined} */
     this.paramManager = options.paramManager
 
-    /** @type {PageRefreshStrategy} */
+    /** @type {PageRefreshStrategy|undefined} */
     this.refreshStrategy = options.refreshStrategy
 
-    /** @type {Object} */
+    /** @type {NavigationServiceInterface|undefined} */
     this.navigationService = options.navigationService
   }
 
@@ -224,7 +236,10 @@ export class NavStateManager {
    * @returns {void}
    */
   navigateAndRefresh (targetMode, mapName = null) {
-    if (this._hasFunction(this.navigationService?.switchToMode)) {
+    if (
+      this.navigationService &&
+      this._hasFunction(this.navigationService.switchToMode)
+    ) {
       this.navigationService.switchToMode(targetMode, undefined, mapName)
       this.refreshStrategy?.softRefresh()
     }
@@ -236,8 +251,8 @@ export class NavStateManager {
    * @returns {void}
    */
   updateParamsAndRefresh (updates) {
-    if (this._hasFunction(this.paramManager?.update)) {
-      this.paramManager.update(updates)
+    if (this.paramManager && this._hasFunction(this.paramManager.setAll)) {
+      this.paramManager.setAll(updates)
       this.paramManager.updateHistoryState()
       this.refreshStrategy?.softRefresh()
     }
@@ -267,6 +282,13 @@ export class NavStateManager {
 }
 
 /**
+ * @typedef {Object} NavStateManagerOptions
+ * @property {ParameterManagerInterface} [paramManager] - Parameter manager instance.
+ * @property {PageRefreshStrategy} [refreshStrategy] - Refresh strategy instance.
+ * @property {NavigationServiceInterface} [navigationService] - Navigation service instance.
+ */
+
+/**
  * Factory function to create a PageRefreshStrategy instance.
  * @param {RefreshStrategyOptions} options - Configuration options.
  * @returns {PageRefreshStrategy} New PageRefreshStrategy instance.
@@ -286,7 +308,7 @@ export function createStateRefreshStrategy (options = {}) {
 
 /**
  * Factory function to create a NavStateManager instance.
- * @param {NavStateManagerOptions} options - Configuration options.
+ * @param {NavStateManagerOptionsObj} options - Configuration options.
  * @returns {NavStateManager} New NavStateManager instance.
  */
 export function createNavStateManager (options = {}) {

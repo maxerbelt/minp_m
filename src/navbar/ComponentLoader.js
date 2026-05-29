@@ -1,27 +1,8 @@
 /**
- * @typedef {string | Element} ComponentLoaderInsertPoint
- * Target location where component HTML will be inserted.
- */
-
-/**
- * @callback ComponentLoaderSuccessCallback
- * Callback invoked when component is successfully loaded.
- * @param {string} html - The loaded HTML content.
- * @returns {void | Promise<void>}
- */
-
-/**
- * @callback ComponentLoaderErrorCallback
- * Callback invoked when component loading fails.
- * @param {Error} error - The error that occurred.
- * @returns {void | Promise<void>}
- */
-
-/**
- * @typedef {Object} ComponentLoaderCacheStats
- * Statistics about loader cache state.
- * @property {number} cachedComponents - Number of cached components.
- * @property {number} loading - Number of in-flight fetch operations.
+ * @typedef {import('./types/shared.types.js').InsertPoint} ComponentLoaderInsertPoint
+ * @typedef {import('./types/callbacks.types.js').ComponentLoaderSuccessCallback} ComponentLoaderSuccessCallback
+ * @typedef {import('./types/callbacks.types.js').ComponentLoaderErrorCallback} ComponentLoaderErrorCallback
+ * @typedef {import('./types/ui.types.js').ComponentLoaderCacheStats} ComponentLoaderCacheStats
  */
 
 /**

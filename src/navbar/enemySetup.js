@@ -3,71 +3,7 @@ import { enemy } from '../waters/enemy.js'
 import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 
 /**
- * @typedef {Object} Coordinate
- * @property {number} row
- * @property {number} col
- */
-
-/**
- * @typedef {[number, number, number]} SplashCell - Tuple of [row, column, powerLevel] for splash effect cells
- */
-
-/**
- * @typedef {Object} BoardMap
- * @property {(row: number, col: number) => boolean} inBounds - Validate if coordinates are within board bounds
- * @property {(map: BoardMap, targetCoordinates: Array<Array<number>>) => Array<SplashCell>} splashAoe - Calculate splash area of effect
- */
-
-/**
- * @typedef {Object} Weapon
- * @property {number} points - Number of cells required to fire this weapon
- * @property {(map: BoardMap, targetCoordinates: Array<Array<number>>) => SplashCell[]} splashAoe - Calculate affected cells
- */
-
-/**
- * @typedef {Object} WeaponSystem
- * @property {Weapon} weapon - The weapon object
- */
-
-/**
- * @typedef {Object} LoadOutModel
- * @property {Array<Array<number>>} [selectedCoordinates] - User-selected target coordinates
- * @property {Array<Array<number>>} [coordinates] - Default loadout coordinates
- * @property {Weapon} [selectedWeapon] - Explicitly selected weapon
- * @property {() => WeaponSystem} [getCurrentWeaponSystem] - Method to get current weapon
- */
-
-/**
- * @typedef {Object} EnemyUIModel
- * @property {() => void} refreshButtons - Refresh UI button states
- * @property {Object<string, HTMLElement>} buttons - Map of button names to DOM elements
- * @property {Object<string, HTMLElement>} weaponBtns - Map of weapon buttons
- * @property {(highlighter: Function, remover: Function, opponent: Object, placement: Object) => void} buildBoardHover - Configure board hover behavior
- * @property {() => void} removeHighlightAoE - Remove area of effect highlights
- * @property {(row: number, col: number) => HTMLElement} gridCellAt - Get grid cell by coordinates
- */
-
-/**
- * @typedef {Object} EnemyGameState
- * @property {Array<Object>} ships - Array of ship objects
- * @property {LoadOutModel} loadOut - Current loadout model
- * @property {EnemyUIModel} UI - UI component
- * @property {Object} opponent - Opponent game state
- * @property {() => void} resetModel - Reset game state
- * @property {(mode: boolean) => void} setBoardTargetingState - Configure targeting mode
- * @property {() => void} setupWeaponButtonHandlers - Wire up weapon button handlers
- * @property {() => void} wireupButtons - Initialize button handlers
- * @property {() => HTMLElement} gridCellAt - Get grid cell reference
- * @property {() => void} [armWeapons] - Arm weapons for targeting
- * @property {() => void} onClickReveal - Handle reveal button click
- * @property {() => void} onClickSingleShotButton - Handle single shot button
- * @property {(letter: string) => void} onClickWeaponButtons - Handle weapon button clicks
- */
-
-/**
- * @typedef {Object} FriendUI
- * @property {() => void} clearFriendClasses - Clear friend UI styling
- */
+ * @typedef {import('./types/domain.types.js').Coordinate} Coordinate\n * @typedef {import('./types/domain.types.js').SplashCell} SplashCell\n * @typedef {import('./types/domain.types.js').BoardMap} BoardMap\n * @typedef {import('./types/domain.types.js').Weapon} Weapon\n * @typedef {import('./types/domain.types.js').WeaponSystem} WeaponSystem\n * @typedef {import('./types/form.types.js').FormState} LoadOutModel\n */
 
 /** @type {(() => void) | null} */
 let cleanupOpponentBoard = null

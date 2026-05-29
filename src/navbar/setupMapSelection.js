@@ -6,9 +6,7 @@ import { ParameterManager } from './ParameterManager.js'
 const noop = Function.prototype
 
 /**
- * @typedef {Object} MapSelectionResult
- * @property {string|undefined} mapName - Resolved map name.
- * @property {Object|null} targetMap - Map object when found, otherwise null.
+ * @typedef {import('./types/domain.types.js').MapSelectionResult} MapSelectionResult
  */
 
 /**

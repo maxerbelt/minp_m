@@ -1,21 +1,8 @@
 /**
- * @typedef {Function} SetupCallback
- * @returns {void}
- */
-
-/**
- * @typedef {Object} UIControl
- * @property {Function} setup - Setup handler registration function.
- */
-
-/**
- * @typedef {Object} StrategyOptions
- * @property {Object.<string, *>} [stateDefaults={}] - Default state values.
- * @property {Object.<string, Function>} [validators={}] - Validation functions by key.
- */
-
-/**
- * @typedef {import('./ParameterManager.js').ParameterManager} ParameterManager
+ * @typedef {import('./types/callbacks.types.js').SetupCallback} SetupCallback
+ * @typedef {import('./types/ui.types.js').UIControl} UIControl
+ * @typedef {import('./types/config.types.js').UISetupStrategyOptions} StrategyOptions
+ * @typedef {import('./types/form.types.js').ParameterManager} ParameterManager
  */
 
 /**

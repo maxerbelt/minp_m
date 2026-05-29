@@ -1,24 +1,16 @@
 /**
+ * @typedef {import('./types/domain.types.js').SizeParams} SizeParams
+ * @typedef {import('./types/shared.types.js').StringMap<string|number|boolean>} ParamMap
+ * @typedef {import('./types/shared.types.js').StringMap<string>} ParamObject
+ */
+
+/**
  * ParameterManager - Centralized URL parameter management.
  * Handles getting and setting URL search parameters with validation.
  *
  * @class
  */
 export class ParameterManager {
-  /**
-   * @typedef {Object} SizeParams
-   * @property {number} height - Map height in rows
-   * @property {number} width - Map width in columns
-   */
-
-  /**
-   * @typedef {Object.<string, string|number|boolean>} ParamMap
-   */
-
-  /**
-   * @typedef {Object.<string, string>} ParamObject
-   */
-
   /**
    * Creates a new ParameterManager instance.
    * @param {URLSearchParams} [urlParams] - Optional URLSearchParams instance.

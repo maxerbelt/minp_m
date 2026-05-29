@@ -13,53 +13,12 @@ import { ParameterManager } from './ParameterManager.js'
 import { MapValueStrategy } from './MapValueStrategy.js'
 
 /**
- * @typedef {Object} MapContext
- * @property {Object|null} targetMap - Map being edited, if any.
- * @property {Object|null} templateMap - Template map for defaults.
- */
-
-/**
- * @typedef {Function} BoardSetupCallback
- * Callback for setting up the game board.
- * @returns {void}
- */
-
-/**
- * @typedef {Function} RefreshCallback
- * Callback for refreshing the display.
- * @returns {void}
- */
-
-/**
- * @typedef {Function} EditHandlerCallback
- * Callback when editing an existing map.
- * @param {Object} targetMap - The map being edited.
- * @returns {void}
- */
-
-/**
- * @typedef {Object} MapsInstance
- * @property {Function} getEditableMap - Get editable map by name.
- * @property {Function} getMap - Get map by name.
- * @property {Function} getLastMap - Get last used map.
- * @property {Function} getLastWidth - Get last used width.
- * @property {Function} getLastHeight - Get last used height.
- * @property {Function} setToBlank - Set to blank map.
- * @property {Function} storeLastWidth - Store last width.
- * @property {Function} storeLastHeight - Store last height.
- * @property {Function} onChange - Change handler.
- */
-
-/**
- * @typedef {Object} DimensionSetupConfig
- * Configuration for setting up dimension controls.
- * @property {BoardSetupCallback} boardSetup - Board setup callback.
- * @property {RefreshCallback} refresh - Refresh callback.
- * @property {string} huntMode - Hunt mode identifier.
- * @property {ParameterManager} paramManager - Parameter manager instance.
- * @property {MapsInstance} maps - Maps instance.
- * @property {number} mapWidth - Current map width.
- * @property {number} mapHeight - Current map height.
+ * @typedef {import('./types/domain.types.js').MapContext} MapContext
+ * @typedef {import('./types/callbacks.types.js').BoardSetupCallback} BoardSetupCallback
+ * @typedef {import('./types/callbacks.types.js').RefreshCallback} RefreshCallback
+ * @typedef {import('./types/callbacks.types.js').EditHandlerCallback} EditHandlerCallback
+ * @typedef {import('./types/domain.types.js').MapsInstance} MapsInstance
+ * @typedef {import('./types/config.types.js').DimensionSetupConfig} DimensionSetupConfig
  */
 
 /**

@@ -1,33 +1,7 @@
 /**
- * @typedef {Object} TabConfig
- * @property {string[]} [current=[]] - Tab names to mark as current.
- * @property {Object.<string, EventListener>} [handlers={}] - Map of tab names to handler functions.
- */
-
-/**
- * @typedef {Object} TabInstance
- * @property {string} name - Tab name identifier.
- * @property {HTMLElement|null} element - DOM element for this tab.
- * @property {Set<EventListener>} handlers - Set of registered event handlers.
- * @property {Function} addClickListener - Add click listener.
- * @property {Function} overrideClickListener - Replace click listener.
- * @property {Function} markAsCurrent - Mark as current tab.
- * @property {Function} cleanup - Clean up resources.
- */
-
-/**
- * @typedef {Object} TabManagerInstance
- * @property {Object.<string, TabInstance>} tabs - Map of tab names to Tab instances.
- * @property {string|null} currentMode - Current active hunt mode.
- * @property {Function} initializeTabs - Initialize tabs.
- * @property {Function} getTab - Get tab instance.
- * @property {Function} setCurrentMode - Set current mode.
- * @property {Function} getCurrentMode - Get current mode.
- * @property {Function} isMode - Check if mode matches current.
- * @property {Function} configureForMode - Configure for mode.
- * @property {Function} addListener - Add event listener.
- * @property {Function} replaceListener - Replace event listener.
- * @property {Function} cleanup - Clean up all tabs.
+ * @typedef {import('./types/ui.types.js').TabConfig} TabConfig
+ * @typedef {import('./types/ui.types.js').TabInstance} TabInstance
+ * @typedef {import('./types/ui.types.js').TabManagerInstance} TabManagerInstance
  */
 
 /**

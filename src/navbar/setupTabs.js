@@ -5,37 +5,10 @@ import { createTabManager } from './TabManager.js'
 import { NavigationService } from './NavigationService.js'
 
 /**
- * @typedef {Object} MapProvider
- * @property {Function} getCurrentMap - Get current map instance.
- * @property {Function} getMaps - Get maps manager instance.
- * @property {Function} getTerrain - Get current terrain instance.
- */
-
-/**
- * @typedef {Object} TabManager
- * @property {Function} setCurrentMode - Set current mode.
- * @property {Function} configureForMode - Configure for mode.
- * @property {Function} addListener - Add event listener.
- * @property {Function} getTab - Get tab instance.
- */
-
-/**
- * @typedef {Object} NavigationServiceInstance
- * @property {Function} switchToMode - Switch to mode.
- * @property {Function} switchToHide - Switch to hide mode.
- * @property {Function} switchToSeek - Switch to seek mode.
- * @property {Function} switchToList - Switch to list mode.
- * @property {Function} switchToRules - Switch to rules mode.
- * @property {Function} switchToBuild - Switch to build mode.
- * @property {Function} printPage - Print page.
- * @property {Function} navigateToBlog - Navigate to blog.
- * @property {Function} navigateToSource - Navigate to source.
- */
-
-/**
- * @typedef {Object} ModeConfig
- * @property {string[]} current - Current tabs for mode.
- * @property {Object.<string, Function>} handlers - Handler functions for mode.
+ * @typedef {import('./types/domain.types.js').MapProvider} MapProvider
+ * @typedef {import('./types/ui.types.js').TabManagerInstance} TabManager
+ * @typedef {import('./types/callbacks.types.js').VoidCallback} NavigationServiceInstance
+ * @typedef {import('./types/config.types.js').ModeConfig} ModeConfig
  */
 
 /**

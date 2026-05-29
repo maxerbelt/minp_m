@@ -1,17 +1,7 @@
 /**
- * @typedef {Object<string, any>} FormState
- */
-
-/**
- * @callback ValidatorFn
- * @param {*} value
- * @returns {*}
- */
-
-/**
- * @callback ChangeHandlerFn
- * @param {*} value
- * @returns {void}
+ * @typedef {import('./types/form.types.js').FormState} FormState
+ * @typedef {import('./types/callbacks.types.js').ValidatorFn} ValidatorFn
+ * @typedef {import('./types/callbacks.types.js').ChangeHandlerFn} ChangeHandlerFn
  */
 
 /**

@@ -1,16 +1,6 @@
 /**
- * @typedef {Object} MapObject
- * @property {string} name - Unique map identifier.
- * @property {string} [displayName] - Human-readable map label.
- * @property {boolean} [editable] - Indicates whether the map is editable.
- */
-
-/**
- * @typedef {Object} MapProviderOptions
- * @property {Array<MapObject>} [maps]
- * @property {Object<string, Array<MapObject>>} [mapLists]
- * @property {Object} [mapProvider]
- * @property {(map: MapObject) => void} [onMapLoad]
+ * @typedef {import('./types/domain.types.js').MapObject} MapObject
+ * @typedef {import('./types/config.types.js').MapProviderOptions} MapProviderOptions
  */
 
 /**

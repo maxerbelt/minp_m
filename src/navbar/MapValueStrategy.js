@@ -1,18 +1,9 @@
 /**
- * @typedef {Object<string, string>} ValueMap
- * @typedef {(value: any) => boolean} ValueValidator
- * @typedef {(value: any) => void} ValueChangeCallback
- * @typedef {(map: Object) => void} MapSelectCallback
- *
- * @typedef {Object} MapValueStrategyOptions
- * @property {ValueMap} [valueMap]
- * @property {*} [defaultValue]
- * @property {ValueChangeCallback} [onValueChange]
- * @property {ValueValidator|null} [validator]
- *
- * @typedef {Object} MapEditStrategyOptions
- * @property {Array<Object>} [maps]
- * @property {MapSelectCallback} [onMapSelect]
+ * @typedef {import('./types/shared.types.js').ValueMap} ValueMap
+ * @typedef {import('./types/config.types.js').ValueValidator} ValueValidator
+ * @typedef {import('./types/callbacks.types.js').ValueChangeCallback} ValueChangeCallback
+ * @typedef {import('./types/config.types.js').MapValueStrategyOptions} MapValueStrategyOptions
+ * @typedef {import('./types/config.types.js').MapEditStrategyOptions} MapEditStrategyOptions
  */
 
 /**

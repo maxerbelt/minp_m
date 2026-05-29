@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Grid state query interface for mask capabilities and symmetry.
+ *
+ * Provides read-only access to grid mask properties including morphology operation
+ * capabilities (dilate/erode/cross), geometric transform capabilities (rotate/flip),
+ * and symmetry classification. All queries are non-mutating and handle missing optional
+ * properties gracefully.
+ *
+ * @module core/GridState
+ */
+
 import {
   checkMorphologyState,
   isBitboardFull,
@@ -88,6 +99,7 @@ export class GridState {
    * @constructor
    * @param {GridMask} mask - The mask object with bits and optional clone/fullMask/emptyMask/actions
    * @param {Object|null} [indexer=null] - Optional indexer for grid-specific operations
+   * @returns {void}
    * @example
    * const state = new GridState(gridMask);
    * const stateWithIndexer = new GridState(gridMask, hexIndexer);
@@ -103,6 +115,7 @@ export class GridState {
    * Retrieves the actions object containing transform maps, symmetry classification,
    * and methods for applying transforms. Returns null if actions are unavailable.
    *
+   * @function getCurrentActions
    * @returns {TransformActions|null} Actions object with transform maps and methods, or null
    * @private
    */
@@ -116,6 +129,7 @@ export class GridState {
    * Queries whether applying the specified morphology operation (dilate, erode, or cross)
    * would result in a different mask. Uses checkMorphologyState for the determination.
    *
+   * @function canApplyMorphology
    * @param {MorphologyOperation} operation - Operation name: 'dilate', 'erode', or 'cross'
    * @returns {boolean} True if operation would change mask, false if it would have no effect
    * @example
@@ -134,6 +148,7 @@ export class GridState {
    * currently have an effect on the mask. Useful for disabling UI buttons or
    * preventing no-op operations. Safe to call even if mask is unavailable.
    *
+   * @function getMorphologyCapabilities
    * @returns {MorphologyCapabilities} Object with boolean flags for each operation
    * @example
    * const caps = state.getMorphologyCapabilities();
@@ -156,6 +171,7 @@ export class GridState {
    * This check uses the fullMask bitboard to determine if all cells are occupied.
    * Returns false if fullMask is unavailable (no capacity limit).
    *
+   * @function isDilateDisabled
    * @returns {boolean} True if grid is at maximum size and dilate is disabled
    * @example
    * if (state.isDilateDisabled()) {
@@ -175,6 +191,7 @@ export class GridState {
    * the current mask. Returns all false if transform maps are unavailable.
    * Handles errors gracefully by returning safe defaults.
    *
+   * @function getTransformCapabilities
    * @returns {TransformCapabilities} Object with boolean flags for each transform
    * @example
    * const caps = state.getTransformCapabilities();
@@ -206,8 +223,9 @@ export class GridState {
    * Safely retrieves actions and verifies that transformMaps are available.
    * Handles null/undefined gracefully and prevents repeated property access.
    *
-   * @private
+   * @function _getActionsWithTransformMaps
    * @returns {TransformActions|null} Actions object with transformMaps, or null if unavailable
+   * @private
    */
   _getActionsWithTransformMaps () {
     const actions = this.getCurrentActions()
@@ -222,10 +240,11 @@ export class GridState {
    * identified by key would result in a different mask. Used internally for both
    * rotation and flip capability checks.
    *
-   * @private
+   * @function _canApplyIndexedTransform
    * @param {string} mapKey - Transform key in transformMaps ('r90', 'r270', 'fx', 'fy')
    * @param {TransformActions} actions - Actions object from getCurrentActions()
    * @returns {boolean} True if transform would change mask, false otherwise
+   * @private
    */
   _canApplyIndexedTransform (mapKey, actions) {
     const map = actions.transformMaps[mapKey]
@@ -241,11 +260,12 @@ export class GridState {
    * or if an error occurs during application. Errors are silently caught and treated
    * as "transform unavailable" (safe default).
    *
-   * @private
+   * @function _canApplyTransform
    * @param {*|null} map - Transform map to apply, or null
    * @param {*} template - Original template bitboard to compare against
    * @param {TransformActions} actions - Actions object with applyMap method
    * @returns {boolean} True if applying map changes template, false if no change or error
+   * @private
    */
   _canApplyTransform (map, template, actions) {
     if (!map) return false
@@ -268,6 +288,7 @@ export class GridState {
    * which may have multiple rotation/reflection variations. Returns false if
    * actions or map are unavailable.
    *
+   * @function canApply
    * @param {number|string} mapIndex - Index or key of rotation/flip map in transformMaps
    * @returns {boolean} True if transform would change mask, false if no change or unavailable
    * @example
@@ -293,7 +314,9 @@ export class GridState {
    * Common symmetry classes include 'C1', 'C2', 'C4', 'D1', 'D2', 'D4' for rectangular grids
    * and additional classes for hexagonal grids.
    *
+   * @function getSymmetry
    * @returns {string} Symmetry class name (e.g., 'C4', 'D2') or 'n/a' if unavailable
+   * @throws {void} Silently catches errors and returns 'n/a'
    * @example
    * const symmetry = state.getSymmetry();
    * console.log(`Mask has ${symmetry} symmetry`);
@@ -320,6 +343,7 @@ export class GridState {
    * The clone is obtained from the mask's clone property if available. Useful
    * for creating separate state branches without modifying the original.
    *
+   * @function cloneBits
    * @returns {*|null} Clone of mask.bits, or null if unavailable
    * @example
    * const cloned = state.cloneBits();
@@ -339,6 +363,7 @@ export class GridState {
    * Returns true if mask equals empty state or if bits are undefined/falsy.
    * If emptyMask is unavailable, defaults to comparing against 0.
    *
+   * @function isEmpty
    * @returns {boolean} True if mask has no bits set or matches emptyMask
    * @example
    * if (state.isEmpty()) {
@@ -358,6 +383,7 @@ export class GridState {
    * Returns false if mask is unavailable. If fullMask is unavailable, defaults to
    * comparing against -1 (all bits set in typical bitboard representation).
    *
+   * @function isFull
    * @returns {boolean} True if all bits are set in mask or matches fullMask
    * @example
    * if (state.isFull()) {

@@ -1,18 +1,8 @@
 /**
- * @typedef {string} EventName
- */
-
-/**
- * @typedef {*} EventPayload
- */
-
-/**
- * @callback EventHandler
- * @param {EventPayload} [payload]
- */
-
-/**
- * @typedef {Object<string, EventHandler[]>} SubscriberMap
+ * @typedef {import('./types/events.types.js').EventName} EventName
+ * @typedef {import('./types/events.types.js').EventPayload} EventPayload
+ * @typedef {import('./types/events.types.js').EventHandler} EventHandler
+ * @typedef {import('./types/events.types.js').SubscriberMap} SubscriberMap
  */
 
 /**

@@ -1,16 +1,7 @@
 /**
- * Handler called when a registered keyboard shortcut is triggered.
- * @typedef {(event: KeyboardEvent) => void} ShortcutHandler
- */
-
-/**
- * Valid shortcut key or array of shortcut keys.
- * @typedef {string|string[]} ShortcutKey
- */
-
-/**
- * Map of shortcut keys to handler functions.
- * @typedef {Object<string, ShortcutHandler>} ShortcutMap
+ * @typedef {import('./types/callbacks.types.js').ShortcutHandler} ShortcutHandler
+ * @typedef {import('./types/config.types.js').ShortcutKey} ShortcutKey
+ * @typedef {import('./types/config.types.js').ShortcutMap} ShortcutMap
  */
 
 /**

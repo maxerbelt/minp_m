@@ -18,92 +18,40 @@
  * @module docs/weaponprint
  */
 
+/** @import { Weapon } from './types/index.d.ts' */
+
+import { SPLASH_DAMAGE_CODES } from './types/index.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
 import { toTitleCase } from '../core/utils.js'
 import { enemy } from '../waters/enemy.js'
 
-/** @type {Readonly<number>} Constant for splash damage weapon path value */
-const SPLASH_WEAPON_PATH = 20
-/** @type {Readonly<number>} Constant for splash damage weapon path + effect value */
-const SPLASH_WEAPON_PLUS = 30
-/** @type {Readonly<number>} Constant for splash damage weapon path + double effect value */
-const SPLASH_WEAPON_PLUS2 = 31
-/** @type {Readonly<number>} Constant for hardened ship destroyed in splash damage */
-const SPLASH_HARDENED_DESTROYED = 2
-/** @type {Readonly<number>} Constant for hardened ship revealed in splash damage */
-const SPLASH_HARDENED_REVEALED = 12
-/** @type {Readonly<number>} Constant for normal ship destroyed in splash damage */
-const SPLASH_NORMAL_DESTROYED = 1
-/** @type {Readonly<number>} Constant for normal ship revealed in splash damage */
-const SPLASH_NORMAL_REVEALED = 11
-/** @type {Readonly<number>} Constant for vulnerable ship destroyed in splash damage */
-const SPLASH_VULNERABLE_DESTROYED = 0
-/** @type {Readonly<number>} Constant for vulnerable ship revealed in splash damage */
-const SPLASH_VULNERABLE_REVEALED = 10
-/** @type {Readonly<number>} Constant for no splash damage effect */
-const SPLASH_NO_EFFECT = -1
-
-/**
- * @typedef {Object<number, number>} SplashTranslation
- * @description Maps original damage values to display values for splash damage visualization.
- * Keys are original damage codes, values are translated codes for UI display.
- */
-
-/**
- * @typedef {Object<number, string>} SplashLegend
- * @description Maps splash damage codes to human-readable descriptions.
- * Describes what each damage code means in context (e.g., 'Vulnerable Destroyed').
- */
-
-/**
- * @typedef {[SplashTranslation, SplashLegend]} SplashConfig
- * @description Tuple containing [translation map, legend descriptions] for splash damage display.
- */
-
 /**
  * @typedef {Object} PowerGroups
- * @description Ship categorization based on weapon effectiveness levels
- * @property {string[]} vulnerable - Ships vulnerable to this weapon
- * @property {string[]} normal - Ships with normal resistance to this weapon
- * @property {string[]} hardened - Ships hardened against this weapon
- * @property {string[]} immune - Ships immune to this weapon
+ * @property {string[]} vulnerable - List of ship type names vulnerable to weapon
+ * @property {string[]} normal - List of ship type names with normal resistance
+ * @property {string[]} hardened - List of ship type names with hardened resistance
+ * @property {string[]} immune - List of ship type names immune to weapon
  */
 
 /**
- * @typedef {Object} Weapon
- * @description Individual weapon with splash damage configuration and coordinates
- * @property {string} tag - Weapon identifier/tag
- * @property {string} letter - Single letter weapon identifier
- * @property {string} name - Display name for the weapon
- * @property {number} splashPower - Splash damage power level (0-3 for vulnerable/normal/hardened/immune)
- * @property {number[][]} splashCoords - Splash coordinate mappings [x, y, value]
- * @property {number[][] | undefined} [crashCoords] - Crash coordinate mappings (optional)
+ * @typedef {[Record<string|number, string|number>, Record<string|number, string>]} SplashConfig
+ * Configuration tuple containing translation map and legend descriptions for splash damage display
  */
 
-/**
- * @typedef {Object} LoadOutEntity
- * @description Fleet loadout configuration for weapons and systems
- * @property {Function} hasWeaponByLetter - Check if loadout has a weapon by letter
- * @property {Object} weaponSystems - Weapon systems configuration
- */
-
-/**
- * @typedef {Object} UIEntity
- * @description UI interface for weapon display and splash damage rendering
- * @property {Function} buildWeaponsSplashPrint - Build weapons splash print display
- * @property {Function} buildSplashLegend - Build splash legend display element
- * @property {Function} buildBoardPrint - Build board print display
- * @property {Object} score - Score tally interface for ship damage
- */
-
-/**
- * @typedef {Object} FleetEntity
- * @description Fleet with ships, loadout, and UI for weapon display
- * @property {Object[]} ships - Array of ship objects in the fleet
- * @property {LoadOutEntity} loadOut - Loadout configuration with weapons
- * @property {UIEntity} UI - UI interface for rendering and display
- */
+// Use imported constants from types
+const {
+  WEAPON_PATH: SPLASH_WEAPON_PATH,
+  WEAPON_PLUS: SPLASH_WEAPON_PLUS,
+  WEAPON_PLUS2: SPLASH_WEAPON_PLUS2,
+  HARDENED_DESTROYED: SPLASH_HARDENED_DESTROYED,
+  HARDENED_REVEALED: SPLASH_HARDENED_REVEALED,
+  NORMAL_DESTROYED: SPLASH_NORMAL_DESTROYED,
+  NORMAL_REVEALED: SPLASH_NORMAL_REVEALED,
+  VULNERABLE_DESTROYED: SPLASH_VULNERABLE_DESTROYED,
+  VULNERABLE_REVEALED: SPLASH_VULNERABLE_REVEALED,
+  NO_EFFECT: SPLASH_NO_EFFECT
+} = SPLASH_DAMAGE_CODES
 
 /**
  * Creates splash damage translation and legend based on weapon power levels.
@@ -116,14 +64,15 @@ const SPLASH_NO_EFFECT = -1
  * 1. If hardened ships present: use hardened config generator
  * 2. Otherwise: use non-hardened config generator with normal/vulnerable subsets
  *
- * @function createSplashConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
  * @returns {SplashConfig} [translation, legend] tuple with damage value mappings and descriptions
  * @private
  */
 function createSplashConfig (hasPower) {
   const [, , hasHardened] = hasPower
+  /** @type {Record<string|number, string|number>} */
   const translate = {}
+  /** @type {Record<string|number, string>} */
   const legend = {}
 
   // Always include weapon path
@@ -141,10 +90,9 @@ function createSplashConfig (hasPower) {
  * Creates splash config when hardened ships are present in the fleet.
  * Handles routing to normal or vulnerable-only configurations based on fleet composition.
  *
- * @function createHardenedSplashConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {SplashConfig} [translation, legend] tuple with populated mappings
  * @private
  */
@@ -170,10 +118,9 @@ function createHardenedSplashConfig (hasPower, translate, legend) {
  * Creates splash config for normal ships when hardened are present.
  * Applies translation mappings for normal + hardened or vulnerable scenarios.
  *
- * @function createNormalWithHardenedConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {SplashConfig} [translation, legend] tuple with populated mappings
  * @private
  */
@@ -202,10 +149,9 @@ function createNormalWithHardenedConfig (hasPower, translate, legend) {
  * Creates splash config for vulnerable-only ships when hardened are present.
  * Handles special mappings when only vulnerable and hardened ships exist in fleet.
  *
- * @function createVulnerableOnlyWithHardenedConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {SplashConfig} [translation, legend] tuple with populated mappings
  * @private
  */
@@ -229,10 +175,9 @@ function createVulnerableOnlyWithHardenedConfig (hasPower, translate, legend) {
  * Creates splash config when no hardened ships are present in the fleet.
  * Routes to normal-only or vulnerable-only configuration based on fleet composition.
  *
- * @function createNonHardenedSplashConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {SplashConfig} [translation, legend] tuple with populated mappings
  * @private
  */
@@ -250,10 +195,9 @@ function createNonHardenedSplashConfig (hasPower, translate, legend) {
  * Creates splash config for normal ships only (no hardened ships present).
  * Handles case where vulnerable and normal ships exist but hardened does not.
  *
- * @function createNormalOnlyConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {SplashConfig} [translation, legend] tuple with populated mappings
  * @private
  */
@@ -283,8 +227,7 @@ function createNormalOnlyConfig (hasPower, translate, legend) {
  * Marks vulnerable ship states as having no effect in translation map.
  * Sets vulnerable ship codes to SPLASH_NO_EFFECT value.
  *
- * @function noVulnerable
- * @param {SplashTranslation} translate - Translation mapping object to update
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to update
  * @returns {void}
  * @private
  */
@@ -297,10 +240,9 @@ function noVulnerable (translate) {
  * Creates splash config for vulnerable ships only (no normal/hardened ships present).
  * Handles case where only vulnerable ships exist in the fleet.
  *
- * @function createNoNormalConfig
  * @param {[boolean, boolean, boolean]} hasPower - Array [hasVulnerable, hasNormal, hasHardened]
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {SplashConfig} [translation, legend] tuple with populated mappings
  * @private
  */
@@ -329,9 +271,8 @@ function createNoNormalConfig (hasPower, translate, legend) {
  * Adds vulnerable ship configuration to translation and legend mappings.
  * Populates translation codes and descriptions for vulnerable ship damage states.
  *
- * @function addVulnerableConfig
- * @param {SplashTranslation} translate - Translation mapping object to populate
- * @param {SplashLegend} legend - Legend description object to populate
+ * @param {Record<string|number, string|number>} translate - Translation mapping object to populate
+ * @param {Record<string|number, string>} legend - Legend description object to populate
  * @returns {void}
  * @private
  */
@@ -354,7 +295,6 @@ function addVulnerableConfig (translate, legend) {
  * - No ships are affected by the weapon
  * - DOM elements not found for the weapon
  *
- * @function showSplashInfo
  * @param {Weapon} weapon - Weapon to display splash info for
  * @param {string[]} vulnerable - List of vulnerable ship type names
  * @param {string[]} normal - List of normal-resistance ship type names
@@ -389,7 +329,6 @@ function showSplashInfo (weapon, vulnerable, normal, hardened, immune) {
  * 2. Show affected list if shorter than unaffected
  * 3. Show unaffected list if shorter than affected
  *
- * @function showAffectedUnits
  * @param {Weapon} weapon - Weapon for splash damage lookup
  * @param {string[][]} powerGroups - All ship types [vulnerable, normal, hardened, immune]
  * @param {string[]} affectedShips - List of affected ship type names
@@ -424,7 +363,6 @@ function showAffectedUnits (weapon, powerGroups, affectedShips) {
  * Shows message that all units are affected by the weapon.
  * Updates element text to indicate no units are unaffected.
  *
- * @function showAllAffected
  * @param {HTMLElement} element - DOM element to update with message
  * @returns {void}
  * @private
@@ -438,7 +376,6 @@ function showAllAffected (element) {
  * Shows list of affected unit types for a weapon.
  * Displays power group names (e.g., 'Vulnerable, Normal') and example ships.
  *
- * @function showAffectedList
  * @param {HTMLElement} element - DOM element to update
  * @param {Weapon} weapon - Weapon to display information for
  * @param {string[]} powerGroupNames - Names of power groups affected
@@ -461,7 +398,6 @@ function showAffectedList (element, weapon, powerGroupNames, ships) {
  * Shows list of unaffected unit types for a weapon.
  * Displays power group names and example ships that resist the weapon.
  *
- * @function showUnaffectedList
  * @param {HTMLElement} element - DOM element to update
  * @param {Weapon} weapon - Weapon to display information for
  * @param {string[]} powerGroupNames - Names of power groups not affected
@@ -491,15 +427,14 @@ function showUnaffectedList (element, weapon, powerGroupNames, ships) {
  * 3. Classify remaining ships as normal resistance
  * 4. Return grouped ship descriptions
  *
- * @function getPowerGroups
  * @param {Weapon} weapon - Weapon to analyze
- * @param {Object[]} [fleet=enemy.ships] - Fleet to analyze (defaults to enemy ships)
+ * @param {Array<any>} [fleet] - Fleet to analyze (defaults to enemy ships)
  * @returns {PowerGroups} Object with vulnerable, normal, hardened, and immune ship lists
  * @private
  */
 function getPowerGroups (weapon, fleet = enemy.ships) {
   const uniqueShips = [
-    ...new Map(fleet.map(ship => [ship.letter, ship])).values()
+    ...new Map(fleet.map(ship => [ship?.letter, ship])).values()
   ]
 
   const immune = getShipsWithPower(weapon, uniqueShips, 'immune')
@@ -521,18 +456,17 @@ function getPowerGroups (weapon, fleet = enemy.ships) {
  * Filters ships based on their weapon relationship and returns unique descriptions.
  * Checks shape.powerType list for weapon letter membership.
  *
- * @function getShipsWithPower
  * @param {Weapon} weapon - Weapon to check relationships for
- * @param {Object[]} ships - Ships to filter
+ * @param {Array<any>} ships - Ships to filter
  * @param {'immune'|'vulnerable'|'hardened'} powerType - Power relationship type
  * @returns {string[]} Array of ship description text for matching ships
  * @private
  */
 function getShipsWithPower (weapon, ships, powerType) {
   return ships.flatMap(ship => {
-    const shape = ship.shape()
-    const powerList = shape[powerType] || []
-    return powerList.includes(weapon.letter) ? shape.descriptionText : []
+    const shape = ship?.shape?.()
+    const powerList = shape?.[powerType] || []
+    return powerList.includes(weapon?.letter) ? shape?.descriptionText : []
   })
 }
 
@@ -542,9 +476,8 @@ function getShipsWithPower (weapon, ships, powerType) {
  * Returns ships that don't have special relationships (immune, vulnerable, hardened)
  * to the weapon - i.e., ships with normal resistance.
  *
- * @function getNormalShips
  * @param {Weapon} _weapon - Weapon (unused, kept for signature consistency)
- * @param {Object[]} ships - Ships to filter
+ * @param {Array<any>} ships - Ships to filter
  * @param {string[]} immune - List of immune ship descriptions
  * @param {string[]} vulnerable - List of vulnerable ship descriptions
  * @param {string[]} hardened - List of hardened ship descriptions
@@ -553,12 +486,12 @@ function getShipsWithPower (weapon, ships, powerType) {
  */
 function getNormalShips (_weapon, ships, immune, vulnerable, hardened) {
   return ships.flatMap(ship => {
-    const shape = ship.shape()
+    const shape = ship?.shape?.()
     const hasSpecialPower = [immune, vulnerable, hardened].some(group =>
-      group.includes(shape.descriptionText)
+      group.includes(shape?.descriptionText)
     )
 
-    return hasSpecialPower ? [] : shape.descriptionText
+    return hasSpecialPower ? [] : shape?.descriptionText
   })
 }
 
@@ -575,7 +508,6 @@ function getNormalShips (_weapon, ships, immune, vulnerable, hardened) {
  * - Shows all power groups that have ships
  * - Shows normal ships only if present and less than 7 types (for brevity)
  *
- * @function showPowerGroups
  * @param {string[]} hardened - List of hardened ship type names
  * @param {string[]} vulnerable - List of vulnerable ship type names
  * @param {string[]} immune - List of immune ship type names
@@ -620,7 +552,6 @@ function showPowerGroups (hardened, vulnerable, immune, weapon, normal) {
  * Creates paragraph element with label and ship descriptions.
  * Only adds if ships array is non-empty.
  *
- * @function addPowerGroupHtml
  * @param {HTMLElement} container - DOM container to add HTML to
  * @param {string[]} ships - List of ship names in the power group (checked for length)
  * @param {string} label - Display label for the power group
@@ -644,9 +575,8 @@ function addPowerGroupHtml (container, ships, label, group) {
  * - If all=true: displays all weapons from bh.terrain.weapons.weapons
  * - If all=false: only displays weapons present in friend.loadOut
  *
- * @function showWeapons
- * @param {FleetEntity} friend - Friendly fleet entity with UI and loadout
- * @param {Object[]} [ships=enemy.ships] - Ships to analyze (defaults to enemy ships)
+ * @param {any} friend - Friendly fleet entity with UI and loadout
+ * @param {Array<any>} [ships] - Ships to analyze (defaults to enemy ships)
  * @param {boolean} [all=false] - Show all weapons (true) or only those in loadout (false)
  * @returns {void}
  * @public
@@ -679,10 +609,9 @@ export function showWeapons (friend, ships = enemy.ships, all = false) {
  * 5. Build UI elements for damage visualization
  * 6. Show affected/unaffected units and power groups
  *
- * @function showWeaponInfo
- * @param {FleetEntity} friend - Friendly fleet with UI interface
+ * @param {any} friend - Friendly fleet with UI interface
  * @param {Weapon} weapon - Weapon to display information for
- * @param {Object[]} ships - Ships to analyze for power groups
+ * @param {Array<any>} ships - Ships to analyze for power groups
  * @param {number} index - List index for numbering display
  * @returns {void}
  * @private
@@ -696,6 +625,7 @@ function showWeaponInfo (friend, weapon, ships, index) {
 
   const powerGroups = getPowerGroups(weapon, ships)
   const { vulnerable, normal, hardened, immune } = powerGroups
+  /** @type {[boolean, boolean, boolean]} */
   const hasPower = [
     vulnerable.length > 0,
     normal.length > 0,
@@ -703,14 +633,16 @@ function showWeaponInfo (friend, weapon, ships, index) {
   ]
 
   const [translate, legend] = createSplashConfig(hasPower)
-  const translatedCoords = weapon.splashCoords.map(coord => {
-    const translatedValue = translate[coord[2]] ?? coord[2] ?? 0
-    return [coord[0], coord[1], translatedValue]
-  })
+  const translatedCoords = weapon?.splashCoords?.map(
+    (/** @type {any} */ coord) => {
+      const translatedValue = translate[coord[2]] ?? coord[2] ?? 0
+      return [coord[0], coord[1], translatedValue]
+    }
+  )
 
-  friend.UI.buildWeaponsSplashPrint(translatedCoords, weapon, 'splash')
-  friend.UI.buildSplashLegend(translatedCoords, weapon, legend, 'splash')
-  const crashCoords = weapon.crashCoords?.map(coord => {
+  friend?.UI?.buildWeaponsSplashPrint?.(translatedCoords, weapon, 'splash')
+  friend?.UI?.buildSplashLegend?.(translatedCoords, weapon, legend, 'splash')
+  const crashCoords = weapon?.crashCoords?.map((/** @type {any} */ coord) => {
     const translatedValue = translate[coord[2]] ?? coord[2] ?? 0
     return [coord[0], coord[1], translatedValue]
   })
@@ -737,10 +669,15 @@ function showWeaponInfo (friend, weapon, ships, index) {
  */
 function customizeUnitDescriptions () {
   Terrain.customizeUnitDescriptions('-unit-header', (letter, _description) => {
-    return bh.terrain.ships.unitDescriptions[letter] + ' Units'
+    const descriptions = /** @type {any} */ (
+      bh.terrain?.ships?.unitDescriptions
+    )
+    const unitDesc = descriptions?.[letter]
+    return (unitDesc ?? letter) + ' Units'
   })
 
   Terrain.customizeUnitDescriptions('-unit-info', (letter, _description) => {
-    return bh.terrain.ships.unitInfo[letter]
+    const info = /** @type {any} */ (bh.terrain?.ships?.unitInfo)
+    return info?.[letter] ?? ''
   })
 }

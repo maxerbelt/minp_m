@@ -8,46 +8,14 @@
  */
 
 /**
- * @typedef {Object} Ship
- * @description Individual ship with letter identifier, shape, and optional type
- * @property {string} letter - Ship letter identifier (e.g., 'A', 'B', 'C')
- * @property {ShapeInfo} shape - Ship shape information with optional notes
- * @property {string} [type] - Ship type (optional, e.g., 'sea', 'space')
- */
-
-/**
- * @typedef {Object} ShapeInfo
- * @description Shape information for a ship including optional notes
- * @property {string[]} [notes] - Array of note strings describing the shape
- */
-
-/**
- * @typedef {Object} UIEntity
- * @description UI interface for ship print display management
- * @property {Function} hideEmptyUnits - Hide units that are empty
- * @property {Function} splitUnits - Split units into groups by type
- * @property {Function} buildTrayItemPrint - Build tray item for print display
- * @property {Function} getTrayOfType - Get tray container for ship type
- * @property {Function} getNotesOfType - Get notes element for ship type
- */
-
-/**
- * @typedef {Object} FleetEntity
- * @description Fleet entity with ships and UI for print display
- * @property {Ship[]} ships - Array of ship objects in the fleet
- * @property {UIEntity} UI - UI interface for building trays and displaying notes
- */
-
-/**
  * Shows ship information and notes for print view
  *
  * Orchestrates the complete display of ship information by:
  * 1. Hiding empty units from the display
  * 2. Displaying ship notes organized by ship type
  *
- * @function showShipInfo
- * @param {FleetEntity} friend - Friend fleet entity with ships and UI
- * @param {Ship[]} [ships=friend.ships] - Ships to display (defaults to friend's ships)
+ * @param {*} friend - Friend fleet entity with ships and UI
+ * @param {*[]} [ships] - Ships to display (defaults to friend's ships)
  * @returns {void}
  * @export
  */
@@ -64,9 +32,8 @@ export function showShipInfo (friend, ships = friend.ships) {
  * 2. Building tray items for each ship type
  * 3. Displaying notes for each ship type
  *
- * @function showNotesPrintOut
- * @param {FleetEntity} friend - Friendly fleet with UI interface
- * @param {Ship[]} ships - Ships to process and display
+ * @param {*} friend - Friendly fleet with UI interface
+ * @param {*[]} ships - Ships to process and display
  * @returns {void}
  * @private
  */
@@ -88,10 +55,9 @@ function showNotesPrintOut (friend, ships) {
  * by checking if buildTrayItemPrint method exists before calling it
  * (e.g., when method is not available in certain UI contexts).
  *
- * @function buildTrayItems
- * @param {FleetEntity} friend - Friendly fleet with UI interface
+ * @param {*} friend - Friendly fleet with UI interface
  * @param {string} type - Ship type identifier to process
- * @param {Object<string, Ship>} shipsInfo - Ships grouped by letter, keyed by ship letter
+ * @param {Object<string, *>} shipsInfo - Ships grouped by letter, keyed by ship letter
  * @returns {void}
  * @private
  */
@@ -118,10 +84,9 @@ function buildTrayItems (friend, type, shipsInfo) {
  * 2. Retrieving the notes element for that type
  * 3. Displaying formatted notes if any exist
  *
- * @function showTypeNotes
- * @param {FleetEntity} friend - Friendly fleet with UI interface
+ * @param {*} friend - Friendly fleet with UI interface
  * @param {string} type - Ship type identifier to display notes for
- * @param {Object<string, Ship>} shipsInfo - Ships grouped by letter, keyed by ship letter
+ * @param {Object<string, *>} shipsInfo - Ships grouped by letter, keyed by ship letter
  * @returns {void}
  * @private
  */
@@ -142,13 +107,12 @@ function showTypeNotes (friend, type, shipsInfo) {
  * to flatten nested arrays into a single array. Returns empty array if no
  * notes are found in any of the ships.
  *
- * @function collectShipNotes
- * @param {Object<string, Ship>} shipsInfo - Ships grouped by letter, keyed by ship letter
+ * @param {Object<string, *>} shipsInfo - Ships grouped by letter, keyed by ship letter
  * @returns {string[]} Array of note strings collected from all ships
  * @private
  */
 function collectShipNotes (shipsInfo) {
   return Object.values(shipsInfo).flatMap(info => {
-    return info.shape.notes || []
+    return info?.shape?.notes || []
   })
 }
