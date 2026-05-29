@@ -7,34 +7,78 @@
 
 /**
  * ComponentLoader handles fetching HTML components and rendering them into the DOM.
+ * Provides efficient component loading with caching and concurrent request deduplication.
+ *
  * Features:
- * - Automatic caching of fetched components
+ * - Automatic caching of fetched components with Map-based storage
  * - Concurrent load deduplication to prevent multiple fetches of same component
- * - Callback support for both success and error scenarios
- * - Centralized error handling with detailed error messages
- * - Flexible insert point resolution (element ID or DOM reference)
+ * - Callback support for both success and error scenarios (async-compatible)
+ * - Centralized error handling with detailed error messages and logging
+ * - Flexible insert point resolution (element ID string or DOM Element reference)
+ * - Cache statistics for debugging and performance monitoring
+ *
+ * @class ComponentLoader
+ * @example
+ * const loader = new ComponentLoader();
+ * await loader.loadComponent('container', 'path/to/component.html',
+ *   (html) => console.log('Component loaded'),
+ *   (error) => console.error('Failed to load:', error)
+ * );
  */
 export class ComponentLoader {
   /**
    * Creates a new ComponentLoader instance.
-   * Initializes cache and loading promise tracking.
+   * Initializes internal caches for component HTML and in-flight fetch promises.
+   *
+   * @constructor
    */
   constructor () {
-    /** @type {Map<string, string>} Cache of loaded component HTML by path */
+    /**
+     * Cache of loaded component HTML by file path.
+     * Maps component paths to their fetched HTML strings.
+     *
+     * @type {Map<string, string>}
+     * @private
+     */
     this.cache = new Map()
-    /** @type {Map<string, Promise<string>>} In-flight fetch promises by path */
+
+    /**
+     * In-flight fetch promises by component path.
+     * Used to deduplicate concurrent requests for the same component.
+     * Promises are removed from this map once fetch completes or fails.
+     *
+     * @type {Map<string, Promise<string>>}
+     * @private
+     */
     this.loadingPromises = new Map()
   }
 
   /**
    * Loads a component, inserts it into the DOM, and invokes callbacks.
-   * Deduplicates concurrent requests for the same component path.
-   * @param {ComponentLoaderInsertPoint} insertPoint - Where to insert the component.
-   * @param {string} componentPath - Path to component file.
-   * @param {ComponentLoaderSuccessCallback|null} [successCallback=null] - Called on successful load.
-   * @param {ComponentLoaderErrorCallback|null} [errorCallback=null] - Called if load fails.
-   * @returns {Promise<string>} The loaded HTML content.
-   * @throws {Error} If component fetch fails after all retries.
+   * Deduplicates concurrent requests for the same component path by returning
+   * the existing in-flight promise if the component is already being loaded.
+   *
+   * @public
+   * @async
+   * @param {ComponentLoaderInsertPoint} insertPoint - Where to insert the component (element ID or Element reference).
+   * @param {string} componentPath - Path to component HTML file (relative or absolute URL).
+   * @param {ComponentLoaderSuccessCallback|null} [successCallback=null] - Called on successful load with HTML content.
+   * @param {ComponentLoaderErrorCallback|null} [errorCallback=null] - Called if load fails with Error object.
+   * @returns {Promise<string>} Resolves with the loaded HTML content string.
+   * @throws {Error} If HTTP request fails, response status is not ok, or component insertion fails.
+   * @throws {Error} If insertPoint is invalid (string ID not found, or not an Element).
+   *
+   * @example
+   * try {
+   *   const html = await loader.loadComponent(
+   *     'myContainer',
+   *     '/components/navbar.html',
+   *     (html) => console.log('Inserted:', html),
+   *     (error) => console.error('Failed:', error)
+   *   );
+   * } catch (error) {
+   *   console.error('Component load error:', error);
+   * }
    */
   async loadComponent (
     insertPoint,
@@ -55,10 +99,21 @@ export class ComponentLoader {
 
   /**
    * Preloads a component into cache without inserting it into DOM.
-   * Useful for preemptively loading components before they're needed.
-   * @param {string} componentPath - Path to component file.
-   * @returns {Promise<string>} The loaded HTML content.
-   * @throws {Error} If component fetch fails.
+   * Useful for preemptively loading components before they're needed to reduce
+   * latency when the component is later requested via loadComponent().
+   *
+   * @public
+   * @async
+   * @param {string} componentPath - Path to component HTML file.
+   * @returns {Promise<string>} Resolves with the loaded HTML content string.
+   * @throws {Error} If HTTP request fails or response status is not ok.
+   *
+   * @example
+   * // Preload multiple components to reduce perceived load time
+   * await Promise.all([
+   *   loader.preloadComponent('/components/navbar.html'),
+   *   loader.preloadComponent('/components/footer.html')
+   * ]);
    */
   async preloadComponent (componentPath) {
     try {
@@ -72,10 +127,27 @@ export class ComponentLoader {
 
   /**
    * Returns an existing cached component or begins fetching it.
-   * Deduplicates concurrent requests for same path by returning existing promise.
+   * Implements intelligent deduplication: if the same component path is already
+   * being fetched concurrently, returns the existing promise instead of making
+   * another fetch request. Cached results bypass the fetch entirely.
+   *
+   * Request deduplication order:
+   * 1. Check if fetch is already in-flight → return existing promise
+   * 2. Check if HTML is already cached → return cached HTML
+   * 3. Start new fetch → track promise → cache result
+   *
    * @private
-   * @param {string} componentPath - Path to component file.
-   * @returns {Promise<string>} HTML content from cache or fetch.
+   * @async
+   * @param {string} componentPath - Path to component HTML file.
+   * @returns {Promise<string>} Resolves with HTML content from cache or fetch.
+   * @throws {Error} If HTTP request fails or response status is not ok.
+   *
+   * @example
+   * // Multiple concurrent calls for same path automatically deduplicated
+   * const [html1, html2] = await Promise.all([
+   *   this._fetchComponent('path/to/component.html'),
+   *   this._fetchComponent('path/to/component.html')  // Uses same promise as html1
+   * ]);
    */
   async _fetchComponent (componentPath) {
     // Return existing in-flight fetch to deduplicate concurrent requests
@@ -102,10 +174,13 @@ export class ComponentLoader {
 
   /**
    * Inserts HTML content into target element by setting innerHTML.
+   * Silently skips insertion if target element cannot be resolved.
+   *
    * @private
-   * @param {ComponentLoaderInsertPoint} insertPoint - Target element or ID.
-   * @param {string} html - HTML content to insert.
+   * @param {ComponentLoaderInsertPoint} insertPoint - Target element ID string or Element reference.
+   * @param {string} html - HTML content string to insert into target element.
    * @returns {void}
+   * @throws {Error} Implicitly throws if innerHTML assignment fails (e.g., due to security policies).
    */
   _insertHtml (insertPoint, html) {
     const element = this._resolveInsertPoint(insertPoint)
@@ -116,10 +191,19 @@ export class ComponentLoader {
 
   /**
    * Resolves an insert point to a DOM element reference.
-   * Accepts either element ID string or Element reference.
+   * Accepts either string element ID (looked up via document.getElementById())
+   * or direct Element reference. Returns null if insert point type is neither string nor Element.
+   *
    * @private
-   * @param {ComponentLoaderInsertPoint} insertPoint - ID string or Element.
-   * @returns {Element|null} Resolved element or null if not found.
+   * @param {ComponentLoaderInsertPoint} insertPoint - Element ID string or Element DOM reference.
+   * @returns {Element|null} Resolved Element reference, or null if element not found or invalid type.
+   *
+   * @example
+   * // String ID lookup
+   * const el1 = this._resolveInsertPoint('my-container'); // returns element or null
+   *
+   * // Direct element reference
+   * const el2 = this._resolveInsertPoint(document.body); // returns document.body
    */
   _resolveInsertPoint (insertPoint) {
     if (typeof insertPoint === 'string') {
@@ -130,12 +214,16 @@ export class ComponentLoader {
   }
 
   /**
-   * Safely invokes success callback with loaded HTML.
-   * Handles both synchronous and asynchronous callbacks.
+   * Safely invokes success callback with loaded HTML content.
+   * Handles both synchronous and asynchronous callbacks without rethrowing errors.
+   * If callback is not a function, silently returns. Callback errors are caught,
+   * logged to console, and not rethrown to prevent cascading failures.
+   *
    * @private
-   * @param {ComponentLoaderSuccessCallback|null} callback - Callback to invoke.
-   * @param {string} html - Loaded HTML content.
-   * @returns {Promise<void>} Resolves when callback completes.
+   * @async
+   * @param {ComponentLoaderSuccessCallback|null} callback - Success callback function or null/undefined.
+   * @param {string} html - Loaded HTML content string to pass to callback.
+   * @returns {Promise<void>} Always resolves (never rejects), resolves when callback completes.
    */
   async _invokeSuccessCallback (callback, html) {
     if (typeof callback !== 'function') {
@@ -150,30 +238,39 @@ export class ComponentLoader {
   }
 
   /**
-   * Handles component loading failures with logging and error callback.
-   * Constructs informative error message and delegates to error callback.
+   * Handles component loading failures with detailed logging and error callback invocation.
+   * Constructs informative error message including insert point description and delegates
+   * to error callback asynchronously. Callback errors are caught and logged separately.
+   *
    * @private
-   * @param {ComponentLoaderInsertPoint} insertPoint - Where component was to be inserted.
-   * @param {Error} error - The error that occurred during load.
-   * @param {ComponentLoaderErrorCallback|null} errorCallback - Callback for error handling.
+   * @param {ComponentLoaderInsertPoint} insertPoint - Target element where component was to be inserted.
+   * @param {Error} error - The Error object that occurred during component load.
+   * @param {ComponentLoaderErrorCallback|null} errorCallback - Error handler callback or null/undefined.
    * @returns {void}
    */
   _handleComponentError (insertPoint, error, errorCallback) {
     const location = this._describeInsertPoint(insertPoint)
     console.error(`Failed to load component at ${location}:`, error)
 
-    // Invoke error callback asynchronously
+    // Invoke error callback asynchronously to prevent blocking
     this._invokeErrorCallback(errorCallback, error).catch(err => {
       console.error('Unhandled error in error callback:', err)
     })
   }
 
   /**
-   * Creates a string description of an insert point for error messages.
-   * Handles both element IDs and Element references safely.
+   * Creates a human-readable string description of an insert point for error messages.
+   * Safely handles string IDs, Element references, and invalid types by generating
+   * appropriate descriptions or fallback text.
+   *
    * @private
-   * @param {ComponentLoaderInsertPoint} insertPoint - Element ID or reference.
-   * @returns {string} Human-readable description.
+   * @param {ComponentLoaderInsertPoint} insertPoint - Element ID string or Element reference.
+   * @returns {string} Human-readable description for error logging (e.g., "element with id 'my-div'").
+   *
+   * @example
+   * this._describeInsertPoint('container')        // "element with id "container""
+   * this._describeInsertPoint(document.body)      // "BODY element"
+   * this._describeInsertPoint({})                 // "unknown element"
    */
   _describeInsertPoint (insertPoint) {
     if (typeof insertPoint === 'string') {
@@ -190,11 +287,15 @@ export class ComponentLoader {
 
   /**
    * Safely invokes error callback when component load fails.
-   * Handles both synchronous and asynchronous error callbacks.
+   * Handles both synchronous and asynchronous error callbacks without rethrowing.
+   * If callback is not a function, silently returns. Callback errors are caught,
+   * logged to console.error(), and not rethrown to prevent cascading failures.
+   *
    * @private
-   * @param {ComponentLoaderErrorCallback|null} errorCallback - Error callback to invoke.
-   * @param {Error} error - The error that occurred.
-   * @returns {Promise<void>} Resolves when callback completes.
+   * @async
+   * @param {ComponentLoaderErrorCallback|null} errorCallback - Error callback function or null/undefined.
+   * @param {Error} error - The Error object that occurred during component load.
+   * @returns {Promise<void>} Always resolves (never rejects), resolves when callback completes.
    */
   async _invokeErrorCallback (errorCallback, error) {
     if (typeof errorCallback !== 'function') {
@@ -209,12 +310,29 @@ export class ComponentLoader {
   }
 
   /**
-   * Performs HTTP fetch and caches result.
-   * Validates response status and extracts text content.
+   * Performs HTTP fetch request and caches successful result.
+   * Validates response status (via response.ok) and extracts text content.
+   * Caches result in this.cache only on success. Throws Error if HTTP
+   * request fails, network error occurs, or response.ok is false.
+   *
    * @private
-   * @param {string} componentPath - Path to component file.
-   * @returns {Promise<string>} HTML content.
-   * @throws {Error} If HTTP request fails or response is not ok.
+   * @async
+   * @param {string} componentPath - Path or URL to component HTML file.
+   * @returns {Promise<string>} Resolves with HTML content string.
+   * @throws {Error} If fetch fails (network error).
+   * @throws {Error} If response.ok is false (includes status code in message).
+   *
+   * @example
+   * // Successful fetch and cache
+   * const html = await this._performFetch('/components/nav.html');
+   * // html is cached in this.cache
+   *
+   * // Failed fetch
+   * try {
+   *   await this._performFetch('/missing.html'); // 404 response
+   * } catch (error) {
+   *   // error: "HTTP error fetching /missing.html: status 404"
+   * }
    */
   async _performFetch (componentPath) {
     const response = await fetch(componentPath)
@@ -226,24 +344,40 @@ export class ComponentLoader {
     }
 
     const html = await response.text()
-    // Cache successful result
+    // Cache successful result for future requests
     this.cache.set(componentPath, html)
     return html
   }
 
   /**
-   * Clears all cached component HTML.
-   * Useful for memory management or forcing fresh loads.
+   * Clears all cached component HTML from the cache.
+   * Useful for memory management in single-page applications or forcing
+   * fresh component loads. In-flight fetch promises are not affected.
+   *
+   * @public
    * @returns {void}
+   *
+   * @example
+   * // Force fresh loads of all components
+   * loader.clearCache();
+   * await loader.loadComponent('container', 'component.html');
    */
   clearCache () {
     this.cache.clear()
   }
 
   /**
-   * Returns current cache and loading statistics.
-   * Useful for debugging and monitoring loader state.
-   * @returns {ComponentLoaderCacheStats} Object with cache metrics.
+   * Returns current cache and loading statistics for monitoring and debugging.
+   * Provides visibility into loader internal state: number of cached components
+   * and number of currently in-flight fetch requests.
+   *
+   * @public
+   * @returns {ComponentLoaderCacheStats} Object with cachedComponents and loading counts.
+   *
+   * @example
+   * const stats = loader.getCacheStats();
+   * console.log(`Cached: ${stats.cachedComponents}, Loading: ${stats.loading}`);
+   * // Output: "Cached: 5, Loading: 2"
    */
   getCacheStats () {
     return {
@@ -255,8 +389,19 @@ export class ComponentLoader {
 
 /**
  * Factory function for creating a new ComponentLoader instance.
- * Provides a convenient way to instantiate ComponentLoader with default settings.
- * @returns {ComponentLoader} New ComponentLoader instance.
+ * Provides a convenient way to instantiate ComponentLoader with default settings
+ * without using the `new` keyword.
+ *
+ * @function
+ * @returns {ComponentLoader} New ComponentLoader instance with empty cache and loadingPromises.
+ *
+ * @example
+ * const loader = createComponentLoader();
+ * await loader.loadComponent('container', 'nav.html');
+ *
+ * @example
+ * // Equivalent to:
+ * const loader = new ComponentLoader();
  */
 export function createComponentLoader () {
   return new ComponentLoader()

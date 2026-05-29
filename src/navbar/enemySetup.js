@@ -3,9 +3,23 @@ import { enemy } from '../waters/enemy.js'
 import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
 
 /**
- * @typedef {import('./types/domain.types.js').Coordinate} Coordinate\n * @typedef {import('./types/domain.types.js').SplashCell} SplashCell\n * @typedef {import('./types/domain.types.js').BoardMap} BoardMap\n * @typedef {import('./types/domain.types.js').Weapon} Weapon\n * @typedef {import('./types/domain.types.js').WeaponSystem} WeaponSystem\n * @typedef {import('./types/form.types.js').FormState} LoadOutModel\n */
+ * @typedef {import('./types/domain.types.js').Coordinate} Coordinate
+ * @typedef {import('./types/domain.types.js').SplashCell} SplashCell
+ * @typedef {import('./types/domain.types.js').BoardMap} BoardMap
+ * @typedef {import('./types/domain.types.js').Weapon} Weapon
+ * @typedef {import('./types/domain.types.js').WeaponSystem} WeaponSystem
+ * @typedef {import('./types/form.types.js').FormState} LoadOutModel
+ */
 
-/** @type {(() => void) | null} */
+/**
+ * Global cleanup function reference for opponent board state.
+ * Stores the cleanup callback from previous board initialization.
+ * Set when initializing a new opponent board with weapon system.
+ * Invoked on next game initialization to reset board state.
+ *
+ * @type {(() => void) | null}
+ * @private
+ */
 let cleanupOpponentBoard = null
 
 // ============================================================================
@@ -14,12 +28,14 @@ let cleanupOpponentBoard = null
 
 /**
  * Validate coordinates are within board bounds.
- * Extracted to reduce code duplication across multiple functions.
+ * Checks if the given row and column fall within the valid game board dimensions.
+ * Extracted to reduce code duplication across multiple functions for maintainability.
+ *
  * @private
- * @param {BoardMap} boardMap - The game board
- * @param {number} row - Row coordinate
- * @param {number} col - Column coordinate
- * @returns {boolean} True if coordinates are in bounds
+ * @param {BoardMap} boardMap - The game board with bounds validation method.
+ * @param {number} row - Row coordinate to validate (0-based).
+ * @param {number} col - Column coordinate to validate (0-based).
+ * @returns {boolean} True if coordinates are in bounds, false otherwise.
  */
 function _isInBounds (boardMap, row, col) {
   return boardMap.inBounds(row, col)
@@ -28,9 +44,14 @@ function _isInBounds (boardMap, row, col) {
 /**
  * Retrieve the active loadout coordinates from a model.
  * Extracts the weapon targeting point set with preference for selected coordinates.
+ * Returns coordinates from loadOut with fallback hierarchy:
+ * 1. selectedCoordinates (if manually selected)
+ * 2. coordinates (default targeting set)
+ * 3. Empty array (no coordinates available)
+ *
  * @private
- * @param {EnemyGameState} model - Enemy game state
- * @returns {Array<Array<number>>} Array of [row, col] coordinates or empty array
+ * @param {EnemyGameState} model - Enemy game state with loadOut property.
+ * @returns {Array<Array<number>>} Array of [row, col] coordinate pairs, or empty array if no loadOut.
  */
 function _getTargetingCoordinates (model) {
   const loadOut = model.loadOut
@@ -41,10 +62,15 @@ function _getTargetingCoordinates (model) {
 
 /**
  * Retrieve the currently active weapon from a model's loadout.
- * Checks selected weapon first, then falls back to current weapon system.
+ * Implements fallback hierarchy for weapon selection:
+ * 1. selectedWeapon.weapon (explicit selection wrapper)
+ * 2. selectedWeapon (direct weapon reference)
+ * 3. getCurrentWeaponSystem().weapon (current system weapon)
+ * 4. undefined (no active weapon)
+ *
  * @private
- * @param {EnemyGameState} model - Enemy game state
- * @returns {Weapon | undefined} Active weapon or undefined
+ * @param {EnemyGameState} model - Enemy game state with loadOut property.
+ * @returns {Weapon|undefined} Active weapon instance, or undefined if not available.
  */
 function _getActiveWeapon (model) {
   if (!model.loadOut) return undefined
@@ -60,12 +86,14 @@ function _getActiveWeapon (model) {
 
 /**
  * Collect all splash area of effect cells for a weapon.
- * Filters out-of-bounds cells and returns valid splash cells.
+ * Retrieves weapon splash cells via splashAoe() and filters out-of-bounds cells.
+ * Returns only cells within valid board dimensions for safe rendering.
+ *
  * @private
- * @param {Weapon} weapon - The weapon being applied
- * @param {BoardMap} boardMap - The game board
- * @param {Array<Array<number>>} targetCoordinates - Target positions
- * @returns {Array<SplashCell>} Filtered splash cells within bounds
+ * @param {Weapon} weapon - The weapon being applied (must have splashAoe method).
+ * @param {BoardMap} boardMap - The game board with bounds validation.
+ * @param {Array<Array<number>>} targetCoordinates - Array of [row, col] target positions.
+ * @returns {Array<SplashCell>} Filtered splash cells with [row, col, powerLevel] within board bounds.
  */
 function _getSplashCellsInBounds (weapon, boardMap, targetCoordinates) {
   const splashCells = weapon.splashAoe(boardMap, targetCoordinates)
@@ -76,11 +104,13 @@ function _getSplashCellsInBounds (weapon, boardMap, targetCoordinates) {
 
 /**
  * Calculate whether a weapon can be applied to target coordinates.
- * Validates that enough targeting points have been selected.
+ * Validates that a weapon exists and has received enough targeting points.
+ * weapon.points defines minimum targeting points required (e.g., 2 for line weapons).
+ *
  * @private
- * @param {Weapon} weapon - Weapon to validate
- * @param {Array<Array<number>>} targetCoordinates - Selected target coordinates
- * @returns {boolean} True if weapon has sufficient targeting points
+ * @param {Weapon} weapon - Weapon to validate (must have 'points' property).
+ * @param {Array<Array<number>>} targetCoordinates - Array of [row, col] coordinate pairs selected by player.
+ * @returns {boolean} True if weapon exists and weapon.points <= targetCoordinates.length, false otherwise.
  */
 function _canApplyWeapon (weapon, targetCoordinates) {
   return !!weapon && weapon.points <= targetCoordinates.length
@@ -93,22 +123,40 @@ function _canApplyWeapon (weapon, targetCoordinates) {
 /**
  * Encapsulates area of effect highlighting for weapon preview.
  * Manages visual feedback for weapon targeting on the opponent board.
+ * Responsible for clearing previous highlights and applying new ones based on weapon effect.
+ *
  * @private
  */
 class BoardHighlighter {
   /**
    * Initialize the highlighter with UI and board references.
-   * @param {EnemyUIModel} boardUI - UI component with cell access and removal methods
-   * @param {BoardMap} boardMap - The game board with bounds validation
+   * Stores references to be used across multiple highlighting operations.
+   *
+   * @constructor
+   * @param {EnemyUIModel} boardUI - UI component with gridCellAt() and removeHighlightAoE() methods.
+   * @param {BoardMap} boardMap - The game board with bounds validation for splash cell filtering.
    */
   constructor (boardUI, boardMap) {
+    /**
+     * Enemy UI model for cell access and highlight removal.
+     * @type {EnemyUIModel}
+     * @private
+     */
     this.boardUI = boardUI
+    /**
+     * Game board for bounds validation during splash cell filtering.
+     * @type {BoardMap}
+     * @private
+     */
     this.boardMap = boardMap
   }
 
   /**
    * Clear any existing area of effect highlights from the board.
+   * Removes all CSS highlight classes applied by previous weapon previews.
+   *
    * @private
+   * @returns {void}
    */
   _clearExistingHighlights () {
     this.boardUI.removeHighlightAoE()
@@ -116,9 +164,12 @@ class BoardHighlighter {
 
   /**
    * Apply visual highlighting to splash area of effect cells.
-   * Adds CSS classes to cells for weapon effect preview.
+   * Adds CSS classes to each cell based on its power level for weapon effect visualization.
+   * Uses bh.splashTags to map power levels to CSS class names.
+   *
    * @private
-   * @param {Array<SplashCell>} splashCells - Cells to highlight
+   * @param {Array<SplashCell>} splashCells - Array of [row, col, powerLevel] cells to highlight.
+   * @returns {void}
    */
   _applyHighlightsToCells (splashCells) {
     for (const [cellRow, cellCol, powerLevel] of splashCells) {
@@ -130,9 +181,13 @@ class BoardHighlighter {
 
   /**
    * Highlight area of effect for a weapon at target coordinates.
-   * Updates visual preview showing weapon splash damage.
-   * @param {Weapon} weapon - Weapon to display effect for
-   * @param {Array<Array<number>>} targetCoordinates - Targeting coordinate array
+   * Updates visual preview showing weapon splash damage pattern and intensity.
+   * Clears previous highlights, validates weapon applicability, and applies new highlights.
+   *
+   * @public
+   * @param {Weapon} weapon - Weapon to display effect for (must have splashAoe method).
+   * @param {Array<Array<number>>} targetCoordinates - Array of [row, col] targeting coordinate pairs.
+   * @returns {void}
    */
   highlightWeaponEffect (weapon, targetCoordinates) {
     this._clearExistingHighlights()
@@ -160,9 +215,12 @@ class BoardHighlighter {
 
 /**
  * Initialize game visibility state for seeking vs hiding mode.
- * This sets which player is in the hidden position and affects board display.
+ * Sets the global bh.seekingMode flag which determines board visibility and targeting behavior.
+ * seekingMode=true: Player seeks (opponent ships hidden), seekingMode=false: Player hides (own ships visible).
+ *
  * @private
- * @param {boolean} isSeekingMode - True if player is seeking/hunting
+ * @param {boolean} isSeekingMode - True if player is seeking/hunting, false if hiding.
+ * @returns {void}
  */
 function _initializeGameMode (isSeekingMode) {
   bh.seekingMode = isSeekingMode
@@ -171,8 +229,11 @@ function _initializeGameMode (isSeekingMode) {
 /**
  * Clear opponent ships when starting a seeking game.
  * In seeking mode, opponent ships start hidden and are revealed as player scores hits.
+ * Ships are cleared from the enemy object's ships array during game start.
+ *
  * @private
- * @param {boolean} isSeekingMode - True if player is seeking
+ * @param {boolean} isSeekingMode - True if player is seeking/hunting.
+ * @returns {void}
  */
 function _clearOpponentShipsIfSeeking (isSeekingMode) {
   if (isSeekingMode) {
@@ -183,7 +244,10 @@ function _clearOpponentShipsIfSeeking (isSeekingMode) {
 /**
  * Update the enemy board title with current terrain name.
  * Provides context about which game board is being displayed.
+ * Sets the 'enemy-title' element's text to 'Enemy ' + terrain heading.
+ *
  * @private
+ * @returns {void}
  */
 function _updateEnemyBoardTitle () {
   const titleElement = document.getElementById('enemy-title')
@@ -195,6 +259,8 @@ function _updateEnemyBoardTitle () {
 /**
  * Clean up or initialize opponent board state.
  * Handles Friend (hiding player) board initialization with weapon arming.
+ * On first call: stores cleanup callback and initializes board state.
+ * On subsequent calls: executes and clears stored cleanup function.
  *
  * REGRESSION PREVENTION NOTE:
  * In Hide mode, the opponent (Friend) has visible ships and attached weapons.
@@ -202,8 +268,9 @@ function _updateEnemyBoardTitle () {
  * This is independent of bh.seekingMode logic (see critical note below).
  *
  * @private
- * @param {(() => void) | null} opponentBoardCleanup - Cleanup function for previous board
- * @param {FriendUI | null} friendUI - Friend player UI (if in hide mode)
+ * @param {(() => void) | null} opponentBoardCleanup - Cleanup function for previous board, or null.
+ * @param {FriendUI | null} friendUI - Friend player UI (if in hide mode), or null.
+ * @returns {void}
  */
 function _initializeOpponentBoard (opponentBoardCleanup, friendUI) {
   // If cleanup is needed from previous game, execute it and return
@@ -223,8 +290,11 @@ function _initializeOpponentBoard (opponentBoardCleanup, friendUI) {
 
 /**
  * Initialize board hover and highlight behavior for the opponent board.
+ * Sets up hover handlers to display weapon effect previews during targeting.
  * Must be called after resetModel to ensure clean state.
+ *
  * @private
+ * @returns {void}
  */
 function _configureBoardHoverBehavior () {
   enemy.UI.buildBoardHover(
@@ -238,8 +308,11 @@ function _configureBoardHoverBehavior () {
 /**
  * Configure board targeting behavior based on current game mode.
  * Affects click interaction model but NOT weapon selection logic.
+ * Delegates to enemy.setBoardTargetingState() which manages click handling.
+ *
  * @private
- * @param {boolean} isSeekingMode - True if player is seeking/hunting
+ * @param {boolean} isSeekingMode - True if player is seeking/hunting.
+ * @returns {void}
  *
  * CRITICAL SEMANTIC DOCUMENTATION (bh.seekingMode):
  * ================================================
@@ -272,7 +345,9 @@ function _configureBoardTargeting (isSeekingMode) {
  * Initialize weapon button click handlers.
  * Wire up UI controls for weapon selection and fire actions.
  * Must happen after resetModel but works in all game modes.
+ *
  * @private
+ * @returns {void}
  */
 function _setupWeaponButtonHandlers () {
   enemy.setupWeaponButtonHandlers()
@@ -280,6 +355,8 @@ function _setupWeaponButtonHandlers () {
 
 /**
  * Start a new game, resetting game state and initializing all subsystems.
+ * Orchestrates the complete game initialization sequence in proper order.
+ * Resets bh state, clears opponent state if seeking, and reinitializes all UI.
  *
  * CRITICAL EXECUTION ORDER AND STATE MANAGEMENT
  * ============================================
@@ -300,9 +377,11 @@ function _setupWeaponButtonHandlers () {
  * - setBoardTargetingState() uses bh.seekingMode, which must be set first
  * - setupWeaponButtonHandlers() MUST happen regardless of mode
  *
- * @param {string} seek - Game mode indicator: 'seek' for seeking, other for hiding mode
- * @param {(() => void) | null} opponentBoard - Cleanup function for previous board
- * @param {FriendUI | null} friendUI - Friend player UI (if available)
+ * @public
+ * @param {string} seek - Game mode indicator: 'seek' for seeking mode, other values for hiding mode.
+ * @param {(() => void) | null} opponentBoard - Cleanup function for previous board state, or null.
+ * @param {FriendUI | null} friendUI - Friend player UI reference (if available in hide mode), or null.
+ * @returns {void}
  */
 export function newGame (seek, opponentBoard, friendUI) {
   const isSeekingMode = seek === 'seek'
@@ -337,13 +416,18 @@ export function newGame (seek, opponentBoard, friendUI) {
 }
 
 /**
- * Create a hover handler for area of effect highlighting.
- * Factory function that returns a handler for board hover events.
- * This handler updates the weapon effect preview as the cursor moves.
+ * Calculate the complete set of targeting coordinates for weapon effect preview.
+ * Combines existing targeting coordinates with current cursor position.
+ * Implements hierarchical fallback for preview generation:
+ * 1. Existing coordinates + cursor position
+ * 2. Selected cell + cursor position
+ * 3. Cursor position alone
+ *
  * @private
- * @param {EnemyGameState} model - Enemy game state with loadout and UI
- * @param {number} cellRow - Current cursor row position
- * @param {number} cellCol - Current cursor column position
+ * @param {EnemyGameState} model - Enemy game state with loadOut and selectedCellCoordinates.
+ * @param {number} cellRow - Current cursor row position (0-based).
+ * @param {number} cellCol - Current cursor column position (0-based).
+ * @returns {Array<Array<number>>} Array of [row, col] coordinate pairs for preview.
  */
 function _getPreviewTargetingCoordinates (model, cellRow, cellCol) {
   const targetingCoordinates = _getTargetingCoordinates(model)
@@ -363,6 +447,17 @@ function _getPreviewTargetingCoordinates (model, cellRow, cellCol) {
   return [[cellRow, cellCol]]
 }
 
+/**
+ * Create and apply area of effect highlighting for weapon preview.
+ * Internal handler called during board hover events to update weapon effect visualization.
+ * Validates cursor position, retrieves weapon and targeting data, and delegates to BoardHighlighter.
+ *
+ * @private
+ * @param {EnemyGameState} model - Enemy game state with UI and loadOut.
+ * @param {number} cellRow - Current cursor row position (0-based).
+ * @param {number} cellCol - Current cursor column position (0-based).
+ * @returns {void}
+ */
 function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
   const boardMap = bh.map
 
@@ -386,28 +481,26 @@ function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
 }
 
 /**
- * Highlight the area of effect for the currently selected weapon.
- * Called when the user hovers over the opponent board to preview weapon effects.
- *
- * This is the entry point for hover-based weapon preview updates.
- * It validates board state and delegates highlighting to BoardHighlighter.
- *
- * @param {EnemyGameState} model - Enemy game state containing loadout and UI
- * @param {number} cellRow - Row coordinate of cursor hover position
- * @param {number} cellCol - Column coordinate of cursor hover position
- */
-
-/**
  * @typedef {(event: KeyboardEvent) => void} KeyboardHandler
  */
 
 /**
  * Build keyboard shortcut handlers for seek mode gameplay.
  * Supports placement, testing, reveal, and weapon selection hotkeys.
+ * Dynamically registers weapon button shortcuts from weaponBtns UI elements.
+ *
+ * Built shortcuts:
+ * - 'p': Placement mode toggle
+ * - 't': Test mode toggle
+ * - 'r': New game (seek mode)
+ * - 'q': Reveal hidden ships
+ * - 's': Single-shot weapon
+ * - [dynamic]: Weapon selection by letter from button dataset
+ *
  * @private
- * @param {Function} placementHandler - Handler for placement mode toggle
- * @param {Function} testHandler - Handler for test mode toggle
- * @returns {Object<string, KeyboardHandler>} Map of keys to handler functions
+ * @param {Function} placementHandler - Handler function for placement mode toggle.
+ * @param {Function} testHandler - Handler function for test mode toggle.
+ * @returns {Object<string, KeyboardHandler>} Map of single-character keys to handler functions.
  */
 function _buildSeekModeShortcuts (placementHandler, testHandler) {
   const shortcuts = {
@@ -433,11 +526,13 @@ function _buildSeekModeShortcuts (placementHandler, testHandler) {
 
 /**
  * Initialize keyboard shortcuts for seek mode.
- * Registers and activates shortcut handlers; returns cleanup function.
+ * Creates a KeyboardShortcutManager, registers built shortcuts, activates listening,
+ * and returns cleanup function to deactivate listening on game end.
+ *
  * @private
- * @param {Function | undefined} placementHandler - Handler for placement mode
- * @param {Function | undefined} testHandler - Handler for test mode
- * @returns {() => void} Cleanup function to deactivate shortcuts
+ * @param {Function|undefined} placementHandler - Handler function for placement mode, or undefined.
+ * @param {Function|undefined} testHandler - Handler function for test mode, or undefined.
+ * @returns {() => void} Cleanup function that deactivates keyboard shortcut listening.
  */
 function _initializeSeekModeShortcuts (placementHandler, testHandler) {
   const shortcutManager = new KeyboardShortcutManager()
@@ -455,10 +550,13 @@ function _initializeSeekModeShortcuts (placementHandler, testHandler) {
 
 /**
  * Safely attach a click handler to an element if it exists and handler is valid.
- * Guards against null elements and non-function handlers.
+ * Guards against null/undefined elements and non-function handlers.
+ * Uses optional chaining to safely access addEventListener method.
+ *
  * @private
- * @param {HTMLElement | null} element - DOM element to attach handler to
- * @param {EventListener | undefined} handler - Click event handler function
+ * @param {HTMLElement|null} element - DOM element to attach handler to, or null to skip.
+ * @param {EventListener|undefined} handler - Click event handler function, or undefined to skip.
+ * @returns {void}
  */
 function _attachClickHandler (element, handler) {
   if (element?.addEventListener && typeof handler === 'function') {
@@ -469,6 +567,7 @@ function _attachClickHandler (element, handler) {
 /**
  * Setup the enemy game UI and event handlers.
  * Initializes button handlers and keyboard shortcuts for gameplay.
+ * Entry point for UI setup that must be called before game begins.
  *
  * EXECUTION ORDER:
  * 1. Refresh UI button states
@@ -477,9 +576,10 @@ function _attachClickHandler (element, handler) {
  * 4. Wire up placement and test buttons
  * 5. Initialize keyboard shortcuts
  *
- * @param {Function} placementHandler - Callback for entering placement mode
- * @param {Function} testHandler - Callback for entering test mode
- * @returns {() => void} Cleanup function to deactivate keyboard shortcuts
+ * @public
+ * @param {Function} placementHandler - Callback function for entering placement mode.
+ * @param {Function} testHandler - Callback function for entering test mode.
+ * @returns {() => void} Cleanup function to deactivate keyboard shortcuts (call on game end).
  */
 export function setupEnemy (placementHandler, testHandler) {
   // Refresh button states
@@ -500,6 +600,13 @@ export function setupEnemy (placementHandler, testHandler) {
   return _initializeSeekModeShortcuts(placementHandler, testHandler)
 }
 
+/**
+ * Internal test exports for unit testing private functions.
+ * Exposes implementation details for testing purposes only.
+ *
+ * @internal
+ * @type {Object<string, Function>}
+ */
 export const __test = {
   _getActiveWeapon,
   _getPreviewTargetingCoordinates

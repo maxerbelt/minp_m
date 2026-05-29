@@ -3,7 +3,6 @@
  * Maps, coordinates, game states, and related structures
  */
 
-import type { Nullable } from './shared.types.js';
 
 // ============================================================================
 // Coordinate System

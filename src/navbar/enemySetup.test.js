@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
-import { bh } from '../terrains/all/js/bh.js'
+import { describe, it, expect, jest } from '@jest/globals'
 
 /**
  * Tests for enemySetup.js - Game mode initialization and flag management
@@ -56,7 +55,8 @@ describe('enemySetup.js - Regression Prevention Documentation', () => {
       // bh.seekingMode = seek === 'seek'
       // When seek === 'seek' → seekingMode = true ✓
       // When seek !== 'seek' → seekingMode = false ✓
-      const result = 'seek' === 'seek'
+      const testParam = 'seek'
+      const result = testParam === 'seek'
       expect(result).toBe(true)
     })
 
