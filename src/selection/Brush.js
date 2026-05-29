@@ -1,7 +1,5 @@
 /**
- * @typedef {Object} BrushObject
- * @property {number} size - The size of the brush
- * @property {*} subterrain - The subterrain associated with the brush
+ * @import type { BrushObject } from './types/brush.types.js';
  */
 
 /**

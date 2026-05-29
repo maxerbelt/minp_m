@@ -1,25 +1,6 @@
 /**
- * @typedef {Object} PlacedShip
- * @property {Function} placeAtCells - Places the ship at the given cells
- * @property {Function} removeFromPlacement - Removes the ship from placement state
- * @property {Function} addToGrid - Adds the ship back onto the grid
- */
-
-/**
- * @typedef {Object} ShipCellGrid
- * @property {any} [grid] - Arbitrary grid metadata used during refresh
- */
-
-/**
- * @typedef {Function} MarkCallback
- * @param {PlacedShip} ship - Ship being marked on the grid
- * @returns {void}
- */
-
-/**
- * @typedef {Function} ReturnShipCallback
- * @param {PlacedShip} ship - Removed ship to return
- * @returns {void}
+ * @import type { PlacedShip, ShipCellGrid } from './types/domain.types.js';
+ * @import type { MarkCallback, ReturnShipCallback } from './types/events.types.js';
  */
 
 /**

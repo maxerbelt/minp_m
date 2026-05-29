@@ -1,45 +1,10 @@
-import { Ghost } from './Ghost.js'
 import { SelectedShip } from './SelectedShip.js'
+import { Ghost } from './Ghost.js'
 import { placedShipsInstance } from './PlacedShips.js'
 
 /**
- * @typedef {[number, number]} CursorPosition
- * Grid position represented as [row, column] tuple where each component is an integer.
- *
- * @typedef {[number, number]} OffsetVector
- * Pixel offset represented as [x, y] tuple for drag positioning.
- *
- * @typedef {import('./Ghost.js').Ghost} GhostType
- * Ghost preview instance for visual feedback during ship dragging.
- *
- * @typedef {import('./SelectedShip.js').SelectedShip} SelectedShipType
- * SelectedShip base class providing ship rotation/flip functionality.
- *
- * @typedef {Object} MouseDragEvent
- * Mouse event data during drag operations.
- * @property {number} clientX - X coordinate relative to viewport
- * @property {number} clientY - Y coordinate relative to viewport
- *
- * @typedef {Object} ShipCellGrid
- * 2D grid structure containing ship cell placement data.
- * Structure varies by grid type (hex, rectangle, triangle).
- *
- * @typedef {Object} Placeable
- * Interface for placeable entities with validation capabilities.
- * @property {Function} canPlace - Validates if placement is possible
- * @property {Function} placeAt - Places entity at given coordinates returning placement data
- *
- * @typedef {Object} Ship
- * Ship object with identity, shape, and placement methods.
- * @property {string} id - Unique ship identifier
- * @property {string} letter - Single character label for display
- * @property {Function} shape - Returns ship shape for current variant
- * @property {Function} placeAt - Places ship at [x, y] position
- * @property {Function} addToGrid - Adds ship representation to grid
- * @property {Function} placeAtCells - Places ship at specific cells
- * @property {Function} removeFromPlacement - Removes ship from placement
- * @property {Function} placeOnGrid - Places ship on grid at given position
- * @property {Array<Array<number>>} cells - Current occupied cells
+ * @import type { CursorPosition, OffsetVector, MouseDragEvent } from './types/ui.types.js';
+ * @import type { Ship, ShipCellGrid, Placeable } from './types/domain.types.js';
  */
 
 /**

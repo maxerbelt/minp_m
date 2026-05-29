@@ -1,11 +1,9 @@
-import { SelectedShip } from './SelectedShip.js'
-
 /**
- * @typedef {Object} Board
- * @property {Function} occupiedLocations - Generator function yielding occupied cell coordinates
- * @property {number} occupancy - Number of occupied cells in the board
- * @property {bigint} bits - Bitboard representation of occupied cells
+ * @import type { Board, Variants } from './types/domain.types.js';
+ * @import type { ContentBuilderFunction } from './types/ui.types.js';
  */
+
+import { SelectedShip } from './SelectedShip.js'
 
 /**
  * @typedef {Object} VariantManager

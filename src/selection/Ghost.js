@@ -1,15 +1,5 @@
 /**
- * @typedef {Object} BoardData
- * @description Board configuration containing terrain, ship placement, and variant information for rendering ghost ship preview.
- * @property {Array<Array<number>>} terrain - 2D grid of terrain values indicating placement type (water, land, etc.)
- * @property {string} [variant] - Optional board variant identifier for styling purposes
- * @property {Object} [config] - Optional board configuration metadata for rendering context
- */
-
-/**
- * @typedef {Function} ContentBuilderFunction
- * @description Function that populates ghost element with HTML content.
- * Signature: (element: HTMLElement, board: BoardData, letter: string) => void
+ * @import type { ContentBuilderFunction } from './types/ui.types.js';
  */
 
 /**

@@ -1,39 +1,5 @@
 /**
- * @typedef {Object} Board
- * @property {Function} occupiedLocations
- */
-
-/**
- * @typedef {Object} Variants
- * @property {boolean} canFlip
- * @property {boolean} canRotate
- * @property {boolean} canTransform
- * @property {number} index
- * @property {Function} placeable
- * @property {Function} variant
- * @property {Function} boardFor
- * @property {Function} rotate
- * @property {Function} leftRotate
- * @property {Function} flip
- * @property {Function} nextForm
- * @property {Function} [onChange]
- */
-
-/**
- * @typedef {Object} Shape
- * @property {Function} variants
- * @property {Function} type
- */
-
-/**
- * @typedef {Object} Ship
- * @property {string} id
- * @property {string} letter
- * @property {Function} shape
- */
-
-/**
- * @typedef {Function} ContentBuilder
+ * @import type { Board, Variants, Ship, Shape } from './types/domain.types.js';
  */
 
 /**

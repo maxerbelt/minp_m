@@ -1,91 +1,16 @@
+/**
+ * @import type { ViewModel, ShipElement } from './types/ui.types.js';
+ * @import type { Model, Weapon, PlacementData } from './types/placement.types.js';
+ * @import type { Ship } from './types/domain.types.js';
+ * @import type { CursorPosition } from './types/ui.types.js';
+ */
+
 import { bh } from '../terrains/all/js/bh.js'
 import { coordsFromCell } from '../core/utilities.js'
 import { DraggedShip } from './DraggedShip.js'
 import { Brush } from './Brush.js'
 import { cursor } from './cursor.js'
 import { CustomMap } from '../terrains/all/js/map.js'
-
-/**
- * @typedef {Object} ViewModel
- * @description View model interface providing UI interaction handlers for drag-and-drop operations, cell highlighting, and ship/weapon management.
- * Coordinates between drag operations and visual updates in the game board interface.
- * @property {() => void} removeHighlight - Clears CSS highlight classes from all board cells after drag operations complete
- * @property {boolean} placingShips - Flag indicating whether currently in ship placement mode (true) or adding mode (false)
- * @property {(r: number, c: number) => HTMLElement} gridCellAt - Retrieves DOM element for grid cell at [row, column] coordinates
- * @property {() => void} disableRotateFlip - Disables rotation/flip UI controls when drag ends successfully or selection changes
- * @property {() => void} removeClicked - Clears the clicked/selected ship state from UI tray display
- * @property {(arrowKey: string, ships: Array) => void} assignByCursor - Moves keyboard cursor in specified direction and selects corresponding ship
- * @property {() => Element|null} getFirstTrayItem - Returns first available ship from tray, used for keyboard cursor initialization
- * @property {Object} trayManager - Manager object providing getTrayItem(id) method to access ship elements by ID
- * @property {(dragShip: HTMLElement, board: Object, letter: string) => void} setDragShipContents - Updates drag preview display with ship variant content
- * @property {(placed: Array<[number, number]>, model: Object, ship: Object) => number} addition - Handles new ship addition; returns assigned ship ID
- * @property {(placed: Array<[number, number]>, model: Object, ship: Object) => void} placement - Handles ship placement in existing grid
- * @property {(dragShip: HTMLElement) => void} removeDragShip - Removes ship element from tray after successful placement
- * @property {(model: Object) => void} displayShipTrackingInfo - Updates ship tracking and stats display with current model state
- * @property {() => void} checkTrays - Validates and refreshes tray availability based on remaining ships
- * @property {(r: number, c: number, color?: string, letter?: string) => void} recolor - Recolors cell display after terrain changes
- * @property {Object} score - Score manager object for tracking game points
- * @property {() => void} updateChangeClearButton - Updates state of undo/change-clear button
- * @property {() => void} refreshAllColor - Refreshes colors on entire board after brush operations
- * @property {(ship: Object, clicked: HTMLElement) => void} assignClicked - Updates UI to show ship as selected and enables transform controls
- * @property {(weapon: Object, clicked: HTMLElement) => void} assignClickedWeapon - Updates UI to show weapon as selected
- * @property {(text: string) => void} showNotice - Displays tooltip or notice message in UI
- * @property {HTMLElement} board - Board grid element containing all cell elements
- * @property {HTMLElement} trays - Container element for ship/weapon tray panels
- * @property {Array<Function>} placelistenCancellables - Array of cleanup functions to remove ship placement listeners
- * @property {Array<Function>} brushlistenCancellables - Array of cleanup functions to remove brush painting listeners
- * @property {() => number} cellSize - Returns size of individual grid cells in pixels (used for coordinate conversion)
- */
-
-/**
- * @typedef {Object} Model
- * @description Model interface representing game state including ships, weapons, and grid placement data.
- * Provides access to ship cell grid for placement validation and collision detection.
- * @property {Object} shipCellGrid - Multi-bit grid storing ship cell occupancy; used for placement validation
- * @property {Array<Object>} ships - Array of Ship objects available in current game
- * @property {(map?: Object) => void} armWeapons - Initializes weapon systems on game board; optional map parameter
- */
-
-/**
- * @typedef {Object} Ship
- * @description Ship object interface representing a game ship with placement and shape information.
- * Provides access to ship properties for drag operations and grid placement.
- * @property {number} id - Unique ship identifier used for tracking in placement operations
- * @property {() => Object} shape - Returns shape object containing ship geometry and transformation info (rotation, flip state)
- * @property {() => Object} placeable - Returns current placeable interface for placement validation at given coordinates
- * @property {() => boolean} canRotate - Returns whether ship rotation is possible for current shape variant
- * @property {() => boolean} canTransform - Returns whether ship transformation to next form is possible
- */
-
-/**
- * @typedef {Object} Weapon
- * @description Weapon object interface representing a game weapon with attack properties.
- * Used during drag operations for weapon placement and tray management.
- * @property {string} letter - Weapon letter identifier (A, B, C, etc.) for display and tracking
- * @property {string} tip - Tooltip text describing weapon attack effect and stats
- * @property {number} ammo - Current ammunition count; decremented on placement, incremented on removal
- */
-
-/**
- * @typedef {HTMLElement} ShipElement
- * @description Ship DOM element interface for tray items and drag sources.
- * Extends HTMLElement with ship-specific data attributes and styling.
- * @property {DOMStringMap} dataset - Data attributes including 'id' (ship ID), 'variant' (variant index), 'letter' (weapon letter)
- * @property {CSSStyleDeclaration} style - Element CSS styles; opacity modified during drag operations
- * @property {Function} addEventListener - Adds event listeners for 'dragstart', 'click', 'dragenter', etc.
- * @property {Function} getBoundingClientRect - Returns element position for calculating drag offsets
- * @property {Function} classList - Class list for managing 'draggable', 'dragListen', 'good', 'bad', 'notgood' classes
- */
-
-/**
- * @typedef {Object} PlacementData
- * @description Placement validation and board data for ship positioning.
- * Provides occupancy grid and constraint checking for drop locations.
- * @property {Object} board - Board containing occupiedLocations() method returning iterator of occupied [column, row] cells
- * @property {Object} notGood - Grid containing cells with terrain/placement constraints; values > 0 indicate warnings
- * @property {(grid: Object) => boolean} canPlace - Validates placement against ship cell grid; returns true if valid
- * @property {(grid: Object) => string} cantPlaceReason - Returns reason string describing why placement is invalid
- */
 
 /**
  * Manages drag-and-drop state for ships and weapons.
