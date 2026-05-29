@@ -60,16 +60,6 @@ export function deltaAndDirection (endX, startX, endY, startY) {
   return { deltaX, deltaY, stepX, stepY }
 }
 
-export function deltaAndDirection (endX, startX, endY, startY) {
-  let deltaX = Math.abs(endX - startX)
-  let deltaY = Math.abs(endY - startY)
-
-  // Convert boolean comparison into +1 or -1
-  const stepX = (startX < endX) * 2 - 1
-  const stepY = (startY < endY) * 2 - 1
-  return { deltaX, deltaY, stepX, stepY }
-}
-
 /**
  * Abstract base class for coordinate-to-index mapping.
  *
@@ -888,7 +878,7 @@ export class Indexer {
    * @private
    */
   _getConnectionResult (connectionKey, methodName, ...coords) {
-    if (!this.connection || !this.connection[connectionKey]) {
+    if (!this.connection?.[connectionKey]) {
       throw new Error(`Missing connection object for type ${connectionKey}`)
     }
     const connection = this.connection[connectionKey]
