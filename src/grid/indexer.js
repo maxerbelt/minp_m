@@ -54,9 +54,9 @@ export function deltaAndDirection (endX, startX, endY, startY) {
   let deltaX = Math.abs(endX - startX)
   let deltaY = Math.abs(endY - startY)
 
-  // Convert boolean comparison into +1 or -1
-  const stepX = (startX < endX) * 2 - 1
-  const stepY = (startY < endY) * 2 - 1
+  // Convert boolean comparison into +1 or -1: true(1) * 2 - 1 = 1, false(0) * 2 - 1 = -1
+  const stepX = (startX < endX ? 1 : 0) * 2 - 1
+  const stepY = (startY < endY ? 1 : 0) * 2 - 1
   return { deltaX, deltaY, stepX, stepY }
 }
 
@@ -126,8 +126,6 @@ export class Indexer {
    *
    * @abstract
    * @method index
-   * @param {number} x - Column coordinate
-   * @param {number} y - Row coordinate
    * @returns {number} Linear index (0 to size-1)
    * @throws {Error} Must be implemented in subclass
    */
@@ -143,7 +141,6 @@ export class Indexer {
    *
    * @abstract
    * @method location
-   * @param {number} index - Linear index (0 to size-1)
    * @returns {Coordinate} [x, y] coordinate pair
    * @throws {Error} Must be implemented in subclass
    */
@@ -154,7 +151,7 @@ export class Indexer {
   /**
    * Verify this is a subclass instance (abstract base check).
    *
-   * Uses the new.target intrinsic to detect if Indexer was instantiated directly
+   * Uses the constructor function to detect if Indexer was instantiated directly
    * (rather than a subclass), which would indicate misuse of the abstract class.
    *
    * @private
@@ -162,7 +159,7 @@ export class Indexer {
    * @throws {Error} If called on Indexer class directly
    */
   checkInstantiation () {
-    if (new.target === Indexer) {
+    if (this.constructor === Indexer) {
       throw new Error(
         'base class cannot be instantiated directly. Please extend it.'
       )
@@ -194,6 +191,7 @@ export class Indexer {
    * @returns {boolean} True if coordinate is valid (0 <= x < width, 0 <= y < height)
    */
   isValid (x, y) {
+    // @ts-expect-error width and height provided by subclasses
     return x >= 0 && x < this.width && y >= 0 && y < this.height
   }
 
@@ -210,6 +208,7 @@ export class Indexer {
    * @private
    * @access private
    * @returns {Function} Predicate function(x, y) → boolean (true if outside bounds)
+   * @unused Used indirectly through delegation pattern
    */
   _createBoundaryExitCondition () {
     return (x, y) => !this.isValid(x, y)
@@ -224,10 +223,11 @@ export class Indexer {
    * @private
    * @access private
    * @param {number} distance - Maximum distance in steps
-   * @returns {Function} Predicate function(x, y, steps) → boolean (true if distance exceeded)
+   * @returns {Function} Predicate function(_x, _y, steps) → boolean (true if distance exceeded)
+   * @unused Used indirectly through delegation pattern
    */
   _createDistanceLimitExitCondition (distance) {
-    return (x, y, steps) => steps >= distance
+    return (_x, _y, steps) => steps >= distance
   }
 
   /**
@@ -241,6 +241,7 @@ export class Indexer {
    * @param {number} endX - Target x coordinate
    * @param {number} endY - Target y coordinate
    * @returns {Function} Predicate function(x, y) → boolean (true if at endpoint)
+   * @unused Used indirectly through delegation pattern
    */
   _createEndpointExitCondition (endX, endY) {
     return (x, y) => x === endX && y === endY
@@ -261,17 +262,18 @@ export class Indexer {
    * @access private
    * @param {string} baseMethodName - Name of base method to wrap
    * @returns {Function} Generator function that yields indices
+   * @unused Used indirectly through delegation pattern
    */
   _createIndexIteratorWrapper (baseMethodName) {
+    // @ts-expect-error baseMethodName is looked up dynamically
     const baseMethod = this[baseMethodName]
     return function* (...args) {
       for (const coordinate of baseMethod.call(this, ...args)) {
         const x = coordinate[0]
         const y = coordinate[1]
+        // @ts-expect-error index() provided by subclass
         const index = this.index(x, y)
-        if (index !== undefined) {
-          yield index
-        }
+        yield index
       }
     }
   }
@@ -285,6 +287,7 @@ export class Indexer {
    *
    * @private
    * @access private
+   * @unused Used indirectly through delegation pattern
    */
   _installIndexIteratorWrappers () {
     const wrapperPairs = [
@@ -303,6 +306,7 @@ export class Indexer {
     ]
 
     for (const [wrapperName, baseMethodName] of wrapperPairs) {
+      // @ts-expect-error Dynamic method assignment for wrapper pattern
       this[wrapperName] = this._createIndexIteratorWrapper(baseMethodName)
     }
   }
@@ -316,6 +320,7 @@ export class Indexer {
    * @access private
    * @param {string} baseMethodName - Name of base coordinate method
    * @returns {Function} Generator function that yields indices
+   * @unused Used indirectly through delegation pattern
    */
   _createIndicesWrapper (baseMethodName) {
     return this._createIndexIteratorWrapper(baseMethodName)
@@ -444,6 +449,7 @@ export class Indexer {
    * @throws {Error} If cover type or method not found
    */
   _delegateCoverMethod (coverType, baseName, args) {
+    // @ts-expect-error cover object structure provided by subclass
     const cover = this?.cover?.[coverType]
     if (!cover) {
       throw new Error(`Missing cover object for type ${coverType}`)
@@ -785,7 +791,7 @@ export class Indexer {
    * Convert coordinate list to index list.
    *
    * Transforms an array of [x, y] coordinate pairs into linear indices.
-   * Skips invalid coordinates (those outside grid bounds).
+   * Subclass implementation of index() returns a valid number for all coordinates.
    *
    * @generator
    * @param {Array<Coordinate>} coords - List of [x, y] coordinates
@@ -795,9 +801,7 @@ export class Indexer {
   *list (coords) {
     for (const point of coords) {
       const i = this.index(...point)
-      if (i !== undefined) {
-        yield i
-      }
+      yield i
     }
   }
 
@@ -826,7 +830,6 @@ export class Indexer {
    * @returns {bigint} Bitboard with indices set at coordinate positions
    */
   bitsFromCoords (bbc, coords) {
-    // generic helper used by various classes; make sure we update the bitboard
     let bits = bbc.store.empty
 
     for (const i of this.list(coords)) {
@@ -922,8 +925,12 @@ export class Indexer {
 
   /**
    * Iterate over all grid positions as [x, y, index] tuples.
+   *
+   * Yields coordinate pairs with their linear indices for iteration over all grid cells.
+   *
    * @generator
-   * @yields {Array<number>} [x, y, index]
+   * @yields {Array<number>} [x, y, index] coordinate with linear index
+   * @returns {Generator<Array<number>, void, void>} Generator of [x, y, index] tuples
    */
   *keys () {
     const n = this.size
@@ -935,8 +942,12 @@ export class Indexer {
 
   /**
    * Iterate over all indices in grid.
+   *
+   * Yields linear indices sequentially from 0 to size-1 for all grid cells.
+   *
    * @generator
-   * @yields {number} Index from 0 to size-1
+   * @yields {number} Linear index from 0 to size-1
+   * @returns {Generator<number, void, void>} Generator of indices
    */
   *indices () {
     const n = this.size
@@ -947,9 +958,13 @@ export class Indexer {
 
   /**
    * Iterate over all grid positions with bitboard values.
+   *
+   * Yields tuples of coordinate, index, and cell value for all grid positions.
+   *
    * @generator
    * @param {Object} bb - Bitboard object with at(x, y) method
-   * @yields {Array} [x, y, index, value, bb]
+   * @yields {Array} [x, y, index, value, bb] coordinate with index, value, and bitboard
+   * @returns {Generator<Array, void, void>} Generator of position tuples
    */
   *entries (bb) {
     for (const key of this.keys()) {
@@ -959,25 +974,60 @@ export class Indexer {
 
   /**
    * Iterate over all grid values from bitboard.
+   *
+   * Yields cell values for all grid positions in order.
+   *
    * @generator
    * @param {Object} bb - Bitboard object with at(x, y) method
    * @yields {number} Cell value at each position
+   * @returns {Generator<number, void, void>} Generator of cell values
    */
   *values (bb) {
     for (const key of this.keys()) {
       yield bb.at(...key)
     }
   }
+  /**
+   * Iterate over all set bit indices in a bitboard.
+   *
+   * Yields linear indices for all bits that are set in the bitboard.
+   * Uses safe iteration to handle arbitrary bitboard patterns.
+   *
+   * @generator
+   * @param {bigint} bb - Bitboard value
+   * @yields {number} Linear index for each set bit
+   * @returns {Generator<number, void, void>} Generator of bit indices
+   */
   *bitsIndices (bb) {
     yield* bitsSafe(bb, this.size)
   }
 
+  /**
+   * Iterate over all set bit positions with coordinates.
+   *
+   * Yields [x, y, index] tuples for all set bits in the bitboard.
+   *
+   * @generator
+   * @param {bigint} bb - Bitboard value
+   * @yields {Array<number>} [x, y, index] for each set bit
+   * @returns {Generator<Array<number>, void, void>} Generator of coordinate tuples
+   */
   *bitKeys (bb) {
     for (const i of this.bitsIndices(bb)) {
       const loc = this.location(i)
       yield [...loc, i]
     }
   }
+  /**
+   * Iterate over set bit indices and values from bitboard.
+   *
+   * Yields [index, value] tuples for all set bits in the bitboard.
+   *
+   * @generator
+   * @param {bigint} bb - Bitboard value
+   * @yields {Array<number|bigint>} [index, value] for each set bit
+   * @returns {Generator<Array, void, void>} Generator of index-value pairs
+   */
   *indicesValues (bb) {
     for (const i of this.bitsIndices(bb)) {
       const loc = this.location(i)
