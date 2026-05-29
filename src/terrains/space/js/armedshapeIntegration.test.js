@@ -1,6 +1,4 @@
-
-
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach } from '@jest/globals'
 import { ArmedShuttle } from './spaceShapes.js'
 import { Missile } from './spaceWeapons.js'
 import { Mask } from '../../../grid/rectangle/mask.js'
@@ -39,8 +37,6 @@ describe('Armed shape', () => {
     expect(missileBoat.board.height).toBe(3)
     expect(missileBoat.board.store.width).toBe(2)
     expect(missileBoat.board.store.height).toBe(3)
-
-    //  expect(missileBoat.board.store.bitsPerCell).toBe(2)
     expect(missileBoat.board.store.bitsPerCell).toBe(1)
     expect(missileBoat.board.store.size).toBe(6n)
     expect(missileBoat.board.store.depth).toBe(2)
@@ -72,8 +68,6 @@ describe('Armed shape', () => {
     expect(addBoard.toAsciiWith()).toBe('.2\n11\n.2')
     const fullBoard = weaponVariant.board
     expect(fullBoard.store.bitsPerCell).toBe(2)
-
-    //  expect(fullBoard.toAsciiWith()).toBe('.2\n11\n.2')
     const b0 = weaponVariant.boardFor(0)
     expect(b0.toAsciiWith()).toBe('.2\n11\n.2')
     const b1 = weaponVariant.boardFor(1)

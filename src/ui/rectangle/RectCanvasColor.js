@@ -1,9 +1,40 @@
 import { RectCanvas } from './RectCanvas.js'
 
 /**
+ * @typedef {Object} PaletteInfo
+ * @property {number} bitsPerCell - Bits per cell for color storage (1, 2, 4, 8)
+ * @property {number} maxColors - Total number of colors in palette
+ * @property {number} colorsPerChannel - Colors per color channel (log2 based)
+ * @property {string[]} colors - Array of hex color codes
+ */
+
+/**
+ * @typedef {Object} ColorAction
+ * @property {'set'|'clear'|'toggle'} mode - Action mode for cell color operations
+ * @property {number} colorValue - Color value to apply (set mode only)
+ */
+
+/**
  * Enhanced rectangular grid canvas supporting multi-color rendering
- * Supports 2, 4, 16, and 256 colors
- * Adds color selection, cycling, and palette UI
+ *
+ * Extends RectCanvas to add multi-color support for grid cells. Supports 2, 4, 16,
+ * and 256 color palettes with dynamic color selection, cycling, and UI integration.
+ *
+ * **Color Storage**: Uses bitsPerCell to determine storage capacity:
+ * - 2 colors: 1 bit per cell (binary)
+ * - 4 colors: 2 bits per cell
+ * - 16 colors: 4 bits per cell
+ * - 256 colors: 8 bits per cell
+ *
+ * **Color Selection**: Supports color cycling and clamping to valid range.
+ * Colors are stored as hex strings in a standard palette array.
+ *
+ * **Action Modes**:
+ * - 'set': Fill cell with selected color
+ * - 'clear': Set cell to color 0
+ * - 'toggle': Cycle through available colors
+ *
+ * @extends RectCanvas
  */
 export class RectCanvasColor extends RectCanvas {
   // ============================================================================
@@ -85,9 +116,8 @@ export class RectCanvasColor extends RectCanvas {
    * Replaces the default toggle with color-aware actions (set, clear, cycle)
    */
   setupToggleCellOverride () {
-    if (!this.grid || !this.grid.toggleCell) return
+    if (!this.grid?.toggleCell) return
 
-    const originalToggle = this.grid.toggleCell.bind(this.grid)
     this.grid.toggleCell = location => {
       this._handleCellToggle(location)
     }
@@ -336,7 +366,7 @@ export class RectCanvasColor extends RectCanvas {
     colorInput.value = this.selectedColor
 
     const handleColorChange = e => {
-      this.setSelectedColor(parseInt(e.target.value))
+      this.setSelectedColor(Number.parseInt(e.target.value))
     }
 
     colorInput.addEventListener('change', handleColorChange)

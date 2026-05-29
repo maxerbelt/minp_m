@@ -1,27 +1,63 @@
+/**
+ * Space Ships Configuration Module
+ *
+ * Provides comprehensive configuration and catalogues for space terrain ship types,
+ * including visual styling (colors, backgrounds), naming conventions, and symmetry properties.
+ * Exports the spaceShipsCatalogue which integrates all ship types for space gameplay.
+ *
+ * @module terrains/space/js/spaceShips
+ */
+
 import { ShipCatalogue } from '../../../ships/ShipGroups.js'
 import { spaceFleet } from './spaceFleet.js'
 import { spaceGroups } from './spaceGroups.js'
 
 /**
+ * Mapping of ship identifiers to hex color codes.
+ * Used for visual representation of different ship types on the game board.
+ * Keys represent ship type identifiers (A-Z, 1-4, special symbols).
+ * Values are hex color strings (e.g., '#ff6666') used for rendering.
+ *
  * @typedef {Record<string, string>} ShipColorMap
  */
 
 /**
+ * Mapping of ship identifiers to human-readable display names.
+ * Provides localized or friendly names for ship types shown in the UI.
+ * Keys represent ship type identifiers (A-Z, 1-4).
+ * Values are descriptive ship type names (e.g., 'Battlecruiser', 'Cruiser').
+ *
  * @typedef {Record<string, string>} ShipNameMap
  */
 
 /**
+ * Mapping of ship identifiers to symmetry group classifications.
+ * Defines rotational and reflective symmetry properties for ship shapes.
+ * Keys represent ship type identifiers.
+ * Values are symmetry codes: 'S' (single/symmetric), 'A' (asymmetric), 'G' (group), 'X' (complex), 'W' (weapon).
+ *
  * @typedef {Record<string, string>} ShipTallyGroupMap
  */
 
 /**
+ * Mapping of ship identifiers to background styling (colors with transparency).
+ * Used for rendering semi-transparent backgrounds in the UI for ship types.
+ * Keys represent ship type identifiers (A-Z, 1-4, special symbols with optional suffixes).
+ * Values are CSS color strings with transparency (e.g., 'rgba(255,102,102,0.3)') or hex codes.
+ *
  * @typedef {Record<string, string>} ShipBackgroundMap
  */
 
 /**
  * Color mapping for space ship types.
- * Maps ship letter identifiers to their display colors.
+ * Maps ship letter identifiers (A-Z, 1-4) and special symbols to their display colors.
+ * Used for visual rendering of different ship types on the game board.
+ *
+ * Ship types A-V use named colors (e.g., coral red, teal blue, turquoise mint).
+ * Special symbols (+, |, !, #, ^, @, %, &) use neutral or contrasting colors (black or white).
+ *
  * @type {ShipColorMap}
+ * @const
  */
 const SHIP_COLORS = {
   A: '#ff6666', // coral red
@@ -65,8 +101,14 @@ const SHIP_COLORS = {
 
 /**
  * Display names for space ship types.
- * Maps ship letter identifiers to their human-readable names.
+ * Maps ship letter identifiers (A-Z, 1-4) to their human-readable names.
+ * Used in UI elements for displaying ship type information to players.
+ *
+ * Standard ship types (A-V): Full name descriptors (e.g., 'Battlecruiser', 'Attack Craft').
+ * Alternate types (W-Z, 1-4): Special ship variants (e.g., 'Wheel', 'Scout Ship').
+ *
  * @type {ShipNameMap}
+ * @const
  */
 const SHIP_NAMES = {
   A: 'Attack Craft',
@@ -103,8 +145,18 @@ const SHIP_NAMES = {
 
 /**
  * Symmetry types for space ship types.
- * Maps ship letter identifiers to their symmetry classifications.
+ * Maps ship letter identifiers (A-Z, 1-4) and special symbols to their symmetry classifications.
+ * Used for determining how ships rotate and reflect on the game board.
+ *
+ * Symmetry codes:
+ * - 'S': Single/Symmetric - rotationally symmetric shapes
+ * - 'A': Asymmetric - non-symmetric shapes with unique orientations
+ * - 'G': Group - symmetry group classifications for complex shapes
+ * - 'X': Complex - multi-axis symmetry properties
+ * - 'W': Weapon - special weapon symbols with limited symmetry
+ *
  * @type {ShipTallyGroupMap}
+ * @const
  */
 const SHIP_TALLYGROUPS = {
   A: 'S',
@@ -145,8 +197,15 @@ const SHIP_TALLYGROUPS = {
 
 /**
  * Background styling for space ship types.
- * Maps ship letter identifiers to their background colors/styles.
+ * Maps ship letter identifiers (A-Z, 1-4) and special symbols to background colors or RGBA values with transparency.
+ * Used for rendering semi-transparent background highlights in the UI.
+ *
+ * Standard ship types (A-Z, 1-4): RGBA color strings with 0.3 (30%) transparency.
+ * Special symbols (+, |, !, ^, @, %, &) and variants: Hex colors or RGBA without transparency.
+ * Variants with suffixes (+1, +2, |1, |2, !1, !2, ^1, ^2): Provide alternative styling for modified symbols.
+ *
  * @type {ShipBackgroundMap}
+ * @const
  */
 const SHIP_BACKGROUNDS = {
   A: 'rgba(255,102,102,0.3)',
@@ -200,8 +259,22 @@ const SHIP_BACKGROUNDS = {
 
 /**
  * Space ships catalogue containing all ship configurations for space terrain.
- * Provides color mapping, naming, symmetry rules, and background styling for all ship types.
+ *
+ * Provides comprehensive configuration for all space ship types including:
+ * - Visual styling with color mappings for each ship type
+ * - Human-readable display names for UI presentation
+ * - Symmetry classification for rotation and reflection handling
+ * - Background styling with transparency for UI highlights
+ *
+ * Initialized with spaceGroups configuration and supplemented with spaceFleet shapes.
+ * This catalogue is used throughout the space terrain gameplay for ship identification,
+ * rendering, and transformation operations.
+ *
  * @type {ShipCatalogue}
+ * @const
+ * @see {@link ShipCatalogue} for catalogue structure and methods
+ * @see {@link spaceFleet} for ship fleet configuration
+ * @see {@link spaceGroups} for ship group definitions
  */
 export const spaceShipsCatalogue = new ShipCatalogue(
   [],

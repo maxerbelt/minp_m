@@ -7,25 +7,50 @@
  * - normalized(bits, width, height): Apply shape-specific normalization
  * - classifyOrbitType(): Classify symmetry orbit types
  *
+ * @typedef {Object} BitboardStore
+ * @property {*} empty - Empty bitboard value (typically 0n for BigInt)
+ * @property {(bitboard: *, index: number) => boolean} isOccupied - Check if cell at index is set
+ * @property {(bitboard: *, index: number) => *} getIdx - Get color/value at index
+ * @property {(bitboard: *, index: number, color: *) => *} setIdx - Set color/value at index
+ * @property {(bitboard: *, width: number, height: number) => *} normalizeUpLeft - Normalize bitboard position
+ *
+ * @typedef {Object} GridIndexer
+ * @property {number} size - Total number of cells/indices
+ * @property {(bitboard?: *) => Generator<number>} indices - Iterate all cell indices
+ * @property {(bitboard: *) => Generator<number>} bitsIndices - Iterate set bit indices
+ * @property {TransformMaps} [transformMaps] - Rotation/reflection transform maps
+ *
+ * @typedef {Object} CubeHelper
+ * @property {number} size - Total number of cells
+ * @property {(bitboard?: *) => Generator<number>} indices - Iterate all indices
+ * @property {(bitboard: *) => Generator<number>} bitsIndices - Iterate set bit indices
+ *
  * @typedef {Object} Mask
- * @property {Object} [store] - Bitboard store with empty, isOccupied, getIdx, setIdx, normalizeUpLeft
- * @property {Object} [indexer] - Grid indexer with size, indices, bitsIndices, transformMaps
- * @property {Object} [cube] - Cube helper with indices, bitsIndices
- * @property {*} [bits] - Template bitboard
+ * @property {BitboardStore} [store] - Bitboard store with cell access operations
+ * @property {GridIndexer} [indexer] - Grid indexer with size, iteration, and transformations
+ * @property {CubeHelper} [cube] - Cube helper for alternative indexing (preferred over indexer)
+ * @property {*} [bits] - Template bitboard value
  *
  * @typedef {Object<string, Array<number>>} TransformMapObject
+ * @property {Array<number>} [id] - Identity map
+ * @property {Array<number>} [r90] - 90° rotation
+ * @property {Array<number>} [r180] - 180° rotation
+ * @property {Array<number>} [f] - Reflection/flip
+ *
  * @typedef {Array<number>} TransformMapArray
  * @typedef {TransformMapObject|Array<TransformMapArray>} TransformMaps
  */
 export class ActionsBase {
   /**
    * Create an Actions handler for a grid shape.
-   * @param {number} width - Grid width
-   * @param {number} height - Grid height
-   * @param {Mask|null} mask - Optional mask object with store, indexer, cube, bits
-   * @param {Array<string>|null} rotateTags - Optional rotation transform names
-   * @param {Array<string>|null} flipTags - Optional reflection transform names
+   * @param {number} width - Grid width in cells
+   * @param {number} height - Grid height in cells
+   * @param {Mask|null} [mask=null] - Optional mask object with store, indexer, cube, and bits template
+   * @param {Array<string>|null} [rotateTags=null] - Optional rotation transform tag names (e.g., ['r90', 'r180'])
+   * @param {Array<string>|null} [flipTags=null] - Optional reflection transform tag names (e.g., ['fx', 'fy'])
+   * @throws {Error} Subclass must implement normalized() and classifyOrbitType()
    */
+
   constructor (width, height, mask = null, rotateTags = null, flipTags = null) {
     this.width = width
     this.height = height
@@ -66,8 +91,9 @@ export class ActionsBase {
 
   /**
    * Get transformation maps (rotations and reflections).
+   * Maps index old position to new position under transformation.
    * Default implementation accesses via indexer; subclasses may override.
-   * @returns {TransformMaps|undefined}
+   * @returns {TransformMaps|undefined} Object with named transform arrays, or undefined if unavailable
    */
   get transformMaps () {
     // @ts-ignore: dynamic property access on mask object
@@ -76,6 +102,7 @@ export class ActionsBase {
 
   /**
    * Get names of all rotation transformation keys.
+   * Caches result after first access to avoid repeated filtering.
    * @returns {Array<string>} Array of rotation transform names (e.g., ['r90', 'r180'])
    */
   get rotTags () {
@@ -87,6 +114,7 @@ export class ActionsBase {
 
   /**
    * Get names of all reflection transformation keys.
+   * Caches result after first access to avoid repeated filtering.
    * @returns {Array<string>} Array of reflection transform names (e.g., ['fx', 'fy'])
    */
   get flpTags () {
@@ -98,8 +126,10 @@ export class ActionsBase {
 
   /**
    * Get the default variant (template) after applying default transformation.
-   * @returns {*|null} Transformed bitboard or null when unavailable
+   * Caches result to avoid recomputation.
+   * @returns {*|null} Normalized transformed bitboard, or null if transformMaps unavailable
    */
+
   get defaultVariant () {
     if (this._defaultVariant) return this._defaultVariant
     if (!this.transformMaps) return null
@@ -112,7 +142,7 @@ export class ActionsBase {
   /**
    * Get all rotational variants from transform maps.
    * @private
-   * @returns {Array<*>} Array of rotated bitboards
+   * @returns {Array<*>} Array of rotated bitboards (may include duplicates if symmetric)
    */
   get rotVariantsRaw () {
     return this.rotTags.map(tag => this.applyMapByName(tag))
@@ -121,7 +151,7 @@ export class ActionsBase {
   /**
    * Get all reflection variants from transform maps.
    * @private
-   * @returns {Array<*>} Array of reflected bitboards
+   * @returns {Array<*>} Array of reflected bitboards (may include duplicates if symmetric)
    */
   get flpVariantsRaw () {
     return this.flpTags.map(tag => this.applyMapByName(tag))
@@ -145,11 +175,13 @@ export class ActionsBase {
 
   /**
    * Compute and cache unique variants, excluding the default.
+   * Deduplicates variants by creating a Set then converting back to Array.
    * @private
-   * @param {string} cacheProp - Cache property name
-   * @param {Array<*>} variantsRaw - Raw variant array
-   * @returns {Array<*>} Unique variants excluding default
+   * @param {string} cacheProp - Instance property name for caching
+   * @param {Array<*>} variantsRaw - Raw variant array (may have duplicates)
+   * @returns {Array<*>} Unique variants excluding the default variant
    */
+
   _getCachedVariants (cacheProp, variantsRaw) {
     // @ts-ignore: dynamic property access
     if (this[cacheProp]) return [...this[cacheProp]]
@@ -179,10 +211,11 @@ export class ActionsBase {
 
   /**
    * Rotate shape clockwise (or positive direction).
-   * @param {*} bits - Optional bitboard to transform; uses template if omitted
-   * @returns {*} Rotated bitboard
-   * @throws Error if no non-symmetric rotation exists
+   * @param {*} [bits=null] - Optional bitboard to transform; uses template if omitted
+   * @returns {*} Rotated and normalized bitboard
+   * @throws {Error} If no non-symmetric rotation exists for this shape
    */
+
   rotate (bits = null) {
     const tag = this._findNonSymmetricTag(this.rotTags)
     if (!tag) {
@@ -193,10 +226,12 @@ export class ActionsBase {
 
   /**
    * Rotate shape counter-clockwise (or negative direction).
-   * @param {*} bits - Optional bitboard to transform; uses template if omitted
-   * @returns {*} Rotated bitboard
-   * @throws Error if no non-symmetric rotation exists
+   * Reverse of rotate() method.
+   * @param {*} [bits=null] - Optional bitboard to transform; uses template if omitted
+   * @returns {*} Rotated and normalized bitboard
+   * @throws {Error} If no non-symmetric rotation exists for this shape
    */
+
   rotateCCW (bits = null) {
     const tag = this._findNonSymmetricTag(this.rotTags, true)
     if (!tag) {
@@ -207,10 +242,11 @@ export class ActionsBase {
 
   /**
    * Reflect/flip shape across axis.
-   * @param {*} bits - Optional bitboard to transform; uses template if omitted
-   * @returns {*} Reflected bitboard
-   * @throws Error if no non-symmetric reflection exists
+   * @param {*} [bits=null] - Optional bitboard to transform; uses template if omitted
+   * @returns {*} Reflected and normalized bitboard
+   * @throws {Error} If no non-symmetric reflection exists for this shape
    */
+
   flip (bits = null) {
     const tag = this._findNonSymmetricTag(this.flpTags)
     if (!tag) {
@@ -221,19 +257,23 @@ export class ActionsBase {
 
   /**
    * Reflect then rotate shape.
-   * @param {*} bits - Optional bitboard to transform; uses template if omitted
-   * @returns {*} Transformed bitboard
+   * Combines flip() and rotate() operations.
+   * @param {*} [bits=null] - Optional bitboard to transform; uses template if omitted
+   * @returns {*} Reflected and rotated bitboard
    */
+
   rotateFlip (bits = null) {
     return this.rotate(this.flip(bits))
   }
 
   /**
    * Apply a named transformation to a bitboard.
-   * @param {string} tag - Transform map name
-   * @param {*} bits - Optional bitboard; uses template if omitted
+   * Looks up transform map by tag, applies it, and normalizes result.
+   * @param {string} tag - Transform map name (e.g., 'r90', 'f', 'id')
+   * @param {*} [bits=null] - Optional bitboard; uses template if omitted
    * @returns {*} Transformed and normalized bitboard
    */
+
   applyMapByName (tag, bits = null) {
     return this.applyMap(this._mapForTag(tag), bits)
   }
@@ -241,13 +281,15 @@ export class ActionsBase {
   /**
    * Shape-specific normalization (move bounding box to origin, apply canonical form, etc).
    * Must be implemented by subclasses.
+   * Typical implementations: move to upper-left, apply canonical orientation, etc.
    * @abstract
    * @param {*} bits - Bitboard to normalize
-   * @param {number} width - Grid width
-   * @param {number} height - Grid height
+   * @param {number} [width=this.width] - Grid width for normalization context
+   * @param {number} [height=this.height] - Grid height for normalization context
    * @returns {*} Normalized bitboard
-   * @throws Error if not implemented in subclass
+   * @throws {Error} If not implemented in subclass
    */
+
   normalized (bits, width = this.width, height = this.height) {
     const normalizedBits = bits == null ? this.template : bits
     // @ts-ignore: dynamic property access on store object
@@ -260,12 +302,14 @@ export class ActionsBase {
 
   /**
    * Find the canonical (lexicographically smallest) form under all symmetries.
-   * @param {TransformMaps|undefined} maps - Transformation maps
-   * @param {*} bits - Bitboard to canonicalize
-   * @param {number} width - Grid width
-   * @param {number} height - Grid height
-   * @returns {string} Canonical form as string
+   * Generates all symmetries and returns the minimal string representation.
+   * @param {TransformMaps|undefined} [maps=this.transformMaps] - Transformation maps
+   * @param {*} [bits=null] - Bitboard to canonicalize; uses template if omitted
+   * @param {number} [width=this.width] - Grid width
+   * @param {number} [height=this.height] - Grid height
+   * @returns {string} Canonical form as string (lexicographically smallest)
    */
+
   canonicalForm (
     maps = this.transformMaps,
     bits = null,
@@ -283,13 +327,15 @@ export class ActionsBase {
 
   /**
    * Get all unique symmetries of a bitboard.
+   * Applies all transformations and deduplicates results.
    * @private
-   * @param {TransformMaps|undefined} maps - Transformation maps
-   * @param {*} bits - Bitboard to transform
-   * @param {number} width - Grid width
-   * @param {number} height - Grid height
-   * @returns {Set<*>} Set of unique transformed bitboards
+   * @param {TransformMaps|undefined} [maps=this.transformMaps] - Transformation maps
+   * @param {*} [bits=null] - Bitboard to transform; uses template if omitted
+   * @param {number} [width=this.width] - Grid width
+   * @param {number} [height=this.height] - Grid height
+   * @returns {Set<*>} Set of unique transformed bitboards (no duplicates)
    */
+
   symetriesFor (
     maps = this.transformMaps,
     bits = null,
@@ -302,9 +348,10 @@ export class ActionsBase {
   /**
    * Collect indices of all set bits in a bitboard.
    * Uses preferred source: cube > indexer > generic fallback.
+   * Prefers cube.bitsIndices over indexer.bitsIndices for better performance.
    * @private
-   * @param {*} bitboard - Bitboard to iterate
-   * @returns {IterableIterator<number>} Indices of set bits
+   * @param {*} bitboard - Bitboard to iterate (often BigInt)
+   * @returns {Generator<number>} Generator yielding indices of set bits
    */
   // @ts-ignore: method may be referenced by subclasses outside this file
   *_bitsIndices (bitboard) {
@@ -347,10 +394,11 @@ export class ActionsBase {
 
   /**
    * Collect indices of all cells referenced by a bitboard or spatial structure.
+   * Iterates all possible indices (0 to size-1).
    * Uses preferred source: cube > indexer > generic fallback.
    * @private
-   * @param {*} bitboard - Bitboard or spatial structure
-   * @returns {IterableIterator<number>} Cell indices
+   * @param {*} bitboard - Bitboard or spatial structure (for type discrimination)
+   * @returns {Generator<number>} Generator yielding all cell indices
    */
   *_indices (bitboard) {
     // @ts-ignore: dynamic property access on cube object
@@ -385,7 +433,7 @@ export class ActionsBase {
    * Get default transformation map (identity or first in array).
    * Subclasses can override for different defaults.
    * @private
-   * @returns {Array<number>|undefined} Default transformation map
+   * @returns {Array<number>|undefined} Default transformation map array, or undefined if unavailable
    */
   _defaultMap () {
     const maps = this.transformMaps
@@ -395,12 +443,14 @@ export class ActionsBase {
 
   /**
    * Apply a transformation map to a bitboard using index mapping.
-   * @param {Array<number>|undefined} map - Index mapping array
-   * @param {*} bits - Optional bitboard; uses template if omitted
-   * @param {number} width - Grid width for normalization
-   * @param {number} height - Grid height for normalization
+   * For each set bit at index i, creates output with same bit at map[i], preserving color.
+   * @param {Array<number>|undefined} [map=this._defaultMap()] - Index mapping array
+   * @param {*} [bits=null] - Optional bitboard; uses template if omitted
+   * @param {number} [width=this.width] - Grid width for normalization
+   * @param {number} [height=this.height] - Grid height for normalization
    * @returns {*} Transformed and normalized bitboard
    */
+
   applyMap (
     map = this._defaultMap(),
     bits = null,
@@ -424,9 +474,11 @@ export class ActionsBase {
 
   /**
    * Get the template: the normalized form of the original bitboard.
+   * Caches result to avoid recomputation.
    * Subclasses typically implement via lazy property.
-   * @returns {*} Normalized template bitboard
+   * @returns {*} Normalized template bitboard (lazy loaded and cached)
    */
+
   get template () {
     if (this._template) return this._template
     if (!this.original?.bits) return 0n
@@ -436,12 +488,14 @@ export class ActionsBase {
 
   /**
    * Generate all orbit members (symmetries) of a bitboard.
-   * @param {TransformMaps|undefined} maps - Transformation maps
-   * @param {*} bits - Bitboard (defaults to template)
-   * @param {number} width - Grid width
-   * @param {number} height - Grid height
-   * @returns {Array<*>} Unique transformed bitboards
+   * Applies all transformations in maps to bitboard, may include duplicates.
+   * @param {TransformMaps|undefined} [maps=this.transformMaps] - Transformation maps
+   * @param {*} [bits=null] - Bitboard (defaults to template if omitted)
+   * @param {number} [width=this.width] - Grid width for normalization
+   * @param {number} [height=this.height] - Grid height for normalization
+   * @returns {Array<*>} All transformed bitboards (may have duplicates if symmetric)
    */
+
   orbitRaw (
     maps = this.transformMaps,
     bits = null,
@@ -460,10 +514,11 @@ export class ActionsBase {
 
   /**
    * Get the orbit (all symmetries) of the template bitboard.
-   * Results are cached for subsequent calls.
-   * @param {TransformMaps|undefined} maps - Transformation maps
-   * @returns {Array<*>} Array of unique symmetries
+   * Results are cached for subsequent calls using the same transformMaps.
+   * @param {TransformMaps|undefined} [maps=this.transformMaps] - Transformation maps
+   * @returns {Array<*>} Array of unique symmetries (copy of cached array)
    */
+
   orbit (maps = this.transformMaps) {
     if (maps === this.transformMaps) {
       if (this._orbit) return [...this._orbit]
@@ -475,19 +530,21 @@ export class ActionsBase {
 
   /**
    * Classify the orbit type based on symmetry group size and properties.
-   * Must be implemented by subclasses (D4, D6, D3, etc).
+   * Must be implemented by subclasses for specific grid shapes (D4 for rectangles, D6 for hexagons, D3 for triangles, etc).
    * @abstract
-   * @returns {string} Orbit type name
-   * @throws Error if not implemented in subclass
+   * @returns {string} Orbit type name (e.g., 'I', 'D1', 'D2', 'D3', 'D4', 'D6')
+   * @throws {Error} If not implemented in subclass
    */
+
   classifyOrbitType () {
     throw new Error('classifyOrbitType() not implemented in subclass')
   }
 
   /**
    * Get the size of the symmetry group (number of symmetries including identity).
-   * @returns {number} Cardinality of symmetry group
+   * @returns {number} Cardinality of symmetry group (order of symmetry group)
    */
+
   get order () {
     return this.symmetries.length
   }
@@ -495,8 +552,9 @@ export class ActionsBase {
   /**
    * Get all unique symmetries of the template bitboard.
    * Results are cached for subsequent calls.
-   * @returns {Array<*>} Array of unique symmetries
+   * @returns {Array<*>} Array of unique symmetries (copy of cached array, no duplicates)
    */
+
   get symmetries () {
     if (this._symmetries) return [...this._symmetries]
     const images = this.orbit(this.transformMaps)
@@ -507,9 +565,10 @@ export class ActionsBase {
   /**
    * Get the transformation map associated with a tag.
    * @private
-   * @param {string} tag - Transform map name
-   * @returns {Array<number>|undefined}
+   * @param {string} tag - Transform map name (e.g., 'r90', 'f')
+   * @returns {Array<number>|undefined} Index mapping array, or undefined if tag not found
    */
+
   _mapForTag (tag) {
     // @ts-ignore: dynamic property access on transformMaps
     return this.transformMaps?.[tag]
@@ -518,9 +577,10 @@ export class ActionsBase {
   /**
    * Filter transform keys by predicate.
    * @private
-   * @param {(key: string) => boolean} predicate - Filter function for tag names
-   * @returns {Array<string>} Matching transform tags
+   * @param {(key: string) => boolean} predicate - Filter function for tag names (returns true to include)
+   * @returns {Array<string>} Matching transform tag names
    */
+
   _filterTransformKeys (predicate) {
     const maps = this.transformMaps
     if (!maps || Array.isArray(maps)) return []
@@ -529,11 +589,13 @@ export class ActionsBase {
 
   /**
    * Find the first non-symmetric transform tag.
+   * Searches tags array (forward or reverse) for a tag that changes the shape.
    * @private
-   * @param {Array<string>} tags - Candidate transform tags
+   * @param {Array<string>} tags - Candidate transform tag names
    * @param {boolean} [reverse=false] - Search in reverse order
-   * @returns {string|undefined}
+   * @returns {string|undefined} First non-symmetric tag name, or undefined if all are symmetric
    */
+
   _findNonSymmetricTag (tags, reverse = false) {
     const candidates = reverse ? [...tags].reverse() : tags
     return candidates.find(tag => this._isNonSymmetricTag(tag))
@@ -541,10 +603,12 @@ export class ActionsBase {
 
   /**
    * Determine whether a given transform tag changes the shape.
+   * Returns false if transformation is symmetric (leaves shape unchanged).
    * @private
    * @param {string} tag - Transform map name
-   * @returns {boolean}
+   * @returns {boolean} True if transformation is non-symmetric (changes shape), false if symmetric
    */
+
   _isNonSymmetricTag (tag) {
     const map = this._mapForTag(tag)
     return map != null && this.applyMap(map) !== this.original?.bits
@@ -552,9 +616,11 @@ export class ActionsBase {
 
   /**
    * Determine size used by generic index iteration.
+   * Prefers indexer.size over cube.size.
    * @private
-   * @returns {number|undefined}
+   * @returns {number|undefined} Grid size in cells, or undefined if unavailable
    */
+
   _storageSize () {
     // @ts-ignore: dynamic property access on indexer/cube objects
     return this.indexer?.size || this.cube?.size

@@ -14,7 +14,40 @@ import { Delay } from './Delay.js'
  * patterns. Handles animation timing via animationend events and forceful style
  * recalculation for restarting CSS animations.
  *
+ * Instance Methods:
+ * - Constructor: Creates animator with element management and optional inner element
+ * - moveTo(): Positions element using CSS custom properties for animations
+ * - scaleInner(): Sets start/end scale values for animation keyframes
+ * - setInnerProperty(): Sets arbitrary CSS custom properties on inner element
+ * - styleInner(): Applies default positioning styles to inner element
+ * - delayInner(): Sets animation delay for inner element
+ * - containerRect: Gets bounding rectangle of container element
+ * - shake(): Adds shake effect class to container
+ * - endShake(): Removes shake effect class from container
+ * - playable: Gets animated element (inner if present, else main)
+ * - run(): Executes complete animation sequence with element cleanup
+ * - play(): Plays animation without removing element (for reuse)
+ *
+ * Static Methods (for animating DOM elements directly):
+ * - run(): Animate element, wait, remove classes, does not remove element
+ * - runWithDelay(): Run animation after a specified delay period
+ * - runWithRandomDelay(): Run animation after random delay in range
+ * - runId(): Animate element by ID lookup
+ * - runIdWithDelay(): Animate element by ID after delay
+ * - play(): Reset and replay animation classes on element
+ * - wait(): Wait for animation completion via animationend event or timeout
+ *
  * @class Animator
+ * @example
+ * // Instance-based animation with lifecycle management
+ * const animator = new Animator('fade-in-class', 'container-id');
+ * animator.moveTo({ x: 100, y: 200 });
+ * await animator.run('fade-in');
+ *
+ * @example
+ * // Static methods for direct element animation
+ * const el = document.getElementById('my-element');
+ * await Animator.runWithDelay(el, 300, 'slide-in');
  */
 export class Animator {
   /**
@@ -24,7 +57,6 @@ export class Animator {
    * animations. Can optionally remove existing elements with the same class
    * to prevent duplicates. Container can be specified by ID or element reference.
    *
-   * @constructor
    * @param {string} className - CSS class name(s) for the animation element
    * @param {string|null|undefined} [containerId=null] - ID of the container element
    * @param {HTMLElement|null} [container=null] - Container element (takes precedence over containerId)
@@ -61,7 +93,8 @@ export class Animator {
    * Removes existing elements with the given class name
    *
    * Selects all elements matching all classes (multiple classes use AND logic)
-   * and removes them from the DOM.
+   * and removes them from the DOM. Uses querySelector with combined selectors
+   * for AND logic (e.g., '.class1.class2').
    *
    * @private
    * @param {string} className - Space-separated CSS class names to remove elements for
@@ -231,6 +264,7 @@ export class Animator {
   endShake (shakeClass) {
     this.container?.classList.remove(shakeClass)
   }
+
   /**
    * Gets the element that should be animated
    *
@@ -242,6 +276,7 @@ export class Animator {
   get playable () {
     return this.innerEl || this.el
   }
+
   /**
    * Runs the complete animation sequence from start to finish
    *
@@ -293,11 +328,6 @@ export class Animator {
   }
 
   /**
-   * Handles delay for inner element if set.
-   * @private
-   * @returns {Promise<void>}
-   */
-  /**
    * Plays the animation by adding classes and forcing style recalculation
    *
    * Resets animation classes, appends element to container, forces style recalculation
@@ -319,6 +349,7 @@ export class Animator {
     this._forceStyleRecalculation()
     this._addClasses(classes)
   }
+
   /**
    * Resets animation classes on elements
    *
@@ -361,6 +392,7 @@ export class Animator {
   _addClasses (classes) {
     this.playable.classList.add(...classes)
   }
+
   /**
    * Runs animation on a given element
    *

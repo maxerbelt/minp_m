@@ -178,6 +178,22 @@ export class PolyominoGridManager {
   }
 
   /**
+   * Get polyomino generator for current connectivity mode
+   *
+   * @returns {import('../../grid/rectangle/RedelmeierGenerator.js').PolyominoGenerator} Generator for polyominoes
+   * @private
+   */
+  _getGeneratorForConnectivity () {
+    if (this.connectivity === '4') {
+      return createOrthoPolyominoGenerator()
+    }
+    if (this.connectivity === '4diag') {
+      return createDiagonalPolyominoGenerator()
+    }
+    return createKingPolyominoGenerator()
+  }
+
+  /**
    * Load polyominoes from generator based on current connectivity settings
    *
    * Creates an appropriate polyomino generator (ortho, diagonal, or king connectivity)
@@ -187,15 +203,86 @@ export class PolyominoGridManager {
    * @returns {Polyomino[]} Array of available polyominoes of current size and connectivity
    */
   loadPolyominoes () {
-    const generator =
-      this.connectivity === '4'
-        ? createOrthoPolyominoGenerator()
-        : this.connectivity === '4diag'
-        ? createDiagonalPolyominoGenerator()
-        : createKingPolyominoGenerator()
-
+    const generator = this._getGeneratorForConnectivity()
     this.availablePolyominoes = generator.collectAll(this.polyominoSize)
     return this.availablePolyominoes
+  }
+
+  /**
+   * Check if polyomino placement is within grid bounds
+   *
+   * @param {Polyomino} poly - The polyomino to check
+   * @param {number} startX - Starting X position (top-left of bounding box)
+   * @param {number} startY - Starting Y position (top-left of bounding box)
+   * @returns {boolean} True if bounding box fits within grid
+   * @private
+   */
+  _isWithinBounds (poly, startX, startY) {
+    return (
+      startX >= 0 &&
+      startY >= 0 &&
+      startX + poly.width <= this.width &&
+      startY + poly.height <= this.height
+    )
+  }
+
+  /**
+   * Check if all occupied cells of a polyomino are empty and collect neighbors
+   *
+   * Returns true and populates the toCheck set with neighbor indices if all cells
+   * are empty. Returns false immediately if any occupied cell is not empty.
+   *
+   * @param {Polyomino} poly - The polyomino to check
+   * @param {number} startX - Starting X position (top-left of bounding box)
+   * @param {number} startY - Starting Y position (top-left of bounding box)
+   * @param {Set<number>} toCheck - Set to populate with neighbor cell indices
+   * @returns {boolean} True if all cells are empty, false otherwise
+   * @private
+   */
+  _checkCellsAndCollectNeighbors (poly, startX, startY, toCheck) {
+    for (const [x, y] of poly.allXYlocations()) {
+      if (poly.at(x, y)) {
+        const gridX = startX + x
+        const gridY = startY + y
+
+        // Cell must be empty
+        if (this.gridMask.at(gridX, gridY) !== EMPTY_CELL_VALUE) {
+          return false
+        }
+
+        // Add 8-neighborhood neighbors to check set
+        for (const [nx, ny] of this.gridMask.indexer.neighbors(gridX, gridY)) {
+          if (
+            this.gridMask.isValid(nx, ny) &&
+            !(nx === gridX && ny === gridY)
+          ) {
+            toCheck.add(ny * this.width + nx)
+          }
+        }
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Check if neighboring cells are unoccupied or belong to excluded polyomino
+   *
+   * @param {Set<number>} neighborIndices - Set of neighbor cell indices to check
+   * @param {number} excludeId - Polyomino ID to exclude from occupancy check
+   * @returns {boolean} True if all neighbors are unoccupied or excluded
+   * @private
+   */
+  _areNeighborsUnoccupied (neighborIndices, excludeId) {
+    for (const idx of neighborIndices) {
+      const y = Math.floor(idx / this.width)
+      const x = idx % this.width
+      const cellValue = this.gridMask.at(x, y)
+      if (cellValue !== EMPTY_CELL_VALUE && cellValue !== excludeId) {
+        return false
+      }
+    }
+    return true
   }
 
   /**
@@ -213,51 +300,16 @@ export class PolyominoGridManager {
    * @returns {boolean} True if placement is valid at this position
    */
   canPlacePolyomino (poly, startX, startY, excludeId = -1) {
-    // Check bounds
-    if (
-      startX < 0 ||
-      startY < 0 ||
-      startX + poly.width > this.width ||
-      startY + poly.height > this.height
-    ) {
+    if (!this._isWithinBounds(poly, startX, startY)) {
       return false
     }
 
     const toCheck = new Set()
-
-    // First pass: check if cells are empty and collect neighbors
-    for (const [x, y] of poly.allXYlocations()) {
-      if (poly.at(x, y)) {
-        const gridX = startX + x
-        const gridY = startY + y
-
-        // Check if cell is empty in gridMask
-        if (this.gridMask.at(gridX, gridY) !== EMPTY_CELL_VALUE) {
-          return false
-        }
-
-        // Add 8-neighborhood to check set
-        for (const [nx, ny] of this.gridMask.indexer.neighbors(gridX, gridY)) {
-          if (this.gridMask.isValid(nx, ny)) {
-            if (!(nx === gridX && ny === gridY)) {
-              toCheck.add(ny * this.width + nx)
-            }
-          }
-        }
-      }
+    if (!this._checkCellsAndCollectNeighbors(poly, startX, startY, toCheck)) {
+      return false
     }
 
-    // Second pass: check if any neighboring cell is occupied by another polyomino
-    for (const idx of toCheck) {
-      const y = Math.floor(idx / this.width)
-      const x = idx % this.width
-      const cellValue = this.gridMask.at(x, y)
-      if (cellValue !== EMPTY_CELL_VALUE && cellValue !== excludeId) {
-        return false
-      }
-    }
-
-    return true
+    return this._areNeighborsUnoccupied(toCheck, excludeId)
   }
 
   /**
@@ -604,7 +656,7 @@ export class PolyominoGridManager {
   _updateDisplayForRange (startIndex, endIndex, total) {
     try {
       const moreDiv = document.getElementById('rect-poly-more')
-      if (moreDiv && moreDiv.style) {
+      if (moreDiv?.style) {
         if (startIndex === -1 || endIndex === -1) {
           moreDiv.textContent = `No polyominoes placed (${this.polyominoSize} cells, ${this.connectivity}-connected)`
           moreDiv.style.color = '#d00'
@@ -635,7 +687,7 @@ export class PolyominoGridManager {
   _updateDisplayForFill (placed, total) {
     try {
       const moreDiv = document.getElementById('rect-poly-more')
-      if (moreDiv && moreDiv.style) {
+      if (moreDiv?.style) {
         if (placed === total) {
           moreDiv.textContent = `Showing all ${total} polyominoes (${this.polyominoSize} cells, ${this.connectivity}-connected)`
           moreDiv.style.color = '#666'

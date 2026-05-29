@@ -1,3 +1,17 @@
+/**
+ * Space Weapons Module
+ *
+ * Defines all weapon types for space terrain gameplay, including missiles, rail bolts,
+ * Gauss rounds, laser blasts, and scanning equipment. Provides dual-board animation
+ * support for cross-board weapon launches with portal effect visualization.
+ *
+ * Weapons implement area-of-effect (AOE) damage patterns with splash effects,
+ * crash mechanics for terrain collision, and animated launch sequences.
+ *
+ * @module terrains/space/js/spaceWeapons
+ * @note Uses @ts-nocheck due to complex type inference in weapon system interactions
+ */
+
 // @ts-nocheck: complex type inference issues in space weapons implementation
 import { WeaponCatelogue as WeaponCatalogue } from '../../../weapon/WeaponCatelogue.js'
 import { Weapon } from '../../../weapon/Weapon.js'
@@ -10,45 +24,108 @@ import {
 } from '../../../weapon/Bomb.js'
 import { CellClassManager } from '../../../waters/helpers/CellClassManager.js'
 import { coordToKey } from '../../../core/utilities.js'
+
 /**
+ * A coordinate pair representing a single cell on the game board.
+ * Format: [row, col] where row is Y-axis and col is X-axis.
+ * Used extensively for targeting, positioning, and layout calculations.
+ *
  * @typedef {[number, number]} Coord
+ */
+
+/**
+ * Area-of-effect damage cell with power/impact rating.
+ * Format: [row, col, power] where power represents damage intensity or effect level.
+ * Power values typically: 0 (no effect), 1 (secondary), 2 (primary), 3+ (special).
+ *
  * @typedef {[number, number, number]} AoeCell
+ */
+
+/**
+ * Complete area-of-effect pattern for a weapon.
+ * Array of AoeCell tuples defining all affected cells and their damage power.
+ * Used for damage calculation, visual effects, and targeting feedback.
+ *
  * @typedef {AoeCell[]} AoePattern
+ */
+
+/**
+ * Indexed bracket for fast coordinate lookup and deduplication.
+ * Maps coordinate string keys to AoeCell tuples for efficient merging of overlapping patterns.
+ * Created by coordToKey() function for string-based coordinate indexing.
+ *
  * @typedef {Record<string, AoeCell>} CoordBracket
+ */
+
+/**
+ * View model interface for rendering game board cells and managing UI state.
+ * Provides methods to access HTML cell elements and retrieve cell sizing information.
+ * Used for animation target selection and coordinate-to-element mapping.
  *
  * @typedef {Object} ViewModel
- * @property {(row: number, col: number) => HTMLElement} gridCellAt
- * @property {() => number} cellSize
+ * @property {(row: number, col: number) => HTMLElement} gridCellAt - Returns HTML element for board cell at coordinates
+ * @property {() => number} cellSize - Returns size in pixels of each grid cell
+ */
+
+/**
+ * Opposing player's view model for dual-board cross-animation.
+ * Identical structure to ViewModel, represents opponent's board rendering interface.
+ * Used exclusively in dual-board weapon animation contexts.
  *
  * @typedef {ViewModel} OpposingViewModel
+ */
+
+/**
+ * Game model interface providing game logic and targeting functionality.
+ * Central reference for coordinate transformation and target candidate lookup.
+ * Bridges weapon calculations with game state management.
  *
  * @typedef {Object} GameModel
- * @property {() => any} getTarget
+ * @property {(effect: AoePattern, weapon: Weapon) => (Coord|null)} getTarget - Looks up impact target from effect pattern
+ */
+
+/**
+ * Terrain map definition with bounds and land classification.
+ * Provides grid dimensions and optional terrain type checking for collision/splash calculations.
+ * Used for boundary validation and land-based weapon mechanics (Gauss, Laser).
  *
  * @typedef {Object} TerrainMap
- * @property {number} rows
- * @property {number} cols
- * @property {(row: number, col: number) => boolean} [isLand]
+ * @property {number} rows - Number of rows in the game board
+ * @property {number} cols - Number of columns in the game board
+ * @property {(row: number, col: number) => boolean} [isLand] - Optional terrain check; true if cell is land
+ */
+
+/**
+ * HTML cell element references for dual-board animation choreography.
+ * Used to store source and target cell elements on both primary and opposing boards.
+ * Essential for synchronized cross-board animation effects like portal markers.
  *
  * @typedef {Object} DualBoardCells
- * @property {HTMLElement} sourceCell1
- * @property {HTMLElement} targetCell1
- * @property {HTMLElement} sourceCell2
- * @property {HTMLElement} targetCell2
+ * @property {HTMLElement} sourceCell1 - Source cell on primary board (board 1)
+ * @property {HTMLElement} targetCell1 - Target cell on primary board (board 1)
+ * @property {HTMLElement} sourceCell2 - Source cell on opposing board (board 2)
+ * @property {HTMLElement} targetCell2 - Target cell on opposing board (board 2)
  */
 
 // ============================================================================
 // Helper Constants & Utility Functions
+// ============================================================================
 
 /**
  * Normalizes weapon launch coordinates into a consistent [source, target] format.
+ *
  * Accepts multiple coordinate formats and produces a standardized [[source], [target]] pair.
- * @param {number[]|number[][]} coords - Raw coordinates in various formats:
- *   - [row, col] - flat coordinate pair
- *   - [[row, col]] - single coordinate in array
- *   - [[row1, col1], [row2, col2]] - coordinate pair
- * @param {number} rr - Source row coordinate
- * @param {number} cc - Source column coordinate
+ * This function ensures consistent coordinate handling regardless of input format,
+ * simplifying downstream weapon launch logic.
+ *
+ * Supported input formats:
+ * - [row, col] → [[rr, cc], [row, col]]
+ * - [[row, col]] → [[rr, cc], [row, col]]
+ * - [[row1, col1], [row2, col2]] → [[row1, col1], [row2, col2]] (pass-through)
+ *
+ * @param {number[]|number[][]} coords - Raw coordinates in various formats
+ * @param {number} rr - Source row coordinate (used as baseline)
+ * @param {number} cc - Source column coordinate (used as baseline)
  * @returns {number[][]} Normalized coordinate pair [[sourceRow, sourceCol], [targetRow, targetCol]]
  * @throws {TypeError} If coords format is invalid or unrecognized
  * @private
@@ -75,21 +152,40 @@ function normalizeWeaponCoordinates (coords, rr, cc) {
 
 // ============================================================================
 
-/** CSS class names for animation state management */
+/**
+ * CSS class names for weapon animation state management.
+ * Applied to HTML cells during animated weapon launches for visual effects.
+ * Must be removed after animation completes to prevent stale hover/cursor state.
+ *
+ * @type {Object<string, string>}
+ * @const
+ * @private
+ */
 const CSS_CLASSES = {
+  /** Applied to source cells in portal animations */
   MARKER: 'marker',
+  /** Applied to target cells in portal animations */
   PORTAL: 'portal'
 }
 
 /**
  * Creates a square explosion pattern around a center point.
- * Generates a 3-layer pattern: center → 3×3 adjacent → distance ring.
+ *
+ * Generates a 3-layer damage pattern:
+ * - Layer 1: Single center cell (power: centerPower)
+ * - Layer 2: 3×3 adjacent cells surrounding center (power: adjacentPower)
+ * - Layer 3: Distance ring at specified radius from center (power: distancePower)
+ * - Layer 4 (if radius > 1): Cardinal directions at radius+1 (power: distancePower)
+ *
+ * Used by Missile.boom() and GaussRound.boom() for splash damage calculations.
+ * Configurable power levels allow different weapon types to have distinct explosion signatures.
+ *
  * @param {number} centerRow - Explosion center row coordinate
  * @param {number} centerCol - Explosion center column coordinate
  * @param {number} radius - Explosion radius (distance from center to outer ring)
- * @param {number} [centerPower=2] - Damage power at center cell
- * @param {number} [adjacentPower=1] - Damage power for 3×3 adjacent cells
- * @param {number} [distancePower=0] - Damage power for distance ring cells
+ * @param {number} [centerPower=2] - Damage power at center cell (primary impact)
+ * @param {number} [adjacentPower=1] - Damage power for 3×3 adjacent cells (secondary)
+ * @param {number} [distancePower=0] - Damage power for distance ring cells (tertiary)
  * @returns {AoePattern} Explosion pattern as [row, col, power] tuples
  * @private
  */
@@ -141,24 +237,30 @@ function createSquareExplosion (
 }
 
 /**
- * Animation configuration for dual-board weapon launch
+ * Animation context for dual-board weapon launch operations.
+ * Bundles all necessary coordinate and rendering references for synchronized cross-board animation.
+ *
  * @typedef {Object} AnimationContext
- * @property {number} sourceRow - Source row coordinate
- * @property {number} sourceCol - Source column coordinate
- * @property {ViewModel} viewModel - Primary view model
- * @property {OpposingViewModel} opposingViewModel - Opposing player view model
+ * @property {number} sourceRow - Source row coordinate on primary board
+ * @property {number} sourceCol - Source column coordinate on primary board
+ * @property {ViewModel} viewModel - Primary board view model (player's perspective)
+ * @property {OpposingViewModel} opposingViewModel - Opposing board view model (opponent's perspective)
  */
 
 /**
  * Performs a dual-board weapon launch with optional animation callback.
+ *
  * Routes weapon launch to launchRightTo with animation context preserved.
+ * Provides unified entry point for cross-board weapon animations with flexible callback support.
+ * Callback can perform custom coordinate transformation or animation sequencing before impact.
+ *
  * @param {Weapon} weapon - The weapon instance being launched
- * @param {number[]|number[][]} coords - Launch target coordinates
+ * @param {number[]|number[][]} coords - Launch target coordinates in various formats
  * @param {AnimationContext} context - Animation context containing source coords and view models
  * @param {TerrainMap} map - Game map object for bounds/terrain checking
- * @param {GameModel} gameModel - Game model object for targeting logic
- * @param {(weapon: Weapon, coords: number[]|number[][], context: AnimationContext, map: TerrainMap, gameModel: GameModel) => Promise<Object>} [animationCallback] - Optional custom animation callback for coordinate transformation
- * @returns {Promise<Object>} Launch completion result with optional {target} property
+ * @param {GameModel} gameModel - Game model object for targeting logic and candidate lookup
+ * @param {(weapon: Weapon, coords: number[]|number[][], context: AnimationContext, map: TerrainMap, gameModel: GameModel) => Promise<Object>} [animationCallback] - Optional custom animation callback for coordinate transformation or effect visualization
+ * @returns {Promise<Object>} Launch completion result with optional {target: Coord} property containing resolved impact location
  * @async
  * @private
  */
@@ -182,9 +284,18 @@ async function launchWithDualBoardAnimation (
 }
 
 /**
- * Adds portal CSS classes to cells for dual-board animation.
- * Applies marker and portal classes symmetrically across both boards for visual effect.
- * Used exclusively for animation decoration; must be cleaned up afterward.
+ * Adds portal CSS classes to cells for dual-board animation decoration.
+ *
+ * Applies marker and portal classes symmetrically across both boards for visual portal effect.
+ * Marker classes signal animation source points, portal classes mark destinations.
+ * Used exclusively for animation decoration; must be cleaned up afterward to avoid stale state.
+ *
+ * Animation decoration pattern:
+ * - sourceCell1 (primary board source): MARKER class
+ * - targetCell1 (primary board target): PORTAL class
+ * - sourceCell2 (opposing board source): PORTAL class
+ * - targetCell2 (opposing board target): MARKER class
+ *
  * @param {DualBoardCells} cells - Source and target cell references on both boards
  * @returns {void}
  * @private
@@ -200,9 +311,12 @@ function addPortalClasses (cells) {
 }
 
 /**
- * Removes portal CSS classes from cells after animation.
- * Cleans up animation decoration classes to restore original cell styling.
+ * Removes portal CSS classes from cells after animation completion.
+ *
+ * Cleans up animation decoration classes to restore original cell styling and state.
  * Essential for preventing stale hover/cursor state after animation completes.
+ * Removes both MARKER and PORTAL classes to fully restore cell appearance.
+ *
  * @param {DualBoardCells} cells - Source and target cell references on both boards
  * @returns {void}
  * @private
@@ -215,10 +329,20 @@ function removePortalClasses (cells) {
 }
 
 /**
- * Performs portal-style dual-board animation for weapons.
+ * Performs portal-style dual-board animation for line-based weapons.
+ *
  * Visualizes weapon trajectory as portal markers (line start and end) across both boards.
- * Decorative portal classes do not affect hit registration logic.
- * @param {Weapon} weapon - The weapon instance (typically Strike-derived)
+ * Specifically designed for line-based weapons like RailBolt that trace infinite lines.
+ * Portal markers are purely decorative and do NOT affect hit registration logic.
+ *
+ * Animation sequence:
+ * 1. Normalize target to full infinite line endpoints via redoCoords()
+ * 2. Resolve actual hit target separately for hit registration
+ * 3. Apply portal markers at line endpoints
+ * 4. Animate on both boards
+ * 5. Remove portal markers
+ *
+ * @param {Weapon} weapon - The weapon instance (typically Strike-derived like RailBolt)
  * @param {number[]|number[][]} coords - Target coordinates
  * @param {AnimationContext} context - Animation context with source coords and view models
  * @param {TerrainMap} map - Game map object for line normalization
@@ -290,16 +414,37 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
 
 /**
  * Missile - A targeted explosive weapon dealing splash damage.
+ *
  * Extends Bomb with cross-board animation support for dual-board gameplay.
  * Single-target area-of-effect explosive with 3-layer splash pattern.
+ *
+ * Gameplay mechanics:
+ * - Single click to target cell
+ * - Detonates at target location
+ * - 3-layer splash: center (power 2), adjacent (power 1), distance (power 0)
+ * - Volatile weapon (triggers on impact)
+ * - Award 2 points per successful launch
+ *
+ * Animation:
+ * - Animates on target (shows flight path)
+ * - Explodes on target with flash effect
+ * - Supports cross-board animation via launchTo override
+ *
  * @extends Bomb
  * @class Missile
+ * @public
  */
 export class Missile extends Bomb {
   /**
-   * Initializes missile with configuration.
-   * Sets up targeting cursors, animation sequence, and splash damage pattern.
-   * @param {number} ammo - Number of missiles available
+   * Initializes missile with configuration and targeting sequence.
+   *
+   * Sets up:
+   * - Two-state targeting cursors for aim sequence
+   * - UI button, hints, and tooltip text
+   * - Splash damage pattern pre-computation
+   * - Volatile flag for impact triggering
+   *
+   * @param {number} ammo - Number of missiles available in this instance
    * @public
    */
   constructor (ammo) {
@@ -340,8 +485,10 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Gets the audio file for missile flight sound.
-   * @returns {URL} URL to missile flight sound asset (relative to this module)
+   * Gets the audio file URL for missile flight sound effect.
+   * Returns asset URL relative to this module for use during animation.
+   *
+   * @returns {URL} URL to missile flight sound asset (missile-flight.mp3)
    * @public
    */
   get flightSound () {
@@ -349,10 +496,13 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Creates a clone of this missile with optional new ammo count.
-   * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
-   * @returns {Missile} New missile instance with specified ammo
+   * Creates an independent clone of this missile.
+   *
+   * Implements weapon cloning protocol for creating new instances with independent state.
+   * If ammo is omitted, uses current ammo count of original missile.
+   *
+   * @param {number} [ammo] - Ammo count for cloned instance (defaults to this.ammo)
+   * @returns {Missile} New missile instance with specified ammo and fresh state
    * @public
    */
   clone (ammo) {
@@ -361,10 +511,13 @@ export class Missile extends Bomb {
 
   /**
    * Normalizes launch coordinates for missile targeting.
-   * Maps source and first target coordinate to launch pair format.
-   * @param {TerrainMap} _map - Game map (unused for missile)
+   *
+   * Maps source and first target coordinate to standard launch pair format.
+   * For missiles, only the first (and usually only) target in array is used.
+   *
+   * @param {TerrainMap} _map - Game map (unused for missile single-target)
    * @param {number[]} baseCoords - Source coordinates [row, col]
-   * @param {number[][]} targetCoords - Array of target coordinates
+   * @param {number[][]} targetCoords - Array of target coordinates (uses first element)
    * @returns {number[][]} Transformed coordinate pair [baseCoords, targetCoords[0]]
    * @public
    */
@@ -374,9 +527,12 @@ export class Missile extends Bomb {
 
   /**
    * Calculates area-of-effect damage pattern from target coordinates.
+   *
    * Delegates to inherited boom() method for standard explosion pattern.
+   * For missiles, AOE is always computed at the last/primary target coordinate.
+   *
    * @param {TerrainMap} _map - Game map (unused for missile)
-   * @param {number[][]} coords - Target coordinates [[row, col], ...]
+   * @param {number[][]} coords - Target coordinates [[row, col], ...] (uses last element)
    * @returns {AoePattern} Damage cells with power levels [row, col, power]
    * @public
    */
@@ -390,8 +546,16 @@ export class Missile extends Bomb {
 
   /**
    * Animates missile launch with cross-board support.
-   * Routes to parent launchTo if no opposing view model exists.
+   *
+   * Performs animation on both primary and opposing boards if available.
+   * Routes to parent launchTo if no opposing view model exists (single-board mode).
    * Single-target missile seeks impact location and returns it for hit registration.
+   *
+   * Animation flow:
+   * 1. Normalize target coordinate
+   * 2. Animate flight on primary board
+   * 3. Return resolved target for hit registration
+   *
    * @async
    * @param {number[]|number[][]} coords - Target coordinates [[row, col]] or flat coordinate
    * @param {number} row - Source row coordinate
@@ -437,8 +601,16 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Determines turn phase for missile variant.
-   * Maps variant ID to turn duration classes for animation pacing.
+   * Determines turn phase for missile animation timing.
+   *
+   * Maps variant ID to CSS turn classes for controlling animation playback duration.
+   * Different variants have different flight animation speeds for visual variety.
+   *
+   * Variant mapping:
+   * - 0: turn3 (medium speed)
+   * - 1: turn4 (slowest)
+   * - 3: turn2 (fastest)
+   *
    * @param {number} variant - Weapon variant identifier (0, 1, 3)
    * @param {number} _x - Column coordinate (unused for missile)
    * @param {number} _y - Row coordinate (unused for missile)
@@ -455,7 +627,11 @@ export class Missile extends Bomb {
   }
 
   /**
-   * Creates a single-missile instance for quick access.
+   * Creates a single-missile instance for convenient quick access.
+   *
+   * Factory method for creating a single-ammo missile instance.
+   * Commonly used in demonstrations or for weapon configuration templates.
+   *
    * @static
    * @returns {Missile} Missile instance with 1 ammo
    * @public
@@ -471,16 +647,42 @@ export class Missile extends Bomb {
 
 /**
  * RailBolt - A two-point targeting weapon with portal-style cross-board animation.
- * Extends Strike with specialized dual-animation launch sequence displaying line trajectory.
- * Renders portal markers at line endpoints for visual feedback across dual boards.
+ *
+ * Extends Strike with specialized dual-animation launch sequence.
+ * Displays portal markers at line endpoints for visual feedback across dual boards.
+ *
+ * Gameplay mechanics:
+ * - Two-point targeting (click start, then end position)
+ * - Traces infinite line between points
+ * - Line intersection with target cells determines damage
+ * - Portal markers show trajectory visualization
+ * - One-and-done weapon (single use per ammo)
+ *
+ * Line mechanics:
+ * - Full infinite line normalized across board boundaries
+ * - Impact determined by target lookup via processCoords()
+ * - Splash pattern based on trajectory direction
+ *
+ * Animation:
+ * - Portal markers at line start and end
+ * - Synchronized animation on both boards
+ * - Markers are purely decorative, don't affect hit registration
+ *
  * @extends Strike
  * @class RailBolt
+ * @public
  */
 export class RailBolt extends Strike {
   /**
-   * Initializes rail bolt with configuration.
-   * Sets up two-point targeting cursors, portal animation support, and splash pattern.
-   * @param {number} ammo - Number of rail bolts available
+   * Initializes rail bolt with configuration for line-based targeting.
+   *
+   * Sets up:
+   * - Two-point targeting cursors
+   * - Portal animation and line normalization support
+   * - Drag-and-drop shape for placement hints
+   * - Splash damage pattern configuration
+   *
+   * @param {number} ammo - Number of rail bolts available in this instance
    * @public
    */
   constructor (ammo) {
@@ -541,8 +743,20 @@ export class RailBolt extends Strike {
     )
   }
   /**
-   * Determines turn phase for rail bolt based on position relative to trajectory line.
-   * Complex geometric calculation for animation pacing based on diagonal/orthogonal position.
+   * Determines turn phase for rail bolt based on geometric position.
+   *
+   * Complex geometric calculation for animation pacing based on position relative to trajectory line.
+   * Returns different turn phases for orthogonal vs diagonal vs arbitrary offsets.
+   * Enables visual variation in animation timing based on distance from line.
+   *
+   * Position-based mapping:
+   * - (0, 0): turn4 if variant 0, else empty
+   * - (0, x != 0): turn4 (on horizontal line)
+   * - (y != 0, 0): turn3 (on vertical line)
+   * - (y == x): turn2 (on main diagonal)
+   * - (y == -x): empty (on anti-diagonal)
+   * - Variant-dependent for arbitrary positions
+   *
    * @param {number} variant - Weapon variant identifier (0, 1, 2, 3)
    * @param {number} y - Row offset from line origin
    * @param {number} x - Column offset from line origin
@@ -568,8 +782,10 @@ export class RailBolt extends Strike {
     return d1 < d0 ? 'turn2' : ''
   }
   /**
-   * Gets the audio file for rail bolt flight sound.
-   * @returns {URL} URL to rail bolt flight sound asset (relative to this module)
+   * Gets the audio file URL for rail bolt flight sound effect.
+   * Distinct audio from other weapons for audio feedback variety.
+   *
+   * @returns {URL} URL to rail bolt flight sound asset (rail-flight.mp3)
    * @public
    */
   get flightSound () {
@@ -577,10 +793,13 @@ export class RailBolt extends Strike {
   }
 
   /**
-   * Creates a clone of this rail bolt with optional new ammo count.
-   * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
-   * @returns {RailBolt} New rail bolt instance with specified ammo
+   * Creates an independent clone of this rail bolt.
+   *
+   * Implements weapon cloning protocol for creating new instances with independent state.
+   * If ammo is omitted, uses current ammo count of original rail bolt.
+   *
+   * @param {number} [ammo] - Ammo count for cloned instance (defaults to this.ammo)
+   * @returns {RailBolt} New rail bolt instance with specified ammo and fresh state
    * @public
    */
   clone (ammo) {
@@ -588,11 +807,14 @@ export class RailBolt extends Strike {
   }
 
   /**
-   * Calculates area-of-effect with auxiliary data for splash calculation.
-   * Returns affected area plus full line for directional splash determination.
+   * Calculates area-of-effect with auxiliary trajectory data for splash.
+   *
+   * Returns affected area (cells along line) plus full line for directional splash calculation.
+   * Full line enables splash() to determine direction of impact for proper damage pattern orientation.
+   *
    * @param {Object} map - Game map object
    * @param {number[][]} coords - Target coordinates [[row1, col1], [row2, col2]]
-   * @returns {{affectedArea: AoePattern, options: {fullLine: AoePattern}}} Effect data with full trajectory
+   * @returns {{affectedArea: AoePattern, options: {fullLine: AoePattern}}} Effect data with complete trajectory
    * @public
    */
   aoePlus (map, coords) {
@@ -602,8 +824,18 @@ export class RailBolt extends Strike {
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point.
-   * Creates cross-shaped splash with directional forward/backward damaging cells.
+   * Calculates splash/secondary damage pattern around an impact point.
+   *
+   * Creates cross-shaped splash pattern with directional forward/backward damaging cells.
+   * Splash direction determined by impact position relative to full line trajectory.
+   * At line start: forward cells receive damage. At end: backward cells receive damage.
+   *
+   * Pattern structure:
+   * - Impact cell: power 2 (primary)
+   * - Orthogonal adjacent: power 0
+   * - Directional cell: power 1 (secondary forward/backward)
+   * - Directional adjacent cells: power 0
+   *
    * @param {TerrainMap} _map - Game map (unused)
    * @param {Coord} resolvedTarget - Impact coordinate [row, col]
    * @param {AoePattern} effect - Damage effect coordinates (full trajectory line)
@@ -650,8 +882,15 @@ export class RailBolt extends Strike {
 
   /**
    * Initiates rail bolt launch with coordinate transformation.
+   *
    * Routes to launchWithDualBoardAnimation for portal-style animation.
-   * Displays portal markers at line start and end for visual feedback.
+   * Displays portal markers at line start and end for visual trajectory feedback.
+   *
+   * Launch sequence:
+   * 1. Normalize target to infinite line via redoCoords()
+   * 2. Perform portal animation with markers at line endpoints
+   * 3. Return resolved target for hit registration
+   *
    * @async
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
@@ -684,7 +923,11 @@ export class RailBolt extends Strike {
   }
 
   /**
-   * Creates a single-rail-bolt instance for quick access.
+   * Creates a single-rail-bolt instance for convenient quick access.
+   *
+   * Factory method for creating a single-ammo rail bolt instance.
+   * Commonly used in demonstrations or for weapon configuration templates.
+   *
    * @static
    * @returns {RailBolt} RailBolt instance with 1 ammo
    * @public
@@ -699,17 +942,44 @@ export class RailBolt extends Strike {
 // ============================================================================
 
 /**
- * GaussRound - A projectile weapon that stops at terrain boundaries.
+ * GaussRound - A projectile weapon with land collision detection.
+ *
  * Extends Fish with land-detection trajectory and dual-animation launch.
  * Implements crash damage mechanics on terrain collision with secondary splash patterns.
+ * Projectile stops when hitting land boundaries; alternate to Laser for land physics.
+ *
+ * Gameplay mechanics:
+ * - Two-point targeting (click source, then target)
+ * - Detects terrain collision via map.isLand() checks
+ * - Crash damage on land contact instead of splash
+ * - Portal animation from source on both boards
+ * - One-and-done weapon (single use per ammo)
+ *
+ * Damage patterns:
+ * - Primary splash: 3-layer square (power 2, 1, 0)
+ * - Crash splash: orthogonal (power 1), diagonals/distance 2 (power 0)
+ *
+ * Animation:
+ * - Portal markers appear at source on both boards
+ * - Animated flight from source to impact
+ * - Supports cross-board dual-board rendering
+ *
  * @extends Fish
  * @class GaussRound
+ * @public
  */
 export class GaussRound extends Fish {
   /**
-   * Initializes Gauss round with configuration.
-   * Sets up land-detection projectile with crash damage and dual-animation launch.
-   * @param {number} ammo - Number of Gauss rounds available
+   * Initializes Gauss round with land-detection projectile configuration.
+   *
+   * Sets up:
+   * - Two-point targeting cursors
+   * - Land-collision detection and crash mechanics
+   * - Dual-animation launch with portal effects
+   * - Drag-and-drop shape for placement hints
+   * - Both splash and crash damage patterns
+   *
+   * @param {number} ammo - Number of Gauss rounds available in this instance
    * @public
    */
   constructor (ammo) {
@@ -794,10 +1064,19 @@ export class GaussRound extends Fish {
     this.crashLoc = null
   }
   /**
-   * Performs Gauss round dual-board animation with portal effect on sources.
+   * Performs Gauss round dual-board animation with source portal effects.
+   *
    * Animates from source on opposing board to target on primary board,
    * then from source on primary board to target on primary board.
-   * Portal markers appear at source coordinates on both boards.
+   * Portal markers appear at source coordinates on both boards (not line endpoints like RailBolt).
+   *
+   * Animation sequence:
+   * 1. Process coordinates through game model for target lookup
+   * 2. Apply portal CSS classes to source cells on both boards
+   * 3. Clear cell state (friendly markers, etc)
+   * 4. Animate on both boards
+   * 5. Remove portal markers and restore cell state
+   *
    * @async
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate (portal source on both boards)
@@ -862,8 +1141,11 @@ export class GaussRound extends Fish {
 
   /**
    * Process launch coordinates through game model targeting logic.
-   * Allows model to transform target location based on game state.
+   *
+   * Allows game model to transform target location based on game state.
    * Returns source, resolved target, and flag indicating candidate availability.
+   * Used for coordinate normalization and hit registration validation.
+   *
    * @param {TerrainMap} map - Game map object
    * @param {number[]} base - Base/source coordinates [row, col]
    * @param {number[]} coords - Target coordinates [row, col]
@@ -883,8 +1165,15 @@ export class GaussRound extends Fish {
     return list
   }
   /**
-   * Determines turn phase for Gauss round variant.
-   * Maps variant ID to turn duration classes for animation pacing.
+   * Determines turn phase for Gauss round animation timing.
+   *
+   * Maps variant ID to CSS turn classes for controlling animation playback duration.
+   * Limited variants compared to other weapons; asymmetric variants animate faster.
+   *
+   * Variant mapping:
+   * - 1: turn2 (fast)
+   * - 3: turn2 (fast)
+   *
    * @param {number} variant - Weapon variant identifier (1, 3)
    * @param {number} _y - Row coordinate (unused for Gauss round)
    * @param {number} _x - Column coordinate (unused for Gauss round)
@@ -900,10 +1189,13 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Creates a clone of this Gauss round with optional new ammo count.
-   * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
-   * @returns {GaussRound} New Gauss round instance with specified ammo
+   * Creates an independent clone of this Gauss round.
+   *
+   * Implements weapon cloning protocol for creating new instances with independent state.
+   * If ammo is omitted, uses current ammo count of original Gauss round.
+   *
+   * @param {number} [ammo] - Ammo count for cloned instance (defaults to this.ammo)
+   * @returns {GaussRound} New Gauss round instance with specified ammo and fresh state
    * @public
    */
   clone (ammo) {
@@ -911,8 +1203,10 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Gets the audio file for Gauss round flight sound.
-   * @returns {URL} URL to Gauss round flight sound asset (relative to this module)
+   * Gets the audio file URL for Gauss round flight sound effect.
+   * Distinct audio from Laser for weapon feedback variety.
+   *
+   * @returns {URL} URL to Gauss round flight sound asset (gauss-flight.mp3)
    * @public
    */
   get flightSound () {
@@ -921,7 +1215,10 @@ export class GaussRound extends Fish {
 
   /**
    * Computes blast radius pattern from explosion center.
+   *
    * Creates expanding square pattern via createSquareExplosion with radius 2.
+   * Generates 3-layer splash: center, 3×3 adjacent, distance ring.
+   *
    * @param {number} centerRow - Explosion center row
    * @param {number} centerCol - Explosion center column
    * @returns {AoePattern} Damage pattern as [row, col, power] tuples
@@ -933,8 +1230,11 @@ export class GaussRound extends Fish {
 
   /**
    * Calculates area-of-effect along the Gauss round's land-stopping path.
-   * Inherits land-detection from Fish, adds penetration distance for crash mechanics.
+   *
+   * Inherits land-detection from Fish parent class.
+   * Adds penetration distance (2) for crash mechanics calculation.
    * Stops at land boundaries (map.isLand check) with optional penetration.
+   *
    * @param {TerrainMap} map - Game map for bounds/terrain checking
    * @param {number[][]} coords - Source and Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @returns {AoePattern} Cells along trajectory path with damage power [row, col, power]
@@ -950,7 +1250,11 @@ export class GaussRound extends Fish {
   }
   /**
    * Calculates area-of-effect with auxiliary data for splash and crash calculations.
+   *
    * Returns affected area plus full line and crash location for damage determination.
+   * Crash location enables proper crash splash pattern application on terrain collision.
+   * Full line provides trajectory information for directional splash calculations.
+   *
    * @param {TerrainMap} map - Game map object
    * @param {number[][]} coords - Target coordinates [[row1, col1], [row2, col2]]
    * @returns {{affectedArea: AoePattern, options: {crashLoc: (Coord|null), fullLine: AoePattern}}} Effect data with trajectory info
@@ -964,8 +1268,15 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Calculates splash/secondary damage pattern around a point.
+   * Calculates splash/secondary damage pattern around an impact point.
+   *
    * Creates directional splash based on trajectory position (start, middle, end).
+   * At trajectory start: forward cells receive damage. At end: backward cells receive damage.
+   * Middle positions: symmetrical secondary damage pattern.
+   *
+   * Impact cell always receives power 2. Directional cells receive power 1.
+   * Perpendicular cells and distance cells receive power 0.
+   *
    * @param {TerrainMap} _map - Game map (unused)
    * @param {Coord} resolvedTarget - Impact coordinate [row, col]
    * @param {AoePattern} effect - Damage effect coordinates along trajectory
@@ -1017,9 +1328,16 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Calculates crash splash damage pattern around a terminal point.
+   * Calculates crash splash damage pattern around a terrain collision point.
+   *
    * Applied when Gauss round hits terrain boundary with no targets registered.
-   * Creates symmetric pattern: orthogonal cells (power 1) + diagonals and distance 2 (power 0).
+   * Creates symmetric pattern optimized for land collision physics.
+   *
+   * Pattern structure:
+   * - Orthogonal adjacent cells (power 1): direct contact damage
+   * - Diagonal adjacent cells (power 0): minimal splash
+   * - Distance 2 cells (power 0): edge effect
+   *
    * @param {TerrainMap} map - Game map for bounds checking
    * @param {Coord} target - Impact coordinate [row, col]
    * @param {AoePattern} _effect - Damage effect coordinates (unused)
@@ -1052,8 +1370,15 @@ export class GaussRound extends Fish {
 
   /**
    * Initiates Gauss round launch with coordinate transformation.
+   *
    * Routes to launchRightTo for coordinate processing before dual-animation launch.
-   * Portal markers appear at source coordinates for visual feedback.
+   * Portal markers appear at source coordinates on both boards for visual feedback.
+   *
+   * Launch sequence:
+   * 1. Transform coordinates through game model
+   * 2. Perform Gauss animation with portal effects at source
+   * 3. Return resolved target for hit registration
+   *
    * @async
    * @param {number[][]} coords - Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @param {number} sourceRow - Source row coordinate
@@ -1096,7 +1421,11 @@ export class GaussRound extends Fish {
   }
 
   /**
-   * Creates a single-GaussRound instance for quick access.
+   * Creates a single-GaussRound instance for convenient quick access.
+   *
+   * Factory method for creating a single-ammo Gauss round instance.
+   * Commonly used in demonstrations or for weapon configuration templates.
+   *
    * @static
    * @returns {GaussRound} GaussRound instance with 1 ammo
    * @public
@@ -1107,17 +1436,44 @@ export class GaussRound extends Fish {
 }
 
 /**
- * Laser - A projectile weapon that stops at terrain boundaries.
+ * Laser - A projectile weapon with identical mechanics to Gauss rounds.
+ *
  * Extends Fish with land-detection trajectory and dual-animation launch.
- * Implements identical crash mechanics and damage patterns to GaussRound.
+ * Implements identical crash damage mechanics and patterns to GaussRound.
+ * Uses different visual/audio assets for weapon variety.
+ *
+ * Gameplay mechanics:
+ * - Two-point targeting (click source, then target)
+ * - Detects terrain collision via map.isLand() checks
+ * - Crash damage on land contact identical to Gauss rounds
+ * - Portal animation from source on both boards
+ * - One-and-done weapon (single use per ammo)
+ *
+ * Damage patterns:
+ * - Primary splash: 3-layer square (identical to Gauss)
+ * - Crash splash: orthogonal (power 1), diagonals/distance 2 (power 0)
+ *
+ * Differences from Gauss:
+ * - Visual representation as '!' instead of '^'
+ * - Flight sound: laser-flight.mp3 instead of gauss-flight.mp3
+ * - All gameplay mechanics identical; functionally interchangeable
+ *
  * @extends Fish
  * @class Laser
+ * @public
  */
 export class Laser extends Fish {
   /**
-   * Initializes Laser with configuration.
-   * Sets up land-detection projectile with identical crash mechanics to GaussRound.
-   * @param {number} ammo - Number of Laser Blasts available
+   * Initializes Laser with identical configuration to Gauss rounds.
+   *
+   * Sets up:
+   * - Two-point targeting cursors
+   * - Land-collision detection and crash mechanics (identical to Gauss)
+   * - Dual-animation launch with portal effects
+   * - Drag-and-drop shape for placement hints
+   * - Both splash and crash damage patterns (identical to Gauss)
+   *
+   * @param {number} ammo - Number of Laser Blasts available in this instance
    * @public
    */
   constructor (ammo) {
@@ -1203,10 +1559,13 @@ export class Laser extends Fish {
   }
 
   /**
-   * Creates a clone of this laser with optional new ammo count.
-   * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
-   * @returns {Laser} New Laser instance with specified ammo
+   * Creates an independent clone of this Laser.
+   *
+   * Implements weapon cloning protocol for creating new instances with independent state.
+   * If ammo is omitted, uses current ammo count of original Laser.
+   *
+   * @param {number} [ammo] - Ammo count for cloned instance (defaults to this.ammo)
+   * @returns {Laser} New Laser instance with specified ammo and fresh state
    * @override
    * @public
    */
@@ -1215,9 +1574,10 @@ export class Laser extends Fish {
   }
 
   /**
-   * Gets the audio file for Laser blast flight sound.
-   * Returns different audio URL from Gauss round for distinct weapon audio feedback.
-   * @returns {URL} URL to Laser blast flight sound asset (relative to this module)
+   * Gets the audio file URL for Laser blast flight sound effect.
+   * Distinct audio from Gauss rounds for weapon feedback variety.
+   *
+   * @returns {URL} URL to Laser blast flight sound asset (laser-flight.mp3)
    * @override
    * @public
    */
@@ -1226,7 +1586,11 @@ export class Laser extends Fish {
   }
 
   /**
-   * Creates a single-Laser-blast instance for quick access.
+   * Creates a single-Laser-blast instance for convenient quick access.
+   *
+   * Factory method for creating a single-ammo Laser instance.
+   * Commonly used in demonstrations or for weapon configuration templates.
+   *
    * @static
    * @returns {Laser} Laser instance with 1 ammo
    * @public
@@ -1242,15 +1606,36 @@ export class Laser extends Fish {
 
 /**
  * Scan - A detection/scanning weapon generating pie-segment patterns.
+ *
  * Extends Sensor for radar-like sweep visualization with sweep animation.
- * Used for terrain scanning with two-point targeting sweep across dual boards.
+ * Used for terrain scanning and reconnaissance with two-point targeting sweep.
+ * Supports cross-board dual-board rendering for full game board coverage.
+ *
+ * Gameplay mechanics:
+ * - Two-point targeting for sweep arc
+ * - Generates pie-segment detection pattern
+ * - Non-lethal (detection/scanning only)
+ * - Reusable weapon (not one-and-done)
+ *
+ * Animation:
+ * - Dish-shaped sweep visualization
+ * - Sweep animation between two points
+ * - Used for reconnaissance and target identification
+ *
  * @extends Sensor
  * @class Scan
+ * @public
  */
 export class Scan extends Sensor {
   /**
-   * Initializes radar scan with configuration.
-   * Sets up two-point targeting sweep with pie-segment detection pattern.
+   * Initializes radar scan with configuration for detection sweep.
+   *
+   * Sets up:
+   * - Two-point targeting sweep with pie-segment pattern
+   * - Non-lethal detection mechanics
+   * - Reusable weapon configuration
+   * - UI button and hint text
+   *
    * @param {number} ammo - Number of scans available
    * @public
    */
@@ -1275,10 +1660,13 @@ export class Scan extends Sensor {
   }
 
   /**
-   * Creates a clone of this scan with optional new ammo count.
-   * Implements weapon cloning protocol.
-   * @param {number} [ammo] - Ammo count for cloned instance; uses current ammo if omitted
-   * @returns {Scan} New scan instance with specified ammo
+   * Creates an independent clone of this scan.
+   *
+   * Implements weapon cloning protocol for creating new instances with independent state.
+   * If ammo is omitted, uses current ammo count of original scan.
+   *
+   * @param {number} [ammo] - Ammo count for cloned instance (defaults to this.ammo)
+   * @returns {Scan} New scan instance with specified ammo and fresh state
    * @override
    * @public
    */
@@ -1293,8 +1681,20 @@ export class Scan extends Sensor {
 
 /**
  * Pre-configured catalogue of space terrain weapons.
- * Provides standard loadout with one of each space weapon type.
+ *
+ * Provides standard loadout with one of each primary space weapon type.
+ * Used as the main weapon arsenal for space terrain battles.
+ * Includes all major weapon systems: explosives, line weapons, and projectiles.
+ *
+ * Weapons included:
+ * - Missile: Single-target area-of-effect explosive
+ * - RailBolt: Line-based strike weapon with portal animation
+ * - GaussRound: Land-detecting projectile with crash mechanics
+ *
+ * Note: Laser blasts and Scan weapons can be added separately to create variant loadouts.
+ *
  * @type {WeaponCatalogue}
+ * @const
  */
 export const spaceWeaponsCatalogue = new WeaponCatalogue([
   new Missile(1),
@@ -1303,9 +1703,13 @@ export const spaceWeaponsCatalogue = new WeaponCatalogue([
 ])
 
 /**
- * Adds a coordinate tuple into an indexed bracket for fast lookup.
- * Stores coordinate data keyed by its string representation for deduplication.
- * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID
+ * Adds a coordinate tuple into an indexed bracket for fast deduplication lookup.
+ *
+ * Stores coordinate data keyed by its string representation for O(1) lookup.
+ * Enables efficient merging of overlapping damage patterns without iteration.
+ * Essential for combining multiple AOE patterns from different sources.
+ *
+ * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID via coordToKey()
  * @param {AoeCell} coord - Coordinate tuple [row, col, power]
  * @returns {void}
  * @private
@@ -1315,9 +1719,19 @@ function addCoord (bracket, coord) {
 }
 
 /**
- * Adds or upgrades a coordinate in a bracket using an offset and power value.
- * Updates the bracket with new coordinates, preferring higher power values for same cell.
- * Essential for merging overlapping damage patterns without duplicates.
+ * Adds or upgrades a coordinate in a bracket using offset and power value.
+ *
+ * Updates the bracket with new coordinates at offset position.
+ * Preferring higher power values for same cell to prevent power degradation.
+ * Essential for merging overlapping damage patterns without losing information.
+ *
+ * Logic:
+ * - Calculates new coordinate by applying offset to base
+ * - Checks if coordinate already exists in bracket
+ * - If exists and new power is higher: upgrades to new power
+ * - If exists and new power is lower: preserves existing higher power
+ * - If not exists: adds new coordinate
+ *
  * @param {CoordBracket} bracket - Coordinate dictionary keyed by string ID
  * @param {AoeCell} coord - Base coordinate tuple [row, col, power]
  * @param {[number, number]} offset - Offset [rowDelta, colDelta] to apply to base

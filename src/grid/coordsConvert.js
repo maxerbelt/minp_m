@@ -1,16 +1,42 @@
 // ==================== BIT ENCODING/DECODING ====================
-import { BigBits, BigOne } from './bitStore/helpers/bigbits.js'
+import { BigOne } from './bitStore/helpers/bigbits.js'
 
 /**
+ * Coordinate conversion utilities for grid representations.
+ * Supports conversions between:
+ * - Bit indices and 2D coordinates
+ * - Coordinate lists and BigInt occupancy masks
+ * - Coordinate lists and 2D grid arrays
+ *
  * @module grid/coordsConvert
+ *
+ * @typedef {[number, number]} Coordinate
+ * A [x, y] coordinate pair where x is column, y is row
+ *
+ * @typedef {[number, number, number]} CoordinateWithValue
+ * A [x, y, value] coordinate tuple with associated cell value
+ *
+ * @typedef {Array<Coordinate>} CoordinateList
+ * Array of coordinate pairs
+ *
+ * @typedef {Array<CoordinateWithValue>} CoordinateValueList
+ * Array of coordinate pairs with values
+ *
+ * @typedef {Array<Array<number>>} Grid2D
+ * 2D array [height][width] representing a grid
  */
 
 /**
- * Decode a linear bit index into 2D grid coordinates
+ * Decode a linear bit index into 2D grid coordinates.
+ * Converts sequential bit position to (x, y) using row-major layout.
+ * Formula: x = bitIndex % width, y = bitIndex / width
+ *
  * @private
- * @param {number} bitIndex - Linear index from bit position
- * @param {number} width - Grid width
- * @returns {{x: number, y: number}} Decoded x,y coordinates
+ * @param {number} bitIndex - Linear index from bit position (0-based)
+ * @param {number} width - Grid width in cells
+ * @returns {Object} Object with x and y coordinates
+ * @returns {number} returns.x - Column coordinate
+ * @returns {number} returns.y - Row coordinate (top-to-bottom)
  */
 function _decodeBitIndexToCoords (bitIndex, width) {
   return {
@@ -20,14 +46,17 @@ function _decodeBitIndexToCoords (bitIndex, width) {
 }
 
 /**
- * Iterate over all set bits in occupancy mask and collect results
+ * Iterate over all set bits in occupancy mask and collect results.
+ * For each set bit, decodes coordinates and calls valueResolver to compute value.
+ * Accumulates results as [x, y, value] tuples.
+ *
  * @private
  * @param {bigint} occupancyBits - Bit pattern where set bits represent occupied cells
- * @param {number} width - Grid width
- * @param {number} height - Grid height
- * @param {Function} valueResolver - Function to determine value for each set bit
- *                                    Signature: (x, y, bitIndex) => value
- * @returns {Array<[number, number, *]>} Array of [x, y, value] tuples
+ * @param {number} width - Grid width in cells
+ * @param {number} height - Grid height in cells
+ * @param {(x: number, y: number, bitIndex: number) => *} valueResolver - Function to compute value for each set bit
+ *        Takes (x, y, bitIndex) and returns computed value
+ * @returns {Array<[number, number, *]>} Array of [x, y, value] tuples for all set bits
  */
 function _collectBitsAsCoords (occupancyBits, width, height, valueResolver) {
   const result = []
@@ -47,11 +76,17 @@ function _collectBitsAsCoords (occupancyBits, width, height, valueResolver) {
 // ==================== COORDINATE CONVERSIONS ====================
 
 /**
- * Convert list of coordinates to BigInt occupancy representation
- * Each coordinate's position becomes a set bit in the result
- * @param {Array<[number, number]>} coordinateList - Array of [x, y] coordinate pairs
- * @param {number} width - Grid width (used to calculate linear index)
+ * Convert list of coordinates to BigInt occupancy representation.
+ * Each coordinate's position becomes a set bit in the result.
+ * Uses row-major layout: bitIndex = y * width + x
+ *
+ * @public
+ * @param {CoordinateList} coordinateList - Array of [x, y] coordinate pairs
+ * @param {number} width - Grid width in cells (used to calculate linear index)
  * @returns {bigint} Occupancy pattern where each set bit represents a coordinate
+ * @example
+ * const coords = [[0, 0], [2, 1], [3, 3]];
+ * const occupancy = coordsToOccBig(coords, 4); // 4-wide grid
  */
 export function coordsToOccBig (coordinateList, width) {
   let occupancyBits = 0n
