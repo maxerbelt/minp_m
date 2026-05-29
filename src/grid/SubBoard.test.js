@@ -1,5 +1,4 @@
-
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach } from '@jest/globals'
 
 import { SubBoard } from './subBoard.js'
 import { Mask } from './rectangle/mask.js'
@@ -141,7 +140,6 @@ describe('SubBoard', () => {
       expect(shrunk.toAscii).toBe('1.\n11\n11\n11\n.1')
     })
     it('shrinkToOccupied special cells', () => {
-      const sb = new SubBoard(0, 0, 3, 3, mask3)
       expect(mask3.toAscii).toBe('112\n..2\n...')
       const shrunk = mask3.shrinkToOccupied()
       expect(shrunk.toAscii).toBe('112\n..2')

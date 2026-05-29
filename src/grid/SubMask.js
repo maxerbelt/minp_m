@@ -12,12 +12,15 @@
  * All coordinate-based methods (at, set, location, setRange, clearRange, isValid, index)
  * work in window-relative coordinates (0 to width-1, 0 to height-1), which are automatically
  * translated to absolute coordinates in the underlying mask.
+ *
+ * @class SubMask
+ * @classdesc Transparent windowed view decorator for MaskBase bitboard operations
  */
 
 /**
  * @typedef {Object} TransformContext
- * @property {string} type - Type of transformation
- * @property {*} [param] - Optional transform-specific parameter
+ * @property {string} type - Type of transformation: 'rotate-90', 'flip-horizontal', 'flip-vertical', 'translate'
+ * @property {*} [param] - Optional transform-specific parameter (e.g., delta for translate)
  */
 
 /**
@@ -28,15 +31,20 @@
 
 /**
  * @typedef {Array<number>} WindowCell
- * @property {number} 0 - X coordinate
- * @property {number} 1 - Y coordinate
+ * @property {number} 0 - X coordinate (window-relative)
+ * @property {number} 1 - Y coordinate (window-relative)
  * @property {number} 2 - Value at that coordinate
  */
 
 /**
  * @typedef {string[]} SymbolsArray
+ * @description Array of ASCII symbols for rendering depth values 0-f
  */
 
+/**
+ * @const {SymbolsArray} DEFAULT_ASCII_SYMBOLS
+ * @description Default symbols for ASCII rendering: '.', '1'-'9', 'a'-'f'
+ */
 const DEFAULT_ASCII_SYMBOLS = [
   '.',
   '1',
@@ -62,8 +70,8 @@ export class SubMask {
    * @param {MaskBase} mask - The underlying mask to wrap
    * @param {number} offsetX - X coordinate of window's top-left corner in parent mask
    * @param {number} offsetY - Y coordinate of window's top-left corner in parent mask
-   * @param {number} windowWidth - Width of the window
-   * @param {number} windowHeight - Height of the window
+   * @param {number} windowWidth - Width of the window (must be positive)
+   * @param {number} windowHeight - Height of the window (must be positive)
    */
   constructor (mask, offsetX, offsetY, windowWidth, windowHeight) {
     this.mask = mask
@@ -82,19 +90,47 @@ export class SubMask {
   // Properties: Expose window dimensions
   // ============================================================================
 
+  /**
+   * Get window width
+   * @type {number}
+   * @readonly
+   */
   get width () {
     return this.windowWidth
   }
+
+  /**
+   * Get full width from origin to window end
+   * @type {number}
+   * @readonly
+   */
   get fullWidth () {
     return this.windowWidth + this.offsetX
   }
+
+  /**
+   * Get window height
+   * @type {number}
+   * @readonly
+   */
   get height () {
     return this.windowHeight
   }
+
+  /**
+   * Get full height from origin to window end
+   * @type {number}
+   * @readonly
+   */
   get fullHeight () {
     return this.windowHeight + this.offsetY
   }
 
+  /**
+   * Get total number of cells in the window
+   * @type {number}
+   * @readonly
+   */
   get size () {
     return this.windowWidth * this.windowHeight
   }
@@ -105,10 +141,10 @@ export class SubMask {
 
   /**
    * Convert window-relative coordinates to absolute parent-mask coordinates.
-   * @protected
+   * @private
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
-   * @returns {Point2D} Absolute coordinates
+   * @returns {Point2D} Absolute coordinates [absX, absY]
    */
   _toAbsoluteCoords (x, y) {
     return [x + this.offsetX, y + this.offsetY]
@@ -116,10 +152,10 @@ export class SubMask {
 
   /**
    * Convert absolute parent-mask coordinates to window-relative coordinates.
-   * @protected
-   * @param {number} x - Absolute X coordinate
-   * @param {number} y - Absolute Y coordinate
-   * @returns {Point2D} Window-relative coordinates
+   * @private
+   * @param {number} x - Absolute X coordinate in parent mask
+   * @param {number} y - Absolute Y coordinate in parent mask
+   * @returns {Point2D} Window-relative coordinates [windowX, windowY]
    */
   _toWindowCoords (x, y) {
     return [x - this.offsetX, y - this.offsetY]
@@ -128,7 +164,10 @@ export class SubMask {
   /**
    * Private helper: Apply offset to window-relative coordinates.
    * Kept for compatibility with existing tests and external callers.
-   * @protected
+   * @private
+   * @param {number} x - Window-relative X coordinate
+   * @param {number} y - Window-relative Y coordinate
+   * @returns {Point2D} Absolute coordinates
    */
   _applyOffset (x, y) {
     return this._toAbsoluteCoords(x, y)
@@ -137,7 +176,10 @@ export class SubMask {
   /**
    * Private helper: Remove offset from absolute coordinates.
    * Kept for compatibility with existing tests and external callers.
-   * @protected
+   * @private
+   * @param {number} x - Absolute X coordinate
+   * @param {number} y - Absolute Y coordinate
+   * @returns {Point2D} Window-relative coordinates
    */
   _removeOffset (x, y) {
     return this._toWindowCoords(x, y)
@@ -145,7 +187,10 @@ export class SubMask {
 
   /**
    * Private helper: Check if coordinates are within window bounds.
-   * @protected
+   * @private
+   * @param {number} x - Window-relative X coordinate
+   * @param {number} y - Window-relative Y coordinate
+   * @returns {boolean} True if [x, y] is within [0, windowWidth) x [0, windowHeight)
    */
   _isInWindow (x, y) {
     return x >= 0 && x < this.windowWidth && y >= 0 && y < this.windowHeight
@@ -157,7 +202,7 @@ export class SubMask {
    * @private
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
-   * @param {function(number, number): *} callback - Function called with absolute coords
+   * @param {Function} callback - Function called with absolute coords: (absX, absY) => *
    * @returns {*} Result of callback or undefined if out of bounds
    */
   _withAbsoluteCoordinates (x, y, callback) {
@@ -173,7 +218,7 @@ export class SubMask {
    * @private
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
-   * @returns {Point2D} Absolute coordinates
+   * @returns {Point2D} Absolute coordinates [absX, absY]
    * @throws {Error} If coordinates are out of window bounds
    */
   _assertWindowCoordinates (x, y) {
@@ -191,7 +236,7 @@ export class SubMask {
    * Execute a callback for a row in window-relative coordinates.
    * @private
    * @param {number} r - Window-relative row
-   * @param {function(number): void} callback - Callback with absolute row index
+   * @param {Function} callback - Callback with absolute row index: (absR) => void
    */
   _withWindowRow (r, callback) {
     if (!this._isInWindow(0, r)) {
@@ -208,7 +253,7 @@ export class SubMask {
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
    * @param {number} [depth=0] - Depth layer to read (may be ignored for Mask)
-   * @returns {number} Value at that position, or null if out of bounds
+   * @returns {(number|null)} Value at that position, or null if out of bounds
    */
   at (x, y, depth = 0) {
     const value = this._withAbsoluteCoordinates(x, y, (absX, absY) =>
@@ -217,6 +262,13 @@ export class SubMask {
     return value === undefined ? null : value
   }
 
+  /**
+   * Test if a cell at window-relative coordinates has a specific color value
+   * @param {number} x - Window-relative X coordinate
+   * @param {number} y - Window-relative Y coordinate
+   * @param {number} [color=1] - Color value to test for (default: 1)
+   * @returns {boolean} True if cell at [x, y] equals color
+   */
   test (x, y, color = 1) {
     return this.at(x, y) === color
   }
@@ -228,7 +280,7 @@ export class SubMask {
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
    * @param {number} [color=1] - Color or depth value to set
-   * @returns {bigint} Updated bits value
+   * @returns {bigint} Updated bits value from underlying mask
    * @throws {Error} If coordinates are out of window bounds
    */
   set (x, y, color = 1) {
@@ -240,7 +292,7 @@ export class SubMask {
    * Clear (zero out) a cell at window-relative coordinates
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
-   * @returns {bigint} Updated bits value
+   * @returns {bigint} Updated bits value from underlying mask
    */
   clear (x, y) {
     return this.set(x, y, 0)
@@ -275,18 +327,29 @@ export class SubMask {
   /**
    * Convert grid index to window-relative coordinates
    * @param {number} index - Index in the underlying mask
-   * @returns {Array<number>} [x, y] in window-relative coordinates
+   * @returns {Point2D} [x, y] in window-relative coordinates
    */
   location (index) {
     const [absX, absY] = this.mask.location(index)
     return this._removeOffset(absX, absY)
   }
 
+  /**
+   * Iterate through all occupied locations in window-relative coordinates
+   * @generator
+   * @yields {Point2D} Occupied [x, y] coordinates in window-relative space
+   */
   *occupiedLocations () {
     for (const [x, y] of this.mask.occupiedLocations()) {
       yield this._removeOffset(x, y)
     }
   }
+
+  /**
+   * Iterate through all occupied locations with their values in window-relative coordinates
+   * @generator
+   * @yields {WindowCell} [x, y, value] tuples for occupied cells
+   */
   *occupiedLocationsAndValues () {
     for (const [x, y, value] of this.mask.occupiedLocationsAndValues()) {
       yield [...this._removeOffset(x, y), value]
@@ -297,7 +360,7 @@ export class SubMask {
    * Check if window-relative coordinates are valid (within window bounds)
    * @param {number} x - Window-relative X coordinate
    * @param {number} y - Window-relative Y coordinate
-   * @returns {boolean} True if coordinates are within window
+   * @returns {boolean} True if coordinates are within window [0, width) x [0, height)
    */
   isValid (x, y) {
     return this._isInWindow(x, y)
@@ -310,8 +373,8 @@ export class SubMask {
   /**
    * Set a range of bits in a window-relative row
    * @param {number} r - Window-relative row
-   * @param {number} c0 - Column start
-   * @param {number} c1 - Column end
+   * @param {number} c0 - Column start (inclusive)
+   * @param {number} c1 - Column end (inclusive)
    */
   setRange (r, c0, c1) {
     this._withWindowRow(r, absR => this.mask.setRange(absR, c0, c1))
@@ -320,8 +383,8 @@ export class SubMask {
   /**
    * Clear a range of bits in a window-relative row
    * @param {number} r - Window-relative row
-   * @param {number} c0 - Column start
-   * @param {number} c1 - Column end
+   * @param {number} c0 - Column start (inclusive)
+   * @param {number} c1 - Column end (inclusive)
    */
   clearRange (r, c0, c1) {
     this._withWindowRow(r, absR => this.mask.clearRange(absR, c0, c1))
@@ -333,8 +396,10 @@ export class SubMask {
 
   /**
    * Get all occupied cells as [x, y] coordinate array
-   * @returns {Array<Array<number>>} Array of [windowX, windowY] or [windowX, windowY, value]
-   *  window-relative coordinates (0 to width-1, 0 to height-1)
+   * @type {Array<Point2D>}
+   * @readonly
+   * @returns {Array<Array<number>>} Array of [windowX, windowY] coordinates
+   *  in window-relative format (0 to width-1, 0 to height-1)
    */
   get toCoords () {
     return Array.from(this.occupiedLocations())
@@ -369,7 +434,7 @@ export class SubMask {
   /**
    * Iterate through all window-relative coordinates.
    * @private
-   * @param {function(number, number): void} callback - Called for each window coordinate
+   * @param {Function} callback - Called for each window coordinate: (x, y) => void
    */
   _forEachWindowCell (callback) {
     for (let y = 0; y < this.windowHeight; y++) {
@@ -385,7 +450,9 @@ export class SubMask {
 
   /**
    * Get ASCII representation of just the window
-   * @returns {string} ASCII art showing window contents
+   * @type {string}
+   * @readonly
+   * @returns {string} ASCII art showing window contents with default symbols
    */
   get toAscii () {
     return this._generateAscii()
@@ -393,7 +460,7 @@ export class SubMask {
 
   /**
    * Get ASCII representation with custom symbols
-   * @param {SymbolsArray} [symbols] - Symbol array for each depth value
+   * @param {SymbolsArray} [symbols] - Symbol array for each depth value (default: DEFAULT_ASCII_SYMBOLS)
    * @returns {string} ASCII art with custom symbols
    */
   toAsciiWith (symbols = DEFAULT_ASCII_SYMBOLS) {
@@ -402,8 +469,9 @@ export class SubMask {
 
   /**
    * Generate ASCII representation of window
-   * @protected
-   * @param {SymbolsArray} [symbols] - Symbol array for each depth value
+   * @private
+   * @param {SymbolsArray} [symbols=DEFAULT_ASCII_SYMBOLS] - Symbol array for each depth value
+   * @returns {string} Newline-separated ASCII representation
    */
   _generateAscii (symbols = DEFAULT_ASCII_SYMBOLS) {
     const lines = []
@@ -431,9 +499,7 @@ export class SubMask {
    *
    * @param {MaskBase} bbc - Bit-based context or mask for bit operations
    * @param {Map|Array} map - Transformation map (index remapping)
-   * @param {Object} [transformContext] - Optional context for offset adjustment
-   * @param {string} [transformContext.type] - Type of transform ('rotate', 'flip', 'translate', etc.)
-   * @param {*} [transformContext.param] - Transform-specific parameter
+   * @param {TransformContext} [transformContext] - Optional context for offset adjustment
    */
   applyTransform (bbc, map, transformContext) {
     // Apply transform to underlying mask bits
@@ -448,7 +514,8 @@ export class SubMask {
 
   /**
    * Adjust window offset based on transformation applied to parent mask
-   * @protected
+   * @private
+   * @param {TransformContext} transformContext - Describes the transformation type and parameters
    */
   _adjustOffsetForTransform (transformContext) {
     const { type, param } = transformContext
@@ -505,7 +572,7 @@ export class SubMask {
   /**
    * Translate the window offset by the provided delta.
    * @private
-   * @param {*} param - Translation parameters
+   * @param {*} param - Translation parameters (should have x and y properties)
    */
   _translateOffset (param) {
     if (param && typeof param === 'object') {
@@ -521,7 +588,7 @@ export class SubMask {
   /**
    * Extract window contents as a list of [x, y, value] coordinates
    * Coordinates are in window-relative format.
-   * @returns {Array<Array>} List of [x, y, value] tuples for all set bits in window
+   * @returns {Array<Array<number>>} List of [x, y, value] tuples for all set bits in window
    */
   copyToCoords () {
     const coords = []
@@ -537,7 +604,7 @@ export class SubMask {
   /**
    * Load window contents from a list of [x, y, value] coordinates
    * Coordinates should be in window-relative format.
-   * @param {Array<Array>} coords - List of [x, y, value] tuples
+   * @param {Array<Array<number>>} coords - List of [x, y, value] tuples
    */
   copyFromCoords (coords) {
     for (const [x, y, value] of coords) {
@@ -576,12 +643,24 @@ export class SubMask {
       }
     })
   }
+
+  /**
+   * Convert window contents to a new mask of specified dimensions
+   * @param {number} newWidth - Width of the new mask
+   * @param {number} newHeight - Height of the new mask
+   * @returns {MaskBase} New mask containing window contents
+   */
   toMask (newWidth, newHeight) {
     const newMask = this.mask.emptyMaskOfSize(newWidth, newHeight)
     this.copyToMask(newMask)
     return newMask
   }
 
+  /**
+   * Convert window contents to a new mask matching another mask's dimensions
+   * @param {MaskBase} otherMask - Template mask to match dimensions from
+   * @returns {MaskBase} New mask with window contents and matching other mask's properties
+   */
   toMaskMatching (otherMask) {
     const newMask = otherMask.emptyMaskOfSize(
       this.windowWidth,
@@ -596,6 +675,7 @@ export class SubMask {
 
   /**
    * Get reference to underlying mask bits
+   * @type {bigint}
    */
   get bits () {
     return this.mask.bits
@@ -603,6 +683,7 @@ export class SubMask {
 
   /**
    * Set underlying mask bits
+   * @param {bigint} value - New bits value for underlying mask
    */
   set bits (value) {
     this.mask.bits = value
@@ -614,6 +695,8 @@ export class SubMask {
 
   /**
    * Count number of set cells in the window
+   * @type {number}
+   * @readonly
    */
   get occupancy () {
     let count = 0
@@ -631,8 +714,8 @@ export class SubMask {
 
   /**
    * Move the window to a new position in the parent mask
-   * @param {number} newOffsetX - New X offset
-   * @param {number} newOffsetY - New Y offset
+   * @param {number} newOffsetX - New X offset (top-left corner)
+   * @param {number} newOffsetY - New Y offset (top-left corner)
    */
   moveWindow (newOffsetX, newOffsetY) {
     this.offsetX = newOffsetX
@@ -650,7 +733,8 @@ export class SubMask {
   }
 
   /**
-   * Get the absolute bounds of this window [x1, y1, x2, y2]
+   * Get the absolute bounds of this window in parent mask coordinates
+   * @returns {Array<number>} [x1, y1, x2, y2] representing top-left and bottom-right corners
    */
   getAbsoluteBounds () {
     return [
