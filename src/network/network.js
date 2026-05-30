@@ -15,6 +15,67 @@
  */
 
 /**
+ * Invokes callback safely, catching and logging any errors.
+ * Always succeeds; errors are logged but do not propagate.
+ *
+ * @private
+ * @param {ComponentCallback} [callback] - Callback to invoke
+ * @param {Error} [error] - Optional error to pass to callback
+ * @returns {void}
+ */
+function _invokeCallback (callback, error) {
+  if (typeof callback !== 'function') {
+    return
+  }
+
+  try {
+    callback(error)
+  } catch (callbackError) {
+    console.error('Error in component callback:', callbackError)
+  }
+}
+
+/**
+ * Fetches HTML content from a URL.
+ * Handles network errors and HTTP status validation.
+ *
+ * @private
+ * @async
+ * @param {string} componentUrl - URL to fetch HTML from
+ * @returns {Promise<string>} HTML content on success
+ * @throws {Error} On network error or non-2xx HTTP status
+ */
+async function _fetchHtml (componentUrl) {
+  const response = await fetch(componentUrl)
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  return response.text()
+}
+
+/**
+ * Inserts HTML into a DOM element by ID.
+ * Validates that element exists before insertion.
+ *
+ * @private
+ * @param {string} elementId - DOM element ID
+ * @param {string} html - HTML content to insert
+ * @returns {void}
+ * @throws {TypeError} If element not found
+ */
+function _insertHtml (elementId, html) {
+  const element = document.getElementById(elementId)
+
+  if (!element) {
+    throw new TypeError(`DOM element with id "${elementId}" not found`)
+  }
+
+  element.innerHTML = html
+}
+
+/**
  * Fetches an HTML component from a URL and inserts it into the DOM.
  *
  * Retrieves HTML content from the provided URL using the Fetch API and inserts it
@@ -23,7 +84,7 @@
  *
  * **Error Handling**:
  * - Network errors: Caught and logged, callback receives error
- * - HTTP errors: Non-2xx status codes throw Error
+ * - HTTP errors: Non-2xx status codes result in error
  * - DOM errors: Element not found or insertion fails
  * - Callback errors: Caught and logged without affecting operation
  *
@@ -73,53 +134,15 @@
  * await fetchComponent('sidebar', '/components/sidebar.html')
  */
 export async function fetchComponent (insertPointId, componentUrl, callback) {
-  let html = ''
-
   try {
-    const response = await fetch(componentUrl)
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    html = await response.text()
+    const html = await _fetchHtml(componentUrl)
+    _insertHtml(insertPointId, html)
+    _invokeCallback(callback)
   } catch (error) {
-    console.error(`Failed to load ${insertPointId}:`, error)
-    if (typeof callback === 'function') {
-      try {
-        callback(error instanceof Error ? error : new Error(String(error)))
-      } catch (callbackError) {
-        console.error('Error in component callback:', callbackError)
-      }
-    }
-    return
-  }
+    const errorMessage =
+      error instanceof Error ? error : new Error(String(error))
 
-  try {
-    const insertElement = document.getElementById(insertPointId)
-
-    if (!insertElement) {
-      throw new TypeError(`DOM element with id "${insertPointId}" not found`)
-    }
-
-    // eslint-disable-next-line no-unsanitized/property
-    insertElement.innerHTML = html
-
-    if (typeof callback === 'function') {
-      try {
-        callback()
-      } catch (callbackError) {
-        console.error('Error in component callback:', callbackError)
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to insert component into ${insertPointId}:`, error)
-    if (typeof callback === 'function') {
-      try {
-        callback(error instanceof Error ? error : new Error(String(error)))
-      } catch (callbackError) {
-        console.error('Error in component callback:', callbackError)
-      }
-    }
+    console.error(`Failed to load ${insertPointId}:`, errorMessage)
+    _invokeCallback(callback, errorMessage)
   }
 }
