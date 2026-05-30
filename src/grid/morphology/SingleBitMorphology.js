@@ -1,22 +1,29 @@
-/** @type {import('./types/index.js').SingleBitStore} */
-/** @type {import('./types/index.js').EdgeMaskCollection} */
-/** @type {import('./types/index.js').Bitboard} */
-
 /**
  * SingleBitMorphology - Optimized morphology for 1-bit (occupancy-only) grids.
+ *
  * Specializes dilation and erosion for single-bit grids where only occupancy
  * matters (no color values). Uses fast bit-shift operations with edge masks
  * to prevent boundary wrap-around.
  *
- * Strategies:
- * - **Dilation**: Separable (horizontal + vertical) shifts with edge masking, or non-separable (8 neighbors at once)
- * - **Erosion**: Constraint-based approach using shifted neighbors with clamping
- * - **Efficiency**: No per-cell iteration needed, pure bitboard operations
+ * ## Strategies
+ *
+ * **Dilation**:
+ * - Separable (horizontal + vertical) shifts with edge masking (most efficient)
+ * - Non-separable (all 8 neighbors simultaneously)
+ * - Cross dilation (4-connectivity cardinal directions only)
+ *
+ * **Erosion**:
+ * - Constraint-based approach using shifted neighbors with clamping
+ * - Cells survive only if all required neighbors are present within bounds
+ *
+ * **Efficiency**: No per-cell iteration needed, pure bitboard operations using
+ * fast bit shifts and masking operations.
  *
  * @class SingleBitMorphology
  * @description Optimized morphological operations for single-bit occupancy grids
  * @see RectMorphologyOps for high-level operation orchestration
- * @see BigStoreMorphology, Store32Morphology for low-level bit operations
+ * @see BigStoreMorphology for BigInt bitboard morphology helpers
+ * @see Store32Morphology for Uint32Array bitboard morphology helpers
  */
 export class SingleBitMorphology {
   /**

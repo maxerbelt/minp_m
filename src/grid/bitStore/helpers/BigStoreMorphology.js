@@ -5,22 +5,22 @@
  * @property {number} bitsPerCell - Bits used per cell (color depth)
  * @property {bigint} fullBits - Mask covering all bits
  * @property {Object} all - Iterator object with occupiedIndexAndValues method
- * @property {Function} setIdx - Set value at index
- * @property {Function} getIdx - Get value at index
- * @property {Function} shiftBits - Perform bitwise shift operation
- * @property {Function} combineMasked - Combine masked bitboard values
- * @property {Function} prepareSrcForUpExpansion - Prepare source for up expansion
- * @property {Function} prepareSrcForDownExpansion - Prepare source for down expansion
- * @property {Function} cellSurvivesHorizontalErosion - Check horizontal erosion survival
- * @property {Function} cellSurvivesVerticalErosion - Check vertical erosion survival
+ * @property {(bitboard: bigint, idx: number, value: bigint) => bigint} setIdx - Set value at index
+ * @property {(bitboard: bigint, idx: number) => bigint} getIdx - Get value at index
+ * @property {(bitboard: bigint, shiftAmount: number) => bigint} shiftBits - Perform bitwise shift operation
+ * @property {(original: bigint, shifted1: bigint, shifted2: bigint) => bigint} combineMasked - Combine masked bitboard values
+ * @property {(bitboard: bigint, edgeMasks?: EdgeMasks) => bigint} prepareSrcForUpExpansion - Prepare source for up expansion
+ * @property {(bitboard: bigint, edgeMasks?: EdgeMasks) => bigint} prepareSrcForDownExpansion - Prepare source for down expansion
+ * @property {(bitboard: bigint, idx: number) => boolean} cellSurvivesHorizontalErosion - Check horizontal erosion survival
+ * @property {(bitboard: bigint, idx: number, gridWidth: number) => boolean} cellSurvivesVerticalErosion - Check vertical erosion survival
  */
 
 /**
  * @typedef {Object} EdgeMasks
- * @property {bigint|number|null} [notTop] - Mask preventing expansion beyond top edge
- * @property {bigint|number|null} [notBottom] - Mask preventing expansion beyond bottom edge
- * @property {bigint|number|null} [notLeft] - Mask preventing expansion beyond left edge
- * @property {bigint|number|null} [notRight] - Mask preventing expansion beyond right edge
+ * @property {(bigint|number|null)} [notTop] - Mask preventing expansion beyond top edge
+ * @property {(bigint|number|null)} [notBottom] - Mask preventing expansion beyond bottom edge
+ * @property {(bigint|number|null)} [notLeft] - Mask preventing expansion beyond left edge
+ * @property {(bigint|number|null)} [notRight] - Mask preventing expansion beyond right edge
  */
 
 /**
@@ -46,6 +46,9 @@
  * - Shift-based: for 1-bit (occupancy) grids using fast bit operations
  * - Cell-wise: for multi-bit (colored) grids using per-cell iteration
  *
+ * @class BigStoreMorphology
+ * @static
+ *
  * @example
  * // 1-bit dilation using shifts
  * const dilated = BigStoreMorphology.propagateVerticalShift(store, bits, width, masks)
@@ -53,6 +56,8 @@
  * @example
  * // Multi-bit dilation using per-cell propagation
  * const dilated = BigStoreMorphology.expandAdjacentCellsHorizontally(store, bits)
+ *
+ * @see StoreBig - The main storage class using this helper
  */
 export class BigStoreMorphology {
   /**
@@ -62,6 +67,9 @@ export class BigStoreMorphology {
    * @static
    * @param {bigint|number|null|undefined} maskValue - Value to normalize
    * @returns {bigint} Normalized edge mask as BigInt (0n if falsy)
+   * @example
+   * const normalized = BigStoreMorphology.normalizeEdgeMask(123); // 123n
+   * const fromNull = BigStoreMorphology.normalizeEdgeMask(null); // 0n
    */
   static normalizeEdgeMask (maskValue) {
     return typeof maskValue === 'bigint' ? maskValue : BigInt(maskValue || 0n)
@@ -76,6 +84,9 @@ export class BigStoreMorphology {
    * @param {StoreBigInstance} store - StoreBig instance with width, height properties
    * @param {bigint} bitboard - Input colored bitboard
    * @returns {bigint} Bitboard with colors expanded to adjacent columns
+   * @example
+   * // Expand cell colors horizontally
+   * const expanded = BigStoreMorphology.expandAdjacentCellsHorizontally(store, bitboard);
    */
   static expandAdjacentCellsHorizontally (store, bitboard) {
     const width = store.width
@@ -100,6 +111,9 @@ export class BigStoreMorphology {
    * @param {bigint} bitboard - Input colored bitboard
    * @param {number} gridWidth - Width of grid in cells (for row offset calculation)
    * @returns {bigint} Bitboard with colors expanded to adjacent rows
+   * @example
+   * // Expand cell colors vertically
+   * const expanded = BigStoreMorphology.propagateAdjacentCellsVertically(store, bitboard, gridWidth);
    */
   static propagateAdjacentCellsVertically (store, bitboard, gridWidth) {
     const height = store.height
@@ -126,6 +140,9 @@ export class BigStoreMorphology {
    * @param {number} gridWidth - Width in cells (shift amount for vertical operations)
    * @param {EdgeMasks} [edgeMasks] - Edge masks to restrict boundary expansion
    * @returns {bigint} Bitboard with vertical expansion (up and down shifts)
+   * @example
+   * // Apply vertical propagation with edge constraints
+   * const propagated = BigStoreMorphology.propagateVerticalShift(store, bits, width, edgeMasks);
    */
   static propagateVerticalShift (store, bitboard, gridWidth, edgeMasks) {
     const srcForUp = store.prepareSrcForUpExpansion(bitboard, edgeMasks)
@@ -146,6 +163,9 @@ export class BigStoreMorphology {
    * @param {StoreBigInstance} store - StoreBig instance with cellSurvivesHorizontalErosion method
    * @param {bigint} bitboard - Input colored bitboard
    * @returns {bigint} Eroded bitboard with edge colors removed
+   * @example
+   * // Remove colors from horizontally isolated cells
+   * const eroded = BigStoreMorphology.erodeHorizontalCells(store, bitboard);
    */
   static erodeHorizontalCells (store, bitboard) {
     let result = bitboard
@@ -168,6 +188,9 @@ export class BigStoreMorphology {
    * @param {bigint} bitboard - Input colored bitboard
    * @param {number} gridWidth - Grid width in cells (used for neighbor offset calculation)
    * @returns {bigint} Eroded bitboard with edge colors removed
+   * @example
+   * // Remove colors from vertically isolated cells
+   * const eroded = BigStoreMorphology.erodeVerticalCells(store, bitboard, gridWidth);
    */
   static erodeVerticalCells (store, bitboard, gridWidth) {
     const size = gridWidth * store.height
@@ -192,6 +215,7 @@ export class BigStoreMorphology {
    * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration
    * @param {string} maskKey - Key of mask to invert (e.g., 'notLeft', 'notRight')
    * @returns {bigint} Inverted edge mask value
+   * @throws {TypeError} If maskKey is not a valid edge mask key
    */
   static computeInvertedEdgeMask (store, edgeMasks, maskKey) {
     const fullMask = store.fullBits
@@ -209,6 +233,11 @@ export class BigStoreMorphology {
    * @param {number} bitShift - Number of bits to shift
    * @param {bigint} invertedMask - Inverted edge mask to apply
    * @returns {bigint} Constraint bitboard for erosion
+   * @example
+   * // Build left neighbor constraint
+   * const constraint = BigStoreMorphology.computeHorizontalConstraintFromShift(
+   *   store, bitboard, 1, invertedLeftMask
+   * );
    */
   static computeHorizontalConstraintFromShift (
     store,
@@ -275,6 +304,7 @@ export class BigStoreMorphology {
    * @param {bigint} bitboard - Input 1-bit bitboard
    * @param {EdgeMasks|undefined} edgeMasks - Edge masks configuration (optional)
    * @returns {bigint} Eroded bitboard
+   * @see erodeHorizontalCells
    */
   static erodeHorizontalShift (store, bitboard, edgeMasks) {
     if (!edgeMasks) return bitboard
