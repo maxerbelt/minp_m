@@ -1480,7 +1480,7 @@ export class Laser extends Fish {
     super(ammo, 'Laser Blast', '!')
 
     // Cursor configuration for targeting sequence
-    this.cursors = ['llaunch', 'round']
+    this.cursors = ['llaunch', 'laser']
     this.launchCursor = 'llaunch'
     this.isOneAndDone = true
     this.postSelectCursor = 1

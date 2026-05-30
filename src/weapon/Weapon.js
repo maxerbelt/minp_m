@@ -592,7 +592,10 @@ export class Weapon {
   ) {
     // Handle both context object and individual parameters
     let context
-    if (viewModel !== undefined) {
+    if (viewModel === undefined) {
+      // Context object passed
+      context = mapOrContext
+    } else {
       // Individual parameters passed (from Waters.launchTo)
       context = {
         map: mapOrContext,
@@ -601,9 +604,6 @@ export class Weapon {
         model,
         processCoords: this.processCoords.bind(this)
       }
-    } else {
-      // Context object passed
-      context = mapOrContext
     }
     return await this.launchToRaw(coords, rr, cc, context)
   }
