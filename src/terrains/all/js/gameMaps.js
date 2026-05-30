@@ -21,24 +21,27 @@ import { spaceAndAsteroidsMaps } from '../../space/js/spaceAndAsteroidsMaps.js'
 
 /**
  * @typedef {import('./TerrainMaps.js').TerrainMaps} TerrainMapsType
+ * @description Instance of TerrainMaps containing map configurations and state
  */
 
 /**
+ * Terrain map type from TerrainMaps configuration.
  * @typedef {Object} TerrainMapType
- * @description Terrain map type from TerrainMaps configuration
+ * @description Individual terrain map configuration with bounds and terrain checking
  * @property {number} rows - The number of rows in the map
  * @property {number} cols - The number of columns in the map
- * @property {string} title - The map title
- * @property {Function} isLand - Method to check if a cell is land
- * @property {Function} inBounds - Method to check if coordinates are in bounds
- * @property {Function} zoneInfo - Method to get zone information
+ * @property {string} title - The map title for display purposes
+ * @property {(row: number, col: number) => boolean} isLand - Method to check if a cell is land terrain
+ * @property {(row: number, col: number) => boolean} inBounds - Method to check if coordinates are within map bounds
+ * @property {(row: number, col: number) => string|undefined} zoneInfo - Method to get zone information for a cell
  */
 
 /**
+ * Registry of available terrain configurations.
  * @typedef {Object} GameMapsRegistry
- * @description Registry of available terrain configurations
- * @property {TerrainMapsType} seaAndLand - Sea terrain with land overlay
- * @property {TerrainMapsType} spaceAndAsteroids - Space terrain with asteroids
+ * @description Mapping of terrain identifiers to their corresponding TerrainMaps configurations
+ * @property {TerrainMapsType} seaAndLand - Sea terrain with optional land overlay (traditional battleship)
+ * @property {TerrainMapsType} spaceAndAsteroids - Space terrain with asteroid field overlay (space variant)
  */
 
 /**
@@ -80,7 +83,8 @@ const DEFAULT_TERRAIN_MAPS = {
  * The check `TerrainMaps.numTerrains > 1` ensures this is only run once,
  * allowing safe idempotent calls throughout the application.
  *
- * @returns {void}
+ * @returns {void} No return value; modifies global TerrainMaps registry state
+ * @static
  * @public
  *
  * @example
@@ -118,7 +122,7 @@ export function assembleTerrains () {
  * that depend on them. Calls assembleTerrains() if not already done.
  * Used internally to implement lazy initialization patterns.
  *
- * @returns {void}
+ * @returns {void} No return value; modifies global TerrainMaps state
  * @private
  *
  * @remarks
@@ -138,8 +142,7 @@ function _ensureTerrainsAssembled () {
  * after ensuring the terrain registry has been initialized. Implements lazy
  * initialization to guarantee terrains are available on first access.
  *
- * @returns {TerrainMapsType}
- *   The current terrain maps configuration (e.g., seaAndLand or spaceAndAsteroids).
+ * @returns {TerrainMapsType} The current terrain maps configuration (e.g., seaAndLand or spaceAndAsteroids).
  *   Never returns null; falls back to default if unset.
  * @private
  *
@@ -163,11 +166,9 @@ function _getCurrentTerrainMaps () {
  *
  * Used as a fallback mechanism to guarantee valid terrain maps are always active.
  *
- * @param {TerrainMapsType|null} currentMaps
- *   The current terrain maps configuration, possibly null if none is set.
- *   If null, replaced with seaAndLand default.
- * @returns {TerrainMapsType}
- *   Either the input currentMaps if not null, or the seaAndLand default.
+ * @param {TerrainMapsType|null} currentMaps - The current terrain maps configuration,
+ *   possibly null if none is set. If null, replaced with seaAndLand default.
+ * @returns {TerrainMapsType} Either the input currentMaps if not null, or the seaAndLand default.
  *   Always returns a valid (non-null) TerrainMaps instance.
  * @private
  *
@@ -210,13 +211,12 @@ function _ensureDefaultMaps (currentMaps) {
  * This is the main entry point for accessing and switching between terrain
  * configurations (e.g., switching from Sea/Land to Space/Asteroids).
  *
- * @param {TerrainMapsType} [maps]
- *   Optional terrain maps configuration to set as current.
+ * @param {TerrainMapsType} [maps] - Optional terrain maps configuration to set as current.
  *   If provided, these maps become the active configuration.
  *   If omitted, the current configuration is returned.
- * @returns {TerrainMapsType}
- *   The current terrain maps configuration (after any setter operation).
+ * @returns {TerrainMapsType} The current terrain maps configuration (after any setter operation).
  *   Always returns a valid (non-null) TerrainMaps instance.
+ * @static
  * @public
  *
  * @example
@@ -269,13 +269,12 @@ export function gameMaps (maps) {
  * initialization first. Typically used after switching terrain configurations
  * to select a specific map within that configuration.
  *
- * @param {TerrainMapType} [map]
- *   Optional map to set as current within the active terrain maps.
+ * @param {TerrainMapType} [map] - Optional map to set as current within the active terrain maps.
  *   If provided, this map becomes the active map.
  *   If omitted, the current map is returned.
- * @returns {TerrainMapType}
- *   The current map (after any setter operation).
- *   Map from the active terrain maps configuration.
+ * @returns {TerrainMapType|undefined} The current map (after any setter operation).
+ *   Map from the active terrain maps configuration, or undefined if no map is set.
+ * @static
  * @public
  *
  * @example

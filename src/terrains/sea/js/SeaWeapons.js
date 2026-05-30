@@ -11,6 +11,12 @@
  * - Sweep: Radar scanning for area reconnaissance
  *
  * @module SeaWeapons
+ * @typedef {import('./types/weapon.types.js').Coord} Coord
+ * @typedef {import('./types/weapon.types.js').AoeCell} AoeCell
+ * @typedef {import('./types/weapon.types.js').AoePattern} AoePattern
+ * @typedef {import('./types/weapon.types.js').CellEffect} CellEffect
+ * @typedef {import('./types/weapon.types.js').SeaViewModel} SeaViewModel
+ * @typedef {import('./types/config.types.js').WeaponConfig} WeaponConfig
  */
 
 import { bh } from '../../../terrains/all/js/bh.js'
@@ -21,33 +27,6 @@ import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
 import { Delay } from '../../../core/Delay.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
-/**
- * @typedef {[number, number]} Coord
- * Represents [row, column] coordinate pair on the game board
- */
-
-/**
- * @typedef {[number, number, number]} AoeCell
- * Represents [row, column, power] for area-of-effect damage calculation
- */
-
-/**
- * @typedef {AoeCell[]} AoePattern
- * Collection of cells with associated damage power in area-of-effect
- */
-
-/**
- * @typedef {[HTMLElement, number, number, number]} CellEffect
- * Tuple of [cell element, row, column, power] for animation application
- */
-
-/**
- * @typedef {Object} SeaViewModel
- * View model for sea board visualization and animation
- * @property {(aoe: AoePattern) => Iterable<CellEffect>} cellsAndCoords
- * Converts AoePattern to iteratable cell effects for rendering
- */
-
 // ============================================================================
 // Configuration Constants
 // ============================================================================
@@ -55,45 +34,57 @@ import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 /**
  * Sound file names for sea weapons flight audio.
  * Maps weapon types to their corresponding MP3 audio files.
+ * Each filename references an audio asset in the sounds directory.
  *
- * @enum {string}
+ * @typedef {Object} SoundFilesMap
+ * @property {string} MEGABOMB - 'bomb-flight.mp3' - Enhanced bomb explosion sound
+ * @property {string} KINETIC - 'kinetic-flight.mp3' - Satellite strike sound
+ * @property {string} TORPEDO - 'torpedo-flight.mp3' - Underwater projectile sound
+ * @property {string} FLACK - 'flack-flight.mp3' - Anti-aircraft burst sound
+ *
+ * @type {Readonly<SoundFilesMap>}
  * @readonly
+ * @constant
  */
-const SOUND_FILES = {
+const SOUND_FILES = Object.freeze({
   MEGABOMB: 'bomb-flight.mp3',
   KINETIC: 'kinetic-flight.mp3',
   TORPEDO: 'torpedo-flight.mp3',
   FLACK: 'flack-flight.mp3'
-}
+})
 
 /**
  * Base URL for sound assets, resolved from module URL.
- * Used to construct full paths to audio files.
+ * Used to construct full paths to audio files in the sea terrain sounds directory.
+ * Resolved at module load time from import.meta.url for ES6 module compatibility.
  *
  * @type {string}
  * @readonly
+ * @constant
  */
 const SOUND_BASE_URL = import.meta.url
 
 /**
  * Sea weapon configuration definitions.
  * Maps weapon type identifiers to their display and behavior configurations.
+ * Contains all weapon types used in sea/naval combat system.
  *
- * Configuration properties:
- * - hints: UI hints shown during targeting phases
- * - buttonHtml: HTML for weapon selection button with keyboard shortcut
- * - tip: Tooltip text describing weapon function
- * - tag: Internal weapon identifier tag
- * - splashType: Area effect type ('air' or 'sea')
- * - splashPower: Splash damage multiplier (0-2)
- * - animateOnTarget: Whether to animate weapon on target
- * - explodeOnTarget: Whether weapon explodes on impact
- * - hasFlash: Whether explosion has visual flash effect
+ * Configuration Structure:
+ * - hints: string[] - UI hints shown during targeting phases
+ * - buttonHtml?: string - HTML for weapon selection button with keyboard shortcut
+ * - tip?: string - Tooltip text describing weapon function
+ * - tag: string - Internal weapon identifier tag for gameplay mechanics
+ * - splashType?: 'air' | 'sea' - Area effect type for damage calculations
+ * - splashPower?: number - Splash damage multiplier (0-2 range)
+ * - animateOnTarget?: boolean - Whether to animate weapon projectile to target
+ * - explodeOnTarget?: boolean - Whether weapon explodes on impact location
+ * - hasFlash?: boolean - Whether explosion has visual flash effect
  *
- * @type {Object<string, Object>}
+ * @type {Readonly<Record<string, WeaponConfig>>}
  * @readonly
+ * @constant
  */
-const SEA_WEAPON_CONFIGS = {
+const SEA_WEAPON_CONFIGS = Object.freeze({
   /**
    * Enhanced explosive bomb with wide area damage.
    * Shows single click hint. Used to disable terrain.
@@ -165,15 +156,22 @@ const SEA_WEAPON_CONFIGS = {
     tag: 'sweep',
     hasFlash: false
   }
-}
+})
 
 /**
  * Resolves a sea weapon flight sound URL from sound file name.
- * Constructs full audio asset path using weapon module base URL.
+ * Constructs full audio asset path using weapon module base URL and file name.
+ * Used for weapon projectile flight audio playback during combat.
  *
- * @param {string} soundFile - Name of the sound file (from SOUND_FILES enum)
+ * @param {string} soundFile - Name of the sound file (from SOUND_FILES object)
  * @returns {URL} Complete URL to weapon flight sound asset
+ * @throws {Error} If sound file path resolution fails
  * @private
+ * @static
+ *
+ * @example
+ * const url = seaFlightSound(SOUND_FILES.MEGABOMB)
+ * // Returns: file:///path/to/terrains/sea/sounds/bomb-flight.mp3
  */
 function seaFlightSound (soundFile) {
   return Weapon.getFlightSoundUrl(soundFile, SOUND_BASE_URL)

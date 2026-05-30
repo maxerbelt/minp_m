@@ -2,56 +2,16 @@ import { bh } from '../terrains/all/js/bh.js'
 import { furtherestFrom } from '../core/utilities.js'
 import { Animator } from '../core/Animator.js'
 import { Random } from '../core/Random.js'
-
-/**
- * @typedef {Object} AnimationOptions
- * Configuration for weapon flight animations
- * @property {number} [rotation] - Rotation angle in degrees
- * @property {number} [duration] - Duration in seconds
- * @property {string} [classname] - CSS class name for weapon
- * @property {boolean} [doesExplode] - Whether to explode on impact
- * @property {boolean} [animateOnTarget] - Whether to animate on target hit
- */
-
-/**
- * @typedef {Object} LaunchContext
- * Context for weapon launch operations
- * @property {any} map - Game map
- * @property {any} viewModel - Primary view model
- * @property {any} [opposingViewModel] - Opposing player's view model
- * @property {any} [model] - Optional game model
- * @property {Function} [processCoords] - Optional coordinate processor
- */
-
-/**
- * @typedef {Object} AnimationResult
- * Result of animation operation
- * @property {any} container - Animation container element
- * @property {{x: number, y: number}} end - End coordinates
- * @property {number} cellSize - Cell size in pixels
- */
-
-/**
- * @typedef {Object} AnimatorContext
- * Animator initialization context
- * @property {Animator} animator - Animator instance
- * @property {{x: number, y: number}} end - End coordinates
- * @property {{x: number, y: number}} start - Start coordinates
- * @property {number} cellSize - Cell size in pixels
- */
-
-/**
- * @typedef {Object} ExplodeOptions
- * Explosion animation options
- * @property {any} [container] - Animation container element
- * @property {{x: number, y: number}} [end] - End position coordinates
- * @property {string} [type] - Explosion type (terrain tag)
- * @property {number} [power] - Explosion power level
- * @property {string} [shake] - Shake animation type
- * @property {Animator} [animator] - Reusable animator instance
- * @property {any} [viewModel] - Optional view model
- * @property {string|null} [id] - Optional explosion ID
- */
+import type {
+  AnimationOptions,
+  AnimationResult,
+  AnimatorContext,
+  ExplodeOptions
+} from './types/index.js'
+import type { LaunchContext, CoordinateProcessor } from './types/index.js'
+import type { Coord, CoordPair, PixelCoord } from './types/index.js'
+import type { AoePattern } from './types/index.js'
+import type { MapLike } from './types/index.js'
 
 export class Weapon {
   /**

@@ -1,29 +1,5 @@
 import { standardShot } from './Weapon.js'
-
-/**
- * @typedef {Object} Weapon
- * @property {string} letter - Single-character identifier for the weapon
- * @property {string} [tag] - Weapon tag shown in UI and save data
- * @property {string[]} [cursors] - Cursor graphics for targeting steps
- * @property {string} [launchCursor] - Cursor graphic shown during launch
- * @property {string} [name] - Weapon display name
- * @property {string} [plural] - Pluralized weapon name
- * @property {string} [classname] - CSS class name for the weapon
- * @property {string} [tip] - Tooltip text for the weapon
- * @property {boolean} [hasFlash] - Whether the weapon shows a flash effect
- * @property {number} [totalCursors] - Total number of selection cursors
- * @property {boolean} [isLimited] - Whether the weapon has limited ammo
- * @property {boolean} [destroys] - Whether the weapon destroys targets
- * @property {number} [points] - Points awarded for a hit
- * @property {string} [buttonHtml] - Custom weapon button HTML
- * @property {string[]} [hints] - Hint text shown for weapon use
- * @property {boolean} [animateOnTarget] - Whether to animate on target
- * @property {boolean} [explodeOnTarget] - Whether to explode on target
- */
-
-/**
- * @typedef {{ [letter: string]: Weapon }} WeaponByLetterMap
- */
+import type { IWeapon, WeaponByLetterMap } from './types/index.js'
 
 // ============================================================================
 // WeaponCatalogue - Weapon Collection Repository
@@ -38,12 +14,12 @@ export class WeaponCatelogue {
   /**
    * Initializes weapon catalogue with collection of weapon instances
    * Builds internal indices for efficient lookups
-   * @param {Weapon[]} weapons - Array of weapon instances to catalog
+   * @param {IWeapon[]} weapons - Array of weapon instances to catalog
    */
   constructor (weapons) {
     /**
      * Array of available weapon instances
-     * @type {Weapon[]}
+     * @type {IWeapon[]}
      * @private
      */
     this.weapons = Array.isArray(weapons) ? weapons : []

@@ -16,6 +16,7 @@ import { NarrowS, NarrowM } from '../scenario/Narrow_Coast.js'
 /**
  * @typedef {import('../../all/js/map.js').BhMap} BhMap
  * Battleship map instance with terrain, weapons, and game mechanics configuration.
+ * @typedef {import('../types/domain.types.js').Terrain} Terrain
  */
 
 /**

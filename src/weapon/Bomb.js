@@ -5,21 +5,36 @@ import { Weapon } from './Weapon.js'
 /**
  * @typedef {[number, number]} Coord - A coordinate tuple [row, column]
  * @typedef {[number, number, number]} AoeCell - An area-of-effect cell [row, column, power]
- * @typedef {AoeCell[]} AoePattern - Array of area-of-effect cells
+ * @typedef {AoeCell[]} AoePattern - Array of area-of-effect cells with power values
  * @typedef {{ x0: number, y0: number, x1: number, y1: number }} LineIntercepts - Canvas line intercept points
- * @typedef {{ inBounds: (row: number, col: number) => boolean, isLand?: (row: number, col: number) => boolean, randomEdge?: Function }} MapLike - Game map interface
- * @typedef {(row: number, col: number) => boolean} TerrainCheck - Terrain validation function
+ * @typedef {{ inBounds: (row: number, col: number) => boolean, isLand?: (row: number, col: number) => boolean, randomEdge?: Function }} MapLike - Game map interface for bounds/terrain checking
+ * @typedef {(row: number, col: number) => boolean} TerrainCheck - Terrain validation function for filtering cells
  * @typedef {[number, number]} DirectionOffset - A direction offset [rowOffset, colOffset]
  */
 
-/** @type {DirectionOffset[]} Orthogonal direction offsets (up, down, left, right) */
+/**
+ * Cardinal direction offsets for orthogonal movement (up, down, left, right).
+ * Used to identify 4-connected adjacent cells in grid patterns.
+ * Format: [rowOffset, colOffset]
+ * @type {DirectionOffset[]}
+ * @constant
+ * @private
+ */
 const CARDINAL_OFFSETS = [
   [-1, 0],
   [1, 0],
   [0, -1],
   [0, 1]
 ]
-/** @type {DirectionOffset[]} Diagonal direction offsets (four corners) */
+
+/**
+ * Diagonal direction offsets for 8-connected movement (four corners).
+ * Used to identify diagonal neighbors in grid patterns.
+ * Format: [rowOffset, colOffset]
+ * @type {DirectionOffset[]}
+ * @constant
+ * @private
+ */
 const DIAGONAL_OFFSETS = [
   [-1, -1],
   [-1, 1],
@@ -31,6 +46,29 @@ const DIAGONAL_OFFSETS = [
 // Configuration Constants
 // ============================================================================
 
+/**
+ * Weapon configuration registry for all weapon types.
+ * Each configuration object defines visual, animation, and gameplay properties
+ * for a specific weapon variant (Bomb, Strike, Fish, Sensor).
+ *
+ * Configuration properties:
+ * - cursors {string[]} - Available cursor names for weapon selection
+ * - splashSize {number} - Radius of explosion/effect splash
+ * - hasFlash {boolean} - Whether weapon has flash animation on impact
+ * - nonAttached {boolean} - Whether weapon is non-attached (separate from ship)
+ * - animateOnTarget {boolean} - Whether animation plays on target hit
+ * - explodeOnTarget {boolean} - Whether explosion triggers on target
+ * - explodeOnSplash {boolean} - Whether explosion triggers on splash
+ * - splashType {string} - Type of splash (e.g., 'air', 'sea')
+ * - splashPower {number} - Damage power of splash effect
+ * - isOneAndDone {boolean} - Whether weapon activates in single shot
+ * - animateOffsetY {number} - Y-axis offset for animation
+ * - dragShape {[number, number, number][]} - Weapon shape for drag/placement
+ *
+ * @type {Object.<string, Object>}
+ * @constant
+ * @private
+ */
 const WEAPON_CONFIGS = {
   BOMB: {
     cursors: ['bomb'],
@@ -202,16 +240,17 @@ export function getPieSegmentCells (
 
 /**
  * Checks whether a map cell is valid for inclusion in an effect pattern.
- * Validates both bounds and terrain constraints.
- * @param {MapLike|null} map - Game map for bounds checking (may be null)
+ * Validates both bounds and terrain constraints using map bounds checking
+ * and optional terrain validation function.
+ * @param {MapLike|null} map - Game map for bounds checking (null/undefined skips bounds check)
  * @param {number} row - Cell row coordinate
  * @param {number} col - Cell column coordinate
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
- * @returns {boolean} True if the cell should be added to effect pattern
+ * @returns {boolean} True if the cell is in bounds and passes terrain check, false otherwise
  * @private
  */
 function isValidCell (map, row, col, terrainCheck = null) {
-  const noMapCheck = map === null || map === undefined
+  const noMapCheck = map == null
   const inBounds = noMapCheck || map.inBounds(row, col)
   const terrainOk = !terrainCheck || terrainCheck(row, col)
   return inBounds && terrainOk
@@ -219,14 +258,15 @@ function isValidCell (map, row, col, terrainCheck = null) {
 
 /**
  * Adds a single cell to an effect pattern if valid.
- * Only adds if the cell passes bounds and terrain checks.
+ * Only adds if the cell passes bounds and terrain checks using isValidCell.
+ * Mutates the provided effectPattern array by appending validated cell.
  * @param {MapLike|null} map - Game map for bounds checking
  * @param {number} row - Cell row coordinate
  * @param {number} col - Cell column coordinate
- * @param {number} power - Damage power for added cells
+ * @param {number} power - Damage power value for the cell [row, col, power]
  * @param {AoePattern} effectPattern - Pattern array to accumulate into
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
- * @returns {AoePattern} Updated effect pattern
+ * @returns {AoePattern} Updated effect pattern (same object reference)
  * @public
  */
 export function addCellToEffect (
@@ -245,7 +285,8 @@ export function addCellToEffect (
 
 /**
  * Adds cells in a set of direction offsets to an effect pattern.
- * Multiplies direction vectors by radius before adding cells.
+ * Applies radius multiplier to each direction vector, then adds resulting cells.
+ * Supports optional terrain filtering via options parameter.
  * @param {MapLike|null} map - Game map for bounds checking
  * @param {number} centerRow - Center row coordinate
  * @param {number} centerCol - Center column coordinate
@@ -255,7 +296,7 @@ export function addCellToEffect (
  * @param {Object} [options] - Optional configuration object
  * @param {TerrainCheck|null} [options.terrainCheck=null] - Optional terrain validation function
  * @param {number} [options.radius=1] - Offset multiplier for direction vectors
- * @returns {AoePattern} Updated effect pattern
+ * @returns {AoePattern} Updated effect pattern (same object reference)
  * @private
  */
 function addDirectionalCells (
@@ -283,7 +324,8 @@ function addDirectionalCells (
 
 /**
  * Adds orthogonal (cardinal) neighbors to an effect pattern.
- * Adds cells in up, down, left, right directions at specified radius.
+ * Adds cells in up, down, left, right directions at specified radius multiplier.
+ * Uses CARDINAL_OFFSETS for consistent direction vectors.
  * @param {MapLike|null} map - Game map for bounds checking
  * @param {number} centerRow - Center row coordinate
  * @param {number} centerCol - Center column coordinate
@@ -291,7 +333,7 @@ function addDirectionalCells (
  * @param {AoePattern} effectPattern - Pattern array to accumulate into
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
  * @param {number} [radius=1] - Distance multiplier for orthogonal neighbors
- * @returns {AoePattern} Updated effect pattern
+ * @returns {AoePattern} Updated effect pattern (same object reference)
  * @public
  */
 export function addOrthogonalNeighbors (
@@ -316,14 +358,15 @@ export function addOrthogonalNeighbors (
 
 /**
  * Adds diagonal neighbors to an effect pattern.
- * Adds cells in four diagonal directions.
+ * Adds cells in four diagonal directions (NW, NE, SW, SE).
+ * Uses DIAGONAL_OFFSETS for consistent diagonal vectors.
  * @param {MapLike|null} map - Game map for bounds checking
  * @param {number} centerRow - Center row coordinate
  * @param {number} centerCol - Center column coordinate
  * @param {number} power - Damage power for added cells
  * @param {AoePattern} effectPattern - Pattern array to accumulate into
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
- * @returns {AoePattern} Updated effect pattern
+ * @returns {AoePattern} Updated effect pattern (same object reference)
  * @public
  */
 export function addDiagonalNeighbors (
@@ -347,14 +390,15 @@ export function addDiagonalNeighbors (
 
 /**
  * Adds cells using explicit direction offsets and power values.
- * Each direction includes its own power value.
+ * Each direction specification includes its own power value for fine-grained control.
+ * Useful for custom patterns that don't follow standard orthogonal/diagonal grids.
  * @param {MapLike|null} map - Game map for bounds checking
  * @param {number} centerRow - Center row coordinate
  * @param {number} centerCol - Center column coordinate
  * @param {AoePattern} effectPattern - Pattern array to accumulate into
- * @param {AoeCell[]} directions - Offsets with power [[dr, dc, power], ...]
+ * @param {AoeCell[]} directions - Offsets with power values [[rowOffset, colOffset, power], ...]
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
- * @returns {AoePattern} Updated effect pattern
+ * @returns {AoePattern} Updated effect pattern (same object reference)
  * @public
  */
 export function addNeighborList (
@@ -380,11 +424,12 @@ export function addNeighborList (
 /**
  * Creates a splash effect pattern around a center point.
  * Adds center cell with full power, then orthogonal neighbors with same power.
+ * Useful for creating symmetric cross-shaped damage patterns.
  * @param {MapLike|null} map - Game map for bounds checking
  * @param {Coord} centerCoords - Center coordinates [row, col]
- * @param {number} power - Damage power for splash cells
+ * @param {number} power - Damage power for all cells in splash
  * @param {TerrainCheck|null} [terrainCheck=null] - Optional terrain validation function
- * @returns {AoePattern} Splash effect pattern
+ * @returns {AoePattern} Splash effect pattern with center + orthogonal cells
  * @public
  */
 export function createSplashEffect (
@@ -410,12 +455,14 @@ export function createSplashEffect (
 
 /**
  * Calculates area-of-effect along a line with optional power and terrain filtering.
- * Supports terrain-based stopping with optional penetration distance.
+ * Supports terrain-based stopping (e.g., land boundaries) with optional penetration.
+ * Uses specified line calculation function for flexibility (infinite, ray, segment).
+ * Handles invalid/degenerate coordinate input gracefully by logging and returning empty.
  * @param {number[][]} coords - Two-point coordinates [[startRow, startCol], [endRow, endCol]]
  * @param {number} [power=1] - Power level for damage cells
  * @param {(row1: number, col1: number, row2: number, col2: number, power: number) => AoePattern} [lineFunction=getExtendedLinePoints] - Function to calculate line points
  * @param {TerrainCheck|null} [terrainFilter=null] - Optional terrain filter (stops at first match)
- * @param {number} [penetration=0] - Cells beyond filter to include
+ * @param {number} [penetration=0] - Number of cells beyond filter to include
  * @returns {AoePattern} Cells along the line with damage power
  * @private
  */
@@ -451,8 +498,9 @@ function calculateLineAreaOfEffect (
 /**
  * Normalizes coordinates between two points using line intercepts.
  * Ensures consistent start/end points regardless of input direction.
- * Handles degenerate cases (single point, invalid input) gracefully.
- * @param {number[][]|number[]} coords - Two-point coordinates or single point [row, col]
+ * Handles degenerate cases (single point, invalid input) gracefully by returning safe defaults.
+ * Accepts flat [row, col] as a degenerate line to both endpoints.
+ * @param {number[][]|number[]} coords - Two-point coordinates [[row1, col1], [row2, col2]] or single point [row, col]
  * @returns {number[][]} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
  * @private
  */
@@ -579,6 +627,7 @@ export class Bomb extends Weapon {
   /**
    * Calculates blast radius pattern: center (power 2) → adjacent cells (power 1)
    * → orthogonal distance-2 cells (power 0).
+   * Internal pattern construction method used by boom().
    * @private
    * @param {number} centerRow - Explosion center row coordinate
    * @param {number} centerCol - Explosion center column coordinate
@@ -593,6 +642,7 @@ export class Bomb extends Weapon {
 
   /**
    * Adds all 8 adjacent (3×3 grid) cells to damage pattern, excluding center.
+   * Forms a ring around the center cell for adjacent damage.
    * @private
    * @param {AoePattern} pattern - Pattern array to accumulate into
    * @param {number} centerRow - Center row coordinate
@@ -612,7 +662,8 @@ export class Bomb extends Weapon {
 
   /**
    * Adds orthogonal cells at distance 2 (forming a + pattern beyond adjacent).
-   * Adds 12 cells: 3 in each cardinal direction at distance 2.
+   * Creates extended damage in cardinal directions, adding 12 cells total:
+   * 3 cells in each of 4 cardinal directions at distance 2 from center.
    * @private
    * @param {AoePattern} pattern - Pattern array to accumulate into
    * @param {number} centerRow - Center row coordinate

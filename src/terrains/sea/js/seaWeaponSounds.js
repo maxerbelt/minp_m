@@ -11,6 +11,7 @@
  * - sea: Explosion in water or underwater (torpedoes, depth charges)
  *
  * @module seaWeaponSounds
+ * @typedef {import('./types/sound.types.js').SeaWeaponSounds} SeaWeaponSounds
  */
 
 /**

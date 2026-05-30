@@ -3,6 +3,11 @@ import { all } from '../../all/js/terrain.js'
 /**
  * @typedef {import('../../all/js/SubTerrain.js').SubTerrain} SubTerrain
  * @typedef {import('../../all/js/Zone.js').Zone} Zone
+ * @typedef {import('../types/domain.types.js').ZoneInfo} ZoneInfo
+ * @typedef {import('../types/domain.types.js').ShapeValidator} ShapeValidator
+ * @typedef {import('../types/domain.types.js').ShapeProperties} ShapeProperties
+ * @typedef {import('../types/domain.types.js').ShapeConfig} ShapeConfig
+ * @typedef {import('../types/domain.types.js').PlacementNotes} PlacementNotes
  */
 
 import {
@@ -15,23 +20,6 @@ import {
   littoral
 } from './seaAndLand.js'
 import { Shape } from '../../../ships/Shape.js'
-
-/**
- * Zone information tuple for terrain and zone validation.
- *
- * Represents a pair of [subterrain, zone] for comprehensive placement validation.
- * Used throughout terrain classes to validate that placement occurs in both the correct
- * terrain type AND the correct zone type within that terrain.
- *
- * @typedef {[SubTerrain, Zone]} ZoneInfo
- * @description
- * First element: SubTerrain - the base terrain type (sea, land, all, etc)
- * Second element: Zone - the zone within that terrain (deep, littoral, inland, coast, etc)
- *
- * @example
- * const zoneInfo = [sea, deep] // sea terrain, deep zone
- * const isValid = DeepSeaVessel.validator(zoneInfo) // true if valid
- */
 
 /**
  * Base class for all sea and land terrain shapes.

@@ -22,6 +22,9 @@
  * @version 1.0.0
  * @see {@link ShipGroups} for group configuration class
  * @see {@link seaAndLand} for parent terrain configuration
+ * @typedef {import('./types/config.types.js').ShipSunkDescriptions} ShipSunkDescriptions
+ * @typedef {import('./types/config.types.js').ShipUnitNameMap} ShipUnitNameMap
+ * @typedef {import('./types/config.types.js').ShipPlacementInfoMap} ShipPlacementInfoMap
  */
 
 import { ShipGroups } from '../../../ships/ShipGroups.js'

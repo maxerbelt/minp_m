@@ -1,5 +1,5 @@
 import { terrains } from './terrains.js'
-import { createRequire } from 'module'
+import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 
@@ -14,27 +14,27 @@ const require = createRequire(import.meta.url)
 /**
  * Configuration object for terrain maps with state management.
  * @typedef {Object} TerrainMapContainer
- * @property {Object|null} [current] - The currently active terrain map
- * @property {(map: Object) => void} [setCurrent] - Sets the active terrain map
+ * @property {Record<string, unknown>|null} [current] - The currently active terrain map
+ * @property {(map: Record<string, unknown>) => void} [setCurrent] - Sets the active terrain map
  * @property {(title: string) => Terrain|undefined} [setByTitle] - Sets terrain by title
  * @property {(tag: string) => Terrain|undefined} [setByTag] - Sets terrain by tag
  * @property {() => Terrain|undefined} [setToDefault] - Sets to default terrain
  * @property {(index: number) => Terrain|undefined} [setByIndex] - Sets terrain by index
- * @property {(shapesByLetter: Object) => void} [setShapesByLetter] - Sets ship shapes
- * @property {Object.<string, Object>} [shapesByLetter] - Ship shapes by letter
- * @property {Array} [list] - List of available terrain maps
+ * @property {(shapesByLetter: Record<string, Record<string, unknown>>) => void} [setShapesByLetter] - Sets ship shapes
+ * @property {Record<string, Record<string, unknown>>} [shapesByLetter] - Ship shapes by letter
+ * @property {Array<Record<string, unknown>>} [list] - List of available terrain maps
  */
 
 /**
  * Ship configuration and type definitions.
  * @typedef {Object} ShipConfig
- * @property {Object.<string, string>} [descriptions] - Ship type descriptions by letter
- * @property {Object.<string, Object>} [types] - Ship type definitions by letter
+ * @property {Record<string, string>} [descriptions] - Ship type descriptions by letter
+ * @property {Record<string, Record<string, unknown>>} [types] - Ship type definitions by letter
  */
 
 /**
  * Sound effect configuration mapping damage types to URLs.
- * @typedef {Object.<string, string>} SoundConfig
+ * @typedef {Record<string, string>} SoundConfig
  */
 
 /**
@@ -50,27 +50,27 @@ const require = createRequire(import.meta.url)
 
 /**
  * Function signature for building ship instances.
- * @typedef {(...args: any[]) => Object} ShipBuilderFunction
+ * @typedef {(...args: unknown[]) => Record<string, unknown>} ShipBuilderFunction
  */
 
 /**
  * Function signature for building fleet instances.
- * @typedef {(...args: any[]) => Object} FleetBuilderFunction
+ * @typedef {(...args: unknown[]) => Record<string, unknown>} FleetBuilderFunction
  */
 
 /**
  * Function signature for retrieving shapes by ship letter.
- * @typedef {(letter: string) => Object|undefined} ShapesByLetterFunction
+ * @typedef {(letter: string) => Record<string, unknown>|undefined} ShapesByLetterFunction
  */
 
 /**
  * Splash damage classification tags for UI rendering.
- * @typedef {Object.<number, string>} SplashTagsMap
+ * @typedef {Record<number, string>} SplashTagsMap
  */
 
 /**
  * Custom unit display descriptions.
- * @typedef {Object.<string, string>} UnitDescriptions
+ * @typedef {Record<string, string>} UnitDescriptions
  */
 
 /**
@@ -106,14 +106,14 @@ const typedTerrains = /** @type {TerrainManager} */ (terrains)
  * @property {(letter: string) => string|undefined} shipDescription - Gets ship type description
  * @property {Terrain[]} terrainList - Array of all terrains (getter)
  * @property {ShipConfig|undefined} ships - Ship configuration from current terrain (getter)
- * @property {Object.<string, Object>|undefined} shipTypes - Ship type definitions (getter)
- * @property {Object[]} subTerrains - Subterrain array (getter)
+ * @property {Record<string, Record<string, unknown>>|undefined} shipTypes - Ship type definitions (getter)
+ * @property {Array<Record<string, unknown>>} subTerrains - Subterrain array (getter)
  * @property {string[]} subTerrainTags - Subterrain tag strings (getter)
  * @property {(cell: HTMLElement) => string|undefined} subTerrainTagFromCell - Finds subterrain tag from element
- * @property {(letter: string) => Object|undefined} shipType - Gets ship type by letter
- * @property {Object|null} terrainMap - Current terrain map (getter/setter)
- * @property {Object} maps - Current maps container (getter/setter)
- * @property {Object|null} map - Current active map (getter/setter)
+ * @property {(letter: string) => Record<string, unknown>|undefined} shipType - Gets ship type by letter
+ * @property {Record<string, unknown>|null} terrainMap - Current terrain map (getter/setter)
+ * @property {Record<string, unknown>} maps - Current maps container (getter/setter)
+ * @property {Record<string, unknown>|null} map - Current active map (getter/setter)
  * @property {BoundsCheckFunction} inBounds - Checks if position is in bounds
  * @property {BoundsCheckFunction} isLand - Checks if position is land terrain
  * @property {ShapesByLetterFunction} shapesByLetter - Gets shapes for a ship letter
@@ -126,7 +126,7 @@ const typedTerrains = /** @type {TerrainManager} */ (terrains)
  * @property {(tag: string|null|undefined) => Terrain|undefined} setTerrainByTag - Sets terrain by tag
  * @property {(tag: string|null|undefined) => Terrain|null} getTerrainByTag - Gets terrain by tag without changing current
  * @property {SplashTagsMap} splashTags - Damage/effect classification tags (getter)
- * @property {Object.<string, string>} typeDescriptions - Ship type descriptions
+ * @property {Record<string, string>} typeDescriptions - Ship type descriptions
  * @property {UnitDescriptions} unitDescriptions - Unit type descriptions
  * @property {(elementTag: string, customize?: CustomizeUnitCallback) => void} customizeUnits - Customizes unit elements
  * @property {AudioManager} audio - Audio playback manager
@@ -142,15 +142,18 @@ const typedTerrains = /** @type {TerrainManager} */ (terrains)
 let bhLocal = null
 try {
   // prefer an already-mocked terrain module (tests mock ../terrain/terrain.js)
-  // eslint-disable-next-line no-undef
-  const terrainModule = /** @type {any} */ (require('./terrain.js'))
-  if (terrainModule?.bh) bhLocal = terrainModule.bh
-} catch (error) {
+  const terrainModule = /** @type {Record<string, unknown>} */ (
+    require('./terrain.js')
+  )
+  if (terrainModule?.bh)
+    bhLocal = /** @type {BattleHandler} */ (terrainModule.bh)
+} catch (err) {
   // Fallback when terrain module is not available (common in test environments)
-  console.debug('Terrain module not available, using default terrain:', error)
+  console.debug('Terrain module not available, using default terrain:', err)
 }
 
-if (!bhLocal)
+if (!bhLocal) {
+  /** @type {BattleHandler} */
   bhLocal = {
     terrainMaps: { current: {} },
     widthUI: null,
@@ -190,7 +193,7 @@ if (!bhLocal)
 
     /**
      * Gets the sound configuration from the currently active terrain.
-     * @returns {Object|undefined} Sound definitions or undefined if no terrain set
+     * @returns {SoundConfig|undefined} Sound definitions or undefined if no terrain set
      */
     get sounds () {
       return typedTerrains.current?.sounds
@@ -202,7 +205,6 @@ if (!bhLocal)
      *
      * @param {string} type - The damage or explosion type (e.g., 'normal', 'critical')
      * @returns {void}
-     * @throws {void} Logs warning if sounds unavailable or specific type not configured
      */
     playBoom (type) {
       const sounds = this.sounds
@@ -210,7 +212,7 @@ if (!bhLocal)
         console.warn('No sounds defined for current terrain')
         return
       }
-      const soundUrl = /** @type {any} */ (this.sounds)?.[type]
+      const soundUrl = sounds[type]
       if (soundUrl) {
         this.audio.playAfterLoad(type + 'Boom', soundUrl)
       } else {
@@ -280,7 +282,7 @@ if (!bhLocal)
 
     /**
      * Gets the ship configuration from the currently active terrain.
-     * @returns {Object|undefined} Ship configuration object or undefined if no terrain set
+     * @returns {ShipConfig|undefined} Ship configuration object or undefined if no terrain set
      */
     get ships () {
       return typedTerrains?.current?.ships
@@ -290,7 +292,7 @@ if (!bhLocal)
      * Gets the ship type definitions mapping for the current terrain.
      * Maps ship letters to their type definitions.
      *
-     * @returns {Object|undefined} Ship types by letter or undefined if no terrain set
+     * @returns {Record<string, Record<string, unknown>>|undefined} Ship types by letter or undefined if no terrain set
      */
     get shipTypes () {
       return typedTerrains?.current?.ships?.types
@@ -300,7 +302,7 @@ if (!bhLocal)
      * Gets the subterrains (terrain variants) for the current terrain.
      * Returns empty array if no terrain or subterrains defined.
      *
-     * @returns {Object[]} Array of subterrain definitions
+     * @returns {Array<Record<string, unknown>>} Array of subterrain definitions
      */
     get subTerrains () {
       return typedTerrains?.current?.subterrains || []
@@ -313,7 +315,10 @@ if (!bhLocal)
      * @returns {string[]} Array of subterrain tag strings
      */
     get subTerrainTags () {
-      return this.subTerrains.map(st => /** @type {any} */ (st).tag)
+      return this.subTerrains.map(st => {
+        const subterrain = /** @type {Record<string, string>} */ (st)
+        return subterrain.tag
+      })
     },
 
     /**
@@ -335,7 +340,7 @@ if (!bhLocal)
      * Returns configuration including health, attacks, and other properties.
      *
      * @param {string} letter - The ship letter identifier
-     * @returns {Object|undefined} Ship type definition or undefined if not found
+     * @returns {Record<string, unknown>|undefined} Ship type definition or undefined if not found
      */
     shipType (letter) {
       return typedTerrains?.current?.ships?.types[letter]
@@ -343,7 +348,7 @@ if (!bhLocal)
 
     /**
      * Gets the current active terrain map instance.
-     * @returns {Object|null} The active map object or null
+     * @returns {Record<string, unknown>|null} The active map object or null
      */
     get terrainMap () {
       return this.terrainMaps?.current
@@ -353,7 +358,7 @@ if (!bhLocal)
      * Sets the current active terrain map.
      * Updates terrainMaps.current if setCurrent method is available.
      *
-     * @param {Object} newCurrent - The new terrain map instance to activate
+     * @param {Record<string, unknown>} newCurrent - The new terrain map instance to activate
      */
     set terrainMap (newCurrent) {
       if (
@@ -369,7 +374,7 @@ if (!bhLocal)
      * Gets the maps container for the current terrain.
      * Returns terrainMaps.current or empty object if undefined.
      *
-     * @returns {Object} Maps container or empty object
+     * @returns {Record<string, unknown>} Maps container or empty object
      */
     get maps () {
       return this.terrainMaps?.current || {}
@@ -379,7 +384,7 @@ if (!bhLocal)
      * Sets the maps container for the current terrain.
      * Updates terrainMaps.current if setCurrent method is available.
      *
-     * @param {Object} newCurrent - The new maps container
+     * @param {Record<string, unknown>} newCurrent - The new maps container
      */
     set maps (newCurrent) {
       if (
@@ -393,7 +398,7 @@ if (!bhLocal)
 
     /**
      * Gets the currently active map from the maps container.
-     * @returns {Object|undefined} The active map or undefined
+     * @returns {Record<string, unknown>|undefined} The active map or undefined
      */
     get map () {
       return this.terrainMaps?.current?.current
@@ -403,7 +408,7 @@ if (!bhLocal)
      * Sets the currently active map in the maps container.
      * Calls setToMap if available on the maps container.
      *
-     * @param {Object} newMap - The new map instance to activate
+     * @param {Record<string, unknown>} newMap - The new map instance to activate
      */
     set map (newMap) {
       if (newMap && this.terrainMaps?.current?.setToMap) {
@@ -450,17 +455,17 @@ if (!bhLocal)
      * Function reference for building individual ships.
      * Should be set to a function that constructs ship instances.
      *
-     * @type {Function}
+     * @type {ShipBuilderFunction}
      */
-    shipBuilder: Function.prototype,
+    shipBuilder: () => ({}),
 
     /**
      * Function reference for building fleets of ships.
      * Should be set to a function that constructs fleet instances.
      *
-     * @type {Function}
+     * @type {FleetBuilderFunction}
      */
-    fleetBuilder: Function.prototype,
+    fleetBuilder: () => ({}),
 
     /**
      * Applies the current terrain's theme to the document.
@@ -595,7 +600,7 @@ if (!bhLocal)
      * Human-readable descriptions for ship type classifications.
      * Maps single-letter ship type codes to display names.
      *
-     * @type {Object.<string, string>}
+     * @type {Record<string, string>}
      */
     typeDescriptions: {
       A: 'Air',
@@ -611,7 +616,7 @@ if (!bhLocal)
      * Human-readable descriptions for unit type classifications.
      * Maps single-letter unit type codes to display names.
      *
-     * @type {Object.<string, string>}
+     * @type {UnitDescriptions}
      */
     unitDescriptions: {
       A: 'Air',
@@ -626,15 +631,14 @@ if (!bhLocal)
      * Iterates over unit descriptions and applies custom logic to matching elements.
      *
      * @param {string} elementTag - Tag suffix for element ID lookup (e.g., 'button' searches for 'air-button')
-     * @param {Function} [customize=Function.prototype] - Optional callback applied to matching elements
-     *   Signature: (letter: string, description: string, element: HTMLElement, key: string) => void
+     * @param {CustomizeUnitCallback} [customize] - Optional callback applied to matching elements
      */
-    customizeUnits (elementTag, customize = Function.prototype) {
+    customizeUnits (elementTag, customize) {
       const descriptions = Object.entries(bh.unitDescriptions)
       for (const [letter, description] of descriptions) {
         const key = description.toLowerCase() + elementTag
         const el = document.getElementById(key)
-        if (el && customize !== Function.prototype) {
+        if (el && customize) {
           customize(letter, description, el, key)
         }
       }
@@ -659,6 +663,7 @@ if (!bhLocal)
       }
     }
   }
+}
 
 /**
  * Global battle handler singleton instance.

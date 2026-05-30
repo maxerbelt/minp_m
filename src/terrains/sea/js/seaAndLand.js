@@ -32,6 +32,9 @@
  * @see {@link SubTerrain} for subterrain definition and structure
  * @see {@link Terrain} for terrain definition and structure
  * @see {@link seaWeaponSounds} for sound effect mappings
+ * @typedef {import('../types/domain.types.js').Zone} Zone
+ * @typedef {import('../types/domain.types.js').SubTerrain} SubTerrain
+ * @typedef {import('../types/domain.types.js').Terrain} Terrain
  */
 
 import { terrains } from '../../all/js/terrains.js'
