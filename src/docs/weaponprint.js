@@ -18,9 +18,6 @@
  * @module docs/weaponprint
  */
 
-/** @import { Weapon } from './types/index.d.ts' */
-
-import { SPLASH_DAMAGE_CODES } from './types/index.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
 import { toTitleCase } from '../core/utils.js'
@@ -38,6 +35,26 @@ import { enemy } from '../waters/enemy.js'
  * @typedef {[Record<string|number, string|number>, Record<string|number, string>]} SplashConfig
  * Configuration tuple containing translation map and legend descriptions for splash damage display
  */
+
+/**
+ * Splash damage code constants for weapon effect translation.
+ * Used to represent different damage states and effects across power levels.
+ *
+ * @type {Object<string, string>}
+ * @const
+ */
+const SPLASH_DAMAGE_CODES = {
+  WEAPON_PATH: 'weapon_path',
+  WEAPON_PLUS: 'weapon_plus',
+  WEAPON_PLUS2: 'weapon_plus2',
+  HARDENED_DESTROYED: 'hardened_destroyed',
+  HARDENED_REVEALED: 'hardened_revealed',
+  NORMAL_DESTROYED: 'normal_destroyed',
+  NORMAL_REVEALED: 'normal_revealed',
+  VULNERABLE_DESTROYED: 'vulnerable_destroyed',
+  VULNERABLE_REVEALED: 'vulnerable_revealed',
+  NO_EFFECT: 'no_effect'
+}
 
 // Use imported constants from types
 const {

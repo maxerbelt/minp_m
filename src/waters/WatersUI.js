@@ -600,12 +600,12 @@ export class WatersUI {
    * Semi means cell is revealed but not confirmed as hit or miss yet.
    * Returns result code for game logic based on cell state.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {number|Object} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
    */
-  cellSemiReveal (row, column) {
-    const cell = this.gridCellAt(row, column)
+  cellSemiReveal (x, y) {
+    const cell = this.gridCellAt(y, x)
 
     if (!CellClassManager.applySemiRevealState(cell)) {
       return LoadOut.noResult

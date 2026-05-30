@@ -1,6 +1,3 @@
-import type { Ship } from './types/domain.types.js'
-import type { CustomUI } from './types/placement.types.js'
-
 import { bh } from '../terrains/all/js/bh.js'
 import { Placement } from './placement.js'
 import { customUI } from './customUI.js'
@@ -46,7 +43,6 @@ import { placedShipsInstance } from '../selection/PlacedShips.js'
  * const ratio = customGame.getDisplacementRatio()
  * const playable = customGame.hasPlayableShips()
  */
-class Custom extends Placement {
 class Custom extends Placement {
   /**
    * Playability thresholds for fleet composition evaluation.

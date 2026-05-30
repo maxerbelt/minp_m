@@ -2633,15 +2633,15 @@ export class Waters {
 
   /**
    * Marks a cell as hit.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {boolean} damaged - Whether the cell was damaged
    * @returns {void}
    * @private
    */
-  markHit (r, c, damaged) {
-    this.score.reveal.clear(r, c)
-    this.UI.cellHit(r, c, damaged)
+  markHit (x, y, damaged) {
+    this.score.reveal.clear(x, y)
+    this.UI.cellHit(y, x, damaged)
   }
 
   /**
@@ -2729,8 +2729,8 @@ export class Waters {
     const shape = bh.shapesByLetter(shipCell.letter)
     const protection = shape.protectionAgainst(weapon.letter)
     if (power === 1 && protection === 2 && hitShip) {
-      this.score.shotReveal(r, c)
-      return this.UI.cellSemiReveal(r, c)
+      this.score.shotReveal(c, r)
+      return this.UI.cellSemiReveal(c, r)
     }
 
     if (protection > power) {
@@ -2738,32 +2738,32 @@ export class Waters {
     }
     let shots = 0
     if (power < 1) {
-      this.score.shot.set(r, c)
+      this.score.shot.set(c, r)
       shots = 1
     }
 
-    return this.showHit(r, c, hitShip, shots)
+    return this.showHit(c, r, hitShip, shots)
   }
 
   /**
    * Shows and processes a hit on a ship.
-   * @param {number} row - Hit row
-   * @param {number} col - Hit column
+   * @param {number} y - Hit row
+   * @param {number} x - Hit column
    * @param {Object} hitShip - The ship that was hit
    * @param {number} initialShots - Initial shot count
    * @returns {Object} Result with hits, shots, reveals, sunk, info
    * @private
    */
-  showHit (row, col, hitShip, initialShots) {
+  showHit (x, y, hitShip, initialShots) {
     const {
       letter,
       info,
       damaged,
       list: hitEntries,
       misses: missEntries
-    } = hitShip.hitAt(this, row, col)
-    this.markHit(row, col, damaged)
-    this.score.shotRevealFinalize(row, col)
+    } = hitShip.hitAt(this, x, y)
+    this.markHit(x, y, damaged)
+    this.score.shotRevealFinalize(x, y)
     let totalHits = 1
     let totalShots = initialShots
 
@@ -2792,11 +2792,11 @@ export class Waters {
    */
   _applyHitEntries (hitEntries, totalHits) {
     for (const { cell, damaged } of hitEntries) {
-      const [r, c] = /** @type {[number, number]} */ (cell)
-      this.score.shotRevealFinalizeXY(r, c)
-      this.score.shot.set(r, c)
+      const [y, x] = /** @type {[number, number]} */ (cell)
+      this.score.shotRevealFinalizeXY(x, y)
+      this.score.shot.set(x, y)
       totalHits++
-      this.markHit(r, c, damaged)
+      this.markHit(x, y, damaged)
     }
     return totalHits
   }
@@ -2810,7 +2810,8 @@ export class Waters {
    */
   _applyMissEntries (missEntries, totalShots) {
     for (const { cell, damaged } of missEntries) {
-      this.score.shot.set(...cell)
+      const [y, x] = /** @type {[number, number]} */ (cell)
+      this.score.shot.set(x, y)
       totalShots++
       this.UI.cellMiss(cell[0], cell[1], damaged)
     }

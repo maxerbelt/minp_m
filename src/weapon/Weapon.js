@@ -569,15 +569,42 @@ export class Weapon {
   /**
    * Standard weapon launch via context-aware forwarding.
    * Routes to launchToRaw with optional coordinate processing.
+   * Handles both object context and individual parameters for backward compatibility.
    *
    * @async
    * @param {number[]} coords - Target coordinates [row, col]
    * @param {number} rr - Source row coordinate
    * @param {number} cc - Source column coordinate
-   * @param {LaunchContext} context - Launch context
+   * @param {LaunchContext|any} mapOrContext - Launch context object or map instance
+   * @param {any} [viewModel] - Primary view model (Board) if using individual parameters
+   * @param {any} [opposingViewModel] - Opposing view model (Board) if using individual parameters
+   * @param {any} [model] - Game model (Waters) if using individual parameters
    * @returns {Promise<Object>} Launch result with optional {target}
    */
-  async launchTo (coords, rr, cc, context) {
+  async launchTo (
+    coords,
+    rr,
+    cc,
+    mapOrContext,
+    viewModel,
+    opposingViewModel,
+    model
+  ) {
+    // Handle both context object and individual parameters
+    let context
+    if (viewModel !== undefined) {
+      // Individual parameters passed (from Waters.launchTo)
+      context = {
+        map: mapOrContext,
+        viewModel,
+        opposingViewModel,
+        model,
+        processCoords: this.processCoords.bind(this)
+      }
+    } else {
+      // Context object passed
+      context = mapOrContext
+    }
     return await this.launchToRaw(coords, rr, cc, context)
   }
 
@@ -600,6 +627,13 @@ export class Weapon {
       model,
       processCoords: processor
     } = context
+
+    // Validate that viewModel is available
+    if (!viewModel) {
+      console.error('launchToRaw: viewModel is missing from context', context)
+      return {}
+    }
+
     const processCoords = processor || this.redoCoords.bind(this)
     const [[r, c], target, hasCandidates] = processCoords(
       map,

@@ -124,13 +124,13 @@ export class Score {
    * Removes the location from active shots and marks it as temporarily revealed.
    * Used during shot animation/reveal phase before finalizing.
    *
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {void}
    */
-  shotReveal (r, c) {
-    this.shot.clear(c, r)
-    this.reveal.set(c, r)
+  shotReveal (x, y) {
+    this.shot.clear(x, y)
+    this.reveal.set(x, y)
   }
 
   /**
@@ -138,26 +138,11 @@ export class Score {
    * Only processes locations that are currently in the reveal mask.
    * Called after shot animation completes to persist the shot.
    *
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {void}
    */
-  shotRevealFinalize (r, c) {
-    if (!this.reveal.test(c, r)) return
-    this.shot.set(c, r)
-    this.reveal.clear(c, r)
-  }
-
-  /**
-   * Finalizes a revealed shot using (x, y) coordinates.
-   * Variant of shotRevealFinalize using x, y parameter order (column, row).
-   * Used when coordinates are already in x, y format to avoid swapping.
-   *
-   * @param {number} x - X coordinate / column (0-based index)
-   * @param {number} y - Y coordinate / row (0-based index)
-   * @returns {void}
-   */
-  shotRevealFinalizeXY (x, y) {
+  shotRevealFinalize (x, y) {
     if (!this.reveal.test(x, y)) return
     this.shot.set(x, y)
     this.reveal.clear(x, y)

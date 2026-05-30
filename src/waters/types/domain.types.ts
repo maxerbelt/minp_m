@@ -206,7 +206,7 @@ export interface Board {
   cellHintReveal?: (r: number, c: number) => void
 
   /** Semi-reveal cell (partial info) */
-  cellSemiReveal?: (r: number, c: number) => void
+  cellSemiReveal?: (x: number, y: number) => void
 
   /** Mark cell as sunk with ship letter */
   cellSunkAt?: (r: number, c: number, letter: string) => void

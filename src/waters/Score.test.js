@@ -155,7 +155,7 @@ describe('Score', () => {
     it('should remove from shot set', () => {
       score.createShotKey(1, 2)
       const initialSize = score.shot.occupancy
-      score.shotReveal(1, 2)
+      score.shotReveal(2, 1)
       expect(score.shot.occupancy).toBe(initialSize - 1)
     })
 
@@ -283,7 +283,7 @@ describe('Score', () => {
       expect(score.noOfShots()).toBe(2)
 
       // Some shots are revealed
-      score.shotReveal(3, 4)
+      score.shotReveal(4, 3)
       expect(score.shot.occupancy).toBe(2) // (5,6) and (7,8)
       expect(score.reveal.occupancy).toBe(1) // (3,4)
 
