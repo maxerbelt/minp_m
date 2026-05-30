@@ -4,6 +4,7 @@ import { Mask } from '../grid/rectangle/mask.js'
 
 /**
  * @fileoverview Blinker variant that supports rotation but not flipping.
+ * Type definitions in types/variants.types.ts and types/shared.types.ts
  *
  * @typedef {import('../grid/rectangle/mask.js').Mask} MaskType
  * @typedef {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number}} VariantTransitionClass

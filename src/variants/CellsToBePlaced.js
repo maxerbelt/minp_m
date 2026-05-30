@@ -1,9 +1,16 @@
 import { placingTarget } from './placingTarget.js'
 
+/**
+ * Type definitions extracted to dedicated type files:
+ * - {@link SubBoard} from ../grid/subBoard.js
+ * - {@link ShipCellGridType} from ../grid/rectangle/ShipCellGrid.js
+ * - {@link ZoneInfo} from types/placement.types.ts
+ * - {@link PlacementTarget} from types/placement.types.ts
+ */
 /** @typedef {import('../grid/subBoard.js').SubBoard} SubBoard */
 /** @typedef {import('../grid/rectangle/ShipCellGrid.js').ShipCellGrid} ShipCellGridType */
-/** @typedef {import('./placingTarget.js').ZoneInfo} ZoneInfo */
-/** @typedef {import('./placingTarget.js').PlacementTarget} PlacementTarget */
+/** @typedef {import('./types/placement.types.ts').ZoneInfo} ZoneInfo */
+/** @typedef {import('./types/placement.types.ts').PlacementTarget} PlacementTarget */
 
 /**
  * Board object with grid manipulation methods (typically a SubBoard instance).

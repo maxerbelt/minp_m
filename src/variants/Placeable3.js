@@ -2,20 +2,13 @@ import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
 import { Placeable } from './Placeable.js'
 
 /**
+ * Type definitions extracted to dedicated type files:
+ * - {@link Placeable} from ./Placeable.js
+ * - {@link PlacementTarget} from types/placement.types.ts
+ * - {@link PlacementValidator} from types/callbacks.types.ts
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
- * Represents a single placeable unit with board configuration and validation.
- */
-
-/**
- * @typedef {import('./CellsToBePlaced.js').PlacementTarget} PlacementTarget
- * Specifies the target location and validation for cell placement operations.
- */
-
-/**
- * @typedef {(zoneInfo: any) => boolean} PlacementValidator
- * Validation function that accepts zone information and returns placement validity.
- * @param {any} zoneInfo - Zone-specific configuration or state information
- * @returns {boolean} True if placement is valid, false otherwise
+ * @typedef {import('./types/placement.types.ts').PlacementTarget} PlacementTarget
+ * @typedef {import('./types/callbacks.types.ts').PlacementValidator} PlacementValidator
  */
 
 /**

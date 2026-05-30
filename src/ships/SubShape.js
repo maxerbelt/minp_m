@@ -62,17 +62,21 @@ export class SubShape {
    * Creates a shallow clone of this sub-shape.
    *
    * Returns a new SubShape instance with identical validator, zoneDetail, and subterrain properties.
-   * The faction is initialized to 1 (default) and must be set separately on the clone.
+   * The faction property is reset to its default value of 1 and must be updated separately
+   * on the cloned instance to reflect the actual proportion for the new context.
    *
-   * Cloning is useful when creating variants or copies of sub-shapes for
-   * different transformation forms in hybrid ships.
+   * Cloning is useful when creating variants or copies of sub-shapes for different
+   * transformation forms in hybrid ships, or when duplicating sub-shapes across multiple placements.
+   * Each clone is independent and can have its own faction value assigned.
    *
-   * @returns {SubShape} New sub-shape instance with same validation, detail, and terrain
+   * @returns {SubShape} New sub-shape instance with same validator, detail, and terrain;
+   *   faction reset to 1 (requires manual assignment to match context)
    *
    * @example
    * const original = new SubShape(validator, 1, terrain);
-   * original.faction = 0.4;
-   * const copy = original.clone(); // copy.faction will be 1 (reset)
+   * original.faction = 0.4; // Original is 40% of hybrid ship
+   * const copy = original.clone(); // copy.faction reset to 1
+   * copy.faction = 0.3; // Clone is 30% of new hybrid ship
    */
   clone () {
     return new SubShape(this.validator, this.zoneDetail, this.subterrain)
@@ -127,10 +131,19 @@ export class StandardCells extends SubShape {
    * Gets cell coordinates from the board mask.
    *
    * Returns the toCoords array from the underlying Mask, which contains
-   * all occupied cell positions as [x, y] coordinate pairs.
+   * all occupied cell positions as [x, y] coordinate pairs in the order they appear
+   * in the mask. This is a read-only view of the board's cell coordinates.
    *
-   * @type {number[][]}
+   * The returned array reflects the current state of the board and updates
+   * automatically when the board is modified via setBoardFromSecondary() or setCells().
+   *
+   * @type {Array<CoordPair>}
    * @readonly
+   *
+   * @example
+   * const subshape = new StandardCells(validator, 1, terrain);
+   * subshape.setBoardFromSecondary(Mask.fromCoordsSquare([[0,0], [1,1]]));
+   * console.log(subshape.cells); // [[0,0], [1,1]]
    */
   get cells () {
     return this.board.toCoords
@@ -141,25 +154,33 @@ export class StandardCells extends SubShape {
    *
    * Handles both scenarios:
    * 1. **Single board**: If secondaryBoard is null/undefined, uses occupancyBoard directly
+   *    (efficient for simple single-board configurations)
    * 2. **Dual board**: Combines occupancy and secondary boards via intersection (take operation)
+   *    (used when sub-shape cells are the intersection of two mask regions)
    *
-   * The dual-board case expands the secondary board to match occupancy dimensions if needed.
-   * Used when a sub-shape's cells are the intersection of two mask regions.
+   * The dual-board case automatically expands the secondary board to match occupancy dimensions
+   * if they differ. This allows flexible composition of boards of different sizes.
    *
-   * @param {MaskType} occupancyBoard - Primary occupancy board defining occupied cells
-   * @param {MaskType} [secondaryBoard] - Optional secondary board to intersect with occupancy
+   * Updates both this.board and this.size properties to reflect the new board configuration.
+   *
+   * @param {MaskType} occupancyBoard - Primary occupancy board defining occupied cells;
+   *   dimensions determine the size of the resulting board
+   * @param {MaskType} [secondaryBoard] - Optional secondary board to intersect with occupancy;
+   *   will be expanded to match occupancy dimensions if smaller
    * @returns {void}
    *
    * @example
-   * // Single board case
+   * // Single board case - simple direct assignment
    * const board = Mask.fromCoordsSquare([[0,0], [1,1]]);
-   * standardCells.setBoardFromSecondary(board); // Uses board directly
+   * standardCells.setBoardFromSecondary(board);
+   * // board property now set directly, size = 2
    *
    * @example
-   * // Dual board case
+   * // Dual board case - intersection of two boards
    * const occupancy = Mask.fromCoordsSquare([[0,0], [1,1], [2,2]]);
    * const secondary = Mask.fromCoordsSquare([[0,0], [1,1]]);
-   * standardCells.setBoardFromSecondary(occupancy, secondary); // Intersection
+   * standardCells.setBoardFromSecondary(occupancy, secondary);
+   * // board property set to intersection of both, size = 3
    */
   setBoardFromSecondary (occupancyBoard, secondaryBoard) {
     if (secondaryBoard == null) {
@@ -175,22 +196,35 @@ export class StandardCells extends SubShape {
   /**
    * Combines occupancy and secondary boards by intersection (take operation).
    *
-   * Creates the intersection of two boards:
+   * Internal method that creates the intersection of two boards:
    * 1. Expands secondary board to match occupancy dimensions if needed
    * 2. Applies take() operation to get intersection: occupancy AND secondary
    *
-   * Returns cells that are occupied in both boards.
+   * Returns only cells that are occupied in both boards, providing the
+   * logical AND operation between the two mask regions.
    *
-   * @param {MaskType} occupancyBoard - Primary board defining occupied cells
+   * @param {MaskType} occupancyBoard - Primary board defining occupied cells;
+   *   dimensions serve as target size for expansion
    * @param {MaskType} secondaryBoard - Secondary board to intersect with occupancy
-   * @returns {MaskType} Combined board mask (intersection of both boards)
+   * @returns {MaskType} Combined board mask (intersection of both boards);
+   *   only cells occupied in both input boards are set
    * @private
    *
    * @example
+   * // Intersection example:
+   * // occupancy has cells: [0,0], [1,1], [2,2], [3,3]
+   * // secondary has cells: [1,1], [2,2]
    * const occupancy = Mask.fromCoordsSquare([[0,0], [1,1], [2,2], [3,3]]);
    * const secondary = Mask.fromCoordsSquare([[1,1], [2,2]]);
    * const combined = this._combineBoards(occupancy, secondary);
-   * // combined has cells [1,1] and [2,2] only (intersection)
+   * // combined only has cells [1,1] and [2,2] (intersection)
+   *
+   * @example
+   * // No intersection example:
+   * const occupancy = Mask.fromCoordsSquare([[0,0], [1,1]]);
+   * const secondary = Mask.fromCoordsSquare([[2,2], [3,3]]);
+   * const combined = this._combineBoards(occupancy, secondary);
+   * // combined is empty (no shared cells)
    */
   _combineBoards (occupancyBoard, secondaryBoard) {
     const expandedSecondary = this._expandBoardIfNeeded(
@@ -204,22 +238,33 @@ export class StandardCells extends SubShape {
   /**
    * Expands secondary board to match occupancy board dimensions if needed.
    *
-   * Checks if secondary board already matches target dimensions.
-   * If dimensions match, returns secondary board unchanged.
-   * If dimensions differ, expands secondary to targetWidth × targetHeight.
+   * Optimization method that checks if secondary board already matches target dimensions.
+   * If dimensions match, returns secondary board unchanged (avoids unnecessary expansion).
+   * If dimensions differ, expands secondary to targetWidth × targetHeight via expand() call.
    *
-   * Expansion preserves cell patterns and fills extra space with empty cells.
+   * Expansion preserves cell patterns within the secondary board and fills extra
+   * space (added rows/columns) with empty cells (all zeros).
+   *
+   * This method is used during board combination to ensure both masks have
+   * compatible dimensions before applying the take operation.
    *
    * @param {MaskType} secondaryBoard - Board to potentially expand
-   * @param {number} targetWidth - Required width in cells
-   * @param {number} targetHeight - Required height in cells
-   * @returns {MaskType} Expanded board (or original if already correct size)
+   * @param {number} targetWidth - Required width in cells (must be positive)
+   * @param {number} targetHeight - Required height in cells (must be positive)
+   * @returns {MaskType} Expanded board (original if already correct size, new Mask if expanded)
    * @private
    *
    * @example
+   * // No expansion needed
+   * const board = Mask.fromCoordsSquare([[0,0], [1,1]]); // 2×2
+   * const result = this._expandBoardIfNeeded(board, 2, 2);
+   * // Returns same board (dimensions match)
+   *
+   * @example
+   * // Expansion required
    * const small = Mask.fromCoordsSquare([[0,0], [1,1]]); // 2×2
    * const expanded = this._expandBoardIfNeeded(small, 4, 4);
-   * // Returns board expanded to 4×4
+   * // Returns new board expanded to 4×4 with original cells preserved
    */
   _expandBoardIfNeeded (secondaryBoard, targetWidth, targetHeight) {
     if (
@@ -234,22 +279,34 @@ export class StandardCells extends SubShape {
   /**
    * Sets board from coordinate arrays by creating masks and combining them.
    *
-   * Process:
-   * 1. Create occupancy board from all coordinates
-   * 2. Get secondary board from secondary sub-shape (or empty if none)
+   * High-level convenience method that converts raw coordinate data into board configuration:
+   * 1. Create occupancy board from all coordinates via Mask.fromCoordsSquare()
+   * 2. Get secondary board from secondary sub-shape's board (or create empty board if none)
    * 3. Combine both boards via setBoardFromSecondary()
    *
-   * This method provides a convenience interface for setting the board
-   * from raw coordinate data rather than pre-constructed Mask objects.
+   * This provides an alternative to directly calling setBoardFromSecondary() with
+   * pre-constructed Mask objects. Useful when working with raw coordinate arrays.
    *
-   * @param {Array<CoordPair>} allCells - All cell coordinates as [x, y] pairs
-   * @param {StandardCells} secondary - Secondary sub-shape for intersection
+   * @param {Array<CoordPair>} allCells - All cell coordinates as [x, y] pairs;
+   *   used to construct the occupancy board
+   * @param {StandardCells} secondary - Secondary sub-shape for intersection;
+   *   its board property is used for combination, or empty board if not set
    * @returns {void}
    *
    * @example
+   * // Simple case: set cells directly without secondary
    * const cells = [[0,0], [1,1], [2,2]];
    * const secondary = new StandardCells(validator, 1, terrain);
-   * standardCells.setCells(cells, secondary); // Sets board from coordinates
+   * standardCells.setCells(cells, secondary);
+   * // Board now set from cell coordinates
+   *
+   * @example
+   * // With secondary board intersection
+   * const allCells = [[0,0], [1,1], [2,2], [3,3]];
+   * const secondary = new StandardCells(validator, 1, terrain);
+   * secondary.setBoardFromSecondary(Mask.fromCoordsSquare([[0,0], [1,1]]));
+   * standardCells.setCells(allCells, secondary);
+   * // Board is intersection of allCells and secondary's board
    */
   setCells (allCells, secondary) {
     const occupancyBoard = Mask.fromCoordsSquare(allCells)
@@ -287,16 +344,24 @@ export class SpecialCells extends SubShape {
   /**
    * Creates a special cells sub-shape with fixed immutable board.
    *
-   * Constructs the board once from the provided coordinates and stores it.
-   * The board cannot be changed after construction (no setters available).
-   * This provides efficiency and safety for fixed sub-shape configurations.
+   * Constructs the board once from the provided coordinates and stores it as an immutable
+   * configuration. The board cannot be changed after construction (no setters available).
+   * This provides efficiency and safety for fixed sub-shape configurations that don't
+   * need dynamic updates during gameplay.
    *
-   * @param {Array<CoordPair>} cells - Cell coordinates defining the shape; used to construct the immutable board
-   * @param {SubShapeValidator} validator - Validation function for this sub-shape
-   * @param {number} zoneDetail - Zone detail level for terrain analysis
-   * @param {SubTerrain} subterrain - Required terrain type
+   * Note: The cells parameter order is different from other classes (cells first)
+   * to emphasize the immutable nature of the board.
+   *
+   * @param {Array<CoordPair>} cells - Cell coordinates defining the shape;
+   *   used to construct the immutable board via Mask.fromCoordsSquare()
+   * @param {SubShapeValidator} validator - Validation function for this sub-shape;
+   *   called during grid placement to verify constraints
+   * @param {number} zoneDetail - Zone detail level for terrain analysis and classification
+   * @param {SubTerrain} subterrain - Required terrain type for placement;
+   *   determines where this sub-shape can be placed on the map
    *
    * @example
+   * // Create a fixed sub-shape with specific cells
    * const special = new SpecialCells(
    *   [[0,0], [1,1], [2,2]],
    *   validationFunc,
@@ -304,6 +369,13 @@ export class SpecialCells extends SubShape {
    *   landTerrain
    * );
    * // Board is now fixed with coordinates [0,0], [1,1], [2,2]
+   * // Cannot be changed via setters after construction
+   *
+   * @example
+   * // Using immutable special cells in hybrid ship
+   * const waterPart = new SpecialCells([[0,0], [0,1]], validateWater, 1, waterTerrain);
+   * const landPart = new SpecialCells([[1,0], [1,1]], validateLand, 1, landTerrain);
+   * // Both configurations are now fixed and cannot be modified
    */
   constructor (cells, validator, zoneDetail, subterrain) {
     super(validator, zoneDetail, subterrain)

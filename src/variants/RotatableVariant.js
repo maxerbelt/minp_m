@@ -2,6 +2,7 @@ import { Variants } from './variants.js'
 
 /**
  * Variant class that supports rotation transformations.
+ * Type definitions in types/variants.types.ts
  */
 export class RotatableVariant extends Variants {
   /**

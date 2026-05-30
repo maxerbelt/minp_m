@@ -1,16 +1,28 @@
 /**
- * @typedef {Object} SunkDescriptionMap
- * @property {string} [key] - Ship type code mapped to sunk description
+ * @typedef {Object.<string, string>} SunkDescriptionMap
+ * Ship type code → sunk description text mapping.
+ * Keys are single-character ship type codes (e.g., 'S', 'D', 'C').
+ * Values are formatted sunk/destroyed text descriptions.
+ * @example
+ * { S: 'Sunk Submarine', D: 'Destroyed Destroyer', C: 'Sunk Cruiser' }
  */
 
 /**
- * @typedef {Object} UnitDescriptionMap
- * @property {string} [key] - Ship letter mapped to unit description
+ * @typedef {Object.<string, string>} UnitDescriptionMap
+ * Ship letter → unit description mapping.
+ * Keys are single-character ship identifiers (e.g., 'A', 'B', 'C').
+ * Values are full unit names or descriptions (e.g., 'Frigate A1', 'Destroyer B2').
+ * @example
+ * { A: 'Frigate Alpha', B: 'Frigate Bravo', C: 'Destroyer Charlie' }
  */
 
 /**
- * @typedef {Object} UnitInfoMap
- * @property {Object} [key] - Ship type code mapped to unit information
+ * @typedef {Object.<string, Object>} UnitInfoMap
+ * Ship type code → unit information object mapping.
+ * Keys are single-character ship type codes (e.g., 'S', 'D', 'C').
+ * Values are metadata objects containing unit properties (size, crew, etc.).
+ * @example
+ * { S: { size: 3, crew: 45 }, D: { size: 4, crew: 60 } }
  */
 
 /**
@@ -40,18 +52,25 @@ export class ShipGroups {
   /**
    * Creates a ShipGroups data container.
    *
-   * Stores ship-related descriptive and metadata information for use by ShipCatalogue.
-   * This constructor simply assigns the provided maps to instance properties.
+   * Aggregates ship-related descriptive and metadata information for use by ShipCatalogue.
+   * Stores three independent lookup maps that are extracted and used by ShipCatalogue
+   * for comprehensive ship data access during gameplay.
    *
-   * @param {SunkDescriptionMap} shipSunkDescriptions - Map of ship type codes to sunk descriptions
-   * @param {UnitDescriptionMap} shipUnitDescriptions - Map of ship letters to unit descriptions
-   * @param {UnitInfoMap} shipUnitInfo - Map of ship type codes to unit information objects
+   * @param {SunkDescriptionMap} shipSunkDescriptions - Type codes → formatted sunk/destroyed text
+   *   Maps single-character ship type codes to their sunk descriptions (e.g., 'S' → 'Sunk Submarine')
+   * @param {UnitDescriptionMap} shipUnitDescriptions - Ship letters → unit descriptions
+   *   Maps single-character ship identifiers to full unit names (e.g., 'A' → 'Frigate Alpha')
+   * @param {UnitInfoMap} shipUnitInfo - Type codes → unit metadata objects
+   *   Maps single-character ship type codes to objects containing unit properties (size, crew, etc.)
+   *
+   * @throws {Error} If maps are not provided or are invalid type
+   * @returns {void}
    *
    * @example
    * const groups = new ShipGroups(
-   *   { S: 'Sunk Submarine', D: 'Destroyed Destroyer' },
-   *   { A: 'Frigate Alpha', B: 'Frigate Bravo' },
-   *   { S: { size: 3, crew: 45 }, D: { size: 4, crew: 60 } }
+   *   { S: 'Sunk Submarine', D: 'Destroyed Destroyer', C: 'Sunk Cruiser' },
+   *   { A: 'Frigate Alpha', B: 'Frigate Bravo', C: 'Cruiser Charlie' },
+   *   { S: { size: 3, crew: 45 }, D: { size: 4, crew: 60 }, C: { size: 5, crew: 80 } }
    * );
    */
   constructor (shipSunkDescriptions, shipUnitDescriptions, shipUnitInfo) {
@@ -66,10 +85,21 @@ export class ShipGroups {
   /**
    * Gets all ship group data as a plain object.
    *
-   * Provides a way to access all ship group information together.
-   * Useful for passing data to other components or for debugging.
+   * Serializes this ShipGroups instance to a plain object containing all three data maps.
+   * Useful for passing complete ship group data to other components or for serialization.
+   * Creates a new object with shallow copies of all map properties.
    *
-   * @returns {Object} Object containing all three data maps
+   * @returns {{shipSunkDescriptions: SunkDescriptionMap, unitDescriptions: UnitDescriptionMap, unitInfo: UnitInfoMap}}
+   *   Object containing all three data maps with same keys and structure
+   *
+   * @example
+   * const groups = new ShipGroups(sunkDescs, unitDescs, unitInfo);
+   * const data = groups.toObject();
+   * // data = {
+   * //   shipSunkDescriptions: { S: 'Sunk Submarine', ... },
+   * //   unitDescriptions: { A: 'Frigate Alpha', ... },
+   * //   unitInfo: { S: { size: 3 }, ... }
+   * // }
    */
   toObject () {
     return {
@@ -82,30 +112,43 @@ export class ShipGroups {
 
 /**
  * @typedef {Object} BaseShape
- * @property {string} letter - Ship identifier letter (A-Z)
- * @property {string} symmetry - Symmetry type (D, H, V, etc.)
- * @property {Array<[number, number]>} cells - Cell coordinates
- * @property {*} [variants] - Variant manager or callable
+ * Ship shape template with placement information.
+ * @property {string} letter - Ship identifier letter (A-Z, case-insensitive)
+ * @property {string} symmetry - Symmetry type code (D=diagonal, H=horizontal, V=vertical, etc.)
+ * @property {Array<[number, number]>} cells - Array of [row, col] cell coordinates defining ship footprint
+ * @property {*} [variants] - Optional variant manager or callable for shape variations
  */
 
 /**
- * @typedef {Object} ShipLetterColorMap
- * @property {string} [letter] - Ship letter mapped to hex color code
+ * @typedef {Object.<string, string>} ShipLetterColorMap
+ * Ship letter → hex color code mapping.
+ * Maps single-character ship identifiers to hex color strings for UI display.
+ * @example
+ * { A: '#FF0000', B: '#00FF00', C: '#0000FF' }
  */
 
 /**
- * @typedef {Object} ShipDescriptionMap
- * @property {string} [letter] - Ship letter mapped to description text
+ * @typedef {Object.<string, string>} ShipDescriptionMap
+ * Ship letter → description text mapping.
+ * Maps single-character ship identifiers to descriptive names or unit designations.
+ * @example
+ * { A: 'Frigate A1', B: 'Destroyer B1', C: 'Cruiser C1' }
  */
 
 /**
- * @typedef {Object} ShipTypeMap
- * @property {string} [letter] - Ship letter mapped to ship type code
+ * @typedef {Object.<string, string>} ShipTypeMap
+ * Ship letter → ship type code mapping.
+ * Maps single-character ship identifiers to their type classification codes.
+ * @example
+ * { A: 'F', B: 'D', C: 'C' }  // F=Frigate, D=Destroyer, C=Cruiser
  */
 
 /**
- * @typedef {Object} ShipColorMap
- * @property {string} [type] - Ship type code mapped to hex color code
+ * @typedef {Object.<string, string>} ShipColorMap
+ * Ship type code → hex color code mapping.
+ * Maps ship type codes to hex colors for consistent UI rendering by type.
+ * @example
+ * { F: '#FF6600', D: '#0066FF', C: '#6600FF' }
  */
 
 /**
@@ -149,25 +192,35 @@ export class ShipCatalogue {
   /**
    * Creates a ShipCatalogue with unified ship data and metadata.
    *
-   * Extracts metadata from ShipGroups and builds the shapesByLetter index
-   * for O(1) shape lookup by letter. All lookups and data structures are
-   * unified in this catalogue for easy access to ship information.
+   * Aggregates all ship-related data into a centralized repository with O(1) lookups.
+   * Extracts metadata from ShipGroups parameter and builds the shapesByLetter index
+   * for fast shape retrieval by letter identifier. Provides unified access to all ship
+   * information (shapes, descriptions, colors, types, metadata) needed during gameplay.
    *
-   * @param {Array<BaseShape>} baseShapes - All ship shape templates
-   * @param {ShipGroups} shipGroups - Container with sunk/unit descriptions and info
-   * @param {ShipLetterColorMap} shipLetterColors - Letter colors (hex codes)
-   * @param {ShipDescriptionMap} shipDescription - Ship descriptions by letter
-   * @param {ShipTypeMap} shiptypes - Ship type codes by letter
-   * @param {ShipColorMap} shipColors - Ship colors by type (hex codes)
+   * @param {Array<BaseShape>} baseShapes - All available ship shape templates
+   *   Complete list of ship shapes used to build shapesByLetter index
+   * @param {ShipGroups} shipGroups - Container object with sunk/unit descriptions and metadata
+   *   ShipGroups instance containing three data maps (shipSunkDescriptions, unitDescriptions, unitInfo)
+   * @param {ShipLetterColorMap} shipLetterColors - Letter identifier → hex color mapping
+   *   Maps ship letters to their display colors (e.g., 'A' → '#FF0000')
+   * @param {ShipDescriptionMap} shipDescription - Letter → unit description mapping
+   *   Maps ship letters to full descriptive names (e.g., 'A' → 'Frigate Alpha')
+   * @param {ShipTypeMap} shiptypes - Letter → type code mapping
+   *   Maps ship letters to type classifications (e.g., 'A' → 'F' for Frigate)
+   * @param {ShipColorMap} shipColors - Type code → hex color mapping
+   *   Maps type codes to colors for consistent rendering (e.g., 'F' → '#FF6600')
+   *
+   * @throws {Error} If baseShapes array is invalid or shiptypes parameter is malformed
+   * @returns {void}
    *
    * @example
    * const catalogue = new ShipCatalogue(
    *   baseShapes,
    *   new ShipGroups(sunkDescs, unitDescs, unitInfo),
-   *   letterColors,
-   *   descriptions,
-   *   types,
-   *   colors
+   *   { A: '#FF0000', B: '#00FF00' },
+   *   { A: 'Frigate Alpha', B: 'Destroyer Bravo' },
+   *   { A: 'F', B: 'D' },
+   *   { F: '#FF6600', D: '#0066FF' }
    * );
    */
   constructor (
@@ -203,15 +256,25 @@ export class ShipCatalogue {
   /**
    * Updates the ship shapes and rebuilds the letter index.
    *
-   * Replaces baseShapes and regenerates shapesByLetter for O(1) lookups.
-   * Used when adding new ship shapes to the catalogue after initialization.
+   * Replaces the baseShapes array and regenerates the shapesByLetter index
+   * to maintain O(1) shape lookup performance. Each shape's letter property
+   * is used as the key in the index. This method enables runtime shape updates
+   * and is useful for loading additional shapes after catalogue initialization.
    *
-   * @param {Array<BaseShape>} shapes - New ship shapes to add to catalogue
+   * @param {Array<BaseShape>} shapes - New or updated ship shape templates to add
+   *   Array of BaseShape objects to replace existing baseShapes
    * @returns {void}
    *
    * @example
-   * catalogue.addShapes([newShip1, newShip2]);
-   * // Now catalogue can look up shapes by letter
+   * // Add new ship shapes to the catalogue
+   * catalogue.addShapes([newShip1, newShip2, newShip3]);
+   * // Now catalogue.shapesByLetter includes the new shapes indexed by letter
+   * const shipA = catalogue.shapesByLetter['A'];
+   *
+   * @example
+   * // Update existing shapes
+   * const updatedShapes = baseShapes.map(s => modifyShape(s));
+   * catalogue.addShapes(updatedShapes);
    */
   addShapes (shapes) {
     /** @type {Array<BaseShape>} */
@@ -225,25 +288,45 @@ export class ShipCatalogue {
   /**
    * Gets the sunk/destroyed description for a ship.
    *
-   * Combines the ship's base description with its type-specific sunk description.
-   * Format: "{description}{middle}{shipSunkDescription}"
+   * Generates a complete sunk description by combining the ship's base unit description
+   * with its type-specific sunk text. Uses the ship letter to look up both the unit
+   * description and type code, then retrieves the type-specific sunk text.
    *
-   * Process:
-   * 1. Look up ship description by letter
-   * 2. Get ship type code via types[letter]
-   * 3. Look up type-specific sunk description
-   * 4. Concatenate with middle separator
+   * Concatenation format: "{description}{middle}{shipSunkDescription}"
    *
-   * @param {string} letter - Ship identifier letter
-   * @param {string} [middle=' '] - Separator between description and sunk text (default: single space)
-   * @returns {string} Full sunk description text
+   * Resolution process:
+   * 1. Look up unit description via `descriptions[letter]` (e.g., 'Frigate Alpha')
+   * 2. Look up ship type code via `types[letter]` (e.g., 'F' for Frigate)
+   * 3. Look up type-specific sunk description via `shipSunkDescriptions[typeCode]` (e.g., 'Sunk Frigate')
+   * 4. Concatenate all parts with middle separator
+   *
+   * @param {string} letter - Single-character ship identifier (A-Z) to look up
+   * @param {string} [middle=' '] - Separator between description and sunk text
+   *   Default is single space; can be customized for different formatting (e.g., ' - ', ' / ')
+   * @returns {string} Full sunk description combining unit and type-specific sunk text
+   *
+   * @throws {Error} If letter not found in descriptions or types maps
    *
    * @example
-   * // descriptions = { A: 'Frigate A1' }
+   * // Given:
+   * // descriptions = { A: 'Frigate Alpha' }
    * // types = { A: 'F' }
    * // shipSunkDescriptions = { F: 'Sunk Frigate' }
-   * catalogue.sunkDescription('A'); // "Frigate A1 Sunk Frigate"
-   * catalogue.sunkDescription('A', ' - '); // "Frigate A1 - Sunk Frigate"
+   *
+   * // Basic usage (default single space separator):
+   * catalogue.sunkDescription('A');
+   * // Returns: "Frigate Alpha Sunk Frigate"
+   *
+   * // With custom separator:
+   * catalogue.sunkDescription('A', ' - ');
+   * // Returns: "Frigate Alpha - Sunk Frigate"
+   *
+   * @example
+   * // Multi-type scenario:
+   * // descriptions = { A: 'Frigate', B: 'Destroyer', C: 'Cruiser' }
+   * // types = { A: 'F', B: 'D', C: 'C' }
+   * // shipSunkDescriptions = { F: 'Sunk', D: 'Destroyed', C: 'Sunk' }
+   * catalogue.sunkDescription('B', ' '); // "Destroyer Destroyed"
    */
   sunkDescription (letter, middle = ' ') {
     return (

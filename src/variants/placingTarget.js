@@ -1,7 +1,14 @@
 /**
  * Board management utilities for creating and validating cell placement targets.
- * Provides placeholder implementations and type definitions for grid-based placement validation.
+ * Provides placeholder implementations for grid-based placement validation.
  * @module variants/makeCell3
+ *
+ * @see types/placement.types.ts for TypeScript type definitions:
+ * - {@link ZoneInfo} Zone information interface
+ * - {@link PlacementTarget} Placement target interface
+ * - {@link BoundsChecker} Bounds checking function type
+ * - {@link AreaBoundsChecker} Area bounds checking function type
+ * - {@link ZoneInfoGetter} Zone info retrieval function type
  */
 
 /**
@@ -9,6 +16,7 @@
  * Represents metadata about a grid location including optional detail information.
  * @typedef {Object} ZoneInfo
  * @property {number|string|null} [detail] - Optional zone detail information (e.g., zone ID, type, or level)
+ * @see types/placement.types.ts ZoneInfo for TypeScript definition
  */
 
 /**
@@ -17,6 +25,7 @@
  * @param {number} y - The row coordinate (0-indexed from top)
  * @param {number} x - The column coordinate (0-indexed from left)
  * @returns {boolean} True if the position is within bounds, false otherwise
+ * @see types/callbacks.types.ts BoundsChecker for TypeScript definition
  */
 
 /**
@@ -28,6 +37,7 @@
  * @param {number} [h=1] - The height of the area to check
  * @param {number} [w=1] - The width of the area to check
  * @returns {boolean} True if the entire area is within bounds, false otherwise
+ * @see types/callbacks.types.ts AreaBoundsChecker for TypeScript definition
  */
 
 /**
@@ -38,6 +48,7 @@
  * @param {number} y - The row coordinate (0-indexed from top)
  * @param {number} [zoneDetail] - Optional detail level for zone information
  * @returns {ZoneInfo} Zone information object for the specified position
+ * @see types/callbacks.types.ts ZoneInfoGetter for TypeScript definition
  */
 
 /**
@@ -47,6 +58,7 @@
  * @property {BoundsChecker} boundsChecker - Validates if a single cell position is within bounds
  * @property {AreaBoundsChecker} allBoundsChecker - Checks if an entire area is within bounds
  * @property {ZoneInfoGetter} getZone - Gets zone information for a position
+ * @see types/placement.types.ts PlacementTarget for TypeScript definition
  */
 
 /**

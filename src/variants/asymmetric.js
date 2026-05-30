@@ -3,6 +3,7 @@ import { Mask } from '../grid/rectangle/mask.js'
 
 /**
  * @fileoverview Asymmetric variant supporting 8 orientations (4 rotations + 4 flipped rotations).
+ * Type definitions in types/variants.types.ts and types/shared.types.ts
  *
  * @typedef {import('../grid/rectangle/mask.js').Mask} MaskType
  * @typedef {{r:(idx:number)=>number, f:(idx:number)=>number, rf:(idx:number)=>number}} VariantTransitionClass

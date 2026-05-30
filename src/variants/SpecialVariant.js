@@ -6,19 +6,17 @@ import { variantType } from './variantType.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**
+ * Type definitions extracted to dedicated type files:
+ * - {@link Placeable} from ./Placeable.js
+ * - {@link Placeable3} from ./Placeable3.js
+ * - {@link MaskType} from types/shared.types.ts
+ * - {@link VariantGroup} from types/variants.types.ts
+ * - {@link VariantTypeHandler} from types/variants.types.ts
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
  * @typedef {import('./Placeable3.js').Placeable3} Placeable3Type
- * @typedef {import('../grid/rectangle/mask.js').Mask} MaskType
- * @typedef {Object} VariantGroup
- * @property {(zoneInfo: any) => boolean} validator
- * @property {any} zoneDetail
- * @property {any} [parent]
- * @typedef {Object} VariantTypeHandler
- * @property {Function} [variantsOf]
- * @property {Function} r
- * @property {Function} f
- * @property {Function} rf
- * @property {Function} setBehaviour
+ * @typedef {import('./types/shared.types.ts').MaskType} MaskType
+ * @typedef {import('./types/variants.types.ts').VariantGroup} VariantGroup
+ * @typedef {import('./types/variants.types.ts').VariantTypeHandler} VariantTypeHandler
  */
 
 /**

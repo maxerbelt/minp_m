@@ -7,16 +7,19 @@ import { SpecialVariant } from './SpecialVariant.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**
+ * Type definitions extracted to dedicated type files:
+ * - {@link PlaceableType} from ./Placeable.js
+ * - {@link Placeable3Type} from ./Placeable3.js
+ * - {@link PlaceableWType} from ./PlaceableW.js
+ * - {@link VariantGroup} from types/variants.types.ts
+ * - {@link WeaponCellMap} from types/variants.types.ts
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
  * @typedef {import('./Placeable3.js').Placeable3} Placeable3Type
  * @typedef {import('./PlaceableW.js').PlaceableW} PlaceableWType
  * @typedef {import('../ships/SubShape.js').StandardCells} StandardCellsType
  * @typedef {import('../ships/SubShape.js').SpecialCells} SpecialCellsType
- * @typedef {Object<string, any>} WeaponMap
- * @typedef {Object} VariantGroup
- * @property {(zoneInfo: any) => boolean} validator
- * @property {any} zoneDetail
- * @property {any} [parent]
+ * @typedef {import('./types/variants.types.ts').WeaponCellMap} WeaponMap
+ * @typedef {import('./types/variants.types.ts').VariantGroup} VariantGroup
  */
 
 /**

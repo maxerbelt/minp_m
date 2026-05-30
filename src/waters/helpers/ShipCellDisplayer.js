@@ -3,85 +3,178 @@ import { CellClassManager } from './CellClassManager.js'
 import { bh } from '../../terrains/all/js/bh.js'
 
 /**
- * @typedef {Object} ColorMaps
- * @property {Record<string, string>} shipLetterColors
- * @property {Record<string, string>} shipColors
- */
-
-/**
- * @typedef {Object} WeaponSlot
- * @property {Weapon} weapon
- * @property {number} ammo
- * @property {string|number} id
- */
-
-/**
- * @typedef {Object} Weapon
- * @property {string} letter
- * @property {string} [launchCursor]
- */
-
-/**
- * Callback for getting weapon slot at position
- * @callback RackAtCallback
- * @param {number} column
- * @param {number} row
- * @returns {WeaponSlot|null|undefined}
- */
-
-/**
- * Callback for getting turn/orientation
- * @callback GetTurnCallback
- * @param {number} row
- * @param {number} column
- * @returns {string|null|undefined}
- */
-
-/**
- * Callback for making key identifiers
- * @callback MakeKeyIdsCallback
- * @returns {string}
- */
-
-/**
- * Callback for getting primary weapon
- * @callback GetPrimaryWeaponCallback
- * @returns {Weapon|null|undefined}
- */
-
-/**
- * @typedef {Object} Ship
- * @property {string|number} id - Unique ship identifier
- * @property {string} letter - Ship letter identifier (A, B, C, etc.)
- * @property {number} variant - Ship variant/type indicator
- * @property {boolean} hasWeapon - Whether ship has armed weapons
- * @property {RackAtCallback} rackAt - Gets weapon slot at column, row coordinates
- * @property {MakeKeyIdsCallback} makeKeyIds - Returns array of key identifiers for weapon effects
- * @property {GetPrimaryWeaponCallback} getPrimaryWeapon - Returns the primary/main weapon
- * @property {GetTurnCallback} getTurn - Gets rotation/turn state at row, column
- */
-
-/**
- * Manages the display of ship cells with various visual states.
+ * @module waters/helpers/ShipCellDisplayer
+ * Renders ship cells with weapon indicators, coloring, and game state visualization.
+ *
+ * @description
+ * Centralizes all ship cell rendering logic including letter cells, armed weapon cells,
+ * fog-of-war reveals, and sunk state visualization. Manages ship-specific styling (colors,
+ * backgrounds) and weapon metadata for UI systems. Handles both placement-phase cells
+ * (simple letter display) and combat-phase cells (weapon indicators with ammo).
+ *
+ * Rendering Contexts:
+ * - **Placement Phase**: Ship letters with ship-specific colors on placement grid
+ * - **Armed Combat**: Weapon indicators with ammo counters on game board
+ * - **Sunk Visualization**: Sunk state indicators with conditional ship letters
+ * - **Fog of War**: Partially revealed ship/weapon status for opponent perspective
+ * - **Color Styling**: Ship-specific text and background colors from game theme
  *
  * Responsibilities:
- * - Render ship cells with letter identifiers
- * - Display armed weapons with ammo indicators
- * - Apply ship-specific styling (colors and backgrounds)
- * - Show weapon area-of-effect indicators
- * - Handle fog-of-war revealed cell display
+ * - Render ship cells with appropriate content (letter or weapon icon)
+ * - Apply ship-specific colors and background styling
+ * - Manage weapon dataset attributes and metadata
+ * - Display weapon area-of-effect surrounds with orientation
+ * - Handle cell cleanup during placement and combat phases
+ * - Support conditional rendering based on cell state and damage
+ *
+ * Design Pattern:
+ * - Static utility class (no instantiation) with private helper hierarchy
+ * - Clear separation: content rendering → data attributes → styling
+ * - Encapsulation of game state access (bh global) in helper methods
+ * - Delegates class management to CellClassManager for consistency
+ */
+
+/**
+ * Maps ship letters to their display colors for visual identification.
+ * Configuration object from game theme with letter-to-color mappings.
+ *
+ * @typedef {Object} ColorMaps
+ * @property {Record<string, string>} shipLetterColors - Maps ship letters (A, B, C...) to text colors (hex/rgba)
+ * @property {Record<string, string>} shipColors - Maps ship letters (A, B, C...) to background colors (hex/rgba)
+ *
+ * @example
+ * // Example structure
+ * {
+ *   shipLetterColors: { A: '#000000', B: '#ffffff', ... },
+ *   shipColors: { A: 'rgba(255,0,0,0.3)', B: 'rgba(0,255,0,0.3)', ... }
+ * }
+ */
+
+/**
+ * Represents a weapon system occupying a grid cell.
+ * Contains weapon type, ammunition, and system identifier for targeting.
+ *
+ * @typedef {Object} WeaponSlot
+ * @property {Weapon} weapon - The weapon object with letter and visual properties
+ * @property {number} ammo - Remaining ammunition/energy in this weapon slot
+ * @property {string|number} id - Unique identifier for this weapon system instance
+ */
+
+/**
+ * Weapon definition with type and visual targeting information.
+ * Represents weapon characteristics including icon and cursor styling.
+ *
+ * @typedef {Object} Weapon
+ * @property {string} letter - Single-letter identifier for weapon type (M, P, S, etc.)
+ * @property {string} [launchCursor] - Optional CSS class for targeting cursor visual feedback (e.g., 'laser-cursor', 'missile-cursor')
+ */
+
+/**
+ * Callback function to retrieve a weapon slot at grid coordinates.
+ * Used by ship objects to locate weapons in grid-based weapon placement systems.
+ *
+ * @callback RackAtCallback
+ * @param {number} column - Grid column coordinate (0-based index)
+ * @param {number} row - Grid row coordinate (0-based index)
+ * @returns {WeaponSlot|null|undefined} Weapon slot at position or null if empty
+ */
+
+/**
+ * Callback function to retrieve ship rotation/orientation at coordinates.
+ * Used to determine weapon orientation class for visual rotation indicators.
+ *
+ * @callback GetTurnCallback
+ * @param {number} row - Grid row coordinate (0-based index)
+ * @param {number} column - Grid column coordinate (0-based index)
+ * @returns {string|null|undefined} CSS class name for rotation (e.g., 'turn2', 'turn3', 'turn4') or null
+ */
+
+/**
+ * Callback function to generate weapon key identifiers.
+ * Used for weapon effect tracking and area-of-effect calculation.
+ *
+ * @callback MakeKeyIdsCallback
+ * @returns {string} Pipe-separated string of key identifiers (e.g., 'key1|key2|key3')
+ */
+
+/**
+ * Callback function to retrieve ship's primary/main weapon.
+ * Used for cursor styling and orientation calculation on surrounding cells.
+ *
+ * @callback GetPrimaryWeaponCallback
+ * @returns {Weapon|null|undefined} Primary weapon object with letter and optional launchCursor, or null
+ */
+
+/**
+ * Ship object representing a combat vessel with positioning and weapons.
+ * Contains identification, status, and callback methods for grid-based operations.
+ *
+ * @typedef {Object} Ship
+ * @property {string|number} id - Unique ship identifier (e.g., 'friendly-1', 'enemy-2')
+ * @property {string} letter - Single-letter ship identifier (A, B, C, D... up to ship count)
+ * @property {number} variant - Ship type/variant number indicating hull class (1-5 typical)
+ * @property {boolean} hasWeapon - Flag indicating whether ship has armed weapons available
+ * @property {RackAtCallback} rackAt - Method: Gets weapon slot at specified grid position
+ * @property {MakeKeyIdsCallback} makeKeyIds - Method: Generates weapon effect key identifiers (returns pipe-separated string)
+ * @property {GetPrimaryWeaponCallback} getPrimaryWeapon - Method: Returns primary weapon for cursor/orientation display
+ * @property {GetTurnCallback} getTurn - Method: Gets rotation/turn CSS class at specified position
+ */
+
+/**
+ * Represents a cell position on the game grid.
+ * Simple coordinate pair structure used throughout for position references.
+ *
+ * @typedef {Object} CellCoordinate
+ * @property {number} row - Row index on grid (0-based)
+ * @property {number} column - Column index on grid (0-based)
+ */
+
+/**
+ * Manages display and rendering of ship cells with various visual states and transitions.
+ *
+ * Primary Responsibilities:
+ * - Render ship cells with letter identifiers or weapon icons based on content
+ * - Display armed weapons with ammo counters at specific grid positions
+ * - Apply ship-specific styling (text colors, background colors) from game theme
+ * - Show weapon area-of-effect indicators on surrounding cells
+ * - Handle fog-of-war reveals showing partial ship information to opponent
+ * - Support clean cell state transitions during placement and combat phases
  *
  * Cell Display Contexts:
- * - **Placement Phase**: Shows ship letter only with ship colors
- * - **Armed Combat**: Shows weapons at specific grid positions with ammo counters
- * - **Sunk State**: Displays sunk indicator with conditional ship letter based on damage
- * - **Fog of War**: Shows revealed ship/weapon status to opponent
+ * 1. **Placement Phase**: Shows ship letter identifier with ship colors on placement grid
+ * 2. **Armed Combat**: Shows weapon icons instead of letters at positions with weapons
+ * 3. **Combat Board**: Displays both letter cells (empty) and weapon cells (occupied)
+ * 4. **Sunk Visualization**: Applies sunk state with conditional letter display
+ * 5. **Fog of War**: Reveals ship/weapon status from opponent's perspective
+ * 6. **Weapon Surrounds**: Applies metadata and orientation to cells around weapons
  *
- * Design: Static utility class (no instantiation) provides centralized ship cell
- * rendering logic, preventing duplication across UI modules.
+ * Design Pattern:
+ * - Static utility class (no instantiation) centralizes all cell rendering logic
+ * - Private helper hierarchy organized by concern (extraction, content, data, styling, DOM)
+ * - Clear responsibility boundaries: rendering → data attributes → styling
+ * - Delegates CSS class management to CellClassManager for consistency
+ * - Encapsulates game state access (bh global) in focused helper methods
+ *
+ * Data Attribute Management:
+ * - Ship attributes: id, letter, variant, primary letter (sletter)
+ * - Weapon attributes: weapon letter, ammo, weapon ID, surround ship ID
+ * - Metadata: key identifiers for effect tracking
+ * - Coordinates: derived from cell DOM element position
  *
  * @class ShipCellDisplayer
  * @static
+ *
+ * @example
+ * // Display a placed ship cell with colors
+ * ShipCellDisplayer.displayPlacedCell(cell, ship, row, column);
+ *
+ * @example
+ * // Display weapon cell with ammo counter
+ * ShipCellDisplayer.displayArmedCell(cell, ship, weaponSlot, colorMaps);
+ *
+ * @example
+ * // Display sunk ship indicator
+ * ShipCellDisplayer.displayEnemySunkCell(cell, ship.letter);
  */
 export class ShipCellDisplayer {
   /**
@@ -140,23 +233,36 @@ export class ShipCellDisplayer {
   // ──────────────────────────────────────────────────────────────────
 
   /**
-   * Displays a ship cell with appropriate content (weapon or letter) based on position.
-   * Primary private method that orchestrates all cell rendering logic.
-   * Retrieves weapon at position and delegates to letter or armed cell display.
+   * Displays a ship cell with appropriate content (weapon or letter) based on grid position.
+   * Core private method orchestrating all cell rendering logic and state application.
+   * Coordinates content selection, data attributes, styling, and weapon surrounds.
    *
-   * Decision tree:
-   * 1. Check if weapon occupies this position
-   * 2. If yes: Display armed cell (weapon + ammo)
-   * 3. If no: Display letter cell (ship identifier)
-   * 4. In both cases: Display surrounding weapon attributes if ship has weapons
+   * Rendering Decision Tree:
+   * 1. Get color maps from current game state (bh.maps)
+   * 2. Check if weapon occupies this grid position via ship.rackAt(column, row)
+   * 3. If weapon found: Render weapon cell (icon instead of letter)
+   * 4. If empty: Render letter cell (ship identifier)
+   * 5. In both cases: Apply ship dataset attributes and ship-specific colors
+   * 6. If ship has weapons: Display surrounding weapon attributes (metadata, cursor, orientation)
    *
-   * @param {Ship} ship - Ship object to display with id, letter, rackAt(), hasWeapon, and makeKeyIds() methods
-   * @param {number} row - Row coordinate on ship's grid (0-based index)
-   * @param {number} column - Column coordinate on ship's grid (0-based index)
-   * @param {HTMLElement} cell - DOM element to render into
+   * Cell Content & Data Flow:
+   * - Letter cells: text = ship.letter, weapon dataset attributes omitted
+   * - Weapon cells: text cleared, weapon CSS class added, weapon dataset attributes set
+   * - Both: Ship data attributes applied (id, letter), color styling applied
+   * - Surrounds: Weapon metadata (letter, ID, surrounds ID, keyIds, cursor, orientation) if hasWeapon
+   *
+   * @param {Ship} ship - Ship object with id, letter, rackAt(), hasWeapon, makeKeyIds(), getPrimaryWeapon(), getTurn() methods
+   * @param {number} row - Row coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
+   * @param {number} column - Column coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
+   * @param {HTMLElement} cell - DOM element to render into (cell.textContent, cell.classList, cell.dataset will be modified)
    * @returns {void}
+   * @throws {TypeError} If cell is not a valid HTMLElement or ship lacks required methods
    * @private
    * @static
+   *
+   * @example
+   * // Internal use: Renders cell with weapon or letter based on what's at the position
+   * ShipCellDisplayer.#displayShipCell(myShip, 3, 5, cellElement);
    */
   static #displayShipCell (ship, row, column, cell) {
     const colorMaps = this.#getColorMaps()
@@ -167,16 +273,28 @@ export class ShipCellDisplayer {
   }
 
   /**
-   * Displays a placed ship cell with the proper letter, coloring, and placement state.
-   * Applies placement CSS class and orchestrates full ship cell rendering.
+   * Displays a placed ship cell with ship letter, colors, and placement indicator.
+   * Applies 'placed' CSS class to mark cell as occupied during placement phase.
+   * Delegates to core display logic for content, data, and styling.
    *
-   * @param {HTMLElement} cell - DOM element to render placement cell into
-   * @param {Ship} ship - Ship object to display
+   * Operation:
+   * 1. Calls #displayShipCell() to render content, data attributes, and styling
+   * 2. Adds 'placed' CSS class to indicate cell is part of ship placement
+   *
+   * Result: Cell shows ship letter with ship-specific colors and placement marker.
+   *
+   * @param {HTMLElement} cell - DOM element to render placement cell into (will add 'placed' class)
+   * @param {Ship} ship - Ship object to display with id, letter, and grid methods
    * @param {number} row - Row coordinate on ship's grid (0-based index)
    * @param {number} column - Column coordinate on ship's grid (0-based index)
    * @returns {void}
+   * @throws {TypeError} If cell is not a valid HTMLElement or ship lacks required properties
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.displayPlacedCell(cellElement, friendlyShip, 2, 4);
+   * // Cell now shows ship letter with colors and 'placed' class
    */
   static displayPlacedCell (cell, ship, row, column) {
     ///  CellClassManager.clearCell(cell)
@@ -186,15 +304,27 @@ export class ShipCellDisplayer {
 
   /**
    * Displays a cell with the ship's letter identifier.
-   * Used in placement and non-combat scenarios where weapons are not shown.
-   * Applies ship data attributes, renders letter text, and applies color styling.
+   * Used in placement and non-combat contexts where weapons are not rendered.
+   * Sets ship data attributes, renders letter text, and applies ship-specific colors.
    *
-   * @param {HTMLElement} cell - DOM element to update with ship letter
-   * @param {Ship} ship - Ship object with id, letter properties
-   * @param {ColorMaps} colorMaps - Color mapping configuration with shipLetterColors and shipColors
+   * Operation:
+   * 1. Applies ship dataset attributes (id, letter) via #applyShipDatasetAttributes()
+   * 2. Renders letter text content in cell
+   * 3. Applies ship colors (text color from shipLetterColors, background from shipColors)
+   *
+   * Result: Cell displays ship letter with ship-specific coloring, no weapon content.
+   *
+   * @param {HTMLElement} cell - DOM element to update with ship letter and styling
+   * @param {Ship} ship - Ship object with id and letter properties
+   * @param {ColorMaps} colorMaps - Color mapping configuration with shipLetterColors and shipColors lookup tables
    * @returns {void}
+   * @throws {TypeError} If cell is not an HTMLElement or colorMaps lacks required structure
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.displayLetterCell(cell, ship, colorMaps);
+   * // Cell shows ship.letter with colors from colorMaps
    */
   static displayLetterCell (cell, ship, colorMaps) {
     const letter = this.#applyShipDatasetAttributes(cell, ship)
@@ -203,17 +333,31 @@ export class ShipCellDisplayer {
   }
 
   /**
-   * Displays a cell containing an armed weapon with ammo indicator.
-   * Shows weapon icon instead of ship letter, with ship-specific styling.
-   * Combines: ship base data + weapon dataset + visual state + ship colors.
+   * Displays a cell containing an armed weapon with ammo information.
+   * Shows weapon icon instead of ship letter, styled with ship-specific colors.
+   * Combines ship dataset, weapon dataset, weapon visual state, and ship colors.
    *
-   * @param {HTMLElement} cell - DOM element to update with weapon display
-   * @param {Ship} ship - Ship object with id, letter properties
-   * @param {WeaponSlot} weaponSlot - Weapon slot object containing weapon, ammo, and id properties
-   * @param {ColorMaps} colorMaps - Color mapping configuration with shipLetterColors and shipColors
+   * Operation:
+   * 1. Applies both ship and weapon dataset attributes
+   * 2. Clears text content (weapon shown as icon via CSS)
+   * 3. Adds 'weapon' CSS class for icon styling
+   * 4. Applies ship colors (text color and background)
+   *
+   * Result: Cell displays weapon icon with ammo data, styled in ship colors.
+   * Ammo count and weapon ID available in dataset for external display logic.
+   *
+   * @param {HTMLElement} cell - DOM element to update with weapon display and metadata
+   * @param {Ship} ship - Ship object with id and letter properties for dataset
+   * @param {WeaponSlot} weaponSlot - Weapon slot containing weapon (letter, launchCursor), ammo, and id
+   * @param {ColorMaps} colorMaps - Color mapping with shipLetterColors and shipColors for styling
    * @returns {void}
+   * @throws {TypeError} If cell is not an HTMLElement or weaponSlot lacks required properties
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.displayArmedCell(cell, ship, { weapon: missileWeapon, ammo: 3, id: 'w-1' }, colorMaps);
+   * // Cell shows weapon icon with ammo=3 in dataset, ship colors applied
    */
   static displayArmedCell (cell, ship, weaponSlot, colorMaps) {
     this.#displayCellContent(cell, ship, weaponSlot, colorMaps)
@@ -221,16 +365,34 @@ export class ShipCellDisplayer {
 
   /**
    * Displays weapon area-of-effect indicators on surrounding cells.
-   * Only applied if ship has armed weapons. Sets weapon-related attributes
-   * and orientation indicators for the weapon's effective radius.
+   * Applies weapon metadata (letter, ID, surrounds), orientation classes, and cursor styling.
+   * Only executed if ship has armed weapons (ship.hasWeapon === true).
    *
-   * @param {HTMLElement} cell - DOM element to annotate with weapon surrounds
-   * @param {Ship} ship - Ship object with id, hasWeapon, weapons, makeKeyIds(), and getTurn() methods
-   * @param {number} row - Row coordinate for rotation/turn calculation
-   * @param {number} column - Column coordinate for rotation/turn calculation
+   * Operation (if hasWeapon is true):
+   * 1. Calls #setSurroundAttributes() to apply weapon metadata and orientation
+   * 2. Sets surround indicator data attributes (weapon letter, weapon ID, surround ship ID)
+   * 3. Applies turn/rotation CSS class based on position
+   * 4. Applies cursor styling if primary weapon has launchCursor
+   * 5. Adds weapon key identifiers for effect tracking
+   *
+   * No-op if ship.hasWeapon is false or null to avoid unnecessary DOM manipulation.
+   *
+   * Used for: Showing weapon effective range, orientation indicators, cursor styling on cells
+   * adjacent to weapon positions.
+   *
+   * @param {HTMLElement} cell - DOM element to annotate with weapon surround attributes
+   * @param {Ship} ship - Ship object with id, hasWeapon flag, makeKeyIds(), getPrimaryWeapon(), and getTurn() methods
+   * @param {number} row - Row coordinate for turn/orientation calculation (passed to getTurn())
+   * @param {number} column - Column coordinate for turn/orientation calculation (passed to getTurn())
    * @returns {void}
+   * @throws {TypeError} If cell is not an HTMLElement or ship lacks required methods
    * @public
    * @static
+   *
+   * @example
+   * // Apply weapon surround indicators if ship has weapons
+   * ShipCellDisplayer.displaySurroundAttributes(cell, ship, 3, 5);
+   * // Cell now has weapon dataset attributes and turn class if applicable
    */
   static displaySurroundAttributes (cell, ship, row, column) {
     if (!this.#hasWeapons(ship)) return
@@ -240,13 +402,23 @@ export class ShipCellDisplayer {
   /**
    * Updates a cell's colors without changing other display properties.
    * Convenience wrapper that applies ship styling using current game color maps.
-   * Used when only color needs to change after initial rendering.
+   * Used when only color needs to change after initial rendering (e.g., sunk state).
    *
-   * @param {HTMLElement} cell - DOM element to update with new colors
-   * @param {string} letter - Ship letter for color map lookup
+   * Operation:
+   * 1. Gets current color maps from bh.maps
+   * 2. Looks up text color in shipLetterColors[letter]
+   * 3. Looks up background color in shipColors[letter]
+   * 4. Applies inline styles (fallback to defaults if not found)
+   *
+   * @param {HTMLElement} cell - DOM element to update with new ship colors
+   * @param {string} letter - Ship letter for color map lookup (e.g., 'A', 'B', 'C')
    * @returns {void}
+   * @throws {TypeError} If cell is not an HTMLElement
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.setShipCellColors(cell, 'A'); // Updates cell colors for ship A
    */
   static setShipCellColors (cell, letter) {
     const colorMaps = this.#getColorMaps()
@@ -255,14 +427,26 @@ export class ShipCellDisplayer {
 
   /**
    * Displays a cell as sunk with appropriate visual indicators.
-   * Applies sunk state class, updates colors, and conditionally shows ship letter.
-   * Text is hidden if cell has damage indicators, otherwise displays letter.
+   * Applies sunk state class, updates ship colors, and conditionally shows ship letter.
+   * Letter is hidden if cell has damage indicators (burnt, damaged, skull classes).
    *
-   * @param {HTMLElement} cell - DOM element to update with sunk state visual
-   * @param {string} letter - Ship letter for color lookup and potential display
+   * Operation:
+   * 1. Calls CellClassManager.applyEnemySunkCellState() to apply sunk visual class
+   * 2. Updates cell colors using setShipCellColors() for sunk ship color scheme
+   * 3. Conditionally shows ship letter if no damage class is present
+   *
+   * Result: Cell displays sunk state with optional letter, colored appropriately.
+   * Damage indicators take visual precedence over ship letter display.
+   *
+   * @param {HTMLElement} cell - DOM element to update with sunk state visual indicators
+   * @param {string} letter - Ship letter for color lookup and conditional text display
    * @returns {void}
+   * @throws {TypeError} If cell is not an HTMLElement
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.displayEnemySunkCell(cell, 'B'); // Shows sunk B ship, letter only if no damage
    */
   static displayEnemySunkCell (cell, letter) {
     CellClassManager.applyEnemySunkCellState(cell)
@@ -272,15 +456,31 @@ export class ShipCellDisplayer {
 
   /**
    * Displays a revealed cell in fog-of-war scenarios.
-   * Shows ship letter or weapon indicator based on what occupies the position.
-   * Used when enemy ships become partially visible during gameplay.
+   * Shows ship letter or weapon indicator based on grid position content.
+   * Used when opponent ships become partially visible during gameplay.
+   * Safe to call with null cell (early return if null).
    *
-   * @param {HTMLElement|null} cell - DOM element to update (returns early if null)
+   * Operation:
+   * 1. Returns early if cell is null (graceful no-op)
+   * 2. Gets cell coordinates via coordsFromCell(cell)
+   * 3. Checks for weapon at position via ship.rackAt(column, row)
+   * 4. Displays weapon cell or letter cell accordingly (without weapon visuals for fog-of-war)
+   * 5. Applies ship colors for visual identification
+   *
+   * Fog-of-War Behavior: Weapon cells shown without 'weapon' CSS class (only data attributes)
+   * to prevent exposing weapon count or placement through CSS styling.
+   *
+   * @param {HTMLElement|null} cell - DOM element to update (returns if null for safety)
    * @param {Ship} ship - Ship object with id, letter, and rackAt() method
-   * @param {ColorMaps} colorMaps - Color mapping configuration with shipLetterColors and shipColors
+   * @param {ColorMaps} colorMaps - Color mapping with shipLetterColors and shipColors
    * @returns {void}
+   * @throws {TypeError} If cell is HTMLElement but lacks required properties, or ship lacks rackAt()
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.displayAsRevealed(cell, enemyShip, colorMaps); // Shows partial info in fog-of-war
+   * ShipCellDisplayer.displayAsRevealed(null, enemyShip, colorMaps); // No-op, safe
    */
   static displayAsRevealed (cell, ship, colorMaps) {
     if (!cell) return
@@ -296,15 +496,25 @@ export class ShipCellDisplayer {
   // ──────────────────────────────────────────────────────────────────
 
   /**
-   * Clears all visual state from a placement cell.
-   * Removes text, inline styles, and all relevant CSS classes used during placement phase.
-   * Delegates to CellClassManager for class-based cleanup.
-   * Leaves the DOM element structure intact, suitable for re-initialization.
+   * Clears all visual state from a placement cell comprehensively.
+   * Removes text content, inline styles, dataset attributes (except coordinates), and CSS classes.
+   * Delegates to CellClassManager for class cleanup and coordinate preservation.
+   * Leaves DOM element structure intact for re-initialization in placement phase.
    *
-   * @param {HTMLElement} cell - DOM element to clear of all placement visuals
+   * Operation:
+   * 1. Calls #clearCellTextAndStyle() to remove text and inline styles
+   * 2. Calls CellClassManager.clearPlaceCell() to remove classes and non-coordinate dataset attributes
+   *
+   * Result: Cell returned to clean state for new ship placement while preserving grid position (r, c).
+   *
+   * @param {HTMLElement} cell - DOM element to clear of all placement visual state
    * @returns {void}
+   * @throws {TypeError} If cell is not a valid HTMLElement
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.clearPlaceCell(cell); // Reset for new ship placement
    */
   static clearPlaceCell (cell) {
     this.#clearCellTextAndStyle(cell)
@@ -313,18 +523,26 @@ export class ShipCellDisplayer {
 
   /**
    * Clears cell visual details based on specified scope.
-   * Provides flexible clearing strategy for different contexts.
+   * Provides flexible clearing strategy for different contexts (targeted cleanup).
    *
-   * Clearing strategies:
-   * - 'content': Clears only text content
-   * - 'all': Clears text and inline styles
-   * - other: No clearing performed (for validation)
+   * Clearing Strategies:
+   * - 'content': Clears only text content (preserves styles and data)
+   * - 'all': Clears text and inline styles (preserves dataset and classes)
+   * - 'none' or other: No clearing performed (validation/noop)
    *
-   * @param {HTMLElement} cell - DOM element to clear
-   * @param {'none'|'content'|'all'} details - Clearing scope: 'content' for text only, 'all' for text and styles
+   * Used when partial cleanup is needed without full cell reset.
+   * For comprehensive placement phase reset, use clearPlaceCell() instead.
+   *
+   * @param {HTMLElement} cell - DOM element to update
+   * @param {'none'|'content'|'all'} details - Clearing scope indicator
    * @returns {void}
+   * @throws {TypeError} If cell is not a valid HTMLElement
    * @public
    * @static
+   *
+   * @example
+   * ShipCellDisplayer.clearDetails(cell, 'content'); // Remove text only
+   * ShipCellDisplayer.clearDetails(cell, 'all'); // Remove text and styles
    */
   static clearDetails (cell, details) {
     if (details === 'content') {

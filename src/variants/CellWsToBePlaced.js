@@ -2,29 +2,15 @@ import { Cell3sToBePlaced } from './Cell3sToBePlaced.js'
 import { makeKey } from '../core/utilities.js'
 
 /**
- * @typedef {import('./Cell3sToBePlaced.js').ZoneInfo} ZoneInfo
- * @typedef {import('./Cell3sToBePlaced.js').Placeable3Type} Placeable3Type
- * @typedef {import('./Cell3sToBePlaced.js').SubGroupPlaced} SubGroupPlaced
- */
-
-/**
- * Generic weapon type - represents any weapon object.
- * Can be extended by consumers to more specific weapon types.
- * This is a flexible object that can carry any game-specific weapon properties.
- *
- * @typedef {Object} Weapon
- * @property {*} [key] - Weapons may have any properties as determined by the game rules
- * @see Placeable3Type for weapon context in placement scenarios
- */
-
-/**
- * Coordinate-keyed mapping of weapons to cell positions.
- * Maps string keys (created from cell coordinates using {@link makeKey}) to weapon objects.
- * Enables O(1) lookup of weapons by their grid position on the game board.
- * Used internally by CellWsToBePlaced to maintain weapon-to-cell associations.
- *
- * @typedef {Object.<string, Weapon>} WeaponCellMap
- * @see makeKey for key generation format
+ * Type definitions extracted to dedicated type files:
+ * - {@link ZoneInfo} from types/placement.types.ts
+ * - {@link Weapon} from types/variants.types.ts
+ * - {@link WeaponCellMap} from types/variants.types.ts
+ * - {@link SubGroupPlaced} from types/variants.types.ts
+ * @typedef {import('./types/placement.types.ts').ZoneInfo} ZoneInfo
+ * @typedef {import('./types/variants.types.ts').Weapon} Weapon
+ * @typedef {import('./types/variants.types.ts').WeaponCellMap} WeaponCellMap
+ * @typedef {import('./types/variants.types.ts').SubGroupPlaced} SubGroupPlaced
  */
 
 /**

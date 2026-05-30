@@ -2,30 +2,11 @@ import { CellWsToBePlaced } from './CellWsToBePlaced.js'
 import { Placeable3 } from './Placeable3.js'
 
 /**
+ * Type definitions extracted to dedicated type files:
+ * - {@link Placeable} from ./Placeable.js
+ * - {@link Weapon} from types/variants.types.ts
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
- * Base placeable configuration with board, validation constraints, and placement logic.
- * Provides geometric shape and bounds/zone validation for placement operations.
- */
-
-/**
- * @typedef {Object} Weapon
- * Weapon object associated with specific cell positions during placement.
- * Contains weapon properties (damage, range, effects) and placement metadata.
- *
- * @property {string} [id] - Unique weapon identifier for tracking and reference
- * @property {string} [type] - Weapon type classification (missile, cannon, laser, etc.)
- * @property {number} [damage] - Weapon damage value (points dealt per successful hit)
- * @property {number} [range] - Maximum effective range in grid units
- * @property {string} [effect] - Special effect description or identifier
- *
- * @example
- * const weapon = {
- *   id: 'weapon_01',
- *   type: 'missile',
- *   damage: 25,
- *   range: 8,
- *   effect: 'explosive'
- * }
+ * @typedef {import('./types/variants.types.ts').Weapon} Weapon
  */
 
 /**

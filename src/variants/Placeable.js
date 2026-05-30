@@ -3,19 +3,13 @@ import { placingTarget } from './placingTarget.js'
 import { Mask } from '../grid/rectangle/mask.js'
 
 /**
- * @typedef {import('./CellsToBePlaced.js').ZoneInfo} ZoneInfo
- * Zone information object containing details about terrain and placement constraints at a specific grid position.
- * Includes terrain type, zone identifier, and validation metadata for placement decision-making.
- *
- * @typedef {import('./CellsToBePlaced.js').PlacementTarget} PlacementTarget
- * Configuration object for placement validation with bounds and zone constraint checkers.
- * Provides methods for checking bounds compliance and retrieving zone information during placement validation.
- * Encapsulates board boundary definitions and available zone metadata.
- *
- * @typedef {(zoneInfo: ZoneInfo) => boolean} PlacementValidator
- * Function type for validating zone information during placement operations.
- * Receives ZoneInfo and returns true if the zone is valid for placement, false if placement should be rejected.
- * Used to implement custom zone-based placement constraints (e.g., water-only zones, terrain restrictions).
+ * Type definitions extracted to dedicated type files for clarity and maintainability:
+ * - {@link ZoneInfo} from types/placement.types.ts
+ * - {@link PlacementTarget} from types/placement.types.ts
+ * - {@link PlacementValidator} from types/callbacks.types.ts
+ * @typedef {import('./types/placement.types.ts').ZoneInfo} ZoneInfo
+ * @typedef {import('./types/placement.types.ts').PlacementTarget} PlacementTarget
+ * @typedef {import('./types/callbacks.types.ts').PlacementValidator} PlacementValidator
  */
 
 /**

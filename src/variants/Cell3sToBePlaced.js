@@ -1,9 +1,14 @@
 import { CellsToBePlaced } from './CellsToBePlaced.js'
 
 /**
+ * Type definitions extracted to dedicated type files:
+ * - {@link Placeable} from ./Placeable.js
+ * - {@link ZoneInfo} from types/placement.types.ts
+ * - {@link PlacementTarget} from types/placement.types.ts
+ * - {@link MaskBase} from ../grid/MaskBase.js
  * @typedef {import('./Placeable.js').Placeable} PlaceableType
- * @typedef {import('./placingTarget.js').ZoneInfo} ZoneInfo
- * @typedef {import('./placingTarget.js').PlacementTarget} PlacementTarget
+ * @typedef {import('./types/placement.types.ts').ZoneInfo} ZoneInfo
+ * @typedef {import('./types/placement.types.ts').PlacementTarget} PlacementTarget
  * @typedef {import('../grid/MaskBase.js').MaskBase} MaskBase
  */
 
