@@ -206,6 +206,7 @@ const VESSEL_RACKS = {
  *
  * A small (3-cell), quick-moving combat vessel designed for hit-and-run tactics.
  * Identified by letter 'A' on the game board.
+ * Two weapon racks at [0, 0] and [2, 0] allow mounting of Lasers.
  *
  * Vulnerabilities:
  * - Missiles (+): Direct and adjacent cells destroyed
@@ -219,7 +220,7 @@ const VESSEL_RACKS = {
  * @see {@link ArmedVessel} for vessel structure with weapon capabilities
  * @see {@link Laser} for weapon specifications
  */
-export const attackCraft = new SpaceVessel(
+export const attackCraft = new ArmedVessel(
   'Attack Craft',
   'A',
   'H',
@@ -259,7 +260,7 @@ attackCraft.attachWeapon(() => {
 export const gunBoat = new ArmedVessel(
   'Gun Boat',
   'G',
-  'D',
+  'H',
   VESSEL_CELLS.GUN_BOAT,
   null, // tip - use default
   VESSEL_RACKS.GUN_BOAT
@@ -342,7 +343,7 @@ export const superCarrier = new SpaceVessel(
 export const starbase = new SpaceVessel(
   'Starbase',
   'Z',
-  'D',
+  'H',
   VESSEL_CELLS.STARBASE
 )
 

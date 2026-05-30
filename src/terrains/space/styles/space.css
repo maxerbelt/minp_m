@@ -203,6 +203,10 @@ seeking-mode .board.rail.not-step {
 
 }
 
+.flying-weapon.laser-blast {
+    background-image: var(--flying-laser-image);
+}
+
 #modeIcon1.missile::before {
     background-image: url('../images/boxlaunch56.png');
 }
@@ -251,6 +255,22 @@ seeking-mode .board.rail.not-step {
     background-image: url('../images/boxroundol56.png');
 }
 
+#modeIcon1.laser-blast::before {
+    background-image: url('../images/boxlaser56.png');
+}
+
+#modeIcon2.laser-blast::before {
+    background-image: url('../images/boxreticule56.png');
+}
+
+#modeIcon1.laser-blast.off::before {
+    background-image: url('../images/boxllaunchol56.png');
+}
+
+#modeIcon2.laser-blast.off::before {
+    background-image: url('../images/boxreticuleol56.png');
+}
+
 .battleship.print-preview div.tally-row.weapon.missile div.tally-box::before {
     content: '+';
 }
@@ -261,6 +281,10 @@ seeking-mode .board.rail.not-step {
 
 .battleship.print-preview div.tally-row.weapon.gauss-round div.tally-box::before {
     content: '^';
+}
+
+.battleship.print-preview div.tally-row.weapon.laser-blast div.tally-box::before {
+    content: '!';
 }
 
 
@@ -289,6 +313,13 @@ seeking-mode .board.rail.not-step {
     background-image: url('../images/boxroundol56.png');
 }
 
+.battleship:not(.print-preview) .tally-row.weapon.laser-blast div.tally-box:not(.hit):not(.damaged):not(.used)::before {
+    background-image: url('../images/boxlaser56.png');
+}
+
+.battleship:not(.print-preview) .tally-row.weapon.laser-blast div.tally-box.used::before {
+    background-image: url('../images/boxllaunchol56.png');
+}
 
 
 .cell.weapon.contrast.bolt.active::before,
@@ -301,6 +332,7 @@ seeking-mode .board.rail.not-step {
     background-image: var(--black-round-image);
 }
 
+.cell.weapon.contrast.laser-blast.active::before,
 .cell.weapon.contrast.llaunch.active::before,
 .cell.weapon.contrast.recticule.active::before {
     background-image: var(--black-llaunch-image);

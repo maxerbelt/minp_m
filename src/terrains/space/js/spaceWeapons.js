@@ -1480,7 +1480,7 @@ export class Laser extends Fish {
     super(ammo, 'Laser Blast', '!')
 
     // Cursor configuration for targeting sequence
-    this.cursors = ['llaunch', 'laser']
+    this.cursors = ['llaunch', 'reticule']
     this.launchCursor = 'llaunch'
     this.isOneAndDone = true
     this.postSelectCursor = 1
@@ -1505,7 +1505,7 @@ export class Laser extends Fish {
       ],
       buttonHtml: '<span class="shortcut">L</span>aser Blast',
       tip: 'drag a laser blast on to the map to increase the number of times you can strike',
-      tag: 'blast',
+      tag: 'laser-blast',
       hasFlash: false
     })
 
@@ -1557,6 +1557,31 @@ export class Laser extends Fish {
     // Tracks crash location when laser hits land
     this.crashLoc = null
   }
+  /**
+   * Determines turn phase for laser animation timing.
+   *
+   * Maps variant ID to CSS turn classes for controlling animation playback duration.
+   * Different variants have different flight animation speeds for visual variety.
+   *
+   * Variant mapping:
+   * - 0: turn3 (medium speed)
+   * - 1: turn4 (slowest)
+   * - 3: turn2 (fastest)
+   *
+   * @param {number} variant - Weapon variant identifier (0, 1, 3)
+   * @param {number} _x - Column coordinate (unused for laser)
+   * @param {number} _y - Row coordinate (unused for laser)
+   * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
+   * @public
+   */
+  getTurn (variant, _x, _y) {
+    const turnMap = {
+      0: 'turn2',
+      1: 'turn3',
+      2: 'turn4'
+    }
+    return turnMap[variant] || ''
+  }
 
   /**
    * Creates an independent clone of this Laser.
@@ -1575,7 +1600,7 @@ export class Laser extends Fish {
 
   /**
    * Gets the audio file URL for Laser blast flight sound effect.
-   * Distinct audio from Gauss rounds for weapon feedback variety.
+   * Distinct audio from Laser blast  for weapon feedback variety.
    *
    * @returns {URL} URL to Laser blast flight sound asset (laser-flight.mp3)
    * @override
