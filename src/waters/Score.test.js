@@ -172,7 +172,7 @@ describe('Score', () => {
     it('should remove from shot set', () => {
       score.createShotKey(...COORDS.DIAGONAL_1)
       const initialSize = score.shot.occupancy
-      score.shotReveal(...[2, 1]) // swapped coordinates
+      score.shotReveal(1, 1) // swapped coordinates
       expect(score.shot.occupancy).toBe(initialSize - 1)
     })
 
@@ -187,7 +187,7 @@ describe('Score', () => {
     })
 
     it('should not affect autoMisses', () => {
-      score.auto.set(...[1, 2])
+      score.auto.set(1, 2)
       score.auto.set(...COORDS.DIAGONAL_2)
       score.shot.set(...COORDS.DIAGONAL_3)
       score.shotReveal(...COORDS.DIAGONAL_3)
@@ -217,8 +217,8 @@ describe('Score', () => {
     it('should return 0 when auto misses equal shots', () => {
       score.shot.set(...COORDS.ORIGIN)
       score.shot.set(...COORDS.DIAGONAL_1)
-      score.auto.set(...[1, 2])
-      score.auto.set(...[2, 3])
+      score.auto.set(1, 2)
+      score.auto.set(2, 3)
       expect(score.noOfShots()).toBe(0)
     })
 
@@ -275,18 +275,18 @@ describe('Score', () => {
 
   describe('integration scenarios', () => {
     it('should track mixed shots and auto misses', () => {
-      score.createShotKey(0, 0) // regular shot
-      score.addAutoMiss(1, 1) // auto miss
-      score.createShotKey(2, 2) // regular shot
+      score.createShotKey(...COORDS.ORIGIN) // regular shot
+      score.addAutoMiss(...COORDS.DIAGONAL_1) // auto miss
+      score.createShotKey(...COORDS.DIAGONAL_2) // regular shot
       expect(score.shot.occupancy).toBe(3)
       expect(score.autoMisses).toBe(1)
       expect(score.noOfShots()).toBe(2) // 3 total - 1 auto miss
     })
 
     it('should handle shot reveal workflow', () => {
-      score.createShotKey(0, 0)
-      score.createShotKey(1, 1)
-      score.shotReveal(0, 0)
+      score.createShotKey(...COORDS.ORIGIN)
+      score.createShotKey(...COORDS.DIAGONAL_1)
+      score.shotReveal(...COORDS.ORIGIN)
       expect(score.shot.size).toBe(1)
       expect(score.reveal.size).toBe(1)
       expect(score.noOfShots()).toBe(1)
@@ -294,15 +294,15 @@ describe('Score', () => {
 
     it('should handle full game scenario', () => {
       // Player fires shots
-      score.createShotKey(3, 4)
-      score.createShotKey(5, 6)
-      score.addAutoMiss(7, 8)
+      score.createShotKey(...COORDS.POS_3_4)
+      score.createShotKey(...COORDS.POS_5_6)
+      score.addAutoMiss(...COORDS.POS_7_8)
       expect(score.noOfShots()).toBe(2)
 
       // Some shots are revealed
       score.shotReveal(4, 3)
-      expect(score.shot.occupancy).toBe(2) // (5,6) and (7,8)
-      expect(score.reveal.occupancy).toBe(1) // (3,4)
+      expect(score.shot.occupancy).toBe(2) // [5,6] and [7,8]
+      expect(score.reveal.occupancy).toBe(1) // [3,4]
 
       // Reset for new game
       score.reset()
@@ -313,38 +313,40 @@ describe('Score', () => {
     })
 
     it('should prevent duplicate shots across different methods', () => {
-      score.createShotKey(2, 2)
-      const autoMissKey = score.addAutoMiss(2, 2)
+      score.createShotKey(...COORDS.DIAGONAL_2)
+      const autoMissKey = score.addAutoMiss(...COORDS.DIAGONAL_2)
       expect(autoMissKey).toBeNull()
       expect(score.shot.occupancy).toBe(1)
       expect(score.autoMisses).toBe(0)
     })
 
     it('should maintain state through multiple operations', () => {
+      const maxShots = 5
       // Add several shots
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < maxShots; i++) {
         score.createShotKey(i, i)
       }
-      expect(score.noOfShots()).toBe(5)
+      expect(score.noOfShots()).toBe(maxShots)
 
       // Add some auto misses
-      for (let i = 0; i < 2; i++) {
+      const maxAutoMisses = 2
+      for (let i = 0; i < maxAutoMisses; i++) {
         score.addAutoMiss(5 + i, 5 + i)
       }
-      expect(score.noOfShots()).toBe(5) // Regular shots only
-      expect(score.autoMisses).toBe(2)
+      expect(score.noOfShots()).toBe(maxShots) // Regular shots only
+      expect(score.autoMisses).toBe(maxAutoMisses)
 
       // Reveal some shots
-      score.shotReveal(0, 0)
-      score.shotReveal(1, 1)
+      score.shotReveal(...COORDS.ORIGIN)
+      score.shotReveal(...COORDS.DIAGONAL_1)
       expect(score.reveal.occupancy).toBe(2)
       expect(score.shot.occupancy).toBe(5) // 3 unrevealed regulars + 2 autos
     })
 
     it('should handle edge case of all shots being auto misses', () => {
-      score.addAutoMiss(0, 0)
-      score.addAutoMiss(1, 1)
-      score.addAutoMiss(2, 2)
+      score.addAutoMiss(...COORDS.ORIGIN)
+      score.addAutoMiss(...COORDS.DIAGONAL_1)
+      score.addAutoMiss(...COORDS.DIAGONAL_2)
       expect(score.shot.occupancy).toBe(3)
       expect(score.autoMisses).toBe(3)
       expect(score.noOfShots()).toBe(0)
@@ -356,15 +358,15 @@ describe('Score', () => {
   })
 
   it('should not have overlapping keys between shot and reveal', () => {
-    score.createShotKey(0, 0)
-    score.shotReveal(0, 0)
-    expect(score.shot.test(0, 0)).toBe(false)
-    expect(score.reveal.test(0, 0)).toBe(true)
+    score.createShotKey(...COORDS.ORIGIN)
+    score.shotReveal(...COORDS.ORIGIN)
+    expect(score.shot.test(...COORDS.ORIGIN)).toBe(false)
+    expect(score.reveal.test(...COORDS.ORIGIN)).toBe(true)
   })
 
   it('should maintain integer autoMisses count', () => {
-    score.addAutoMiss(0, 0)
-    score.addAutoMiss(1, 1)
+    score.addAutoMiss(...COORDS.ORIGIN)
+    score.addAutoMiss(...COORDS.DIAGONAL_1)
     expect(Number.isInteger(score.autoMisses)).toBe(true)
     expect(score.autoMisses).toBe(2)
   })

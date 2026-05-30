@@ -10,7 +10,6 @@
  * - Map configuration and terrain
  */
 
-import type { Location } from './coordinates.types'
 
 /**
  * Weapon object with firing and display properties.
