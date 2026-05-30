@@ -231,42 +231,42 @@ describe('Score', () => {
 
   describe('addAutoMiss', () => {
     it('should create and add auto miss shot', () => {
-      const isCreated = score.addAutoMiss(0, 0)
+      const isCreated = score.addAutoMiss(...COORDS.ORIGIN)
       expect(isCreated).toBe(true)
-      expect(score.shot.test(0, 0)).toBe(true)
+      expect(score.shot.test(...COORDS.ORIGIN)).toBe(true)
     })
 
     it('should increment autoMisses counter', () => {
       expect(score.autoMisses).toBe(0)
-      score.addAutoMiss(1, 1)
+      score.addAutoMiss(...COORDS.DIAGONAL_1)
       expect(score.autoMisses).toBe(1)
-      score.addAutoMiss(2, 2)
+      score.addAutoMiss(...COORDS.DIAGONAL_2)
       expect(score.autoMisses).toBe(2)
     })
 
     it('should return null if location already shot', () => {
-      score.shot.set(3, 3)
-      const isCreated = score.addAutoMiss(3, 3)
+      score.shot.set(...COORDS.DIAGONAL_3)
+      const isCreated = score.addAutoMiss(...COORDS.DIAGONAL_3)
       expect(isCreated).toBeNull()
       expect(score.autoMisses).toBe(0) // Not incremented
     })
 
     it('should add multiple auto misses', () => {
-      score.addAutoMiss(0, 0)
-      score.addAutoMiss(1, 1)
-      score.addAutoMiss(2, 2)
+      score.addAutoMiss(...COORDS.ORIGIN)
+      score.addAutoMiss(...COORDS.DIAGONAL_1)
+      score.addAutoMiss(...COORDS.DIAGONAL_2)
       expect(score.autoMisses).toBe(3)
       expect(score.shot.occupancy).toBe(3)
     })
 
     it('should add auto miss to shot set', () => {
-      score.addAutoMiss(4, 5)
-      expect(score.newShotKey(4, 5)).toBe(null)
+      score.addAutoMiss(...COORDS.POS_4_5)
+      expect(score.newShotKey(...COORDS.POS_4_5)).toBeNull()
     })
 
     it('should prevent duplicate auto misses', () => {
-      score.addAutoMiss(5, 5)
-      const isCreated = score.addAutoMiss(5, 5)
+      score.addAutoMiss(...COORDS.DIAGONAL_5)
+      const isCreated = score.addAutoMiss(...COORDS.DIAGONAL_5)
       expect(isCreated).toBeNull()
       expect(score.autoMisses).toBe(1)
       expect(score.shot.occupancy).toBe(1)
