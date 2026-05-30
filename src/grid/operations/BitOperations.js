@@ -8,10 +8,16 @@
 
 /**
  * @typedef {Object} MaskInstance
- * @description A mask object with bitboard storage and operations.
- * @property {bigint} bits - The bitboard storage (BigInt representation of grid state)
- * @property {Object} store - Storage backend providing bit operations (bitOr, bitAnd, etc.)
- * @property {Function} emptyMask - Factory method to create empty mask instances
+ * @description A mask instance representing a set of grid coordinates with associated values
+ * @property {Object} store - Bit store backend (BigInt-based storage with operations)
+ * @property {bigint} store.one - Single bit value (1n)
+ * @property {Function} store.bitOr - Bitwise OR operation: (bits1, bits2) => bigint
+ * @property {Function} store.bitAnd - Bitwise AND operation: (bits1, bits2) => bigint
+ * @property {Function} store.bitSub - Bitwise SUB operation: (bits1, bits2) => bigint
+ * @property {Function} store.bitXor - Bitwise XOR operation: (bits1, bits2) => bigint (optional)
+ * @property {Function} store.invertedBits - Bitwise NOT operation: (bits) => bigint
+ * @property {bigint} bits - Current bit pattern
+ * @property {Object} emptyMask - Reference to empty mask instance (factory for new masks)
  */
 
 /**
@@ -27,6 +33,8 @@
  * on grid masks while preserving mask structure and metadata.
  *
  * @class BitOperations
+ * @description Encapsulates bit-level operations on mask bits
+ * @public
  */
 export class BitOperations {
   /**
@@ -39,6 +47,7 @@ export class BitOperations {
    * @param {MaskInstance} maskInstance - Mask instance to operate on.
    * Must have bits (bigint), store (backend), and emptyMask (factory) properties.
    * @throws {Error} If maskInstance is null or missing required properties
+   * @public
    *
    * @example
    * const mask = new Mask(8, 8);
@@ -63,6 +72,7 @@ export class BitOperations {
    * Must be a valid BigInt value.
    * @returns {bigint} Result of bitwise OR operation (union of both patterns).
    * Every bit that is 1 in either operand is 1 in the result.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -84,6 +94,7 @@ export class BitOperations {
    * Must be a valid BigInt value.
    * @returns {bigint} Result of bitwise AND operation (intersection of both patterns).
    * Only bits that are 1 in both operands are 1 in the result.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -105,6 +116,7 @@ export class BitOperations {
    * Must be a valid BigInt value.
    * @returns {bigint} Result of bitwise subtraction (difference of patterns).
    * Bits that are 1 in the operand are set to 0 in the result.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -127,6 +139,7 @@ export class BitOperations {
    * @returns {bigint} Result of bitwise XOR operation (symmetric difference).
    * Bits that differ between operands are 1 in the result;
    * bits that are the same are 0.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -148,6 +161,7 @@ export class BitOperations {
    *
    * @returns {bigint} Bitwise complement of all bits in this mask.
    * Every 1 bit becomes 0 and every 0 bit becomes 1 (within grid bounds).
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask);
@@ -171,6 +185,7 @@ export class BitOperations {
    * Must be a valid BigInt value, typically from another mask.bits.
    * @returns {MaskInstance} New mask instance with bits = (this.bits OR bits).
    * Same dimensions and structure as this mask, but with combined occupancy.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -192,6 +207,7 @@ export class BitOperations {
    * Must be a valid BigInt value, typically from another mask.bits.
    * @returns {MaskInstance} New mask instance with bits = (this.bits AND bits).
    * Same dimensions and structure as this mask, but with only overlapping cells.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -213,6 +229,7 @@ export class BitOperations {
    * Must be a valid BigInt value, typically from another mask.bits.
    * @returns {MaskInstance} New mask instance with bits = (this.bits - bits).
    * Same dimensions and structure as this mask, but with operand cells removed.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask1);
@@ -232,6 +249,7 @@ export class BitOperations {
    *
    * @returns {MaskInstance} New mask instance with bits = complement(this.bits).
    * Same dimensions and structure as this mask, but with all cells flipped.
+   * @public
    *
    * @example
    * const ops = new BitOperations(mask);
@@ -258,6 +276,7 @@ export class BitOperations {
    * Signature: () => bigint. Should return the computed bit pattern.
    * @returns {MaskInstance} New mask instance with bits set to operation result.
    * Inherits dimensions and structure from this mask via emptyMask.
+   * @throws {TypeError} If operationFn is not a function or returns non-bigint
    *
    * @example
    * // Internal usage in createUnionMask

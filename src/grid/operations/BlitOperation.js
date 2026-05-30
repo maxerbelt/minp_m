@@ -8,29 +8,30 @@
 
 /**
  * @typedef {Object} MaskInstance
- * @description A mask object with bitboard storage and operations.
- * @property {bigint} bits - The bitboard storage (BigInt representation of grid state)
- * @property {Object} store - Storage backend providing bit operations (bitOr, bitAnd, bitPos, etc.)
- * @property {number} width - Width of the grid in cells
- * @property {Function} clone - Factory method to create a copy of this mask
+ * @description A mask instance representing a set of grid coordinates with associated values
+ * @property {bigint} bits - Current bit pattern
+ * @property {Object} store - Bit store backend (BigInt-based storage with operations)
+ * @property {Function} store.bitPos - Convert linear position to bit position: (pos) => number
+ * @property {number} width - Grid width in cells
+ * @property {Function} clone - Clone the mask: () => MaskInstance
  */
 
 /**
  * @typedef {Object} SourceGrid
- * @description Grid-like object that provides row data for blitting.
- * @property {Function} sliceRow - Method to extract row bits: sliceRow(row, startCol, endCol) => bigint
+ * @description A source grid providing row extraction for blitting operations
+ * @property {Function} sliceRow - Extract row bits: (row, startCol, endCol) => bigint
  */
 
 /**
  * @typedef {Object} BlitOptions
- * @description Complete configuration for blit operations.
- * @property {SourceGrid} src - Source grid/mask with sliceRow method
- * @property {number} [srcX=0] - Column offset in source grid
- * @property {number} [srcY=0] - Row offset in source grid
- * @property {number} [width=0] - Width of region to copy in cells
- * @property {number} [height=0] - Height of region to copy in cells
- * @property {number} [dstX=0] - Destination column in this mask
- * @property {number} [dstY=0] - Destination row in this mask
+ * @description Configuration for blit operations
+ * @property {SourceGrid} src - Source grid to blit from
+ * @property {number} [srcX=0] - Source X coordinate (column) to start reading from
+ * @property {number} [srcY=0] - Source Y coordinate (row) to start reading from
+ * @property {number} [width=0] - Width of region to blit (number of columns)
+ * @property {number} [height=0] - Height of region to blit (number of rows)
+ * @property {number} [dstX=0] - Destination X coordinate (column) to write to
+ * @property {number} [dstY=0] - Destination Y coordinate (row) to write to
  * @property {string} [mode='copy'] - Blend mode: 'copy'|'or'|'and'|'xor'
  */
 
@@ -38,7 +39,9 @@
  * BlitOperation - Encapsulates bitwise blitting operations.
  * Handles copying/combining rectangular regions with various blend modes.
  * Provides both destructive (blit) and non-destructive (blitToMask) operations.
- * @class
+ * @class BlitOperation
+ * @description Bitwise blitting operations for rectangular region copying/combining
+ * @public
  */
 export class BlitOperation {
   /**
@@ -52,6 +55,7 @@ export class BlitOperation {
    * @param {MaskInstance} maskInstance - Target mask for blitting operations.
    * Must have bits (bigint), store (backend), width (number), and clone method.
    * @throws {TypeError} If maskInstance lacks required properties.
+   * @public
    *
    * @example
    * const blitter = new BlitOperation(targetMask);
@@ -82,6 +86,7 @@ export class BlitOperation {
    * @param {BlitOptions} options - Complete blit configuration.
    * Defaults: srcX=0, srcY=0, width=0, height=0, dstX=0, dstY=0, mode='copy'.
    * @returns {void} Modifies this.mask.bits in-place; no return value.
+   * @public
    *
    * @example
    * // Copy 5x5 region from source at (0,0) to destination at (10, 10)
@@ -144,6 +149,7 @@ export class BlitOperation {
    * Defaults: srcX=0, srcY=0, width=0, height=0, dstX=0, dstY=0, mode='copy'.
    * @returns {MaskInstance} New mask instance with blit operation applied.
    * Original this.mask remains unchanged.
+   * @public
    *
    * @example
    * // Create a composite mask without modifying original
@@ -199,6 +205,7 @@ export class BlitOperation {
    * @param {number} width - Number of bits in the row to blend.
    * @param {string} mode - Blend mode: 'copy'|'or'|'and'|'xor'.
    * @returns {bigint} Result bits after blend operation applied to that row.
+   * @throws {TypeError} If parameters are malformed
    *
    * @example
    * // Apply blend to row 5, starting at column 3, width 8
@@ -242,6 +249,7 @@ export class BlitOperation {
    * Default behavior for unknown modes: return unchanged currentBits (no-op).
    * @returns {bigint} Result bits after blend operation.
    * Same size as currentBits with the blitted row applied.
+   * @throws {TypeError} If parameters are malformed or mode is invalid
    *
    * @example
    * // Blit 8-bit row at bit position 1024 using 'or' mode

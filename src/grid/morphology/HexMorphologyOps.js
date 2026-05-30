@@ -1,25 +1,6 @@
-/**
- * @typedef {Object} HexMask
- * @property {bigint|Uint32Array} bits - Current bit state of the mask
- * @property {number} width - Grid width in cells
- * @property {number} height - Grid height in cells
- * @property {Object} store - Storage backend handling bit operations
- * @property {Object} indexer - Hex indexer with dilate/erode methods
- * @property {Function} edgeMasks - Method returning boundary mask collection
- */
-
-/**
- * @typedef {Object} HexIndexer
- * @property {Function} dilate - Dilate hex mask: (bits, radius, store) => bits
- * @property {Function} erode - Erode hex mask: (bits, radius, store) => bits
- */
-
-/**
- * @typedef {Object} StoreBackend
- * @property {boolean} [isMultiBit] - Whether store supports multi-bit cells
- * @property {Function} [dilate] - Per-cell dilation operation
- * @property {Function} [erode] - Per-cell erosion operation
- */
+/** @type {import('./types/index.js').HexMask} */
+/** @type {import('./types/index.js').HexIndexer} */
+/** @type {import('./types/index.js').AnyStore} */
 
 /**
  * HexMorphologyOps - Morphological operations for hexagonal grids
@@ -56,7 +37,7 @@ export class HexMorphologyOps {
    * Captures references to mask, storage, bits, and indexer for morphological
    * operations. The indexer must implement hex-aware dilate/erode methods.
    *
-   * @param {HexMask} mask - Hexagonal mask instance with indexer support
+   * @param {import('./types/index.js').HexMask} mask - Hexagonal mask instance with indexer support
    * @throws {Error} If mask lacks required properties (bits, store, indexer)
    */
   constructor (mask) {
@@ -86,7 +67,7 @@ export class HexMorphologyOps {
    * ```
    *
    * @param {number} [radius=1] - Number of dilation expansion steps (must be >= 0)
-   * @returns {HexMask} this.mask for method chaining
+   * @returns {import('./types/index.js').HexMask} this.mask for method chaining
    * @throws {Error} If indexer lacks dilate method
    */
   dilate (radius = 1) {

@@ -2,6 +2,12 @@ import { bh } from '../../terrains/all/js/bh.js'
 import { gameHost } from '../WatersUI.js'
 
 /**
+ * @typedef {Object} MapDimensions
+ * @property {number} [cols] - Number of grid columns (defaults to 18 if not provided)
+ * @property {number} [rows] - Number of grid rows (defaults to 8 if not provided)
+ */
+
+/**
  * @module waters/helpers/BoardConfigurator
  * Centralizes board configuration logic for grid setup and sizing.
  *
@@ -75,9 +81,7 @@ export class BoardConfigurator {
    * - Modifies board.style CSS custom properties
    *
    * @param {HTMLElement} board - The board container element to configure
-   * @param {Object} [map={}] - Map object with grid dimensions
-   * @param {number} [map.cols=18] - Number of grid columns (defaults to 18 if not provided)
-   * @param {number} [map.rows=8] - Number of grid rows (defaults to 8 if not provided)
+   * @param {MapDimensions} [map={}] - Map object with grid dimensions
    * @param {string} [cellSize='30px'] - CSS size value for individual cells (e.g., '30px', '2em')
    * @returns {void}
    * @throws {TypeError} If board is not a valid HTMLElement or cellSize is not a string
@@ -118,9 +122,7 @@ export class BoardConfigurator {
    * 3. Calls configureBoardGrid with calculated values
    *
    * @param {HTMLElement} board - The board container element to reset
-   * @param {Object} [map=bh.map] - Map object with grid dimensions
-   * @param {number} [map.cols=18] - Number of grid columns (defaults to 18)
-   * @param {number} [map.rows=8] - Number of grid rows (defaults to 8)
+   * @param {MapDimensions | null | undefined} [map] - Map object with grid dimensions; if not provided or null, uses bh.map
    * @param {string} [cellSize] - Optional cell size in CSS units (e.g., '30px')
    *                               If omitted, calculated as: containerWidth / cols + 'px'
    * @returns {void}
@@ -143,14 +145,14 @@ export class BoardConfigurator {
    * BoardConfigurator.resetBoardSize(board, null, '32px');
    */
   static resetBoardSize (board, map, cellSize) {
-    if (!map) map = bh.map
+    const resolvedMap = map || bh.map || {}
     if (!cellSize) {
       // Calculate cell size based on container width and map columns
-      const containerWidth = gameHost.containerWidth
-      const cols = map?.cols || 18
-      cellSize = containerWidth / cols + 'px'
+      const containerWidth = /** @type {number} */ (gameHost.containerWidth)
+      const cols = /** @type {number} */ (resolvedMap?.cols) || 18
+      cellSize = String(containerWidth / cols) + 'px'
     }
-    this.configureBoardGrid(board, map, cellSize)
+    this.configureBoardGrid(board, resolvedMap, cellSize)
   }
 
   /**
@@ -177,9 +179,7 @@ export class BoardConfigurator {
    * 4. Calls configureBoardGrid with print-specific values
    *
    * @param {HTMLElement} board - The board container element to configure for printing
-   * @param {Object} [map=bh.map] - Map object with grid dimensions
-   * @param {number} [map.cols=18] - Number of grid columns (defaults to 18)
-   * @param {number} [map.rows=8] - Number of grid rows (defaults to 8)
+   * @param {MapDimensions | null | undefined} [map] - Map object with grid dimensions; if not provided or null, uses bh.map
    * @param {string} [cellSizePrint] - Optional print cell size in CSS units (e.g., '24px')
    *                                   If omitted, calculated as: 600 / (cols + 1) + 'px'
    * @returns {void}
@@ -202,13 +202,16 @@ export class BoardConfigurator {
    * BoardConfigurator.resetBoardSizePrint(board, null, '20px');
    */
   static resetBoardSizePrint (board, map, cellSizePrint) {
-    if (!map) map = bh.map
-    if (!cellSizePrint) cellSizePrint = 600 / ((map.cols || 18) + 1) + 'px'
+    const resolvedMap = map || bh.map || {}
+    if (!cellSizePrint)
+      cellSizePrint =
+        String(600 / (/** @type {number} */ ((resolvedMap?.cols) || 18) + 1)) +
+        'px'
 
     // create a transient map object with expanded grid for print layout
     const printMap = {
-      cols: (map.cols || 18) + 1,
-      rows: (map.rows || 8) + 1
+      cols: /** @type {number} */ ((resolvedMap?.cols) || 18) + 1,
+      rows: /** @type {number} */ ((resolvedMap?.rows) || 8) + 1
     }
 
     this.configureBoardGrid(board, printMap, cellSizePrint)

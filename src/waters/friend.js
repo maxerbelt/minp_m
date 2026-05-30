@@ -5,19 +5,40 @@ import { setupDragHandlers } from '../selection/dragndrop.js'
 import { Player } from './steps.js'
 import { LoadOut } from './LoadOut.js'
 import { Delay } from '../core/Delay.js'
-import { Placement } from './Placement.js'
+import { Placement } from './placement.js'
+
+// ============================================================================
+// Constants
+// ============================================================================
 
 const ENEMY_TURN_DELAY = 50
 
 /**
- * @typedef {[number, number]} GridCoordinate - [column, row] coordinate pair
+ * @typedef {Object} WeaponLaunchResult
+ * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used
+ * @property {boolean} [hasUnattached] - Indicates if unattached weapon needs target selection
+ * @property {Weapon} [weapon] - The weapon object used
+ * @property {Object} [score] - The score result from the launch
  */
 
 /**
- * @typedef {Object} WeaponLaunchResult
- * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used
- * @property {Object} [weapon] - The weapon object used
- * @property {Object} [score] - The score result from the launch
+ * @typedef {Object} Weapon
+ * @property {string} letter - Single character weapon identifier
+ * @property {string} [name] - Human-readable weapon name
+ * @property {Array<string>} [cursors] - Array of cursor class names for weapon modes
+ * @property {string} [launchCursor] - Cursor class when ready to launch
+ * @property {string} [tag] - Weapon tag identifier for filtering/targeting
+ * @property {boolean} [postSelectShadow] - Whether weapon shows shadow after selection
+ * @property {number} [postSelectCoords] - Number of additional coordinates needed after selection
+ * @property {boolean} [isLimited] - Whether weapon has limited ammo
+ * @property {() => void} [playWarnSound] - Optional callback to play warning sound
+ */
+
+/**
+ * @typedef {Object} WeaponSystem
+ * @property {Weapon} weapon - The weapon configuration
+ * @property {number} [id] - Weapon system ID reference
+ * @property {() => number} [ammoCapacity] - Function returning remaining ammo
  */
 
 /**
@@ -27,8 +48,9 @@ const ENEMY_TURN_DELAY = 50
  */
 
 /**
- * @typedef {Object} WeaponSystem - Weapon system rack with weapon property
- * @property {Object} weapon - The actual weapon object
+ * @typedef {Object} SelectedCellCoordinates
+ * @property {number} r - Target row coordinate
+ * @property {number} c - Target column coordinate
  */
 
 /**
@@ -64,6 +86,10 @@ const ENEMY_TURN_DELAY = 50
  */
 
 /**
+ * @typedef {[number, number]} GridCoordinate - [column, row] coordinate pair
+ */
+
+/**
  * @typedef {'DestroyOne'|'Bomb'|'Scan'|'Seek'} EffectType - Weapon effect type enumeration
  */
 
@@ -93,6 +119,99 @@ const ENEMY_TURN_DELAY = 50
  * @property {number} BOMB_ATTEMPTS - Attempts per impact level
  * @property {number} SEEK_MAX_ATTEMPTS - Maximum search attempts
  * @property {number} SEEK_DELAY_MS - Delay between seek steps in milliseconds
+ */
+
+/**
+ * @typedef {() => Promise<WeaponLaunchResult|null>} EffectHandler
+ * Effect handler function for weapon targeting strategy.
+ * @description Async function returning weapon launch result or null if strategy fails
+ */
+
+/**
+ * @typedef {Object<'DestroyOne'|'Bomb'|'Scan'|'Seek', EffectHandler>} EffectHandlerMap
+ * Mapping of effect types to their corresponding handler functions.
+ * @description Routes effect type strings to specialized targeting strategies
+ */
+
+/**
+ * @typedef {(r: number, c: number) => Promise<void>} CellClickHandler
+ * Handler for cell click events during weapon selection and targeting.
+ * @description Processes row/column coordinate clicks in hide/seek mode
+ */
+
+/**
+ * @typedef {(ships: Object[]) => void} UIResetCallback
+ * Callback to reset UI with new ship information.
+ * @description Updates board display and tray information after placement
+ */
+
+/**
+ * @typedef {() => void} VoidCallback
+ * Generic callback with no parameters or return value.
+ * @description Used for UI refresh and state synchronization
+ */
+
+/**
+ * @typedef {(weapon: Weapon, score: Score) => void} BombResultCallback
+ * Callback to process bomb weapon results on opponent board.
+ * @description Updates UI to reflect bomb splash damage and hits
+ */
+
+/**
+ * @typedef {(weapon: Weapon, effect: Array) => void} RevealCallback
+ * Callback to handle scan weapon reveal effect.
+ * @description Processes revealed cells from scan weapon area-of-effect
+ */
+
+/**
+ * @typedef {Object} PlacementUI
+ * @property {HTMLElement} board - The main game board element
+ * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
+ * @property {(row: number, column: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
+ * @property {() => void} [clearVisuals] - Clear all visual effects from board
+ * @property {() => void} [resetShips] - Reset ship cell styling
+ * @property {(ships: Array<Object>) => void} [reset] - Reset UI with new ships
+ * @property {() => void} [makeDroppable] - Make board droppable for drag operations
+ * @property {(onClickCell?: Function, thisRef?: any) => void} [buildBoard] - Build board grid with handlers
+ * @property {(ships: Array<Object>, shipCellGrid?: Object) => void} [buildTrays] - Build weapon trays
+ * @property {() => void} [clearFriendVisuals] - Clear friendly player visuals
+ * @property {(ships: Array<Object>) => void} [markWeaponCellsOnFriendlyBoard] - Mark weapon cells
+ * @property {() => void} [testMode] - Switch UI to test mode
+ * @property {() => void} [showNotice] - Show notice message
+ */
+
+/**
+ * @typedef {Object} LoadOutType
+ * @property {boolean} isSingleShot - Whether in single-shot mode
+ * @property {Array<any>} selectedCoordinates - Currently selected targeting coordinates
+ * @property {Object|null} selectedWeapon - Currently selected weapon (null if none)
+ * @property {() => void|undefined} clearSelectedCoordinates - Clears targeting coordinates
+ * @property {() => WeaponSystem|undefined} getUnattachedWeaponSystem - Gets unattached weapon or undefined
+ * @property {() => WeaponSystem|undefined} getCurrentWeaponSystem - Gets current weapon system
+ * @property {(letter: string) => void} switchToWeapon - Switch to weapon by letter
+ * @property {() => void} switchToNextWeaponSystem - Switch to next weapon system
+ * @property {() => EffectType|null} switchToPreferredWeapon - Switch to preferred weapon
+ * @property {() => void} switchToSingleShot - Switch to single-shot mode
+ * @property {() => boolean} isOutOfAmmo - Check if out of ammo
+ * @property {(r: number, c: number, weapon?: Object) => void} addSelectedCoordinates - Add targeting coordinate
+ * @property {(r: number, c: number, ...args: any[]) => Promise<WeaponLaunchResult|null>} aimWeapon - Aim weapon at coordinates
+ * @property {Function|null} onReveal - Callback when scan reveals cells
+ * @property {Object} static - Static methods like noResult, launchDefault
+ */
+
+/**
+ * @typedef {Object} StepsManager
+ * @property {Function|null} onBeginTurn - Begin turn callback
+ * @property {() => void} endTurn - End turn method
+ */
+
+/**
+ * @typedef {Object} WatersOpponent
+ * @property {PlacementUI} UI - Opponent UI controller
+ * @property {Object|null} opponent - The opposing player
+ * @property {() => void} [updateUI] - Update opponent UI
+ * @property {(weapon: Object, score: Object) => void} [updateResultsOfBomb] - Update bomb results
+ * @property {() => void} [_transitionToOpponentTurn] - Transition to opponent's turn
  */
 const SEEK_CONSTANTS = {
   IMPACT_MIN: 2,
@@ -126,6 +245,10 @@ export class Friend extends Placement {
    *
    * @param {import('./placementUI.js').PlacementUI} friendUI - The friend player UI instance.
    *   Provides board rendering, event handling, and visual feedback for weapon targeting.
+   * @property {boolean} testContinue - Controls test continuation
+   * @property {boolean} friendlyWaters - Marks this as friendly player
+   * @property {Bitmask|null} untried - Untried location mask for seeking
+   * @property {Object|null} selectedCellCoordinates - Tracks selected target cell for two-click weapon firing in hide/seek mode
    */
   constructor (friendUI) {
     super(friendUI, Player.friend)
@@ -141,16 +264,19 @@ export class Friend extends Placement {
 
   /**
    * Gets the current game map.
-   * @returns {MapInfo} The active map with grid dimensions
+   * Accesses global map state from bh singleton.
+   * @returns {MapInfo} The active map with grid dimensions and utility methods
    */
   get map () {
+    // @ts-ignore - bh.map is MapInfo at runtime, may be null in type system
     return bh.map
   }
 
   /**
    * Gets the empty result tuple for no-op weapon fire.
    * Used as default return value when weapon firing fails or is not possible.
-   * @returns {WeaponLaunchResult} Empty result object with single shot weapon
+   * Contains single-shot weapon and no-result score indicator.
+   * @returns {WeaponLaunchResult} Empty result object with single shot weapon and noResult score
    */
   get noResult () {
     // @ts-ignore - loadOut.getSingleShot() is defined in base Placement class at runtime
@@ -158,8 +284,8 @@ export class Friend extends Placement {
   }
 
   /**
-   * Checks if test mode should continue.
-   * @returns {boolean} True if test should continue
+   * Checks if autonomous test/seek mode should be cancelled.
+   * @returns {boolean} True if test should stop (testContinue is false)
    */
   isCancelled () {
     return !this.testContinue
@@ -270,6 +396,7 @@ export class Friend extends Placement {
 
   /**
    * Gets a random untried coordinate from the map mask.
+   * Synchronizes untried locations with shots before returning random candidate.
    * Returns null when no untried coordinates remain.
    *
    * @private
@@ -328,10 +455,11 @@ export class Friend extends Placement {
   /**
    * Creates a launch function for weapon aiming.
    * Returns a function that launches the weapon at specified coordinates.
+   * The returned function is bound to current map and game state.
    *
    * @private
    * @param {WeaponSystem} weaponSystem - The weapon system to create launch function for
-   * @returns {Function} Async function(coords) that launches weapon at target
+   * @returns {(coords: Location) => Promise<WeaponLaunchResult>} Async function(coords) that launches weapon at target
    */
   createLaunchFunction (weaponSystem) {
     return async (/** @type {Location} */ coords) => {
@@ -342,7 +470,8 @@ export class Friend extends Placement {
 
   /**
    * Creates a launch function for the currently selected weapon system.
-   * @returns {Function} Launch function for the current weapon system
+   * Convenience wrapper around createLaunchFunction using current weapon.
+   * @returns {(coords: Location) => Promise<WeaponLaunchResult>} Launch function for the current weapon system
    * @private
    */
   _createCurrentLaunchFunction () {
@@ -351,12 +480,13 @@ export class Friend extends Placement {
   }
 
   /**
-   * Launches randomly selected weapon at specified location.
-   * Returns true if weapon was successfully launched (no result).
+   * Launches the currently selected weapon at specified location.
+   * Delegates to loadOut.aimWeapon with current weapon system and launch function.
+   * Processes both click coordinates and weapon targeting logic.
    *
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score information
    */
   async launchCurrentWeapon (r, c) {
     const launch = this._createCurrentLaunchFunction()
@@ -372,11 +502,13 @@ export class Friend extends Placement {
 
   /**
    * Attempts weapon launch and falls back to a secondary aim coordinate.
-   * @param {number} r - Initial target row coordinate.
-   * @param {number} c - Initial target column coordinate.
-   * @param {number} [fallbackR=r] - Fallback row coordinate.
-   * @param {number} [fallbackC=c] - Fallback column coordinate.
-   * @returns {Promise<WeaponLaunchResult>} Launch result.
+   * If initial target returns noResult or fails, retries with fallback coordinates.
+   * Used for boundary-aware targeting in random strategies.
+   * @param {number} r - Initial target row coordinate
+   * @param {number} c - Initial target column coordinate
+   * @param {number} [fallbackR=r] - Fallback row coordinate (defaults to r)
+   * @param {number} [fallbackC=c] - Fallback column coordinate (defaults to c)
+   * @returns {Promise<WeaponLaunchResult>} Launch result from initial or fallback target
    * @private
    */
   async _attemptLaunchWithFallback (r, c, fallbackR = r, fallbackC = c) {
@@ -400,12 +532,12 @@ export class Friend extends Placement {
   // ============ Random Actions ============
 
   /**
-   * Searches for bomb targets with decreasing impact requirement.
-   * Attempts multiple bomb launches at random untried locations.
-   * Returns result of first successful hit or no result after all attempts.
+   * Searches for bomb targets by attempting random launches.
+   * Delegates to _attemptBomb for multiple tries with fallback logic.
+   * Returns noResult if all attempts are exhausted without success.
    *
    * @private
-   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score, or noResult if no hits
+   * @returns {Promise<WeaponLaunchResult>} Result with bomb weapon and score, or noResult if no hits
    */
   async randomBomb () {
     const result = await this._attemptBomb()
@@ -417,9 +549,10 @@ export class Friend extends Placement {
   /**
    * Attempts bomb launches with fallback retry logic.
    * Iterates through BOMB_ATTEMPTS tries, checking if coordinates are new shots.
+   * Respects isCancelled() state and returns early if test is cancelled.
    *
    * @private
-   * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null if all attempts exhausted
+   * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null if all BOMB_ATTEMPTS exhausted
    */
   async _attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
@@ -436,10 +569,11 @@ export class Friend extends Placement {
 
   /**
    * Launches single destroy-type weapon across highest frequency row.
-   * Uses most-attempted row for targeting line sweep (row sweep with fallback to opposite end).
+   * Uses most-attempted row for targeting line sweep with fallback to opposite end.
+   * Strategy: sweep from left (col 0) to right (cols-1) on most-hit row.
    *
    * @private
-   * @returns {Promise<WeaponLaunchResult|null>} Result with weapon and score
+   * @returns {Promise<WeaponLaunchResult>} Result with destroy weapon and score information
    */
   async randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
@@ -450,11 +584,11 @@ export class Friend extends Placement {
 
   /**
    * Validates if location is valid target for seeking.
-   * Must be in bounds and not already double-tapped.
+   * Checks if location is in bounds and hasn't been double-tapped (clicked twice).
    *
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
-   * @returns {boolean} True if valid target location
+   * @returns {boolean} True if valid target location (in bounds and not double-tapped)
    * @private
    */
   isHitValid (r, c) {
@@ -462,6 +596,13 @@ export class Friend extends Placement {
     // @ts-ignore - isDTap is inherited from Waters base class
     return this.map.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
   }
+  /**
+   * Handles transition to friendly player's turn in game flow.
+   * Clears weapon selection state, signals opponent turn transition, and initiates seek.
+   *
+   * @private
+   * @returns {Promise<void>}
+   */
   async _handleBeginTurn () {
     // Reset selected cell coordinates for two-click mode
     this.selectedCellCoordinates = null
@@ -473,11 +614,12 @@ export class Friend extends Placement {
   }
   /**
    * Seeks single ship target with single shot weapons.
-   * Attempts to find and fire at valid untried locations.
+   * Attempts to find and fire at valid untried locations up to SEEK_MAX_ATTEMPTS.
    * Stops game if unable to find valid locations after max attempts.
+   * Respects isCancelled() state for test mode control.
    *
    * @private
-   * @returns {Promise<WeaponLaunchResult|null>} Null on success, noResult on failure
+   * @returns {Promise<WeaponLaunchResult>} Result from weapon fire or noResult on failure
    */
   async randomSeek () {
     for (
@@ -501,8 +643,10 @@ export class Friend extends Placement {
   }
 
   /**
-   * Handles failure to find valid seek locations.
+   * Handles failure to find valid seek locations during autonomous play.
+   * Displays error message and halts test mode.
    * @private
+   * @returns {void}
    */
   _handleSeekFailure () {
     // @ts-ignore - UI.showNotice is defined in Board class at runtime
@@ -514,7 +658,8 @@ export class Friend extends Placement {
   /**
    * Performs area scan with two random locations.
    * Reveals hidden areas without destroying ships.
-   * Sets up reveal handler before launching scan weapon.
+   * Sets up reveal handler (scan callback) before launching scan weapon.
+   * Returns result with scan weapon and score information.
    *
    * @private
    * @returns {Promise<WeaponLaunchResult>} Result with scan weapon and score
@@ -542,12 +687,12 @@ export class Friend extends Placement {
 
   /**
    * Handles scan effect - reveals cells in effect area.
-   * Callback for loadOut onReveal handler.
-   * Currently marks UI for revealed cells without detailed logic.
+   * Callback for loadOut onReveal handler set during randomScan().
+   * Validates revealed cells and updates board state.
    *
    * @private
-   * @param {Object} _weapon - The scan weapon (unused, not needed for reveal)
-   * @param {Array<GridCoordinate>} effect - [row, col, power] cells to reveal
+   * @param {Weapon} _weapon - The scan weapon (unused, not needed for reveal processing)
+   * @param {Array<GridCoordinate>} effect - Array of [row, col, power] coordinate tuples to reveal
    * @returns {void}
    */
   scan (_weapon, effect) {
@@ -574,6 +719,7 @@ export class Friend extends Placement {
    * @returns {Promise<WeaponLaunchResult|null>} Result from effect handler or noResult
    */
   async randomEffect (effect) {
+    /** @type {EffectHandlerMap} */
     const effectHandlers = {
       DestroyOne: () => this.randomDestroyOne(),
       Bomb: () => this.randomBomb(),
@@ -609,9 +755,10 @@ export class Friend extends Placement {
   /**
    * Executes prioritized finish strategies until one returns a result.
    * Attempts strategies in order, returning first non-null result.
+   * Used to try multiple targeting patterns before falling back to scanning.
    *
    * @private
-   * @param {Array<FinishStrategy>} strategies - Array of asynchronous strategy functions.
+   * @param {Array<() => Promise<WeaponLaunchResult|null>>} strategies - Array of asynchronous strategy functions
    * @returns {Promise<WeaponLaunchResult|null>} Strategy result or null if all exhausted
    */
   async _executeFinishStrategies (strategies) {
@@ -625,10 +772,11 @@ export class Friend extends Placement {
   /**
    * Attempts to fire at a random target from a candidate mask.
    * Validates mask has occupancy, then delegates to selectRandomCandidate.
+   * Returns null if mask is empty or occupancy is zero.
    *
    * @private
-   * @param {Bitmask|null} mask - Candidate mask to use for selection.
-   * @returns {Promise<WeaponLaunchResult|null>} Result from firing at selected candidate
+   * @param {Bitmask|null} mask - Candidate bitmask with occupied cells to select from
+   * @returns {Promise<WeaponLaunchResult|null>} Result from firing at selected candidate, or null if no targets
    */
   async _finishMaskCandidates (mask) {
     // @ts-ignore - mask is Bitmask at runtime with occupancy property and methods
@@ -641,9 +789,10 @@ export class Friend extends Placement {
    * Attempts to fire at revealed but not yet attacked cells.
    * Prioritizes previously revealed locations for follow-up shots.
    * Removes already-shot cells from reveal mask before selection.
+   * Used in shot selection strategy priority chain.
    *
    * @private
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no revealed targets
    */
   async finishRevealed () {
     // @ts-ignore - score.reveal is Bitmask at runtime with occupancy property
@@ -660,10 +809,11 @@ export class Friend extends Placement {
    * Attempts to finish partially damaged ship.
    * First tries orthogonal cross pattern (up/down/left/right neighbors).
    * Falls back to surrounding cells (all 8-neighbors) if cross pattern yields no shots.
+   * Used in shot selection strategy priority chain.
    *
    * @private
-   * @param {Bitmask|null} hits - Hit locations mask from unsunk ships
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
+   * @param {Bitmask|null} hits - Hit locations mask from unsunk ships on opponent board
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no targets
    */
   async finishPartiallySunk (hits) {
     // @ts-ignore - hits is Bitmask at runtime with occupancy property
@@ -736,9 +886,10 @@ export class Friend extends Placement {
    * Attempts to fire at hint-revealed locations.
    * Expands hint area by 1 cell and looks for untried cells within expansion.
    * Focuses on areas near hint clusters for strategic targeting.
+   * Used in shot selection strategy priority chain.
    *
    * @private
-   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null
+   * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no hint targets
    */
   async finishHints () {
     // @ts-ignore - score.hint is Bitmask at runtime with occupancy property
@@ -756,10 +907,11 @@ export class Friend extends Placement {
   /**
    * Selects random cell from candidate mask and launches single shot.
    * Switches to single shot weapon before firing at selected coordinate.
+   * Extracts random occupied cell from candidate bitmask.
    *
    * @private
-   * @param {Bitmask} candidate - Bitmask with randomOccupied property
-   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score
+   * @param {Bitmask} candidate - Bitmask with randomOccupied property containing target cells
+   * @returns {Promise<WeaponLaunchResult>} Result with weapon and score information
    */
   async selectRandomCandidate (candidate) {
     // @ts-ignore - loadOut.switchToSingleShot is method at runtime
@@ -774,9 +926,10 @@ export class Friend extends Placement {
    * Selects next shot strategy based on current board state.
    * Priority: Revealed cells > Partially sunk ships > Hint areas > Effect weapon > Seek.
    * Implements escalating strategy: finish easy targets first, then switch to scanning/seeking.
+   * Core method for intelligent autonomous targeting.
    *
    * @private
-   * @param {Bitmask} hits - Current hit locations on board
+   * @param {Bitmask} hits - Current hit locations on board from unsunk ships
    * @returns {Promise<WeaponLaunchResult|null>} Result from selected shot strategy
    */
   async selectShot (hits) {
@@ -805,8 +958,9 @@ export class Friend extends Placement {
   /**
    * Restarts game board for new round.
    * Clears visuals, resets ship display, and re-arms weapons.
+   * Removes 'destroyed' CSS class from board element.
    *
-   * @param {boolean} [friendlyMode=false] - Also clear friendly player visuals if true
+   * @param {boolean} [friendlyMode=false] - Also clear friendly player visuals if true (default: false)
    * @returns {void}
    */
   restartBoard (friendlyMode = false) {
@@ -830,8 +984,9 @@ export class Friend extends Placement {
 
   /**
    * Initializes untried locations mask with full map.
-   * Used to track which cells have not yet been shot at.
+   * Used to track which cells have not yet been shot at during seeking.
    * Called at start of seek loop to reset candidate pool.
+   * Sets this.untried to full map bitmask.
    *
    * @returns {void}
    */
@@ -841,9 +996,10 @@ export class Friend extends Placement {
   }
 
   /**
-   * Gets combined hit mask from all unsunk ships.
+   * Gets combined hit mask from all unsunk ships on opponent board.
    * Used to identify areas with damaged but unsunk ships.
-   * Joins hit masks of all unsunk ships into single aggregate mask.
+   * Joins hit masks of all unsunk ships into single aggregate bitmask.
+   * Returns empty (blank) mask if no hits or no unsunk ships.
    *
    * @returns {Bitmask} Bitmask of all current hits across unsunk ships
    */
@@ -885,6 +1041,7 @@ export class Friend extends Placement {
    * Initiates test mode and begins autonomous seeking.
    * Disables player controls and starts seek loop.
    * Prepares board state and weapon systems for automated play.
+   * Updates UI buttons and initializes game board for testing.
    *
    * @returns {void}
    */
@@ -910,6 +1067,7 @@ export class Friend extends Placement {
    * Performs single seek step: selects target, fires, and processes results.
    * Updates UI with shot results and ends turn.
    * Core loop iteration for autonomous seeking AI.
+   * Called repeatedly by seekRaw() in the main game loop.
    *
    * @returns {Promise<void>}
    */
@@ -947,6 +1105,7 @@ export class Friend extends Placement {
    * Main seek entry point. Runs autonomous loop and restores UI afterward.
    * Re-enables controls and hides stop button when complete.
    * Wrapper that ensures UI cleanup after seeking finishes.
+   * Public API for starting autonomous seek mode.
    *
    * @returns {Promise<void>}
    */
@@ -964,9 +1123,9 @@ export class Friend extends Placement {
   }
 
   /**
-   * Autonomous seeking loop for test mode.
-   * Continuously selects targets and fires until cancelled or board destroyed.
-   * Resets game state and initializes weapons before starting loop.
+   * Initializes autonomous seeking run with clean state.
+   * Resets game state flags, arms weapons, and sets up untried locations.
+   * Called before entering main seek loop.
    *
    * @returns {Promise<void>}
    * @private
@@ -985,6 +1144,7 @@ export class Friend extends Placement {
    * Main autonomous seeking loop with delay between steps.
    * Initializes seek state and enters continuous targeting loop.
    * Exits when testContinue becomes false or board destroyed.
+   * Core game loop for autonomous AI play.
    *
    * @returns {Promise<void>}
    * @private
@@ -1002,6 +1162,7 @@ export class Friend extends Placement {
   /**
    * Resets the model to initial state.
    * Clears score, resets map state, and reinitializes UI.
+   * Comprehensive reset for starting fresh game.
    *
    * @returns {void}
    */
@@ -1196,7 +1357,7 @@ export class Friend extends Placement {
    * 5. Marking weapon cells with the 'weapon' class for hide & seek mode
    *
    * The click handler (onClickCell) is bound to this Friend instance so it can
-   * access weapon selection methods and UI state.
+   * access weapon selection methods and UI state during gameplay.
    *
    * Called during game initialization and board reset operations.
    *
@@ -1219,8 +1380,9 @@ export class Friend extends Placement {
   /**
    * Resets the UI and places ships.
    * Comprehensive board initialization including ship placement and weapon UI.
+   * Rebuilds board, trays, and updates display with ship information.
    *
-   * @param {Object} [ships] - The ships to place. Uses this.ships if not provided.
+   * @param {Ship[]} [ships] - The ships to place. Uses this.ships if not provided.
    * @returns {void}
    */
   resetUI (ships) {

@@ -1,35 +1,6 @@
-/**
- * @typedef {Object} StoreBackend
- * @property {number} bitsPerCell - Bits used per cell (1 for single-bit)
- * @property {boolean} isSingleBit - Always true for single-bit stores
- * @property {Function} _createDefaultEdgeMasks - Create boundary masks
- * @property {Function} dilate1D_horizontal - 1D horizontal dilation
- * @property {Function} dilate1D_vertical - 1D vertical dilation
- * @property {Function} prepareSrcForLeftExpansion - Prepare bits for left shift
- * @property {Function} prepareSrcForRightExpansion - Prepare bits for right shift
- * @property {Function} prepareSrcForUpExpansion - Prepare bits for up shift
- * @property {Function} prepareSrcForDownExpansion - Prepare bits for down shift
- * @property {Function} shiftBits - Shift bits by offset
- * @property {Function} combineMasked - Combine multiple bit patterns
- * @property {Function} dilateCrossStep - Cross-pattern dilation
- * @property {Function} erodeHorizontalClamp - Horizontal erosion with clamping
- * @property {Function} erodeVerticalClamp - Vertical erosion with clamping
- * @property {Function} computeHorizontalErodeConstraints - Compute left/right constraints
- * @property {Function} computeVerticalErodeConstraints - Compute up/down constraints
- */
-
-/**
- * @typedef {Object} EdgeMaskCollection
- * @property {bigint|Uint32Array} top - Mask for top edge (boundary cells)
- * @property {bigint|Uint32Array} bottom - Mask for bottom edge (boundary cells)
- * @property {bigint|Uint32Array} left - Mask for left edge (boundary cells)
- * @property {bigint|Uint32Array} right - Mask for right edge (boundary cells)
- */
-
-/**
- * @typedef {bigint|Uint32Array} Bitboard
- * @description Occupancy bits representing single-bit (1 bit per cell) grid state
- */
+/** @type {import('./types/index.js').SingleBitStore} */
+/** @type {import('./types/index.js').EdgeMaskCollection} */
+/** @type {import('./types/index.js').Bitboard} */
 
 /**
  * SingleBitMorphology - Optimized morphology for 1-bit (occupancy-only) grids.
@@ -53,7 +24,7 @@ export class SingleBitMorphology {
    * Validates that store is configured for single-bit operations (isSingleBit === true)
    * Caches store reference for all morphological operations
    *
-   * @param {StoreBackend} store - Store instance (StoreBig or Store32) with isSingleBit === true
+   * @param {import('./types/index.js').SingleBitStore} store - Store instance (StoreBig or Store32) with isSingleBit === true
    * @throws {Error} If store.isSingleBit is not true
    */
   constructor (store) {
@@ -74,10 +45,10 @@ export class SingleBitMorphology {
    * More efficient than non-separable and respects grid boundaries via edge masking.
    * Radius determines the number of dilation steps applied (cumulative expansion).
    *
-   * @param {Bitboard} bitboard - Input occupancy bits
+   * @param {import('./types/index.js').Bitboard} bitboard - Input occupancy bits
    * @param {number} gridWidth - Grid width in cells (for vertical shift calculation)
    * @param {number} [radius=1] - Number of dilation steps (non-negative integer)
-   * @returns {Bitboard} Dilated occupancy bits
+   * @returns {import('./types/index.js').Bitboard} Dilated occupancy bits
    */
   dilateSeparable (bitboard, gridWidth, radius = 1) {
     const edgeMasks = this.store._createDefaultEdgeMasks?.()

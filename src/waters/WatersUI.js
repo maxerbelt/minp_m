@@ -30,6 +30,54 @@
  * @property {(map: GridMap, width?: number) => number} getDivisor - Returns divisor for cell size calculation
  */
 
+/**
+ * @typedef {(cell: HTMLDivElement, power: any) => Promise<void>} CellEffectCallback
+ * Async effect callback applied to cells during animations.
+ * @description Called for each cell with optional power/data parameter during async effect processing
+ */
+
+/**
+ * @typedef {(row: number, col: number) => void} CellMissCallback
+ * Callback to mark a cell as a miss (no ship hit).
+ * @description Used for area-of-effect visualization and weapon splash calculations
+ */
+
+/**
+ * @typedef {(row: number, col: number, ship: Ship) => void} CellDisplayCallback
+ * Callback to display a cell with ship information.
+ * @description Used for rendering ship positions and damage states during display
+ */
+
+/**
+ * @typedef {(row: number, col: number) => HTMLElement} CoordToElementCallback
+ * Callback to transform grid coordinates to DOM element.
+ * @description Used for mapping coordinate pairs to their corresponding cell elements
+ */
+
+/**
+ * @typedef {(row: number, col: number) => any} CoordToValueCallback
+ * Callback to transform grid coordinates to any value.
+ * @description Generic callback for coordinate-based transformations in collection methods
+ */
+
+/**
+ * @typedef {(weaponSource: any, row: number, col: number) => void} CellHoverEnterCallback
+ * Callback fired when mouse enters a cell during hover targeting.
+ * @description Receives weapon source data and cell coordinates for aiming display
+ */
+
+/**
+ * @typedef {(row: number, col: number) => void} CellHoverLeaveCallback
+ * Callback fired when mouse leaves a cell during hover targeting.
+ * @description Receives cell coordinates for cleanup of hover-related display
+ */
+
+/**
+ * @typedef {(cell: HTMLElement) => void} CellClassClearer
+ * Callback to clear CSS classes from a cell.
+ * @description Custom strategy for class clearing used during board reset operations
+ */
+
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
 import { ScoreUI } from './ScoreUI.js'
@@ -251,10 +299,11 @@ export class WatersUI {
    * Calculates cell size in pixels using configuration for display mode.
    * Consolidates screen, list, and print size calculations.
    *
-   * @param {string} mode - Display mode: 'SCREEN', 'LIST', or 'PRINT'
+   * @param {'SCREEN'|'LIST'|'PRINT'} mode - Display mode identifier
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @param {number} [containerWidthOverride] - Optional container width (defaults to this.containerWidth)
    * @returns {number} Cell size in pixels
+   * @throws {Error} If mode is not recognized (must be SCREEN, LIST, or PRINT)
    */
   #calculateCellSize (mode, map, containerWidthOverride) {
     const config = /** @type {SurroundingStrategy|undefined} */ (
@@ -312,9 +361,10 @@ export class WatersUI {
    * Calculates linear index from 2D grid coordinates.
    * Index = row * columnCount + column (standard row-major ordering).
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} row - Row coordinate (0-based, y-axis)
+   * @param {number} column - Column coordinate (0-based, x-axis)
    * @returns {number} Linear array index in flattened grid
+   * @private
    */
   #gridIndex (row, column) {
     return row * bh.map.cols + column
@@ -384,7 +434,7 @@ export class WatersUI {
   /**
    * Applies async effects to multiple cells with random delays.
    * @param {Array<[HTMLDivElement, number, number, any]>} cells - Cells with coordinates and power
-   * @param {(cell: HTMLDivElement, power: any) => Promise<void>} effect - Async callback for each cell
+   * @param {CellEffectCallback} effect - Async callback for each cell
    * @param {number} [mindelay=380] - Minimum delay in milliseconds
    * @param {number} [maxdelay=730] - Maximum delay in milliseconds
    * @returns {Promise<PromiseSettledResult<void>[]>} Results of all async operations
@@ -399,7 +449,7 @@ export class WatersUI {
   /**
    * Applies async effect to a single cell with random delay.
    * @param {HTMLDivElement} cell - Cell element to apply effect to
-   * @param {(cell: HTMLDivElement, power: any) => Promise<void>} effect - Async callback
+   * @param {CellEffectCallback} effect - Async callback
    * @param {number} [mindelay=380] - Minimum delay in milliseconds
    * @param {number} [maxdelay=730] - Maximum delay in milliseconds
    * @param {any} [power=null] - Optional power/data passed to effect
@@ -483,7 +533,7 @@ export class WatersUI {
    * @param {HTMLDivElement} cell - DOM element to clear
    * @param {'none'|'content'|'all'} details - What to clear:
    *   'none' = only call classClear, 'content' = text only, 'all' = text and style
-   * @param {(cell: HTMLDivElement) => void} [classClear] - Function to clear cell classes (defaults to clearCell)
+   * @param {CellClassClearer} [classClear] - Function to clear cell classes (defaults to clearCell)
    * @returns {void}
    */
   clearCellVisuals (cell, details, classClear) {
@@ -681,11 +731,13 @@ export class WatersUI {
    *
    * @param {number} row - Row coordinate of center cell
    * @param {number} column - Column coordinate of center cell
-   * @param {Set<string>|Object|any[]} container - Container to accumulate results
-   * @param {string} strategy - Result format: 'keySet' | 'objectMap' | 'array'
+   * @param {Set<string>|Object<string, HTMLElement>|any[]} container - Container to accumulate results
+   * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy
    * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @param {(row: number, col: number) => any} [maker] - Callback for 'objectMap'/'array' strategies (optional)
+   * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
    * @returns {void}
+   * @throws {Error} If maker callback required but not provided for chosen strategy
+   * @private
    */
   _addSurroundingCells (row, column, container, strategy, map, maker) {
     const currentMap = map || bh.map
@@ -744,7 +796,7 @@ export class WatersUI {
    * @param {number} row - Row coordinate of center cell
    * @param {number} column - Column coordinate of center cell
    * @param {Object} container - Object to accumulate surrounding cell mappings
-   * @param {(row: number, col: number) => HTMLElement} maker - Callback to transform [row, col] → HTMLElement
+   * @param {CoordToElementCallback} maker - Callback to transform [row, col] → HTMLElement
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
    */
@@ -759,7 +811,7 @@ export class WatersUI {
    * @param {number} row - Row coordinate of center cell
    * @param {number} column - Column coordinate of center cell
    * @param {any[]} container - Array to accumulate surrounding cell elements
-   * @param {(row: number, col: number) => any} maker - Callback to transform [row, col] → any value
+   * @param {CoordToValueCallback} maker - Callback to transform [row, col] → any value
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
    */
@@ -842,7 +894,7 @@ export class WatersUI {
    * Marks all neighbors (but not original cells) as miss for area-of-effect.
    *
    * @param {Set<string>} surroundingKeys - Set of surrounding cell keys
-   * @param {Function} cellMiss - Callback to mark cells as miss: (row, col) => void
+   * @param {CellMissCallback} cellMiss - Callback to mark cells as miss: (row, col) => void
    * @returns {void}
    */
   _displaySurroundingMisses (surroundingKeys, cellMiss) {
@@ -858,7 +910,7 @@ export class WatersUI {
    *
    * @param {Iterable<[number, number]>} cells - Original cell coordinates
    * @param {Ship} ship - Ship object for display
-   * @param {Function} displayFn - Callback to display cells: (row, col, ship) => void
+   * @param {CellDisplayCallback} displayFn - Callback to display cells: (row, col, ship) => void
    * @returns {void}
    */
   _displayCenterCells (cells, ship, displayFn) {
@@ -873,8 +925,8 @@ export class WatersUI {
    *
    * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
    * @param {Ship} ship - Ship object for center cell display
-   * @param {(row: number, col: number) => void} cellMiss - Callback to mark surrounding cells as miss
-   * @param {(row: number, col: number, ship: Ship) => void} [display] - Optional callback to display center cells
+   * @param {CellMissCallback} cellMiss - Callback to mark surrounding cells as miss
+   * @param {CellDisplayCallback} [display] - Optional callback to display center cells
    * @returns {void}
    */
   displaySurround (cells, ship, cellMiss, display) {
@@ -997,15 +1049,17 @@ export class WatersUI {
   }
 
   /**
-   * Checks if cell has edge with land based on neighboring cell.
-   * Edge classes indicate transition from water to land.
+   * Checks if cell has edges with land and applies corresponding CSS classes.
+   * Adds edge classes for water cells adjacent to land cells.
    *
    * @param {HTMLElement} cell - DOM element for edge class application
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} row - Row coordinate (0-based, y-axis)
+   * @param {number} column - Column coordinate (0-based, x-axis)
    * @param {GridMap} map - Map configuration with cols, rows, isLand() method
-   * @param {boolean} isLand - Whether current cell is land
+   * @param {boolean} isLand - Whether current cell is land terrain
    * @returns {void}
+   * @description Applies CSS classes: rightEdge, leftEdge, topEdge, bottomEdge as appropriate
+   * @private
    */
   _detectAndApplyEdges (cell, row, column, map, isLand) {
     // Check right edge (water next to land)
@@ -1105,6 +1159,7 @@ export class WatersUI {
    * @param {((event: MouseEvent) => void)|null} [onClickCell] - Optional click event handler
    * @param {GridMap} [map] - Map configuration for terrain coloring
    * @returns {void}
+   * @description onClickCell is typically bound with .bind(thisRef, row, column) before use
    */
   buildCell (row, column, onClickCell, map) {
     const cell = document.createElement('div')
@@ -1147,10 +1202,11 @@ export class WatersUI {
    * Builds board grid for interactive display with optional click handlers.
    * Creates grid cells and binds click events if handler provided.
    *
-   * @param {(row: number, col: number) => void} [onClickCell] - Click handler
+   * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} [onClickCell] - Click handler (row, col) bound
    * @param {Object} [thisRef] - Context object for click handler binding
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
+   * @description onClickCell will be called with (row, column) coordinates after binding with thisRef context
    */
   buildBoard (onClickCell, thisRef, map) {
     const currentMap = map || bh.map
@@ -1191,8 +1247,8 @@ export class WatersUI {
    * Attaches hover event listeners to all board cells.
    * Shows/hides area-of-effect or targeting information on hover.
    *
-   * @param {(weaponSource: any, row: number, col: number) => void} onEnter - Mouseenter handler
-   * @param {(row: number, col: number) => void} onLeave - Mouseleave handler
+   * @param {CellHoverEnterCallback} onEnter - Mouseenter handler
+   * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler
    * @param {Object} [thisRef] - Context for onLeave binding
    * @param {any} [weaponSource] - Weapon source data passed to onEnter
    * @returns {void}
@@ -1215,7 +1271,7 @@ export class WatersUI {
    * Generic method applying custom clearing callback and detail level to all cells.
    *
    * @param {'none'|'content'|'all'} details - What to clear: 'none', 'content', or 'all'
-   * @param {(cell: HTMLElement) => void} [classClearer] - Function to clear cell classes
+   * @param {CellClassClearer} [classClearer] - Function to clear cell classes
    * @returns {void}
    */
   _clearAllCellVisuals (details, classClearer) {
@@ -1360,10 +1416,11 @@ export class WatersUI {
 
   /**
    * Counts ships by unit type across fleet.
-   * Normalizes M/T types to X type for display.
+   * Normalizes M/T types to X type for display aggregation.
    *
    * @param {Ship[]} ships - Array of ship objects
-   * @returns {Object<string, number>} Map of unit type to count
+   * @returns {Object<string, number>} Map of unit type to count (e.g., {A: 4, S: 2, X: 1})
+   * @private
    */
   _countUnitsByType (ships) {
     return ships.reduce((/** @type {Object<string, number>} */ acc, ship) => {
@@ -1390,9 +1447,10 @@ export class WatersUI {
    * Adds a ship to a unit type group, incrementing count.
    * Creates group entry if needed with ship shape.
    *
-   * @param {Object<string, any>} group - Group object keyed by ship letter
+   * @param {Object<string, {shape: Object, count: number}>} group - Group object keyed by ship letter
    * @param {Ship} ship - Ship object with letter and shape() method
    * @returns {void}
+   * @private
    */
   addShipToGroup (group, ship) {
     const key = ship.letter
@@ -1407,7 +1465,7 @@ export class WatersUI {
    * Each group contains ship entries keyed by letter with shape/count.
    *
    * @param {Ship[]} ships - Array of ship objects
-   * @returns {Object<string, Object<string, any>>} Ships grouped by type:
+   * @returns {Object<string, Object<string, {shape: Object, count: number}>>} Ships grouped by type:
    *   { A: {D: {shape: ..., count: 2}}, S: {A: {shape: ..., count: 1}}, ...}
    */
   splitUnits (ships) {
@@ -1428,8 +1486,8 @@ export class WatersUI {
    * Trays display ship/unit loadout and information.
    *
    * @param {string} type - Unit type identifier (A, S, X, G, W)
-   * @returns {HTMLDivElement} The tray container element
-   * @throws {Error} If type is unknown or tray element not found
+   * @returns {HTMLDivElement} The tray container element (never null when found)
+   * @throws {Error} If type is unknown or tray element not found in DOM
    */
   getTrayOfType (type) {
     const trayId = TRAY_TYPE_MAP[type]
@@ -1445,11 +1503,11 @@ export class WatersUI {
 
   /**
    * Gets the notes/information DOM element for a specific unit type.
-   * Notes display unit descriptions and stats.
+   * Notes display unit descriptions and stats for UI feedback.
    *
    * @param {string} type - Unit type identifier (A, S, X, G, W, or M/T for special)
    * @returns {HTMLDivElement|null} The notes container element, or null if not found
-   * @throws {Error} If type is unknown
+   * @throws {Error} If type is unknown or not in NOTES_TYPE_MAP
    */
   getNotesOfType (type) {
     const notesId = NOTES_TYPE_MAP[type]

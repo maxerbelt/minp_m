@@ -3,22 +3,33 @@
  */
 
 /**
- * BitMorphology
+ * @typedef {Object} EdgeMasks
+ * @description Defines expansion boundaries for morphological operations
+ * @property {bigint} [left] - Mask for left edge boundary cells
+ * @property {bigint} [right] - Mask for right edge boundary cells
+ * @property {bigint} [top] - Mask for top edge boundary cells
+ * @property {bigint} [bottom] - Mask for bottom edge boundary cells
+ */
+
+/**
+ * BitMorphology - Morphological operations on bitboard representations
  *
- * Holds bit manipulation methods for morphological operations like dilation and erosion
- * on bitboard representations. Operations include horizontal dilation and combination
- * of bitboards using bitwise operations.
- *
- * Consider consolidating into mask classes if not needed separately.
+ * Encapsulates bit manipulation methods for morphological operations like dilation
+ * and erosion on bitboard representations. Operations include horizontal dilation
+ * and combination of bitboards using bitwise operations. Provides foundational
+ * utilities for grid-based cellular operations.
  *
  * @class BitMorphology
+ * @description Morphological operations on bitboard representations
+ * @public
  */
-// eslint-disable-next-line no-unused-vars
 class BitMorphology {
   /**
    * Create a BitMorphology instance for performing morphological bit operations
    *
    * @param {StoreBig} store - The bitboard store providing shift and expansion methods
+   * @throws {Error} If store is not provided or missing required methods
+   * @public
    */
   constructor (store) {
     this.store = store
@@ -32,9 +43,14 @@ class BitMorphology {
    * 2. Shifting the expanded sources left and right respectively
    * 3. Combining all three (original, left shift, right shift) with bitwise OR
    *
+   * This operation expands set bits horizontally, creating a "thickening" effect in the
+   * left and right directions while respecting edge boundaries defined by the masks.
+   *
    * @param {bigint} bitboard - The bitboard to dilate (BigInt value where each bit represents a cell state)
-   * @param {object} edgeMasks - Edge masks defining expansion boundaries for left/right operations
+   * @param {EdgeMasks} edgeMasks - Edge masks defining expansion boundaries for left/right operations
    * @returns {bigint} The horizontally dilated bitboard result
+   * @throws {TypeError} If bitboard is not a BigInt or edgeMasks is malformed
+   * @public
    */
   dilateHorizontal (bitboard, edgeMasks) {
     const srcLeft = this.store.prepareSrcForLeftExpansion(bitboard, edgeMasks)
@@ -51,9 +67,12 @@ class BitMorphology {
    *
    * Merges all provided bitboards together using bitwise OR and applies
    * the store's full bits mask to ensure the result is properly bounded
+   * and doesn't exceed the grid dimensions.
    *
-   * @param {...bigint} values - Variable number of bitboards to combine
+   * @param {...bigint} values - Variable number of bitboards to combine (each a BigInt)
    * @returns {bigint} Combined bitboard with all bits from input values ORed together
+   * @throws {TypeError} If any value is not a BigInt
+   * @public
    */
   combine (...values) {
     const mask = this.store.fullBits
@@ -65,3 +84,5 @@ class BitMorphology {
     return result & mask
   }
 }
+
+export { BitMorphology }

@@ -8,14 +8,17 @@
 
 /**
  * @typedef {Object} MaskInstance
- * @description A mask object with bitboard storage and operations.
- * @property {bigint} bits - The bitboard storage (BigInt representation of grid state)
- * @property {bigint} fullBits - All bits set (full grid occupancy mask)
- * @property {Object} store - Storage backend providing bit operations (bitOr, bitAnd, bitSub, bitPos, isBitSet, etc.)
- * @property {Function} index - Compute linear index from coordinates: index(x, y) => number
- * @property {Function} dilateBits - Dilate bits by radius: dilateBits(radius) => bigint
- * @property {Function} erodeBits - Erode bits by radius: erodeBits(radius) => bigint
- * @property {Function} emptyMask - Factory method to create empty mask instances
+ * @description A mask instance representing a set of grid coordinates with associated values
+ * @property {Object} store - Bit store backend (BigInt-based storage with operations)
+ * @property {Function} store.bitSub - Bitwise SUB operation: (bits1, bits2) => bigint
+ * @property {Function} store.bitSub3 - Three-way bitwise SUB: (bits1, bits2, bits3) => bigint
+ * @property {Function} store.isBitSet - Check if bit is set: (bits, index) => boolean
+ * @property {bigint} fullBits - Full grid bit pattern (all cells occupied)
+ * @property {bigint} bits - Current bit pattern
+ * @property {Function} dilateBits - Dilate by n steps: (n) => bigint
+ * @property {Function} erodeBits - Erode by n steps: (n) => bigint
+ * @property {Function} index - Convert coordinates to bit index: (x, y) => number
+ * @property {Object} emptyMask - Reference to empty mask instance (factory for new masks)
  */
 
 /**
@@ -25,7 +28,9 @@
  *   2. Outer area: all cells beyond the outer border
  *   3. Inner border: cells inside the mask but adjacent to empty space (erosion boundary)
  *   4. Inner area: core cells of the mask (stable interior)
- * @class
+ * @class BorderRegions
+ * @description Spatial region and border analysis on masks
+ * @public
  */
 export class BorderRegions {
   /**
@@ -38,6 +43,7 @@ export class BorderRegions {
    * @param {MaskInstance} maskInstance - Target mask for border analysis.
    * Must have bits (bigint), store (backend), fullBits, index, dilateBits, erodeBits methods.
    * @throws {TypeError} If maskInstance lacks required properties.
+   * @public
    *
    * @example
    * const borders = new BorderRegions(targetMask);
@@ -61,6 +67,7 @@ export class BorderRegions {
    *
    * @returns {bigint} Bit pattern representing all outer border cells.
    * Empty if mask is dilated (no room to expand) or isolated.
+   * @public
    *
    * @example
    * const outerBorderBits = borders.getOuterBorderBits();
@@ -81,6 +88,7 @@ export class BorderRegions {
    *
    * @returns {MaskInstance} New mask with bits = outer border cells.
    * Original mask unchanged. Empty mask if no outer border exists.
+   * @public
    *
    * @example
    * const borderMask = borders.createOuterBorderMask();
@@ -103,6 +111,7 @@ export class BorderRegions {
    *
    * @returns {bigint} Bit pattern representing all outer area cells.
    * Large if mask is small (lots of distant empty space).
+   * @public
    *
    * @example
    * const outerAreaBits = borders.getOuterAreaBits();
@@ -126,6 +135,7 @@ export class BorderRegions {
    *
    * @returns {MaskInstance} New mask with bits = outer area cells.
    * Original mask unchanged. Empty if no outer area exists (fills entire grid).
+   * @public
    *
    * @example
    * const areaMask = borders.createOuterAreaMask();
@@ -148,6 +158,7 @@ export class BorderRegions {
    *
    * @returns {bigint} Bit pattern representing all inner border cells.
    * Empty if mask is eroded (no interior) or fully enclosed.
+   * @public
    *
    * @example
    * const innerBorderBits = borders.getInnerBorderBits();
@@ -168,6 +179,7 @@ export class BorderRegions {
    *
    * @returns {MaskInstance} New mask with bits = inner border cells.
    * Original mask unchanged. Empty mask if no inner border exists.
+   * @public
    *
    * @example
    * const borderMask = borders.createInnerBorderMask();
@@ -190,6 +202,7 @@ export class BorderRegions {
    *
    * @returns {bigint} Bit pattern representing all inner area cells.
    * Empty if mask has no interior (all cells are boundary).
+   * @public
    *
    * @example
    * const innerAreaBits = borders.getInnerAreaBits();
@@ -209,6 +222,7 @@ export class BorderRegions {
    *
    * @returns {MaskInstance} New mask with bits = inner area cells.
    * Original mask unchanged. Empty if no inner area exists.
+   * @public
    *
    * @example
    * const areaMask = borders.createInnerAreaMask();
@@ -231,6 +245,7 @@ export class BorderRegions {
    * @param {number} x - X coordinate (column) of location to test.
    * @param {number} y - Y coordinate (row) of location to test.
    * @returns {boolean} True if (x, y) is on the outer border; false otherwise.
+   * @public
    *
    * @example
    * if (borders.isOnOuterBorder(5, 10)) {
@@ -252,6 +267,7 @@ export class BorderRegions {
    * @param {number} x - X coordinate (column) of location to test.
    * @param {number} y - Y coordinate (row) of location to test.
    * @returns {boolean} True if (x, y) is on the inner border; false otherwise.
+   * @public
    *
    * @example
    * if (borders.isOnInnerBorder(5, 10)) {
@@ -275,6 +291,7 @@ export class BorderRegions {
    * @param {bigint} bits - Bit pattern to assign to the new mask.
    * @returns {MaskInstance} New mask instance with bits set to the provided pattern.
    * Inherits dimensions and structure from this.mask.
+   * @throws {TypeError} If bits is not a BigInt
    *
    * @example
    * // Internal usage in createOuterBorderMask
@@ -298,6 +315,7 @@ export class BorderRegions {
    * @param {number} x - X coordinate (column) of location to test.
    * @param {number} y - Y coordinate (row) of location to test.
    * @returns {boolean} True if the bit is set at (x, y); false otherwise.
+   * @throws {TypeError} If coordinates are out of bounds
    *
    * @example
    * // Internal usage in isOnOuterBorder

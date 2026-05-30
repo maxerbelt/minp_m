@@ -1,40 +1,6 @@
-/**
- * @typedef {Object} MaskInstance
- * @property {bigint|Uint32Array} bits - Bitboard representation
- * @property {Object} store - Bit storage backend
- * @property {number} width - Grid width in cells
- * @property {number} height - Grid height in cells
- * @property {Object} indexer - Coordinate-to-index converter
- * @property {number} depth - Color depth (bits per cell)
- * @property {Function} emptyMaskOfSize - Create empty mask of given size
- * @property {Function} isValid - Check coordinate validity
- * @property {Function} set - Set value at coordinate
- * @property {Function} occupiedLocationsAndValues - Iterator of [x, y, value]
- */
-
-/**
- * @typedef {Object} StoreBackend
- * @property {boolean} isMultiBit - True if store handles multi-bit (colored) cells
- * @property {boolean} isSingleBit - True if store handles single-bit (occupancy) cells
- * @property {Function} dilate1D_horizontal - Horizontal dilation (1D)
- * @property {Function} dilate1D_vertical - Vertical dilation (1D)
- * @property {Function} dilateCrossStep - Cross-pattern dilation step
- * @property {Function} expandHorizontallyCellwise - Per-cell horizontal expansion
- * @property {Function} propagateVerticalCellwise - Per-cell vertical propagation
- * @property {Function} erodeHorizontalClamp - Horizontal erosion with clamping
- * @property {Function} erodeVerticalClamp - Vertical erosion with clamping
- * @property {Function} erodeHorizontalCellwise - Per-cell horizontal erosion
- * @property {Function} erodeVerticalCellwise - Per-cell vertical erosion
- * @property {Function} _createDefaultEdgeMasks - Create boundary masks
- */
-
-/**
- * @typedef {Object} EdgeMaskCollection
- * @property {bigint|Uint32Array} top - Mask for top edge
- * @property {bigint|Uint32Array} bottom - Mask for bottom edge
- * @property {bigint|Uint32Array} left - Mask for left edge
- * @property {bigint|Uint32Array} right - Mask for right edge
- */
+/** @type {import('./types/index.js').RectMask} */
+/** @type {import('./types/index.js').AnyStore} */
+/** @type {import('./types/index.js').EdgeMaskCollection} */
 
 /**
  * RectMorphologyOps - Morphological operations orchestration for rectangular grids.
@@ -64,7 +30,7 @@ export class RectMorphologyOps {
    * Create a morphology operation handler for rectangular grids
    * Caches mask dimensions and store reference for all morphological operations
    *
-   * @param {MaskInstance} mask - Mask or packed grid instance with required properties
+   * @param {import('./types/index.js').RectMask} mask - Mask or packed grid instance with required properties
    * @throws {Error} If mask is missing required properties (store, width, height, indexer)
    */
   constructor (mask) {
@@ -86,7 +52,7 @@ export class RectMorphologyOps {
    * Uses strategy pattern: separable bit shifts for 1-bit stores, per-cell expansion for multi-bit.
    *
    * @param {number} [radius=1] - Number of dilation steps (non-negative integer)
-   * @returns {MaskInstance} This mask instance (mutated) for method chaining
+   * @returns {import('./types/index.js').RectMask} This mask instance (mutated) for method chaining
    */
   dilate (radius = 1) {
     this.mask.bits = this.dilateBits(radius)
@@ -99,7 +65,7 @@ export class RectMorphologyOps {
    * Selects strategy based on store type (isMultiBit vs single-bit)
    *
    * @param {number} [radius=1] - Number of dilation steps (non-negative integer)
-   * @returns {bigint|Uint32Array} Dilated bits
+   * @returns {import('./types/index.js').Bitboard} Dilated bits
    */
   dilateBits (radius = 1) {
     if (radius <= 0) return this.bits

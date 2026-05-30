@@ -13,10 +13,12 @@
  * @see RectMorphologyOps for high-level operation orchestration
  * @see BigStoreMorphology, Store32Morphology for per-cell operation helpers
  */
+
+/** @type {import('./types/index.js').MultiColorStore} */
 export class MultiColorMorphology {
   /**
    * Initialize multi-bit morphology handler
-   * @param {Object} store - Store instance (StoreBig or Store32)
+   * @param {import('./types/index.js').MultiColorStore} store - Store instance (StoreBig or Store32)
    */
   constructor (store) {
     this.store = store
@@ -33,10 +35,10 @@ export class MultiColorMorphology {
   /**
    * Dilate colored grid by propagating colors into neighboring cells.
    * Each occupied cell spreads its color to adjacent cells.
-   * @param {bigint|Uint32Array} bitboard - Input colored bits
+   * @param {import('./types/index.js').Bitboard} bitboard - Input colored bits
    * @param {number} gridWidth - Grid width
    * @param {number} radius - Number of dilation steps
-   * @returns {bigint|Uint32Array} Dilated colored bits
+   * @returns {import('./types/index.js').Bitboard} Dilated colored bits
    */
   dilate (bitboard, gridWidth, radius = 1) {
     if (radius <= 0) return bitboard
@@ -148,10 +150,10 @@ export class MultiColorMorphology {
   /**
    * Erode colored grid by removing colors from cells without neighbors.
    * A cell survives only if it has occupied neighbors in all 4 cardinal directions.
-   * @param {bigint|Uint32Array} bitboard - Input colored bits
+   * @param {import('./types/index.js').Bitboard} bitboard - Input colored bits
    * @param {number} gridWidth - Grid width
    * @param {number} radius - Number of erosion steps
-   * @returns {bigint|Uint32Array} Eroded colored bits
+   * @returns {import('./types/index.js').Bitboard} Eroded colored bits
    */
   erode (bitboard, gridWidth, radius = 1) {
     if (radius <= 0) return bitboard
