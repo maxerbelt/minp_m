@@ -1,7 +1,4 @@
 import { terrains } from './terrains.js'
-import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
 
 /**
  * @typedef {import('./terrain.js').Terrain} Terrain
@@ -143,7 +140,7 @@ let bhLocal = null
 try {
   // prefer an already-mocked terrain module (tests mock ../terrain/terrain.js)
   const terrainModule = /** @type {Record<string, unknown>} */ (
-    require('./terrain.js')
+    import('./terrain.js')
   )
   if (terrainModule?.bh)
     bhLocal = /** @type {BattleHandler} */ (terrainModule.bh)
