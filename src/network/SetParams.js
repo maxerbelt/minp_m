@@ -1,3 +1,15 @@
+/**
+ * URL parameter management for map configuration and state updates.
+ * Provides utilities for setting and updating URL parameters related to map dimensions,
+ * names, and types, with automatic page title and browser history management.
+ *
+ * @module network/SetParams
+ * @typedef {import('./types/params.types.js').ParameterChanges} ParameterChanges
+ * @typedef {import('./types/shared.types.js').TokenPair} TokenPair
+ * @typedef {import('./types/terrain.types.js').TerrainData} TerrainData
+ * @typedef {import('./types/params.types.js').MapConfiguration} MapConfiguration
+ */
+
 import {
   getParamSize,
   isEditMode,
@@ -9,10 +21,15 @@ import { terrains } from '../terrains/all/js/terrains.js'
 import { toTitleCase } from '../core/utils.js'
 
 /**
- * Gets the current terrain body tag, with fallback to 'sea'.
+ * Gets the current terrain body tag with fallback to 'sea'.
+ * Retrieves the terrain's body tag from the global terrain handler (bh),
+ * used for applying CSS classes based on the current terrain type.
+ *
  * @private
- * @param {string} [context=''] - Context for warning message
- * @returns {string} Body tag
+ * @param {string} [context=''] - Context identifier for warning messages (e.g., function name)
+ * @returns {string} Body tag identifier ('sea', 'space', 'asteroid', etc.), defaults to 'sea'
+ * @example
+ * const bodyTag = getCurrentBodyTag('setSizeParams') // returns 'sea' or current terrain
  */
 function getCurrentBodyTag (context = '') {
   const bodyTag = bh?.terrain?.bodyTag
@@ -23,9 +40,16 @@ function getCurrentBodyTag (context = '') {
 }
 
 /**
- * Updates the page state with new URL and title tokens.
- * @param {Array<[string, string]>} tokens - Key-value pairs for title replacement
- * @param {URL} url - New URL to push to history
+ * Updates the page state with new URL and page title.
+ * Updates the document title by replacing tokens in the page title template,
+ * then pushes a new state to the browser history without reloading the page.
+ *
+ * @private
+ * @param {TokenPair[]} tokens - Array of [key, value] pairs for template substitution
+ * @param {URL} url - URL object with updated parameters to push to history
+ * @returns {void}
+ * @example
+ * updateState([['mapName', 'MyMap']], new URL(window.location))
  */
 function updateState (tokens, url) {
   const pageTitle = document.getElementById('page-title')
@@ -38,12 +62,19 @@ function updateState (tokens, url) {
 }
 
 /**
- * Replaces tokens in a template string.
+ * Replaces a single token in a template string.
+ * Replaces both curly-bracket tokens ({key}) and square-bracket tokens ([key]) in the template.
+ * Curly-bracket tokens are replaced as-is, while square-bracket tokens are replaced with
+ * title-cased values (first letter uppercase).
+ *
  * @private
- * @param {string} template - Template string
- * @param {string} key - Token key
- * @param {string} value - Replacement value
- * @returns {string} Updated template
+ * @param {string} template - Template string containing tokens to replace
+ * @param {string} key - Token key (without brackets)
+ * @param {string} value - Replacement value for the token
+ * @returns {string} Template with tokens replaced
+ * @example
+ * replaceToken('Map: {name} [{name}]', 'name', 'mymap')
+ * // returns 'Map: mymap [Mymap]'
  */
 function replaceToken (template, key, value) {
   const temp = template.replaceAll('{' + key + '}', value)
@@ -52,9 +83,15 @@ function replaceToken (template, key, value) {
 
 /**
  * Replaces multiple tokens in a template string.
- * @param {string} template - Template string
- * @param {Array<[string, string]>} pairs - Key-value pairs
- * @returns {string} Updated template
+ * Iterates through token pairs and replaces each token in the template.
+ * Tokens can use curly brackets ({key}) or square brackets ([key]) formats.
+ *
+ * @param {string} template - Template string containing tokens to replace
+ * @param {TokenPair[]} pairs - Array of [key, value] token replacement pairs
+ * @returns {string} Template with all tokens replaced
+ * @example
+ * replaceTokens('Mode: {mode}, Map: {map}', [['mode', 'edit'], ['map', 'test']])
+ * // returns 'Mode: edit, Map: test'
  */
 export function replaceTokens (template, pairs) {
   for (const [key, value] of pairs) {
@@ -64,12 +101,22 @@ export function replaceTokens (template, pairs) {
 }
 
 /**
- * Base function to set URL parameters and update state.
+ * Updates URL parameters and page state based on changes.
+ * Applies parameter deletions and additions to the URL search parameters,
+ * then updates the page state with new tokens for the page title.
+ *
  * @private
- * @param {URLSearchParams} urlParams - URL parameters
- * @param {Object} paramChanges - Parameters to delete and set
- * @param {Array<[string, string]>} stateTokens - Tokens for state update
- * @param {URL} url - URL object
+ * @param {URLSearchParams} urlParams - URL search parameters to modify
+ * @param {ParameterChanges} paramChanges - Object specifying which parameters to delete and set
+ * @param {TokenPair[]} stateTokens - Tokens for updating page title via updateState
+ * @param {URL} url - URL object to push to browser history
+ * @returns {void}
+ * @example
+ * updateUrlAndState(urlParams,
+ *   { delete: ['mapName'], set: { height: '8', width: '10' } },
+ *   [['height', '8'], ['width', '10']],
+ *   new URL(window.location)
+ * )
  */
 function updateUrlAndState (urlParams, paramChanges, stateTokens, url) {
   // Delete specified parameters
@@ -86,9 +133,16 @@ function updateUrlAndState (urlParams, paramChanges, stateTokens, url) {
 }
 
 /**
- * Sets size parameters (height and width) in the URL and updates state.
- * @param {number} height - New height value
- * @param {number} width - New width value
+ * Sets size parameters (height and width) in the URL and updates page state.
+ * Updates the URL with new map dimensions if they differ from current parameters,
+ * clearing the mapName parameter in the process. Updates page title and browser history.
+ * Only applies changes if both height and width are valid numbers and differ from current values.
+ *
+ * @param {number} height - New map height in cells (must be a valid positive number)
+ * @param {number} width - New map width in cells (must be a valid positive number)
+ * @returns {void}
+ * @example
+ * setSizeParams(8, 10) // Sets URL to height=8&width=10 and removes mapName
  */
 export function setSizeParams (height, width) {
   const url = new URL(globalThis.location)
@@ -130,8 +184,15 @@ export function setSizeParams (height, width) {
   }
 }
 /**
- * Sets map name parameter in the URL and updates state.
- * @param {string} title - New map title
+ * Sets map name parameter in the URL and updates page state.
+ * Updates the URL with the new map name if it differs from the current mapName parameter,
+ * clearing height and width parameters in the process. Updates page title and browser history.
+ * Only applies changes if title is provided and differs from current mapName.
+ *
+ * @param {string} title - New map title/name to set in URL as mapName parameter
+ * @returns {void}
+ * @example
+ * setMapParams('MyCustomMap') // Sets URL to mapName=MyCustomMap and removes height/width
  */
 export function setMapParams (title) {
   const url = new URL(globalThis.location)
@@ -164,8 +225,16 @@ export function setMapParams (title) {
   }
 }
 /**
- * Sets map type parameter in the URL and updates state.
- * @param {string} mapType - New map type
+ * Sets map type parameter in the URL and updates page state.
+ * Updates the URL with the new map type (extracting first word if multiple words provided),
+ * clearing height, width, and mapName parameters. Syncs terrain system with URL terrain parameter.
+ * Updates page title and browser history. Only applies changes if mapType differs from current value.
+ *
+ * @param {string} mapType - New map type identifier (first word is extracted if contains spaces)
+ * @returns {void}
+ * @example
+ * setMapTypeParams('asteroid') // Sets URL to mapType=asteroid and updates terrain
+ * setMapTypeParams('space terrain') // Extracts 'space' and sets URL to mapType=space
  */
 export function setMapTypeParams (mapType) {
   mapType = mapType?.split(' ', 1)[0]

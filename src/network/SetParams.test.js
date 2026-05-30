@@ -1,4 +1,3 @@
-
 import { jest } from '@jest/globals'
 
 let replaceTokens
@@ -30,8 +29,12 @@ describe('SetParams', () => {
         value: { href: '', search: '', reload: jest.fn(), assign: jest.fn() },
         configurable: true
       })
-    } catch (e) {
+    } catch (error) {
       // fallback: try to set safe properties on existing location object
+      console.debug(
+        'Could not replace location object, attempting property assignment:',
+        error.message
+      )
       try {
         if (origLocation && typeof origLocation === 'object') {
           origLocation.href = origLocation.href || ''
@@ -40,7 +43,7 @@ describe('SetParams', () => {
           origLocation.assign = origLocation.assign || jest.fn()
         }
       } catch (err) {
-        // ignore - cannot mock location
+        console.debug('Could not set location properties:', err.message)
       }
     }
     globalThis.history = { pushState: jest.fn() }
@@ -60,7 +63,8 @@ describe('SetParams', () => {
         }
         return new OrigURL(input)
       }
-    } catch (e) {
+    } catch (error) {
+      console.debug('Could not mock URL constructor:', error.message)
       origURL = undefined
     }
 
@@ -88,46 +92,65 @@ describe('SetParams', () => {
     }
   })
 
-  afterEach(() => {
-    globalThis.history = origPush
+  /**
+   * Restore history mock.
+   * @private
+   * @returns {void}
+   */
+  function _restorePushState () {
     try {
-      if (origPush && origPush.pushState && origPush.pushState.mockRestore) {
-        origPush.pushState.mockRestore()
-      }
-    } catch (e) {
-      console.warn('Could not restore history.pushState:', e)
+      origPush?.pushState?.mockRestore?.()
+    } catch (error) {
+      console.warn('Could not restore history.pushState:', error)
     }
+  }
+
+  /**
+   * Restore location object or properties.
+   * @private
+   * @returns {void}
+   */
+  function _restoreLocation () {
     try {
       if (origLocation && typeof origLocation === 'object') {
-        // try to restore properties
         try {
           globalThis.location.href = origLocation.href
           globalThis.location.search = origLocation.search
-        } catch (e) {
-          console.warn('Could not restore location properties:', e)
+        } catch (error) {
+          console.warn('Could not restore location properties:', error)
         }
       } else {
-        try {
-          Object.defineProperty(globalThis, 'location', {
-            value: origLocation,
-            configurable: true
-          })
-        } catch (e) {
-          console.warn('Could not restore globalThis.location:', e)
-        }
+        Object.defineProperty(globalThis, 'location', {
+          value: origLocation,
+          configurable: true
+        })
       }
-    } catch (e) {
-      console.warn('Could not restore globalThis.location:', e)
-      // ignore restore errors
+    } catch (error) {
+      console.warn('Could not restore globalThis.location:', error)
     }
-    if (origURL) globalThis.URL = origURL
+  }
+
+  /**
+   * Restore document to original state.
+   * @private
+   * @returns {void}
+   */
+  function _restoreDocument () {
     if (createdMockDocument) {
       delete globalThis.document
       createdMockDocument = false
     } else if (origDocument) {
       const el = document.getElementById('page-title')
-      if (el) el.remove()
+      el?.remove?.()
     }
+  }
+
+  afterEach(() => {
+    globalThis.history = origPush
+    _restorePushState()
+    _restoreLocation()
+    if (origURL) globalThis.URL = origURL
+    _restoreDocument()
   })
 
   test('replaceTokens replaces {} and [] tokens and title-case [] tokens', () => {

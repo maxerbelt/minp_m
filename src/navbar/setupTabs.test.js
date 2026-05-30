@@ -204,12 +204,10 @@ describe('setupTabs and switchTo', () => {
         value: { href: '', search: '' },
         configurable: true
       })
-    } catch (_error) {
-      // Location may be read-only in some environments
+    } catch (error) {
       if (origLocation && typeof origLocation === 'object') {
         _attemptRestoreLocationFunctions(origLocation)
       }
-      // Silently continue in test environment where location may be read-only
     }
   }
 
@@ -224,9 +222,9 @@ describe('setupTabs and switchTo', () => {
       // avoid mutating location.href/search to prevent jsdom navigation
       globalThis.location.reload = location.reload || undefined
       globalThis.location.assign = location.assign || undefined
-    } catch (_error) {
-      // Location may be fully read-only; continue without changes
-      // no-op: silently continue in test environment
+    } catch (error) {
+      // Location may be fully read-only; silently continue
+      console.debug('Could not restore location functions:', error.message)
     }
   }
 
@@ -261,8 +259,8 @@ describe('setupTabs and switchTo', () => {
       } else {
         _restoreLocationObject()
       }
-    } catch (_error) {
-      // no-op: silently continue in test environment
+    } catch (error) {
+      console.debug('Could not restore location:', error.message)
     }
   }
 
@@ -278,16 +276,16 @@ describe('setupTabs and switchTo', () => {
       // restore functions only to avoid navigation
       try {
         globalThis.location.reload = location.reload
-      } catch (_error) {
-        // ignore read-only location in this environment
+      } catch (error) {
+        console.debug('Could not restore location.reload:', error.message)
       }
       try {
         globalThis.location.assign = location.assign
-      } catch (_error) {
-        // ignore read-only location in this environment
+      } catch (error) {
+        console.debug('Could not restore location.assign:', error.message)
       }
-    } catch (_error) {
-      // ignore read-only location in this environment
+    } catch (error) {
+      console.debug('Error restoring location functions:', error.message)
     }
   }
 
@@ -302,8 +300,8 @@ describe('setupTabs and switchTo', () => {
         value: origLocation,
         configurable: true
       })
-    } catch (_error) {
-      // no-op: silently continue in test environment
+    } catch (error) {
+      console.debug('Could not restore location object:', error.message)
     }
   }
 
