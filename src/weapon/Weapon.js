@@ -2,16 +2,6 @@ import { bh } from '../terrains/all/js/bh.js'
 import { furtherestFrom } from '../core/utilities.js'
 import { Animator } from '../core/Animator.js'
 import { Random } from '../core/Random.js'
-import type {
-  AnimationOptions,
-  AnimationResult,
-  AnimatorContext,
-  ExplodeOptions
-} from './types/index.js'
-import type { LaunchContext, CoordinateProcessor } from './types/index.js'
-import type { Coord, CoordPair, PixelCoord } from './types/index.js'
-import type { AoePattern } from './types/index.js'
-import type { MapLike } from './types/index.js'
 
 export class Weapon {
   /**

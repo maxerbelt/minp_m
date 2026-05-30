@@ -1,8 +1,4 @@
 import { randomElement } from '../core/utilities.js'
-import type { IWeaponSystem, AggregationState } from './types/index.js'
-import type { AoePattern } from './types/index.js'
-import type { MapLike } from './types/index.js'
-import type { Coord } from './types/index.js'
 
 // ============================================================================
 // Static ID Manager - Centralized Sequential ID Generation

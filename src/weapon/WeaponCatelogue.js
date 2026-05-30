@@ -1,5 +1,4 @@
 import { standardShot } from './Weapon.js'
-import type { IWeapon, WeaponByLetterMap } from './types/index.js'
 
 // ============================================================================
 // WeaponCatalogue - Weapon Collection Repository
