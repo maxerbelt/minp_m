@@ -82,7 +82,7 @@ describe('Ship - advanced weapon methods', () => {
     expect(loaded.map(([k]) => k)).toEqual(['1,2', '3,4'])
   })
 
-  it('getFirstLoadedWeapon returns first loaded weapon', () => {
+  it('firstLoadedWeapon returns first loaded weapon', () => {
     const s = new Ship(1, 'x', 'A')
     const wp1 = { id: 1, hasAmmo: () => true }
     const wp2 = { id: 2, hasAmmo: () => false }

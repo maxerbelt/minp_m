@@ -8,7 +8,7 @@ describe('Custom Maps Weapon Initialization', () => {
     it('should initialize weapons from terrain', () => {
       // Create a terrain with weapons catalogue
       const mockWeaponCatalogue = {
-        getAllWeapons: () => [
+        allWeapons: [
           { letter: '+', name: 'Bomb' },
           { letter: '|', name: 'Destroy' },
           { letter: '^', name: 'DestroyOne' }
@@ -35,7 +35,7 @@ describe('Custom Maps Weapon Initialization', () => {
 
     it('should include space-specific weapons', () => {
       const mockWeaponCatalogue = {
-        getAllWeapons: () => [
+        allWeapons: [
           { letter: '+', name: 'Bomb' },
           { letter: '|', name: 'Destroy' },
           { letter: '^', name: 'DestroyOne' }

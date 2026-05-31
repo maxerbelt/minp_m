@@ -152,12 +152,12 @@ export class BhMap {
    *
    * @protected
    * @returns {Array<Weapon>} Initialized weapons array with standardShot plus terrain weapons
-   * @description Terrain weapons are obtained from terrain.weapons.getAllWeapons() if available.
+   * @description Terrain weapons are obtained from terrain.weapons.allWeapons if available.
    */
   _initializeWeapons () {
     const weapons = [standardShot]
-    if (this.terrain?.weapons?.getAllWeapons) {
-      const terrainWeapons = this.terrain.weapons.getAllWeapons()
+    if (this.terrain?.weapons?.allWeapons) {
+      const terrainWeapons = this.terrain.weapons.allWeapons
       weapons.push(...terrainWeapons)
     }
     return weapons
@@ -973,8 +973,8 @@ export class SavedCustomMap extends CustomMap {
       : []
 
     // Include terrain's default weapons plus any custom saved weapons
-    const terrainWeapons = this.terrain?.weapons?.getAllWeapons
-      ? this.terrain.weapons.getAllWeapons()
+    const terrainWeapons = this.terrain?.weapons?.allWeapons
+      ? this.terrain.weapons.allWeapons
       : []
     this.weapons = [standardShot, ...terrainWeapons].concat(
       customWeapons.filter(Boolean)

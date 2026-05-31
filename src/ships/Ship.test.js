@@ -51,14 +51,14 @@ describe('Ship basic behaviors', () => {
 
   /**
    * Test weapon system accessor methods and key generation
-   * @test {Ship#getAllWeapons} Retrieves all weapons from ship
-   * @test {Ship#getAllWeaponEntries} Gets all weapon entries
+   * @test {Ship#allWeapons} Retrieves all weapons from ship
+   * @test {Ship#allWeaponEntries} Gets all weapon entries
    * @test {Ship#hasWeapon} Checks if ship has weapons
    * @test {Ship#getPrimaryWeaponSystem} Gets primary weapon system
    * @test {Ship#getPrimaryWeapon} Gets primary weapon
    * @test {Ship#makeKeyIds} Generates weapon key IDs string
    */
-  it('getAllWeapons, weaponEntries, hasWeapon, weaponSystem, weapon, makeKeyIds', () => {
+  it('allWeapons, weaponEntries, hasWeapon, weaponSystem, weapon, makeKeyIds', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
       '1,2': {
@@ -79,8 +79,8 @@ describe('Ship basic behaviors', () => {
       }
     }
 
-    expect(s.getAllWeapons().length).toBe(2)
-    expect(s.getAllWeaponEntries().length).toBe(2)
+    expect(s.allWeapons.length).toBe(2)
+    expect(s.allWeaponEntries.length).toBe(2)
     expect(s.hasWeapon).toBe(true)
     const primary = s.getPrimaryWeaponSystem()
     expect(primary).toBe(s.weapons['1,2'])

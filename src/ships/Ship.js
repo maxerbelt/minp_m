@@ -231,7 +231,7 @@ export class Ship {
     if (this._weapons) {
       return this._weapons
     }
-    if (!this._weaponsById?.size) return {}
+    if (!this._weaponsById?.size && !this._weaponArray?.length) return {}
     this._weapons = this._idWeaponMapToWeaponPositionObject()
     return this._weapons
   }
@@ -251,7 +251,7 @@ export class Ship {
    * @private
    */
   _idWeaponMapToWeaponPositionObject () {
-    return this._weaponEntriesFromIdMap().reduce(
+    const result = this._weaponEntriesFromIdMap().reduce(
       /**
        * @param {Object<string, Rack>} obj
        * @param {[string, Rack]} entry
@@ -262,6 +262,16 @@ export class Ship {
       },
       {}
     )
+    // Also include weapons without IDs from the array
+    if (this._weaponArray) {
+      for (const weapon of this._weaponArray) {
+        if (weapon.id == null && weapon.row != null && weapon.col != null) {
+          const key = `${weapon.row},${weapon.col}`
+          result[key] = weapon
+        }
+      }
+    }
+    return result
   }
   /**
    * Internal: Create or update weapons from various input formats
@@ -274,6 +284,13 @@ export class Ship {
    * @private
    */
   _createOrUpdateWeapons (weapons) {
+    // Handle null or undefined weapons
+    if (weapons == null) {
+      this._weaponsById = new Map()
+      this._weaponArray = []
+      this._weapons = {}
+      return
+    }
     const type = Zip.getType(weapons)
     switch (type) {
       case 'array':
@@ -341,7 +358,7 @@ export class Ship {
       return
     }
     const { weaponsById, weaponArray } = this._importWeapons(weapons)
-    if (!weaponsById?.size) return {}
+    if (!weaponsById?.size && !weaponArray?.length) return {}
     this._weaponsById = weaponsById
     this._weaponArray = weaponArray
     this._weapons = this._idWeaponMapToWeaponPositionObject()
@@ -857,12 +874,14 @@ export class Ship {
 
   /**
    * Internal: Check if weapon has ammunition
-   * @param {{ hasAmmo?: boolean; ammo?: number }} weapon
+   * @param {{ hasAmmo?: boolean|Function; ammo?: number }} weapon
    * @returns {boolean} True if weapon is loaded and has ammunition
    */
   _isWeaponLoaded (weapon) {
     if (weapon.hasAmmo != null) {
-      return weapon.hasAmmo
+      return typeof weapon.hasAmmo === 'function'
+        ? weapon.hasAmmo()
+        : weapon.hasAmmo
     }
     return weapon.ammo > 0
   }
@@ -887,16 +906,16 @@ export class Ship {
    * Returns weapons in order from weaponArray.
    * @returns {Rack[]} Array of all weapon systems
    */
-  getAllWeapons () {
+  get allWeapons () {
     return this._weaponArray
   }
 
   /**
-   * Get first loaded weapon from all weapons
-   * Returns first weapon with available ammunition.
+   * Get first loaded weapon
+   * Returns the first weapon with available ammunition.
    * @returns {Rack|null} First loaded weapon or null if none
    */
-  getFirstLoadedWeapon () {
+  get firstLoadedWeapon () {
     return firstElement(this.loadedWeapons)
   }
 
@@ -906,7 +925,7 @@ export class Ship {
    * @returns {Rack[]} Array of loaded weapon systems
    */
   get loadedWeapons () {
-    return this.getAllWeapons().filter(w => this._isWeaponLoaded(w))
+    return this.allWeapons.filter(w => this._isWeaponLoaded(w))
   }
 
   /**
@@ -923,10 +942,7 @@ export class Ship {
    */
   get ammoRemainingTotal () {
     if (this.sunk) return 0
-    return this.getAllWeapons().reduce(
-      (sum, w) => sum + (w.ammoRemaining ?? 0),
-      0
-    )
+    return this.allWeapons.reduce((sum, w) => sum + (w.ammoRemaining ?? 0), 0)
   }
 
   /**
@@ -935,10 +951,7 @@ export class Ship {
    */
   get ammoCapacityTotal () {
     if (this.sunk) return 0
-    return this.getAllWeapons().reduce(
-      (sum, w) => sum + (w.ammoCapacity ?? 0),
-      0
-    )
+    return this.allWeapons.reduce((sum, w) => sum + (w.ammoCapacity ?? 0), 0)
   }
 
   /**
@@ -1069,9 +1082,9 @@ export class Ship {
   ) {
     if (weaponSystem.id != null) {
       weaponsById.set(weaponSystem.id, weaponSystem)
-      if (!preserveExisting || !weaponArray.includes(weaponSystem)) {
-        weaponArray.push(weaponSystem)
-      }
+    }
+    if (!preserveExisting || !weaponArray.includes(weaponSystem)) {
+      weaponArray.push(weaponSystem)
     }
   }
 

@@ -28,9 +28,9 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @property {boolean} hasAmmoRemaining - Checks if ship has ammo
  * @property {function(): Weapon} getPrimaryWeapon - Gets the primary weapon
  * @property {function(string): Weapon} getWeaponBySystemId - Gets weapon by system ID
- * @property {function(): Weapon[]} getAllWeapons - Gets all weapons on ship
+ * @property {  Weapon[]} allWeapons - Gets all weapons on ship
  * @property {Weapon[]} loadedWeapons - Gets loaded weapons
- * @property {function(): Weapon} getFirstLoadedWeapon - Gets first loaded weapon
+ * @property { Weapon} firstLoadedWeapon - Gets first loaded weapon
  */
 
 /**
@@ -489,7 +489,7 @@ export class LoadOut {
    * @returns {Weapon[]} All weapons
    */
   getAllRacks () {
-    return this.ships.flatMap(ship => ship.getAllWeapons())
+    return this.ships.flatMap(ship => ship.allWeapons)
   }
 
   /**

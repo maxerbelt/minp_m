@@ -30,7 +30,7 @@ import { randomElement } from '../core/utilities.js'
  * @property {number} ammoCapacityTotal - Total ammo capacity across all weapons
  * @property {Function} getPrimaryWeapon - Returns primary weapon or undefined
  * @property {Function} getWeaponBySystemId - Finds weapon by system ID
- * @property {Function} getAllWeapons - Returns all weapon systems
+ * @property {Array<WeaponRack>} allWeapons - Returns all weapon systems
  * @property {Array<WeaponRack>} loadedWeapons - Weapons with available ammo
  * @property {WeaponRack|undefined} firstLoadedWeapon - First weapon with ammo
  */

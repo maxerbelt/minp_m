@@ -245,6 +245,9 @@ function applyActionToIndices (action, indices) {
 
 // Override toggleCell to respect action dropdown and avoid tool conflicts
 triDraw.toggleCell = function (idx) {
+  // Safely ignore null hits from line tool operations
+  if (idx == null) return
+
   // when a line tool is active, don't toggle cells directly
   if (triCanvas?.currentTool || currentTool) return
 

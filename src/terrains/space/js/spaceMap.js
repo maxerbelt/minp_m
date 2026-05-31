@@ -196,7 +196,7 @@ export function spaceMap (title, size, shipNum, landArea, name) {
 
   // Attach complete weapon arsenal: standard shots + all space-specific weapons
   // standardShot provides basic weapon, space weapons add specialized options
-  spaceMap.weapons = [standardShot, ...spaceWeaponsCatalogue.getAllWeapons()]
+  spaceMap.weapons = [standardShot, ...spaceWeaponsCatalogue.allWeapons]
 
   return spaceMap
 }

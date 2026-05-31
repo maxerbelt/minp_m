@@ -162,7 +162,7 @@ export class WeaponCatalogue {
    *
    * @returns {Weapon[]} Shallow copy of weapons array
    */
-  getAllWeapons () {
+  get allWeapons () {
     return [...this.weapons]
   }
 

@@ -160,10 +160,10 @@ export interface Ship {
   getWeaponBySystemId?: (id: string | number) => Weapon | undefined
 
   /** Get all weapons on ship */
-  getAllWeapons?: () => Weapon[]
+  allWeapons?:  Weapon[]
 
   /** Get loaded weapons */
-  getLoadedWeapons?: () => Weapon[]
+  loadedWeapons?:   Weapon[]
 
   /** Get first loaded weapon */
   getFirstLoadedWeapon?: () => Weapon | undefined
