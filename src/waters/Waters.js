@@ -794,7 +794,7 @@ export class Waters {
       // @ts-ignore - weaponId is number from parseTriple
       const ship = this.loadOut.getShipByWeaponId(weaponId)
       if (ship && this.steps) {
-        // @ts-ignore - ship structure has required getPrimaryWeapon at runtime
+        // @ts-ignore - ship structure has required primaryWeapon at runtime
         this.steps.addShip(ship)
         const [sourceR, sourceC] = this.generateSourceHint(ship, this.opponent)
         this.createShadowSource(sourceR, sourceC)
@@ -1615,7 +1615,7 @@ export class Waters {
       )
       // @ts-ignore - loadOut available at runtime
       const ship = this.loadOut?.getShipByWeaponId(rack?.id)
-      // @ts-ignore - steps available at runtime, ship has getPrimaryWeapon method at runtime
+      // @ts-ignore - steps available at runtime, ship has primaryWeapon property at runtime
       if (ship && this.steps) {
         this.steps.addShip(ship)
       }

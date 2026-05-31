@@ -154,7 +154,7 @@ export interface Ship {
   shape?: () => unknown
 
   /** Get primary weapon system */
-  getPrimaryWeapon?: () => Weapon | null
+  primaryWeapon?:  Weapon | null
 
   /** Get weapon by system ID */
   getWeaponBySystemId?: (id: string | number) => Weapon | undefined

@@ -37,7 +37,7 @@ describe('LoadOut', () => {
       weapon: () => mockWeapon,
       hasAmmoRemaining: true,
       firstLoadedWeapon: { weapon: mockWeapon },
-      getPrimaryWeapon: () => ({ weapon: mockWeapon }),
+      primaryWeapon: { weapon: mockWeapon },
       allWeapons: [{ weapon: mockWeapon }],
       loadedWeapons: [{ id: 1, weapon: mockWeapon }],
       getWeaponBySystemId: id => (id === 1 ? { id: 1 } : undefined),

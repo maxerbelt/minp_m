@@ -242,13 +242,13 @@ describe('Ship - weaponSystem edge cases', () => {
   it('weaponSystem with no weapons', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {}
-    expect(s.getPrimaryWeaponSystem()).toBeNull()
+    expect(s.primaryWeaponSystem).toBeNull()
   })
 
   it('weapon with null weaponSystem', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {}
-    expect(s.getPrimaryWeapon()).toBeUndefined()
+    expect(s.primaryWeapon).toBeUndefined()
   })
 
   it('weapon with valid weaponSystem', () => {
@@ -257,6 +257,6 @@ describe('Ship - weaponSystem edge cases', () => {
     s.weapons = {
       '1,1': { weapon: mockWeapon }
     }
-    expect(s.getPrimaryWeapon()).toBe(mockWeapon)
+    expect(s.primaryWeapon).toBe(mockWeapon)
   })
 })

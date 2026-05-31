@@ -594,7 +594,7 @@ export class Ship {
     )
     const y0 = y - offsetY - (windowHeight - 1) / 2
     const x0 = x - offsetX - (windowWidth - 1) / 2
-    return this.getPrimaryWeapon()?.getTurn(this.variant, x0, y0) || ''
+    return this.primaryWeapon?.getTurn(this.variant, x0, y0) || ''
   }
   /**
    * Reset ship to initial state
@@ -770,7 +770,7 @@ export class Ship {
    * Returns the primary (first) weapon system or undefined if no weapons.
    * @returns {Rack|undefined} First weapon system or undefined
    */
-  getPrimaryWeaponSystem () {
+  get primaryWeaponSystem () {
     return firstElement(this._weaponArray)
   }
 
@@ -779,8 +779,8 @@ export class Ship {
    * Returns weapon object from primary weapon system or undefined if no weapons.
    * @returns {any|undefined} Weapon instance from primary system or undefined
    */
-  getPrimaryWeapon () {
-    return this.getPrimaryWeaponSystem()?.weapon
+  get primaryWeapon () {
+    return this.primaryWeaponSystem?.weapon
   }
   /**
    * Find closest loaded weapon rack to given coordinates
@@ -890,7 +890,7 @@ export class Ship {
    * Get all [coordKey, weapon] entries as key-value pairs
    * @returns {Array<[string, any]>} Array of [coordinate, weapon] pairs
    */
-  getAllWeaponEntries () {
+  get allWeaponEntries () {
     return this._weaponEntries()
   }
 
@@ -898,7 +898,7 @@ export class Ship {
    * Get all weapon locations as coordinate pairs
    * @returns {Array<[number, number]>} Array of [row, col] coordinate pairs
    */
-  getAllWeaponLocations () {
+  get allWeaponLocations () {
     return this._weaponEntries().map(([key]) => parsePair(key))
   }
   /**

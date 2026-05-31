@@ -57,7 +57,7 @@ export const WeaponMode = Object.freeze({
 /**
  * Ship object with weapon management methods.
  * @typedef {Object} Ship
- * @property {Function} getPrimaryWeapon - Method returning primary weapon object
+ * @property {Object} primaryWeapon - The primary weapon object
  */
 
 /**
@@ -758,7 +758,7 @@ export class Steps {
    * Issues warning if ship registered on non-attached-weapon terrain (logic error).
    *
    * @public
-   * @param {Ship} ship - The ship object with getPrimaryWeapon() method
+   * @param {Ship} ship - The ship object with primaryWeapon property
    * @returns {void}
    */
   addShip (ship) {
@@ -768,7 +768,7 @@ export class Steps {
       return
     }
 
-    const primaryWeapon = ship.getPrimaryWeapon()
+    const primaryWeapon = ship.primaryWeapon
     const letter = primaryWeapon.letter
     if (this._isWeaponChangeRequired(letter)) {
       this.onChangeWeapon(letter)

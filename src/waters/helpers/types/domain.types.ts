@@ -136,7 +136,7 @@ export interface Ship {
    * Gets the primary/main weapon system for this ship.
    * Used as fallback when querying specific weapon slots.
    */
-  getPrimaryWeapon(): Weapon | null
+  get primaryWeapon(): Weapon | null
 
   /**
    * Gets the rotation/turn state at a grid position on this ship.

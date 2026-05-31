@@ -28,7 +28,7 @@ import { randomElement } from '../core/utilities.js'
  * @property {boolean} [hasAmmoRemaining] - True if ship has ammo
  * @property {number} ammoRemainingTotal - Total ammo remaining in all weapons
  * @property {number} ammoCapacityTotal - Total ammo capacity across all weapons
- * @property {Function} getPrimaryWeapon - Returns primary weapon or undefined
+ * @property {Weapon} primaryWeapon - The primary weapon object
  * @property {Function} getWeaponBySystemId - Finds weapon by system ID
  * @property {Array<WeaponRack>} allWeapons - Returns all weapon systems
  * @property {Array<WeaponRack>} loadedWeapons - Weapons with available ammo

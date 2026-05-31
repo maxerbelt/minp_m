@@ -54,8 +54,8 @@ describe('Ship basic behaviors', () => {
    * @test {Ship#allWeapons} Retrieves all weapons from ship
    * @test {Ship#allWeaponEntries} Gets all weapon entries
    * @test {Ship#hasWeapon} Checks if ship has weapons
-   * @test {Ship#getPrimaryWeaponSystem} Gets primary weapon system
-   * @test {Ship#getPrimaryWeapon} Gets primary weapon
+   * @test {Ship#primaryWeaponSystem} Gets primary weapon system
+   * @test {Ship#primaryWeapon} Gets primary weapon
    * @test {Ship#makeKeyIds} Generates weapon key IDs string
    */
   it('allWeapons, weaponEntries, hasWeapon, weaponSystem, weapon, makeKeyIds', () => {
@@ -82,9 +82,9 @@ describe('Ship basic behaviors', () => {
     expect(s.allWeapons.length).toBe(2)
     expect(s.allWeaponEntries.length).toBe(2)
     expect(s.hasWeapon).toBe(true)
-    const primary = s.getPrimaryWeaponSystem()
+    const primary = s.primaryWeaponSystem
     expect(primary).toBe(s.weapons['1,2'])
-    const primaryWeapon = s.getPrimaryWeapon()
+    const primaryWeapon = s.primaryWeapon
     expect(primaryWeapon).toEqual({ name: 'w1' })
     expect(primaryWeapon).toEqual(primary.weapon)
     expect(s.makeKeyIds()).toBe('1,2:10|2,3:11')
@@ -369,7 +369,7 @@ describe('Ship - getTurn', () => {
     s.weapons = {}
     // getTurn relies on weapon() which returns undefined when no weapons
     // The getTurn method will crash if weapon() is undefined, so ensure we have weapons
-    const result = s.getPrimaryWeapon()
+    const result = s.primaryWeapon
     expect(result).toBeUndefined() // Verify behavior when no weapons
   })
 

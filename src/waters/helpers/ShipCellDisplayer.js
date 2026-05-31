@@ -116,7 +116,7 @@ import { bh } from '../../terrains/all/js/bh.js'
  * @property {boolean} hasWeapon - Flag indicating whether ship has armed weapons available
  * @property {RackAtCallback} rackAt - Method: Gets weapon slot at specified grid position
  * @property {MakeKeyIdsCallback} makeKeyIds - Method: Generates weapon effect key identifiers (returns pipe-separated string)
- * @property {GetPrimaryWeaponCallback} getPrimaryWeapon - Method: Returns primary weapon for cursor/orientation display
+ * @property {Weapon} primaryWeapon - The primary weapon object
  * @property {GetTurnCallback} getTurn - Method: Gets rotation/turn CSS class at specified position
  */
 
@@ -251,7 +251,7 @@ export class ShipCellDisplayer {
    * - Both: Ship data attributes applied (id, letter), color styling applied
    * - Surrounds: Weapon metadata (letter, ID, surrounds ID, keyIds, cursor, orientation) if hasWeapon
    *
-   * @param {Ship} ship - Ship object with id, letter, rackAt(), hasWeapon, makeKeyIds(), getPrimaryWeapon(), getTurn() methods
+   * @param {Ship} ship - Ship object with id, letter, rackAt(), hasWeapon, makeKeyIds(), primaryWeapon, getTurn() methods
    * @param {number} row - Row coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
    * @param {number} column - Column coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
    * @param {HTMLElement} cell - DOM element to render into (cell.textContent, cell.classList, cell.dataset will be modified)
@@ -381,7 +381,7 @@ export class ShipCellDisplayer {
    * adjacent to weapon positions.
    *
    * @param {HTMLElement} cell - DOM element to annotate with weapon surround attributes
-   * @param {Ship} ship - Ship object with id, hasWeapon flag, makeKeyIds(), getPrimaryWeapon(), and getTurn() methods
+   * @param {Ship} ship - Ship object with id, hasWeapon flag, makeKeyIds(), primaryWeapon, and getTurn() methods
    * @param {number} row - Row coordinate for turn/orientation calculation (passed to getTurn())
    * @param {number} column - Column coordinate for turn/orientation calculation (passed to getTurn())
    * @returns {void}
@@ -767,7 +767,7 @@ export class ShipCellDisplayer {
    * Orchestrates cursor class and orientation class application.
    *
    * @param {HTMLElement} cell - DOM element to annotate with weapon orientation
-   * @param {Ship} ship - Ship object with getPrimaryWeapon() and getTurn() methods
+   * @param {Ship} ship - Ship object with primaryWeapon and getTurn() methods
    * @param {number} row - Row coordinate for turn/rotation calculation
    * @param {number} column - Column coordinate for turn/rotation calculation
    * @returns {void}
@@ -776,7 +776,7 @@ export class ShipCellDisplayer {
    */
   static #applyWeaponMetadata (cell, ship, row, column) {
     const weaponLetterKey = this.#DATA_ATTRIBUTES.WEAPON_LETTER
-    const primaryWeapon = ship?.getPrimaryWeapon?.()
+    const primaryWeapon = ship?.primaryWeapon
     this.#setDatasetAttribute(cell, weaponLetterKey, primaryWeapon?.letter)
     this.#setDatasetAttribute(
       cell,

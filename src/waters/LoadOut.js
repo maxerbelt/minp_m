@@ -26,7 +26,7 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @typedef {Object} Ship
  * @property {string} id - Ship identifier
  * @property {boolean} hasAmmoRemaining - Checks if ship has ammo
- * @property {function(): Weapon} getPrimaryWeapon - Gets the primary weapon
+ * @property {  Weapon} primaryWeapon - Gets the primary weapon
  * @property {function(string): Weapon} getWeaponBySystemId - Gets weapon by system ID
  * @property {  Weapon[]} allWeapons - Gets all weapons on ship
  * @property {Weapon[]} loadedWeapons - Gets loaded weapons
@@ -611,7 +611,7 @@ export class LoadOut {
    */
   _mergeAttachedWeapons (weaponByLetter) {
     return this.ships.reduce((map, ship) => {
-      const weapon = ship.getPrimaryWeapon()
+      const weapon = ship.primaryWeapon
       if (weapon) {
         const key = weapon.letter
         map[key] = map[key]
