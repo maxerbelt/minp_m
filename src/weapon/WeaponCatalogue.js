@@ -25,7 +25,7 @@ import { standardShot } from './Weapon.js'
  *
  * @class WeaponCatalogue
  */
-export class WeaponCatelogue {
+export class WeaponCatalogue {
   /**
    * Initializes weapon catalogue with collection of weapon instances
    * Builds internal indices for efficient O(1) letter lookups

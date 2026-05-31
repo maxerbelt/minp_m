@@ -133,8 +133,14 @@ export class BhMap {
       this.terrain = bh.terrain
     }
 
-    this.subterrainTrackers = new SubTerrainTrackers(this?.terrain?.subterrains)
-    this.subterrainTrackers.calc(this)
+    if (this?.terrain?.subterrains) {
+      this.subterrainTrackers = new SubTerrainTrackers(
+        this?.terrain?.subterrains
+      )
+      this.subterrainTrackers.calc(this)
+    } else {
+      this.subterrainTrackers = new SubTerrainTrackers([])
+    }
     this.isPreGenerated = true
     /** @type {Array<import('../../../weapon/Weapon.js').Weapon>} */
     this.weapons = this._initializeWeapons()
@@ -707,7 +713,7 @@ export class CustomMap extends BhMap {
       shipNum: this.shipNum,
       landArea: this.landArea,
       land: [...this.land],
-      terrain: this.terrain.title,
+      terrain: this.terrain?.title || null,
       isPreGenerated: this.isPreGenerated,
       example: this.example,
       weapons: this.weapons
@@ -744,12 +750,18 @@ export class CustomMap extends BhMap {
    * @description Calls terrain.updateCustomMaps() to register map in terrain's custom maps.
    */
   saveToLocalStorage (title, key) {
-    title = title || makeTitle(this.terrain, this.cols, this.rows)
+    title =
+      title ||
+      (this.terrain
+        ? makeTitle(this.terrain, this.cols, this.rows)
+        : `map-${this.cols}x${this.rows}`)
     key = key || this.localStorageKey(title)
 
     localStorage.setItem(key, this.jsonString())
 
-    this.terrain.updateCustomMaps(title)
+    if (this.terrain?.updateCustomMaps) {
+      this.terrain.updateCustomMaps(title)
+    }
   }
 
   /**
@@ -956,9 +968,9 @@ export class SavedCustomMap extends CustomMap {
     )
 
     // Get saved custom weapons
-    const customWeapons = data.weapons.map(w =>
-      this.terrain.getNewWeapon(w.letter, w.ammo)
-    )
+    const customWeapons = this.terrain
+      ? data.weapons.map(w => this.terrain.getNewWeapon(w.letter, w.ammo))
+      : []
 
     // Include terrain's default weapons plus any custom saved weapons
     const terrainWeapons = this.terrain?.weapons?.getAllWeapons

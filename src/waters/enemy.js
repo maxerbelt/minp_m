@@ -944,7 +944,7 @@ class Enemy extends Waters {
    */
   get canTakeTurn () {
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
-    if (this.isGameOver || loadOut?.hasNoCurrentAmmo) {
+    if (this.isGameOver || this.hasNoAmmo) {
       return false
     }
     if (this.timeoutId) {

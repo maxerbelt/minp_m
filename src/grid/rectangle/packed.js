@@ -382,18 +382,14 @@ export class Packed extends RectMaskBase {
   }
 
   /**
-   * Get dilated bits without mutation
+   * Expand set bits without mutation using 4-connectivity (cross pattern).
+   * Expands only in cardinal directions (up/down/left/right), not diagonally.
    * @param {number} [radius=1] - Dilation radius
    * @returns {*} Dilated bits
    */
   dilateBits (radius = 1) {
     const edges = this.edgeMasks()
-    return this.store.dilateSeparable(
-      this.bits,
-      this.width,
-      this.store.storeType(radius),
-      edges
-    )
+    return this.store.dilateSeparable(this.bits, this.width, radius, edges)
   }
 
   /**

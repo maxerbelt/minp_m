@@ -23,7 +23,7 @@ import { bh } from '../../../terrains/all/js/bh.js'
 import { Random } from '../../../core/Random.js'
 import { coordsFromCell } from '../../../core/utilities.js'
 import { Weapon } from '../../../weapon/Weapon.js'
-import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
+import { WeaponCatalogue } from '../../../weapon/WeaponCatalogue.js'
 import { Delay } from '../../../core/Delay.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
 
@@ -634,10 +634,10 @@ export class Sweep extends Sensor {
  *
  * Note: Sweep (W) radar weapon is currently disabled but available for future use.
  *
- * @type {WeaponCatelogue}
+ * @type {WeaponCatalogue}
  * @readonly
  */
-export const seaWeaponsCatalogue = new WeaponCatelogue([
+export const seaWeaponsCatalogue = new WeaponCatalogue([
   new Megabomb(1),
   new Kinetic(1),
   new Flack(1),

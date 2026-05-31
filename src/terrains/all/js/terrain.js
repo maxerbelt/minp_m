@@ -25,12 +25,12 @@ const {
  */
 
 /**
- * @typedef {import('../../../weapon/WeaponCatelogue.js').Weapon} Weapon
+ * @typedef {import('../../../weapon/WeaponCatalogue.js').Weapon} Weapon
  * @description Single weapon configuration with letter, name, ammo, and damage properties
  */
 
 /**
- * @typedef {import('../../../weapon/WeaponCatelogue.js').WeaponCatalogue} WeaponCatalogue
+ * @typedef {import('../../../weapon/WeaponCatalogue.js').WeaponCatalogue} WeaponCatalogue
  * @description Container for all weapons with lookup and indexing methods
  */
 

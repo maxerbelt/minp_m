@@ -1,4 +1,3 @@
-
 import { describe, it, expect, jest } from '@jest/globals'
 import {
   Megabomb,
@@ -8,7 +7,7 @@ import {
   Sweep,
   seaWeaponsCatalogue
 } from './SeaWeapons.js'
-import { WeaponCatelogue } from '../../../weapon/WeaponCatelogue.js'
+import { WeaponCatalogue } from '../../../weapon/WeaponCatalogue.js'
 // Jest it suite
 describe('SeaWeapons - Megabomb', () => {
   it('Megabomb constructor sets properties', () => {
@@ -139,8 +138,8 @@ describe('SeaWeapons - Sweep', () => {
 })
 
 describe('seaWeaponsCatalogue', () => {
-  it('catalogue is WeaponCatelogue with weapons', () => {
-    expect(seaWeaponsCatalogue).toBeInstanceOf(WeaponCatelogue)
+  it('catalogue is WeaponCatalogue with weapons', () => {
+    expect(seaWeaponsCatalogue).toBeInstanceOf(WeaponCatalogue)
     expect(Array.isArray(seaWeaponsCatalogue.weapons)).toBe(true)
     expect(seaWeaponsCatalogue.weapons.length).toBeGreaterThan(0)
   })

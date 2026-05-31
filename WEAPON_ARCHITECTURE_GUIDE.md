@@ -17,7 +17,7 @@ The weapon system has been refactored with a comprehensive TypeScript type defin
                           ↓
 ┌─────────────────────────────────────────────────────────┐
 │              Runtime Implementation Layer                │
-│  Weapon.js, Bomb.js, WeaponCatelogue.js, WeaponSystem.js│
+│  Weapon.js, Bomb.js, WeaponCatalogue.js, WeaponSystem.js│
 │  ✓ JSDoc annotations reference type imports            │
 │  ✓ 100% backward compatible                             │
 │  ✓ All behavior preserved                               │

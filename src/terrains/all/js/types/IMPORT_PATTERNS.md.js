@@ -81,11 +81,11 @@ import { BhConstants } from './constants.js'
  */
 
 /**
- * @typedef {import('../../../weapon/WeaponCatelogue.js').Weapon} Weapon
+ * @typedef {import('../../../weapon/WeaponCatalogue.js').Weapon} Weapon
  */
 
 /**
- * @typedef {import('../../../weapon/WeaponCatelogue.js').WeaponCatalogue} WeaponCatalogue
+ * @typedef {import('../../../weapon/WeaponCatalogue.js').WeaponCatalogue} WeaponCatalogue
  */
 
 /**

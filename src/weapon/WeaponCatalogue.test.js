@@ -50,7 +50,7 @@ beforeEach(async () => {
  * Test suite for WeaponCatalogue repository class
  * Tests core functionality: initialization, indexing, lookups, and updates
  */
-describe('WeaponCatelogue', () => {
+describe('WeaponCatalogue', () => {
   /**
    * Test: Constructor initialization
    * Verifies that weapons array is properly stored and default weapon is set
@@ -59,7 +59,7 @@ describe('WeaponCatelogue', () => {
     const weapons = [
       { letter: 'A', tag: 'alpha', cursors: ['a'], launchCursor: 'launchA' }
     ]
-    const catalogue = new WeaponCatelogue(weapons)
+    const catalogue = new WeaponCatalogue(weapons)
 
     expect(catalogue.weapons).toBe(weapons)
     expect(catalogue.defaultWeapon).toBe(standardShot)
@@ -70,7 +70,7 @@ describe('WeaponCatelogue', () => {
    * Verifies that adding weapons updates the collection and rebuilds the index
    */
   it('addWeapons sets weapons and creates weaponsByLetter map', () => {
-    const catalogue = new WeaponCatelogue([])
+    const catalogue = new WeaponCatalogue([])
     const shot = {
       letter: 'B',
       tag: 'beta',
@@ -93,7 +93,7 @@ describe('WeaponCatelogue', () => {
       { letter: 'A', tag: 'alpha', cursors: ['a'], launchCursor: 'launchA' },
       { letter: 'B', tag: 'beta', cursors: ['b'], launchCursor: 'launchB' }
     ]
-    const catalogue = new WeaponCatelogue(weapons)
+    const catalogue = new WeaponCatalogue(weapons)
 
     expect(catalogue.tags).toEqual(['alpha', 'beta'])
   })
@@ -113,7 +113,7 @@ describe('WeaponCatelogue', () => {
       },
       { letter: 'Y', tag: 'other', cursors: ['cursor3'], launchCursor: 'go' }
     ]
-    const catalogue = new WeaponCatelogue(weapons)
+    const catalogue = new WeaponCatalogue(weapons)
 
     expect(catalogue.cursors).toEqual([
       'cursor1',

@@ -144,7 +144,7 @@ Centralized export of all types from above modules, reducing import complexity.
 - Eliminates duplicate typedefs from Weapon.js
 - Improves maintainability via centralized type definitions
 
-### 3. **WeaponCatelogue.js**
+### 3. **WeaponCatalogue.js**
 **Changes**:
 - Added: `import type { IWeapon, WeaponByLetterMap } from './types/index.js'`
 - Removed: 2 JSDoc @typedef blocks (Weapon object interface, WeaponByLetterMap)
@@ -215,7 +215,7 @@ types/index.ts (barrel)
 Runtime Files:
   ├── Weapon.js → types/index.ts (type import only)
   ├── Bomb.js → Weapon.js, types/index.ts (type import only)
-  ├── WeaponCatelogue.js → Weapon.js, types/index.ts (type import only)
+  ├── WeaponCatalogue.js → Weapon.js, types/index.ts (type import only)
   └── WeaponSystem.js → utilities.js, types/index.ts (type import only)
 ```
 
@@ -330,10 +330,10 @@ src/weapon/
 │   └── geometry.types.ts          (9 types + 1 interface, 50 LOC)
 ├── Weapon.js                       (Updated with type imports)
 ├── Bomb.js                         (Updated with type imports)
-├── WeaponCatelogue.js             (Updated with type imports)
+├── WeaponCatalogue.js             (Updated with type imports)
 ├── WeaponSystem.js                (Updated with type imports)
 ├── Weapon.test.js                 (No changes needed)
-├── WeaponCatelogue.test.js       (No changes needed)
+├── WeaponCatalogue.test.js       (No changes needed)
 └── animateExplode.test.js        (No changes needed)
 ```
 
