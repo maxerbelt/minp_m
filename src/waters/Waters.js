@@ -1874,7 +1874,7 @@ export class Waters {
    */
   // @ts-ignore - unused but may be called externally
   async launchSelectedWeapon (r, c) {
-    if (this.loadOut?.isArmed()) {
+    if (this.loadOut?.isArmed) {
       return await this.fireWeaponAt(
         r,
         c,

@@ -1158,17 +1158,13 @@ export class LoadOut {
    *
    * @returns {boolean} True if armed and ready
    */
-  isArmed () {
+  get isArmed () {
     const isInHideMode =
-      this._isHideMode() &&
-      this._isWeaponSelected() &&
-      this._hasSufficientSelection()
+      this._isHideMode && this._isWeaponSelected && this._hasSufficientSelection
 
     // In seeking mode with all attached weapons, allow firing if weapon is selected
     const isInSeekingWithAttached =
-      bh.seekingMode &&
-      bh.terrain?.hasAttachedWeapons &&
-      this._isWeaponSelected()
+      bh.seekingMode && bh.terrain?.hasAttachedWeapons && this._isWeaponSelected
 
     return isInHideMode || isInSeekingWithAttached
   }
@@ -1179,7 +1175,7 @@ export class LoadOut {
    * @returns {boolean} True if hide mode active
    * @private
    */
-  _isHideMode () {
+  get _isHideMode () {
     return !bh.seekingMode
   }
 
@@ -1189,7 +1185,7 @@ export class LoadOut {
    * @returns {boolean} True if weapon selected
    * @private
    */
-  _isWeaponSelected () {
+  get _isWeaponSelected () {
     return this.selectedWeapon !== null && this.selectedWeapon !== undefined
   }
 
@@ -1199,7 +1195,7 @@ export class LoadOut {
    * @returns {boolean} True if sufficient selection
    * @private
    */
-  _hasSufficientSelection () {
+  get _hasSufficientSelection () {
     return (
       this.selectedCoordinates.length >=
       this.selectedWeapon.weapon.postSelectCursor
