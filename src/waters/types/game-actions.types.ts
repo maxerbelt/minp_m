@@ -10,7 +10,6 @@
  */
 
 import type { Weapon, WeaponSystem, WeaponRack } from './domain.types'
-import type { ShadowCoords, SelectedCoordinates } from './coordinates.types'
 
 /**
  * Result of launching/firing a weapon.

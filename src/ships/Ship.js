@@ -1464,8 +1464,10 @@ export class Ship {
 
   /**
    * Serialize ship state to JSON-compatible object
-   * Converts ship data to a serializable format excluding non-JSON objects.
-   * @returns {Object} Ship state with id, symmetry, letter, size, sunk, variant, cells, weapons, hitPositions
+   * Converts ship data to a serializable format excluding non-JSON objects and BigInt values.
+   * Excludes internal caches and derived properties to keep payload minimal.
+   * @returns {{id: number, symmetry: string, letter: string, size: number, sunk: boolean, variant: number, cells: CoordinatePair[], weapons: Object<string, {id: number, letter?: string, ammo?: number}>, hitPositions: CoordinatePair[]}}
+   *   Ship state as JSON-compatible object
    */
   toJSON () {
     return {
@@ -1482,8 +1484,9 @@ export class Ship {
   }
 
   /**
-   * Serialize weapons object for JSON, filtering out non-serializable properties
-   * @returns {Object} Serialized weapons object
+   * Internal: Serialize weapons object for JSON, filtering out non-serializable properties
+   * Extracts only id, letter, and ammo from each weapon to avoid BigInt and circular references.
+   * @returns {Object<string, {id: number, letter?: string, ammo?: number}>} Serialized weapons object indexed by coordinate key
    * @private
    */
   _serializeWeapons () {
@@ -1503,9 +1506,10 @@ export class Ship {
   /**
    * Place ship at grid with validation
    * Checks if placement is valid before placing ship and updating grid.
-   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to
+   * Updates the grid's masked layer with ship occupancy and deactivates displaced cells.
+   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to (must have setCell and _maskedGrid properties)
    * @param {Placement} placement - Placement configuration to validate and apply
-   * @returns {CoordinatePair[]|null} Ship cells if placement succeeded, null if validation failed
+   * @returns {CoordinatePair[]|null} Ship cells [row, col] pairs if placement succeeded, null if validation failed
    */
   placeOnGrid (shipCellGrid, placement) {
     if (!placement.canPlace(shipCellGrid)) {
@@ -1517,7 +1521,8 @@ export class Ship {
   /**
    * Internal: Add unplaced ship to grid during placement
    * Updates ship placement state, computes displaced area, and adds ship to grid.
-   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to modify
+   * Marks cells occupied by the ship in the grid's masked layer.
+   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to modify (must have _maskedGrid and setCell)
    * @param {Placement} placement - Placement configuration to apply
    * @returns {void}
    * @private
@@ -1536,8 +1541,11 @@ export class Ship {
   }
   /**
    * Add ship to grid at its current position
-   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to
+   * Records ship occupancy in the grid at all cell locations defined by ship's board.
+   * Each cell records the ship's id and letter for hit tracking.
+   * @param {ShipCellGrid|unknown} shipCellGrid - Grid to add ship to (must have setCell method and valid board)
    * @returns {void}
+   * @throws {Error} If ship has invalid board with no occupiedLocations method
    */
   addToGrid (shipCellGrid) {
     const grid = shipCellGrid
@@ -1618,6 +1626,7 @@ export class Ship {
 
   /**
    * Get shape definition for this ship
+   * Retrieves cached shape or queries from bh.shapesByLetter lookup.
    * @returns {ShipShape|undefined} Shape object defining this ship's form and properties
    */
   shape () {
@@ -1628,8 +1637,9 @@ export class Ship {
 
   /**
    * Get ship type classification (e.g., 'G' for ground, 'S' for sea)
-   * Delegates to bh.shipType() for type mapping from letter.
-   * @returns {string} Ship type code from ship letter identifier
+   * Delegates to bh.shipType() for type mapping from ship letter.
+   * Ground ships can only be placed on land terrain, sea ships on water.
+   * @returns {string} Ship type code ('G' for ground, 'S' for sea)
    */
   type () {
     return bh.shipType(this.letter)
@@ -1638,8 +1648,9 @@ export class Ship {
   /**
    * Get description for sunk ship
    * Combines ship name and sunk status text with optional separator.
+   * Only meaningful when ship.sunk === true.
    * @param {string} [middle=' '] - String to insert between ship name and status
-   * @returns {string} Description text for sunk ship state
+   * @returns {string} Description text for sunk ship state (e.g., "Battleship Sunk")
    */
   getSunkDescription (middle = ' ') {
     return bh.shipSunkText(this.letter, middle)
@@ -1648,7 +1659,10 @@ export class Ship {
   /**
    * Get general description of ship
    * Returns descriptive text about the ship's role and characteristics.
-   * @returns {string} Description text for this ship's type
+   * Example: "Battleship" for letter 'B', "Minesweeper" for letter 'M'.
+   *
+   * @returns {string} Description text about the ship
+   * @public
    */
   getDescription () {
     return bh.shipDescription(this.letter)

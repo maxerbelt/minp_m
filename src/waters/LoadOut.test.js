@@ -6,7 +6,7 @@ import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // polyfill structuredClone for Node environments that lack it
 if (globalThis.structuredClone == null) {
-  globalThis.structuredClone = obj => JSON.parse(JSON.stringify(obj))
+  globalThis.structuredClone = obj => JSON.parse(JSON.stringify(obj)) // NOSONAR
 }
 
 import { LoadOut } from './LoadOut.js'

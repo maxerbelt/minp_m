@@ -11,7 +11,7 @@ import type { CoordinatePair } from "./coordinates.types.js";
  */
 export interface SubTerrain {
   readonly name: string;
-  readonly terrain: any;
+  readonly terrain: unknown;
 }
 
 /**
@@ -20,8 +20,8 @@ export interface SubTerrain {
  */
 export interface WeaponSystemRef {
   readonly id: number;
-  readonly weapon: any;
-  readonly [key: string]: any;
+  readonly weapon: unknown;
+  readonly [key: string]: unknown;
 }
 
 /**

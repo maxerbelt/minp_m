@@ -758,8 +758,8 @@ export class RailBolt extends Strike {
    * - Variant-dependent for arbitrary positions
    *
    * @param {number} variant - Weapon variant identifier (0, 1, 2, 3)
-   * @param {number} y - Row offset from line origin
    * @param {number} x - Column offset from line origin
+   * @param {number} y - Row offset from line origin
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
    * @public
    */
@@ -836,14 +836,14 @@ export class RailBolt extends Strike {
    * - Directional cell: power 1 (secondary forward/backward)
    * - Directional adjacent cells: power 0
    *
-   * @param {TerrainMap} _map - Game map (unused)
+   * @param {TerrainMap} map - Game map (unused in RailBolt, used in subclasses)
    * @param {Coord} resolvedTarget - Impact coordinate [row, col]
    * @param {AoePattern} effect - Damage effect coordinates (full trajectory line)
    * @param {{fullLine: AoePattern}} options - Additional options with trajectory line
    * @returns {AoePattern} Splash pattern [row, col, power] tuples
    * @public
    */
-  splash (_map, resolvedTarget, effect, options) {
+  splash (map, resolvedTarget, effect, options) {
     const last = (effect?.length || 1) - 1
     const { fullLine } = options
     resolvedTarget[2] = 2
@@ -1147,8 +1147,8 @@ export class GaussRound extends Fish {
    * Used for coordinate normalization and hit registration validation.
    *
    * @param {TerrainMap} map - Game map object
-   * @param {number[]} base - Base/source coordinates [row, col]
-   * @param {number[]} coords - Target coordinates [row, col]
+   * @param {number[]} _sourceCoords - Source coordinates [row, col] (extracted via destructuring)
+   * @param {number[]|number[][]} coords - Target coordinates [row, col]
    * @param {GameModel} model - Game model for target lookup
    * @returns {[number[], Coord, boolean]} Tuple with [source, resolvedTarget, hasCandidates]
    * @private
@@ -1175,8 +1175,8 @@ export class GaussRound extends Fish {
    * - 3: turn2 (fast)
    *
    * @param {number} variant - Weapon variant identifier (1, 3)
-   * @param {number} _y - Row coordinate (unused for Gauss round)
    * @param {number} _x - Column coordinate (unused for Gauss round)
+   * @param {number} _y - Row coordinate (unused for Gauss round)
    * @returns {string} CSS turn class name ('turn2') or empty string if no mapping
    * @public
    */
@@ -1238,7 +1238,6 @@ export class GaussRound extends Fish {
    * @param {TerrainMap} map - Game map for bounds/terrain checking
    * @param {number[][]} coords - Source and Target coordinates [[startRow, startCol], [endRow, endCol]]
    * @returns {AoePattern} Cells along trajectory path with damage power [row, col, power]
-   * @override
    * @public
    */
   aoe (map, coords) {
@@ -1282,7 +1281,6 @@ export class GaussRound extends Fish {
    * @param {AoePattern} effect - Damage effect coordinates along trajectory
    * @param {{fullLine: AoePattern}} options - Additional options with full trajectory line
    * @returns {AoePattern} Splash pattern [row, col, power] tuples
-   * @override
    * @public
    */
   splash (_map, resolvedTarget, effect, options) {
@@ -1343,7 +1341,6 @@ export class GaussRound extends Fish {
    * @param {AoePattern} _effect - Damage effect coordinates (unused)
    * @param {Object} _options - Additional options (unused)
    * @returns {AoePattern} Crash splash pattern [row, col, power] tuples
-   * @override
    * @public
    */
   crashSplash (map, target, _effect, _options) {
@@ -1564,11 +1561,12 @@ export class Laser extends Fish {
    * Different variants have different flight animation speeds for visual variety.
    *
    * Variant mapping:
-   * - 0: turn3 (medium speed)
-   * - 1: turn4 (slowest)
-   * - 3: turn2 (fastest)
+   * - 0: turn2 (fast)
+   * - 1: turn3 (medium)
+   * - 2: turn4 (slow)
+   * - 3: empty (no animation adjustment)
    *
-   * @param {number} variant - Weapon variant identifier (0, 1, 3)
+   * @param {number} variant - Weapon variant identifier (0, 1, 2, 3)
    * @param {number} _x - Column coordinate (unused for laser)
    * @param {number} _y - Row coordinate (unused for laser)
    * @returns {string} CSS turn class name ('turn4', 'turn2', 'turn3') or empty string if no mapping
@@ -1591,7 +1589,6 @@ export class Laser extends Fish {
    *
    * @param {number} [ammo] - Ammo count for cloned instance (defaults to this.ammo)
    * @returns {Laser} New Laser instance with specified ammo and fresh state
-   * @override
    * @public
    */
   clone (ammo) {

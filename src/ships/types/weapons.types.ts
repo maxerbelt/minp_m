@@ -5,7 +5,7 @@
 
 import type { CoordinateKey, CoordinatePair } from "./coordinates.types.js";
 import type { WeaponSystemRef } from "./interfaces.types.js";
-import type { ResetCallback, AmmoChecker, AnimationCallback } from "./callbacks.types.js";
+import type { ResetCallback,  AnimationCallback } from "./callbacks.types.js";
 
 /**
  * Flexible rack input format - accepts multiple representations
@@ -55,7 +55,6 @@ export interface WeaponAtPosition extends WeaponSystemRef {
   readonly letter?: string;
   readonly hit?: boolean;
   readonly damaged?: boolean;
-  readonly weapon?: any;
   ammoRemaining: number;
   ammoCapacity?: number;
   animateDetonation?: AnimationCallback;

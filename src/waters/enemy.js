@@ -16,7 +16,18 @@ const MAX_PLACEMENT_ATTEMPTS = 50
 const MAX_PLACEMENT_RETRIES = 10
 const ATTEMPTS_PER_RETRY = 25
 
-// CSS class names for board state
+/**
+ * CSS class names for board state.
+ * Used to apply visual styling to DOM elements during game state transitions.
+ *
+ * @typedef {Object} CSSClasses
+ * @property {string} DESTROYED - Class applied when board is destroyed
+ * @property {string} WAITING - Class applied while waiting for action
+ * @property {string} HIDDEN - Class applied to hide elements
+ * @property {string} CURSOR_PREFIX - Prefix for cursor-type class names
+ * @property {string} OFF - Class applied to disabled/off state
+ * @property {string} ON - Class applied to enabled/on state
+ */
 const CSS_CLASSES = {
   DESTROYED: 'destroyed',
   WAITING: 'waiting',
@@ -26,9 +37,26 @@ const CSS_CLASSES = {
   ON: 'on'
 }
 
-// Message templates
+/**
+ * Message templates for game status updates.
+ * Provides consistent messaging for player feedback and game state notifications.
+ *
+ * @typedef {Object} MessageTemplates
+ * @property {Function} PLACEMENT_DIFFICULTY - Factory function for placement attempt messages
+ * @property {string} PLACEMENT_FAILED - Message when ship placement exhausts all retries
+ * @property {string} CLICK_TO_FIRE - Instruction to click board to fire weapon
+ * @property {string} ALREADY_SHOT - Error when trying to shoot same cell twice
+ * @property {string} NO_EFFECT - Error when weapon has no effect
+ * @property {string} WAIT_FOR_ENEMY - Status message while waiting for opponent turn
+ * @property {string} GAME_OVER - Message when game ends
+ * @property {string} ENEMY_SELECTING_TARGET - Status during two-click weapon selection
+ * @property {string} ENEMY_TURN - Status message for opponent's turn
+ * @property {string} YOUR_TURN - Status message for player's turn
+ * @property {string} SINGLE_SHOT_LABEL - Label for single-shot weapon mode
+ */
 const MESSAGES = {
   /**
+   * Creates a difficulty message showing placement attempt count.
    * @param {number} attempts - Number of placement attempts made
    * @returns {string} Formatted difficulty message
    */
@@ -661,8 +689,9 @@ class Enemy extends Waters {
 
   /**
    * Checks if the enemy has ammo available.
+   * Getter convenience method that inverts hasNoAmmo logic.
    * @public
-   * @returns {boolean} True if ammo is available
+   * @returns {boolean} True if ammo is available; false if out of ammo
    */
   get hasAmmo () {
     return !this.hasNoAmmo
@@ -670,8 +699,10 @@ class Enemy extends Waters {
 
   /**
    * Checks if the enemy has no ammo.
+   * Queries the loadOut weapon system to determine ammo availability.
+   * Returns true only when all ammunition is depleted.
    * @public
-   * @returns {boolean} True if no ammo is available
+   * @returns {boolean} True if no ammo is available; false if ammo remains
    */
   get hasNoAmmo () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
@@ -694,8 +725,9 @@ class Enemy extends Waters {
   /**
    * Checks if the game is over for the enemy.
    * Game is over when board is destroyed or ships are revealed.
+   * Either condition results in game over state.
    * @public
-   * @returns {boolean} True if the game is over
+   * @returns {boolean} True if board is destroyed or ships revealed; false otherwise
    */
   get isGameOver () {
     return this.boardDestroyed || this.isRevealed
@@ -807,9 +839,9 @@ class Enemy extends Waters {
     this.isRevealed = true
   }
 
-  /**
-   * Updates all UI components.
+  /**\n   * Updates all UI components.
    * Refreshes weapon UI, tally, and button availability based on game state.
+   * Orchestrates parent UI updates with current weapon system display.
    * @public
    * @returns {void}
    */
@@ -905,9 +937,10 @@ class Enemy extends Waters {
 
   /**
    * Checks if the enemy can take a turn.
-   * Validates game is not over, has ammo, opponent is alive, and no pending action.
+   * Validates multiple conditions: game not over, ammo available, opponent alive, and no pending action.
+   * Updates game status with appropriate message if turn cannot be taken.
    * @public
-   * @returns {boolean} True if a turn can be taken
+   * @returns {boolean} True if game is not over, ammo available, opponent alive, and no pending timeout; false otherwise
    */
   get canTakeTurn () {
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)

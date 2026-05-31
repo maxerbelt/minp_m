@@ -122,9 +122,9 @@ export interface Ship {
    *
    * @param column - Column coordinate on ship's grid (0-based)
    * @param row - Row coordinate on ship's grid (0-based)
-   * @returns WeaponSlot if weapon occupies this position, null/undefined otherwise
+   * @returns WeaponSlot if weapon occupies this position, null otherwise
    */
-  rackAt(column: number, row: number): WeaponSlot | null | undefined
+  rackAt(column: number, row: number): WeaponSlot | null
 
   /**
    * Returns array of key identifiers for this ship's weapon effects.
@@ -136,7 +136,7 @@ export interface Ship {
    * Gets the primary/main weapon system for this ship.
    * Used as fallback when querying specific weapon slots.
    */
-  getPrimaryWeapon(): Weapon | null | undefined
+  getPrimaryWeapon(): Weapon | null
 
   /**
    * Gets the rotation/turn state at a grid position on this ship.
@@ -146,7 +146,7 @@ export interface Ship {
    * @param column - Column coordinate on ship's grid (0-based)
    * @returns Orientation string (e.g., 'turn2', 'turn3') or null
    */
-  getTurn(row: number, column: number): string | null | undefined
+  getTurn(row: number, column: number): string | null
 }
 
 /**

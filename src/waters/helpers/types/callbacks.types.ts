@@ -13,8 +13,7 @@ import type {
   Weapon,
   WeaponSlot,
   ShipShape,
-  Ship,
-  WeaponSystem
+  Ship
 } from './domain.types'
 
 /**
@@ -23,12 +22,12 @@ import type {
  *
  * @param column - Column coordinate on ship's grid (0-based)
  * @param row - Row coordinate on ship's grid (0-based)
- * @returns WeaponSlot if weapon present, null or undefined otherwise
+ * @returns WeaponSlot if weapon present, null otherwise
  */
 export type RackAtCallback = (
   column: number,
   row: number
-) => WeaponSlot | null | undefined
+) => WeaponSlot | null
 
 /**
  * Callback signature for getting cell rotation/orientation state.
@@ -41,7 +40,7 @@ export type RackAtCallback = (
 export type GetTurnCallback = (
   row: number,
   column: number
-) => string | null | undefined
+) => string | null
 
 /**
  * Callback signature for generating key identifiers for weapon effects.
@@ -55,9 +54,9 @@ export type MakeKeyIdsCallback = () => string | string[]
  * Callback signature for retrieving the primary weapon system.
  * Returns the main/default weapon when no specific position is queried.
  *
- * @returns Weapon if found, null or undefined if ship has no primary weapon
+ * @returns Weapon if found, null if ship has no primary weapon
  */
-export type GetPrimaryWeaponCallback = () => Weapon | null | undefined
+export type GetPrimaryWeaponCallback = () => Weapon | null
 
 /**
  * Callback signature for calculating displacement for a subterrain.

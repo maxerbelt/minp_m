@@ -12,22 +12,22 @@ import { Delay } from '../core/Delay.js'
  * @property {number} numStep - Number of targeting steps (1 or 2)
  * @property {number} [postUnattached] - Post-unattached step offset
  * @property {string} classname - CSS class name for styling
- * @property {Function} stepHint - Method returning hint text for current step
- * @property {Function} stepIdx - Method calculating step index
+ * @property {(stepIndex: number) => string} stepHint - Returns hint text for given step
+ * @property {(numCoords: number, stepIdxArg: number) => number} stepIdx - Calculates step index from coordinates and argument
  */
 
 /**
  * Weapon system with ammo management.
  * @typedef {Object} WeaponSystem
  * @property {Weapon} weapon - The weapon object
- * @property {number} ammoCapacity - Method returning total ammo capacity
- * @property {number} ammoRemaining - Method returning remaining ammo
+ * @property {number} ammoCapacity - Total ammo capacity for the weapon
+ * @property {() => number} ammoRemaining - Function returning remaining ammo count
  */
 
 /**
- * Game maps configuration.
+ * Game maps configuration with weapon color mappings.
  * @typedef {Object} GameMaps
- * @property {Object<string, string>} shipColors - Map of ship colors by weapon letter
+ * @property {Object<string, string>} shipColors - Map of CSS color strings by weapon letter with step suffix (e.g., 'P1', 'M2')
  */
 
 /**
@@ -1018,4 +1018,11 @@ class StatusUI {
   }
 }
 
+/**
+ * Global singleton instance of StatusUI for managing game status display.
+ * Handles weapon status, ammo counters, tips queue, and score announcements.
+ *
+ * @type {StatusUI}
+ * @exports
+ */
 export const gameStatus = new StatusUI()

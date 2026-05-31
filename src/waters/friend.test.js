@@ -1,61 +1,117 @@
 /**
  * @jest-environment jsdom
+ * @file Friend class test suite with mock setup for autonomous AI targeting and board UI
+ * @description Tests for Friend AI player autonomous seeking, weapon selection, and board interactions
  */
 
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
+// ============================================================================
+// Type Definitions for Mocks and Test Utilities
+// ============================================================================
+
+/**
+ * @typedef {Object} MockUI
+ * @property {jest.Mock} showNotice - Show notice to player
+ * @property {jest.Mock} clearVisuals - Clear weapon visual effects
+ * @property {jest.Mock} clearFriendVisuals - Clear friendly player visuals
+ * @property {jest.Mock} revealShip - Reveal single ship
+ * @property {jest.Mock} revealShips - Reveal multiple ships
+ * @property {jest.Mock} resetShips - Reset ship display state
+ * @property {jest.Mock} buildBoard - Build game board with click handlers
+ * @property {jest.Mock} makeDroppable - Enable drag-and-drop on board
+ * @property {jest.Mock} markWeaponCellsOnFriendlyBoard - Mark weapon cell display
+ * @property {jest.Mock} buildTrays - Build weapon trays
+ * @property {jest.Mock} reset - Reset UI state
+ * @property {HTMLElement} board - Game board DOM element mock
+ * @property {jest.Mock} itMode - IT/Test mode toggle
+ * @property {HTMLButtonElement} itBtn - IT mode button mock
+ * @property {HTMLButtonElement} seekBtn - Seek mode button mock
+ * @property {HTMLButtonElement} stopBtn - Stop button mock
+ * @property {jest.Mock} showStatus - Show status message
+ * @property {jest.Mock} showTips - Show tips
+ * @property {jest.Mock} hideTips - Hide tips
+ * @property {Object} trayManager - Weapon tray manager mock
+ * @property {jest.Mock} showTransformBtns - Show transformation buttons
+ * @property {jest.Mock} hideTransformBtns - Hide transformation buttons
+ * @property {jest.Mock} standardPanels - Show standard UI panels
+ * @property {HTMLButtonElement} newPlacementBtn - New placement button mock
+ * @property {Object} score - Score display UI mock
+ */
+
+/**
+ * @typedef {Object} MockShip
+ * @property {jest.Mock} reset - Reset ship state
+ * @property {Array<string>} hits - Hit coordinates as strings
+ * @property {number} id - Ship unique identifier
+ * @property {jest.Mock} weapon - Get ship weapon (mocked)
+ * @property {jest.Mock} getFirstLoadedWeapon - Get first loaded weapon
+ * @property {jest.Mock} getAllWeapons - Get all weapons
+ * @property {jest.Mock} loadedWeapons - Get weapons with ammo
+ * @property {jest.Mock} getWeaponBySystemId - Find weapon by system ID
+ */
+
+/** @type {typeof Friend} */
 let Friend
 
-// Mocks
-const getMockUI = () => ({
-  showNotice: jest.fn(),
-  clearVisuals: jest.fn(),
-  clearFriendVisuals: jest.fn(),
-  revealShip: jest.fn(),
-  revealShips: jest.fn(),
-  resetShips: jest.fn(),
-  buildBoard: jest.fn(),
-  makeDroppable: jest.fn(),
-  markWeaponCellsOnFriendlyBoard: jest.fn(),
-  buildTrays: jest.fn(),
-  reset: jest.fn(),
-  board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
-  itMode: jest.fn(),
-  itBtn: {
-    disabled: false,
-    classList: { add: jest.fn(), remove: jest.fn() }
-  },
-  seekBtn: {
-    disabled: false,
-    classList: { add: jest.fn(), remove: jest.fn() }
-  },
-  stopBtn: {
-    disabled: false,
-    classList: { add: jest.fn(), remove: jest.fn() }
-  },
-  showStatus: jest.fn(),
-  showTips: jest.fn(),
-  hideTips: jest.fn(),
-  trayManager: {
-    showShipTrays: jest.fn(),
-    hideShipTrays: jest.fn()
-  },
+// ============================================================================
+// Mock Factory Functions
+// ============================================================================
 
-  showTransformBtns: jest.fn(),
-  hideTransformBtns: jest.fn(),
-  standardPanels: jest.fn(),
-  newPlacementBtn: { classList: { add: jest.fn(), remove: jest.fn() } },
-  score: {
-    display: jest.fn(),
-    buildTally: jest.fn(),
-    shotsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-    hitsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-    sunkLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-    revealsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-    hintsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-    placedLabel: { classList: { add: jest.fn(), remove: jest.fn() } }
-  }
-})
+/**
+ * Creates a mock UI object for testing.
+ * Provides jest mocks for all PlacementUI methods.
+ * @returns {MockUI} Mock UI with all required methods and properties
+ */
+const getMockUI = () =>
+  /** @type {MockUI} */ ({
+    showNotice: jest.fn(),
+    clearVisuals: jest.fn(),
+    clearFriendVisuals: jest.fn(),
+    revealShip: jest.fn(),
+    revealShips: jest.fn(),
+    resetShips: jest.fn(),
+    buildBoard: jest.fn(),
+    makeDroppable: jest.fn(),
+    markWeaponCellsOnFriendlyBoard: jest.fn(),
+    buildTrays: jest.fn(),
+    reset: jest.fn(),
+    board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
+    itMode: jest.fn(),
+    itBtn: {
+      disabled: false,
+      classList: { add: jest.fn(), remove: jest.fn() }
+    },
+    seekBtn: {
+      disabled: false,
+      classList: { add: jest.fn(), remove: jest.fn() }
+    },
+    stopBtn: {
+      disabled: false,
+      classList: { add: jest.fn(), remove: jest.fn() }
+    },
+    showStatus: jest.fn(),
+    showTips: jest.fn(),
+    hideTips: jest.fn(),
+    trayManager: {
+      showShipTrays: jest.fn(),
+      hideShipTrays: jest.fn()
+    },
+    showTransformBtns: jest.fn(),
+    hideTransformBtns: jest.fn(),
+    standardPanels: jest.fn(),
+    newPlacementBtn: { classList: { add: jest.fn(), remove: jest.fn() } },
+    score: {
+      display: jest.fn(),
+      buildTally: jest.fn(),
+      shotsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+      hitsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+      sunkLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+      revealsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+      hintsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+      placedLabel: { classList: { add: jest.fn(), remove: jest.fn() } }
+    }
+  })
 
 // Minimal mocks for bh and dependencies
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
@@ -139,9 +195,29 @@ const mockDragModule = {
 jest.unstable_mockModule('../selection/dragndrop.js', () => mockDragModule)
 
 // Mock gameStatus to track UI update calls
+/**
+ * Mock gameStatus to track UI update calls.
+ * Simulates weapon status display logic.
+ */
 jest.unstable_mockModule('./StatusUI.js', () => ({
   gameStatus: {
-    updateWeaponStatus: function (weaponSystem, maps, numCoords, unattached) {
+    /**
+     * Updates weapon status in game UI.
+     * Calls internal methods to set mode, reset icons, and display ammo.
+     * @param {Object} weaponSystem - Current weapon system
+     * @param {Object} maps - Map provider
+     * @param {number} numCoords - Number of selected coordinates
+     * @param {Object} [_reserved] - Reserved parameter (unused)
+     * @param {boolean} [unattached] - Whether weapon has unattached variants
+     * @returns {void}
+     */
+    updateWeaponStatus: function (
+      weaponSystem,
+      maps,
+      numCoords,
+      _reserved,
+      unattached
+    ) {
       const weapon = weaponSystem?.weapon
 
       if (weapon) {
@@ -151,19 +227,34 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
         this.displayAmmoStatus(weaponSystem, maps, numCoords, null, unattached)
       }
     },
+    /** @type {jest.Mock} */
     _setWeaponMode: jest.fn(),
+    /** @type {jest.Mock} */
     _resetAmmoIcons: jest.fn(),
+    /** @type {jest.Mock} */
     displayAmmoStatus: jest.fn(),
+    /** @type {jest.Mock} */
     showMode: jest.fn(),
+    /** @type {jest.Mock} */
     addToQueue: jest.fn()
   }
 }))
 
 describe('Friend', () => {
+  /** @type {Friend|undefined} */
   let friend
+  /** @type {Object|undefined} */
   let gameStatus
+  /** @type {Object|undefined} */
   let bh
+  /** @type {MockUI|undefined} */
   let mockUI
+
+  /**
+   * Setup test fixtures before each test.
+   * Initializes mocks and creates Friend instance.
+   * @returns {Promise<void>}
+   */
   beforeEach(async () => {
     mockUI = getMockUI()
     // require Friend after bh mock is in place
@@ -175,6 +266,7 @@ describe('Friend', () => {
     const friendModule = await import('./friend.js')
     Friend = friendModule.Friend
     friend = new Friend(mockUI)
+    /** @type {Array<MockShip>} */
     friend.ships = [
       {
         reset: jest.fn(),
@@ -207,14 +299,17 @@ describe('Friend', () => {
   })
 
   it('getRandomHitCoordinate returns null for empty', () => {
+    // @ts-ignore: testing deprecated method
     expect(friend.getRandomHitCoordinate([])).toBeNull()
   })
 
   it('getRandomHitCoordinate returns only element for single', () => {
+    // @ts-ignore: testing deprecated method
     expect(friend.getRandomHitCoordinate([[1, 2]])).toEqual([1, 2])
   })
 
   it('getRandomHitCoordinate returns one of the elements for multiple', () => {
+    // @ts-ignore: testing deprecated method
     const result = friend.getRandomHitCoordinate([
       [1, 2],
       [3, 4]

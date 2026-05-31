@@ -400,7 +400,8 @@ export class WeaponTallyBuilder {
     } ${weapon.classname}`
 
     // Sort leaf weapons by ammo for consistent display
-    const leaves = weaponSystem.leafWeapons.sort(
+    const leaves = [...weaponSystem.leafWeapons]
+    leaves.sort(
       (a, b) =>
         (b.hit ? 40 : 0) -
         (a.damage ? 20 : 0) +

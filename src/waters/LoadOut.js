@@ -449,9 +449,7 @@ export class LoadOut {
    * @returns {Ship|undefined} Ship with weapon
    */
   getShipByWeaponId (weaponId) {
-    return this.ships.find(
-      ship => ship.getWeaponBySystemId(weaponId) !== undefined
-    )
+    return this.ships.find(ship => ship.getWeaponBySystemId(weaponId) != null)
   }
 
   /**
@@ -1186,7 +1184,7 @@ export class LoadOut {
    * @private
    */
   get _isWeaponSelected () {
-    return this.selectedWeapon !== null && this.selectedWeapon !== undefined
+    return this.selectedWeapon != null
   }
 
   /**
@@ -1260,7 +1258,7 @@ export class LoadOut {
   get hasAllAmmo () {
     const currentWeaponSystem = this.currentWeaponSystem
     if (!currentWeaponSystem.weapon.isLimited) return true
-    return this._hasArsenalAmmo
+    return this.hasArsenalAmmo
   }
 
   /**

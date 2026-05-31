@@ -352,11 +352,11 @@ export class Friend extends Placement {
   /**
    * Selects a random hit coordinate from candidates.
    * Returns null if empty, first element if only one, random element otherwise.
+   * Note: Used in test suite for randomization testing.
    *
    * @param {Array<GridCoordinate>} hitCoordinates - Candidate [row, col] coordinates
    * @returns {GridCoordinate|null} Random [row, col] or null if empty
    * @private
-   * @deprecated Not used in current codebase
    */
   // @ts-ignore - unused but may be used by external code
   getRandomHitCoordinate (hitCoordinates) {

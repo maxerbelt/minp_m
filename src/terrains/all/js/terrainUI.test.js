@@ -59,7 +59,7 @@ describe('terrainUI', () => {
         return new OrigURL(input)
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.debug('URL mock failed:', e)
       origURL = undefined
     }
@@ -80,7 +80,7 @@ describe('terrainUI', () => {
         return new OrigURLSearchParams(input)
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.debug('URLSearchParams mock failed:', e)
       origURLSearchParams = undefined
     }

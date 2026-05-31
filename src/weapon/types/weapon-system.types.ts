@@ -39,15 +39,15 @@ export interface IWeaponSystem {
   firstUnattachedWeapon: IWeaponSystem | null
 
   // Ship queries
-  armedShips(): any[]
-  getShipById(shipId: number): any | null
+  armedShips(): unknown[]
+  getShipById(shipId: number): unknown
 
   // Racks
-  rack: any
-  racks: any[]
+  rack: unknown
+  racks: unknown[]
 
   // Effects
-  splash(map: MapLike, target: Coord, effect: AoePattern, options?: any): AoePattern
+  splash(map: MapLike, target: Coord, effect: AoePattern, options?: unknown): AoePattern
 }
 
 /**
@@ -64,7 +64,7 @@ export type CombinedSystemState = {
  * Represents weapons attached to ships
  */
 export type AttachedSystemState = {
-  readonly ships: any[]
+  readonly ships: unknown[]
   readonly weapon: IWeapon
 }
 

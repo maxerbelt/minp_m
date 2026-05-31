@@ -106,7 +106,7 @@ describe('Ship - advanced weapon methods', () => {
       '2,3': wp2,
       '3,4': wp3
     }
-    const loaded = s.oadedWeapons
+    const loaded = s.loadedWeapons
     expect(loaded).toHaveLength(2)
     expect(loaded).toContain(wp1)
     expect(loaded).toContain(wp3)
@@ -221,7 +221,7 @@ describe('Ship - ammo calculations with edge cases', () => {
   it('ammoRemaining is zero when sunk', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
-      '1,1': { ammoRemaining: 50, ammoCapacityTotal  100 }
+      '1,1': { ammoRemaining: 50, ammoCapacityTotal: 100 }
     }
     expect(s.ammoRemainingTotal).toBe(50)
     s.sunk = true
@@ -231,7 +231,7 @@ describe('Ship - ammo calculations with edge cases', () => {
   it('ammoCapacityTotal is zero when sunk', () => {
     const s = new Ship(1, 'x', 'A')
     s.weapons = {
-      '1,1': { ammoRemaining: 50, ammoCapacity:  100 }
+      '1,1': { ammoRemaining: 50, ammoCapacity: 100 }
     }
     expect(s.ammoCapacityTotal).toBe(100)
     s.sunk = true
