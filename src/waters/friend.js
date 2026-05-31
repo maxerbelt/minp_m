@@ -1201,8 +1201,9 @@ export class Friend extends Placement {
       // @ts-ignore - loadOut.currentWeaponSystem is method at runtime
       if (this.loadOut?.currentWeaponSystem == null) {
         return false
-        // @ts-ignore - currentWeaponSystem returns WeaponSystem at runtime
-        weaponSystem = this.loadOut.currentWeaponSystem
+      }
+      // @ts-ignore - currentWeaponSystem returns WeaponSystem at runtime
+      weaponSystem = this.loadOut.currentWeaponSystem
     }
 
     if (!bh.seekingMode || bh.terrain?.title !== 'Space and Asteroids') {
@@ -1236,9 +1237,10 @@ export class Friend extends Placement {
     // @ts-ignore - setWeaponFireHandlers is method defined in base Waters class at runtime
     this.setWeaponFireHandlers()
     // @ts-ignore - loadOut.currentWeaponSystem is method at runtime
-    const weaponSystem = this.loadOut?.currentWeaponSystem != null
-        ? this.loadOut.currentWeaponSystem
-        : undefined
+    const weaponSystem =
+      this.loadOut?.currentWeaponSystem == null
+        ? undefined
+        : this.loadOut.currentWeaponSystem
     // @ts-ignore - fireWeaponAt is method defined in base Waters class at runtime
     const result = await this.fireWeaponAt(r, c, weaponSystem)
     // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
