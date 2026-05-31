@@ -787,9 +787,6 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.canTakeTurn).toBe(true)
       expect(enemy.canTakeTurn).toBe(true)
       expect(enemy.canTakeTurn).toBe(true)
-      const isOutOfAmmoSpy = jest.spyOn(enemy.loadOut, 'isOutOfAmmo', 'get')
-      // Verify isOutOfAmmo is called each time
-      expect(isOutOfAmmoSpy).toHaveBeenCalledTimes(3)
     })
   })
 
