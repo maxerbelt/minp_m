@@ -74,7 +74,7 @@ describe('LoadOut', () => {
       [3, 4]
     ]
     // bh.seekingMode is false by default
-    expect(loadOut.isArmed()).toBe(true)
+    expect(loadOut.isArmed).toBe(true)
   })
 
   it('isNotArming returns correct value', () => {
