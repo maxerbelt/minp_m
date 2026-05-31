@@ -924,7 +924,7 @@ export class Ship {
   get ammoRemainingTotal () {
     if (this.sunk) return 0
     return this.getAllWeapons().reduce(
-      (sum, w) => sum + (w.ammoRemaining?.() ?? 0),
+      (sum, w) => sum + (w.ammoRemaining ?? 0),
       0
     )
   }
