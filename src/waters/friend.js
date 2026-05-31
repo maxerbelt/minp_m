@@ -38,7 +38,7 @@ const ENEMY_TURN_DELAY = 50
  * @typedef {Object} WeaponSystem
  * @property {Weapon} weapon - The weapon configuration
  * @property {number} [id] - Weapon system ID reference
- * @property {() => number} [ammoCapacity] - Function returning remaining ammo
+ * @property {number} [ammoCapacity] - Function returning remaining ammo
  */
 
 /**
@@ -186,8 +186,8 @@ const ENEMY_TURN_DELAY = 50
  * @property {Array<any>} selectedCoordinates - Currently selected targeting coordinates
  * @property {Object|null} selectedWeapon - Currently selected weapon (null if none)
  * @property {() => void|undefined} clearSelectedCoordinates - Clears targeting coordinates
- * @property {() => WeaponSystem|undefined} getUnattachedWeaponSystem - Gets unattached weapon or undefined
- * @property {() => WeaponSystem|undefined} getCurrentWeaponSystem - Gets current weapon system
+ * @property { WeaponSystem|undefined} firstUnattachedWeaponSystem - Gets unattached weapon or undefined
+ * @property {WeaponSystem|undefined} currentWeaponSystem - Gets current weapon system
  * @property {(letter: string) => void} switchToWeapon - Switch to weapon by letter
  * @property {() => void} switchToNextWeaponSystem - Switch to next weapon system
  * @property {() => EffectType|null} switchToPreferredWeapon - Switch to preferred weapon
@@ -310,8 +310,8 @@ export class Friend extends Placement {
    * @returns {void}
    */
   updateWeaponStatus (_rack, _cursorInfo) {
-    // @ts-ignore - loadOut.getCurrentWeaponSystem() is defined in base Placement class at runtime
-    const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+    // @ts-ignore - loadOut.currentWeaponSystem is defined in base Placement class at runtime
+    const weaponSystem = this.loadOut.currentWeaponSystem
     gameStatus.updateWeaponStatus(
       // @ts-ignore - weaponSystem.weapon may be WeaponsSystem variant at runtime, has name/icon properties
       weaponSystem,
@@ -342,8 +342,8 @@ export class Friend extends Placement {
       bh.seekingMode ||
       // @ts-ignore - loadOut.isSingleShot is defined in base Placement class at runtime
       this.loadOut.isSingleShot ||
-      // @ts-ignore - loadOut.getUnattachedWeaponSystem() returns WeaponSystem|null at runtime
-      this.loadOut.getUnattachedWeaponSystem() != null
+      // @ts-ignore - loadOut.firstUnattachedWeaponSystem returns WeaponSystem|null at runtime
+      this.loadOut.firstUnattachedWeaponSystem != null
     )
   }
 
@@ -1198,13 +1198,11 @@ export class Friend extends Placement {
 
     // Use current weapon system if not provided
     if (weaponSystem === undefined) {
-      // @ts-ignore - loadOut.getCurrentWeaponSystem is method at runtime
-      if (typeof this.loadOut?.getCurrentWeaponSystem === 'function') {
-        // @ts-ignore - getCurrentWeaponSystem returns WeaponSystem at runtime
-        weaponSystem = this.loadOut.getCurrentWeaponSystem()
-      } else {
+      // @ts-ignore - loadOut.currentWeaponSystem is method at runtime
+      if (this.loadOut?.currentWeaponSystem == null) {
         return false
-      }
+        // @ts-ignore - currentWeaponSystem returns WeaponSystem at runtime
+        weaponSystem = this.loadOut.currentWeaponSystem
     }
 
     if (!bh.seekingMode || bh.terrain?.title !== 'Space and Asteroids') {
@@ -1237,10 +1235,9 @@ export class Friend extends Placement {
   async _fireCurrentWeaponImmediately (r, c) {
     // @ts-ignore - setWeaponFireHandlers is method defined in base Waters class at runtime
     this.setWeaponFireHandlers()
-    // @ts-ignore - loadOut.getCurrentWeaponSystem is method at runtime
-    const weaponSystem =
-      typeof this.loadOut?.getCurrentWeaponSystem === 'function'
-        ? this.loadOut.getCurrentWeaponSystem()
+    // @ts-ignore - loadOut.currentWeaponSystem is method at runtime
+    const weaponSystem = this.loadOut?.currentWeaponSystem != null
+        ? this.loadOut.currentWeaponSystem
         : undefined
     // @ts-ignore - fireWeaponAt is method defined in base Waters class at runtime
     const result = await this.fireWeaponAt(r, c, weaponSystem)

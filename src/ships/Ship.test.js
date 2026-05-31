@@ -65,17 +65,17 @@ describe('Ship basic behaviors', () => {
         id: 10,
         weapon: { name: 'w1' },
         ammo: 1,
-        hasAmmo: () => true,
-        ammoRemaining: () => 1,
-        ammoCapacityTotal: () => 2
+        hasAmmo: true,
+        ammoRemaining: 1,
+        ammoCapacityTotal: 2
       },
       '2,3': {
         id: 11,
         weapon: { name: 'w2' },
         ammo: 0,
-        hasAmmo: () => false,
-        ammoRemaining: () => 0,
-        ammoCapacityTotal: () => 3
+        hasAmmo: false,
+        ammoRemaining: 0,
+        ammoCapacityTotal: 3
       }
     }
 
@@ -98,14 +98,14 @@ describe('Ship basic behaviors', () => {
   it('ammoRemaining and ammoCapacityTotal reflect sunk state', () => {
     const s = new Ship(2, 'y', 'B')
     s.weapons = {
-      '0,0': { id: 1, ammoRemaining: () => 3, ammoCapacity: () => 5 },
-      '0,1': { id: 2, ammoRemaining: () => 2, ammoCapacity: () => 4 }
+      '0,0': { id: 1, ammoRemaining: 3, ammoCapacity: 5 },
+      '0,1': { id: 2, ammoRemaining: 2, ammoCapacity: 4 }
     }
 
-    expect(s.ammoCapacityTotal()).toBe(9)
+    expect(s.ammoCapacityTotal).toBe(9)
     s.sunk = true
-    expect(s.ammoRemainingTotal()).toBe(0)
-    expect(s.ammoCapacityTotal()).toBe(0)
+    expect(s.ammoRemainingTotal).toBe(0)
+    expect(s.ammoCapacityTotal).toBe(0)
   })
 
   /**

@@ -20,8 +20,8 @@ import { Delay } from '../core/Delay.js'
  * Weapon system with ammo management.
  * @typedef {Object} WeaponSystem
  * @property {Weapon} weapon - The weapon object
- * @property {Function} ammoCapacity - Method returning total ammo capacity
- * @property {Function} ammoRemaining - Method returning remaining ammo
+ * @property {number} ammoCapacity - Method returning total ammo capacity
+ * @property {number} ammoRemaining - Method returning remaining ammo
  */
 
 /**
@@ -677,7 +677,7 @@ class StatusUI {
    * @returns {void}
    */
   _displayAmmoCount (wps) {
-    this._displayAmmoCounter(wps.ammoCapacity(), wps.ammoRemaining())
+    this._displayAmmoCounter(wps.ammoCapacity, wps.ammoRemaining())
   }
 
   /**

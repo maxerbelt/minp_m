@@ -2,7 +2,6 @@
  * @jest-environment
  */
 
-
 import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 
 // polyfill structuredClone for Node environments that lack it
@@ -36,11 +35,11 @@ describe('LoadOut', () => {
     }
     mockShip = {
       weapon: () => mockWeapon,
-      hasAmmoRemaining: () => true,
+      hasAmmoRemaining: true,
       getFirstLoadedWeapon: () => ({ weapon: mockWeapon }),
       getPrimaryWeapon: () => ({ weapon: mockWeapon }),
       getAllWeapons: () => [{ weapon: mockWeapon }],
-      getLoadedWeapons: () => [{ id: 1, weapon: mockWeapon }],
+      loadedWeapons: [{ id: 1, weapon: mockWeapon }],
       getWeaponBySystemId: id => (id === 1 ? { id: 1 } : undefined),
       id: 1
     }
@@ -80,16 +79,16 @@ describe('LoadOut', () => {
 
   it('isNotArming returns correct value', () => {
     loadOut.isRackSelectable = false
-    expect(loadOut.isNotArming()).toBe(true)
+    expect(loadOut.isNotArming).toBe(true)
     loadOut.isRackSelectable = true
-    expect(loadOut.isNotArming()).toBe(false)
+    expect(loadOut.isNotArming).toBe(false)
   })
 
   it('isArming returns correct value', () => {
     loadOut.isRackSelectable = false
-    expect(loadOut.isArming()).toBe(false)
+    expect(loadOut.isArming).toBe(false)
     loadOut.isRackSelectable = true
-    expect(loadOut.isArming()).toBe(true)
+    expect(loadOut.isArming).toBe(true)
   })
 
   it('aimWeapon triggers launch and ammo usage', () => {
@@ -115,7 +114,7 @@ describe('LoadOut', () => {
         aoePlus: jest.fn(() => ({ affectedArea: [[1, 1]], options: {} }))
       }
     }
-    loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+    loadOut.firstUnattachedWeaponSystem = null
     loadOut.onDestroy = jest.fn(async () => ({ sunk: true }))
     loadOut.launch = jest.fn(async () => ({ target: 'foo' }))
 
@@ -144,7 +143,7 @@ describe('LoadOut', () => {
   it('clearSelectedCoordinates notifies cursor change when no unattached weapon exists', () => {
     loadOut.selectedCoordinates = [[1, 2]]
     loadOut.onCursorChangeCallback = jest.fn()
-    loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+    loadOut.firstUnattachedWeaponSystem = null
 
     loadOut.clearSelectedCoordinates()
 

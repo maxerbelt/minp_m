@@ -96,11 +96,11 @@ IWeaponAnimatable extends IWeapon
 ### System Hierarchy
 ```
 IWeaponSystem
-  ├── ammoRemaining(): number
-  ├── ammoCapacity(): number
-  ├── hasAmmo(): boolean
-  ├── getLeafWeapons(): IWeaponSystem[]
-  └── getLoadedWeapons(): IWeaponSystem[]
+  ├── ammoRemaining: number
+  ├── ammoCapacity: number
+  ├── hasAmmo: boolean
+  ├── leafWeapons(): IWeaponSystem[]
+  └── loadedWeapons: IWeaponSystem[]
 
 CombinedWeaponSystem extends IWeaponSystem
   └── subsystems: IWeaponSystem[]

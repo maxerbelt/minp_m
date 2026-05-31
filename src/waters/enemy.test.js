@@ -106,9 +106,9 @@ describe('Enemy.updateWeaponStatus', () => {
 
     // Create a mock loadOut that will be used by Enemy instances
     mockLoadOut = {
-      getCurrentWeaponSystem: jest.fn(),
+      currentWeaponSystem: null,
       selectedCoordinates: [],
-      getUnattachedWeaponSystem: jest.fn(() => null),
+      firstUnattachedWeaponSystem: null,
       isSingleShot: false
     }
 
@@ -154,13 +154,13 @@ describe('Enemy.updateWeaponStatus', () => {
       _hasUnattachedForCurrentWeapon () {
         return (
           this.loadOut.isSingleShot ||
-          this.loadOut.getUnattachedWeaponSystem() != null ||
+          this.loadOut.firstUnattachedWeaponSystem != null ||
           (bh.seekingMode && !bh.terrain?.hasAttachedWeapons)
         )
       }
 
       updateWeaponStatus (_rack, _cursorInfo) {
-        const weaponSystem = this.loadOut.getCurrentWeaponSystem()
+        const weaponSystem = this.loadOut.currentWeaponSystem
         const weapon = weaponSystem?.weapon
 
         if (weapon) {
@@ -210,16 +210,16 @@ describe('Enemy.updateWeaponStatus', () => {
         this.updateMode(newCursorInfo.wps, newCursorInfo)
       }
 
-      hasNoAmmo () {
+      get hasNoAmmo () {
         return this.loadOut.isOutOfAmmo()
       }
 
-      isGameOver () {
+      get isGameOver () {
         return this.boardDestroyed || this.isRevealed
       }
 
-      canTakeTurn () {
-        if (this.isGameOver() || this.hasNoAmmo()) {
+      get canTakeTurn () {
+        if (this.isGameOver || this.hasNoAmmo) {
           return false
         }
         if (this.timeoutId) {
@@ -242,7 +242,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       const enemy = new Enemy()
       enemy.loadOut.isSingleShot = false
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
 
       expect(enemy._hasUnattachedForCurrentWeapon()).toBe(false)
     })
@@ -253,7 +253,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       const enemy = new Enemy()
       enemy.loadOut.isSingleShot = false
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
 
       expect(enemy._hasUnattachedForCurrentWeapon()).toBe(true)
     })
@@ -265,12 +265,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const mockWeapon = { letter: 'M', name: 'Missile' }
       const mockWeaponSystem = {
         weapon: mockWeapon,
-        ammoCapacity: jest.fn(() => 10)
+        ammoCapacity: 10
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -286,7 +286,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should handle null weapon gracefully', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.currentWeaponSystem = null
 
       enemy.updateWeaponStatus(null, undefined)
 
@@ -298,13 +298,13 @@ describe('Enemy.updateWeaponStatus', () => {
       const mockWeapon = { letter: 'R', name: 'Rail Bolt' }
       const mockWeaponSystem = { weapon: mockWeapon }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = [
         [1, 2],
         [3, 4],
         [5, 6]
       ]
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -329,12 +329,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       const missileSystem = {
         weapon: { letter: 'M', name: 'Missile' },
-        ammoCapacity: jest.fn(() => 5)
+        ammoCapacity: 5
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => missileSystem)
+      enemy.loadOut.currentWeaponSystem = missileSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -352,12 +352,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       const railGunSystem = {
         weapon: { letter: 'R', name: 'Rail Bolt' },
-        ammoCapacity: jest.fn(() => 4)
+        ammoCapacity: 4
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => railGunSystem)
+      enemy.loadOut.currentWeaponSystem = railGunSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -380,9 +380,9 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'M', name: 'Missile' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.cuirrentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -397,14 +397,14 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       bh.seekingMode = true
       enemy.loadOut.isSingleShot = false
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => ({
+      enemy.loadOut.firstUnattachedWeaponSystem = {
         weapon: { letter: 'S', name: 'Scan' }
-      }))
+      }
 
       const mockWeaponSystem = {
         weapon: { letter: 'M', name: 'Missile' }
       }
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
 
       enemy.updateWeaponStatus(null, undefined)
@@ -422,12 +422,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       bh.seekingMode = false
       enemy.loadOut.isSingleShot = true
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
 
       const mockWeaponSystem = {
         weapon: { letter: 'M', name: 'Missile' }
       }
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
 
       enemy.updateWeaponStatus(null, undefined)
@@ -449,9 +449,9 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'R', name: 'Rail Bolt' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -472,9 +472,9 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'M', name: 'Missile' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(mockRack, undefined)
@@ -495,9 +495,9 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'M', name: 'Missile' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystem)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, mockCursorInfo)
@@ -519,9 +519,9 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'M', name: 'Missile' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => missileSystem)
+      enemy.loadOut.currentWeaponSystem = missileSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -535,9 +535,9 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'R', name: 'Rail Bolt' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => railGunSystem)
+      enemy.loadOut.currentWeaponSystem = railGunSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -549,13 +549,13 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       const missileSystem = {
         weapon: { letter: 'M', name: 'Missile' },
-        ammoCapacity: jest.fn(() => 5),
-        ammoRemaining: jest.fn(() => 3)
+        ammoCapacity: 5,
+        ammoRemaining: 3
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => missileSystem)
+      enemy.loadOut.currentWeaponSystem = missileSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
 
       enemy.updateWeaponStatus(null, undefined)
@@ -578,13 +578,13 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'R', name: 'Rail Bolt' }
       }
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => missileSystem)
+      enemy.loadOut.currentWeaponSystem = missileSystem
       enemy.loadOut.selectedCoordinates = []
-      enemy.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.firstUnattachedWeaponSystem = null
       enemy.loadOut.isSingleShot = false
       enemy.updateWeaponStatus(null, undefined)
 
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => railGunSystem)
+      enemy.loadOut.currentWeaponSystem = railGunSystem
       enemy.updateWeaponStatus(null, undefined)
 
       expect(gameStatus.displayAmmoStatus).toHaveBeenCalledTimes(2)
@@ -706,7 +706,7 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.boardDestroyed = true
       enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
 
-      expect(enemy.canTakeTurn()).toBe(false)
+      expect(enemy.canTakeTurn).toBe(false)
     })
 
     it('should return false when no ammo is available', () => {
@@ -715,7 +715,7 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.isRevealed = false
       enemy.loadOut.isOutOfAmmo = jest.fn(() => true)
 
-      expect(enemy.canTakeTurn()).toBe(false)
+      expect(enemy.canTakeTurn).toBe(false)
     })
 
     it('should return false when timeoutId is set', () => {
@@ -725,7 +725,7 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
       enemy.timeoutId = 123
 
-      expect(enemy.canTakeTurn()).toBe(false)
+      expect(enemy.canTakeTurn).toBe(false)
       expect(gameStatus.addToQueue).toHaveBeenCalledWith(
         'Wait For Enemy To Finish Their Turn',
         false
@@ -742,7 +742,7 @@ describe('Enemy.updateWeaponStatus', () => {
         boardDestroyed: true
       }
 
-      expect(enemy.canTakeTurn()).toBe(false)
+      expect(enemy.canTakeTurn).toBe(false)
       expect(gameStatus.addToQueue).toHaveBeenCalledWith(
         'Game Over - No More Shots Allowed',
         true
@@ -759,7 +759,7 @@ describe('Enemy.updateWeaponStatus', () => {
         boardDestroyed: false
       }
 
-      expect(enemy.canTakeTurn()).toBe(true)
+      expect(enemy.canTakeTurn).toBe(true)
     })
 
     it('should use hasNoAmmo wrapper method to check ammo status', () => {
@@ -770,7 +770,7 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.timeoutId = null
       enemy.opponent = { boardDestroyed: false }
 
-      enemy.canTakeTurn()
+      enemy.canTakeTurn
 
       // Verify that isOutOfAmmo is called via hasNoAmmo (regression test for checkNoAmmo bug)
       expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalled()
@@ -784,9 +784,9 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.timeoutId = null
       enemy.opponent = { boardDestroyed: false }
 
-      expect(enemy.canTakeTurn()).toBe(true)
-      expect(enemy.canTakeTurn()).toBe(true)
-      expect(enemy.canTakeTurn()).toBe(true)
+      expect(enemy.canTakeTurn).toBe(true)
+      expect(enemy.canTakeTurn).toBe(true)
+      expect(enemy.canTakeTurn).toBe(true)
 
       // Verify isOutOfAmmo is called each time
       expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalledTimes(3)
@@ -832,23 +832,23 @@ describe('Enemy.updateWeaponStatus', () => {
           {
             id: 'railgun1',
             name: 'Railgun',
-            getLoadedWeaponEntries: jest.fn(() => [
+            loadedWeaponEntries: [
               ['0,0', mockWeaponSystemR],
               ['1,0', mockWeaponSystemR]
-            ])
+            ]
           },
           {
             id: 'missile1',
             name: 'MissileBoat',
-            getLoadedWeaponEntries: jest.fn(() => [
+            loadedWeaponEntries: [
               ['2,0', mockWeaponSystemM],
               ['3,0', mockWeaponSystemM]
-            ])
+            ]
           },
           {
             id: 'railgun2',
             name: 'Railgun2',
-            getLoadedWeaponEntries: jest.fn(() => [['4,0', mockWeaponSystemR]])
+            loadedWeaponEntries: [['4,0', mockWeaponSystemR]]
           }
         ],
         UI: {
@@ -860,7 +860,7 @@ describe('Enemy.updateWeaponStatus', () => {
         constructor () {
           this.opponent = mockOpponent
           this.loadOut = {
-            getCurrentWeaponSystem: jest.fn(),
+            currentWeaponSystem: null,
             selectedCoordinates: []
           }
           this.UI = { board: { classList: {} } }
@@ -884,7 +884,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
         _selectCurrentWeaponOnRandomShip () {
           // @ts-ignore - currentWeapon type is unknown from mock, but structure is known from mockWeaponSystemR/M
-          const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+          const currentWeapon = this.loadOut.currentWeaponSystem
 
           // @ts-ignore - weapon property exists on mock weapon system
           if (!currentWeapon?.weapon?.letter) {
@@ -895,7 +895,7 @@ describe('Enemy.updateWeaponStatus', () => {
           // @ts-ignore - weapon property exists on mock weapon system
           const targetLetter = currentWeapon?.weapon?.letter
           const shipsWithWeapon = this.opponent.ships.filter(ship => {
-            const entries = ship.getLoadedWeaponEntries()
+            const entries = ship.loadedWeaponEntries
             return entries.some(
               ([_key, weapon]) => weapon?.weapon?.letter === targetLetter
             )
@@ -911,7 +911,7 @@ describe('Enemy.updateWeaponStatus', () => {
             shipsWithWeapon[Math.floor(Math.random() * shipsWithWeapon.length)]
           this.steps.addShip(selectedShip)
 
-          const entries = selectedShip.getLoadedWeaponEntries()
+          const entries = selectedShip.loadedWeaponEntries
           const [key, weapon] = entries.find(
             ([_k, w]) => w.weapon?.letter === targetLetter
           )
@@ -945,7 +945,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should select a Railgun when Rail Bolt is selected, NOT a MissileBoat', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystemR
 
       enemy._selectCurrentWeaponOnRandomShip()
 
@@ -962,7 +962,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should select a MissileBoat when Missile is selected, NOT a Railgun', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemM)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystemM
 
       enemy._selectCurrentWeaponOnRandomShip()
 
@@ -976,7 +976,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should fall back to randomAttachedWeapon when no current weapon selected', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => null)
+      enemy.loadOut.currentWeaponSystem = null
 
       enemy._selectCurrentWeaponOnRandomShip()
 
@@ -986,11 +986,11 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should fall back to randomAttachedWeapon when weapon letter is undefined', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => ({
+      enemy.loadOut.currentWeaponSystem = {
         id: 'X1',
         weapon: { name: 'Unknown' }
         // NO letter property
-      }))
+      }
 
       enemy._selectCurrentWeaponOnRandomShip()
 
@@ -1004,7 +1004,7 @@ describe('Enemy.updateWeaponStatus', () => {
         id: 'X1',
         weapon: { letter: 'X', name: 'Unknown Weapon' }
       }
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => unknownWeapon)
+      enemy.loadOut.currentWeaponSystem = unknownWeapon
 
       enemy._selectCurrentWeaponOnRandomShip()
 
@@ -1014,7 +1014,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should only select from ships with the target weapon, never all ships', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystemR
 
       // Call multiple times to verify consistent filtering
       for (let i = 0; i < 5; i++) {
@@ -1031,7 +1031,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should arm the selected weapon with correct parameters', () => {
       const enemy = new Enemy()
-      enemy.loadOut.getCurrentWeaponSystem = jest.fn(() => mockWeaponSystemR)
+      enemy.loadOut.currentWeaponSystem = mockWeaponSystemR
 
       enemy._selectCurrentWeaponOnRandomShip()
 
@@ -1065,7 +1065,7 @@ describe('Enemy.updateWeaponStatus', () => {
         constructor () {
           // NOSONAR - Test mock class
           this.opponent = mockOpponent
-          this.loadOut = { getCurrentWeaponSystem: jest.fn() }
+          this.loadOut = { currentWeaponSystem: null }
           this.timeoutId = null
 
           this._onFirstClickSelection = jest.fn()
@@ -1077,7 +1077,7 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         async onClickCell (r, c) {
-          if (!this.canTakeTurn()) return
+          if (!this.canTakeTurn) return
 
           if (this.opponent?.hasAttachedWeapons) {
             if (this.selectedCellCoordinates === null) {
@@ -1126,10 +1126,10 @@ describe('Enemy.updateWeaponStatus', () => {
         opponent: { hasAttachedWeapons: true },
         loadOut: {
           isSingleShot: true,
-          getCurrentWeaponSystem: jest.fn(() => ({ weapon: {} }))
+          currentWeaponSystem: { weapon: {} }
         },
         selectedCellCoordinates: { r: 0, c: 0 },
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         fireWeaponAt: jest.fn(async (_r, _c, _weaponSystem) => ({
           weapon: 'single-shot',
           score: { hits: 0 }
@@ -1151,7 +1151,7 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
         1,
         2,
-        enemy.loadOut.getCurrentWeaponSystem()
+        enemy.loadOut.currentWeaponSystem
       )
       expect(enemy._processWeaponResult).toHaveBeenCalledWith({
         weapon: 'single-shot',
@@ -1182,7 +1182,7 @@ describe('Enemy.updateWeaponStatus', () => {
         opponent: { hasAttachedWeapons: true },
         loadOut: { selectedWeapon: { id: 'mock-weapon' }, isSingleShot: false },
         timeoutId: null,
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         _handleAttachedWeaponClick: /** @type {any} */ (
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
@@ -1210,12 +1210,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = {
         opponent: { hasAttachedWeapons: true },
         loadOut: {
-          getCurrentWeaponSystem: jest.fn(() => ({
+          currentWeaponSystem: {
             weapon: { name: 'Gauss Round', letter: '^', playWarnSound }
-          }))
+          }
         },
         timeoutId: null,
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         UI: {
           gridCellAt: jest.fn(() => ({
             classList: { contains: jest.fn(() => true) }
@@ -1255,13 +1255,13 @@ describe('Enemy.updateWeaponStatus', () => {
         opponent: { hasAttachedWeapons: true },
         loadOut: {
           isSingleShot: false,
-          getUnattachedWeaponSystem: jest.fn(() => null),
-          getCurrentWeaponSystem: jest.fn(() => ({
+          firstUnattachedWeaponSystem: null,
+          currentWeaponSystem: {
             weapon: { letter: 'M', name: 'Missile', tag: 'missile' }
-          }))
+          }
         },
         timeoutId: null,
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         setupWeapon: /** @type {any} */ (
           jest.fn(async () => ({
             weapon: 'Missile',
@@ -1326,11 +1326,11 @@ describe('Enemy.updateWeaponStatus', () => {
         opponent: { hasAttachedWeapons: true },
         loadOut: {
           isSingleShot: false,
-          getUnattachedWeaponSystem: jest.fn(() => null),
-          getCurrentWeaponSystem: jest.fn(() => currentWeaponSystem)
+          firstUnattachedWeaponSystem: null,
+          currentWeaponSystem: currentWeaponSystem
         },
         timeoutId: null,
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         setupWeapon: jest.fn(async () => null),
         fireWeaponAt: jest.fn(async () => ({
           weapon: 'Missile',
@@ -1344,7 +1344,7 @@ describe('Enemy.updateWeaponStatus', () => {
         ),
         _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
           const result = { weapon: 'Missile', score: { hits: 1 } }
-          await this.fireWeaponAt(r, c, this.loadOut.getCurrentWeaponSystem())
+          await this.fireWeaponAt(r, c, this.loadOut.currentWeaponSystem)
           this._processWeaponResult(result)
           this._finalizeTurn()
           return result
@@ -1391,13 +1391,13 @@ describe('Enemy.updateWeaponStatus', () => {
         hasAttachedWeapons: true,
         loadOut: {
           isSingleShot: false,
-          getUnattachedWeaponSystem: jest.fn(() => null),
-          getCurrentWeaponSystem: jest.fn(() => ({
+          firstUnattachedWeaponSystem: null,
+          currentWeaponSystem: {
             weapon: { letter: 'M', name: 'Missile', tag: 'missile' }
-          }))
+          }
         },
         timeoutId: null,
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         setupWeapon: /** @type {any} */ (
           jest.fn(async () => ({
             weapon: 'Missile',
@@ -1445,14 +1445,14 @@ describe('Enemy.updateWeaponStatus', () => {
         loadOut: {
           isSingleShot: false,
           selectedWeapon: null,
-          getUnattachedWeaponSystem: jest.fn(() => ({ id: 'M1' })),
-          getCurrentWeaponSystem: jest.fn(() => ({
+          firstUnattachedWeaponSystem: { id: 'M1' },
+          currentWeaponSystem: {
             id: 'M1',
             weapon: { letter: 'M' }
-          }))
+          }
         },
         timeoutId: null,
-        canTakeTurn: jest.fn(() => true),
+        canTakeTurn: true,
         _hasUnattachedForCurrentWeapon: /** @type {any} */ (
           EnemyClass.prototype
         )._hasUnattachedForCurrentWeapon,
@@ -1507,13 +1507,13 @@ describe('Enemy.updateWeaponStatus', () => {
         gridCellAt: jest.fn()
       })
 
-      enemy.canTakeTurn = jest.fn(() => true)
+      enemy.canTakeTurn = true
       enemy.opponent = null
       enemy.hasAttachedWeapons = true
       enemy.loadOut = /** @type {any} */ ({
         isSingleShot: false,
-        getCurrentWeaponSystem: jest.fn(() => ({})),
-        getUnattachedWeaponSystem: jest.fn(() => null)
+        currentWeaponSystem: {},
+        firstUnattachedWeaponSystem: null
       })
       enemy['_onFirstClickSelection'] = jest.fn()
       enemy['_onSecondClickFire'] = jest.fn(async (_r, _c) => {})
@@ -1537,9 +1537,8 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'R' }
       })
 
-      enemy.loadOut.getCurrentWeaponSystem = /** @type {any} */ (
-        jest.fn(() => mockWeaponSystemR)
-      )
+      enemy.loadOut.currentWeaponSystem = /** @type {any} */ mockWeaponSystemR
+
       enemy.generateSourceHint = jest.fn(() => null)
       enemy._armSelectedWeapon = /** @type {any} */ (jest.fn())
       enemy.randomAttachedWeapon = /** @type {any} */ (jest.fn())
@@ -1548,9 +1547,9 @@ describe('Enemy.updateWeaponStatus', () => {
         UI: { gridCellAt: jest.fn() },
         ships: [
           {
-            getLoadedWeaponEntries: jest.fn(() => [
+            loadedWeaponEntries: [
               ['0,0', { id: 'R1', weapon: { letter: 'R' } }]
-            ])
+            ]
           }
         ],
         hasAttachedWeapons: true
@@ -1586,9 +1585,7 @@ describe('Enemy.updateWeaponStatus', () => {
         weapon: { letter: 'R', postSelectCoords: 1 }
       })
 
-      enemy.loadOut.getCurrentWeaponSystem = /** @type {any} */ (
-        jest.fn(() => mockWeaponSystemR)
-      )
+      enemy.loadOut.currentWeaponSystem = /** @type {any} */ mockWeaponSystemR
       enemy.generateSourceHint = /** @type {any} */ jest.fn(
         () => /** @type {[number, number]} */ ([9, 9])
       )
@@ -1599,9 +1596,9 @@ describe('Enemy.updateWeaponStatus', () => {
         UI: { gridCellAt: jest.fn(() => 'cell') },
         ships: [
           {
-            getLoadedWeaponEntries: jest.fn(() => [
+            loadedWeaponEntries: [
               ['0,0', { id: 'R1', weapon: { letter: 'R' } }]
-            ])
+            ]
           }
         ],
         hasAttachedWeapons: true
@@ -1769,7 +1766,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this.loadOut = {
             notifyCursorChange: jest.fn(),
             isSingleShot: false,
-            getUnattachedWeaponSystem: jest.fn(() => null)
+            firstUnattachedWeaponSystem: null
           }
           this.steps = {
             clearSource: jest.fn()
@@ -1961,7 +1958,7 @@ describe('Enemy.updateWeaponStatus', () => {
             notifyCursorChange: jest.fn(),
             switchToWeapon: jest.fn(),
             isSingleShot: false,
-            getUnattachedWeaponSystem: jest.fn(() => null)
+            firstUnattachedWeaponSystem: null
           }
           this.steps = {
             clearSource: jest.fn(),
@@ -2109,7 +2106,7 @@ describe('Enemy.updateWeaponStatus', () => {
             notifyCursorChange: jest.fn(),
             clearSelectedCoordinates: jest.fn(),
             isSingleShot: false,
-            getUnattachedWeaponSystem: jest.fn(() => null)
+            firstUnattachedWeaponSystem: null
           }
           this.steps = {
             clearSource: jest.fn()
@@ -2417,9 +2414,9 @@ describe('Enemy.updateWeaponStatus', () => {
           this.loadOut = {
             switchToWeapon: jest.fn(),
             notifyCursorChange: jest.fn(),
-            getCurrentWeaponSystem: jest.fn(() => ({
+            currentWeaponSystem: {
               weapon: { letter: 'M' }
-            }))
+            }
           }
           this.UI = {
             board: { classList: [] }

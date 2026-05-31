@@ -60,16 +60,16 @@ export interface WeaponSystem {
   id: string | number
 
   /** Returns the maximum ammo capacity for this weapon */
-  ammoCapacity(): number
+  ammoCapacity: number
 
   /** Returns the amount of ammo already used/fired */
   ammoUsed(): number
 
   /** Returns the count of unattached ammo rounds */
-  ammoUnattached(): number
+  ammoUnattached: number
 
   /** Returns array of leaf weapons (for weapon hierarchies) */
-  getLeafWeapons(): Weapon[]
+  leafWeapons: Weapon[]
 }
 
 /**

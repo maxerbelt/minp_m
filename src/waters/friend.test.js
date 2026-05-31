@@ -265,12 +265,12 @@ describe('Friend', () => {
 
       // Mock loadOut
       friend.loadOut = {
-        getCurrentWeaponSystem: jest.fn(() => ({
+        currentWeaponSystem: {
           weapon: { name: 'RailGun', letter: 'R' }
-        })),
+        },
         selectedCoordinates: [{ r: 1, c: 1 }],
         isSingleShot: false,
-        getUnattachedWeaponSystem: jest.fn(() => null)
+        firstUnattachedWeaponSystem: null
       }
     })
 
@@ -299,7 +299,7 @@ describe('Friend', () => {
     })
 
     it('does not call UI methods if no weapon is available', () => {
-      friend.loadOut.getCurrentWeaponSystem = jest.fn(() => null)
+      friend.loadOut.currentWeaponSystem = null
       friend.updateWeaponStatus()
       expect(gameStatus._setWeaponMode).not.toHaveBeenCalled()
       expect(gameStatus._resetAmmoIcons).not.toHaveBeenCalled()
@@ -333,7 +333,7 @@ describe('Friend', () => {
     beforeEach(() => {
       friend.loadOut = {
         isSingleShot: false,
-        getUnattachedWeaponSystem: jest.fn(() => null)
+        firstUnattachedWeaponSystem: null
       }
     })
 
@@ -353,9 +353,9 @@ describe('Friend', () => {
     })
 
     it('returns true when weapon has unattached variants', () => {
-      friend.loadOut.getUnattachedWeaponSystem = jest.fn(() => ({
+      friend.loadOut.firstUnattachedWeaponSystem = {
         weapon: { name: 'MissileBoat' }
-      }))
+      }
       expect(friend._hasUnattachedForCurrentWeapon()).toBe(true)
     })
 
@@ -363,7 +363,7 @@ describe('Friend', () => {
       const originalSeekingMode = bh.seekingMode
       bh.seekingMode = false
       friend.loadOut.isSingleShot = false
-      friend.loadOut.getUnattachedWeaponSystem = jest.fn(() => null)
+      friend.loadOut.firstUnattachedWeaponSystem = null
       try {
         expect(friend._hasUnattachedForCurrentWeapon()).toBe(false)
       } finally {

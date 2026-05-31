@@ -25,9 +25,9 @@ export interface PositionedWeaponSystem extends WeaponSystemRef {
   readonly hit?: boolean;
   readonly damaged?: boolean;
   readonly ammo?: number;
-  hasAmmo?(): boolean;
-  ammoRemaining?(): number;
-  ammoCapacity?(): number;
+  hasAmmo?: boolean;
+  ammoRemaining: number;
+  ammoCapacity?: number;
   animateDetonation?: AnimationCallback;
   reset?: ResetCallback;
 }
@@ -56,8 +56,8 @@ export interface WeaponAtPosition extends WeaponSystemRef {
   readonly hit?: boolean;
   readonly damaged?: boolean;
   readonly weapon?: any;
-  ammoRemaining?(): number;
-  ammoCapacity?(): number;
+  ammoRemaining: number;
+  ammoCapacity?: number;
   animateDetonation?: AnimationCallback;
   reset?: ResetCallback;
 }

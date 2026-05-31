@@ -58,10 +58,10 @@ import { dragNDrop } from '../../selection/dragndrop.js'
  * @property {boolean} hit - Whether the weapon has recorded a hit on opponent
  * @property {boolean} damaged - Whether the weapon is damaged or malfunctioning
  * @property {string|number} id - Unique identifier for this weapon system (e.g., 'w-1', 'sys-42')
- * @property {() => number} ammoCapacity - Function that returns total ammo capacity for weapon (e.g., 4, 6, 8)
- * @property {() => number} ammoUsed - Function that returns amount of ammo consumed/fired
- * @property {() => number} ammoUnattached - Function that returns count of unattached/unloaded ammo (for shared pools)
- * @property {() => WeaponSystem[]} getLeafWeapons - Function that returns array of sub-weapons (branches in weapon hierarchy)
+ * @property {number} ammoCapacity - Function that returns total ammo capacity for weapon (e.g., 4, 6, 8)
+ * @property {number} ammoUsed - Function that returns amount of ammo consumed/fired
+ * @property {number} ammoUnattached - Function that returns count of unattached/unloaded ammo (for shared pools)
+ * @property {  WeaponSystem[]} leafWeapons - Function that returns array of sub-weapons (branches in weapon hierarchy)
  */
 
 /**
@@ -291,9 +291,9 @@ export class WeaponTallyBuilder {
    * Called for each leaf weapon in a weapon hierarchy.
    *
    * Operation:
-   * 1. Get ammo capacity from weaponSystem.ammoCapacity()
-   * 2. Get ammo used from weaponSystem.ammoUsed()
-   * 3. Get ammo unattached from weaponSystem.ammoUnattached()
+   * 1. Get ammo capacity from weaponSystem.ammoCapacity
+   * 2. Get ammo used from weaponSystem.ammoUsed
+   * 3. Get ammo unattached from weaponSystem.ammoUnattached
    * 4. Loop from 0 to capacity-1
    * 5. For each index: Call #createWeaponBox() with all parameters
    * 6. Each box appended to row during creation
@@ -324,9 +324,9 @@ export class WeaponTallyBuilder {
    * // row now contains 4 boxes: first faded (used), rest full (available)
    */
   static #buildWeaponSubRow (weaponSystem, viewModel, weapon, maps, row) {
-    const ammoCapacity = weaponSystem.ammoCapacity()
-    const ammoUsed = weaponSystem.ammoUsed()
-    const ammoUnattached = weaponSystem.ammoUnattached()
+    const ammoCapacity = weaponSystem.ammoCapacity
+    const ammoUsed = weaponSystem.ammoUsed
+    const ammoUnattached = weaponSystem.ammoUnattached
 
     for (let i = 0; i < ammoCapacity; i++) {
       this.#createWeaponBox({
@@ -354,7 +354,7 @@ export class WeaponTallyBuilder {
    * 3. Get color maps from bh.maps for weapon coloring
    * 4. Get weapon definition from weaponSystem.weapon
    * 5. Apply CSS classes: 'tally-row' + 'weapon' + weapon.classname (for weapon-specific styling)
-   * 6. Get leaf weapons from weaponSystem.getLeafWeapons()
+   * 6. Get leaf weapons from weaponSystem.leafWeapons
    * 7. Sort leaves by damage/hit/ammo state for consistent display order
    * 8. For each leaf: Call #buildWeaponSubRow() to render ammo boxes
    * 9. Append completed row to container
@@ -400,17 +400,15 @@ export class WeaponTallyBuilder {
     } ${weapon.classname}`
 
     // Sort leaf weapons by ammo for consistent display
-    const leaves = weaponSystem
-      .getLeafWeapons()
-      .sort(
-        (a, b) =>
-          (b.hit ? 40 : 0) -
-          (a.damage ? 20 : 0) +
-          (b.damage ? 20 : 0) -
-          (a.hit ? 40 : 0) +
-          a.ammo -
-          b.ammo
-      )
+    const leaves = weaponSystem.leafWeapons.sort(
+      (a, b) =>
+        (b.hit ? 40 : 0) -
+        (a.damage ? 20 : 0) +
+        (b.damage ? 20 : 0) -
+        (a.hit ? 40 : 0) +
+        a.ammo -
+        b.ammo
+    )
 
     // Build ammo boxes for each weapon leaf
     for (const leaf of leaves) {

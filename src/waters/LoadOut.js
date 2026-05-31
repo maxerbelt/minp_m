@@ -25,11 +25,11 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 /**
  * @typedef {Object} Ship
  * @property {string} id - Ship identifier
- * @property {function(): boolean} hasAmmoRemaining - Checks if ship has ammo
+ * @property {boolean} hasAmmoRemaining - Checks if ship has ammo
  * @property {function(): Weapon} getPrimaryWeapon - Gets the primary weapon
  * @property {function(string): Weapon} getWeaponBySystemId - Gets weapon by system ID
  * @property {function(): Weapon[]} getAllWeapons - Gets all weapons on ship
- * @property {function(): Weapon[]} getLoadedWeapons - Gets loaded weapons
+ * @property {Weapon[]} loadedWeapons - Gets loaded weapons
  * @property {function(): Weapon} getFirstLoadedWeapon - Gets first loaded weapon
  */
 
@@ -37,12 +37,12 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @typedef {Object} WeaponsSystem
  * @property {Weapon} weapon - The weapon object
  * @property {number} ammo - Current ammo count
- * @property {function(): number} ammoCapacity - Total ammo capacity
- * @property {function(): number} ammoRemaining - Remaining ammo count
- * @property {function(): boolean} hasAmmoRemaining - Checks if has ammo remaining
+ * @property {number} ammoCapacity - Total ammo capacity
+ * @property {number} ammoRemaining - Remaining ammo count
+ * @property {boolean} hasAmmoRemaining - Checks if has ammo remaining
  * @property {function(): void} useAmmo - Consumes ammo
- * @property {function(): WeaponsSystem|undefined} getUnattachedWeapon - Gets unattached weapon
- * @property {function(): boolean} hasAmmo - Checks if has ammo
+ * @property {WeaponsSystem|undefined} firstUnattachedWeapon - Gets unattached weapon
+ * @property {boolean} hasAmmo - Checks if has ammo
  */
 
 /**
@@ -188,11 +188,11 @@ export class LoadOut {
    * @returns {FiringInfo|null} Complete firing info if ready, null/partial if still selecting
    */
   firingInfoIfReady (map, row, col, weaponSystem) {
-    const wps = weaponSystem || this.getCurrentWeaponSystem()
+    const wps = weaponSystem || this.currentWeaponSystem
     const weapon = wps?.weapon
 
     this.addSelectedCoordinates(row, col, weapon)
-    const unattachedWeaponSystem = this.getUnattachedWeaponSystem()
+    const unattachedWeaponSystem = this.firstUnattachedWeaponSystem
 
     if (unattachedWeaponSystem) {
       this.selectedWeapon = unattachedWeaponSystem
@@ -347,7 +347,7 @@ export class LoadOut {
    * @private
    */
   _resolveWeaponSystem (weaponSystem) {
-    return weaponSystem || this.getCurrentWeaponSystem()
+    return weaponSystem || this.currentWeaponSystem
   }
 
   /**
@@ -439,7 +439,7 @@ export class LoadOut {
    * @returns {Weapon|undefined} First weapon or undefined
    */
   getFirstRack () {
-    return this.ships[0]?.getFirstLoadedWeapon()
+    return this.ships[0]?.firstLoadedWeapon
   }
 
   /**
@@ -461,7 +461,7 @@ export class LoadOut {
    * @returns {Weapon|undefined} Matching weapon
    */
   getWeaponBySystemId (rackId) {
-    return this._findWeaponInCollection(this.getLoadedWeapons(), rackId)
+    return this._findWeaponInCollection(this.loadedWeapons, rackId)
   }
 
   /**
@@ -481,8 +481,8 @@ export class LoadOut {
    *
    * @returns {Weapon[]} All loaded weapons
    */
-  getLoadedWeapons () {
-    return this.ships.flatMap(ship => ship.getLoadedWeapons())
+  get loadedWeapons () {
+    return this.ships.flatMap(ship => ship.loadedWeapons)
   }
 
   /**
@@ -641,7 +641,7 @@ export class LoadOut {
    * @returns {Ship[]} Array of ships with ammo remaining
    */
   getArmedShips () {
-    return this.ships.filter(ship => ship.hasAmmoRemaining())
+    return this.ships.filter(ship => ship.hasAmmoRemaining)
   }
 
   /**
@@ -649,8 +649,8 @@ export class LoadOut {
    *
    * @returns {WeaponsSystem|undefined} Unattached weapon system if available
    */
-  getUnattachedWeaponSystem () {
-    return this.getCurrentWeaponSystem()?.getUnattachedWeapon()
+  get firstUnattachedWeapon () {
+    return this.currentWeaponSystem?.firstUnattachedWeapon
   }
 
   /**
@@ -679,7 +679,7 @@ export class LoadOut {
    */
   getAmmoCapacity () {
     return this.getLimitedWeaponSystems().reduce(
-      (acc, wps) => acc + wps.ammoCapacity(),
+      (acc, wps) => acc + wps.ammoCapacity,
       0
     )
   }
@@ -691,7 +691,7 @@ export class LoadOut {
    */
   ammoRemaining () {
     return this.getLimitedWeaponSystems().reduce(
-      (acc, wps) => acc + wps.ammoRemaining(),
+      (acc, wps) => acc + wps.ammoRemaining,
       0
     )
   }
@@ -718,7 +718,7 @@ export class LoadOut {
   _canWeaponFire (weaponSystem) {
     if (!weaponSystem?.weapon) return false
     if (!weaponSystem.weapon.isLimited) return true
-    return weaponSystem.hasAmmoRemaining()
+    return weaponSystem.hasAmmoRemaining
   }
 
   /**
@@ -754,7 +754,7 @@ export class LoadOut {
    *
    * @returns {WeaponsSystem} Current weapon system
    */
-  getCurrentWeaponSystem () {
+  get currentWeaponSystem () {
     return this.weaponSystems?.[this.currentWeaponIndex]
   }
 
@@ -764,8 +764,8 @@ export class LoadOut {
    *
    * @returns {Weapon} Current weapon
    */
-  getCurrentWeapon () {
-    const weaponSystem = this.getCurrentWeaponSystem()
+  get currentWeapon () {
+    const weaponSystem = this.currentWeaponSystem
     return weaponSystem?.weapon
   }
 
@@ -881,7 +881,7 @@ export class LoadOut {
    * @private
    */
   _setCurrentWeaponIndex (idx) {
-    const oldCursor = this.getCurrentCursor()
+    const oldCursor = this.currentCursor
     this.currentWeaponIndex = idx
     this.notifyCursorChange(oldCursor)
   }
@@ -930,7 +930,7 @@ export class LoadOut {
   switchToNextWeaponSystem () {
     this._moveToNextWeaponIndex()
     this.clearSelectedCoordinates()
-    return this.getCurrentWeapon()
+    return this.currentWeapon
   }
 
   /**
@@ -976,8 +976,8 @@ export class LoadOut {
    *
    * @returns {CursorInfo} Object with cursor, weapon system, and index
    */
-  getCurrentCursorInfo () {
-    const weaponSystem = this.getCurrentWeaponSystem()
+  get currentCursorInfo () {
+    const weaponSystem = this.currentWeaponSystem
     if (!weaponSystem) {
       return null
     }
@@ -1041,8 +1041,8 @@ export class LoadOut {
    *
    * @returns {string} Cursor identifier
    */
-  getCurrentCursor () {
-    const cursorInfo = this.getCurrentCursorInfo()
+  get currentCursor () {
+    const cursorInfo = this.currentCursorInfo
     return cursorInfo?.cursor
   }
 
@@ -1052,7 +1052,7 @@ export class LoadOut {
    * @param {string} oldCursor - Previous cursor value
    */
   notifyCursorChange (oldCursor) {
-    const cursorInfo = this.getCurrentCursorInfo()
+    const cursorInfo = this.currentCursorInfo
     if (cursorInfo) {
       this.onCursorChangeCallback(oldCursor, cursorInfo)
     }
@@ -1096,8 +1096,8 @@ export class LoadOut {
    * @param {number} col - Column coordinate
    * @param {Weapon} [_weapon] - Weapon being selected (defaults to current)
    */
-  addSelectedCoordinates (row, col, _weapon = this.getCurrentWeapon()) {
-    const oldCursor = this.getCurrentCursor()
+  addSelectedCoordinates (row, col, _weapon = this.currentWeapon) {
+    const oldCursor = this.currentCursor
     this.selectedCoordinates.push([row, col])
     this.notifyCursorChange(oldCursor)
   }
@@ -1107,7 +1107,7 @@ export class LoadOut {
    * HIGH-LEVEL: compound operation for clearing selection state.
    */
   clearSelectedCoordinates () {
-    const oldCursor = this.getCurrentCursor()
+    const oldCursor = this.currentCursor
     this.selectedCoordinates = []
 
     const unattachedWeaponSystem = this._resolveUnattachedWeaponForClear()
@@ -1126,7 +1126,7 @@ export class LoadOut {
    * @private
    */
   _resolveUnattachedWeaponForClear () {
-    let unattachedWeaponSystem = this.getUnattachedWeaponSystem()
+    let unattachedWeaponSystem = this.firstUnattachedWeaponSystem
     if (bh.seekingMode && !unattachedWeaponSystem) {
       unattachedWeaponSystem = this.getFirstRack()
     }
@@ -1211,7 +1211,7 @@ export class LoadOut {
    *
    * @returns {boolean} True if cannot arm
    */
-  isNotArming () {
+  get isNotArming () {
     return !this.isRackSelectable
   }
 
@@ -1220,8 +1220,8 @@ export class LoadOut {
    *
    * @returns {boolean} True if can arm
    */
-  isArming () {
-    return !this.isNotArming()
+  get isArming () {
+    return !this.isNotArming
   }
   /**
    * Consumes ammo for a weapon system.
@@ -1230,7 +1230,7 @@ export class LoadOut {
    * @param {WeaponsSystem} [weaponSystem] - Weapon to consume ammo from (defaults to current)
    */
   useAmmo (weaponSystem) {
-    const wps = weaponSystem || this.getCurrentWeaponSystem()
+    const wps = weaponSystem || this.currentWeaponSystem
     if (!wps.weapon.isLimited) return
     wps.useAmmo()
     this._checkAndRemoveExpiredWeapon()
@@ -1242,8 +1242,8 @@ export class LoadOut {
    *
    * @returns {boolean} True if current weapon can fire
    */
-  hasCurrentAmmo () {
-    return this._canWeaponFire(this.getCurrentWeaponSystem())
+  get hasCurrentAmmo () {
+    return this._canWeaponFire(this.currentWeaponSystem)
   }
 
   /**
@@ -1251,19 +1251,8 @@ export class LoadOut {
    *
    * @returns {boolean} True if no ammo left
    */
-  hasNoCurrentAmmo () {
-    return !this.hasCurrentAmmo()
-  }
-
-  /**
-   * Checks if current weapon is expired (depleted).
-   * Helper for ammo state validation.
-   *
-   * @returns {boolean} True if current weapon has no ammo
-   * @private
-   */
-  _isCurrentWeaponExpired () {
-    return this.hasNoCurrentAmmo()
+  get hasNoCurrentAmmo () {
+    return !this.hasCurrentAmmo
   }
 
   /**
@@ -1272,10 +1261,10 @@ export class LoadOut {
    *
    * @returns {boolean} True if arsenal has ammo
    */
-  hasAllAmmo () {
-    const currentWeaponSystem = this.getCurrentWeaponSystem()
+  get hasAllAmmo () {
+    const currentWeaponSystem = this.currentWeaponSystem
     if (!currentWeaponSystem.weapon.isLimited) return true
-    return this._hasArsenalAmmo()
+    return this._hasArsenalAmmo
   }
 
   /**
@@ -1283,8 +1272,8 @@ export class LoadOut {
    *
    * @returns {boolean} True if any limited weapon has ammo
    */
-  _hasArsenalAmmo () {
-    return this.ammoRemaining() > 0
+  get hasArsenalAmmo () {
+    return this.ammoRemaining > 0
   }
 
   /**
@@ -1304,7 +1293,7 @@ export class LoadOut {
    * @private
    */
   _checkAndRemoveExpiredWeapon () {
-    if (this.hasNoCurrentAmmo()) {
+    if (this.hasNoCurrentAmmo) {
       this._removeCurrentWeaponSystem()
       return true
     }
@@ -1327,7 +1316,7 @@ export class LoadOut {
    * @private
    */
   _findExpiredWeapons () {
-    return this.getLimitedWeaponSystems().filter(wps => !wps.hasAmmoRemaining())
+    return this.getLimitedWeaponSystems().filter(wps => !wps.hasAmmoRemaining)
   }
 
   /**
@@ -1338,7 +1327,7 @@ export class LoadOut {
    * @private
    */
   _removeCurrentWeaponSystem () {
-    const oldCursor = this.getCurrentCursor()
+    const oldCursor = this.currentCursor
     this._removeWeaponAtIndex(this.currentWeaponIndex)
     this._notifyWeaponRemoved(oldCursor)
   }

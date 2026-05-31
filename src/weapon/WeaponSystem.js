@@ -78,7 +78,7 @@ export class WeaponSystem {
    * Override in subclasses for specific rack retrieval
    * @returns {Object|null} Weapon rack or null if none available
    */
-  getRack () {
+  get firstRack () {
     return null
   }
 
@@ -87,7 +87,7 @@ export class WeaponSystem {
    * Override in subclasses to return complete rack list
    * @returns {Array} Array of weapon racks (empty for base class)
    */
-  getRacks () {
+  get racks () {
     return []
   }
 
@@ -120,7 +120,7 @@ export class WeaponSystem {
    * Gets all leaf weapon systems (non-aggregated weapons)
    * @returns {Array<WeaponSystem>} Array containing this system
    */
-  getLeafWeapons () {
+  get leafWeapons () {
     return [this]
   }
 
@@ -128,16 +128,16 @@ export class WeaponSystem {
    * Gets all loaded weapons (those with available ammo)
    * @returns {Array<WeaponSystem>} Array of this system if ammo available, else empty
    */
-  getLoadedWeapons () {
-    return this.hasAmmo() ? [this] : []
+  get loadedWeapons () {
+    return this.hasAmmo ? [this] : []
   }
 
   /**
    * Gets single loaded weapon instance
    * @returns {WeaponSystem|null} This system if ammo available, else null
    */
-  getLoadedWeapon () {
-    return this.hasAmmo() ? this : null
+  get firstLoadedWeapon () {
+    return this.hasAmmo ? this : null
   }
 
   /**
@@ -157,14 +157,14 @@ export class WeaponSystem {
    */
   hasAmmo () {
     if (!this.weapon.isLimited) return true
-    return this.hasAmmoRemaining()
+    return this.hasAmmoRemaining
   }
 
   /**
    * Checks if ammunition count is above zero
    * @returns {boolean} True if ammo > 0
    */
-  hasAmmoRemaining () {
+  get hasAmmoRemaining () {
     return this.ammo > 0
   }
 
@@ -172,7 +172,7 @@ export class WeaponSystem {
    * Gets current ammunition count
    * @returns {number|null} Current ammo or null for unlimited weapons
    */
-  ammoRemaining () {
+  get ammoRemaining () {
     return this.ammo
   }
 
@@ -201,15 +201,15 @@ export class WeaponSystem {
    * Calculated as capacity minus attached ammo
    * @returns {number} Unattached ammo count
    */
-  ammoUnattached () {
-    return this.ammoCapacity() - this.ammoAttached()
+  get ammoUnattached () {
+    return this.ammoCapacity - this.ammoAttached
   }
 
   /**
    * Gets total ammunition capacity
    * @returns {number} Maximum ammo this weapon can hold
    */
-  ammoCapacity () {
+  get ammoCapacity () {
     return this.weapon.ammo
   }
 
@@ -218,7 +218,7 @@ export class WeaponSystem {
    * Calculated as capacity minus remaining ammo
    * @returns {number} Ammo used count
    */
-  ammoUsed () {
+  get ammoUsed () {
     return this.weapon.ammo - this.ammo
   }
 
@@ -227,7 +227,7 @@ export class WeaponSystem {
    * Override in subclasses for aggregation
    * @returns {WeaponSystem} This system (unattached for base class)
    */
-  getUnattachedWeapon () {
+  get firstUnattachedWeapon () {
     return this
   }
 
@@ -290,32 +290,32 @@ class CombinedWeaponSystem extends WeaponSystem {
    * Gets all weapon racks across all subsystems
    * @returns {Array} Flattened array of all racks
    */
-  getRacks () {
-    return this._flatMapSubsystems(wps => wps.getRacks())
+  get racks () {
+    return this._flatMapSubsystems(wps => wps.racks)
   }
 
   /**
    * Checks if any subsystem has ammunition remaining
    * @returns {boolean} True if at least one subsystem has ammo
    */
-  hasAmmoRemaining () {
-    return this.subsystems.some(wps => wps.hasAmmoRemaining())
+  get hasAmmoRemaining () {
+    return this.subsystems.some(wps => wps.hasAmmoRemaining)
   }
 
   /**
    * Sums ammunition remaining across all subsystems
    * @returns {number} Total ammo in all subsystems
    */
-  ammoRemaining () {
-    return this._sumSubsystemValues(wps => wps.ammoRemaining())
+  get ammoRemaining () {
+    return this._sumSubsystemValues(wps => wps.ammoRemaining)
   }
 
   /**
    * Sums ammunition capacity across all subsystems
    * @returns {number} Total capacity in all subsystems
    */
-  ammoCapacity () {
-    return this._sumSubsystemValues(wps => wps.ammoCapacity())
+  get ammoCapacity () {
+    return this._sumSubsystemValues(wps => wps.ammoCapacity)
   }
 
   /**
@@ -330,8 +330,8 @@ class CombinedWeaponSystem extends WeaponSystem {
    * Sums ammunition used across all subsystems
    * @returns {number} Total ammo expended in all subsystems
    */
-  ammoUsed () {
-    return this._sumSubsystemValues(wps => wps.ammoUsed())
+  get ammoUsed () {
+    return this._sumSubsystemValues(wps => wps.ammoUsed)
   }
 
   /**
@@ -348,24 +348,24 @@ class CombinedWeaponSystem extends WeaponSystem {
    * Gets all leaf weapons across all subsystems
    * @returns {Array<WeaponSystem>} Flattened array of leaf weapons
    */
-  getLeafWeapons () {
-    return this._flatMapSubsystems(wps => wps.getLeafWeapons())
+  get leafWeapons () {
+    return this._flatMapSubsystems(wps => wps.leafWeapons)
   }
 
   /**
    * Finds first loaded weapon across subsystems
    * @returns {WeaponSystem|undefined} First subsystem with ammo
    */
-  getLoadedWeapon () {
-    return this.subsystems.find(wps => wps.hasAmmo())
+  get firstLoadedWeapon () {
+    return this.subsystems.find(wps => wps.hasAmmo)
   }
 
   /**
    * Gets all loaded weapons across all subsystems
-   * @returns {Array<WeaponSystem>} Flattened array of loaded weapons
+   * @returns {WeaponSystem[]} Flattened array of loaded weapons
    */
-  getLoadedWeapons () {
-    return this._flatMapSubsystems(wps => wps.getLoadedWeapons())
+  get loadedWeapons () {
+    return this._flatMapSubsystems(wps => wps.loadedWeapons)
   }
 
   /**
@@ -373,11 +373,11 @@ class CombinedWeaponSystem extends WeaponSystem {
    * Prioritizes AttachedWeaponSystems for rack lookup
    * @returns {Object|null} Available weapon rack or null
    */
-  getRack () {
+  get firstRack () {
     const attachedWithAmmo = this.subsystems.find(
-      wps => wps instanceof AttachedWeaponSystems && wps.hasAmmo()
+      wps => wps instanceof AttachedWeaponSystems && wps.hasAmmo
     )
-    return attachedWithAmmo?.getRack()
+    return attachedWithAmmo?.rack
   }
 
   /**
@@ -411,9 +411,9 @@ class CombinedWeaponSystem extends WeaponSystem {
    * Unattached weapons are non-AttachedWeaponSystems subsystems
    * @returns {WeaponSystem|undefined} First unattached subsystem with ammo
    */
-  getUnattachedWeapon () {
+  get firstUnattachedWeapon () {
     return this.subsystems.find(
-      wps => !(wps instanceof AttachedWeaponSystems) && wps.hasAmmo()
+      wps => !(wps instanceof AttachedWeaponSystems) && wps.hasAmmo
     )
   }
 
@@ -425,13 +425,13 @@ class CombinedWeaponSystem extends WeaponSystem {
   useAmmo () {
     if (!this.weapon.isLimited) return
 
-    const unattachedWeapon = this.getUnattachedWeapon()
+    const unattachedWeapon = this.firstUnattachedWeapon
     if (unattachedWeapon) {
       unattachedWeapon.useAmmo()
       return
     }
 
-    const loadedWeapon = this.getLoadedWeapon()
+    const loadedWeapon = this.firstLoadedWeapon
     if (loadedWeapon) {
       loadedWeapon.useAmmo()
     }
@@ -508,31 +508,31 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * @returns {Array} Filtered array of armed ships
    */
   armedShips () {
-    return this.ships.filter(ship => ship.hasAmmoRemaining())
+    return this.ships.filter(ship => ship.hasAmmoRemaining)
   }
 
   /**
    * Gets all loaded weapons from all ships
    * @returns {Array} Flattened array of loaded weapons
    */
-  getRacks () {
-    return this.ships.flatMap(ship => ship.getLoadedWeapons())
+  get racks () {
+    return this.ships.flatMap(ship => ship.loadedWeapons)
   }
 
   /**
    * Gets first available weapon rack from any ship with ammo
    * @returns {Object|null} Available weapon rack or null
    */
-  getRack () {
-    const armedShip = this.ships.find(ship => ship.hasAmmoRemaining())
-    return armedShip?.loadedWeapon()
+  get firstRack () {
+    const armedShip = this.ships.find(ship => ship.hasAmmoRemaining)
+    return armedShip?.firstLoadedWeapon
   }
 
   /**
    * Attached systems contain no unattached weapons
    * @returns {null} Always null for attached systems
    */
-  getUnattachedWeapon () {
+  get firstUnattachedWeapon () {
     return null
   }
 
@@ -561,8 +561,8 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * Checks if any ship has ammunition remaining
    * @returns {boolean} True if at least one ship has ammo
    */
-  hasAmmoRemaining () {
-    return this.ships.some(ship => ship.hasAmmoRemaining())
+  get hasAmmoRemaining () {
+    return this.ships.some(ship => ship.hasAmmoRemaining)
   }
 
   /**
@@ -570,17 +570,17 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * Delegates to ship's ammoRemainingTotal() method
    * @returns {number} Total ammo remaining in all ships
    */
-  ammoRemaining () {
-    return this._sumShipValues(ship => ship.ammoRemainingTotal())
+  get ammoRemaining () {
+    return this._sumShipValues(ship => ship.ammoRemainingTotal)
   }
 
   /**
    * Sums ammunition capacity across all ships
-   * Delegates to ship's ammoCapacityTotal() method
+   * Delegates to ship's ammoCapacityTotal method
    * @returns {number} Total ammo capacity in all ships
    */
-  ammoCapacity () {
-    return this._sumShipValues(ship => ship.ammoCapacityTotal())
+  get ammoCapacity () {
+    return this._sumShipValues(ship => ship.ammoCapacityTotal)
   }
 
   /**
@@ -589,30 +589,30 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * @returns {number} Total attached ammo capacity
    */
   ammoAttached () {
-    return this.ammoCapacity()
+    return this.ammoCapacity
   }
 
   /**
    * Gets ammunition expended (capacity - remaining)
    * @returns {number} Total ammo used across all ships
    */
-  ammoUsed () {
-    return this.ammoCapacity() - this.ammoRemaining()
+  get ammoUsed () {
+    return this.ammoCapacity - this.ammoRemaining
   }
 
   /**
    * Gets all loaded weapons from all ships
    * @returns {Array<WeaponSystem>} Flattened array of loaded weapons
    */
-  getLoadedWeapons () {
-    return this.ships.flatMap(ship => ship.getLoadedWeapons())
+  get loadedWeapons () {
+    return this.ships.flatMap(ship => ship.loadedWeapons)
   }
 
   /**
    * Gets all leaf weapons from all ships
    * @returns {Array<WeaponSystem>} Flattened array of all weapons
    */
-  getLeafWeapons () {
+  get leafWeapons () {
     return this.ships.flatMap(ship => ship.getAllWeapons())
   }
 
@@ -621,8 +621,8 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * Useful for selecting random weapon when multiple available
    * @returns {WeaponSystem|undefined} Random loaded weapon or undefined if none available
    */
-  getLoadedWeapon () {
-    return randomElement(this.getLoadedWeapons())
+  get firstLoadedWeapon () {
+    return randomElement(this.loadedWeapons)
   }
 
   /**
@@ -631,7 +631,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * @returns {void}
    */
   useAmmo () {
-    const loadedWeapon = this.getLoadedWeapon()
+    const loadedWeapon = this.firstLoadedWeapon
     if (loadedWeapon) {
       loadedWeapon.useAmmo()
     }

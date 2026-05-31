@@ -96,19 +96,19 @@ export interface WeaponSystem {
   ammo?: number
 
   /** Returns the maximum ammo capacity */
-  ammoCapacity?: () => number
+  ammoCapacity?: number
 
   /** Returns the amount of ammo already used */
-  ammoUsed?: () => number
+  ammoUsed?:  number
 
   /** Returns the count of unattached ammo rounds */
-  ammoUnattached?: () => number
+  ammoUnattached?:  number
 
   /** Returns array of leaf weapons (for hierarchies) */
-  getLeafWeapons?: () => Weapon[]
+  leafWeapons?:  Weapon[]
 
   /** Check if weapon has remaining ammo */
-  hasAmmoRemaining?: () => boolean
+  hasAmmoRemaining?: boolean
 }
 
 /**
@@ -162,13 +162,13 @@ export interface Ship {
   getAllWeapons?: () => Weapon[]
 
   /** Get loaded weapons */
-  getLoadedWeapons?: () => Weapon[]
+  get loadedWeapons?:   Weapon[]
 
   /** Get first loaded weapon */
   getFirstLoadedWeapon?: () => Weapon | undefined
 
   /** Check if ship has ammo remaining */
-  hasAmmoRemaining?: () => boolean
+  hasAmmoRemaining?:  boolean
 
   /** Reset ship to initial state */
   reset?: () => void

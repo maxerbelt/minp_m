@@ -115,12 +115,12 @@ const MESSAGES = {
  * @property {Array<any>} selectedCoordinates - Currently selected targeting coordinates
  * @property {Object|null} selectedWeapon - Currently selected weapon (null if none)
  * @property {() => void|undefined} clearSelectedCoordinates - Clears targeting coordinates
- * @property {() => WeaponSystem|undefined} getUnattachedWeaponSystem - Gets unattached weapon or undefined
- * @property {() => WeaponSystem|undefined} getCurrentWeaponSystem - Gets current weapon system
+ * @property { WeaponSystem|undefined} firstUnattachedWeaponSystem - Gets unattached weapon or undefined
+ * @property { WeaponSystem|undefined} currentWeaponSystem - Gets current weapon system
  * @property {(letter: string) => void} switchToWeapon - Switch to weapon by letter
  * @property {() => void} switchToNextWeaponSystem - Switch to next weapon system
  * @property {() => boolean} isOutOfAmmo - Check if out of ammo
- * @property {() => boolean} hasNoCurrentAmmo - Check if current weapon has no ammo
+ * @property {boolean} hasNoCurrentAmmo - Check if current weapon has no ammo
  * @property {() => Array<any>} getLimitedWeaponSystems - Get weapons with limited ammo
  * @property {() => void} switchToSingleShot - Switch to single-shot mode
  * @property {(r: number, c: number, weapon?: Object) => void} addSelectedCoordinates - Add targeting coordinate
@@ -154,7 +154,7 @@ const MESSAGES = {
  */
 /**
  * @typedef {Object} ShipCell
- * @property {() => Array<[string, Object]>} getLoadedWeaponEntries - Get loaded weapons
+ * @property {Array<[string, Object]>} loadedWeaponEntries - Get loaded weapons
  */
 /**
  * @typedef {Object} Score
@@ -412,7 +412,7 @@ class Enemy extends Waters {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     return (
       loadOut?.isSingleShot === true ||
-      loadOut?.getUnattachedWeaponSystem() != null ||
+      loadOut?.firstUnattachedWeaponSystem != null ||
       (bh.seekingMode && !this.hasAttachedWeapons)
     )
   }
@@ -430,7 +430,7 @@ class Enemy extends Waters {
    * @returns {boolean}
    */
   _shouldFireSeekModeMissileImmediately (weaponSystem) {
-    const ws = weaponSystem ?? this.loadOut?.getCurrentWeaponSystem?.()
+    const ws = weaponSystem ?? this.loadOut?.currentWeaponSystem
     // NOTE (regression prevention): In the "Space and Asteroids" terrain,
     // when the overall game mode is pure Seek (bh.seekingMode === true),
     // Missile weapons are intended to be single-click weapons. Historically
@@ -556,7 +556,7 @@ class Enemy extends Waters {
     this._setSpinnerState(false, '')
     // Reset selected cell coordinates for two-click mode
     this.selectedCellCoordinates = null
-    if (this.isGameOver()) {
+    if (this.isGameOver) {
       const steps = /** @type {StepsManager|undefined} */ (this.steps)
       steps?.select()
     } else {
@@ -664,8 +664,8 @@ class Enemy extends Waters {
    * @public
    * @returns {boolean} True if ammo is available
    */
-  hasAmmo () {
-    return !this.hasNoAmmo()
+  get hasAmmo () {
+    return !this.hasNoAmmo
   }
 
   /**
@@ -673,7 +673,7 @@ class Enemy extends Waters {
    * @public
    * @returns {boolean} True if no ammo is available
    */
-  hasNoAmmo () {
+  get hasNoAmmo () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     return loadOut?.isOutOfAmmo?.() === true
   }
@@ -685,7 +685,7 @@ class Enemy extends Waters {
    * @returns {void}
    */
   switchMode () {
-    if (this.isGameOver() || this.hasNoAmmo()) return
+    if (this.isGameOver || this.hasNoAmmo) return
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     loadOut?.switchToNextWeaponSystem?.()
     this.updateUI()
@@ -697,7 +697,7 @@ class Enemy extends Waters {
    * @public
    * @returns {boolean} True if the game is over
    */
-  isGameOver () {
+  get isGameOver () {
     return this.boardDestroyed || this.isRevealed
   }
 
@@ -818,7 +818,7 @@ class Enemy extends Waters {
     // @ts-ignore - Parent class updateUI is private but we call it here
     super.updateUI(this.ships)
     const weaponSystem = /** @type {WeaponSystem|undefined} */ (
-      this.loadOut?.getCurrentWeaponSystem?.()
+      this.loadOut?.currentWeaponSystem
     )
     if (weaponSystem) {
       // @ts-ignore - Parent class updateMode is private but we call it here
@@ -833,8 +833,8 @@ class Enemy extends Waters {
    * @returns {void}
    */
   _updateButtonStates () {
-    const isGameOver = this.isGameOver()
-    const isOutOfAmmo = this.hasNoAmmo()
+    const isGameOver = this.isGameOver
+    const isOutOfAmmo = this.hasNoAmmo
     const shouldDisableWeapon = isGameOver || isOutOfAmmo
 
     // @ts-ignore - this.UI is typed as Object but has weaponBtn property
@@ -909,9 +909,9 @@ class Enemy extends Waters {
    * @public
    * @returns {boolean} True if a turn can be taken
    */
-  canTakeTurn () {
+  get canTakeTurn () {
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
-    if (this.isGameOver() || loadOut?.hasNoCurrentAmmo?.()) {
+    if (this.isGameOver || loadOut?.hasNoCurrentAmmo) {
       return false
     }
     if (this.timeoutId) {
@@ -1054,7 +1054,7 @@ class Enemy extends Waters {
   _selectCurrentWeaponOnRandomShip (r, c) {
     // Get the weapon the player currently has selected (via weapon button click)
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
-    const currentWeapon = loadOut?.getCurrentWeaponSystem()
+    const currentWeapon = loadOut?.currentWeaponSystem
 
     if (!currentWeapon?.weapon?.letter) {
       // Fallback to random weapon if player hasn't selected one
@@ -1072,7 +1072,7 @@ class Enemy extends Waters {
     // This prevents selecting a MissileBoat when Rail Bolt is selected
     const shipsWithWeapon = (shipCandidates || []).filter(ship => {
       if (!targetLetter) return false
-      const entries = ship?.getLoadedWeaponEntries?.()
+      const entries = ship?.loadedWeaponEntries
       if (!entries) return false
       return entries.some(
         ([_key, weapon]) =>
@@ -1095,7 +1095,7 @@ class Enemy extends Waters {
     steps.addShip(selectedShip)
 
     // Find and select the target weapon from the ship
-    const entries = selectedShip.getLoadedWeaponEntries?.()
+    const entries = selectedShip.loadedWeaponEntries
     if (!entries || !targetLetter) {
       // @ts-ignore - randomAttachedWeapon is parent method
       this.randomAttachedWeapon?.(opponent)
@@ -1258,7 +1258,7 @@ class Enemy extends Waters {
    * @throws {void} Does not throw; instead handles errors via game status messages
    */
   async onClickCell (r, c) {
-    if (!this.canTakeTurn()) return
+    if (!this.canTakeTurn) return
 
     if (this.loadOut?.isSingleShot) {
       await this._handleSingleShotClick(r, c)
@@ -1317,7 +1317,7 @@ class Enemy extends Waters {
     const result = await this.fireWeaponAt?.(
       r,
       c,
-      this.loadOut?.getCurrentWeaponSystem?.()
+      this.loadOut?.currentWeaponSystem
     )
     if (this._shouldWaitForWeaponResult(result)) return
     this._processWeaponResult(result)
@@ -1335,7 +1335,7 @@ class Enemy extends Waters {
   async _handleAttachedWeaponClick (r, c) {
     if (this.loadOut?.selectedWeapon) {
       // REGRESSION GUARD: Check if selectedWeapon is a seek-mode missile before firing
-      // Call without argument to use default parameter (getCurrentWeaponSystem)
+      // Call without argument to use default parameter (currentWeaponSystem)
       // This ensures the missile check always gets valid weapon system data
       if (
         typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
@@ -1349,7 +1349,7 @@ class Enemy extends Waters {
     }
 
     if (this.selectedCellCoordinates === null) {
-      const currentWeapon = this.loadOut.getCurrentWeaponSystem()
+      const currentWeapon = this.loadOut.currentWeaponSystem
 
       if (
         typeof this._shouldFireSeekModeMissileImmediately === 'function' &&
@@ -1407,7 +1407,7 @@ class Enemy extends Waters {
     // @ts-ignore - setWeaponFireHandlers is parent method
     this.setWeaponFireHandlers?.()
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
-    const weaponSystem = loadOut?.getCurrentWeaponSystem?.()
+    const weaponSystem = loadOut?.currentWeaponSystem
     const weapon = weaponSystem?.weapon
     loadOut?.addSelectedCoordinates?.(r0, c0, weapon)
     // @ts-ignore - fireWeaponAt is parent method
@@ -1707,7 +1707,7 @@ class Enemy extends Waters {
    */
   updateWeaponStatus (_rack, _cursorInfo) {
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
-    const weaponSystem = loadOut?.getCurrentWeaponSystem?.()
+    const weaponSystem = loadOut?.currentWeaponSystem
     // @ts-ignore - Weapon type compatibility with gameStatus
     gameStatus.updateWeaponStatus(
       weaponSystem,
@@ -1727,7 +1727,7 @@ class Enemy extends Waters {
   updateWeaponMode () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     const weaponSystem = /** @type {WeaponSystem|undefined} */ (
-      loadOut?.getCurrentWeaponSystem?.()
+      loadOut?.currentWeaponSystem
     )
     if (weaponSystem) {
       // @ts-ignore - Parent class updateMode is private but we call it here
@@ -1862,7 +1862,7 @@ class Enemy extends Waters {
     // This shows player is back in selection mode with the new weapon
     // CRITICAL: This must be the last operation to prevent being overwritten
     if (gameStatus?.resetToSelectionMode) {
-      const currentWeaponSystem = loadOut?.getCurrentWeaponSystem?.()
+      const currentWeaponSystem = loadOut?.currentWeaponSystem
       gameStatus.resetToSelectionMode(currentWeaponSystem?.weapon)
     }
   }
@@ -1931,7 +1931,7 @@ class Enemy extends Waters {
       loadOut.onOutOfAmmo = () => {
         this._handleWeaponChange()
         const ws = /** @type {WeaponSystem|undefined} */ (
-          loadOut.getCurrentWeaponSystem?.()
+          loadOut.currentWeaponSystem
         )
         if (ws) {
           // @ts-ignore - Parent class updateMode is private

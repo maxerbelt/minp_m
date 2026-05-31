@@ -144,9 +144,9 @@ import { Random } from '../core/Random.js'
  * @property {Weapon} weapon - The weapon object
  * @property {number} id - Weapon system ID
  * @property {number} ammo - Remaining ammunition
- * @property {Function} [hasAmmo] - Check if weapon has ammo
- * @property {Function} [getLoadedWeapon] - Get loaded weapon variant
- * @property {Function} [getLoadedWeapons] - Get all loaded weapons
+ * @property {boolean} [hasAmmo] - Check if weapon has ammo
+ * @property {Weapon} [firstLoadedWeapon] - Get loaded weapon variant
+ * @property {Weapon[]} [loadedWeapons] - Get all loaded weapons
  */
 
 /**
@@ -748,7 +748,7 @@ export class Waters {
    */
   _getLoadedWeaponIds () {
     // @ts-ignore - Weapon object structure known at runtime
-    return new Set(this.loadOut.getLoadedWeapons().map(w => w.id))
+    return new Set(this.loadOut.loadedWeapons.map(w => w.id))
   }
 
   /**
@@ -912,8 +912,8 @@ export class Waters {
    * @private
    */
   selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {
-    // @ts-ignore - getLoadedWeaponEntries method available at runtime
-    const entries = ship.getLoadedWeaponEntries()
+    // @ts-ignore - loadedWeaponEntries getter available at runtime
+    const entries = ship.loadedWeaponEntries
     const [key, weapon] = random
       ? randomElement(entries)
       : findClosestCoord(entries, hintR, hintC, (/** @type {any[]} */ [k]) =>
@@ -1188,6 +1188,7 @@ export class Waters {
 
     this.configureLoadOut(map, weaponShips)
     this.setCursorChangeCallback()
+    this.setupAttachedAim()
   }
 
   /**
@@ -1723,12 +1724,12 @@ export class Waters {
    * @returns {boolean} True if a weapon was selected
    */
   prepareTargetedRandomWeaponSelection (autoSelectWarning = !bh.seekingMode) {
-    const current = this.loadOut?.getCurrentWeaponSystem()
+    const current = this.loadOut?.currentWeaponSystem
     if (!current) {
       return false
     }
     // @ts-ignore - hasAmmo method available at runtime
-    const attached = current?.hasAmmo?.()
+    const attached = current?.hasAmmo != null
     if (attached) {
       return this.hasTargettedRandomWeaponForWps(autoSelectWarning)
     }
@@ -1821,15 +1822,13 @@ export class Waters {
   }
   /**
    * Gets the currently selected or active weapon system.
-   * Falls back to getCurrentWeaponSystem if selectedWeapon is not available.
+   * Falls back to currentWeaponSystem if selectedWeapon is not available.
    *
    * @returns {WeaponSystemType|undefined} Current weapon system or undefined
    */
   get currentWeaponSystem () {
     // @ts-ignore - selectedWeapon available at runtime
-    return (
-      this.loadOut?.selectedWeapon || this.loadOut?.getCurrentWeaponSystem()
-    )
+    return this.loadOut?.selectedWeapon || this.loadOut?.currentWeaponSystem
   }
 
   /**
@@ -1893,7 +1892,7 @@ export class Waters {
    * @private
    */
   async launchUnattachedWeapon (r, c) {
-    const unAttached = this.getUnattachedWeaponSystem()
+    const unAttached = this.firstUnattachedWeaponSystem
     if (unAttached) {
       const launch = async (/** @type {Array<number>} */ coords) => {
         return await this.launchTo(coords, bh.map.rows - 1, 0, unAttached)
@@ -1943,15 +1942,15 @@ export class Waters {
    * @returns {WeaponSystemType|null} Unattached weapon system or null
    * @private
    */
-  getUnattachedWeaponSystem () {
+  get firstUnattachedWeaponSystem () {
     if (this.opponent == null || bh.seekingMode) {
       // @ts-ignore - loadOut available at runtime
-      const weaponSystem = this.loadOut?.getCurrentWeaponSystem()
-      // @ts-ignore - getLoadedWeapon method available at runtime
-      return weaponSystem?.getLoadedWeapon() || null
+      const weaponSystem = this.loadOut?.currentWeaponSystem
+      // @ts-ignore - firstLoadedWeapon getter available at runtime
+      return weaponSystem?.firstLoadedWeapon || null
     } else {
       // @ts-ignore - loadOut available at runtime
-      return this.loadOut?.getUnattachedWeaponSystem() || null
+      return this.loadOut?.firstUnattachedWeaponSystem || null
     }
   }
 

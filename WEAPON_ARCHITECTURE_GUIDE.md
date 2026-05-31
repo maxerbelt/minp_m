@@ -96,8 +96,8 @@ Unified interface: IWeaponSystem
 **Type-Safe Queries**:
 ```typescript
 interface IWeaponSystem {
-  getLeafWeapons(): IWeaponSystem[]
-  getLoadedWeapons(): IWeaponSystem[]
+  leafWeapons: IWeaponSystem[]
+  loadedWeapons: IWeaponSystem[]
   getWeaponBySystemId(id: number): IWeaponSystem | null
   getShipById(id: number): Ship | null
 }

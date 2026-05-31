@@ -21,30 +21,30 @@ export interface IWeaponSystem {
 
   // State management
   reset(): void
-  hasAmmo(): boolean
-  hasAmmoRemaining(): boolean
+  hasAmmo: boolean
+  hasAmmoRemaining: boolean
   useAmmo(): void
 
   // Ammunition tracking
-  ammoRemaining(): number | null
-  ammoCapacity(): number
-  ammoAttached(): number
-  ammoUsed(): number
+  ammoRemaining: number | null
+  ammoCapacity: number
+  ammoAttach: number
+  ammoUsed: number
 
   // Weapon queries
-  getLeafWeapons(): IWeaponSystem[]
-  getLoadedWeapons(): IWeaponSystem[]
-  getLoadedWeapon(): IWeaponSystem | null
+  leafWeapons: IWeaponSystem[]
+  loadedWeapons: IWeaponSystem[]
+  firstLoadedWeapon: IWeaponSystem | null
   getWeaponBySystemId(systemId: number): IWeaponSystem | null
-  getUnattachedWeapon(): IWeaponSystem | null
+  firstUnattachedWeapon: IWeaponSystem | null
 
   // Ship queries
   armedShips(): any[]
   getShipById(shipId: number): any | null
 
   // Racks
-  getRack(): any | null
-  getRacks(): any[]
+  rack: any
+  racks: any[]
 
   // Effects
   splash(map: MapLike, target: Coord, effect: AoePattern, options?: any): AoePattern

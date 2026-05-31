@@ -65,7 +65,7 @@ function _getTargetingCoordinates (model) {
  * Implements fallback hierarchy for weapon selection:
  * 1. selectedWeapon.weapon (explicit selection wrapper)
  * 2. selectedWeapon (direct weapon reference)
- * 3. getCurrentWeaponSystem().weapon (current system weapon)
+ * 3. currentWeaponSystem.weapon (current system weapon)
  * 4. undefined (no active weapon)
  *
  * @private
@@ -80,7 +80,7 @@ function _getActiveWeapon (model) {
     return selectedWeapon.weapon || selectedWeapon
   }
 
-  const weaponSystem = model.loadOut.getCurrentWeaponSystem?.()
+  const weaponSystem = model.loadOut.currentWeaponSystem
   return weaponSystem?.weapon
 }
 

@@ -185,13 +185,12 @@ export interface WeaponSystemWithAmmo {
   ammo: number
 
   /** Returns remaining ammo capacity */
-  ammoCapacity?: () => number
+  ammoCapacity?: number
 
   /** Returns ammo already used */
-  ammoRemaining?: () => number
-
+  ammoRemaining?:   number;
   /** Checks if ammo remains */
-  hasAmmoRemaining?: () => boolean
+  hasAmmoRemaining?: boolean
 
   /** ID for tracking */
   id?: string | number

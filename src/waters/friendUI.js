@@ -800,6 +800,6 @@ export class FriendUI extends PlacementUI {
     this.readyMode()
     this.seekMode()
 
-    this.onFleetPlaced?.()
+    //   this.onFleetPlaced?.()
   }
 }

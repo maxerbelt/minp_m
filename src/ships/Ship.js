@@ -16,9 +16,9 @@ import { Zip } from '../core/Zip.js'
  * @property {boolean} [hit] - Whether weapon has been hit by enemy fire
  * @property {boolean} [damaged] - Whether weapon is damaged but not hit (unloaded)
  * @property {number} [ammo] - Current ammunition count
- * @property {Function} [hasAmmo] - Check if weapon has ammunition
- * @property {Function} [ammoRemaining] - Get remaining ammunition
- * @property {Function} [ammoCapacity] - Get ammunition capacity
+ * @property {boolean} [hasAmmo] - Check if weapon has ammunition
+ * @property {number} [ammoRemaining] - Get remaining ammunition
+ * @property {number} [ammoCapacity] - Get ammunition capacity
  * @property {Function} [animateDetonation] - Animation function for detonation
  * @property {Function} [reset] - Reset weapon state
  */
@@ -114,8 +114,8 @@ import { Zip } from '../core/Zip.js'
  * Weapon positioned at specific location
  * @property {(r: number, c: number) => boolean} hasAmmo - Check ammunition availability
  * @property {number} [ammo] - Ammunition count
- * @property {() => number} [ammoRemaining] - Get remaining ammunition
- * @property {() => number} [ammoCapacity] - Get ammunition capacity
+ * @property {number} [ammoRemaining] - Get remaining ammunition
+ * @property {number} [ammoCapacity] - Get ammunition capacity
  * @property {string} [letter] - Weapon letter identifier
  * @property {number} id - Weapon system unique ID
  * @property {boolean} [hit] - Whether weapon has been hit
@@ -773,7 +773,7 @@ export class Ship {
    * @returns {Array<[string, Rack]>|null} [coordKey, weapon] pair of closest loaded weapon or null if none
    */
   findClosestLoadedRack (r, c) {
-    const loadedRacks = this.getLoadedWeaponEntries()
+    const loadedRacks = this.loadedWeaponEntries
     if (loadedRacks.length === 0) return null
     return this._findClosestRack(loadedRacks, r, c)
   }
@@ -851,18 +851,18 @@ export class Ship {
    * Loaded weapons are those with ammunition remaining.
    * @returns {Array<[string, Rack]>} Array of [coordinate key, weapon] pairs for loaded weapons
    */
-  getLoadedWeaponEntries () {
+  get loadedWeaponEntries () {
     return this._filterWeaponEntries(weapon => this._isWeaponLoaded(weapon))
   }
 
   /**
    * Internal: Check if weapon has ammunition
-   * @param {{ hasAmmo?: () => boolean; ammo?: number }} weapon
+   * @param {{ hasAmmo?: boolean; ammo?: number }} weapon
    * @returns {boolean} True if weapon is loaded and has ammunition
    */
   _isWeaponLoaded (weapon) {
-    if (typeof weapon.hasAmmo === 'function') {
-      return weapon.hasAmmo()
+    if (weapon.hasAmmo != null) {
+      return weapon.hasAmmo
     }
     return weapon.ammo > 0
   }
@@ -897,7 +897,7 @@ export class Ship {
    * @returns {Rack|null} First loaded weapon or null if none
    */
   getFirstLoadedWeapon () {
-    return firstElement(this.getLoadedWeapons())
+    return firstElement(this.loadedWeapons)
   }
 
   /**
@@ -905,7 +905,7 @@ export class Ship {
    * Filters weapons to return only those with available ammunition.
    * @returns {Rack[]} Array of loaded weapon systems
    */
-  getLoadedWeapons () {
+  get loadedWeapons () {
     return this.getAllWeapons().filter(w => this._isWeaponLoaded(w))
   }
 
@@ -913,15 +913,15 @@ export class Ship {
    * Check if ship has ammunition remaining
    * @returns {boolean} True if any weapon has ammunition
    */
-  hasAmmoRemaining () {
-    return this.ammoRemainingTotal() > 0
+  get hasAmmoRemaining () {
+    return this.ammoRemainingTotal > 0
   }
 
   /**
    * Get remaining ammunition count across all weapons
    * @returns {number} Total remaining ammunition (0 if sunk)
    */
-  ammoRemainingTotal () {
+  get ammoRemainingTotal () {
     if (this.sunk) return 0
     return this.getAllWeapons().reduce(
       (sum, w) => sum + (w.ammoRemaining?.() ?? 0),
@@ -933,10 +933,10 @@ export class Ship {
    * Get total ammunition capacity across all weapons
    * @returns {number} Total ammunition capacity (0 if sunk)
    */
-  ammoCapacityTotal () {
+  get ammoCapacityTotal () {
     if (this.sunk) return 0
     return this.getAllWeapons().reduce(
-      (sum, w) => sum + (w.ammoCapacity?.() ?? 0),
+      (sum, w) => sum + (w.ammoCapacity ?? 0),
       0
     )
   }
