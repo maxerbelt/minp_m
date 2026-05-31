@@ -780,16 +780,16 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = false
       enemy.isRevealed = false
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.loadOut.isOutOfAmmo = false
       enemy.timeoutId = null
       enemy.opponent = { boardDestroyed: false }
 
       expect(enemy.canTakeTurn).toBe(true)
       expect(enemy.canTakeTurn).toBe(true)
       expect(enemy.canTakeTurn).toBe(true)
-
+      const isOutOfAmmoSpy = jest.spyOn(enemy.loadOut, 'isOutOfAmmo', 'get')
       // Verify isOutOfAmmo is called each time
-      expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalledTimes(3)
+      expect(isOutOfAmmoSpy).toHaveBeenCalledTimes(3)
     })
   })
 

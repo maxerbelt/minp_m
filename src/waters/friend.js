@@ -192,7 +192,7 @@ const ENEMY_TURN_DELAY = 50
  * @property {() => void} switchToNextWeaponSystem - Switch to next weapon system
  * @property {() => EffectType|null} switchToPreferredWeapon - Switch to preferred weapon
  * @property {() => void} switchToSingleShot - Switch to single-shot mode
- * @property {() => boolean} isOutOfAmmo - Check if out of ammo
+ * @property {boolean} isOutOfAmmo - Check if out of ammo
  * @property {(r: number, c: number, weapon?: Object) => void} addSelectedCoordinates - Add targeting coordinate
  * @property {(r: number, c: number, ...args: any[]) => Promise<WeaponLaunchResult|null>} aimWeapon - Aim weapon at coordinates
  * @property {Function|null} onReveal - Callback when scan reveals cells
