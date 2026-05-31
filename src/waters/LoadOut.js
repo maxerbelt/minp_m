@@ -1277,7 +1277,7 @@ export class LoadOut {
    *
    * @returns {boolean} True if no other weapons available
    */
-  isOutOfAmmo () {
+  get isOutOfAmmo () {
     return this.weaponSystems.length <= 1
   }
 
@@ -1361,7 +1361,7 @@ export class LoadOut {
    */
   _notifyWeaponRemoved (oldCursor) {
     this.notifyCursorChange(oldCursor)
-    if (this.isOutOfAmmo()) {
+    if (this.isOutOfAmmo) {
       this.onOutOfAllAmmo()
     }
   }

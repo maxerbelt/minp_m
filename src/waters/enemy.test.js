@@ -211,7 +211,7 @@ describe('Enemy.updateWeaponStatus', () => {
       }
 
       get hasNoAmmo () {
-        return this.loadOut.isOutOfAmmo()
+        return this.loadOut.isOutOfAmmo
       }
 
       get isGameOver () {
@@ -704,7 +704,7 @@ describe('Enemy.updateWeaponStatus', () => {
     it('should return false when game is over', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = true
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.loadOut.isOutOfAmmo = false
 
       expect(enemy.canTakeTurn).toBe(false)
     })
@@ -713,7 +713,7 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = false
       enemy.isRevealed = false
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => true)
+      enemy.loadOut.isOutOfAmmo = true
 
       expect(enemy.canTakeTurn).toBe(false)
     })
@@ -722,7 +722,7 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = false
       enemy.isRevealed = false
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.loadOut.isOutOfAmmo = false
       enemy.timeoutId = 123
 
       expect(enemy.canTakeTurn).toBe(false)
@@ -736,7 +736,7 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = false
       enemy.isRevealed = false
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.loadOut.isOutOfAmmo = false
       enemy.timeoutId = null
       enemy.opponent = {
         boardDestroyed: true
@@ -753,7 +753,7 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = false
       enemy.isRevealed = false
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.loadOut.isOutOfAmmo = false
       enemy.timeoutId = null
       enemy.opponent = {
         boardDestroyed: false
@@ -766,14 +766,14 @@ describe('Enemy.updateWeaponStatus', () => {
       const enemy = new Enemy()
       enemy.boardDestroyed = false
       enemy.isRevealed = false
-      enemy.loadOut.isOutOfAmmo = jest.fn(() => false)
+      enemy.loadOut.isOutOfAmmo = false
       enemy.timeoutId = null
       enemy.opponent = { boardDestroyed: false }
 
-      enemy.canTakeTurn
+      const isOutOfAmmoSpy = jest.spyOn(enemy.loadOut, 'isOutOfAmmo', 'get')
 
       // Verify that isOutOfAmmo is called via hasNoAmmo (regression test for checkNoAmmo bug)
-      expect(enemy.loadOut.isOutOfAmmo).toHaveBeenCalled()
+      expect(isOutOfAmmoSpy).toHaveBeenCalled()
     })
 
     it('should handle multiple consecutive calls correctly', () => {
