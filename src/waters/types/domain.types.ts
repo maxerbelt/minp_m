@@ -10,6 +10,7 @@
  * - Map configuration and terrain
  */
 
+import type { GridCoordinate } from './coordinates.types'
 
 /**
  * Weapon object with firing and display properties.
@@ -48,16 +49,16 @@ export interface Weapon {
   playWarnSound?: () => void
 
   /** Launch method for firing weapon */
-  launchTo?: (r: number, c: number) => any
+  launchTo?: (r: number, c: number) => unknown
 
   /** Get splash/area-of-effect coordinates */
-  splash?: () => any
+  splash?: () => unknown
 
   /** Get crash splash coordinates */
-  crashSplash?: () => any
+  crashSplash?: () => unknown
 
   /** Animate explosion/splash effect */
-  animateSplashExplode?: (element: HTMLElement, r: number, c: number) => any
+  animateSplashExplode?: (element: HTMLElement, r: number, c: number) => unknown
 }
 
 /**
@@ -99,13 +100,13 @@ export interface WeaponSystem {
   ammoCapacity?: number
 
   /** Returns the amount of ammo already used */
-  ammoUsed?:  number
+  ammoUsed?: number
 
   /** Returns the count of unattached ammo rounds */
-  ammoUnattached?:  number
+  ammoUnattached?: number
 
   /** Returns array of leaf weapons (for hierarchies) */
-  leafWeapons?:  Weapon[]
+  leafWeapons?: Weapon[]
 
   /** Check if weapon has remaining ammo */
   hasAmmoRemaining?: boolean
@@ -150,10 +151,10 @@ export interface Ship {
   cells?: Array<[number, number]>
 
   /** Get shape configuration for this ship */
-  shape?: () => any
+  shape?: () => unknown
 
   /** Get primary weapon system */
-  getPrimaryWeapon?: () => Weapon | null | undefined
+  getPrimaryWeapon?: () => Weapon | null
 
   /** Get weapon by system ID */
   getWeaponBySystemId?: (id: string | number) => Weapon | undefined
@@ -162,13 +163,13 @@ export interface Ship {
   getAllWeapons?: () => Weapon[]
 
   /** Get loaded weapons */
-  get loadedWeapons?:   Weapon[]
+  getLoadedWeapons?: () => Weapon[]
 
   /** Get first loaded weapon */
   getFirstLoadedWeapon?: () => Weapon | undefined
 
   /** Check if ship has ammo remaining */
-  hasAmmoRemaining?:  boolean
+  hasAmmoRemaining?: boolean
 
   /** Reset ship to initial state */
   reset?: () => void
@@ -214,7 +215,7 @@ export interface Board {
   cellSize?: () => number
 
   /** Mark ship as placed */
-  markPlaced?: (cells: any, ship: Ship) => void
+  markPlaced?: (cells: unknown, ship: Ship) => void
 
   /** Callback when fleet placed */
   onFleetPlaced?: () => void
@@ -235,7 +236,7 @@ export interface Board {
   clearPlaceVisuals?: () => void
 
   /** Get surrounding cells */
-  surroundCells?: (mask: any) => any
+  surroundCells?: (mask: unknown) => unknown
 
   /** Get surrounding cell elements */
   surroundCellElement?: () => HTMLElement[]
@@ -253,13 +254,13 @@ export interface Board {
   deactivateWeapons?: () => void
 
   /** Score display object */
-  score?: any
+  score?: unknown
 
   /** Weapon button elements */
-  weaponBtns?: any
+  weaponBtns?: unknown
 
   /** Tray manager for ships */
-  trayManager?: any
+  trayManager?: unknown
 
   /** Weapon activation for cell */
   cellWeaponActive?: (r: number, c: number, rotation?: string, extra?: string) => void
@@ -304,19 +305,19 @@ export interface MapType {
   weapons?: Weapon[]
 
   /** Example ship placement reference */
-  example?: any
+  example?: unknown
 
   /** Check if coordinates are in bounds */
   inBounds: (r: number, c: number) => boolean
 
   /** Land terrain mask */
-  landMask?: () => any
+  landMask?: () => unknown
 
   /** Blank/empty mask for map */
-  blankMask?: () => any
+  blankMask?: () => unknown
 
   /** Full playable area mask */
-  fullMask?: () => any
+  fullMask?: () => unknown
 }
 
 /**
@@ -340,19 +341,19 @@ export interface Score {
   reset: () => void
 
   /** Mask of all shot locations */
-  shot?: any
+  shot?: unknown
 
   /** Mask of revealed locations */
-  reveal?: any
+  reveal?: unknown
 
   /** Mask of hinted locations */
-  hint?: any
+  hint?: unknown
 
   /** Mask of wake effects */
-  wake?: any
+  wake?: unknown
 
   /** Mask of automatic misses */
-  auto?: any
+  auto?: unknown
 
   /** Get occupancy count of automatic misses */
   autoMisses?: number
@@ -367,16 +368,16 @@ export interface ShipShape {
   displacement: number
 
   /** Primary terrain type this shape occupies */
-  subterrain?: any
+  subterrain?: unknown
 
   /** Calculate displacement for specific subterrain */
-  displacementFor?: (subterrain: any) => number
+  displacementFor?: (subterrain: unknown) => number
 
   /** Ship letter identifier */
   letter?: string
 
   /** Weapon system configuration */
-  weaponSystem?: any
+  weaponSystem?: unknown
 
   /** Tally group identifier */
   tallyGroup?: string
@@ -423,5 +424,3 @@ export interface Bitmask {
   /** Get single random occupied cell */
   randomOccupied?: () => [number, number]
 }
-
-import type { GridCoordinate } from './coordinates.types'

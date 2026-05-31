@@ -305,7 +305,11 @@ describe('rect.js transform helpers', () => {
       actions: {
         transformMaps: { r90: 'A', r270: 'B', fx: 'C', fy: 'D' },
         template: 'T',
-        applyMap: map => (map === 'A' ? 'A' : map === 'B' ? 'B' : map)
+        applyMap: map => {
+          if (map === 'A') return 'A'
+          if (map === 'B') return 'B'
+          return map
+        }
       },
       bits: 'orig',
       set: jest.fn(),

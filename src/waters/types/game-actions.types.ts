@@ -26,7 +26,7 @@ export interface WeaponLaunchResult {
   weapon?: Weapon
 
   /** Score/result from the launch */
-  score?: any
+  score?: unknown
 }
 
 /**
@@ -127,7 +127,7 @@ export interface FiringInfo {
   fireCoordinates?: Array<[number, number]> | null
 
   /** Method to fire the weapon */
-  fireWeapon?: (context: any) => Promise<any>
+  fireWeapon?: (context: unknown) => Promise<unknown>
 
   /** Weapon system being fired */
   wps?: WeaponSystem
@@ -154,7 +154,7 @@ export interface FireWeaponInfoContext {
   isSingleShot: boolean
 
   /** Board UI reference */
-  board: any
+  board: unknown
 }
 
 /**
@@ -187,7 +187,8 @@ export interface WeaponSystemWithAmmo {
   ammoCapacity?: number
 
   /** Returns ammo already used */
-  ammoRemaining?:   number;
+  ammoRemaining?: number
+
   /** Checks if ammo remains */
   hasAmmoRemaining?: boolean
 

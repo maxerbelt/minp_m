@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Battle Building Module
+ * Manages the ship placement and battle setup UI for custom map creation.
+ * Handles drag-and-drop placement, keyboard shortcuts, button controls, and UI visibility.
+ * @module battlebuild
+ */
+
 import { bh } from './terrains/all/js/bh.js'
 import { customUI } from './waters/customUI.js'
 
@@ -73,20 +80,52 @@ import { KeyboardShortcutManager } from './navbar/KeyboardShortcutManager.js'
 import { UIVisibilityManager } from './ui/UIVisibilityManager.js'
 import { GameStateManager } from './ui/GameStateManager.js'
 
+/**
+ * Initialize board display to default dimensions on module load.
+ * Resets board size to accommodating viewport without specific dimensions.
+ */
 customUI.resetBoardSize(undefined, undefined)
 
+/**
+ * Registers the undo/redo functionality with UI button elements.
+ * @type {PlacedShips}
+ */
 placedShipsInstance.registerUndo(customUI.undoBtn, customUI.resetBtn)
 
-// Initialize service managers and state manager
+/**
+ * Central state management system for build mode.
+ * Coordinates mode switching, UI visibility, and manager lifecycle.
+ * @type {GameStateManager}
+ * @const
+ */
 const stateManager = new GameStateManager('build')
+
+/**
+ * UI visibility controller for managing element display state.
+ * @type {UIVisibilityManager}
+ * @const
+ */
 const uiManager = new UIVisibilityManager()
+
+/**
+ * Manager for button event handlers and UI interactions.
+ * Initialized during build mode setup.
+ * @type {?ButtonManager}
+ */
 let buttonManager = null
+
+/**
+ * Manager for keyboard shortcuts and input handling.
+ * Initialized during build mode setup.
+ * @type {?KeyboardShortcutManager}
+ */
 let keyboardManager = null
 
 /**
  * Creates candidate ships from current placement and stores them in custom state.
  * Validates placement and prepares ships for addition to the board.
- * @returns {Array} Validated ship array ready for placement
+ * @returns {Array<Object>} Validated ship array ready for placement
+ * @throws {Error} If ship validation fails
  * @private
  */
 function _createAndValidateCandidateShips () {
@@ -110,7 +149,8 @@ function _saveMapIfEditing (isEditing) {
 /**
  * Initializes the ship addition mode UI.
  * Prepares the board display and UI for adding ships to the placement.
- * @param {Array} ships - Validated ships to display in UI
+ * @param {Array<Object>} ships - Validated ships to display in UI
+ * @returns {void}
  * @private
  */
 function _setupShipAdditionMode (ships) {
@@ -123,6 +163,7 @@ function _setupShipAdditionMode (ships) {
 /**
  * Configures drag-and-drop handlers for ship addition.
  * Sets up event listeners and droppable zones for adding ships to board.
+ * @returns {void}
  * @private
  */
 function _setupShipAdditionDragHandlers () {
@@ -137,6 +178,7 @@ function _setupShipAdditionDragHandlers () {
  * Accepts the current ship placement and optionally saves the edited map.
  * Validates placement, updates UI, and prepares for ship addition.
  * @param {boolean} editingMap - Whether map editing is enabled
+ * @returns {void}
  * @private
  */
 function _handleAccept (editingMap) {
@@ -149,8 +191,9 @@ function _handleAccept (editingMap) {
 /**
  * Tracks level completion and navigates to target game mode.
  * Records analytics event and switches game state to specified mode.
- * @param {string} targetMode - Target game mode to switch to
+ * @param {string} targetMode - Target game mode to switch to ('battleseek', 'index', etc.)
  * @param {boolean} [trackAsComplete=true] - Whether to track this as a completed level
+ * @returns {void}
  * @private
  */
 function _transitionToMode (targetMode, trackAsComplete = true) {
@@ -161,6 +204,7 @@ function _transitionToMode (targetMode, trackAsComplete = true) {
 /**
  * Switches to seek mode while preserving build progress.
  * Transitions to battleseek mode with current map data.
+ * @returns {void}
  * @private
  */
 function _handleSeekMap () {
@@ -170,6 +214,7 @@ function _handleSeekMap () {
 /**
  * Publishes the current map and returns to the main index.
  * Finalizes map creation and transitions to main navigation.
+ * @returns {void}
  * @private
  */
 function _handlePlayMap () {
@@ -179,6 +224,7 @@ function _handlePlayMap () {
 /**
  * Saves the current map for later editing.
  * Records incomplete tracking and loads the map in edit mode.
+ * @returns {void}
  * @private
  */
 function _handleSaveMap () {
@@ -190,7 +236,7 @@ function _handleSaveMap () {
 /**
  * Sets up button handlers using declarative ButtonManager.
  * Registers all build mode button actions and initializes drag-and-drop.
- * @returns {ButtonManager} Configured button manager instance
+ * @returns {ButtonManager} Configured button manager instance with all handlers registered
  * @private
  */
 function _setupBuildButtons () {
@@ -205,6 +251,7 @@ function _setupBuildButtons () {
 /**
  * Creates all button handler functions for build mode.
  * Maps button IDs to their corresponding action handlers.
+ * Supports: placement, rotation, flipping, transformation, undo/redo operations.
  * @returns {ButtonHandlerMap} Map of button names to handler functions
  * @private
  */
@@ -227,6 +274,7 @@ function _createBuildButtonHandlers () {
 /**
  * Registers and activates keyboard shortcuts for build mode.
  * Sets up keyboard event handlers and integrates with state manager.
+ * Enables single-key shortcuts and arrow key navigation.
  * @returns {KeyboardShortcutManager} Activated keyboard manager instance
  * @private
  */
@@ -243,6 +291,8 @@ function _setupBuildKeyboardShortcuts () {
 /**
  * Creates all keyboard shortcut handlers for build mode.
  * Maps keyboard keys to their corresponding action handlers.
+ * Includes single-character shortcuts and arrow key navigation.
+ * Key mappings: a=accept, c=clear, d=reuse, r=rotate, s=reset, l=rotateLeft, f=flip, x=transform, u=undo, p=play, v=save.
  * @returns {KeyboardShortcutHandlerMap} Map of keys to handler functions
  * @private
  */
@@ -274,12 +324,23 @@ function _createBuildKeyboardShortcuts () {
 // BUILD MODE INITIALIZATION
 // ============================================================================
 
-// Register mode callbacks with GameStateManager
-// Handles setup and teardown of build mode state and managers
+/**
+ * Mode lifecycle callbacks for build mode.
+ * Handles setup and teardown of managers and UI state.
+ * @typedef {Object} ModeCallbacks
+ * @property {Function} onInit - Called when entering build mode
+ * @property {Function} onExit - Called when exiting build mode
+ */
+
+/**
+ * Register mode callbacks with GameStateManager
+ * Handles setup and teardown of build mode state and managers
+ */
 stateManager.registerModeCallbacks('build', {
   /**
    * Called when entering build mode.
-   * Sets up all button and keyboard managers.
+   * Initializes button handlers and keyboard shortcuts.
+   * @returns {void}
    */
   onInit: () => {
     _setupBuildButtons()
@@ -287,28 +348,40 @@ stateManager.registerModeCallbacks('build', {
   },
   /**
    * Called when exiting build mode.
-   * Managers are auto-cleaned up by stateManager.
+   * Managers are automatically cleaned up by stateManager.
+   * @returns {void}
    */
   onExit: () => {
     // Managers are auto-cleaned up by stateManager
   }
 })
 
-// Save UI visibility config for build mode
-// Specifies which UI elements should be visible during build mode
-stateManager.saveUIVisibility('build', {
+/**
+ * Save UI visibility configuration for build mode.
+ * Specifies which UI elements should be visible during build mode.
+ * @type {Object<string, boolean>}
+ */
+const buildModeUIConfig = {
   'height-container': true,
   'width-container': true
-})
+}
+stateManager.saveUIVisibility('build', buildModeUIConfig)
 
-// Initialize build mode UI
-// Fetches navbar configuration and applies build mode styling
+/**
+ * Initialize build mode UI by fetching navbar configuration and applying styling.
+ * Fetches navbar, shows secondary bar, and applies UI visibility rules.
+ * @returns {Promise<void>}
+ */
 await fetchNavBar('build', 'Create Your Own Game')
 
 show2ndBar()
 stateManager.applyUIVisibility(uiManager, 'build')
 
-// Setup build options with callbacks for board size and placement initialization
+/**
+ * Setup build options with callbacks for board size and placement initialization.
+ * Configures responsive board sizing and initial placement setup.
+ * @type {Object}
+ */
 const editing = setupBuildOptions(
   customUI.resetBoardSize.bind(customUI),
   custom.initializePlacement.bind(custom),
@@ -316,11 +389,17 @@ const editing = setupBuildOptions(
   () => _handleAccept(true)
 )
 
-// Initialize managers for build mode
+/**
+ * Initialize button and keyboard managers for build mode interaction.
+ * Must be called after UI visibility is applied.
+ */
 _setupBuildButtons()
 _setupBuildKeyboardShortcuts()
 
-// Load existing map if editing, otherwise setup fresh placement
+/**
+ * Load existing map configuration if editing, or initialize fresh placement session.
+ * Restores previous map state or creates new empty placement canvas.
+ */
 if (editing) {
   custom.loadForEdit(editing)
 } else {
@@ -328,6 +407,9 @@ if (editing) {
   custom.initializePlacement()
 }
 
-// Override tab click listeners to use game flow handlers
+/**
+ * Override tab click listeners with game flow handlers.
+ * Connects navigation tabs to mode transition functions.
+ */
 tabs.hide?.overrideClickListener(_handlePlayMap)
 tabs.seek?.overrideClickListener(_handleSeekMap)

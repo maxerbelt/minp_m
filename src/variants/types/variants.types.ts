@@ -11,10 +11,7 @@ import type { ZoneInfo } from './placement.types'
  * Variant index - identifies which variant is selected in a variant list.
  * Numeric index into the variants array (0-based).
  * Can be undefined/null when referring to the currently active variant.
- *
- * @typedef {number} VariantIndex
  */
-export type VariantIndex = number
 
 /**
  * Zone detail level for variant placement queries.
@@ -133,11 +130,9 @@ export type SymmetryType = 'S' | 'L' | 'D' | 'A' | 'H' | 'G'
 /**
  * Variant board type - represents a specific orientation/variant of a shape.
  * Typically a Mask instance or compatible bitboard structure.
- * Stored in Variants.list array and indexed by VariantIndex.
- *
- * @typedef {any} VariantBoard
+ * Stored in Variants.list array and indexed by numeric variant index.
+ * External Mask type from grid/rectangle/mask.js
  */
-export type VariantBoard = any // External Mask type from grid/rectangle/mask.js
 
 /**
  * Variant transformation capabilities interface.
@@ -187,9 +182,9 @@ export interface VariantState extends VariantCapabilities {
    * The index into the variants list of the active variant.
    * Updates when variant is changed via setByIndex or transitions.
    *
-   * @type {VariantIndex}
+   * @type {number}
    */
-  index: VariantIndex
+  index: number
 
   /**
    * Rotation transition function for this instance.

@@ -93,27 +93,33 @@ class MapList {
   }
 
   /**
+   * Find a DOM element by ID with type casting
    * @private
-   * @param {string} id
-   * @returns {HTMLElement}
+   * @param {string} id - The element ID to retrieve
+   * @returns {HTMLElement} The DOM element
    */
   _findElement (id) {
     return /** @type {HTMLElement} */ (document.getElementById(id))
   }
 
   /**
+   * Attach a click event listener to an element if it exists
+   * Safely binds click handlers to optional elements
    * @private
-   * @param {HTMLElement|null} element
-   * @param {() => void} handler
+   * @param {HTMLElement|null|undefined} element - The element to attach listener to
+   * @param {() => void} handler - The click event handler function
+   * @returns {void}
    */
   _bindClickEvent (element, handler) {
-    if (element && typeof element.addEventListener === 'function') {
+    if (element?.addEventListener) {
       element.addEventListener('click', handler)
     }
   }
 
   /**
+   * Bind rename dialog OK and Cancel button click events
    * @private
+   * @returns {void}
    */
   _bindRenameEvents () {
     this._bindClickEvent(this.okBtn, this.renameOk.bind(this))
@@ -121,7 +127,10 @@ class MapList {
   }
 
   /**
-   * Rename the currently selected map if the input value is valid.
+   * Rename the currently selected map if the input value is valid
+   * Validates input (non-empty), renames the map, tracks the action, and refreshes the list
+   * Does nothing if input is empty or no map is currently being renamed
+   * @returns {void}
    */
   renameOk () {
     const newName = this.input?.value.trim() ?? ''
@@ -138,7 +147,9 @@ class MapList {
   }
 
   /**
-   * Cancel an active rename operation and restore hidden buttons.
+   * Cancel an active rename operation and restore hidden control buttons
+   * Restores visibility of action buttons and clears the rename dialog
+   * @returns {void}
    */
   renameCancel () {
     this._restoreHiddenControls()
@@ -146,7 +157,9 @@ class MapList {
   }
 
   /**
+   * Restore visibility of hidden action control buttons
    * @private
+   * @returns {void}
    */
   _restoreHiddenControls () {
     this.currentRenameEntry?.buttonList.forEach(button => {
@@ -155,7 +168,10 @@ class MapList {
   }
 
   /**
+   * Reset the rename dialog to initial state
+   * Hides the dialog, clears input, and resets current rename entry
    * @private
+   * @returns {void}
    */
   _resetRenameDialog () {
     this.inputDiv?.classList.add('hidden')
@@ -166,7 +182,9 @@ class MapList {
   }
 
   /**
-   * Reload the map list.
+   * Clear the map list container and regenerate the list display
+   * Removes all child elements and calls makeList to rebuild the list
+   * @returns {void}
    */
   refresh () {
     if (this.container) {
@@ -176,14 +194,15 @@ class MapList {
   }
 
   /**
+   * Create a new HTML element with optional configuration
    * @private
-   * @param {string} tag
-   * @param {Object} [options]
-   * @param {string} [options.id]
-   * @param {string} [options.className]
-   * @param {string} [options.textContent]
-   * @param {Record<string, string>} [options.styles]
-   * @returns {HTMLElement}
+   * @param {string} tag - The HTML tag name to create
+   * @param {ElementOptions} [options={}] - Configuration options for the element
+   * @param {string} [options.id] - Element ID attribute
+   * @param {string} [options.className] - CSS class name(s)
+   * @param {string} [options.textContent] - Inner text content
+   * @param {Record<string, string>} [options.styles] - Inline style properties
+   * @returns {HTMLElement} The created element
    */
   _createElement (tag, options = {}) {
     const element = document.createElement(tag)
@@ -205,12 +224,14 @@ class MapList {
   }
 
   /**
+   * Create a button element with event handler and add to container
+   * Creates a button with unique ID, adds click handler, and appends to container
    * @private
-   * @param {string} label
-   * @param {number} idx
-   * @param {HTMLElement} container
-   * @param {() => void} handler
-   * @returns {HTMLButtonElement}
+   * @param {string} label - The button text label
+   * @param {number} idx - Index for generating unique button ID
+   * @param {HTMLElement} container - Parent element to append button to
+   * @param {() => void} handler - Click event handler function
+   * @returns {HTMLButtonElement} The created button element
    */
   _createButton (label, idx, container, handler) {
     const button = /** @type {HTMLButtonElement} */ (
@@ -226,11 +247,13 @@ class MapList {
   }
 
   /**
+   * Get button configuration array for a map based on its type
+   * Generates appropriate button configs for pre-generated or custom maps
    * @private
-   * @param {MapModel} map
-   * @param {HTMLButtonElement[]} controls
-   * @param {HTMLDivElement} buttonsContainer
-   * @returns {ButtonConfig[]}
+   * @param {MapModel} map - The map to get button configs for
+   * @param {HTMLButtonElement[]} controls - Array to accumulate control buttons
+   * @param {HTMLDivElement} buttonsContainer - Container for buttons
+   * @returns {ButtonConfig[]} Array of button configuration objects
    */
   _getMapButtonConfigs (map, controls, buttonsContainer) {
     if (map.isPreGenerated) {
@@ -241,9 +264,11 @@ class MapList {
   }
 
   /**
+   * Get button configs specific to pre-generated maps
+   * Pre-generated maps support: duplicate, export, play, seek, and print
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig[]}
+   * @param {MapModel} map - The pre-generated map
+   * @returns {ButtonConfig[]} Button configuration array
    */
   _getPreGeneratedMapButtonConfigs (map) {
     return [
@@ -256,11 +281,13 @@ class MapList {
   }
 
   /**
+   * Get button configs specific to custom maps
+   * Custom maps support all operations: delete, rename, duplicate, export, edit, play, seek, print
    * @private
-   * @param {MapModel} map
-   * @param {HTMLButtonElement[]} controls
-   * @param {HTMLDivElement} buttonsContainer
-   * @returns {ButtonConfig[]}
+   * @param {MapModel} map - The custom map
+   * @param {HTMLButtonElement[]} controls - Array to accumulate control buttons
+   * @param {HTMLDivElement} buttonsContainer - Container for buttons
+   * @returns {ButtonConfig[]} Button configuration array
    */
   _getCustomMapButtonConfigs (map, controls, buttonsContainer) {
     return [
@@ -276,9 +303,10 @@ class MapList {
   }
 
   /**
+   * Build delete button configuration for custom maps
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to delete
+   * @returns {ButtonConfig} Delete button configuration
    */
   _buildDeleteConfig (map) {
     return {
@@ -292,9 +320,10 @@ class MapList {
   }
 
   /**
+   * Build duplicate button configuration
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to duplicate
+   * @returns {ButtonConfig} Duplicate button configuration
    */
   _buildDuplicateConfig (map) {
     return {
@@ -308,11 +337,13 @@ class MapList {
   }
 
   /**
+   * Build rename button configuration for custom maps
+   * Hides other controls and shows the rename dialog
    * @private
-   * @param {MapModel} map
-   * @param {HTMLButtonElement[]} controls
-   * @param {HTMLDivElement} buttonsContainer
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to rename
+   * @param {HTMLButtonElement[]} controls - Control buttons to hide during rename
+   * @param {HTMLDivElement} buttonsContainer - Container for the rename dialog
+   * @returns {ButtonConfig} Rename button configuration
    */
   _buildRenameConfig (map, controls, buttonsContainer) {
     return {
@@ -325,9 +356,10 @@ class MapList {
   }
 
   /**
+   * Build edit button configuration for custom maps
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to edit
+   * @returns {ButtonConfig} Edit button configuration
    */
   _buildEditConfig (map) {
     return {
@@ -340,9 +372,10 @@ class MapList {
   }
 
   /**
+   * Build export button configuration
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to export
+   * @returns {ButtonConfig} Export button configuration
    */
   _buildExportConfig (map) {
     return {
@@ -355,9 +388,11 @@ class MapList {
   }
 
   /**
+   * Build play button configuration
+   * Switches to the play (battle) tab with the selected map
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to play
+   * @returns {ButtonConfig} Play button configuration
    */
   _buildPlayConfig (map) {
     return {
@@ -370,9 +405,11 @@ class MapList {
   }
 
   /**
+   * Build seek button configuration
+   * Switches to the seek/hide battle tab with the selected map
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to play in seek mode
+   * @returns {ButtonConfig} Seek button configuration
    */
   _buildSeekConfig (map) {
     return {
@@ -384,9 +421,12 @@ class MapList {
   }
 
   /**
+   * Build print button configuration
+   * For pre-generated maps: downloads PDF game sheet
+   * For custom maps: switches to print view
    * @private
-   * @param {MapModel} map
-   * @returns {ButtonConfig}
+   * @param {MapModel} map - The map to print
+   * @returns {ButtonConfig} Print button configuration
    */
   _buildPrintConfig (map) {
     return {
@@ -398,10 +438,13 @@ class MapList {
   }
 
   /**
+   * Display the rename input dialog for a map
+   * Shows input field, hides other controls, and focuses on the input
    * @private
-   * @param {MapModel} map
-   * @param {HTMLButtonElement[]} controls
-   * @param {HTMLDivElement} buttonsContainer
+   * @param {MapModel} map - The map being renamed
+   * @param {HTMLButtonElement[]} controls - Control buttons to hide
+   * @param {HTMLDivElement} buttonsContainer - Container to append dialog to
+   * @returns {void}
    */
   _showRenameDialog (map, controls, buttonsContainer) {
     this.currentRenameEntry = { map, buttonList: controls }
@@ -412,12 +455,14 @@ class MapList {
   }
 
   /**
-   * @private
-   * @param {MapModel} map
-   * @param {Object} boardViewModel
-   * @param {HTMLElement} entryContent
-   * @param {number} idx
-   * @returns {HTMLDivElement}
+   * Add a miniature map board representation to the entry
+   * Creates and renders a small visual representation of the map
+   * Initializes the board view model with proper sizing and content
+   * @param {MapModel} map - The map to render
+   * @param {Object} boardViewModel - The board view model for rendering
+   * @param {HTMLElement} entryContent - Container for the board
+   * @param {number} idx - Index for generating unique element IDs
+   * @returns {HTMLDivElement} The board wrapper element
    */
   addMiniMap (map, boardViewModel, entryContent, idx) {
     const boardWrapper = this._createBoardWrapper()
@@ -435,8 +480,9 @@ class MapList {
   }
 
   /**
+   * Create the board wrapper container element
    * @private
-   * @returns {HTMLDivElement}
+   * @returns {HTMLDivElement} The board wrapper element
    */
   _createBoardWrapper () {
     return /** @type {HTMLDivElement} */ (
@@ -448,9 +494,10 @@ class MapList {
   }
 
   /**
+   * Create the board canvas/div element for rendering the map
    * @private
-   * @param {number} idx
-   * @returns {HTMLDivElement}
+   * @param {number} idx - Index for generating unique element ID
+   * @returns {HTMLDivElement} The board element
    */
   _createBoardElement (idx) {
     return /** @type {HTMLDivElement} */ (
@@ -467,10 +514,12 @@ class MapList {
   }
 
   /**
-   * @param {number} idx
-   * @param {MapModel} map
-   * @param {HTMLElement} entryContent
-   * @returns {HTMLDivElement}
+   * Create and append action buttons for a map entry
+   * Generates buttons based on map type and adds them to the entry
+   * @param {number} idx - Index for generating unique button IDs
+   * @param {MapModel} map - The map for which buttons are created
+   * @param {HTMLElement} entryContent - Container to append buttons to
+   * @returns {HTMLDivElement} The buttons container element
    */
   addEntryButtons (idx, map, entryContent) {
     const buttonsContainer = /** @type {HTMLDivElement} */ (
@@ -498,10 +547,12 @@ class MapList {
   }
 
   /**
+   * Create and set up the tally box for displaying map statistics
+   * Returns tally box and wrapper for height adjustment
    * @private
-   * @param {number} idx
-   * @param {HTMLElement} entryContent
-   * @returns {[HTMLDivElement, HTMLDivElement]}
+   * @param {number} idx - Index for generating unique element IDs
+   * @param {HTMLElement} entryContent - Container to append tally box to
+   * @returns {[HTMLDivElement, HTMLDivElement]} Tuple of [tallyBox, boardWrapper]
    */
   setupTallyBox (idx, entryContent) {
     const boardWrapper = this._createTallyBoardWrapper()
@@ -516,8 +567,9 @@ class MapList {
   }
 
   /**
+   * Create the tally board wrapper container element
    * @private
-   * @returns {HTMLDivElement}
+   * @returns {HTMLDivElement} The tally board wrapper
    */
   _createTallyBoardWrapper () {
     return /** @type {HTMLDivElement} */ (
@@ -529,9 +581,10 @@ class MapList {
   }
 
   /**
+   * Create the tally container element
    * @private
-   * @param {number} idx
-   * @returns {HTMLDivElement}
+   * @param {number} idx - Index for generating unique element ID
+   * @returns {HTMLDivElement} The tally container
    */
   _createTallyContainer (idx) {
     return /** @type {HTMLDivElement} */ (
@@ -544,9 +597,10 @@ class MapList {
   }
 
   /**
+   * Create the tally box element for displaying ship counts
    * @private
-   * @param {number} idx
-   * @returns {HTMLDivElement}
+   * @param {number} idx - Index for generating unique element ID
+   * @returns {HTMLDivElement} The tally box element
    */
   _createTallyBox (idx) {
     return /** @type {HTMLDivElement} */ (
@@ -558,13 +612,16 @@ class MapList {
   }
 
   /**
-   * @param {number} idx
-   * @param {MapModel} map
-   * @param {HTMLDivElement} tallyBox
-   * @param {Object} boardViewModel
+   * Populate the tally box with ship and weapon statistics for the map
+   * Creates a Waters model, initializes ScoreUI, and builds the tally display
+   * Computes and renders ship/weapon counts for the current map
+   * @param {number} idx - Index for the tally box element
+   * @param {MapModel} map - The map to generate tally for
+   * @param {HTMLDivElement} tallyBox - The tally box element to populate
+   * @param {Object} boardViewModel - The board view model
+   * @returns {void}
    */
   fillTallyBox (idx, map, tallyBox, boardViewModel) {
-    // @ts-ignore
     const model = new Waters()
     model.setMap(map)
     boardViewModel.score = new ScoreUI(idx.toString())
@@ -577,14 +634,17 @@ class MapList {
   }
 
   /**
-   * @param {MapModel} map
-   * @param {number} idx
+   * Add a complete map entry with board, tally, and action buttons
+   * Combines mini map board, ship tally statistics, and action buttons into one entry
+   * Orchestrates the complete map display with all sub-components
+   * @param {MapModel} map - The map to display
+   * @param {number} idx - Index for generating unique element IDs
+   * @returns {void}
    */
   addEntry (map, idx) {
     const entry = this._createMapEntry(map, idx)
     const entryContent = this._createEntryContent()
 
-    // @ts-ignore
     const boardViewModel = new WatersUI()
     const boardNode = this.addMiniMap(map, boardViewModel, entryContent, idx)
     const [tallyBox, tallyWrapper] = this.setupTallyBox(idx, entryContent)
@@ -598,10 +658,11 @@ class MapList {
   }
 
   /**
+   * Create the map entry div with title heading
    * @private
-   * @param {MapModel} map
-   * @param {number} idx
-   * @returns {HTMLDivElement}
+   * @param {MapModel} map - The map being displayed
+   * @param {number} idx - Index for alternating row styling
+   * @returns {HTMLDivElement} The map entry container
    */
   _createMapEntry (map, idx) {
     const entry = /** @type {HTMLDivElement} */ (
@@ -618,8 +679,9 @@ class MapList {
   }
 
   /**
+   * Create the entry content container element
    * @private
-   * @returns {HTMLDivElement}
+   * @returns {HTMLDivElement} The entry content container
    */
   _createEntryContent () {
     return /** @type {HTMLDivElement} */ (
@@ -630,10 +692,13 @@ class MapList {
   }
 
   /**
+   * Adjust button container height to match board and tally box heights
+   * Ensures buttons span the full height of the tallest adjacent element
    * @private
-   * @param {HTMLElement} buttonsNode
-   * @param {HTMLElement} boardNode
-   * @param {HTMLElement} tallyWrapper
+   * @param {HTMLElement} buttonsNode - The buttons container
+   * @param {HTMLElement} boardNode - The board container
+   * @param {HTMLElement} tallyWrapper - The tally box wrapper
+   * @returns {void}
    */
   _adjustButtonHeight (buttonsNode, boardNode, tallyWrapper) {
     buttonsNode.style.maxHeight = `${
@@ -642,7 +707,11 @@ class MapList {
   }
 
   /**
-   * @param {string|undefined} listIncludes
+   * Generate and display the map list
+   * Resolves map list based on selection filter and renders all entries
+   * Clears current list and rebuilds with new selection
+   * @param {string|undefined} [listIncludes] - Filter option: '0' custom, '1' all, '2' pre-generated
+   * @returns {void}
    */
   makeList (listIncludes = undefined) {
     const titleEl = this._findElement('list-title')
@@ -650,23 +719,27 @@ class MapList {
     this.listIncludes = listIncludes ?? this.listIncludes
 
     const { title, maps } = this._resolveMapList(this.listIncludes, listLabel)
-    titleEl.textContent = title
+    if (titleEl) {
+      titleEl.textContent = title
+    }
 
-    this.container.innerHTML = ''
+    if (this.container) {
+      this.container.innerHTML = ''
+    }
     maps.forEach((map, idx) => {
       if (map) {
         this.addEntry(map, idx)
-      } else {
-        console.log('Skipping empty map at index', idx)
       }
     })
   }
 
   /**
+   * Resolve which maps to display based on selection filter
+   * Returns title and maps array for the selected display option
    * @private
-   * @param {string} selection
-   * @param {string} listLabel
-   * @returns {{title:string, maps:Array<MapModel>}}
+   * @param {string} selection - Filter option: '0' custom, '1' all, '2' pre-generated
+   * @param {string} listLabel - The base label for the list title
+   * @returns {{title: string, maps: Array<MapModel>}} Object with display title and maps array
    */
   _resolveMapList (selection, listLabel) {
     switch (selection) {
@@ -683,10 +756,12 @@ class MapList {
 }
 
 /**
- * Saves JSON data as a downloadable file using the browser's download API.
- * Falls back to creating a blob URL and triggering a download link.
- * @param {string} json - The JSON string to save.
- * @param {string} [filename='data.json'] - The name of the file to download.
+ * Saves JSON data as a downloadable file using the browser's download API
+ * Creates a blob URL and triggers a download via an anchor element
+ * Revokes the URL after a delay for memory cleanup
+ * @param {string} json - The JSON string to save
+ * @param {string} [filename='data.json'] - The name of the file to download
+ * @returns {void}
  */
 function saveAsJson (json, filename = 'data.json') {
   const blob = new Blob([json], { type: 'application/json' })
@@ -703,26 +778,32 @@ function saveAsJson (json, filename = 'data.json') {
 }
 
 /**
- * Downloads a PDF game sheet for a pre-generated map.
- * @param {MapModel} map - The map to print.
- * @returns {string} The PDF file path.
+ * Downloads a PDF game sheet for a pre-generated map
+ * Navigates to the PDF file location based on map terrain tag and name
+ * Only triggers download in browser environments (not Node.js)
+ * @param {MapModel} map - The map to print
+ * @returns {string} The PDF file path/URL
  */
 function printGameSheet (map) {
   trackClick(map, 'download pdf')
   const location = `../docs/gamesheets/${map.terrain.tag}/${map.name}.pdf`
 
-  if (globalThis.process === undefined) {
-    globalThis.location.href = location
+  if (typeof process === 'undefined') {
+    // Browser environment: trigger PDF download
+    if (globalThis.location) {
+      globalThis.location.href = location
+    }
   }
 
   return location
 }
 
 /**
- * Saves a map to a file using the modern File System API or falls back to download.
- * @param {MapModel} map - The map to save.
- * @param {string|undefined} suggestedName - Optional suggested filename.
- * @returns {Promise<{success:boolean, handle?:unknown, fallback?:boolean, error?:unknown}>}
+ * Saves a map to a file using the modern File System API or falls back to download
+ * Uses showSaveFilePicker for modern browsers, or saveAsJson fallback
+ * @param {MapModel} map - The map to save
+ * @param {string|undefined} [suggestedName] - Optional suggested filename
+ * @returns {Promise<{success: boolean, handle?: unknown, fallback?: boolean, error?: unknown}>} Result with success status and optional handle/error
  */
 async function saveToFile (map, suggestedName = undefined) {
   const json = map.jsonString()
@@ -754,26 +835,26 @@ async function saveToFile (map, suggestedName = undefined) {
   return { success: true, fallback: true }
 }
 
+export { MapList, saveAsJson, printGameSheet, saveToFile }
+
 /**
  * Initialize map list UI after navbar is loaded
  * Sets up tab bar visibility and loads the selected map list
- * @private
- * @param {MapList} mapList
+ * Only runs in browser environments with DOM available
  */
-export { MapList, saveAsJson, printGameSheet, saveToFile }
-
-// Initialize if in browser and not in test
-if (
-  globalThis.window !== undefined &&
-  typeof document !== 'undefined' &&
-  // @ts-ignore
-  typeof process === 'undefined' // && !process?.env?.JEST_WORKER_ID)
-) {
+if (typeof document !== 'undefined' && typeof process === 'undefined') {
   const mapList = new MapList()
   await fetchNavBar('list', 'List of Hidden Battle Maps')
 
-  document.getElementById('second-tab-bar').classList.remove('hidden')
-  document.getElementById('choose-include').classList.remove('hidden')
+  const secondTabBar = document.getElementById('second-tab-bar')
+  const chooseInclude = document.getElementById('choose-include')
+
+  if (secondTabBar) {
+    secondTabBar.classList.remove('hidden')
+  }
+  if (chooseInclude) {
+    chooseInclude.classList.remove('hidden')
+  }
 
   const includes = setupMapListOptions(mapList.makeList.bind(mapList))
 

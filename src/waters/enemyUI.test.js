@@ -13,9 +13,15 @@ jest.unstable_mockModule('./WatersUI.js', () => {
         this.displayName = displayName
       }
 
-      playMode () {}
-      revealShips () {}
-      revealMode () {}
+      playMode () {
+        /* no-op */
+      }
+      revealShips () {
+        /* no-op */
+      }
+      revealMode () {
+        /* no-op */
+      }
     }
   }
 })
@@ -40,7 +46,9 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
 // Mock ShipCellDisplayer
 jest.unstable_mockModule('./helpers/ShipCellDisplayer.js', () => {
   return {
-    ShipCellDisplayer: class {}
+    ShipCellDisplayer: class {
+      static mock = true
+    }
   }
 })
 

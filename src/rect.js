@@ -4,62 +4,132 @@ import { RectIndex } from './grid/rectangle/RectIndex.js'
 import { PolyominoGridManager } from './ui/rectangle/polyominoGrid.js'
 import { Delay } from './core/Delay.js'
 
+/**
+ * @fileoverview Rectangular Grid Integration Module
+ * @description Manages RectDraw and RectCanvas instances for rectangular grid interaction.
+ * Provides polyomino grid management, drag-and-drop placement, and visual previews.
+ * Supports coordinate modes, transforms, and connectivity-based polyomino generation.
+ *
+ * **Responsibilities**:
+ * - Initialize and manage RectDraw rendering layer
+ * - Initialize and manage RectCanvas UI interaction layer
+ * - Initialize and manage PolyominoGridManager for polyomino visualization
+ * - Handle drag-and-drop between polyomino and main grids
+ * - Draw drop previews and validate placements
+ * - Wire all interactive controls and event handlers
+ *
+ * **Architecture**:
+ * - Singleton instances of RectDraw, RectCanvas, and PolyominoGridManager
+ * - Lazy initialization on first use or DOM ready
+ * - Automatic UI event wiring for buttons, dropdowns, and canvas events
+ *
+ * @module rect
+ */
+
+/** Default cell size in pixels for grid rendering */
 const DEFAULT_CELL_SIZE = 50
+/** Horizontal offset of grid from canvas left edge in pixels */
 const GRID_OFFSET_X = 50
+/** Vertical offset of grid from canvas top edge in pixels */
 const GRID_OFFSET_Y = 50
+/** Default grid width in cells */
 const GRID_WIDTH = 10
+/** Default grid height in cells */
 const GRID_HEIGHT = 10
 
+/**
+ * Singleton instance of RectDraw rendering layer.
+ * Initialized on first use in grid operations.
+ * @type {RectDraw|null}
+ */
 let rectDraw = null
+
+/**
+ * Singleton instance of RectCanvas UI interaction layer.
+ * Initialized on first use in grid operations.
+ * @type {RectCanvas|null}
+ */
 let rectCanvas = null
+
+/**
+ * Singleton instance of PolyominoGridManager.
+ * Manages available polyominoes and their display.
+ * @type {PolyominoGridManager|null}
+ */
 let polyGrid = null
+
+/**
+ * ID of the currently dragged polyomino during drag-and-drop.
+ * Null when no drag is in progress.
+ * @type {number|null}
+ */
 let draggedPolyominoId = null
+
+/**
+ * Current drop preview data showing where polyomino will be placed.
+ * Null when no preview is active.
+ * @type {DropPreviewData|null}
+ */
 let dropPreviewData = null
 
 /**
  * @typedef {Object} GridCoords
- * @property {number} gridX
- * @property {number} gridY
- * @property {number} x
- * @property {number} y
+ * @description Represents grid and canvas coordinates for a point.
+ * @property {number} gridX - X coordinate in grid cells
+ * @property {number} gridY - Y coordinate in grid cells
+ * @property {number} x - X position relative to grid origin in pixels
+ * @property {number} y - Y position relative to grid origin in pixels
  */
 
 /**
  * @typedef {Object} DropPreviewData
- * @property {number} gridX
- * @property {number} gridY
- * @property {number} width
- * @property {number} height
- * @property {Array<unknown>} cells
+ * @description Data for visualizing where a polyomino will be placed.
+ * @property {number} gridX - Target grid X position in cells
+ * @property {number} gridY - Target grid Y position in cells
+ * @property {number} width - Width of polyomino in cells
+ * @property {number} height - Height of polyomino in cells
+ * @property {Array<unknown>} cells - Array of cell coordinates
  */
 
 /**
  * @typedef {Object} Polyomino
- * @property {number} width
- * @property {number} height
- * @property {function(number, number): boolean} at
- * @property {function(): IterableIterator<[number, number]>} allXYlocations
+ * @description Represents a polyomino shape.
+ * @property {number} width - Bounding box width
+ * @property {number} height - Bounding box height
+ * @property {function(number, number): boolean} at - Test if cell at (x,y) is occupied
+ * @property {function(): IterableIterator<[number, number]>} allXYlocations - Iterator over all cell coordinates
  */
 
 /**
  * @typedef {Object} DragData
- * @property {number} polyId
- * @property {number} polyIndex
- * @property {number} width
- * @property {number} height
- * @property {Array<unknown>} cells
+ * @description Data transferred during drag-and-drop of polyominoes.
+ * @property {number} polyId - Unique ID of the polyomino
+ * @property {number} polyIndex - Index in polyominoes array
+ * @property {number} width - Polyomino width
+ * @property {number} height - Polyomino height
+ * @property {Array<unknown>} cells - Cell coordinate data
  */
 
 /**
- * @returns {boolean}
+ * Check if running in a browser environment.
+ * Determines if DOM APIs (document, window) are available.
+ * Safe to call in Node.js or other non-browser environments.
+ *
+ * **Usage**: Guard function calls that depend on DOM availability.
+ *
+ * @returns {boolean} True if document global is defined, false otherwise
  */
 function isBrowser () {
   return typeof document !== 'undefined'
 }
 
 /**
- * @param {string} id
- * @returns {HTMLElement|null}
+ * Safely retrieve a DOM element by ID.
+ * Returns null if not in browser environment or element doesn't exist.
+ * Prevents errors when called in Node.js or when element is missing.
+ *
+ * @param {string} id - The element ID to retrieve
+ * @returns {HTMLElement|null} The element if found, null otherwise
  */
 function getElement (id) {
   if (!isBrowser()) return null
@@ -67,8 +137,14 @@ function getElement (id) {
 }
 
 /**
- * @param {string} id
- * @returns {HTMLCanvasElement|null}
+ * Safely retrieve a canvas element by ID.
+ * Validates that retrieved element is actually an HTMLCanvasElement.
+ * Returns null if not in browser, element not found, or wrong element type.
+ *
+ * **Type Safety**: Uses instanceof check to verify canvas type.
+ *
+ * @param {string} id - The element ID to retrieve
+ * @returns {HTMLCanvasElement|null} The canvas element if found and valid, null otherwise
  */
 function getCanvas (id) {
   const element = getElement(id)
@@ -76,16 +152,37 @@ function getCanvas (id) {
 }
 
 /**
- * @param {HTMLElement|null} element
- * @param {string} type
- * @param {EventListenerOrEventListenerObject} listener
+ * Conditionally add an event listener only if element exists.
+ * Safely handles null/undefined elements without throwing errors.
+ * Uses optional chaining to prevent null reference errors.
+ *
+ * **Side Effects**: Attaches event listener to element if it exists.
+ *
+ * @param {HTMLElement|null} element - The element to attach listener to
+ * @param {string} type - The event type name (e.g., 'click', 'change', 'dragstart')
+ * @param {EventListener} listener - The event listener function to attach
+ * @returns {void}
  */
 function addEventListenerIfExists (element, type, listener) {
-  if (element && typeof element.addEventListener === 'function') {
-    element.addEventListener(type, listener)
-  }
+  element?.addEventListener(type, listener)
 }
 
+/**
+ * Initialize the rectangular grid if not already initialized.
+ * Creates RectDraw rendering layer and RectCanvascolor UI wrapper.
+ * Idempotent - safe to call multiple times.
+ *
+ * **Initialization Flow**:
+ * 1. Check if already initialized (early return if true)
+ * 2. Create RectDraw instance with grid configuration
+ * 3. Create RectCanvas UI wrapper around RectDraw
+ *
+ * **Side Effects**:
+ * - Sets global rectDraw instance
+ * - Sets global rectCanvas instance
+ *
+ * @returns {void}
+ */
 function initializeGridIfNeeded () {
   if (rectDraw) return // Already initialized
 
@@ -103,6 +200,20 @@ function initializeGridIfNeeded () {
   })
 }
 
+/**
+ * Initialize the polyomino grid if not already initialized.
+ * Creates PolyominoGridManager for polyomino visualization and interaction.
+ * Idempotent - safe to call multiple times.
+ *
+ * **Initialization Flow**:
+ * 1. Check if already initialized (early return if true)
+ * 2. Create PolyominoGridManager instance with grid configuration
+ *
+ * **Side Effects**:
+ * - Sets global polyGrid instance
+ *
+ * @returns {void}
+ */
 function initializePolyominoGridIfNeeded () {
   if (polyGrid) return
 
@@ -116,10 +227,32 @@ function initializePolyominoGridIfNeeded () {
   )
 }
 
+/**
+ * Execute a callback with the rect canvas if it's initialized.
+ * Provides safe access to rectCanvas without null checks in caller.
+ *
+ * **Pattern**: Higher-order function for safe component access.
+ *
+ * @param {function(RectCanvas): void} callback - Function to execute with canvas
+ * @returns {void}
+ */
 function withRectCanvas (callback) {
   if (rectCanvas) callback(rectCanvas)
 }
 
+/**
+ * Get the current state of canvas tool buttons and controls.
+ * Retrieves tool state from RectCanvas without direct access.
+ *
+ * **Returns**: Object with null-safe property values. If rectCanvas is not
+ * initialized, returns empty object.
+ *
+ * @returns {Object} Object containing tool state properties
+ * @returns {string} [return.currentTool] The currently active drawing tool
+ * @returns {?Array<number>} [return.lineStart] Starting point for line tools (if set)
+ * @returns {string} [return.currentAction] Current action being performed
+ * @returns {string} [return.coverType] Current coverage type for operations
+ */
 function getButtonStates () {
   if (!rectCanvas) return {}
   return {
@@ -130,6 +263,19 @@ function getButtonStates () {
   }
 }
 
+/**
+ * Set the state of canvas tool buttons and controls.
+ * Updates tool state in RectCanvas. Only updates properties that are provided.
+ *
+ * **Side Effects**: Modifies RectCanvas internal state.
+ *
+ * @param {Object} states - Object containing tool state properties to update
+ * @param {string} [states.currentTool] The drawing tool to activate
+ * @param {?Array<number>} [states.lineStart] Starting point for line tools
+ * @param {string} [states.currentAction] Action to perform
+ * @param {string} [states.coverType] Coverage type to set
+ * @returns {void}
+ */
 function setButtonStates (states) {
   if (!rectCanvas) return
   if (states.currentTool !== undefined)
@@ -141,14 +287,27 @@ function setButtonStates (states) {
 }
 
 /**
- * Update button states - delegates to rectCanvas
+ * Update button states in the UI.
+ * Delegates to RectCanvas to refresh button visual state based on internal state.
+ *
+ * **Side Effects**: Triggers UI update in RectCanvas.
+ *
+ * @returns {void}
  */
 function updateButtonStates () {
   withRectCanvas(canvas => canvas.updateButtonStates())
 }
 
 /**
- * Apply transform operation - delegates to rectCanvas
+ * Apply a transform operation to the grid.
+ * Performs a map transformation (rotation, flip, etc.) on the current grid.
+ *
+ * **Side Effects**:
+ * - Initializes grid if needed
+ * - Modifies grid state through transform
+ *
+ * @param {string} mapName - Name of the map/transform to apply
+ * @returns {void}
  */
 function applyTransform (mapName) {
   initializeGridIfNeeded()
@@ -156,14 +315,14 @@ function applyTransform (mapName) {
 }
 
 /**
- * Apply morphology operation - delegates to rectCanvas
- */
-function applyMorphology (operation) {
-  withRectCanvas(canvas => canvas.applyMorphology(operation))
-}
-
-/**
- * Compute preview cells - delegates to rectCanvas
+ * Compute preview of cells affected by a draw operation.
+ * Calculates which cells would be affected if drawing between two points.
+ *
+ * **Precondition**: Initializes grid if needed.
+ *
+ * @param {GridCoords} start - Starting coordinate
+ * @param {GridCoords} end - Ending coordinate
+ * @returns {Array<Array<number>>} Array of [x, y] cell coordinates that would be affected
  */
 function computePreviewCells (start, end) {
   initializeGridIfNeeded()
@@ -172,14 +331,28 @@ function computePreviewCells (start, end) {
 }
 
 /**
- * Draw line between two points - delegates to rectCanvas
+ * Draw a line between two points on the canvas.
+ * Completes a line drawing operation with visual feedback.
+ *
+ * **Side Effects**: Modifies grid state, triggers redraw.
+ *
+ * @param {GridCoords} start - Starting coordinate
+ * @param {GridCoords} end - Ending coordinate
+ * @returns {void}
  */
 function drawLineBetween (start, end) {
   withRectCanvas(canvas => canvas.completeLine(start, end))
 }
 
 /**
- * Set current tool - delegates to rectCanvas
+ * Set the current drawing tool for subsequent operations.
+ * Activates a specific tool in the RectCanvas.
+ *
+ * **Precondition**: Initializes grid if needed.
+ * **Side Effects**: Changes active tool state, may trigger UI updates.
+ *
+ * @param {string} tool - The tool to activate (e.g., 'line', 'rect', 'circle')
+ * @returns {void}
  */
 function setTool (tool) {
   initializeGridIfNeeded()
@@ -187,7 +360,10 @@ function setTool (tool) {
 }
 
 /**
- * Main initialization function callable by tests after DOM is ready
+ * Populate the polyomino connectivity dropdown with available options.
+ * Retrieves connectivity options from RectIndex and populates the UI dropdown.
+ * @function
+ * @returns {void}
  */
 function populateConnectivityDropdown () {
   if (!isBrowser()) return
@@ -207,6 +383,12 @@ function populateConnectivityDropdown () {
     .join('')
 }
 
+/**
+ * Initialize the rectangle grid UI and all event handlers.
+ * Sets up the main grid, polyomino grid, and wires all interactive elements.
+ * @function
+ * @returns {void}
+ */
 function initializeRect () {
   initializeGridIfNeeded()
   initializePolyominoGridIfNeeded()
@@ -221,7 +403,10 @@ function initializeRect () {
 }
 
 /**
- * Wire coordinate mode radio buttons
+ * Wire up coordinate mode radio button change events.
+ * Attaches listeners to coordinate mode radio buttons for grid mode switching.
+ * @function
+ * @returns {void}
  */
 function wireCoordinateModeRadios () {
   if (!isBrowser() || !rectDraw) return
@@ -238,7 +423,14 @@ function wireCoordinateModeRadios () {
 }
 
 /**
- * Helper: Convert canvas coordinates to grid coordinates
+ * Convert canvas/mouse event coordinates to grid coordinates
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {number} clientX - Mouse client X coordinate
+ * @param {number} clientY - Mouse client Y coordinate
+ * @param {number} cellSize - Size of each grid cell in pixels
+ * @param {number} offsetX - Horizontal offset of grid from canvas edge
+ * @param {number} offsetY - Vertical offset of grid from canvas edge
+ * @returns {GridCoords} Grid coordinates and relative positions
  */
 function getGridCoordsFromEvent (
   canvas,
@@ -257,9 +449,11 @@ function getGridCoordsFromEvent (
 }
 
 /**
- * Get the color for a polyomino based on its ID
+ * Get the color for a polyomino based on its ID using the color palette.
+ * Cycles through available colors based on polyomino ID.
+ * @function
  * @param {number} polyominoId - The ID of the polyomino
- * @returns {string} The color string
+ * @returns {string} The color string (hex format)
  */
 function getPolyominoColor (polyominoId) {
   if (!polyGrid || polyominoId <= 0) return '#4ecdc4'
@@ -268,10 +462,12 @@ function getPolyominoColor (polyominoId) {
 }
 
 /**
- * Create a canvas with appropriate size for the polyomino
+ * Create a canvas with appropriate dimensions for the polyomino.
+ * Includes padding and enforces minimum canvas size.
+ * @function
  * @param {Polyomino} polyomino - The polyomino to size for
- * @param {number} cellSize - Size of each cell
- * @returns {HTMLCanvasElement} The created canvas
+ * @param {number} cellSize - Size of each cell in pixels
+ * @returns {HTMLCanvasElement} The created canvas element
  */
 function createDragCanvas (polyomino, cellSize) {
   const padding = 8
@@ -284,11 +480,14 @@ function createDragCanvas (polyomino, cellSize) {
 }
 
 /**
- * Draw the polyomino on the canvas
+ * Draw the polyomino on a canvas with padding and grid lines.
+ * Renders each occupied cell with fill and stroke styling.
+ * @function
  * @param {CanvasRenderingContext2D} ctx - The canvas context
  * @param {Polyomino} polyomino - The polyomino to draw
- * @param {number} cellSize - Size of each cell
- * @param {string} color - The fill color
+ * @param {number} cellSize - Size of each cell in pixels
+ * @param {string} color - The fill color for the polyomino cells
+ * @returns {void}
  */
 function drawPolyominoOnCanvas (ctx, polyomino, cellSize, color) {
   const padding = 8
@@ -305,8 +504,11 @@ function drawPolyominoOnCanvas (ctx, polyomino, cellSize, color) {
 }
 
 /**
- * Style the drag image canvas
+ * Style the drag image canvas for hidden placement.
+ * Positions the canvas off-screen to keep drag image invisible.
+ * @function
  * @param {HTMLCanvasElement} canvas - The canvas to style
+ * @returns {void}
  */
 function styleDragCanvas (canvas) {
   canvas.style.position = 'absolute'
@@ -315,8 +517,11 @@ function styleDragCanvas (canvas) {
 }
 
 /**
- * Append canvas to body and schedule cleanup
+ * Append canvas to body and schedule cleanup after a short delay.
+ * Ensures the canvas is cleaned up from the DOM after use.
+ * @function
  * @param {HTMLCanvasElement} canvas - The canvas to append and clean up
+ * @returns {void}
  */
 function appendAndScheduleCleanup (canvas) {
   document.body.appendChild(canvas)
@@ -329,7 +534,9 @@ function appendAndScheduleCleanup (canvas) {
 }
 
 /**
- * Helper: Create a drag image canvas showing only the polyomino
+ * Create a drag image canvas showing only the polyomino.
+ * Generates a styled canvas for the drag-and-drop operation.
+ * @function
  * @param {Polyomino} polyomino - The polyomino to draw
  * @param {number} polyominoId - The ID of the polyomino for coloring
  * @param {number} [cellSize=DEFAULT_CELL_SIZE] - Size of each cell
@@ -351,7 +558,14 @@ function createPolyominoDragImage (
 }
 
 /**
- * Helper: Draw preview of where polyomino will land
+ * Draw a visual preview of where the polyomino will be placed.
+ * Shows a semi-transparent overlay indicating drop location.
+ * @function
+ * @param {HTMLCanvasElement} canvas - The target canvas
+ * @param {DragData} dragData - The dragged polyomino data
+ * @param {number} clientX - Mouse client X coordinate
+ * @param {number} clientY - Mouse client Y coordinate
+ * @returns {void}
  */
 function drawDropPreview (canvas, dragData, clientX, clientY) {
   if (!rectDraw || !rectCanvas) return
@@ -376,10 +590,12 @@ function drawDropPreview (canvas, dragData, clientX, clientY) {
   if (!rectCanvas.grid) return
 
   rectCanvas.grid.previewCells = dragData.cells.map(cell => {
-    const x = cell[0] === undefined ? cell : cell[0]
-    const y =
-      cell[1] === undefined ? (Array.isArray(cell) ? cell[0] : 0) : cell[1]
-    return [coords.gridX + x, coords.gridY + y]
+    const cellX = Array.isArray(cell) ? cell[0] : cell
+    let cellY = 0
+    if (Array.isArray(cell) && cell[1] != null) {
+      cellY = cell[1]
+    }
+    return [coords.gridX + cellX, coords.gridY + cellY]
   })
 
   if (!rectCanvas._origDrawHover) {
@@ -414,7 +630,10 @@ function drawDropPreview (canvas, dragData, clientX, clientY) {
 }
 
 /**
- * Helper: Clear drop preview
+ * Clear the drop preview from the canvas.
+ * Removes preview cells and restores original drawing behavior.
+ * @function
+ * @returns {void}
  */
 function clearDropPreview () {
   if (!dropPreviewData || !rectCanvas?.grid) return
@@ -431,7 +650,8 @@ function clearDropPreview () {
 }
 
 /**
- * Set up drag and drop between polyomino grid and main rect grid
+ * Set up drag and drop event handlers between polyomino and main grids
+ * @returns {void}
  */
 function setupDragAndDrop () {
   if (!isBrowser()) return
@@ -451,8 +671,11 @@ function setupDragAndDrop () {
 }
 
 /**
- * @param {DataTransfer} dataTransfer
- * @returns {DragData|null}
+ * Parse drag data from a DataTransfer object.
+ * Safely extracts and parses polyomino data from drag events.
+ * @function
+ * @param {DataTransfer} dataTransfer - The data transfer object from drag event
+ * @returns {DragData|null} Parsed drag data or null if invalid/unavailable
  */
 function parseDragData (dataTransfer) {
   try {
@@ -462,6 +685,13 @@ function parseDragData (dataTransfer) {
   }
 }
 
+/**
+ * Handle mouse down event on polyomino canvas.
+ * Records which polyomino was clicked for potential drag operation.
+ * @function
+ * @param {MouseEvent} event - The mouse event
+ * @returns {void}
+ */
 function handlePolyCanvasMouseDown (event) {
   initializePolyominoGridIfNeeded()
   if (!polyGrid) return
@@ -479,6 +709,13 @@ function handlePolyCanvasMouseDown (event) {
   draggedPolyominoId = clickedPolyId > 0 ? clickedPolyId : null
 }
 
+/**
+ * Handle drag start event on polyomino canvas.
+ * Sets up data transfer and visual feedback for the drag operation.
+ * @function
+ * @param {DragEvent} event - The drag event
+ * @returns {void}
+ */
 function handlePolyCanvasDragStart (event) {
   if (draggedPolyominoId === null) {
     event.preventDefault()
@@ -516,11 +753,25 @@ function handlePolyCanvasDragStart (event) {
   event.currentTarget.style.opacity = '0.5'
 }
 
+/**
+ * Handle drag end event on polyomino canvas.
+ * Resets opacity and clears dragged polyomino tracking.
+ * @function
+ * @param {DragEvent} event - The drag event
+ * @returns {void}
+ */
 function handlePolyCanvasDragEnd (event) {
   event.currentTarget.style.opacity = '1'
   draggedPolyominoId = null
 }
 
+/**
+ * Handle drag over event on target canvas.
+ * Updates visual feedback and preview while dragging over the target.
+ * @function
+ * @param {DragEvent} event - The drag event
+ * @returns {void}
+ */
 function handleTargetCanvasDragOver (event) {
   event.preventDefault()
   event.dataTransfer.dropEffect = 'move'
@@ -537,11 +788,25 @@ function handleTargetCanvasDragOver (event) {
   }
 }
 
+/**
+ * Handle drag enter event on target canvas.
+ * Provides visual feedback when dragged item enters drop target.
+ * @function
+ * @param {DragEvent} event - The drag event
+ * @returns {void}
+ */
 function handleTargetCanvasDragEnter (event) {
   event.preventDefault()
   event.currentTarget.style.backgroundColor = 'rgba(100, 150, 255, 0.1)'
 }
 
+/**
+ * Handle drag leave event on target canvas.
+ * Clears visual feedback when dragged item leaves drop target.
+ * @function
+ * @param {DragEvent} event - The drag event
+ * @returns {void}
+ */
 function handleTargetCanvasDragLeave (event) {
   if (event.target === event.currentTarget) {
     event.currentTarget.style.backgroundColor = ''
@@ -549,6 +814,69 @@ function handleTargetCanvasDragLeave (event) {
   }
 }
 
+/**
+ * Validate if polyomino can be placed at the given position.
+ * Checks bounds and collision detection.
+ * @function
+ * @param {Polyomino} poly - The polyomino to validate
+ * @param {number} gridX - Target grid X position
+ * @param {number} gridY - Target grid Y position
+ * @returns {boolean} True if polyomino can be placed
+ */
+function validatePolyominoPlacement (poly, gridX, gridY) {
+  // Check if custom placement validator exists
+  if (rectDraw?.mask?.canPlacePolyomino) {
+    return rectDraw.mask.canPlacePolyomino(poly, gridX, gridY)
+  }
+
+  // Perform default bounds and collision checking
+  if (
+    gridX < 0 ||
+    gridY < 0 ||
+    gridX + poly.width > rectDraw.width ||
+    gridY + poly.height > rectDraw.height
+  ) {
+    return false
+  }
+
+  // Check for collisions with existing cells
+  for (const [px, py] of poly.allXYlocations()) {
+    if (!poly.at(px, py)) continue
+    const gx = gridX + px
+    const gy = gridY + py
+    if (rectDraw.mask.at(gx, gy) !== 0) {
+      return false
+    }
+  }
+
+  return true
+}
+
+/**
+ * Place a polyomino on the main grid at the given position.
+ * Renders the polyomino on the grid canvas.
+ * @function
+ * @param {Polyomino} poly - The polyomino to place
+ * @param {number} gridX - Target grid X position
+ * @param {number} gridY - Target grid Y position
+ * @returns {void}
+ */
+function placePolyominoOnGrid (poly, gridX, gridY) {
+  for (const [px, py] of poly.allXYlocations()) {
+    if (!poly.at(px, py)) continue
+    rectDraw.mask.set(gridX + px, gridY + py, 1)
+  }
+
+  rectDraw.redraw?.()
+}
+
+/**
+ * Handle drop event on target canvas - places polyomino on main grid.
+ * Processes the drop event and places the polyomino if validation passes.
+ * @function
+ * @param {DragEvent} event - The drag event
+ * @returns {void}
+ */
 function handleTargetCanvasDrop (event) {
   event.preventDefault()
   event.stopPropagation()
@@ -557,7 +885,7 @@ function handleTargetCanvasDrop (event) {
   clearDropPreview()
 
   const dragData = parseDragData(event.dataTransfer)
-  if (!dragData || dragData.polyId === undefined) return
+  if (!dragData?.polyId) return
 
   initializeGridIfNeeded()
   initializePolyominoGridIfNeeded()
@@ -575,51 +903,20 @@ function handleTargetCanvasDrop (event) {
   const sourcePoly = polyGrid.polyominoes.find(p => p.id === dragData.polyId)
   if (!sourcePoly) return
 
-  if (rectDraw.mask.canPlacePolyomino) {
-    if (
-      !rectDraw.mask.canPlacePolyomino(
-        sourcePoly.poly,
-        coords.gridX,
-        coords.gridY
-      )
-    ) {
-      return
-    }
-  } else {
-    const poly = sourcePoly.poly
-    if (
-      coords.gridX < 0 ||
-      coords.gridY < 0 ||
-      coords.gridX + poly.width > rectDraw.width ||
-      coords.gridY + poly.height > rectDraw.height
-    ) {
-      return
-    }
-
-    for (const [px, py] of poly.allXYlocations()) {
-      if (!poly.at(px, py)) continue
-
-      const gx = coords.gridX + px
-      const gy = coords.gridY + py
-      if (rectDraw.mask.at(gx, gy) !== 0) {
-        return
-      }
-    }
+  if (
+    !validatePolyominoPlacement(sourcePoly.poly, coords.gridX, coords.gridY)
+  ) {
+    return
   }
 
-  const poly = sourcePoly.poly
-  for (const [px, py] of poly.allXYlocations()) {
-    if (!poly.at(px, py)) continue
-    rectDraw.mask.set(coords.gridX + px, coords.gridY + py, 1)
-  }
-
-  if (rectDraw.redraw) {
-    rectDraw.redraw()
-  }
+  placePolyominoOnGrid(sourcePoly.poly, coords.gridX, coords.gridY)
 }
 
 /**
- * Wire polyomino grid controls
+ * Wire up all polyomino grid control event handlers.
+ * Attaches listeners to all polyomino grid control buttons and dropdowns.
+ * @function
+ * @returns {void}
  */
 function wirePolyominoGridControls () {
   if (!isBrowser()) return
@@ -643,7 +940,7 @@ function wirePolyominoGridControls () {
     addEventListenerIfExists(sizeDropdown, 'change', event => {
       const target = /** @type {HTMLSelectElement} */ (event.target)
       if (polyGrid) {
-        polyGrid.polyominoSize = parseInt(target.value)
+        polyGrid.polyominoSize = Number.parseInt(target.value, 10)
         polyGrid.availablePolyominoes = []
         polyGrid.currentPolyominoIndex = 0
         polyGrid.loadPolyominoes()
@@ -656,7 +953,7 @@ function wirePolyominoGridControls () {
   if (fillButton) {
     addEventListenerIfExists(fillButton, 'click', () => {
       initializePolyominoGridIfNeeded()
-      if (polyGrid) polyGrid.fillGrid()
+      polyGrid?.fillGrid()
     })
   }
 
@@ -664,7 +961,7 @@ function wirePolyominoGridControls () {
   if (prevButton) {
     addEventListenerIfExists(prevButton, 'click', () => {
       initializePolyominoGridIfNeeded()
-      if (polyGrid && polyGrid.prevPolyomino) polyGrid.prevPolyomino()
+      polyGrid?.prevPolyomino?.()
     })
   }
 
@@ -672,24 +969,57 @@ function wirePolyominoGridControls () {
   if (nextButton) {
     addEventListenerIfExists(nextButton, 'click', () => {
       initializePolyominoGridIfNeeded()
-      if (polyGrid && polyGrid.nextPolyomino) polyGrid.nextPolyomino()
+      polyGrid?.nextPolyomino?.()
     })
   }
 
   setupDragAndDrop()
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+if (globalThis?.document) {
   initializeRect()
 }
+
+/**
+ * Module interface with getter accessors for singleton instances.
+ * Prevents mutable exports while providing safe read-only access.
+ * @type {Object}
+ */
+const moduleInterface = {
+  /**
+   * Get the RectDraw rendering layer instance.
+   * Returns null if not yet initialized.
+   * @returns {RectDraw|null}
+   */
+  get rectDraw () {
+    return rectDraw
+  },
+
+  /**
+   * Get the RectCanvas UI wrapper instance.
+   * Returns null if not yet initialized.
+   * @returns {RectCanvas|null}
+   */
+  get rectCanvas () {
+    return rectCanvas
+  },
+
+  /**
+   * Get the PolyominoGridManager instance.
+   * Returns null if not yet initialized.
+   * @returns {PolyominoGridManager|null}
+   */
+  get polyGrid () {
+    return polyGrid
+  }
+}
+
+export default moduleInterface
 
 export {
   initializeRect,
   initializeGridIfNeeded,
   initializePolyominoGridIfNeeded,
-  rectDraw,
-  rectCanvas,
-  polyGrid,
   updateButtonStates,
   applyTransform,
   computePreviewCells,

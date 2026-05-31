@@ -1,22 +1,33 @@
+/**
+ * @fileoverview Triangular grid with interactive drawing and line tool support.
+ * Provides triangle rendering, cell manipulation, and line drawing tools (segment, ray, full line).
+ *
+ * @module tri
+ */
+
 import { TriDraw } from './ui/triangle/triDraw.js'
 import { TriCanvas } from './ui/triangle/TriCanvas.js'
 import { drawTri, triToPixel, pixelToTri } from './ui/triangle/triDrawHelper.js'
 
-// Create TriDraw instance with canvas ID, side length, and drawing parameters
-// use a larger grid size (side = 12)
+/**
+ * TriDraw instance for rendering triangular grids.
+ * @type {TriDraw}
+ */
 const triDraw = new TriDraw('c', 12, 300, 300, 25)
 
-// Create TriCanvas controller to manage UI
-let triCanvas = null
-
-// Initialize canvas controller when DOM is ready
-function initializeTriCanvas () {
-  if (triCanvas) return
-  if (typeof document === 'undefined') return
-
-  triCanvas = new TriCanvas('c', triDraw)
-  triCanvas.initializeAll()
-}
+/**
+ * TriCanvas controller instance for managing UI and interactions.
+ * Lazily initialized when DOM is available.
+ * @type {TriCanvas|null}
+ */
+const triCanvas = (() => {
+  if (globalThis.window && globalThis.document) {
+    const canvas = new TriCanvas('c', triDraw)
+    canvas.initializeAll()
+    return canvas
+  }
+  return null
+})()
 
 // Set example shape with triangular coords
 triDraw.setBitsFromCoords([
@@ -25,63 +36,40 @@ triDraw.setBitsFromCoords([
   [1, 1]
 ])
 
-// ============================================================================
-// CONCEPT: DELEGATION TO TRICANVAS
-// ============================================================================
-
 /**
- * Delegation functions for backward compatibility and testing
+ * Line action handler for dropdown selection (set, clear, toggle).
+ * @param {Event} e - The change/input event
+ * @returns {void}
  */
-function updateButtons () {
-  if (triCanvas) triCanvas.updateButtonStates()
-}
-
-function setMorphologyButtons ({ dilate, erode, cross }) {
-  if (!triCanvas) return
-  if (dilate) triCanvas.dilateBtn = dilate
-  if (erode) triCanvas.erodeBtn = erode
-  if (cross) triCanvas.crossBtn = cross
-}
-
-function computeMorphChanged (op) {
-  if (!triCanvas) return false
-  return triCanvas._canApplyMorphology(op)
-}
-
-function computeTriMorphState (op) {
-  if (!triCanvas) return false
-  return triCanvas.computeMorphChanged(op)
-}
-
-function applyTransform (mapIndex) {
-  if (triCanvas) triCanvas.applyTransform(mapIndex)
+function updateLineActionFromDropdown (e) {
+  const value = e.target?.value || e.currentTarget?.value
+  if (value === 'set' || value === 'clear' || value === 'toggle') {
+    currentAction = value
+  }
 }
 
 /**
- * Wire line action dropdown (set, clear, toggle)
+ * Wire line action dropdown (set, clear, toggle) to update currentAction.
+ * Handles both change and input events for compatibility.
+ * @returns {void}
  */
 function wireLineActionDropdown () {
-  if (typeof document === 'undefined') return
-  const dropdown = document.getElementById('tri-line-action')
+  if (!globalThis.document) return
+  const dropdown = globalThis.document.getElementById('tri-line-action')
   if (!dropdown) return
 
-  const updateAction = function (e) {
-    const value = e.target?.value || this.value
-    if (value === 'set' || value === 'clear' || value === 'toggle') {
-      currentAction = value
-    }
-  }
-
-  dropdown.addEventListener('change', updateAction)
-  dropdown.addEventListener('input', updateAction)
+  dropdown.addEventListener('change', updateLineActionFromDropdown)
+  dropdown.addEventListener('input', updateLineActionFromDropdown)
 }
 
 /**
- * Update the hover info label with coordinates, index, and neighbor count
+ * Update the hover info label with coordinates, index, and neighbor count.
+ * @param {MouseEvent} e - The mouse event with clientX/clientY properties
+ * @returns {void}
  */
 function updateTriHoverInfo (e) {
   if (!triDraw) return
-  const hoverLabel = document.getElementById('tri-hover-info')
+  const hoverLabel = globalThis.document?.getElementById('tri-hover-info')
   if (!hoverLabel) return
 
   const rect = triDraw.canvas.getBoundingClientRect()
@@ -108,47 +96,157 @@ function updateTriHoverInfo (e) {
 }
 
 // ============================================================================
-// CONCEPT: LINE TOOL HANDLING
+// CONCEPT: DELEGATION TO TRICANVAS FOR BACKWARD COMPATIBILITY
 // ============================================================================
 
-// Line/ray/full tool state variables
-let currentTool = null // 'segment' | 'ray' | 'full'
-let currentAction = 'set' // 'set' | 'clear' | 'toggle'
+/**
+ * Update button states by delegating to the canvas instance.
+ * No-op if canvas instance is not available.
+ * @returns {void}
+ */
+function updateButtons () {
+  triCanvas?.updateButtonStates()
+}
+
+/**
+ * Set morphology operation buttons (dilate, erode, cross) on the canvas instance.
+ * Only sets buttons that are provided in the configuration object.
+ * No-op if canvas instance is not available.
+ * @param {Object} options - Morphology button configuration
+ * @param {HTMLElement} [options.dilate] - The dilate button element
+ * @param {HTMLElement} [options.erode] - The erode button element
+ * @param {HTMLElement} [options.cross] - The cross morphology button element
+ * @returns {void}
+ */
+function setMorphologyButtons ({ dilate, erode, cross }) {
+  if (!triCanvas) return
+  if (dilate) triCanvas.dilateBtn = dilate
+  if (erode) triCanvas.erodeBtn = erode
+  if (cross) triCanvas.crossBtn = cross
+}
+
+/**
+ * Check if a morphology operation can be applied on the canvas.
+ * @param {string} op - The morphology operation to check
+ * @returns {boolean} True if the operation can be applied
+ */
+function computeMorphChanged (op) {
+  return triCanvas?._canApplyMorphology(op) ?? false
+}
+
+/**
+ * Compute morphology state for the given operation.
+ * @param {string} op - The morphology operation
+ * @returns {boolean} The computed morphology state
+ */
+function computeTriMorphState (op) {
+  return triCanvas?.computeMorphChanged(op) ?? false
+}
+
+/**
+ * Apply a transform to the grid.
+ * @param {number} mapIndex - The transform/map index to apply
+ * @returns {void}
+ */
+function applyTransform (mapIndex) {
+  triCanvas?.applyTransform(mapIndex)
+}
+
+/**
+ * Line/ray/full tool type.
+ * @type {'segment'|'ray'|'full'|null}
+ */
+let currentTool = null
+
+/**
+ * Current action to apply with line tools.
+ * @type {'set'|'clear'|'toggle'}
+ */
+let currentAction = 'set'
+
+/**
+ * Starting cell index for line drawing operations.
+ * @type {number|null}
+ */
 let lineStart = null
+
+/**
+ * Array of cell indices to preview in the current drawing operation.
+ * @type {number[]}
+ */
 triDraw.previewCells = []
 
 /**
- * Apply an action to a list of cell indices
+ * Get the current bit value at an index from the mask.
+ * Handles both BigInt and regular bit operations.
+ * @param {number} idx - The cell index
+ * @param {*} maskBits - The mask bits (could be BigInt or number)
+ * @returns {number} The current bit value (0 or 1)
+ */
+function getBitValue (idx, maskBits) {
+  if (typeof maskBits === 'bigint') {
+    return Number((maskBits >> BigInt(idx)) & 1n)
+  }
+  const mask = triDraw.mask
+  return mask.atIndex ? mask.atIndex(idx) : (maskBits >> idx) & 1
+}
+
+/**
+ * Compute the new bit value for a toggle action.
+ * @param {number} currentVal - The current bit value (0 or 1)
+ * @returns {number} The new bit value after toggle (1 or 0)
+ */
+function getToggledValue (currentVal) {
+  return currentVal ? 0 : 1
+}
+
+/**
+ * Apply a single action to cell indices.
+ * Applies 'set' (enable), 'clear' (disable), or 'toggle' operation to each cell.
+ * @param {string} action - The action to apply: 'set', 'clear', or 'toggle'
+ * @param {number[]} indices - Array of cell indices to modify
+ * @returns {void}
+ */
+function applySingleAction (action, indices) {
+  const mask = triDraw.mask
+  const { bits } = mask
+
+  for (const i of indices) {
+    let newValue
+    if (action === 'set') {
+      newValue = 1
+    } else if (action === 'clear') {
+      newValue = 0
+    } else if (action === 'toggle') {
+      const currentVal = getBitValue(i, bits)
+      newValue = getToggledValue(currentVal)
+    } else {
+      continue
+    }
+    mask.bits = mask.setIndex(i, newValue)
+  }
+}
+
+/**
+ * Apply an action to a list of cell indices.
+ * Sets/clears/toggles cells and refreshes the display.
  * @param {string} action - 'set', 'clear', or 'toggle'
  * @param {number[]} indices - Array of cell indices
+ * @returns {void}
  */
 function applyActionToIndices (action, indices) {
-  const mask = triDraw.mask
-  for (const i of indices) {
-    if (action === 'set') {
-      mask.bits = mask.setIndex(i, 1)
-    } else if (action === 'clear') {
-      mask.bits = mask.setIndex(i, 0)
-    } else if (action === 'toggle') {
-      let val
-      if (typeof mask.bits === 'bigint') {
-        val = Number((mask.bits >> BigInt(i)) & 1n)
-      } else {
-        val = mask.atIndex ? mask.atIndex(i) : (mask.bits >> i) & 1
-      }
-      mask.bits = mask.setIndex(i, val ? 0 : 1)
-    }
+  applySingleAction(action, indices)
+  triDraw.setBits(triDraw.mask.bits)
+  if (typeof triDraw.redraw === 'function') {
+    triDraw.redraw()
   }
-  triDraw.setBits(mask.bits)
-  if (typeof triDraw.redraw === 'function') triDraw.redraw()
   updateButtons()
 }
 
 // Override toggleCell to respect action dropdown and avoid tool conflicts
-const origToggleTri = triDraw.toggleCell.bind(triDraw)
 triDraw.toggleCell = function (idx) {
   // when a line tool is active, don't toggle cells directly
-  if ((triCanvas && triCanvas.currentTool) || currentTool) return
+  if (triCanvas?.currentTool || currentTool) return
 
   // Apply currentAction to single cell
   applyActionToIndices(currentAction, [idx])
@@ -181,7 +279,11 @@ triDraw.toggleCell = function (idx) {
 }
 
 /**
- * Compute line preview cells based on current tool type and endpoints
+ * Compute line preview cells based on current tool type and endpoints.
+ * Returns indices for segment, ray, or full line depending on currentTool.
+ * @param {number} startIdx - Starting cell index
+ * @param {number} endIdx - Ending cell index
+ * @returns {number[]} Array of cell indices forming the line
  */
 function computePreviewIndices (startIdx, endIdx) {
   if (startIdx == null || endIdx == null) return []
@@ -217,7 +319,10 @@ function computePreviewIndices (startIdx, endIdx) {
 }
 
 /**
- * Draw a line of cells from start to end index, applying the current action
+ * Draw a line of cells from start to end index, applying the current action.
+ * @param {number} startIdx - Starting cell index
+ * @param {number} endIdx - Ending cell index
+ * @returns {void}
  */
 function drawLineBetween (startIdx, endIdx) {
   const inds = computePreviewIndices(startIdx, endIdx)
@@ -225,9 +330,9 @@ function drawLineBetween (startIdx, endIdx) {
 }
 
 /**
- * Get the cell index from a mouse event, or null if invalid
+ * Get the cell index from a mouse event, or null if invalid.
  * @param {MouseEvent} e - The mouse event
- * @returns {number|null} - The cell index or null
+ * @returns {number|null} The cell index or null if out of bounds
  */
 function getHitIndexFromEvent (e) {
   const rect = triDraw.canvas.getBoundingClientRect()
@@ -242,15 +347,17 @@ function getHitIndexFromEvent (e) {
   return triDraw.indexer.index(r, c)
 }
 
-// Initialize on module load if DOM is available
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  initializeTriCanvas()
-}
-
-// Fallback canvas listeners when TriCanvas is not available
-if (!triCanvas && !triDraw.canvas.__lineToolsListenersAttached) {
+// Initialize canvas and attach event listeners
+if (triCanvas) {
+  wireLineActionDropdown()
+} else if (!triDraw.canvas.__lineToolsListenersAttached) {
   triDraw.canvas.__lineToolsListenersAttached = true
 
+  /**
+   * Handle canvas mouse move for line preview and hover info.
+   * Updates hover label and preview cells when line tool is active.
+   * @param {MouseEvent} e - The mouse move event
+   */
   const onCanvasMouseMove = e => {
     // Update hover info label
     updateTriHoverInfo(e)
@@ -262,6 +369,11 @@ if (!triCanvas && !triDraw.canvas.__lineToolsListenersAttached) {
     triDraw.redraw()
   }
 
+  /**
+   * Handle canvas click for line drawing.
+   * Two-click workflow: first click sets start point, second click draws line.
+   * @param {MouseEvent} e - The mouse click event
+   */
   const onCanvasClick = e => {
     if (!currentTool) return
     const hit = getHitIndexFromEvent(e)
@@ -285,7 +397,20 @@ if (!triCanvas && !triDraw.canvas.__lineToolsListenersAttached) {
   triDraw.canvas.addEventListener('click', onCanvasClick)
 }
 
-// exports for testing
+/**
+ * Exports for testing and external control.
+ *
+ * @export
+ * @type {Object}
+ * @property {TriDraw} triDraw - The triangular grid drawing utility
+ * @property {TriCanvas|null} triCanvas - The canvas controller instance (null if DOM not available)
+ * @property {Function} updateButtons - Update button states
+ * @property {Function} applyTransform - Apply a transform to the grid
+ * @property {Function} computeMorphChanged - Check if morphology can be applied
+ * @property {Function} computeTriMorphState - Compute morphology state
+ * @property {Function} setMorphologyButtons - Configure morphology buttons
+ * @property {Function} wireLineActionDropdown - Wire line action dropdown control
+ */
 export {
   triDraw,
   triCanvas,
@@ -293,5 +418,6 @@ export {
   applyTransform,
   computeMorphChanged,
   computeTriMorphState,
-  setMorphologyButtons
+  setMorphologyButtons,
+  wireLineActionDropdown
 }

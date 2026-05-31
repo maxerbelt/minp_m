@@ -2,9 +2,8 @@
  * Test: Weapon tally display for custom maps in space/asteroids terrain
  * Reproduces the issue: weapon tally boxes not showing for custom maps in hide-and-seek mode
  */
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach } from '@jest/globals'
 import { CustomBlankMap, SavedCustomMap } from '../terrains/all/js/map.js'
-import { Waters } from './Waters.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { terrains } from '../terrains/all/js/terrains.js'
 import { spaceAndAsteroidsMaps } from '../terrains/space/js/spaceAndAsteroidsMaps.js'
@@ -86,7 +85,7 @@ describe('Weapon Tally for Custom Maps in Space/Asteroids', () => {
       const savedMap = new SavedCustomMap(mapData)
       expect(savedMap.isPreGenerated).toBe(false)
 
-      const limitedWeapons = savedMap.weapons.filter(w => w && w.isLimited)
+      const limitedWeapons = savedMap.weapons.filter(w => w?.isLimited)
       console.log(
         `SavedCustomMap limited weapons: ${limitedWeapons
           .map(w => w.letter)

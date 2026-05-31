@@ -194,11 +194,16 @@ describe('rectcolor.js transform and line helpers', () => {
     // spy on set so we can assert calls
     packed.set = jest.fn(packed.set.bind(packed))
     // provide actions used by update/apply functions
+    const applyMapFn = map => {
+      if (map === 'A') return 'A'
+      if (map === 'B') return 'B'
+      return map
+    }
     Object.defineProperty(packed, 'actions', {
       value: {
         transformMaps: { r90: 'A', r270: 'B', fx: 'C', fy: 'D' },
         template: 'T',
-        applyMap: map => (map === 'A' ? 'A' : map === 'B' ? 'B' : map)
+        applyMap: applyMapFn
       },
       configurable: true
     })
@@ -383,11 +388,16 @@ describe('rectcolor dilation diagnostics', () => {
     const packed = new Packed(10, 10)
     packed.set(1, 1, 1)
     packed.set = jest.fn(packed.set.bind(packed))
+    const applyMapFn = map => {
+      if (map === 'A') return 'A'
+      if (map === 'B') return 'B'
+      return map
+    }
     Object.defineProperty(packed, 'actions', {
       value: {
         transformMaps: { r90: 'A', r270: 'B', fx: 'C', fy: 'D' },
         template: 'T',
-        applyMap: map => (map === 'A' ? 'A' : map === 'B' ? 'B' : map)
+        applyMap: applyMapFn
       },
       configurable: true
     })
@@ -454,14 +464,17 @@ describe('rectcolor dilation diagnostics', () => {
     expect(packed.occupancy).toBe(1)
     const all = packed.store.all
     const occ = packed.singleBitMask // Get a mask with bits set where packed has non-zero cells
-    for (const [x, y] of all.occupiedLocations()) {
+    // Use all.bitsToCoords instead of deprecated all.occupiedLocations
+    const coords = Array.from(all.bitsToCoords(all.bits))
+    for (const [x, y] of coords) {
       if (packed.at(x, y) !== 0) {
         occ.set(x, y, 1)
       }
     }
     expect(occ.occupancy).toBe(1)
     console.log('[diag] Manual occupancy before dilate:')
-    for (const [x, y] of all.occupiedLocations()) {
+    const occCoords = Array.from(all.bitsToCoords(occ.bits))
+    for (const [x, y] of occCoords) {
       if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
 
@@ -470,7 +483,8 @@ describe('rectcolor dilation diagnostics', () => {
     occ.dilateCross()
     expect(occ.occupancy).toBe(5)
     console.log('[diag] Manual occupancy after dilate:')
-    for (const [x, y] of all.occupiedLocations()) {
+    const occCoords2 = Array.from(all.bitsToCoords(occ.bits))
+    for (const [x, y] of occCoords2) {
       if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
 
@@ -670,9 +684,6 @@ describe('rectcolor dilation diagnostics', () => {
 
     drawLineBetween2([1, 1], [2, 1])
 
-    // Count first call
-    const firstCallColor = grid.packed.set.mock.calls[0][2]
-
     // Change to color 1
     grid.packed.set.mockClear()
     lineColorDropdown.value = '1'
@@ -750,7 +761,7 @@ describe('rectcolor dilation diagnostics', () => {
           expect(grid.packed.set).toHaveBeenCalledWith(
             expect.any(Number),
             expect.any(Number),
-            parseInt(color)
+            Number.parseInt(color, 10)
           )
         }
       }

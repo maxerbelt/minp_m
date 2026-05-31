@@ -635,8 +635,6 @@ describe('tri.js line tool handling', () => {
   })
 
   it('toggleCell respects line tool state', async () => {
-    const triModule = await import('./tri.js')
-
     // When segment tool is active, toggleCell should not apply directly
     const radioButtons = document.querySelectorAll(
       'input[name="tri-line-tool"]'

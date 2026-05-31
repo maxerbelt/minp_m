@@ -3,7 +3,6 @@ import { FriendUI } from './friendUI.js'
 describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
   let friendUI
   let mockShips
-  let mockCells
 
   beforeEach(() => {
     friendUI = new FriendUI()
@@ -15,7 +14,6 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
     friendUI.board = boardDiv
 
     // Create mock cells
-    mockCells = []
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 4; c++) {
         const cell = document.createElement('div')
@@ -23,7 +21,6 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
         cell.dataset.r = r
         cell.dataset.c = c
         boardDiv.appendChild(cell)
-        mockCells.push(cell)
       }
     }
 
