@@ -312,15 +312,21 @@ export class Friend extends Placement {
   updateWeaponStatus (_rack, _cursorInfo) {
     // @ts-ignore - loadOut.currentWeaponSystem is defined in base Placement class at runtime
     const weaponSystem = this.loadOut.currentWeaponSystem
-    gameStatus.updateWeaponStatus(
-      // @ts-ignore - weaponSystem.weapon may be WeaponsSystem variant at runtime, has name/icon properties
-      weaponSystem,
-      bh.maps,
-      // @ts-ignore - loadOut.selectedCoordinates is Array available in base Placement class at runtime
-      this.loadOut.selectedCoordinates.length,
+    const weapon = weaponSystem?.weapon
 
-      this._hasUnattachedForCurrentWeapon?.()
-    )
+    if (weapon) {
+      // Always set the weapon mode and reset icons to ensure UI updates on weapon change
+      gameStatus._setWeaponMode(weapon)
+      gameStatus._resetAmmoIcons()
+      // @ts-ignore - loadOut.selectedCoordinates is Array available in base Placement class at runtime
+      gameStatus.displayAmmoStatus(
+        weaponSystem,
+        bh.maps,
+        this.loadOut.selectedCoordinates.length,
+        null,
+        this._hasUnattachedForCurrentWeapon?.()
+      )
+    }
   }
 
   /**

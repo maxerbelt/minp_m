@@ -464,8 +464,8 @@ describe('rectcolor dilation diagnostics', () => {
     expect(packed.occupancy).toBe(1)
     const all = packed.store.all
     const occ = packed.singleBitMask // Get a mask with bits set where packed has non-zero cells
-    // Use all.bitsToCoords instead of deprecated all.occupiedLocations
-    const coords = Array.from(all.bitsToCoords(all.bits))
+    // Use all.locations instead of deprecated all.occupiedLocations
+    const coords = Array.from(all.locations(all.bits))
     for (const [x, y] of coords) {
       if (packed.at(x, y) !== 0) {
         occ.set(x, y, 1)
@@ -473,7 +473,7 @@ describe('rectcolor dilation diagnostics', () => {
     }
     expect(occ.occupancy).toBe(1)
     console.log('[diag] Manual occupancy before dilate:')
-    const occCoords = Array.from(all.bitsToCoords(occ.bits))
+    const occCoords = Array.from(all.locations(occ.bits))
     for (const [x, y] of occCoords) {
       if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }
@@ -483,7 +483,7 @@ describe('rectcolor dilation diagnostics', () => {
     occ.dilateCross()
     expect(occ.occupancy).toBe(5)
     console.log('[diag] Manual occupancy after dilate:')
-    const occCoords2 = Array.from(all.bitsToCoords(occ.bits))
+    const occCoords2 = Array.from(occ.indexer.bitsToCoords(occ.bits))
     for (const [x, y] of occCoords2) {
       if (occ.at(x, y) === 1) console.log(`  occ(${x},${y})=1`)
     }

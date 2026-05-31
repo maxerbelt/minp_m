@@ -1017,6 +1017,8 @@ const moduleInterface = {
 export default moduleInterface
 
 export {
+  rectDraw,
+  polyGrid,
   initializeRect,
   initializeGridIfNeeded,
   initializePolyominoGridIfNeeded,

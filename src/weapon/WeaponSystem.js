@@ -557,7 +557,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * @param {Ship} ship - Ship instance with weapon systems
    */
   constructor (ship) {
-    super(ship.getPrimaryWeapon(), -1)
+    super(ship.primaryWeapon, -1)
     this.ships = [ship]
   }
 
