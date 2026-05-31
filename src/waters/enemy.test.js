@@ -1507,7 +1507,7 @@ describe('Enemy.updateWeaponStatus', () => {
         gridCellAt: jest.fn()
       })
 
-      enemy.canTakeTurn = true
+      ///   enemy.canTakeTurn = true
       enemy.opponent = null
       enemy.hasAttachedWeapons = true
       enemy.loadOut = /** @type {any} */ ({
