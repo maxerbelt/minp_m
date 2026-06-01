@@ -99,11 +99,6 @@ globalThis.addEventListener('keydown', e => {
   redraw()
 })
 
-function drawOrigin (ctx, hex, S) {
-  const { x, y } = hexToPixel(0, 0, S)
-  drawHex(ctx, x + offsetX, y + offsetY, S, 'rgba(0,0,255,0.2)')
-}
-
 function cubeRound (q, r, s) {
   let rq = Math.round(q)
   let rr = Math.round(r)
@@ -136,7 +131,7 @@ function isPlacementLegal (bb) {
 }
 
 function computeGhost (px, py) {
-  const [q, r, s] = pixelToSnappedHex(px - offsetX, py - offsetY, S)
+  const [q, r] = pixelToSnappedHex(px - offsetX, py - offsetY, S)
 
   const dq = q - interaction.dragStartHex.q
   const dr = r - interaction.dragStartHex.r

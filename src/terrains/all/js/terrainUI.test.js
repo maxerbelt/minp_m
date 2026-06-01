@@ -59,7 +59,6 @@ describe('terrainUI', () => {
         return new OrigURL(input)
       }
     } catch (e) {
-       
       console.debug('URL mock failed:', e)
       origURL = undefined
     }
@@ -80,7 +79,6 @@ describe('terrainUI', () => {
         return new OrigURLSearchParams(input)
       }
     } catch (e) {
-       
       console.debug('URLSearchParams mock failed:', e)
       origURLSearchParams = undefined
     }
@@ -89,7 +87,6 @@ describe('terrainUI', () => {
   afterEach(() => {
     // avoid reassigning global location object (can trigger navigation)
     if (origURL) globalThis.URL = origURL
-   
     jest.clearAllMocks()
   })
 

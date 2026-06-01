@@ -17,7 +17,6 @@ const OP_SUB3 = 9
 const OP_SUBMANY = 10
 
 const one = 1 >>> 0
-const zero = 0 >>> 0
 function toStoreType (value) {
   return value >>> 0
 }
