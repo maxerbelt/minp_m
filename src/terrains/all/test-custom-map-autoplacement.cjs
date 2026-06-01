@@ -31,7 +31,7 @@ import('../../ships/Shape.js')
       }
     })()
 
-    global.localStorage = localStorage
+    globalThis.localStorage = localStorage
 
     // Import after mocking
     const { bh } = await import('./bh.js')
