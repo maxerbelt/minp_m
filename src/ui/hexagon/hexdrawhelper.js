@@ -32,7 +32,7 @@ export function drawPolyhex (
  * @param {number} offsetY - Y offset.
  */
 export function drawHexGrid (ctx, hex, S, offsetX, offsetY) {
-  for (const [q, r, s] of hex.coords) {
+  for (const [q, r] of hex.coords) {
     const { x, y } = hexToPixel(q, r, S)
     drawHex(ctx, x + offsetX, y + offsetY, S, 'transparent', '#ccc')
   }

@@ -89,8 +89,7 @@ describe('terrainUI', () => {
   afterEach(() => {
     // avoid reassigning global location object (can trigger navigation)
     if (origURL) globalThis.URL = origURL
-    if (typeof origURLSearchParams !== 'undefined')
-      globalThis.URLSearchParams = origURLSearchParams
+   
     jest.clearAllMocks()
   })
 

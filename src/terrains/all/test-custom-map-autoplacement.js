@@ -6,11 +6,6 @@
  */
 
 // Setup module resolution
-const path = require('path')
-process.env.NODE_OPTIONS = '--experimental-vm-modules'
-
-const { fileURLToPath } = require('url')
-const moduleUrl = `file://${__filename}`
 
 // Import test utilities
 import('../../ships/Shape.js')
@@ -34,7 +29,7 @@ import('../../ships/Shape.js')
       }
     })()
 
-    global.localStorage = localStorage
+    globalThis.localStorage = localStorage
 
     // Import after mocking
     const { bh } = await import('./bh.js')

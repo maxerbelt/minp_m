@@ -134,12 +134,7 @@ export class TriCanvas extends GridCanvas {
    * @private
    */
   _overrideGridHoverPreview () {
-    if (
-      !this.grid ||
-      !this.grid._drawHover ||
-      this.grid._drawHover._isOverridden
-    )
-      return
+    if (!this.grid?._drawHover || this.grid._drawHover._isOverridden) return
 
     const originalDrawHover = this.grid._drawHover.bind(this.grid)
     this.grid._drawHover = function () {
@@ -543,6 +538,7 @@ export class TriCanvas extends GridCanvas {
         symEl.textContent = `Symmetry: ${sym}`
       } catch (e) {
         symEl.textContent = 'Symmetry: n/a'
+        console.warn('Error updating symmetry display:', e)
       }
     }
 
@@ -558,6 +554,7 @@ export class TriCanvas extends GridCanvas {
         } — Maps: ${mapKeys}`
       } catch (e) {
         detailsEl.textContent = ''
+        console.warn('Error updating symmetry details:', e)
       }
     }
   }

@@ -943,7 +943,6 @@ class Enemy extends Waters {
    * @returns {boolean} True if game is not over, ammo available, opponent alive, and no pending timeout; false otherwise
    */
   get canTakeTurn () {
-    const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
     if (this.isGameOver || this.hasNoAmmo) {
       return false
     }

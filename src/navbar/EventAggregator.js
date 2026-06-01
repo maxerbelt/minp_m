@@ -595,7 +595,7 @@ export class NavbarEventAggregator extends EventAggregator {
  *
  * @example
  * const events = createNavbarEventAggregator();
- * events.onTerrainChanged((terrain) => { /* ... */ });
+ * events.onTerrainChanged((terrain) => { * ... * });
  */
 export function createNavbarEventAggregator () {
   return new NavbarEventAggregator()
