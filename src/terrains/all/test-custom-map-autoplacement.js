@@ -33,9 +33,7 @@ import('../../ships/Shape.js')
 
     // Import after mocking
     const { bh } = await import('./bh.js')
-    const { CustomBlankMap, SavedCustomMap, EditedCustomMap } = await import(
-      './map.js'
-    )
+    const { CustomBlankMap, SavedCustomMap } = await import('./map.js')
     const { spaceAndAsteroidsMaps } = await import(
       '../space/js/spaceAndAsteroidsMaps.js'
     )

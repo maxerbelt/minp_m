@@ -429,7 +429,7 @@ export class MaskHex extends MaskBase {
    * @returns {MaskHex} This instance for chaining
    */
   dilateCross (radius = 1) {
-    return this.dilate(1)
+    return this.dilate(radius)
   }
 
   /**

@@ -18,12 +18,6 @@ function triangularIndex (row, col) {
  * @param {number} index - Linear cell index
  * @returns {Array<number>} [row, col]
  */
-function indexToRowCol (index) {
-  const row = Math.floor(Math.sqrt(index))
-  const col = index - row * row
-  return [row, col]
-}
-
 /**
  * Create geometric transformation function: rotation around center.
  * @private
