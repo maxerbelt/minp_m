@@ -109,7 +109,7 @@ export class MaskHex extends MaskBase {
    * @private
    */
   for (q, r, s) {
-    if (s === undefined) {
+    if (s == null) {
       s = -(q + r)
     }
     const pos = this.bitPos(q, r, s)
@@ -166,7 +166,7 @@ export class MaskHex extends MaskBase {
    * @returns {*} Updated bits value
    */
   set (q, r, s, color = 1) {
-    if (s === undefined) {
+    if (s == null) {
       s = -(q + r)
     }
     const loc = this.for(q, r, s)
