@@ -588,16 +588,18 @@ describe('Friend', () => {
       expect(friend.resetShipCells).toHaveBeenCalled()
     })
 
-    it('calls UI.makeDroppable to enable drag operations', () => {
+    it('calls UI.grid.makeDroppable to enable drag operations', () => {
       friend.buildBoard()
-      expect(friend.UI.makeDroppable).toHaveBeenCalledWith(friend)
+      expect(friend.UI.grid.makeDroppable).toHaveBeenCalledWith(friend)
     })
 
     it('calls all setup methods in correct sequence', () => {
       const callOrder = []
       friend.UI.buildBoard = jest.fn(() => callOrder.push('buildBoard'))
       friend.resetShipCells = jest.fn(() => callOrder.push('resetShipCells'))
-      friend.UI.makeDroppable = jest.fn(() => callOrder.push('makeDroppable'))
+      friend.UI.grid.makeDroppable = jest.fn(() =>
+        callOrder.push('makeDroppable')
+      )
       friend.UI.grid.markFleetWeapons = jest.fn(() =>
         callOrder.push('markFleetWeapons')
       )
