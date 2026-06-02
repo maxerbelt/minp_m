@@ -3,7 +3,7 @@ import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 import { CellClassManager } from './helpers/CellClassManager.js'
-import { CellUI } from './cellUI.js'
+
 /**
  * @callback CellCallback
  * @param {HTMLElement} cell - The grid cell element

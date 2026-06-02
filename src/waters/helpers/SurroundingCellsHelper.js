@@ -7,9 +7,10 @@ import { makeKey } from '../../core/utilities.js'
  * Maps must implement boundary validation to ensure operations stay within valid grid bounds.
  *
  * @typedef {Object} GridMap
- * @property {Function} inBounds - Function signature: (row: number, col: number) => boolean
- *                                 Returns true if the given row and column are within grid bounds.
- *                                 Used to validate neighboring cells before iteration.
+ * @property {(row: number, col: number) => boolean} inBounds - Boundary check function.
+ *                                                              Signature: (row: number, col: number) => boolean
+ *                                                              Returns true if the given row and column are within grid bounds.
+ *                                                              Used to validate neighboring cells before iteration.
  */
 
 /**
@@ -59,20 +60,20 @@ export class SurroundingCellsHelper {
   }
 
   /**
-   * Iterates over all in-bounds cells in the 3×3 neighborhood around (r, c).
+   * Iterates over all in-bounds cells in the 3×3 neighborhood around (row, col).
    *
    * Processes all neighboring cells within the 8-connected neighborhood,
    * including the center cell itself. Skips any cells outside grid bounds.
    * Iteration order: row-major from top-left to bottom-right.
    *
    * @static
+   * @private
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
    *                        Used to validate cells before invoking callback.
-   * @param {number} y - Center row coordinate. Must be >= 0.
-   * @param {number} x - Center column coordinate. Must be >= 0.
-   * @param {Function} callback - Function(row: number, col: number) => void
-   *                             Invoked for each in-bounds neighboring cell.
-   *                             Parameters: row and col coordinates of cell.
+   * @param {number} x - Center column coordinate (0-based). Must be >= 0.
+   * @param {number} y - Center row coordinate (0-based). Must be >= 0.
+   * @param {(row: number, col: number) => void} callback - Iterator function invoked for each in-bounds neighboring cell.
+   *                                                        Parameters: row and col coordinates of cell.
    * @returns {void} This method performs side effects (iteration) only.
    *
    * @example
@@ -106,21 +107,22 @@ export class SurroundingCellsHelper {
    * Generic reducer for surrounding cells. Collects neighbor coordinates
    * into a target collection using a provided reducer function.
    *
-   * Internal helper that implements the core accumulation pattern used by
-   * all public collection methods. Encapsulates boundary checking and iteration.
-   * Private helper method: not part of public API.
+   * Internal helper that implements the core accumulation pattern used by all public collection methods.
+   * Encapsulates boundary checking and iteration logic, supporting flexible collection types.
+   * Not part of public API.
    *
    * @static
+   * @private
+   * @template T
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
-   * @param {number} r - Center row coordinate.
-   * @param {number} c - Center column coordinate.
-   * @param {Object|Array|Set} initialCollection - Starting collection to populate.
-   *                                               Can be any mutable collection type.
-   *                                               Passed by reference and mutated by reducer.
-   * @param {Function} reducer - Accumulation function: (collection, row: number, col: number) => void
-   *                            Receives collection and cell coordinates.
-   *                            Must mutate collection (no return value expected).
-   * @returns {Object|Array|Set} The populated collection (same reference as initialCollection).
+   * @param {number} x - Center column coordinate (0-based).
+   * @param {number} y - Center row coordinate (0-based).
+   * @param {T} initialCollection - Starting collection to populate (Object, Array, Set, or custom type).
+   *                                 Passed by reference and mutated by reducer.
+   * @param {(collection: T, row: number, col: number) => void} reducer - Accumulation function.
+   *                                                                     Receives collection and cell coordinates.
+   *                                                                     Must mutate collection (no return value expected).
+   * @returns {T} The populated collection (same reference as initialCollection).
    *
    * @see {@link asKeySet}
    * @see {@link asObjectMap}
@@ -136,18 +138,20 @@ export class SurroundingCellsHelper {
   /**
    * Returns a Set of key strings for all surrounding cells.
    *
-   * Collects neighboring cell coordinates as string keys for use in Set operations.
-   * Keys are generated by makeKey(row, col) function.
+   * Collects neighboring cell coordinates as string keys for use in Set operations and lookups.
+   * Keys are generated by calling makeKey(row, col) for each cell.
    * Useful for O(1) membership checks and deduplication.
+   * Cells are included in row-major iteration order starting from top-left.
    *
    * @static
    * @public
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
-   * @param {number} r - Center row coordinate.
-   * @param {number} c - Center column coordinate.
-   * @returns {Set<string>} Set of string keys for all neighboring cells.
-   *                       Each key generated via makeKey(row, col).
-   *                       Excludes out-of-bounds cells.
+   * @param {number} x - Center column coordinate (0-based).
+   * @param {number} y - Center row coordinate (0-based).
+   * @returns {Set<string>} Set of string keys for all in-bounds neighboring cells.
+   *                        Each key generated via makeKey(row, col).
+   *                        Excludes out-of-bounds cells.
+   *                        Size ranges from 4 (corner) to 9 (interior).
    *
    * @example
    * // Check if a specific neighbor exists
@@ -178,19 +182,22 @@ export class SurroundingCellsHelper {
    * Creates a key-value object where keys are cell coordinates (via makeKey)
    * and values are generated by invoking maker(row, col) for each neighboring cell.
    * Useful for associating metadata or computed values with each neighbor.
+   * Values can be any type returned by the maker function.
    *
    * @static
    * @public
+   * @template T
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
-   * @param {number} y - Center row coordinate.
-   * @param {number} x - Center column coordinate.
-   * @param {Function} maker - Mapping function: (row: number, col: number) => any
-   *                          Called for each in-bounds neighboring cell.
-   *                          Return value becomes the value for that cell's key.
-   * @returns {Object<string, any>} Object map where:
-   *                                - Keys: string identifiers (via makeKey(row, col))
-   *                                - Values: results from maker(row, col)
-   *                                - Excludes out-of-bounds cells
+   * @param {number} x - Center column coordinate (0-based).
+   * @param {number} y - Center row coordinate (0-based).
+   * @param {(row: number, col: number) => T} maker - Mapping function for generating values.
+   *                                                  Called for each in-bounds neighboring cell.
+   *                                                  Return value becomes the value for that cell's key.
+   * @returns {Object<string, T>} Object map where:
+   *                             - Keys: string identifiers (via makeKey(row, col))
+   *                             - Values: results from maker(row, col)
+   *                             - Excludes out-of-bounds cells
+   *                             - Size ranges from 4 (corner) to 9 (interior)
    *
    * @example
    * // Create coordinate object for each neighbor
@@ -219,20 +226,23 @@ export class SurroundingCellsHelper {
    *
    * Creates an ordered array where each element is the result of calling
    * maker(row, col) for each neighboring cell. Order follows row-major
-   * iteration (top-left to bottom-right).
-   * Useful for collecting computed values from all neighbors.
+   * iteration from top-left to bottom-right within the 3×3 neighborhood.
+   * Useful for collecting computed values from all neighbors in a consistent order.
+   * Out-of-bounds cells are excluded from the result.
    *
    * @static
    * @public
+   * @template T
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
-   * @param {number} y - Center row coordinate.
-   * @param {number} x - Center column coordinate.
-   * @param {Function} maker - Mapping function: (row: number, col: number) => any
-   *                          Called for each in-bounds neighboring cell.
-   *                          Return value is pushed to result array.
-   * @returns {Array<any>} Array of maker results, one per neighboring cell.
-   *                      Order: row-major from (r-1,c-1) to (r+1,c+1).
-   *                      Excludes out-of-bounds cells.
+   * @param {number} x - Center column coordinate (0-based).
+   * @param {number} y - Center row coordinate (0-based).
+   * @param {(row: number, col: number) => T} maker - Mapping function for generating values.
+   *                                                  Called for each in-bounds neighboring cell.
+   *                                                  Return value is pushed to result array.
+   * @returns {Array<T>} Array of maker results, one per neighboring cell.
+   *                     Order: row-major from (y-1,x-1) to (y+1,x+1).
+   *                     Excludes out-of-bounds cells.
+   *                     Length ranges from 4 (corner) to 9 (interior).
    *
    * @example
    * // Collect actual cell objects from map

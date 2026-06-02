@@ -1,6 +1,18 @@
 /**
  * @fileoverview MapList test suite - Unit tests for MapList class and related utilities
  * Tests map listing, renaming, deletion, duplication, and export operations
+ * @module maplist.test
+ * @requires @jest/globals
+ * @requires src/maplist.js
+ * @requires src/ui/ButtonManager.js
+ * @requires src/waters/WatersUI.js
+ * @requires src/waters/Waters.js
+ * @requires src/waters/ScoreUI.js
+ * @requires src/terrains/all/js/bh.js
+ * @requires src/navbar/setupOptions.js
+ * @requires src/navbar/setupTabs.js
+ * @requires src/navbar/navbar.js
+ * @requires src/navbar/gtag.js
  */
 
 import {
@@ -14,29 +26,51 @@ import {
 
 /**
  * Mock ButtonManager module with basic implementation
+ * @type {jest.Mock}
+ * @description Creates a mock ButtonManager class that tracks button registration and wiring
  */
 jest.unstable_mockModule('../src/ui/ButtonManager.js', () => ({
   ButtonManager: jest.fn().mockImplementation(() => ({
+    /** @type {jest.Mock} Mock registerButtons method */
     registerButtons: jest.fn(),
+    /** @type {jest.Mock} Mock wireUp method */
     wireUp: jest.fn()
   }))
 }))
 
 /**
  * Mock WatersUI module with board manipulation methods
+ * @type {jest.Mock}
+ * @description Creates a mock WatersUI class for testing board and UI operations
  */
 jest.unstable_mockModule('../src/waters/WatersUI.js', () => ({
-  /** @class Mock WatersUI class for testing */
+  /** @class Mock WatersUI class for testing board operations and UI updates */
   WatersUI: class {
+    /**
+     * Mock resetBoardSize method
+     * @returns {void}
+     */
     resetBoardSize () {
       // Mock implementation
     }
+    /**
+     * Mock buildBoard method
+     * @returns {void}
+     */
     buildBoard () {
       // Mock implementation
     }
+    /**
+     * Mock showMapTitle method
+     * @returns {void}
+     */
     showMapTitle () {
       // Mock implementation
     }
+    /**
+     * Mock cellSizeStringList method
+     * @returns {Array<string>} Empty array of cell size strings
+     */
     cellSizeStringList () {
       return []
     }
@@ -45,16 +79,33 @@ jest.unstable_mockModule('../src/waters/WatersUI.js', () => ({
 
 /**
  * Mock Waters module with map and ship management
+ * @type {jest.Mock}
+ * @description Creates a mock Waters class for testing map and fleet operations
  */
 jest.unstable_mockModule('../src/waters/Waters.js', () => ({
-  /** @class Mock Waters class for testing */
+  /** @class Mock Waters class for testing map operations and ship management */
   Waters: class {
-    setMap () {
+    /**
+     * Mock setMap method
+     * @param {Object} map - The map to set (unused in mock)
+     * @returns {void}
+     */
+    setMap (_map) {
       // Mock implementation
     }
+    /**
+     * Mock ships getter property
+     * @type {Array<Object>}
+     * @returns {Array<Object>} Empty array of ships
+     */
     get ships () {
       return []
     }
+    /**
+     * Mock loadOut getter property
+     * @type {Object<string, Array>}
+     * @returns {Object<string, Array>} Loadout object with empty weaponSystems
+     */
     get loadOut () {
       return { weaponSystems: [] }
     }
@@ -63,13 +114,16 @@ jest.unstable_mockModule('../src/waters/Waters.js', () => ({
 
 /**
  * Mock ScoreUI module for tally and score management
+ * @type {jest.Mock}
+ * @description Creates a mock ScoreUI class for testing score display operations
  */
 jest.unstable_mockModule('../src/waters/ScoreUI.js', () => ({
-  /** @class Mock ScoreUI class for testing */
+  /** @class Mock ScoreUI class for testing score and tally operations */
   ScoreUI: class {
-    constructor () {
-      // Mock implementation
-    }
+    /**
+     * Mock buildTally method
+     * @returns {void}
+     */
     buildTally () {
       // Mock implementation
     }
@@ -78,16 +132,33 @@ jest.unstable_mockModule('../src/waters/ScoreUI.js', () => ({
 
 /**
  * Mock bh (BattleHide terrain) module with map lists and configuration
+ * @type {jest.Mock}
+ * @description Creates a mock bh module with terrain and map management functionality
  */
 jest.unstable_mockModule('../src/terrains/all/js/bh.js', () => ({
-  /** @type {Object} Mock bh terrain configuration */
+  /** @type {Object<string, any>} Mock bh terrain configuration with map operations */
   bh: {
+    /** @type {string} Heading text for map display */
     mapHeading: 'Test Maps',
+    /** @type {Object<string, string>} Default terrain configuration */
     terrain: { tag: 'sea' },
+    /**
+     * Mock getTerrainByTag method
+     * @type {jest.Mock}
+     * @param {string} tag - The terrain tag to retrieve
+     * @returns {Object<string, string>} Terrain object with matching tag
+     */
     getTerrainByTag: jest.fn().mockImplementation(tag => ({ tag })),
+    /**
+     * Map list operations
+     * @type {Object<string, jest.Mock>}
+     */
     maps: {
+      /** @type {jest.Mock} Mock customMapList function */
       customMapList: jest.fn(),
+      /** @type {jest.Mock} Mock maps function (all maps) */
       maps: jest.fn(),
+      /** @type {jest.Mock} Mock preGenMapList function */
       preGenMapList: jest.fn()
     }
   }
@@ -124,23 +195,41 @@ jest.unstable_mockModule('../src/navbar/gtag.js', () => ({
   trackClick: jest.fn()
 }))
 
-/** @type {typeof MapList} MapList class constructor */
+/**
+ * MapList class constructor - imported from maplist module
+ * @type {typeof MapList}
+ */
 let MapList
 
-/** @type {function(string, string): void} saveAsJson utility function */
+/**
+ * saveAsJson utility function - Creates and downloads JSON files
+ * @type {(json: string, filename: string) => void}
+ */
 let saveAsJson
 
-/** @type {function(Object): string} printGameSheet utility function */
+/**
+ * printGameSheet utility function - Resolves PDF location for game sheets
+ * @type {(map: Object<string, any>) => string}
+ */
 let printGameSheet
 
-/** @type {function(Object): Promise<{success: boolean}>} saveToFile utility function */
+/**
+ * saveToFile utility function - Saves map data to file with modern File System API
+ * @type {(map: Object<string, any>) => Promise<{success: boolean, fallback?: boolean, error?: Error}>}
+ */
 let saveToFile
 
-/** @type {Object} bh terrain configuration module */
+/**
+ * bh terrain configuration module - Provides terrain types and map lists
+ * @type {Object<string, any>}
+ */
 let bh
 
 /**
  * Setup global mocks and import modules before each test
+ * Initializes document mocks, URL mocks, and imports test modules
+ * @async
+ * @returns {Promise<void>}
  */
 beforeEach(async () => {
   if (globalThis.document) {

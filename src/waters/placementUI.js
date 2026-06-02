@@ -13,7 +13,6 @@ import { TrayManager } from './helpers/TrayManager.js'
 import { DirectionMovement } from './helpers/DirectionMovement.js'
 import { UIElementBuilder } from './helpers/UIElementBuilder.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
-import { CellUI } from './cellUI.js'
 /**
  * Coordinate pair [row, column] for grid positions.
  * @typedef {[number, number]} CoordinatePair

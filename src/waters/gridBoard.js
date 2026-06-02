@@ -184,8 +184,8 @@ export class GridBoard {
    * Convenience method combining grid lookup and display.
    * Silently skips out-of-bounds coordinates to handle edge cases gracefully.
    *
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @param {Ship} ship - Ship object to display
    * @returns {void}
    */
@@ -438,7 +438,7 @@ export class GridBoard {
     return Object.values(surroundings)
   }
   /**
-   * Attaches hover event listeners to all board cells.
+   * Attaches hover event listeners to all board cells (static factory).
    * Shows/hides area-of-effect or targeting information on hover.
    * @param {HTMLElement|null} boardElement - The board element
    * @param {GridMap} [map] - Map configuration (defaults to current map)
@@ -447,6 +447,7 @@ export class GridBoard {
    * @param {Object} [thisRef] - Context for onLeave binding
    * @param {any} [weaponSource] - Weapon source data passed to onEnter
    * @returns {void}
+   * @static
    */
   static addHover (boardElement, map, onEnter, onLeave, thisRef, weaponSource) {
     const grid = new GridBoard(boardElement, map)
@@ -472,10 +473,12 @@ export class GridBoard {
     })
   }
   /**
-   * Removes all area-of-effect highlight classes from board.
+   * Removes all area-of-effect highlight classes from board (static factory).
    * Clears target and splash effect visual indicators.
    *
+   * @param {HTMLElement|null} boardElement - The board element
    * @returns {void}
+   * @static
    */
   static removeHighlightAoE (boardElement) {
     const grid = new GridBoard(boardElement)
@@ -511,15 +514,12 @@ export class GridBoard {
    * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} [onClick] - Click handler (row, col) bound
    * @param {Object} [thisRef] - Context object for click handler binding
    * @returns {void}
-   * @description onClickCell will be called with (row, column) coordinates after binding with thisRef context
    */
   createScreenGrid (onClick, thisRef) {
     if (!this.board) return
 
     this.board.innerHTML = ''
     const map = this.map
-    const cols =
-      map?.cols || Math.ceil(Math.sqrt(getBoardChildren(this.board).length))
 
     for (const [x, y] of this.locations()) {
       if (onClick) {
@@ -531,7 +531,7 @@ export class GridBoard {
           onClick.bind(thisRef, y, x)
         )
       } else {
-        CellUI.createAndAppendTo(this.board, column, row, map, onClick)
+        CellUI.createAndAppendTo(this.board, x, y, map, onClick)
       }
     }
   }
@@ -582,6 +582,12 @@ export class GridBoard {
     }
   }
 
+  /**
+   * Generator for all cell coordinates in the board.
+   * Yields coordinates in row-major order: top-left to bottom-right.
+   * @yields {[number, number]} Cell coordinates as [x, y] tuples
+   * @returns {Generator<[number, number]>} Generator of coordinate pairs
+   */
   *locations () {
     for (let y = 0; y < this.map.rows; y++) {
       for (let x = 0; x < this.map.cols; x++) {
