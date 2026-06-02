@@ -43,7 +43,7 @@ describe('FriendUI - markFleetWeapons', () => {
       rows: 9,
       cols: 18
     }
-   
+
     friendUI.grid._map = mockMap
     // Create mock ships with weapons at specific positions
     mockShips = [
@@ -96,7 +96,7 @@ describe('FriendUI - markFleetWeapons', () => {
   })
 
   it('should add weapon class to cells with weapons', () => {
-    friendUI.grid.markFleetWeapons(mockShips )
+    friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells with weapons have the 'weapon' class
     const cell_0_0 = friendUI.gridCellAt(0, 0)
@@ -109,10 +109,10 @@ describe('FriendUI - markFleetWeapons', () => {
   })
 
   it('should not add weapon class to cells without weapons', () => {
-    friendUI.grid.markFleetWeapons(mockShips )
+    friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells without weapons don't have the 'weapon' class
-    const cell_1_0 = friendUI.gridCellAt(0, 1) // Ship 1 cell without weapon
+    const cell_1_0 = friendUI.gridCellAt(1, 0) // Ship 1 cell without weapon
     const cell_1_1 = friendUI.gridCellAt(1, 1) // Ship 3 cells (no weapons)
     const cell_1_2 = friendUI.gridCellAt(2, 1)
     const cell_1_3 = friendUI.gridCellAt(3, 1)

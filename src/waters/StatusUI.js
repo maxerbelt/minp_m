@@ -677,7 +677,7 @@ class StatusUI {
    * @returns {void}
    */
   _displayAmmoCount (wps) {
-    this._displayAmmoCounter(wps.ammoCapacity, wps.ammoRemaining())
+    this._displayAmmoCounter(wps.ammoCapacity, wps.ammoRemaining)
   }
 
   /**
