@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 
-
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 // Mock StatusUI and bh as used by enemy module
@@ -64,14 +63,16 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => {
 jest.unstable_mockModule('./enemyUI.js', () => ({
   enemyUI: {
     board: /** @type {HTMLElement} */ (document.createElement('div')),
+    grid: {
+      addHover: jest.fn(),
+      clearClasses: jest.fn(),
+      removeHighlightAoE: jest.fn()
+    },
     playMode: jest.fn(),
     buildBoard: jest.fn(),
     reset: jest.fn(),
     cellWeaponActive: jest.fn(),
-    removeHighlightAoE: jest.fn(),
     weaponButtons: jest.fn(),
-    buildBoardHover: jest.fn(),
-    clearClasses: jest.fn(),
     revealAll: jest.fn(),
     enableBtns: jest.fn()
   }

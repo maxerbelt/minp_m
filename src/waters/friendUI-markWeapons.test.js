@@ -1,6 +1,8 @@
 import { FriendUI } from './friendUI.js'
+import { GridBoard } from './gridBoard.js'
+import { jest } from '@jest/globals'
 
-describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
+describe('FriendUI - markFleetWeapons', () => {
   let friendUI
   let mockShips
 
@@ -11,7 +13,7 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
     const boardDiv = document.createElement('div')
     boardDiv.id = 'friend-board'
     document.body.appendChild(boardDiv)
-    friendUI.board = boardDiv
+    friendUI.grid = GridBoard.create('friend')
 
     // Create mock cells
     for (let r = 0; r < 4; r++) {
@@ -80,7 +82,7 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
   })
 
   it('should add weapon class to cells with weapons', () => {
-    friendUI.markWeaponCellsOnFriendlyBoard(mockShips)
+    friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells with weapons have the 'weapon' class
     const cell_0_0 = friendUI.gridCellAt(0, 0)
@@ -93,7 +95,7 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
   })
 
   it('should not add weapon class to cells without weapons', () => {
-    friendUI.markWeaponCellsOnFriendlyBoard(mockShips)
+    friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells without weapons don't have the 'weapon' class
     const cell_1_0 = friendUI.gridCellAt(0, 1) // Ship 1 cell without weapon
@@ -109,7 +111,7 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
 
   it('should handle null ships gracefully', () => {
     expect(() => {
-      friendUI.markWeaponCellsOnFriendlyBoard(null)
+      friendUI.grid.markFleetWeapons(null)
     }).not.toThrow()
   })
 
@@ -120,13 +122,12 @@ describe('FriendUI - markWeaponCellsOnFriendlyBoard', () => {
     ]
 
     expect(() => {
-      friendUI.markWeaponCellsOnFriendlyBoard(shipsNoCells)
+      friendUI.grid.markFleetWeapons(shipsNoCells)
     }).not.toThrow()
   })
 
   it('should only call gridCellAt for cells with weapons', () => {
-    friendUI.markWeaponCellsOnFriendlyBoard(mockShips)
-
+    friendUI.grid.markFleetWeapons(mockShips)
     // gridCellAt should be called for cells with weapons only
     // Ship 1: 3 cells, 2 with weapons
     // Ship 2: 2 cells, 1 with weapons

@@ -261,7 +261,7 @@ describe('Score', () => {
 
     it('should add auto miss to shot set', () => {
       score.addAutoMiss(...COORDS.POS_4_5)
-      expect(score.newShotKey(...COORDS.POS_4_5)).toBeNull()
+      expect(score.isOldShot(...COORDS.POS_4_5)).toBe(true)
     })
 
     it('should prevent duplicate auto misses', () => {

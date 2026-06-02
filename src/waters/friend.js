@@ -80,7 +80,8 @@ const ENEMY_TURN_DELAY = 50
  * @property {Bitmask} shot - Bitmask of all shot locations
  * @property {Bitmask} reveal - Bitmask of revealed (scanned) locations
  * @property {Bitmask} hint - Bitmask of hint-revealed locations
- * @property {Function} newShotKey - Checks if coordinates haven't been shot yet
+ * @property {Function} isNewShot - Checks if coordinates haven't been shot yet
+ * @property {Function} isOldShot - Checks if coordinates have been shot already
  * @property {Function} finishTurn - Completes a turn and updates game state
  * @property {Function} reset - Resets score to initial state
  */
@@ -162,20 +163,30 @@ const ENEMY_TURN_DELAY = 50
  * Callback to handle scan weapon reveal effect.
  * @description Processes revealed cells from scan weapon area-of-effect
  */
-
+/**
+ * @typedef {Object} GridBoard
+ * @property {HTMLElement} board - Main game board DOM element
+ * @property {Function} nodeAt - Get cell at coordinates (x, y)
+ * @property {Function} clearClasses - Clear CSS classes from cells
+ * @property {Function} surroundCellElement - Get surrounding cell elements
+ * @property {Function} displaySurround - Display surround cells
+ * @property {Function} markPlaced - Mark ship as placed
+ * @property {Function} makeAddDroppable - Make board cells droppable for ship addition
+ * @property {Function} makeBrushable - Make board cells brushable for terrain editing
+ * @property {() => void} makeDroppable - Make board droppable for drag operations
+ */
 /**
  * @typedef {Object} PlacementUI
- * @property {HTMLElement} board - The main game board element
+ * @property {HTMLElement} board - The main game board elemenT
+ * @property {GridBoard} grid - The grid board instance
  * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
  * @property {(row: number, column: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
  * @property {() => void} [clearVisuals] - Clear all visual effects from board
  * @property {() => void} [resetShips] - Reset ship cell styling
  * @property {(ships: Array<Object>) => void} [reset] - Reset UI with new ships
- * @property {() => void} [makeDroppable] - Make board droppable for drag operations
  * @property {(onClickCell?: Function, thisRef?: any) => void} [buildBoard] - Build board grid with handlers
  * @property {(ships: Array<Object>, shipCellGrid?: Object) => void} [buildTrays] - Build weapon trays
  * @property {() => void} [clearFriendVisuals] - Clear friendly player visuals
- * @property {(ships: Array<Object>) => void} [markWeaponCellsOnFriendlyBoard] - Mark weapon cells
  * @property {() => void} [testMode] - Switch UI to test mode
  * @property {() => void} [showNotice] - Show notice message
  */
@@ -539,14 +550,13 @@ export class Friend extends Placement {
 
   /**
    * Searches for bomb targets by attempting random launches.
-   * Delegates to _attemptBomb for multiple tries with fallback logic.
+   * Delegates to_ attemptBomb for multiple tries with fallback logic.
    * Returns noResult if all attempts are exhausted without success.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult>} Result with bomb weapon and score, or noResult if no hits
    */
-  async randomBomb () {
-    const result = await this._attemptBomb()
+  async #randomBomb () {
+    const result = await this.#attemptBomb()
     if (result) return result
 
     return this.noResult
@@ -557,16 +567,15 @@ export class Friend extends Placement {
    * Iterates through BOMB_ATTEMPTS tries, checking if coordinates are new shots.
    * Respects isCancelled() state and returns early if test is cancelled.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null if all BOMB_ATTEMPTS exhausted
    */
-  async _attemptBomb () {
+  async #attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
       if (this.isCancelled()) return this.noResult
       // @ts-ignore - this.map is MapInfo at runtime with randomLocation compat
       const { r, c } = this.randomLocation(/** @type {MapInfo} */ (this.map))
-      // @ts-ignore - this.score.newShotKey() is Score method available at runtime
-      if (this.score.newShotKey(r, c)) {
+      // @ts-ignore - this.score.isNewShot() is Score method available at runtime
+      if (this.score.isNewShot(c, r)) {
         return await this._attemptLaunchWithFallback(r, c)
       }
     }
@@ -578,10 +587,9 @@ export class Friend extends Placement {
    * Uses most-attempted row for targeting line sweep with fallback to opposite end.
    * Strategy: sweep from left (col 0) to right (cols-1) on most-hit row.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult>} Result with destroy weapon and score information
    */
-  async randomDestroyOne () {
+  async #randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
     const r = this.getMostFrequentRowNumber()
     // @ts-ignore - this.map.cols is number property available at runtime
@@ -624,10 +632,9 @@ export class Friend extends Placement {
    * Stops game if unable to find valid locations after max attempts.
    * Respects isCancelled() state for test mode control.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult>} Result from weapon fire or noResult on failure
    */
-  async randomSeek () {
+  async #randomSeek () {
     for (
       let attempt = 0;
       attempt < SEEK_CONSTANTS.SEEK_MAX_ATTEMPTS;
@@ -670,7 +677,7 @@ export class Friend extends Placement {
    * @private
    * @returns {Promise<WeaponLaunchResult>} Result with scan weapon and score
    */
-  async randomScan () {
+  async #randomScan () {
     // @ts-ignore - loadOut.onReveal is property for callback at runtime
     this.loadOut.onReveal = this.scan.bind(this)
     if (this.isCancelled()) return this.noResult
@@ -728,9 +735,9 @@ export class Friend extends Placement {
     /** @type {EffectHandlerMap} */
     const effectHandlers = {
       DestroyOne: () => this.randomDestroyOne(),
-      Bomb: () => this.randomBomb(),
-      Scan: () => this.randomScan(),
-      Seek: () => this.randomSeek()
+      Bomb: () => this.#randomBomb(),
+      Scan: () => this.#randomScan(),
+      Seek: () => this.#randomSeek()
     }
     // @ts-ignore - effect is EffectType string, effectHandlers[effect] returns async function
     const handler = effectHandlers[effect]
@@ -745,12 +752,11 @@ export class Friend extends Placement {
    * Generic helper for attempting location-based finish strategies.
    * Checks mask occupancy and delegates to finishAction if non-zero.
    *
-   * @private
    * @param {Bitmask|null} mask - Bitmask with occupancy property, or null
    * @param {MaskConditionHandler} finishAction - Callback(mask) to execute if occupied
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish action or null if no candidates
    */
-  async tryFinishCondition (mask, finishAction) {
+  async #tryFinishCondition (mask, finishAction) {
     // @ts-ignore - mask.occupancy is number property at runtime, indicates non-empty mask
     if (mask?.occupancy > 0) {
       return await finishAction(mask)
@@ -777,17 +783,16 @@ export class Friend extends Placement {
 
   /**
    * Attempts to fire at a random target from a candidate mask.
-   * Validates mask has occupancy, then delegates to selectRandomCandidate.
+   * Validates mask has occupancy, then delegates to #selectRandomCandidate.
    * Returns null if mask is empty or occupancy is zero.
    *
-   * @private
    * @param {Bitmask|null} mask - Candidate bitmask with occupied cells to select from
    * @returns {Promise<WeaponLaunchResult|null>} Result from firing at selected candidate, or null if no targets
    */
-  async _finishMaskCandidates (mask) {
+  async #finishMaskCandidates (mask) {
     // @ts-ignore - mask is Bitmask at runtime with occupancy property and methods
-    return await this.tryFinishCondition(mask, candidate =>
-      this.selectRandomCandidate(candidate)
+    return await this.#tryFinishCondition(mask, candidate =>
+      this.#selectRandomCandidate(candidate)
     )
   }
 
@@ -797,16 +802,15 @@ export class Friend extends Placement {
    * Removes already-shot cells from reveal mask before selection.
    * Used in shot selection strategy priority chain.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no revealed targets
    */
-  async finishRevealed () {
+  async #finishRevealed () {
     // @ts-ignore - score.reveal is Bitmask at runtime with occupancy property
     const reveal = /** @type {Bitmask} */ (this.score.reveal)
     if (reveal.occupancy === 0) return null
     // @ts-ignore - score.reveal and score.shot are Bitmask methods available at runtime
     this.score.reveal = reveal.take(this.score.shot)
-    return await this._finishMaskCandidates(
+    return await this.#finishMaskCandidates(
       /** @type {Bitmask} */ (this.score.reveal)
     )
   }
@@ -817,75 +821,50 @@ export class Friend extends Placement {
    * Falls back to surrounding cells (all 8-neighbors) if cross pattern yields no shots.
    * Used in shot selection strategy priority chain.
    *
-   * @private
    * @param {Bitmask|null} hits - Hit locations mask from unsunk ships on opponent board
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no targets
    */
-  async finishPartiallySunk (hits) {
+  async #finishPartiallySunk (hits) {
     // @ts-ignore - hits is Bitmask at runtime with occupancy property
     if (!hits?.occupancy) return null
 
-    const result = await this._tryCrossPattern(hits)
+    const result = await this.#tryCrossPattern(hits)
     if (result) return result
 
-    return await this._trySurroundPattern(hits)
+    return await this.#trySurroundPattern(hits)
   }
 
   /**
    * Tries cross pattern for finishing partially sunk ship.
    * Dilates hits in orthogonal directions (±1 row/col), excludes already-shot cells.
    *
-   * @private
    * @param {Bitmask} hits - Hit locations mask
    * @returns {Promise<WeaponLaunchResult|null>} Result or null if no candidates
    */
-  async _tryCrossPattern (hits) {
+  async #tryCrossPattern (hits) {
     // @ts-ignore - score.shot is Bitmask at runtime with take method
     const shots = this.score.shot
     // @ts-ignore - hits.clone.dilateCross() are Bitmask methods at runtime
     const cross = hits.clone.dilateCross()
     // @ts-ignore - cross.take is Bitmask method at runtime
     const candidates = cross.take(shots)
-    //  this._logMaskInfo('cross', shots, hits, cross, candidates)
-    return await this._finishMaskCandidates(candidates)
+
+    return await this.#finishMaskCandidates(candidates)
   }
 
   /**
    * Tries surround pattern for finishing partially sunk ship.
    * Dilates hits to all 8-neighbors, excludes already-shot cells.
    *
-   * @private
    * @param {Bitmask} hits - Hit locations mask
    * @returns {Promise<WeaponLaunchResult|null>} Result or null if no candidates
    */
-  async _trySurroundPattern (hits) {
+  async #trySurroundPattern (hits) {
     // @ts-ignore - score.shot is Bitmask at runtime
     const shots = this.score.shot
     // @ts-ignore - hits.clone.dilate(1).take() are Bitmask methods at runtime
     const surround = hits.clone.dilate(1).take(shots)
-    return await this._finishMaskCandidates(surround)
-  }
-
-  /**
-   * Logs mask information for debugging.
-   * @param {string} _pattern - Pattern name (unused)
-   * @param {Object} _shots - Shot mask (unused)
-   * @param {Object} _hits - Hits mask (unused)
-   * @param {Object} _patternMask - Pattern mask (unused)
-   * @param {Object} _candidates - Candidate mask (unused)
-   * @private
-   * @deprecated Not used in current codebase
-   */
-  // @ts-ignore - unused but may be used by external code
-  _logMaskInfo (_pattern, _shots, _hits, _patternMask, _candidates) {
-    // @ts-ignore - debug logging on Bitmask properties
-    console.log('shot', _shots.occupancy, _shots.toAscii)
-    // @ts-ignore - debug logging on Bitmask properties
-    console.log('hits', _hits.toAscii)
-    // @ts-ignore - debug logging on Bitmask properties
-    console.log(_pattern, _patternMask.toAscii)
-    // @ts-ignore - debug logging on Bitmask properties
-    console.log('candidates', _candidates.toAscii)
+    return await this.#finishMaskCandidates(surround)
   }
 
   /**
@@ -894,10 +873,9 @@ export class Friend extends Placement {
    * Focuses on areas near hint clusters for strategic targeting.
    * Used in shot selection strategy priority chain.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no hint targets
    */
-  async finishHints () {
+  async #finishHints () {
     // @ts-ignore - score.hint is Bitmask at runtime with occupancy property
     const numHints = this.score?.hint?.occupancy || 0
     if (numHints > 0) {
@@ -905,7 +883,7 @@ export class Friend extends Placement {
       const surroundHints = this.score.hint.clone
         .dilate(1)
         .take(this.score.shot)
-      return await this._finishMaskCandidates(surroundHints)
+      return await this.#finishMaskCandidates(surroundHints)
     }
     return null
   }
@@ -915,11 +893,10 @@ export class Friend extends Placement {
    * Switches to single shot weapon before firing at selected coordinate.
    * Extracts random occupied cell from candidate bitmask.
    *
-   * @private
    * @param {Bitmask} candidate - Bitmask with randomOccupied property containing target cells
    * @returns {Promise<WeaponLaunchResult>} Result with weapon and score information
    */
-  async selectRandomCandidate (candidate) {
+  async #selectRandomCandidate (candidate) {
     // @ts-ignore - loadOut.switchToSingleShot is method at runtime
     this.loadOut.switchToSingleShot()
     // @ts-ignore - candidate.randomOccupied is [col, row] tuple at runtime
@@ -934,15 +911,14 @@ export class Friend extends Placement {
    * Implements escalating strategy: finish easy targets first, then switch to scanning/seeking.
    * Core method for intelligent autonomous targeting.
    *
-   * @private
    * @param {Bitmask} hits - Current hit locations on board from unsunk ships
    * @returns {Promise<WeaponLaunchResult|null>} Result from selected shot strategy
    */
-  async selectShot (hits) {
+  async #selectShot (hits) {
     const finishMethods = [
-      () => this.finishRevealed(),
-      () => this.finishPartiallySunk(hits),
-      () => this.finishHints()
+      () => this.#finishRevealed(),
+      () => this.#finishPartiallySunk(hits),
+      () => this.#finishHints()
     ]
 
     const strategyResult = await this._executeFinishStrategies(finishMethods)
@@ -956,7 +932,7 @@ export class Friend extends Placement {
 
     // @ts-ignore - loadOut.switchToSingleShot is method at runtime
     this.loadOut.switchToSingleShot()
-    return await this.randomSeek()
+    return await this.#randomSeek()
   }
 
   // ============ Board Management ============
@@ -1081,8 +1057,8 @@ export class Friend extends Placement {
     const hits = this.getHits()
     // @ts-ignore - setWeaponFireHandlers is method defined in base Waters class at runtime
     this.setWeaponFireHandlers()
-    const result = await this.selectShot(hits)
-    await this._finalizeSeekStep(result)
+    const result = await this.#selectShot(hits)
+    await this.#finalizeSeekStep(result)
   }
 
   /**
@@ -1090,11 +1066,10 @@ export class Friend extends Placement {
    * Records hit/score if weapon was successfully fired.
    * Transitions to opponent's turn and triggers UI update.
    *
-   * @private
    * @param {WeaponLaunchResult|null} result - The result from a shot or action.
    * @returns {Promise<void>}
    */
-  async _finalizeSeekStep (result) {
+  async #finalizeSeekStep (result) {
     if (result?.score && result.score !== LoadOut.noResult) {
       // @ts-ignore - updateResultsOfBomb is method defined in base Waters class at runtime
       this.updateResultsOfBomb(result.weapon, result.score)
@@ -1116,7 +1091,7 @@ export class Friend extends Placement {
    * @returns {Promise<void>}
    */
   async seek () {
-    await this.seekRaw()
+    await this.#seekRaw()
     // @ts-ignore - UI.testBtn is HTMLButton element at runtime
     const testBtn = /** @type {HTMLButtonElement} */ (this.UI.testBtn)
     // @ts-ignore - UI.seekBtn is HTMLButton element at runtime
@@ -1134,9 +1109,8 @@ export class Friend extends Placement {
    * Called before entering main seek loop.
    *
    * @returns {Promise<void>}
-   * @private
    */
-  async _initializeSeekRun () {
+  async #initializeSeekRun () {
     this.testContinue = true
     this.boardDestroyed = false
     // @ts-ignore - armWeapons is method defined in base Placement class at runtime
@@ -1153,10 +1127,9 @@ export class Friend extends Placement {
    * Core game loop for autonomous AI play.
    *
    * @returns {Promise<void>}
-   * @private
    */
-  async seekRaw () {
-    await this._initializeSeekRun()
+  async #seekRaw () {
+    await this.#initializeSeekRun()
 
     while (!this.isCancelled()) {
       await Delay.wait(SEEK_CONSTANTS.SEEK_DELAY_MS)
@@ -1374,12 +1347,12 @@ export class Friend extends Placement {
     this.UI.buildBoard(this.onClickCell, this)
     // @ts-ignore - resetShipCells is method defined in base Placement class at runtime
     this.resetShipCells()
-    // @ts-ignore - UI.makeDroppable is method defined in Board class at runtime
-    this.UI.makeDroppable(this)
+    // @ts-ignore - UI.grid.makeDroppable is method defined in Board class at runtime
+    this.UI.grid.makeDroppable(this)
     setupDragHandlers(this.UI)
     // Mark cells with weapons on friendly board for visual indication
-    // @ts-ignore - UI.markWeaponCellsOnFriendlyBoard is method defined in Board class at runtime
-    this.UI.markWeaponCellsOnFriendlyBoard(this.ships)
+    // @ts-ignore - UI..grid.markFleetWeapons is method defined in Board class at runtime
+    this.UI.grid.markFleetWeapons(this.ships)
   }
 
   /**

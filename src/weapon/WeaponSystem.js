@@ -690,7 +690,7 @@ export class AttachedWeaponSystems extends WeaponSystem {
    * @returns {Array<WeaponSystem>} Flattened array of all weapons from all ships
    */
   get leafWeapons () {
-    return this.ships.flatMap(ship => ship.getAllWeapons())
+    return this.ships.flatMap(ship => ship.getAllWeapons)
   }
 
   /**

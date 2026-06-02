@@ -87,7 +87,7 @@ export interface ViewModel {
   /** Validates and refreshes tray availability */
   checkTrays(): void;
   /** Recolors cell display after terrain changes */
-  recolor(r: number, c: number, color?: string, letter?: string): void;
+  recolor(x: number, y: number): void;
   /** Score manager object for tracking game points */
   score: object;
   /** Updates state of undo/change-clear button */

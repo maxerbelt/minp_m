@@ -344,12 +344,34 @@ export class BhMap {
   }
 
   /**
+   * Checks if coordinates are within map bounds.
+   *
+   * @public
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
+   * @returns {boolean} True if 0 <= y < rows and 0 <= x < cols, false otherwise
+   */
+  isInBoundsAt (x, y) {
+    return y >= 0 && y < this.rows && x >= 0 && x < this.cols
+  }
+  /**
+   * Checks if coordinates are within map bounds.
+   *
+   * @public
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @returns {boolean} True if 0 <= r < rows and 0 <= c < cols, false otherwise
+   */
+  is (r, c) {
+    return r >= 0 && r < this.rows && c >= 0 && c < this.cols
+  }
+
+  /**
    * Creates a blank grid of the map dimensions.
    * Grid is a 2D array: rows × cols with all cells set to null.
    * Useful for initialization before populating cells.
    *
    * @public
-   * @readonly
    * @returns {Array<Array<?Object>>} 2D array of rows × cols filled with null values
    */
   get blankGrid () {
@@ -364,13 +386,13 @@ export class BhMap {
    * Forms a 3×3 grid centered at (r, c) where all positions are within bounds.
    *
    * @public
-   * @param {number} r - Row coordinate of center
-   * @param {number} c - Column coordinate of center
-   * @returns {Array<Array<number>>} Array of [row, col] coordinates within bounds (max 9 items)
+   * @param {number} y - Row coordinate of center
+   * @param {number} x - Column coordinate of center
+   * @returns { number[][]} Array of [row, col] coordinates within bounds (max 9 items)
    */
-  surroundArea (r, c) {
+  surroundArea (x, y) {
     let surroundings = []
-    this.surroundBase(r, c, this.inBounds.bind(this), surroundings)
+    this.surroundBase(x, y, this.inBounds.bind(this), surroundings)
     return surroundings
   }
 
@@ -380,14 +402,14 @@ export class BhMap {
    * Forms a 3×3 grid minus the center cell where all positions are within bounds.
    *
    * @public
-   * @param {number} r - Row coordinate of center
-   * @param {number} c - Column coordinate of center
-   * @returns {Array<Array<number>>} Array of [row, col] coordinates within bounds, excluding center (max 8 items)
+   * @param {number} y - Row coordinate of center
+   * @param {number} x - Column coordinate of center
+   * @returns { number[][]} Array of [row, col] coordinates within bounds, excluding center (max 8 items)
    */
-  surround (r, c) {
+  surround (x, y) {
     let surroundings = []
-    const isValid = (rr, cc) => (cc !== c || rr !== r) && this.inBounds(rr, cc)
-    this.surroundBase(r, c, isValid, surroundings)
+    const isValid = (rr, cc) => (cc !== x || rr !== y) && this.inBounds(rr, cc)
+    this.surroundBase(x, y, isValid, surroundings)
     return surroundings
   }
 
@@ -397,15 +419,15 @@ export class BhMap {
    * Helper method used by surroundArea() and surround().
    *
    * @public
-   * @param {number} r - Center row coordinate
-   * @param {number} c - Center column coordinate
+   * @param {number} y - Center row coordinate
+   * @param {number} x - Center column coordinate
    * @param {(rr: number, cc: number) => boolean} isValid - Validation function for coordinates
    * @param {Array<Array<number>>} surroundings - Array to populate with valid [row, col] coordinates
    * @returns {void}
    */
-  surroundBase (r, c, isValid, surroundings) {
-    for (let rr = r - 1; rr <= r + 1; rr++) {
-      for (let cc = c - 1; cc <= c + 1; cc++) {
+  surroundBase (x, y, isValid, surroundings) {
+    for (let rr = y - 1; rr <= y + 1; rr++) {
+      for (let cc = x - 1; cc <= x + 1; cc++) {
         if (isValid(rr, cc)) {
           surroundings.push([rr, cc])
         }
@@ -508,26 +530,24 @@ export class BhMap {
    * Uses the landMask bitboard to efficiently determine if a cell is land or water.
    *
    * @public
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {boolean} True if the position is land, false if water/default terrain
    */
-  isLand (r, c) {
-    return this.landMask.test(c, r)
+  isLand (y, x) {
+    return this.landMask.test(x, y)
   }
-
   /**
-   * Gets the tag for the terrain at the specified coordinates.
-   * Tags identify terrain types (e.g., 'water', 'grass', 'rock', 'asteroid').
-   * Uses the land/water status to select the appropriate subterrain tag.
+   * Checks if the specified coordinates are land.
+   * Uses the landMask bitboard to efficiently determine if a cell is land or water.
    *
    * @public
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {string} Terrain tag string (e.g., 'water'), or empty string if no tag found
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
+   * @returns {boolean} True if the position is land, false if water/default terrain
    */
-  tag (r, c) {
-    return this.terrain.subterrainTag(this.isLand(r, c)) || ''
+  isLandAt (x, y) {
+    return this.landMask.test(x, y)
   }
 
   /**
@@ -538,7 +558,7 @@ export class BhMap {
    * @public
    * @returns {string} Concatenated string of all subterrain tags
    */
-  allTags () {
+  #allTags () {
     return this.terrain.allSubterrainTag() || ''
   }
 
@@ -550,20 +570,61 @@ export class BhMap {
    *
    * @public
    * @param {Object} cell - DOM element or object with add/remove methods for CSS classes
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
-   * @description Even parity (r+c) % 2 === 0 gets 'light' class, odd gets 'dark' class
+   * @description Even parity (y+x) % 2 === 0 gets 'light' class, odd gets 'dark' class
    */
-  tagCell (cell, r, c) {
-    const allTags = this.allTags()
-    cell.remove(...allTags)
-    const tag = this.tag(r, c)
+  tagsAt (x, y) {
+    const oldTags = this.#allTags()
+    const isLand = this.isLandAt(x, y)
+    const newTags = []
 
-    const checker = (r + c) % 2 === 0
-    cell.add(tag, checker ? 'light' : 'dark')
+    const subTerrain = this.terrain.subterrainTag(isLand)
+    if (subTerrain) newTags.push(subTerrain)
+    const parity = (y + x) % 2 === 0
+    const checker = parity ? 'light' : 'dark'
+    newTags.push(checker)
+    this.#addEdgeTags(x, y, isLand, newTags)
+    return { newTags, oldTags }
   }
 
+  /**
+   * Checks if cell has edges with land and applies corresponding CSS classes.
+   * Adds edge classes for water cells adjacent to land cells.
+   *
+   * @param {number} y - Row coordinate (0-based, y-axis)
+   * @param {number} x - Column coordinate (0-based, x-axis)
+   * @param {boolean} isLand - Whether current cell is land terrain
+   * @returns {void}
+   * @description Applies CSS classes: rightEdge, leftEdge, topEdge, bottomEdge as appropriate
+   * @private
+   */
+  #addEdgeTags (x, y, isLand, tags) {
+    // Check right edge (water next to land)
+    const columnRight = x + 1
+    if (!isLand && columnRight < this.cols && this.isLand(columnRight, y)) {
+      tags.push('rightEdge')
+    }
+
+    // Check left edge (water next to land)
+    if (x !== 0 && !isLand && this.isLandAt(x - 1, y)) {
+      tags.push('leftEdge')
+    }
+
+    // Check bottom edge (transition between land/water vertically)
+    const rowBelow = y + 1
+    if (rowBelow < this.rows && isLand !== this.isLandAt(x, rowBelow)) {
+      tags.push('bottomEdge')
+    }
+
+    // Check top edge (water next to land vertically)
+    if (y !== 0 && !isLand && this.isLandAt(x, y - 1)) {
+      tags.push('topEdge')
+    }
+
+    return tags
+  }
   /**
    * Creates a saved version of this map with a new title.
    * Converts a BhMap to an EditedCustomMap for persistence and editing.
@@ -796,12 +857,12 @@ const withModifyable = Base =>
      * Uses makeKey to convert [r,c] to Set key format.
      *
      * @public
-     * @param {number} r - Row coordinate
-     * @param {number} c - Column coordinate
+     * @param {number} y - Row coordinate
+     * @param {number} x - Column coordinate
      * @returns {void}
      */
-    addLand (r, c) {
-      if (this.inBounds(r, c)) this.land.add(makeKey(r, c))
+    addLand (x, y) {
+      if (this.inBounds(y, x)) this.land.add(makeKey(y, x))
     }
 
     /**
@@ -810,12 +871,12 @@ const withModifyable = Base =>
      * Uses makeKey to convert [r,c] to Set key format.
      *
      * @public
-     * @param {number} r - Row coordinate
-     * @param {number} c - Column coordinate
+     * @param {number} y - Row coordinate
+     * @param {number} x - Column coordinate
      * @returns {void}
      */
-    removeLand (r, c) {
-      if (this.inBounds(r, c)) this.land.delete(makeKey(r, c))
+    removeLand (x, y) {
+      if (this.inBounds(y, x)) this.land.delete(makeKey(y, x))
     }
 
     /**
@@ -841,17 +902,17 @@ const withModifyable = Base =>
      * Otherwise adds land (making it solid terrain).
      *
      * @public
-     * @param {number} r - Row coordinate
-     * @param {number} c - Column coordinate
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
      * @param {Object} subterrain - The subterrain object with isDefault property
      * @returns {void}
      * @description Subterrain.isDefault=true means water/default terrain; false means land.
      */
-    setLand (r, c, subterrain) {
+    setLand (x, y, subterrain) {
       if (subterrain.isDefault) {
-        this.removeLand(r, c)
+        this.removeLand(x, y)
       } else {
-        this.addLand(r, c)
+        this.addLand(x, y)
       }
     }
   }

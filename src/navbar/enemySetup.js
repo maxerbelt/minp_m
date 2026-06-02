@@ -1,7 +1,7 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { enemy } from '../waters/enemy.js'
 import { KeyboardShortcutManager } from './KeyboardShortcutManager.js'
-
+import { GridBoard } from '../waters/gridBoard.js'
 /**
  * @typedef {import('./types/domain.types.js').Coordinate} Coordinate
  * @typedef {import('./types/domain.types.js').SplashCell} SplashCell
@@ -453,7 +453,9 @@ function _initializeOpponentBoard (opponentBoardCleanup, friendUI) {
  * @returns {void}
  */
 function _configureBoardHoverBehavior () {
-  enemy.UI.buildBoardHover(
+  GridBoard.addHover(
+    enemy.UI.board,
+    bh.map,
     _createAreaOfEffectHighlighter,
     enemy.UI.removeHighlightAoE,
     enemy.UI,

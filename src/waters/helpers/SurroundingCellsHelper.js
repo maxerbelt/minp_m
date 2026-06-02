@@ -68,8 +68,8 @@ export class SurroundingCellsHelper {
    * @static
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
    *                        Used to validate cells before invoking callback.
-   * @param {number} r - Center row coordinate. Must be >= 0.
-   * @param {number} c - Center column coordinate. Must be >= 0.
+   * @param {number} y - Center row coordinate. Must be >= 0.
+   * @param {number} x - Center column coordinate. Must be >= 0.
    * @param {Function} callback - Function(row: number, col: number) => void
    *                             Invoked for each in-bounds neighboring cell.
    *                             Parameters: row and col coordinates of cell.
@@ -88,13 +88,13 @@ export class SurroundingCellsHelper {
    *   neighbors.push([r, c]);
    * });
    */
-  static forEachSurroundingCell (map, r, c, callback) {
+  static #forEachSurroundingCell (map, x, y, callback) {
     const { MIN_DELTA, MAX_DELTA } = this.#NEIGHBORHOOD
 
-    for (let dr = MIN_DELTA; dr <= MAX_DELTA; dr++) {
-      for (let dc = MIN_DELTA; dc <= MAX_DELTA; dc++) {
-        const row = r + dr
-        const col = c + dc
+    for (let dy = MIN_DELTA; dy <= MAX_DELTA; dy++) {
+      for (let dx = MIN_DELTA; dx <= MAX_DELTA; dx++) {
+        const row = y + dy
+        const col = x + dx
         if (map.inBounds(row, col)) {
           callback(row, col)
         }
@@ -126,8 +126,8 @@ export class SurroundingCellsHelper {
    * @see {@link asObjectMap}
    * @see {@link asArray}
    */
-  static #collectSurroundingCells (map, r, c, initialCollection, reducer) {
-    this.forEachSurroundingCell(map, r, c, (row, col) => {
+  static #collectSurroundingCells (map, x, y, initialCollection, reducer) {
+    this.#forEachSurroundingCell(map, x, y, (row, col) => {
       reducer(initialCollection, row, col)
     })
     return initialCollection
@@ -161,11 +161,11 @@ export class SurroundingCellsHelper {
    * const neighbors = SurroundingCellsHelper.asKeySet(map, 0, 0);
    * console.log(`Found ${neighbors.size} neighbors near corner`);
    */
-  static asKeySet (map, r, c) {
+  static asKeySet (map, x, y) {
     return this.#collectSurroundingCells(
       map,
-      r,
-      c,
+      x,
+      y,
       new Set(),
       (set, row, col) => set.add(makeKey(row, col))
     )
@@ -182,8 +182,8 @@ export class SurroundingCellsHelper {
    * @static
    * @public
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
-   * @param {number} r - Center row coordinate.
-   * @param {number} c - Center column coordinate.
+   * @param {number} y - Center row coordinate.
+   * @param {number} x - Center column coordinate.
    * @param {Function} maker - Mapping function: (row: number, col: number) => any
    *                          Called for each in-bounds neighboring cell.
    *                          Return value becomes the value for that cell's key.
@@ -207,8 +207,8 @@ export class SurroundingCellsHelper {
    *   (r, c) => map.getCell(r, c).content
    * );
    */
-  static asObjectMap (map, r, c, maker) {
-    return this.#collectSurroundingCells(map, r, c, {}, (obj, row, col) => {
+  static asObjectMap (map, x, y, maker) {
+    return this.#collectSurroundingCells(map, x, y, {}, (obj, row, col) => {
       obj[makeKey(row, col)] = maker(row, col)
     })
   }
@@ -225,8 +225,8 @@ export class SurroundingCellsHelper {
    * @static
    * @public
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
-   * @param {number} r - Center row coordinate.
-   * @param {number} c - Center column coordinate.
+   * @param {number} y - Center row coordinate.
+   * @param {number} x - Center column coordinate.
    * @param {Function} maker - Mapping function: (row: number, col: number) => any
    *                          Called for each in-bounds neighboring cell.
    *                          Return value is pushed to result array.
@@ -249,8 +249,8 @@ export class SurroundingCellsHelper {
    * );
    * // Result: [[4,4], [4,5], [4,6], [5,4], [5,5], [5,6], [6,4], [6,5], [6,6]]
    */
-  static asArray (map, r, c, maker) {
-    return this.#collectSurroundingCells(map, r, c, [], (arr, row, col) => {
+  static asArray (map, x, y, maker) {
+    return this.#collectSurroundingCells(map, x, y, [], (arr, row, col) => {
       arr.push(maker(row, col))
     })
   }

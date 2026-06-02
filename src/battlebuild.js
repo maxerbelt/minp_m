@@ -9,9 +9,21 @@ import { bh } from './terrains/all/js/bh.js'
 import { customUI } from './waters/customUI.js'
 
 /**
+ * @typedef {Object} GridBoard
+ * @property {HTMLElement} board - Main game board DOM element
+ * @property {Function} nodeAt - Get cell at coordinates (x, y)
+ * @property {Function} clearClasses - Clear CSS classes from cells
+ * @property {Function} surroundCellElement - Get surrounding cell elements
+ * @property {Function} displaySurround - Display surround cells
+ * @property {Function} markPlaced - Mark ship as placed
+ * @property {Function} makeAddDroppable - Make board cells droppable for ship addition
+ * @property {Function} makeBrushable - Make board cells brushable for terrain editing
+ */
+/**
  * Represents the custom UI for battle building.
  * Manages board display, visual feedback, and user interface elements.
  * @typedef {Object} CustomUI
+ * @property {GridBoard} grid - The grid board instance
  * @property {(width?: number, height?: number) => void} resetBoardSize - Resets board size display
  * @property {() => void} clearVisuals - Clears visual markers and overlays
  * @property {() => void} refreshAllColor - Refreshes all cell colors on board
@@ -19,7 +31,6 @@ import { customUI } from './waters/customUI.js'
  * @property {Function} buildBoard - Builds the game board in UI
  * @property {(ships: Array) => void} addShipMode - Sets UI to ship addition mode
  * @property {(custom: any) => void} displayShipTrackingInfo - Shows ship tracking information
- * @property {(custom: any) => void} makeAddDroppable - Makes cells droppable for ship addition
  * @property {() => void} handleReuse - Handles reuse of previous placement
  * @property {Function} undoBtn - Undo button element
  * @property {Function} resetBtn - Reset button element
@@ -167,7 +178,7 @@ function _setupShipAdditionMode (ships) {
  * @private
  */
 function _setupShipAdditionDragHandlers () {
-  customUI.makeAddDroppable(custom)
+  customUI.grid.makeAddDroppable(custom, customUI)
   setupDragHandlers(customUI)
   customUI.placelistenCancellables.push(
     dragOverAddingHandlerSetup(custom, customUI)

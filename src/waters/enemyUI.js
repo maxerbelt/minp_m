@@ -398,20 +398,6 @@ class EnemyUI extends WatersUI {
   }
 
   /**
-   * Marks a cell at coordinates as sunk.
-   * Retrieves cell by grid coordinates and displays as sunk.
-   *
-   * @param {number} r - Row index (0-based)
-   * @param {number} c - Column index (0-based)
-   * @param {string} letter - Ship letter identifier
-   * @returns {void}
-   */
-  cellSunkAt (r, c, letter) {
-    const cell = this.gridCellAt(r, c)
-    this.displayAsSunk(cell, letter)
-  }
-
-  /**
    * Resets the board and game status.
    * Clears board HTML, removes destroyed styling, and resets game message.
    *

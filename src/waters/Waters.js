@@ -90,10 +90,20 @@ import { Random } from '../core/Random.js'
  * @property {boolean} isValid - Whether effect was properly formatted
  * @property {Array<Array<number>>} filtered - Entries with exactly 3+ elements
  */
-
+/**
+ * @typedef {Object} GridBoard
+ * @property {HTMLElement} board - Main game board DOM element
+ * @property {Function} nodeAt - Get cell at coordinates (x, y)
+ * @property {Function} clearClasses - Clear CSS classes from cells
+ * @property {Function} surroundCellElement - Get surrounding cell elements
+ * @property {Function} displaySurround - Display surround cells
+ * @property {Function} markPlaced - Mark ship as placed
+ */
 /**
  * @typedef {Object} Board
  * @property {HTMLElement} board - Main game board DOM element
+ * @property {GridBoard}
+} grid - Grid object for cell management
  * @property {Function} gridCellAt - Get cell at coordinates (r, c)
  * @property {Function} cellHit - Mark cell as hit
  * @property {Function} cellMiss - Mark cell as miss
@@ -102,17 +112,13 @@ import { Random } from '../core/Random.js'
  * @property {Function} cellSemiReveal - Semi-reveal cell (partial info)
  * @property {Function} cellSunkAt - Mark cell as sunk with ship letter
  * @property {Function} cellSize - Get cell size in pixels
- * @property {Function} markPlaced - Mark ship as placed
  * @property {Function} onFleetPlaced - Callback when fleet placed
  * @property {Function} placeTally - Display placement tally
  * @property {Function} displayShipInfo - Display ship information
  * @property {Function} revealShips - Reveal ships visually
  * @property {Function} clearVisuals - Clear visual elements
  * @property {Function} clearPlaceVisuals - Clear placement visuals
- * @property {Function} surroundCells - Get surrounding cells
- * @property {Function} surroundCellElement - Get surrounding cell elements
  * @property {Function} displayFleetSunk - Display fleet sunk
- * @property {Function} displaySurround - Display surround cells
  * @property {Function} deactivateTempHints - Deactivate temp hints
  * @property {Function} deactivateWeapons - Deactivate weapons
  * @property {HTMLCollection} children - Cell children collection
@@ -1465,8 +1471,8 @@ export class Waters {
     const cells = ship.cells
     if (!cells) return []
     // @ts-ignore - opponent.UI is Board at runtime
-    const opponentBoard = /** @type {Board} */ (opponent.UI)
-    const surrounding = [...(opponentBoard.surroundCells?.(cells) || [])]
+    const opponentBoard = /** @type {GridBoard} */ (opponent.UI?.grid)
+    const surrounding = [...(opponentBoard?.surroundCells?.(cells) || [])]
     return surrounding
   }
 
@@ -1481,16 +1487,16 @@ export class Waters {
     const opponent = this.opponent
     if (opponent?.UI) {
       // @ts-ignore - opponent.UI is Board at runtime
-      const opponentBoard = /** @type {Board} */ (opponent.UI)
-      const opponentCell = opponentBoard.gridCellAt?.(r, c)
+      const opponentBoard = /** @type {GridBoard} */ (opponent.UI?.grid)
+      const opponentCell = opponentBoard.nodeAt?.(r, c)
       if (this.steps) {
         this.steps.addShadow(opponentBoard, r, c, opponentCell || null)
       }
       return opponentCell || null
     } else {
       // @ts-ignore - this.UI is Board at runtime
-      const board = /** @type {Board} */ (this.UI)
-      return board.gridCellAt?.(r, c) || null
+      const board = /** @type {GridBoard} */ (this.UI?.grid)
+      return board.nodeAt?.(r, c) || null
     }
   }
 
@@ -1499,8 +1505,8 @@ export class Waters {
    * @param {boolean} isTargeting - Whether the board is in targeting mode.
    */
   setBoardTargetingState (isTargeting) {
-    // @ts-ignore - this.UI is Board at runtime
-    const board = /** @type {Board} */ (this.UI)
+    // @ts-ignore - this.UI.grid is GridBoard at runtime
+    const board = /** @type {GridBoard} */ (this.UI?.grid)
     const boardClasses = board.board?.classList
     if (!boardClasses) return
     if (bh.seekingMode) {
@@ -2548,17 +2554,17 @@ export class Waters {
 
   /**
    * Records an auto-miss at the given coordinates.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    * @private
    */
-  recordAutoMiss (r, c) {
-    const key = this.score.addAutoMiss(r, c)
+  recordAutoMiss (y, x) {
+    const key = this.score.addAutoMiss(x, y)
     if (!key) return // already shot here
     // @ts-ignore - this.UI is Board at runtime
-    const board = /** @type {Board} */ (this.UI)
-    board.cellMiss?.(r, c)
+    const board = /** @type {GridBoard} */ (this.UI.grid)
+    board.cellMiss?.(x, y)
   }
 
   /**
@@ -2609,16 +2615,17 @@ export class Waters {
     if (!shipCells) return
     // @ts-ignore - this.UI is Board at runtime
     const board = /** @type {Board} */ (this.UI)
-    board.displaySurround?.(
+    const grid = /** @type {GridBoard} */ (board?.grid)
+    grid.displaySurround?.(
       shipCells,
       ship.letter,
-      (/** @type {number} */ r, /** @type {number} */ c) =>
-        this.recordAutoMiss(r, c),
+      (/** @type {number} */ x, /** @type {number} */ y) =>
+        this.recordAutoMiss(x, y),
       (
-        /** @type {number} */ c,
-        /** @type {number} */ r,
+        /** @type {number} */ x,
+        /** @type {number} */ y,
         /** @type {string} */ letter
-      ) => board.cellSunkAt?.(r, c, letter)
+      ) => board.cellSunkAt?.(x, y, letter)
     )
     this.checkFleetSunk()
   }
@@ -2705,14 +2712,14 @@ export class Waters {
   /**
    * Checks whether a weapon fire results in a hit.
    * @param {Object} weapon - The weapon being fired
-   * @param {number} r - Target row
-   * @param {number} c - Target column
+   * @param {number} y - Target row
+   * @param {number} x - Target column
    * @param {number} power - Weapon power
    * @param {Object|null} shipCell - The ship cell at target
    * @returns {Object} Hit result with hits, shots, sunk, info
    * @private
    */
-  checkForHit (weapon, r, c, power, shipCell) {
+  checkForHit (weapon, x, y, power, shipCell) {
     if (!shipCell) {
       return LoadOut.noResult
     }
@@ -2720,7 +2727,7 @@ export class Waters {
     const hitShip = this.getShipFromCell(shipCell)
 
     if (!hitShip) {
-      this.UI.cellMiss(r, c)
+      this.UI.grid.cellMiss(x, y)
       return LoadOut.missResult
     }
 
@@ -2728,8 +2735,8 @@ export class Waters {
     const shape = bh.shapesByLetter(shipCell.letter)
     const protection = shape.protectionAgainst(weapon.letter)
     if (power === 1 && protection === 2 && hitShip) {
-      this.score.shotReveal(c, r)
-      return this.UI.cellSemiReveal(c, r)
+      this.score.shotReveal(x, y)
+      return this.UI.cellSemiReveal(x, y)
     }
 
     if (protection > power) {
@@ -2737,17 +2744,17 @@ export class Waters {
     }
     let shots = 0
     if (power < 1) {
-      this.score.shot.set(c, r)
+      this.score.shot.set(x, y)
       shots = 1
     }
 
-    return this.showHit(c, r, hitShip, shots)
+    return this.showHit(x, y, hitShip, shots)
   }
 
   /**
    * Shows and processes a hit on a ship.
-   * @param {number} y - Hit row
    * @param {number} x - Hit column
+   * @param {number} y - Hit row
    * @param {Object} hitShip - The ship that was hit
    * @param {number} initialShots - Initial shot count
    * @returns {Object} Result with hits, shots, reveals, sunk, info
@@ -2870,22 +2877,22 @@ export class Waters {
    * and marks hits/misses on the board based on power penetration.
    *
    * @param {Weapon} weapon - The weapon firing (with letter property for protection matching)
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
+   * @param {number} y - Target row coordinate
+   * @param {number} x - Target column coordinate
    * @param {number} power - Weapon power level (determines penetration of protection)
    * @returns {WeaponResult} Result object with hits, shots, and sunk ship info
    * @private
    */
-  fireShot (weapon, r, c, power) {
-    const shipCell = this.shipCellAt(r, c)
+  fireShot (weapon, x, y, power) {
+    const shipCell = this.shipCellAt(y, x)
     if (!shipCell) {
       if (power > 0) {
-        this.UI.cellMiss(r, c)
+        this.UI.grid.cellMiss(x, y)
         return LoadOut.missResult
       }
       return LoadOut.noResult
     }
-    return this.checkForHit(weapon, r, c, power, shipCell)
+    return this.checkForHit(weapon, x, y, power, shipCell)
   }
 
   /**
@@ -3351,19 +3358,19 @@ export class Waters {
    * Checks for double-tap, then fires the shot and returns the result.
    *
    * @param {Weapon} weapon - The weapon firing (contains letter and animation properties)
-   * @param {number} r - Row coordinate of the shot
-   * @param {number} c - Column coordinate of the shot
+   * @param {number} y - Row coordinate of the shot
+   * @param {number} x - Column coordinate of the shot
    * @param {number} power - Weapon power level for penetration calculation
    * @returns {WeaponResult} Shot result with hits, shots fired, and sunk info
    * @private
    */
-  processShot (weapon, r, c, power) {
-    if (!bh.inBounds(r, c)) return LoadOut.noResult
+  processShot (weapon, y, x, power) {
+    if (!bh.inBounds(y, x)) return LoadOut.noResult
     if (!weapon) return LoadOut.noResult
-    if (this.isDTap(r, c, power, true, weapon.hasFlash))
+    if (this.isDTap(y, x, power, true, weapon.hasFlash))
       return LoadOut.doubleTapResult
 
-    const result = this.fireShot(weapon, r, c, power)
+    const result = this.fireShot(weapon, x, y, power)
 
     return result
   }

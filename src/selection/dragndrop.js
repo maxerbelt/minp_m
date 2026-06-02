@@ -1133,7 +1133,7 @@ class DragNDrop {
     const min = size > 2 ? -1 : 0
     const max = size < 2 ? 1 : 2
 
-    this._setLandCells(r, c, min, max, map, subterrain)
+    this.#setLandCells(r, c, min, max, map, subterrain)
     this._recolorCells(viewModel, r, c, min, max, map)
   }
 
@@ -1141,8 +1141,11 @@ class DragNDrop {
    * Sets land terrain cells in square area around brush center.
    * Iterates through min to max offsets from center applying subterrain type.
    * Validates bounds before each assignment to prevent errors.
+   * Recolors cells after land terrain change to reflect new terrain type.
+   * Recolors area larger than paint area (extended by 1) to update adjacent cells.
    * Called by _applyBrushOperation to paint terrain.
    *
+   * @param {ViewModel} viewModel - The view model providing recolor method
    * @param {number} r - Center row coordinate
    * @param {number} c - Center column coordinate
    * @param {number} min - Minimum offset from center (-1, 0, or -0.5)
@@ -1151,42 +1154,19 @@ class DragNDrop {
    * @param {string} subterrain - Terrain type identifier to paint
    *
    * @returns {void}
-   * @private
    */
-  _setLandCells (r, c, min, max, map, subterrain) {
+  #setLandCells (viewModel, r, c, min, max, map, subterrain) {
     for (let i = min; i < max; i++) {
       for (let j = min; j < max; j++) {
         if (map.inBounds(r + i, c + j)) {
           map.setLand(r + i, c + j, subterrain)
-        }
-      }
-    }
-  }
-
-  /**
-   * Recolors cells after land terrain change to reflect new terrain type.
-   * Recolors area larger than paint area (extended by 1) to update adjacent cells.
-   * Called after _setLandCells to update visual display of terrain changes.
-   *
-   * @param {ViewModel} viewModel - The view model providing recolor method
-   * @param {number} r - Center row coordinate
-   * @param {number} c - Center column coordinate
-   * @param {number} min - Minimum offset from center for paint area
-   * @param {number} max - Maximum offset from center for paint area
-   * @param {Object} map - Map instance for bounds checking
-   *
-   * @returns {void}
-   * @private
-   */
-  _recolorCells (viewModel, r, c, min, max, map) {
-    for (let i = min - 1; i < max + 1; i++) {
-      for (let j = min - 1; j < max + 1; j++) {
-        if (map.inBounds(r + i, c + j)) {
           viewModel.recolor(r + i, c + j)
         }
       }
     }
   }
+
+  n
 
   // ============================================================================
   // Drag End Handlers

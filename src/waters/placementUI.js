@@ -13,7 +13,7 @@ import { TrayManager } from './helpers/TrayManager.js'
 import { DirectionMovement } from './helpers/DirectionMovement.js'
 import { UIElementBuilder } from './helpers/UIElementBuilder.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
-
+import { CellUI } from './cellUI.js'
 /**
  * Coordinate pair [row, column] for grid positions.
  * @typedef {[number, number]} CoordinatePair
@@ -521,39 +521,6 @@ export class PlacementUI extends WatersUI {
    */
   makeDroppable (model) {
     this.#configureBoardCellsForDrop(model)
-  }
-
-  /**
-   * Prepares board cells for additional weapon placement with enhanced drop handlers.
-   * Includes weapon-specific drop behavior in addition to standard handlers.
-   *
-   * Side effects:
-   * - Invokes dragNDrop.addWeaponDrop(model, this)
-   * - Configures board cells with both standard and weapon-specific drop handlers
-   *
-   * @param {GameModel} model - Game model with weapon placement configuration
-   * @returns {void}
-   */
-  makeAddDroppable (model) {
-    dragNDrop.addWeaponDrop(model, this)
-    this.#configureBoardCellsForDrop(model, cell => {
-      dragNDrop.addDrop(cell, model, this)
-    })
-  }
-
-  /**
-   * Enables terrain brush dragging interactions on all board cells.
-   * Prepares cells to respond to brush tool drag-enter events.
-   *
-   * Side effects:
-   * - Invokes dragNDrop.dragBrushEnter on each board cell
-   *
-   * @returns {void}
-   */
-  makeBrushable () {
-    this.#forEachBoardCell(cell => {
-      dragNDrop.dragBrushEnter(cell, this)
-    })
   }
 
   /**
@@ -1090,27 +1057,6 @@ export class PlacementUI extends WatersUI {
       bg: tag ? undefined : bg,
       classes
     })
-  }
-
-  /**
-   * Updates cell at specified board coordinates to display placed ship.
-   * Convenience method combining grid lookup and display.
-   * Silently skips out-of-bounds coordinates to handle edge cases gracefully.
-   *
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @param {Ship} ship - Ship object to display
-   * @returns {void}
-   */
-  cellPlacedAt (r, c, ship) {
-    const map = bh.map
-    if (!map || !('inBounds' in map)) return
-    const inBoundsMethod = /** @type {(r: number, c: number) => boolean} */ (
-      map.inBounds
-    )
-    if (!inBoundsMethod?.call(map, r, c)) return
-    const cell = this.gridCellAt(r, c)
-    ShipCellDisplayer.displayPlacedCell(cell, ship, r, c)
   }
 
   /**
@@ -1856,30 +1802,6 @@ export class PlacementUI extends WatersUI {
     this.trayManager.clearTrays()
     model.armWeapons?.()
     this.displayAddInfo(model)
-  }
-  /**
-   * Adds a marked-as-placed visual to ship cell and surroundings.
-   * Calls display surround with callbacks to render miss/surround effects.
-   * Displays ship placement result and surrounding terrain state.
-   *
-   * Side effects:
-   * - Invokes this.displaySurround() with cellMiss and cellPlacedAt callbacks
-   * - Updates board display to show placement result
-   *
-   * @param {Array<[number, number]>} cells - Placed cell coordinates as [row, col] tuples
-   * @param {Object} ship - Ship that was placed
-   * @returns {void}
-   */
-  markPlaced (cells, ship) {
-    this.displaySurround(
-      cells,
-      ship,
-      (r, c) => {
-        this.cellMiss(r, c)
-        this.surroundShipCellAt(ship, r, c)
-      },
-      (c, r, ship) => this.cellPlacedAt(r, c, ship)
-    )
   }
 }
 

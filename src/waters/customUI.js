@@ -305,7 +305,7 @@ export class CustomUI extends PlacementUI {
   initializePlacement () {
     this.buildBoard((_r, _c) => {})
     this.trayManager.showBrushTrays()
-    this.makeBrushable()
+    this.grid.makeBrushable()
     this.buildBrushTray(bh.terrain)
     this.brushMode()
     this.acceptBtn.disabled = false

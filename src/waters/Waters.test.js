@@ -34,7 +34,6 @@ import { bh } from '../terrains/all/js/bh.js'
  * @property {Object} trayManager - Mock ship tray manager
  * @property {jest.Mock} removeDragShip - Mock drag removal
  * @property {jest.Mock} cellSize - Mock cell size getter
- * @property {jest.Mock} surroundCells - Mock surround cells
  * @property {jest.Mock} surroundCellElement - Mock surround cell element
  * @property {jest.Mock} makeDroppable - Mock draggable setup
  * @property {jest.Mock} reset - Mock reset callback
@@ -57,15 +56,19 @@ import { bh } from '../terrains/all/js/bh.js'
  */
 const mockUI = {
   placement: jest.fn(),
+  grid: {
+    surroundCells: jest.fn(),
+    cellMiss: jest.fn(),
+    displaySurround: jest.fn(),
+    surroundCellElement: jest.fn()
+  },
   placeTally: jest.fn(),
   displayShipInfo: jest.fn(),
   clearPlaceVisuals: jest.fn(),
   clearVisuals: jest.fn(),
   board: { classList: { remove: jest.fn() }, children: [] },
   displayFleetSunk: jest.fn(),
-  displaySurround: jest.fn(),
   cellHit: jest.fn(),
-  cellMiss: jest.fn(),
   cellSunkAt: jest.fn(),
   gridCellAt: jest.fn(),
   trayManager: {
@@ -76,8 +79,6 @@ const mockUI = {
   },
   removeDragShip: jest.fn(),
   cellSize: jest.fn(),
-  surroundCells: jest.fn(),
-  surroundCellElement: jest.fn(),
   makeDroppable: jest.fn(),
   reset: jest.fn(),
   buildBoard: jest.fn(),

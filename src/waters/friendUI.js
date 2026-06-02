@@ -3,7 +3,7 @@ import { gameStatus } from './StatusUI.js'
 import { PlacementUI } from './placementUI.js'
 import { trackLevelEnd } from '../navbar/gtag.js'
 import { CellClassManager } from './helpers/CellClassManager.js'
-
+import { CellUI } from './cellUI.js'
 /**
  * @callback CellCallback
  * @param {HTMLElement} cell - The grid cell element
@@ -721,33 +721,6 @@ export class FriendUI extends PlacementUI {
   }
 
   /**
-   * Marks weapon cells on the friendly board with the 'weapon' class.
-   * Iterates through all ships and their cells, adding the weapon class to cells that have armed weapons.
-   * Called during game initialization to visually distinguish weapon-equipped cells.
-   *
-   * @public
-   * @param {Array<ShipObject>} ships - Array of ship objects with cells and rackAt method
-   * @returns {void}
-   */
-  markWeaponCellsOnFriendlyBoard (ships) {
-    if (!ships) return
-
-    for (const ship of ships) {
-      if (!ship.cells) continue
-
-      for (const [column, row] of ship.cells) {
-        const weaponSlot = ship.rackAt?.(column, row)
-        if (weaponSlot) {
-          const cell = this.gridCellAt(row, column)
-          if (cell) {
-            cell.classList.add(UI_CLASSES.WEAPON)
-          }
-        }
-      }
-    }
-  }
-
-  /**
    * Proceeds to the next stage after ship placement.
    * Transitions to ready or seeking mode based on test environment status.
    * In production, fires onFleetPlaced callback and launches battle game.
@@ -756,7 +729,7 @@ export class FriendUI extends PlacementUI {
    * @returns {void}
    */
   gotoNextStageAfterPlacement () {
-    this.clearClasses()
+    this.grid.clearClasses()
     if (this.isTestEnvironment()) {
       this.setReadyModeAfterPlacement()
     } else {

@@ -30,7 +30,7 @@ export interface WeaponSystemRef {
 export interface GameGrid {
   isLand(row: number, col: number): boolean;
   inBounds(row: number, col: number): boolean;
-  surround(row: number, col: number): CoordinatePair[];
+  surround(x: number, y: number): CoordinatePair[];
 }
 
 /**

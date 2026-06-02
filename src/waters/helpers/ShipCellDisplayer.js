@@ -269,7 +269,7 @@ export class ShipCellDisplayer {
     const weaponSlot = this.#getWeaponSlotAt(ship, column, row)
 
     this.#displayCellContent(cell, ship, weaponSlot, colorMaps)
-    this.displaySurroundAttributes(cell, ship, row, column)
+    this.displaySurroundAttributes(cell, ship, column, row)
   }
 
   /**
@@ -394,9 +394,9 @@ export class ShipCellDisplayer {
    * ShipCellDisplayer.displaySurroundAttributes(cell, ship, 3, 5);
    * // Cell now has weapon dataset attributes and turn class if applicable
    */
-  static displaySurroundAttributes (cell, ship, row, column) {
+  static displaySurroundAttributes (cell, ship, x, y) {
     if (!this.#hasWeapons(ship)) return
-    this.#setSurroundAttributes(cell, ship, row, column)
+    this.#setSurroundAttributes(cell, ship, y, x)
   }
 
   /**

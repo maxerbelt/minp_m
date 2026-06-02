@@ -118,7 +118,28 @@ export class Score {
     if (this.shot.test(c, r)) return null
     return true
   }
-
+  /**
+   * Checks if a coordinate has not been shot yet.
+   * Returns true if the location is available for a new shot, null if already shot.
+   *
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
+   * @returns {boolean} True if location is unshot
+   */
+  isNewShot (x, y) {
+    return !this.shot.test(x, y)
+  }
+  /**
+   * Checks if a coordinate has not been shot yet.
+   * Returns true if the location is available for a new shot, null if already shot.
+   *
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
+   * @returns {boolean} True if location is unshot
+   */
+  isOldShot (x, y) {
+    return this.shot.test(x, y)
+  }
   /**
    * Moves a shot from shot mask to reveal mask.
    * Removes the location from active shots and marks it as temporarily revealed.
@@ -225,14 +246,14 @@ export class Score {
    * Automatic misses are excluded from player's shot count.
    * Returns null if the location was already shot.
    *
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {true|null} True if automatic miss registered, null if location already shot
    */
-  addAutoMiss (r, c) {
-    const isCreated = this.createShotKey(r, c)
+  addAutoMiss (x, y) {
+    const isCreated = this.createShotKey(y, x)
     if (!isCreated) return null
-    this.auto.set(c, r)
+    this.auto.set(x, y)
     return true
   }
 }

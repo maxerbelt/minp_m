@@ -174,6 +174,35 @@ export interface Ship {
   /** Reset ship to initial state */
   reset?: () => void
 }
+/**
+ * GridBoard reference with cell operations and state management.
+ * Main interface to the game board UI and logic.
+ * Circular ref note: Board operations are extensive; not all listed here.
+ */
+export interface GridBoard {
+  /** Main game board DOM element */
+  board: HTMLElement 
+
+  /** Mark cell as miss */
+  cellMiss?: (r: number, c: number) => void
+ 
+  markFleetWeapons?: (ships: Ship[]) => void
+ 
+
+  /** Mark ship as placed */
+  markPlaced?: (cells: unknown, ship: Ship) => void
+
+  /** Get surrounding cell elements */
+  surroundCellElement?: () => HTMLElement[] 
+
+  /** Display surrounding cells effect */
+  displaySurround?: (r: number, c: number) => void
+ 
+
+  /** Remove area-of-effect highlight */
+  removeHighlightAoE?: () => void
+ 
+}
 
 /**
  * Board reference with cell operations and state management.
@@ -195,9 +224,7 @@ export interface Board {
 
   /** Mark cell as hit */
   cellHit?: (r: number, c: number, letter?: string) => void
-
-  /** Mark cell as miss */
-  cellMiss?: (r: number, c: number) => void
+ 
 
   /** Mark ammo usage at cell */
   cellUseAmmo?: (r: number, c: number) => void
@@ -209,7 +236,7 @@ export interface Board {
   cellSemiReveal?: (x: number, y: number) => void
 
   /** Mark cell as sunk with ship letter */
-  cellSunkAt?: (r: number, c: number, letter: string) => void
+  cellSunkAt?: (x: number, y: number, letter: string) => void
 
   /** Get cell size in pixels */
   cellSize?: () => number
@@ -235,8 +262,6 @@ export interface Board {
   /** Clear placement visuals */
   clearPlaceVisuals?: () => void
 
-  /** Get surrounding cells */
-  surroundCells?: (mask: unknown) => unknown
 
   /** Get surrounding cell elements */
   surroundCellElement?: () => HTMLElement[]

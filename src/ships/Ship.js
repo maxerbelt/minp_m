@@ -1326,7 +1326,7 @@ export class Ship {
     weapon.animateDetonation(cell, viewModel.cellSize())
     const { hits, misses } = this._processCellDamage(
       model,
-      bh.map.surround(y, x)
+      bh.map.surround(x, y)
     )
     return { damaged, info: detonationInfo, hits, misses }
   }

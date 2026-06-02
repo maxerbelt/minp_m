@@ -97,8 +97,8 @@ export interface BhMap {
   readonly defaultBigint?: bigint
   readonly landBigint?: bigint
   readonly isBuiltin: boolean
-  inBounds: (r: number, c: number) => boolean
-  isLand: (r: number, c: number) => boolean
+  inBounds: (y: number, x: number) => boolean
+  isLand: (y: number, x: number) => boolean
 }
 
 /**
@@ -110,8 +110,8 @@ export interface BhMap {
  * @description Reference to CustomMap class from map.js
  */
 export interface CustomMap extends BhMap {
-  addLand?: (r: number, c: number) => void
-  removeLand?: (r: number, c: number) => void
+  addLand?: (x: number, y: number) => void
+  removeLand?: (x: number, y: number) => void
 }
 
 /**

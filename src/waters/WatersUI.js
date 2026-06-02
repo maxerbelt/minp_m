@@ -81,24 +81,18 @@
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
 import { ScoreUI } from './ScoreUI.js'
-import {
-  coordsFromCell,
-  makeKey,
-  parsePair,
-  setCellCoords
-} from '../core/utilities.js'
+import { CellUI } from './cellUI.js'
 import { LoadOut } from './LoadOut.js'
 import { gameStatus } from './StatusUI.js'
 import { Delay } from '../core/Delay.js'
 import { CellClassManager } from './helpers/CellClassManager.js'
 import { BoardConfigurator } from './helpers/BoardConfigurator.js'
-import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
+import { GridBoard } from './gridBoard.js'
 
 export const gameHost = {
   containerWidth: 574
 }
-const startCharCode = 65
 
 /**
  * Retrieves all child elements from a board element.
@@ -162,10 +156,9 @@ const NOTES_TYPE_MAP = {
  *
  * **Key Methods:**
  * - cellSize() / cellSizeString(): Responsive sizing for display modes
- * - gridCellAt() / gridCellRawAt(): Cell element access with/without validation
+ * - gridCellAt() / #cellDivAt(): Cell element access with/without validation
  * - buildBoard() / buildBoardPrint(): Grid initialization for interactive/print display
- * - colorizeCell() / _detectAndApplyEdges(): Terrain coloring and edge detection
- * - displaySurround() / _displaySurroundingMisses(): Area-of-effect visualization
+ * - #colorizeCell() / _detectAndApplyEdges(): Terrain coloring and edge detection
  *
  * @class WatersUI
  * @classdesc Board UI manager for player territories with state, sizing, and rendering capabilities
@@ -183,7 +176,7 @@ export class WatersUI {
    * Board element ID format: "{territory}-board", Title element: "{territory}-title"
    */
   constructor (territory, title) {
-    this.board = document.getElementById(territory + '-board')
+    this.grid = GridBoard.create(territory)
     this.score = new ScoreUI(territory)
     this.territory = territory
     this.territoryTitle = title
@@ -191,6 +184,10 @@ export class WatersUI {
     this.containerWidth = gameHost.containerWidth
     this.isPrinting = false
     this.showShips = false
+  }
+
+  get board () {
+    return this.grid?.board
   }
 
   /**
@@ -235,24 +232,6 @@ export class WatersUI {
     for (const cell of getBoardChildren(this.board)) {
       // @ts-ignore - child elements are HTMLElement at runtime
       callback(/** @type {HTMLElement} */ (cell))
-    }
-  }
-
-  /**
-   * Iterates over grid coordinates, calling callback for each cell position.
-   * Provides functional interface to grid enumeration for board construction.
-   *
-   * @param {number} rows - Number of rows in grid
-   * @param {number} cols - Number of columns in grid
-   * @param {(row: number, column: number) => void} callback - Function to call for each coordinate
-   * @returns {void}
-   * @private
-   */
-  _buildGrid (rows, cols, callback) {
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        callback(r, c)
-      }
     }
   }
 
@@ -358,35 +337,6 @@ export class WatersUI {
   }
 
   /**
-   * Calculates linear index from 2D grid coordinates.
-   * Index = row * columnCount + column (standard row-major ordering).
-   *
-   * @param {number} row - Row coordinate (0-based, y-axis)
-   * @param {number} column - Column coordinate (0-based, x-axis)
-   * @returns {number} Linear array index in flattened grid
-   * @private
-   */
-  #gridIndex (row, column) {
-    return row * bh.map.cols + column
-  }
-
-  /**
-   * Retrieves grid cell element at coordinates without validation.
-   * Returns null if cell not found (safer for defensive programming).
-   *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @returns {HTMLDivElement|null} Cell element or null if not found
-   */
-  gridCellRawAt (row, column) {
-    return (
-      /** @type {HTMLDivElement|null} */ (
-        this.board?.children?.[this.#gridIndex(row, column)]
-      ) || null
-    )
-  }
-
-  /**
    * Retrieves grid cell element at coordinates with validation.
    * Throws error if cell not found to catch coordinate errors early.
    *
@@ -396,7 +346,7 @@ export class WatersUI {
    * @throws {Error} If cell at coordinates is invalid or missing
    */
   gridCellAt (row, column) {
-    const result = this.gridCellRawAt(row, column)
+    const result = CellUI.node(this.board, column, row)
     if (result?.classList) return result
     throw new Error(
       `Invalid cell at ${row},${column}: ${JSON.stringify(result)}`
@@ -467,19 +417,6 @@ export class WatersUI {
   }
 
   /**
-   * Displays surrounding ship cell attributes.
-   * @param {Ship} ship - Ship object
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @returns {void}
-   */
-  surroundShipCellAt (ship, r, c) {
-    const cell = this.gridCellAt(r, c)
-    // @ts-ignore - ship type compatible with ShipCellDisplayer.Ship
-    ShipCellDisplayer.displaySurroundAttributes(cell, ship, r, c)
-  }
-
-  /**
    * Resets all ships to initial state and reveals them on the board.
    * Used when starting a new game or round.
    *
@@ -519,8 +456,8 @@ export class WatersUI {
   revealShip (ship) {
     const colorMaps = bh.maps
     // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
-    for (const [column, row] of ship.cells) {
-      const cell = this.gridCellAt(row, column)
+    for (const [x, y] of ship.cells) {
+      const cell = CellUI.nodeAt(this.board, x, y, colorMaps)
       // @ts-ignore - ship matches Ship type for display
       ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
     }
@@ -557,18 +494,6 @@ export class WatersUI {
   }
 
   /**
-   * Clears all cell classes from every cell in the board.
-   * Returns board to base state (only terrain coloring remains).
-   *
-   * @returns {void}
-   */
-  clearClasses () {
-    this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
-      CellClassManager.clearCell(cell)
-    )
-  }
-
-  /**
    * Marks a cell at coordinates as sunk.
    * @param {number} r - Row index
    * @param {number} c - Column index
@@ -576,7 +501,7 @@ export class WatersUI {
    * @returns {void}
    */
   cellSunkAt (r, c, letter) {
-    const cell = this.gridCellAt(r, c)
+    const cell = CellUI.nodeAt(this.board, c, r)
     this.displayAsSunk(cell, letter)
   }
 
@@ -590,7 +515,7 @@ export class WatersUI {
    * @returns {void}
    */
   cellHit (row, column, damageType) {
-    const cell = this.gridCellAt(row, column)
+    const cell = CellUI.nodeAt(this.board, column, row)
     CellClassManager.applyEnemyHitCellState(cell, damageType)
     this._clearCellText(cell)
   }
@@ -605,7 +530,7 @@ export class WatersUI {
    * @returns {number|Object} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
    */
   cellSemiReveal (x, y) {
-    const cell = this.gridCellAt(y, x)
+    const cell = CellUI.nodeAt(this.board, x, y)
 
     if (!CellClassManager.applySemiRevealState(cell)) {
       return LoadOut.noResult
@@ -706,238 +631,6 @@ export class WatersUI {
   }
 
   /**
-   * Marks a cell as a miss (no ship hit).
-   * Skips if cell already has a ship placed to protect ships.
-   *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @param {string} [damageType] - Optional damage indicator class
-   * @returns {void}
-   */
-  cellMiss (row, column, damageType) {
-    const cell = this.gridCellAt(row, column)
-
-    if (cell.classList.contains('placed')) return
-    cell.classList.add('miss')
-    if (damageType) {
-      cell.classList.add(damageType)
-    }
-    cell.classList.remove('wake')
-  }
-
-  /**
-   * Adds surrounding cells to container using specified strategy.
-   * Generic method that delegates to SurroundingCellsHelper with flexible result format.
-   *
-   * @param {number} row - Row coordinate of center cell
-   * @param {number} column - Column coordinate of center cell
-   * @param {Set<string>|Object<string, HTMLElement>|any[]} container - Container to accumulate results
-   * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
-   * @returns {void}
-   * @throws {Error} If maker callback required but not provided for chosen strategy
-   * @private
-   */
-  _addSurroundingCells (row, column, container, strategy, map, maker) {
-    const currentMap = map || bh.map
-    if (!currentMap) return
-    let result
-
-    switch (strategy) {
-      case 'keySet': {
-        result = SurroundingCellsHelper.asKeySet(currentMap, row, column)
-        // @ts-ignore - container is Set when strategy is keySet
-        result.forEach(key => container.add(key))
-        break
-      }
-      case 'objectMap': {
-        if (!maker) throw new Error('maker required for objectMap strategy')
-        result = SurroundingCellsHelper.asObjectMap(
-          currentMap,
-          row,
-          column,
-          maker
-        )
-        Object.assign(container, result)
-        break
-      }
-      case 'array': {
-        if (!maker) throw new Error('maker required for array strategy')
-        result = SurroundingCellsHelper.asArray(currentMap, row, column, maker)
-        // @ts-ignore - container is array when strategy is array
-        container.push(...result)
-        break
-      }
-      default:
-        throw new Error(`Unknown surround strategy: ${strategy}`)
-    }
-  }
-
-  /**
-   * Adds surrounding cell keys to a set container.
-   * Retrieves all neighbors of specified cell and adds their keys.
-   *
-   * @param {number} row - Row coordinate of center cell
-   * @param {number} column - Column coordinate of center cell
-   * @param {Set<string>} container - Set to accumulate surrounding cell keys
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @returns {void}
-   */
-  surround (row, column, container, map) {
-    // @ts-ignore - map compatible with GridMap when defined
-    this._addSurroundingCells(row, column, container, 'keySet', map)
-  }
-
-  /**
-   * Adds surrounding cells as object mappings to container.
-   * Retrieves neighbors and applies maker function to each coordinate.
-   *
-   * @param {number} row - Row coordinate of center cell
-   * @param {number} column - Column coordinate of center cell
-   * @param {Object} container - Object to accumulate surrounding cell mappings
-   * @param {CoordToElementCallback} maker - Callback to transform [row, col] → HTMLElement
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @returns {void}
-   */
-  surroundObj (row, column, container, maker, map) {
-    this._addSurroundingCells(row, column, container, 'objectMap', map, maker)
-  }
-
-  /**
-   * Adds surrounding cells to array container.
-   * Retrieves neighbors and applies maker function to each coordinate.
-   *
-   * @param {number} row - Row coordinate of center cell
-   * @param {number} column - Column coordinate of center cell
-   * @param {any[]} container - Array to accumulate surrounding cell elements
-   * @param {CoordToValueCallback} maker - Callback to transform [row, col] → any value
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @returns {void}
-   */
-  surroundList (row, column, container, maker, map) {
-    this._addSurroundingCells(row, column, container, 'array', map, maker)
-  }
-
-  /**
-   * Converts coordinate pairs to set of cell keys.
-   * Keys are formatted as 'col-row' for keyed lookups.
-   *
-   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
-   * @returns {Set<string>} Set of cell keys
-   */
-  cellSet (cells) {
-    const result = new Set()
-    for (const [row, column] of cells) {
-      result.add(makeKey(column, row))
-    }
-    return result
-  }
-
-  /**
-   * Calculates hollow set (outer ring without interior).
-   * Returns surrounding cells minus original cells.
-   * Useful for area-of-effect calculations.
-   *
-   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
-   * @returns {Set<string>} Set of hollow cells (surrounding but not original)
-   */
-  hollowCells (cells) {
-    const surround = this.surroundCells(cells)
-    const original = this.cellSet(cells)
-    return surround.difference(original)
-  }
-
-  /**
-   * Calculates all cells surrounding given cells (flood fill perimeter).
-   * Includes diagonal neighbors.
-   *
-   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
-   * @returns {Set<string>} Set of surrounding cell keys
-   */
-  surroundCells (cells) {
-    const map = bh.map
-    const surroundings = new Set()
-    for (const [column, row] of cells) {
-      this.surround(row, column, surroundings, map)
-    }
-    return surroundings
-  }
-
-  /**
-   * Gets surrounding cell DOM elements for given cell elements.
-   * Retrieves neighbor cells and returns as flat array.
-   *
-   * @param {Iterable<HTMLElement>} cells - Iterable of DOM cell elements
-   * @param {Object<string, HTMLElement>} [container] - Optional container object to accumulate results
-   * @returns {HTMLElement[]} Array of surrounding cell elements
-   */
-
-  surroundCellElement (cells, container) {
-    const map = bh.map
-    const surroundings = container || {}
-    for (const cell of cells) {
-      const [row, column] = coordsFromCell(cell)
-      this.surroundObj(
-        row,
-        column,
-        surroundings,
-        this.gridCellAt.bind(this),
-        map
-      )
-    }
-    return Object.values(surroundings)
-  }
-
-  /**
-   * Displays surrounding cells with miss indicator.
-   * Marks all neighbors (but not original cells) as miss for area-of-effect.
-   *
-   * @param {Set<string>} surroundingKeys - Set of surrounding cell keys
-   * @param {CellMissCallback} cellMiss - Callback to mark cells as miss: (row, col) => void
-   * @returns {void}
-   */
-  _displaySurroundingMisses (surroundingKeys, cellMiss) {
-    for (const key of surroundingKeys) {
-      const [row, column] = parsePair(key)
-      cellMiss(row, column)
-    }
-  }
-
-  /**
-   * Displays center cells using provided display function.
-   * Typically marks original cells with ship or hit indicators.
-   *
-   * @param {Iterable<[number, number]>} cells - Original cell coordinates
-   * @param {Ship} ship - Ship object for display
-   * @param {CellDisplayCallback} displayFn - Callback to display cells: (row, col, ship) => void
-   * @returns {void}
-   */
-  _displayCenterCells (cells, ship, displayFn) {
-    for (const [row, column] of cells) {
-      displayFn(row, column, ship)
-    }
-  }
-
-  /**
-   * Displays surrounding cells with miss indicator and center cells with display function.
-   * Used for area-of-effect visualization (e.g., weapon splash).
-   *
-   * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
-   * @param {Ship} ship - Ship object for center cell display
-   * @param {CellMissCallback} cellMiss - Callback to mark surrounding cells as miss
-   * @param {CellDisplayCallback} [display] - Optional callback to display center cells
-   * @returns {void}
-   */
-  displaySurround (cells, ship, cellMiss, display) {
-    const surroundingKeys = this.hollowCells(cells)
-    this._displaySurroundingMisses(surroundingKeys, cellMiss)
-    if (display) {
-      this._displayCenterCells(cells, ship, display)
-    }
-  }
-
-  /**
    * Resets board CSS dimensions for screen display.
    * Delegates to BoardConfigurator for DOM manipulation.
    *
@@ -965,32 +658,17 @@ export class WatersUI {
   }
 
   /**
-   * Applies terrain coloring to cell at coordinates.
-   * Convenience wrapper over colorizeCell using cell lookup.
-   *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @returns {void}
-   */
-  colorize (row, column) {
-    const cell = this.gridCellRawAt(row, column)
-    if (cell) {
-      this.colorizeCell(cell, row, column)
-    }
-  }
-
-  /**
    * Removes and reapplies terrain coloring to cell at coordinates.
    * Used when terrain has changed and colors need refresh.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    */
-  recolor (row, column) {
-    const cell = this.gridCellRawAt(row, column)
-    if (cell) {
-      this.recolorCell(cell, row, column)
+  recolor (x, y) {
+    const cellUI = CellUI.fromBoard(this.board, x, y)
+    if (cellUI) {
+      cellUI.recolor()
     }
   }
 
@@ -1014,165 +692,8 @@ export class WatersUI {
    * @returns {void}
    */
   refreshColor (cell) {
-    const rowStr = cell.dataset.r || '0'
-    const colStr = cell.dataset.c || '0'
-    const row = Number.parseInt(rowStr)
-    const column = Number.parseInt(colStr)
-    this.uncolorCell(cell)
-    this.colorizeCell(cell, row, column)
-  }
-
-  /**
-   * Removes all edge-related classes from a cell.
-   * Used before reapplying terrain coloring.
-   *
-   * @param {HTMLElement} cell - DOM element to clear
-   * @returns {void}
-   */
-  uncolorCell (cell) {
-    const edgeClasses = Object.values(CellClassManager.CELL_CLASSES.edge)
-    cell.classList.remove(...edgeClasses)
-  }
-
-  /**
-   * Removes and reapplies terrain coloring for a cell at coordinates.
-   * Convenience method combining uncolorCell and colorizeCell.
-   *
-   * @param {HTMLElement} cell - DOM element to update
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @returns {void}
-   */
-  recolorCell (cell, row, column) {
-    this.uncolorCell(cell)
-    this.colorizeCell(cell, row, column)
-  }
-
-  /**
-   * Checks if cell has edges with land and applies corresponding CSS classes.
-   * Adds edge classes for water cells adjacent to land cells.
-   *
-   * @param {HTMLElement} cell - DOM element for edge class application
-   * @param {number} row - Row coordinate (0-based, y-axis)
-   * @param {number} column - Column coordinate (0-based, x-axis)
-   * @param {GridMap} map - Map configuration with cols, rows, isLand() method
-   * @param {boolean} isLand - Whether current cell is land terrain
-   * @returns {void}
-   * @description Applies CSS classes: rightEdge, leftEdge, topEdge, bottomEdge as appropriate
-   * @private
-   */
-  _detectAndApplyEdges (cell, row, column, map, isLand) {
-    // Check right edge (water next to land)
-    const columnRight = column + 1
-    if (!isLand && columnRight < map.cols && map.isLand(row, columnRight)) {
-      cell.classList.add('rightEdge')
-    }
-
-    // Check left edge (water next to land)
-    if (column !== 0 && !isLand && map.isLand(row, column - 1)) {
-      cell.classList.add('leftEdge')
-    }
-
-    // Check bottom edge (transition between land/water vertically)
-    const rowBelow = row + 1
-    if (rowBelow < map.rows && isLand !== map.isLand(rowBelow, column)) {
-      cell.classList.add('bottomEdge')
-    }
-
-    // Check top edge (water next to land vertically)
-    if (row !== 0 && !isLand && map.isLand(row - 1, column)) {
-      cell.classList.add('topEdge')
-    }
-  }
-
-  /**
-   * Applies terrain coloring and edge detection to a cell.
-   * Determines if cell borders land/water and adds appropriate edge classes.
-   * Called during board initialization and terrain refresh.
-   *
-   * @param {HTMLElement} cell - DOM element to colorize
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @returns {void}
-   */
-  colorizeCell (cell, row, column, map) {
-    const currentMap = map || bh.map
-    if (!currentMap) return
-    currentMap.tagCell(cell.classList, row, column)
-    const isLand = currentMap.isLand(row, column)
-    this._detectAndApplyEdges(cell, row, column, currentMap, isLand)
-  }
-
-  /**
-   * Creates and appends an empty cell (used for corner label cell).
-   *
-   * @returns {void}
-   */
-  buildEmptyCell () {
-    const cell = document.createElement('div')
-    cell.className = 'cell empty'
-    if (this.board) {
-      this.board.appendChild(cell)
-    }
-  }
-
-  /**
-   * Creates and appends a row label cell.
-   *
-   * @param {number} maxRows - Total rows (used to calculate inverted index)
-   * @param {number} row - Row index (0-based)
-   * @returns {void}
-   */
-  buildRowLabel (maxRows, row) {
-    const cell = document.createElement('div')
-    cell.className = 'cell row-label'
-    cell.dataset.r = String(row)
-    cell.textContent = `${maxRows - row}`
-    if (this.board) {
-      this.board.appendChild(cell)
-    }
-  }
-
-  /**
-   * Creates and appends a column label cell with letter.
-   *
-   * @param {number} column - Column index (0-based)
-   * @returns {void}
-   */
-  buildColLabel (column) {
-    const cell = document.createElement('div')
-    cell.className = 'cell col-label'
-    cell.dataset.c = String(column)
-    cell.textContent = String.fromCodePoint(startCharCode + column)
-    if (this.board) {
-      this.board.appendChild(cell)
-    }
-  }
-
-  /**
-   * Creates and appends a game board cell with optional click handler.
-   * Applies terrain coloring, coordinates, and click listener.
-   *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
-   * @param {((event: MouseEvent) => void)|null} [onClickCell] - Optional click event handler
-   * @param {GridMap} [map] - Map configuration for terrain coloring
-   * @returns {void}
-   * @description onClickCell is typically bound with .bind(thisRef, row, column) before use
-   */
-  buildCell (row, column, onClickCell, map) {
-    const cell = document.createElement('div')
-    cell.className = 'cell'
-    this.colorizeCell(cell, row, column, map)
-    setCellCoords(cell, row, column)
-    if (onClickCell && typeof onClickCell === 'function') {
-      // @ts-ignore - event listener type checked at runtime
-      cell.addEventListener('click', onClickCell)
-    }
-    if (this.board) {
-      this.board.appendChild(cell)
-    }
+    const cellUI = CellUI.fromHtmlElement(cell)
+    cellUI.recolor()
   }
 
   /**
@@ -1183,19 +704,7 @@ export class WatersUI {
    * @returns {void}
    */
   buildBoardPrint (map) {
-    const currentMap = map || bh.map
-    if (!this.board) return
-    this.board.innerHTML = ''
-    this.buildEmptyCell()
-    for (let column = 0; column < currentMap.cols; column++) {
-      this.buildColLabel(column)
-    }
-    for (let row = 0; row < currentMap.rows; row++) {
-      this.buildRowLabel(currentMap.rows, row)
-      for (let column = 0; column < currentMap.cols; column++) {
-        this.buildCell(row, column, undefined, currentMap)
-      }
-    }
+    GridBoard.createPrintableGrid(this.board, map)
   }
 
   /**
@@ -1209,25 +718,7 @@ export class WatersUI {
    * @description onClickCell will be called with (row, column) coordinates after binding with thisRef context
    */
   buildBoard (onClickCell, thisRef, map) {
-    const currentMap = map || bh.map
-    if (!this.board) return
-    this.board.innerHTML = ''
-    this._buildGrid(
-      currentMap.rows,
-      currentMap.cols,
-      (/** @type {number} */ row, /** @type {number} */ column) => {
-        if (onClickCell) {
-          this.buildCell(
-            row,
-            column,
-            onClickCell.bind(thisRef, row, column),
-            currentMap
-          )
-        } else {
-          this.buildCell(row, column, undefined, currentMap)
-        }
-      }
-    )
+    GridBoard.createScreenGrid(this.board, onClickCell, thisRef, map)
   }
 
   /**
@@ -1241,29 +732,6 @@ export class WatersUI {
     this._forEachBoardCell((/** @type {HTMLElement} */ el) =>
       el.classList.remove(...tags)
     )
-  }
-
-  /**
-   * Attaches hover event listeners to all board cells.
-   * Shows/hides area-of-effect or targeting information on hover.
-   *
-   * @param {CellHoverEnterCallback} onEnter - Mouseenter handler
-   * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler
-   * @param {Object} [thisRef] - Context for onLeave binding
-   * @param {any} [weaponSource] - Weapon source data passed to onEnter
-   * @returns {void}
-   */
-  buildBoardHover (onEnter, onLeave, thisRef, weaponSource) {
-    this._forEachBoardCell((/** @type {HTMLElement} */ el) => {
-      const [row, column] = coordsFromCell(el)
-      // @ts-ignore - addEventListener signature compatible at runtime
-      el.addEventListener(
-        'mouseenter',
-        onEnter.bind(null, weaponSource, row, column)
-      )
-      // @ts-ignore - addEventListener signature compatible at runtime
-      el.addEventListener('mouseleave', onLeave.bind(thisRef, row, column))
-    })
   }
 
   /**

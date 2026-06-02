@@ -1,5 +1,3 @@
-
-
 import { inRange, CustomBlankMap, SavedCustomMap } from './map.js'
 import { oldToken } from './terrain.js'
 import { jest } from '@jest/globals'
@@ -20,7 +18,7 @@ describe('map.js basic utilities', () => {
     globalThis.localStorage = origLocalStorage
   })
 
-  test('inRange returns matcher for row and column span', () => {
+  it('inRange returns matcher for row and column span', () => {
     const matcher = inRange(2, 3)
     // element format [r, cmin, cmax]
     expect(matcher([2, 1, 3])).toBe(true)
@@ -29,7 +27,7 @@ describe('map.js basic utilities', () => {
     expect(matcher([2, 4, 6])).toBe(false)
   })
 
-  test('CustomBlankMap indexToken uses oldToken and terrain key', () => {
+  it('CustomBlankMap indexToken uses oldToken and terrain key', () => {
     const terrain = {
       key: 'my-ter',
       title: 'My Terrain',
@@ -41,19 +39,19 @@ describe('map.js basic utilities', () => {
     expect(token).toBe(`${oldToken}.${terrain.key}-index-8x6`)
   })
 
-  test('CustomBlankMap addLand and isLand work via withModifyable', () => {
+  it('CustomBlankMap addLand and isLand work via withModifyable', () => {
     const terrain = { key: 'k', title: 'T', subterrains: [] }
     const cb = new CustomBlankMap(4, 5, terrain)
     // initially not land
     expect(cb.isLand(1, 2)).toBe(false)
-    cb.addLand(1, 2)
+    cb.addLand(2, 1)
     expect(cb.isLand(1, 2)).toBe(true)
     // out of bounds should be ignored
     cb.addLand(999, 999)
     expect(cb.isLand(999, 999)).toBe(false)
   })
 
-  test('SavedCustomMap.loadObj/load and remove interact with localStorage and terrain', () => {
+  it('SavedCustomMap.loadObj/load and remove interact with localStorage and terrain', () => {
     const title = 'saved-map-1'
     const key = `${oldToken}.${title}`
 

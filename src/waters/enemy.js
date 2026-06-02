@@ -706,7 +706,7 @@ class Enemy extends Waters {
    */
   get hasNoAmmo () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
-    return loadOut?.isOutOfAmmo?.() === true
+    return loadOut?.isOutOfAmmo === true
   }
 
   /**
@@ -829,7 +829,7 @@ class Enemy extends Waters {
   revealAll () {
     // @ts-ignore - this.UI is typed as Object but has clearClasses method
     const ui = /** @type {EnemyUI|undefined} */ (this.UI)
-    ui?.clearClasses?.()
+    ui?.grid?.clearClasses?.()
     ui?.revealAll?.(this.ships)
     this._hideWaiting()
     // @ts-ignore - opponent type compatibility and hideWaiting method
@@ -1578,7 +1578,7 @@ class Enemy extends Waters {
    *
    * @public
    * @param {Weapon} weapon - The weapon being fired
-   * @param {Array<Array<number>>} effect - Array of effect coordinates [row, col] with optional [row, col, power]
+   * @param {number[][]} effect - Array of effect coordinates [row, col] with optional [row, col, power]
    * @param {Object} [options] - Additional firing options
    * @param {boolean} [options.isSplash=false] - If true, skips shot validity checks (for splash damage)
    * @returns {Object|Symbol} The weapon effect result or LoadOut.noResult sentinel
@@ -1586,7 +1586,7 @@ class Enemy extends Waters {
   // @ts-ignore - Intentionally overrides parent's private destroy with public implementation
   destroy (weapon, effect, options) {
     if (!options?.isSplash) {
-      if (this._isInvalidShot(effect)) {
+      if (this.#isInvalidShot(effect)) {
         gameStatus.addToQueue(MESSAGES.ALREADY_SHOT, false)
         // @ts-ignore - LoadOut type issue
         return LoadOut.noResult
@@ -1603,13 +1603,12 @@ class Enemy extends Waters {
 
   /**
    * Checks if the shot is invalid (already shot).
-   * @private
-   * @param {Array<Array<number>>} effect - Array of effect coordinates
+   * @param {  number[][]} effect - Array of effect coordinates
    * @returns {boolean} True if invalid
    */
-  _isInvalidShot (effect) {
+  #isInvalidShot (effect) {
     return (
-      effect.length === 1 && !this.score.newShotKey(effect[0][0], effect[0][1])
+      effect.length === 1 && this.score.isOldShot(effect[0][1], effect[0][0])
     )
   }
 

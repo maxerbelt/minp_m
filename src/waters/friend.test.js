@@ -11,6 +11,13 @@ import { it, describe, expect, beforeEach, jest } from '@jest/globals'
 // ============================================================================
 
 /**
+ * @typedef {Object} MockGridBoard
+ * @property {HTMLElement} board - Game board DOM element mock
+ * @property {jest.Mock} makeDroppable - Enable drag-and-drop on board
+ * @property {jest.Mock} markFleetWeapons - Mark weapon cell display
+ */
+
+/**
  * @typedef {Object} MockUI
  * @property {jest.Mock} showNotice - Show notice to player
  * @property {jest.Mock} clearVisuals - Clear weapon visual effects
@@ -19,11 +26,10 @@ import { it, describe, expect, beforeEach, jest } from '@jest/globals'
  * @property {jest.Mock} revealShips - Reveal multiple ships
  * @property {jest.Mock} resetShips - Reset ship display state
  * @property {jest.Mock} buildBoard - Build game board with click handlers
- * @property {jest.Mock} makeDroppable - Enable drag-and-drop on board
- * @property {jest.Mock} markWeaponCellsOnFriendlyBoard - Mark weapon cell display
  * @property {jest.Mock} buildTrays - Build weapon trays
  * @property {jest.Mock} reset - Reset UI state
  * @property {HTMLElement} board - Game board DOM element mock
+ * @property {MockGridBoard} grid
  * @property {jest.Mock} itMode - IT/Test mode toggle
  * @property {HTMLButtonElement} itBtn - IT mode button mock
  * @property {HTMLButtonElement} seekBtn - Seek mode button mock
@@ -72,8 +78,10 @@ const getMockUI = () =>
     revealShips: jest.fn(),
     resetShips: jest.fn(),
     buildBoard: jest.fn(),
-    makeDroppable: jest.fn(),
-    markWeaponCellsOnFriendlyBoard: jest.fn(),
+    grid: {
+      makeDroppable: jest.fn(),
+      markFleetWeapons: jest.fn()
+    },
     buildTrays: jest.fn(),
     reset: jest.fn(),
     board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
@@ -590,8 +598,8 @@ describe('Friend', () => {
       friend.UI.buildBoard = jest.fn(() => callOrder.push('buildBoard'))
       friend.resetShipCells = jest.fn(() => callOrder.push('resetShipCells'))
       friend.UI.makeDroppable = jest.fn(() => callOrder.push('makeDroppable'))
-      friend.UI.markWeaponCellsOnFriendlyBoard = jest.fn(() =>
-        callOrder.push('markWeaponCellsOnFriendlyBoard')
+      friend.UI.grid.markFleetWeapons = jest.fn(() =>
+        callOrder.push('markFleetWeapons')
       )
 
       friend.buildBoard()
@@ -600,7 +608,7 @@ describe('Friend', () => {
         'buildBoard',
         'resetShipCells',
         'makeDroppable',
-        'markWeaponCellsOnFriendlyBoard'
+        'markFleetWeapons'
       ])
     })
   })

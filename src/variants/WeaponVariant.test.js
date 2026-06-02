@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals'
 
-
 jest.unstable_mockModule('../ships/SubShape.js', () => {
   return {
     StandardCells: jest
@@ -68,9 +67,7 @@ jest.unstable_mockModule('./SpecialVariant.js', () => {
       this.specialGroups = []
       this.subGroups = []
     }
-    buildCell3 (_symmetry, _full) {
-      this.list = []
-    }
+
     buildBoard3 (symmetry, board) {
       this.list = [board]
     }
