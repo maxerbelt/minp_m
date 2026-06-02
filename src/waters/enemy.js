@@ -139,56 +139,69 @@ const MESSAGES = {
  */
 /**
  * @typedef {Object} LoadOutType
- * @property {boolean} isSingleShot - Whether in single-shot mode
- * @property {Array<any>} selectedCoordinates - Currently selected targeting coordinates
- * @property {Object|null} selectedWeapon - Currently selected weapon (null if none)
- * @property {() => void|undefined} clearSelectedCoordinates - Clears targeting coordinates
- * @property { WeaponSystem|undefined} firstUnattachedWeaponSystem - Gets unattached weapon or undefined
- * @property { WeaponSystem|undefined} currentWeaponSystem - Gets current weapon system
- * @property {(letter: string) => void} switchToWeapon - Switch to weapon by letter
- * @property {() => void} switchToNextWeaponSystem - Switch to next weapon system
- * @property {() => boolean} isOutOfAmmo - Check if out of ammo
- * @property {boolean} hasNoCurrentAmmo - Check if current weapon has no ammo
- * @property {() => Array<any>} getLimitedWeaponSystems - Get weapons with limited ammo
- * @property {() => void} switchToSingleShot - Switch to single-shot mode
+ * @description Weapon loadout manager interface for weapon selection, ammo tracking, and targeting state.
+ * Manages active weapon system, multi-click targeting state, and single-shot mode.
+ * @property {boolean} isSingleShot - Whether loadout is in single-shot weapon mode
+ * @property {Array<[number, number]>} selectedCoordinates - Currently selected targeting coordinates [r, c]
+ * @property {Object|null} selectedWeapon - Currently selected weapon object (null if none)
+ * @property {() => void|undefined} clearSelectedCoordinates - Clears targeting coordinates and resets targeting state
+ * @property {WeaponSystem|undefined} firstUnattachedWeaponSystem - Gets first unattached weapon system or undefined
+ * @property {WeaponSystem|undefined} currentWeaponSystem - Gets currently active weapon system
+ * @property {(letter: string) => void} switchToWeapon - Switch to weapon system by letter identifier
+ * @property {() => void} switchToNextWeaponSystem - Switch to next available weapon system (cycle)
+ * @property {() => boolean} isOutOfAmmo - Check if completely out of ammo for all weapons
+ * @property {boolean} hasNoCurrentAmmo - Check if current weapon has zero ammo
+ * @property {() => Array<WeaponSystem>} getLimitedWeaponSystems - Get weapons with limited ammo
+ * @property {() => void} switchToSingleShot - Switch to single-shot targeting mode
  * @property {(r: number, c: number, weapon?: Object) => void} addSelectedCoordinates - Add targeting coordinate
  * @property {Function|null} onOutOfAllAmmo - Callback when all ammo depleted
  * @property {Function|null} onOutOfAmmo - Callback when weapon ammo depleted
- * @property {Function} notifyCursorChange - Notify loadout of cursor change
- * @property {boolean} isNotArming - Check if weapon is not arming
+ * @property {Function} notifyCursorChange - Notify loadout of cursor change for mode update
+ * @property {boolean} isNotArming - Check if weapon is not arming (ready to fire)
+ * @memberof Enemy
  */
 /**
  * @typedef {Object} StepsManager
- * @property {Function|null} onBeginTurn - Begin turn callback
- * @property {Function|null} onDeactivate - Deactivate callback
- * @property {Function|null} onActivate - Activate callback
- * @property {Function|null} onSelect - Select callback
- * @property {Function|null} onAim - Aim callback
- * @property {Function|null} onChangeWeapon - Change weapon callback
- * @property {() => void|undefined} clearSource - Clear selected source
- * @property {(ship: Object) => void} addShip - Add ship to selection
- * @property {(ui: EnemyUI, r: number, c: number, cell?: HTMLElement) => void} addSource - Add source location
- * @property {(ui: EnemyUI, r: number, c: number, cell?: HTMLElement) => void} addHint - Add hint location
- * @property {() => void} select - Trigger selection mode
- * @property {() => void} endTurn - End the turn
+ * @description Game state machine interface managing turn flow, weapon selection, and targeting.
+ * Handles callbacks for each phase of turn: begin → select → aim → activate → end.
+ * @property {Function|null} onBeginTurn - Begin turn callback (reset state, show status)
+ * @property {Function|null} onDeactivate - Deactivate weapon callback (clear visual state)
+ * @property {Function|null} onActivate - Activate weapon callback (show weapon preview)
+ * @property {Function|null} onSelect - Select callback (prepare for targeting)
+ * @property {Function|null} onAim - Aim callback (enter targeting mode)
+ * @property {Function|null} onChangeWeapon - Change weapon callback (switch weapon system)
+ * @property {() => void|undefined} clearSource - Clear selected source (ship weapon rack)
+ * @property {(ship: Object) => void} addShip - Add ship to selection (source ship)
+ * @property {(ui: EnemyUI, r: number, c: number, cell?: HTMLElement) => void} addSource - Add source location (weapon rack position)
+ * @property {(ui: EnemyUI, r: number, c: number, cell?: HTMLElement) => void} addHint - Add hint location (targeting hint)
+ * @property {() => void} select - Trigger selection mode (prepare for targeting)
+ * @property {() => void} endTurn - End the current turn
+ * @memberof Enemy
  */
 /**
  * @typedef {Object} WatersOpponent
- * @property {boolean} [hasAttachedWeapons] - Whether opponent has attached weapons
- * @property {boolean} [boardDestroyed] - Whether opponent board is destroyed
- * @property {Object} UI - Opponent UI controller
- * @property {() => void} [hideWaiting] - Hide waiting indicator
- * @property {() => void} [updateUI] - Update opponent UI
+ * @description Opponent player interface (Friend instance) for accessing opponent state and UI.
+ * Used by Enemy to interact with the opposing player's board, weapons, and UI.
+ * @property {boolean} [hasAttachedWeapons] - Whether opponent has attached weapons (ships with weapons)
+ * @property {boolean} [boardDestroyed] - Whether opponent board is destroyed (game over)
+ * @property {EnemyUI} UI - Opponent UI controller for board manipulation
+ * @property {() => void} [hideWaiting] - Hide waiting/spinner indicator
+ * @property {(ships?: Array<Object>) => void} [updateUI] - Update opponent UI with current state
+ * @memberof Enemy
  */
 /**
  * @typedef {Object} ShipCell
- * @property {Array<[string, Object]>} loadedWeaponEntries - Get loaded weapons
+ * @description Ship cell object representing a ship on the board with weapon systems.
+ * @property {Array<[string, Object]>} loadedWeaponEntries - Array of [key, weapon] tuples for loaded weapons
+ * @memberof Enemy
  */
 /**
  * @typedef {Object} Score
- * @property {() => boolean} newShotKey - Check if shot is new
- * @property {() => void} finishTurn - Finish current turn
- * @property {() => void} reset - Reset score
+ * @description Score tracking interface for recording hits, misses, and game statistics.
+ * @property {() => boolean} newShotKey - Check if current shot is a new hit location
+ * @property {() => void} finishTurn - Finalize current turn and record score
+ * @property {() => void} reset - Reset score to initial state
+ * @memberof Enemy
  */
 
 /**
@@ -197,11 +210,19 @@ const MESSAGES = {
  * ship placement with retry logic, and turn management.
  *
  * Key Features:
- * - Automatic ship placement with exponential retry backoff
+ * - Automatic ship placement with exponential retry backoff (MAX_PLACEMENT_RETRIES)
  * - Weapon selection and firing with support for attached and unattached weapons
- * - Two-click weapon targeting in Hide & Seek mode
- * - Cursor state management and visual feedback
- * - Turn-based game flow with event handlers
+ * - Two-click weapon targeting in Hide & Seek mode (selectedCellCoordinates tracking)
+ * - Cursor state management and visual feedback (board cursor classes)
+ * - Turn-based game flow with event handlers (steps callbacks)
+ * - AI decision-making for weapon selection and targeting
+ *
+ * Architecture:
+ * - Inherits from Waters: ship, board, and opponent management
+ * - Uses LoadOut: weapon selection and ammo tracking
+ * - Uses StepsManager (steps): game state machine for turn flow
+ * - Uses EnemyUI: visual board rendering and control buttons
+ * - Uses Score: hit/miss tracking and game statistics
  *
  * @class Enemy
  * @extends Waters
@@ -215,14 +236,28 @@ class Enemy extends Waters {
    * Sets up cursor management, targeting state, and weapon selection state.
    *
    * @param {EnemyUI} enemyUI - The UI controller instance for rendering enemy board and controls
-   * @property {EnemyUI} UI - The UI controller
-   * @property {LoadOut} loadOut - Weapon loadout manager
-   * @property {StepsManager} steps - Game state machine for steps
-   * @property {WatersOpponent|null} opponent - The opponent player
-   * @property {Score} score - Score manager
+   * @memberof Enemy
+   *
+   * Instance Properties (inherited from Waters):
+   * @property {EnemyUI} UI - The UI controller for board rendering and buttons
+   * @property {LoadOutType} loadOut - Weapon loadout manager with ammo tracking
+   * @property {StepsManager} steps - Game state machine for turn-based flow
+   * @property {WatersOpponent|null} opponent - The opponent player (Friend instance)
+   * @property {Score} score - Score manager with hit/miss tracking
    * @property {Array<ShipCell>} ships - Array of ships on board
-   * @property {boolean} boardDestroyed - Whether this board is destroyed
+   * @property {boolean} boardDestroyed - Whether this board is destroyed (game over)
    * @property {boolean} hasAttachedWeapons - Whether this player has attached weapons
+   *
+   * Instance Properties (Enemy-specific):
+   * @property {string} preamble0 - Message prefix: 'Enemy'
+   * @property {string} preamble - Message prefix: 'The enemy was '
+   * @property {string} preamble1 - Message prefix: 'The enemy '
+   * @property {boolean} isRevealed - Whether all ships are revealed
+   * @property {number|null} timeoutId - Timeout ID for delayed enemy actions
+   * @property {Function|null} weaponSelectHandler - Handler for weapon button clicks
+   * @property {Function|null} revealHandler - Handler for reveal button clicks
+   * @property {boolean} enemyWaters - Flag indicating enemy waters instance
+   * @property {Array<number>|null} selectedCellCoordinates - [r, c] for two-click hide/seek mode
    */
   constructor (enemyUI) {
     super(enemyUI, Player.enemy)
@@ -231,19 +266,19 @@ class Enemy extends Waters {
     this.preamble1 = 'The enemy '
     this.isRevealed = false
 
-    /** @type {number|null} Timeout ID for enemy actions. */
+    /** @type {number|null} Timeout ID for delayed enemy actions (e.g., ship placement retry). */
     this.timeoutId = null
 
-    /** @type {Function|null} Handler for weapon selection. */
+    /** @type {Function|null} Handler for weapon selection button clicks. */
     this.weaponSelectHandler = null
 
-    /** @type {Function|null} Handler for reveal action. */
+    /** @type {Function|null} Handler for reveal board button clicks. */
     this.revealHandler = null
 
-    /** @type {boolean} Indicates this is an enemy waters instance. */
+    /** @type {boolean} Flag indicating this is an enemy waters instance (vs. friend/player). */
     this.enemyWaters = true
 
-    /** @type {Object|null} Tracks the selected target cell for two-click weapon firing in hide/seek mode. */
+    /** @type {Array<number>|null} Stores [row, col] for two-click hide/seek weapon targeting. */
     this.selectedCellCoordinates = null
 
     this._initializeSteps()
@@ -252,8 +287,10 @@ class Enemy extends Waters {
   /**
    * Initializes the steps event handlers.
    * Registers callbacks for all turn-based game state transitions.
+   * Called during constructor to set up event handlers before turn begins.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _initializeSteps () {
     if (!this.steps) return
@@ -273,6 +310,7 @@ class Enemy extends Waters {
    *
    * @private
    * @returns {string} The cursor class name or empty string if not found
+   * @memberof Enemy
    */
   _extractCursorClass () {
     // @ts-ignore - this.UI is typed as Object but has board property
@@ -294,9 +332,11 @@ class Enemy extends Waters {
    * Clears targeting coordinate state to reset mode icons.
    * Ensures updateWeaponStatus() calculates correct mode index after weapon change.
    * Delegates to loadOut.clearSelectedCoordinates() to reset targeting coordinates.
+   * Must be called before weapon switch to prevent stale coordinate state.
    *
    * @private
    * @returns {void}
+   * @memberof Enemy
    * @see _handleWeaponChange for full context on why this is critical
    */
   _clearCoordinateState () {
@@ -309,9 +349,11 @@ class Enemy extends Waters {
   /**
    * Clears visual state from the previous weapon selection.
    * Deselects ship, removes weapon rack, and clears hint location on opponent board.
+   * Resets game state machine and opponent UI state.
    *
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _clearSelectionVisualState () {
     const steps = /** @type {StepsManager|undefined} */ (this.steps)
@@ -325,11 +367,13 @@ class Enemy extends Waters {
     }
   }
 
-  /**
-   * Updates board cursor display when weapon changes.
-   * Notifies loadOut of cursor changes to update visual feedback.
+  /** and mode display.
+   * Triggers UI update for weapon status display.
    *
    * @private
+   * @param {string|null} oldCursor - Current cursor class to remove (nullable)
+   * @returns {void}
+   * @memberof Enemy
    * @param {string|null} oldCursor - Current cursor class to remove
    * @returns {void}
    */
@@ -344,10 +388,12 @@ class Enemy extends Waters {
 
   /**
    * Updates board targeting state based on current weapon configuration.
-   * Reflects whether the current weapon requires two-click targeting.
+   * Reflects whether the current weapon requires two-click targeting (attached weapons).
+   * Sets CSS class on board to indicate targeting mode.
    *
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _updateBoardTargetingState () {
     const hasUnattached = this._hasUnattachedForCurrentWeapon()
@@ -356,9 +402,11 @@ class Enemy extends Waters {
 
   /**
    * Remove cursor classes from the board element and all its child cells.
-   * Uses `CellClassManager.removeCursorClasses` to clear terrain-specific cursor tags.
-   * Cursor classes are attached both to the board element itself and to individual cells.
+   * Prevents accumulation of stale cursor classes during weapon/step changes.
    * @private
+   * @param {HTMLElement|undefined} element - The DOM element to clear cursor classes from
+   * @returns {void}
+   * @memberof Enemy
    * @param {HTMLElement|undefined} element - The DOM element to clear cursor classes from
    * @returns {void}
    */
@@ -380,8 +428,11 @@ class Enemy extends Waters {
 
   /**
    * Clears all cursor classes from the board element and its child cells.
+   * Removes stale cursor classes from entire grid to prevent accumulation.
+   * Called when switching weapons or modes to reset visual cursor display.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _clearBoardCursorClasses () {
     // @ts-ignore - this.UI is typed as Object but has board property
@@ -407,8 +458,10 @@ class Enemy extends Waters {
   /**
    * Creates a handler that adapts the steps.js parameter format to our object-based approach.
    * Converts multiple parameters into a single activation data object for internal use.
+   * Steps.js passes 9 parameters but we use a single object with extracted properties.
    * @private
    * @returns {Function} Activation handler adapted for steps.js interface
+   * @memberof Enemy
    */
   _createActivationHandler () {
     // Return a function that matches steps.js callback signature (9 parameters)
@@ -435,6 +488,7 @@ class Enemy extends Waters {
    * Returns true for single-shot weapons, unattached weapon systems, or in seek mode without attached weapons.
    * @private
    * @returns {boolean} True if weapon requires target selection
+   * @memberof Enemy
    */
   _hasUnattachedForCurrentWeapon () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
@@ -456,6 +510,7 @@ class Enemy extends Waters {
    * @private
    * @param {WeaponSystem|undefined} [weaponSystem]
    * @returns {boolean}
+   * @memberof Enemy
    */
   _shouldFireSeekModeMissileImmediately (weaponSystem) {
     const ws = weaponSystem ?? this.loadOut?.currentWeaponSystem
@@ -489,6 +544,7 @@ class Enemy extends Waters {
    * Updates targeting state to reflect whether two-click targeting is needed.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _handleSelect () {
     this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
@@ -499,6 +555,7 @@ class Enemy extends Waters {
    * Sets board to targeting state to show aiming cursor.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _handleAim () {
     this.setBoardTargetingState(true)
@@ -514,6 +571,7 @@ class Enemy extends Waters {
    * @param {number} activationData.targetCol - Target column coordinate
    * @param {number} activationData.shadowRow - Shadow row coordinate for post-select shadow
    * @param {number} activationData.shadowCol - Shadow column coordinate for post-select shadow
+   * @memberof Enemy
    */
   // @ts-ignore - Called from _createActivationHandler() return function
   _handleActivate (activationData) {
@@ -533,6 +591,7 @@ class Enemy extends Waters {
    * @private
    * @param {string} wletter - The weapon letter to switch to
    * @returns {void}
+   * @memberof Enemy
    */
   _handleChangeWeapon (wletter) {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
@@ -545,6 +604,7 @@ class Enemy extends Waters {
    * Disables weapon buttons and shows spinner.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   // @ts-ignore - Used by friend.js opponent._transitionToOpponentTurn()
   _transitionToOpponentTurn () {
@@ -560,6 +620,7 @@ class Enemy extends Waters {
    * @param {boolean} show - Whether to show the spinner
    * @param {string} mode - The mode text to display in game status
    * @returns {void}
+   * @memberof Enemy
    */
   _setSpinnerState (show, mode) {
     const spinner = document.getElementById('spinner')
@@ -577,8 +638,11 @@ class Enemy extends Waters {
    * Handles the begin turn event.
    * Displays game status and manages single-shot weapon logic.
    * Resets selected cell coordinates and triggers selection if needed.
+   * Called as onBeginTurn callback from steps state machine.
    * @private
+   * @async
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async _handleBeginTurn () {
     this._setSpinnerState(false, '')
@@ -741,6 +805,7 @@ class Enemy extends Waters {
    * @private
    * @param {Array<ShipCell>} ships - Array of Ship objects to place on board
    * @returns {boolean} True if all ships placed successfully; false if placement failed
+   * @memberof Enemy
    */
   _attemptShipPlacement (ships) {
     for (let trial = 0; trial < MAX_PLACEMENT_ATTEMPTS; trial++) {
@@ -760,6 +825,7 @@ class Enemy extends Waters {
    * @param {Array<ShipCell>} ships - Array of Ship objects to retry placing
    * @param {number} attempt - Current retry attempt number (0-indexed)
    * @returns {Promise<boolean>} True if placement succeeded after retry; false if max retries exceeded
+   * @memberof Enemy
    */
   async _handlePlacementFailure (ships, attempt) {
     const totalAttempts = (attempt + 1) * ATTEMPTS_PER_RETRY
@@ -779,6 +845,7 @@ class Enemy extends Waters {
    * @private
    * @param {Array<ShipCell>} ships - The ships to place
    * @returns {boolean} True if all ships placed successfully
+   * @memberof Enemy
    */
   _attemptShipPlacementWithRetry (ships) {
     return this._attemptShipPlacement(ships)
@@ -790,6 +857,7 @@ class Enemy extends Waters {
    * @private
    * @throws {Error} Always throws with placement failed message
    * @returns {void}
+   * @memberof Enemy
    */
   _finalizePlacementFailure () {
     // @ts-ignore - this.UI is typed as Object but has enableBtns method
@@ -801,10 +869,13 @@ class Enemy extends Waters {
 
   /**
    * Places all ships on the board asynchronously.
-   * Uses retry logic to handle placement difficulties.
+   * Uses retry logic to handle placement difficulties. Yields control to let UI update.
+   * Enables buttons after placement and provides click-to-fire instruction.
    * @public
-   * @param {Array<ShipCell>} [ships] - The ships to place
+   * @async
+   * @param {Array<ShipCell>} [ships] - The ships to place (defaults to this.ships)
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async placeAll (ships) {
     const shipsToPlace = ships ?? this.ships
@@ -823,8 +894,10 @@ class Enemy extends Waters {
   /**
    * Reveals all ships on the board.
    * Clears UI classes, shows all ships, and marks board as destroyed/revealed.
+   * Called when game ends to show opponent's ship positions.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   revealAll () {
     // @ts-ignore - this.UI is typed as Object but has clearClasses method
@@ -839,11 +912,13 @@ class Enemy extends Waters {
     this.isRevealed = true
   }
 
-  /**\n   * Updates all UI components.
+  /**
+   * Updates all UI components.
    * Refreshes weapon UI, tally, and button availability based on game state.
    * Orchestrates parent UI updates with current weapon system display.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   updateUI () {
     this._updateButtonStates()
@@ -863,6 +938,7 @@ class Enemy extends Waters {
    * Disables buttons when game is over or out of ammo.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _updateButtonStates () {
     const isGameOver = this.isGameOver
@@ -885,6 +961,7 @@ class Enemy extends Waters {
    * Includes debug logging for weapon system inspection.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   setupWeaponButtonHandlers () {
     // @ts-ignore - this.UI is typed as Object but has weaponBtn property
@@ -941,6 +1018,7 @@ class Enemy extends Waters {
    * Updates game status with appropriate message if turn cannot be taken.
    * @public
    * @returns {boolean} True if game is not over, ammo available, opponent alive, and no pending timeout; false otherwise
+   * @memberof Enemy
    */
   get canTakeTurn () {
     if (this.isGameOver || this.hasNoAmmo) {
@@ -969,6 +1047,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate (0-indexed)
    * @param {number} c - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} Result containing weapon, score, or targeting state
+   * @memberof Enemy
    */
   async _prepareWeaponLaunch (r, c) {
     // @ts-ignore - this.UI.removeHighlightAoE is a real method
@@ -996,6 +1075,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate (0-indexed)
    * @param {number} c - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} The final launch result
+   * @memberof Enemy
    */
   async _launchWeaponSequence (r, c) {
     // @ts-ignore - launchSelectedWeapon is parent method
@@ -1040,6 +1120,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate (0-indexed)
    * @param {number} c - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} Result with weapon info and score, or null if targeting continues
+   * @memberof Enemy
    */
   async setupWeapon (r, c) {
     return await this._prepareWeaponLaunch(r, c)
@@ -1051,6 +1132,7 @@ class Enemy extends Waters {
    * @private
    * @param {WeaponLaunchResult|null} result - The weapon launch result to evaluate
    * @returns {boolean} True if result is complete and requires no further action
+   * @memberof Enemy
    */
   _isFinalLaunchResult (result) {
     return !!(
@@ -1082,6 +1164,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate (used in seek mode source hint)
    * @param {number} c - Target column coordinate (used in seek mode source hint)
    * @returns {void}
+   * @memberof Enemy
    */
   _selectCurrentWeaponOnRandomShip (r, c) {
     // Get the weapon the player currently has selected (via weapon button click)
@@ -1193,6 +1276,7 @@ class Enemy extends Waters {
    * @private
    * @param {Array<number>|undefined|null} hintCoords - Hint coordinates from source hint generator
    * @returns {Array<number>} Normalized hint coordinates as [row, col] array
+   * @memberof Enemy
    */
   _normalizeSourceHint (hintCoords) {
     if (
@@ -1224,6 +1308,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {void}
+   * @memberof Enemy
    */
   _onFirstClickSelection (r, c) {
     this._selectCurrentWeaponOnRandomShip(r, c)
@@ -1233,10 +1318,13 @@ class Enemy extends Waters {
   /**
    * Handles the second click in hide/seek mode: fires the selected weapon at the target.
    * Ensures fire handlers are properly set before executing the attack.
+   * Updates opponent UI with results and finalizes turn.
    * @private
+   * @async
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async _onSecondClickFire (r, c) {
     // Ensure fire handlers are attached before firing.
@@ -1288,6 +1376,7 @@ class Enemy extends Waters {
    * @param {number} c - Column coordinate (0-indexed)
    * @returns {Promise<void>} Resolves when cell click handling completes
    * @throws {void} Does not throw; instead handles errors via game status messages
+   * @memberof Enemy
    */
   async onClickCell (r, c) {
     if (!this.canTakeTurn) return
@@ -1334,6 +1423,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate (0-indexed)
    * @param {number} c - Target column coordinate (0-indexed)
    * @returns {Promise<void>} Resolves when single-shot handling completes
+   * @memberof Enemy
    */
   async _handleSingleShotClick (r, c) {
     // CRITICAL: Ensure fire handlers are attached before firing.
@@ -1360,9 +1450,11 @@ class Enemy extends Waters {
    * Handles a click for attached weapons in two-click or single-click mode.
    * Routes to appropriate handler based on weapon selection state.
    * @private
+   * @async
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async _handleAttachedWeaponClick (r, c) {
     if (this.loadOut?.selectedWeapon) {
@@ -1412,9 +1504,11 @@ class Enemy extends Waters {
    * Fires weapon via setup sequence.
    * Prepares weapon and launches at target location.
    * @private
+   * @async
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async _fireWeaponViaSetup (r, c) {
     const result = await this.setupWeapon(r, c)
@@ -1427,9 +1521,11 @@ class Enemy extends Waters {
    * Fires the currently selected weapon immediately without target selection.
    * Used for seek-mode missiles and single-click weapons.
    * @private
+   * @async
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async _fireCurrentWeaponImmediately (r, c) {
     const { r0, c0 } = bh.map.nearestCornerTo(r, c)
@@ -1456,6 +1552,7 @@ class Enemy extends Waters {
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @returns {boolean} True if warning should be played
+   * @memberof Enemy
    */
   _shouldWarnOnGaussAsteroid (currentWeapon, r, c) {
     const isGaussRound =
@@ -1483,6 +1580,7 @@ class Enemy extends Waters {
    * @private
    * @param {WeaponLaunchResult|null} result - The weapon launch result
    * @returns {void}
+   * @memberof Enemy
    */
   _processWeaponResult (result) {
     if (result?.score) {
@@ -1497,6 +1595,7 @@ class Enemy extends Waters {
    * @private
    * @param {WeaponLaunchResult|null} result - The weapon launch result
    * @returns {boolean} True if waiting for additional result
+   * @memberof Enemy
    */
   _shouldWaitForWeaponResult (result) {
     return !!(result?.hasTargettedWeapon || result?.hasUnattached)
@@ -1507,6 +1606,7 @@ class Enemy extends Waters {
    * Updates UI, finishes turn, and triggers opponent UI update.
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _finalizeTurn () {
     this.score.finishTurn()
@@ -1534,6 +1634,7 @@ class Enemy extends Waters {
    * @param {number} hintR - Hint row coordinate (0-indexed)
    * @param {number} hintC - Hint column coordinate (0-indexed)
    * @returns {void}
+   * @memberof Enemy
    */
   onClickOppoCell (hintR, hintC) {
     // @ts-ignore - opponent type compatibility
@@ -1582,6 +1683,7 @@ class Enemy extends Waters {
    * @param {Object} [options] - Additional firing options
    * @param {boolean} [options.isSplash=false] - If true, skips shot validity checks (for splash damage)
    * @returns {Object|Symbol} The weapon effect result or LoadOut.noResult sentinel
+   * @memberof Enemy
    */
   // @ts-ignore - Intentionally overrides parent's private destroy with public implementation
   destroy (weapon, effect, options) {
@@ -1603,8 +1705,10 @@ class Enemy extends Waters {
 
   /**
    * Checks if the shot is invalid (already shot).
-   * @param {  number[][]} effect - Array of effect coordinates
+   * @private
+   * @param {number[][]} effect - Array of effect coordinates
    * @returns {boolean} True if invalid
+   * @memberof Enemy
    */
   #isInvalidShot (effect) {
     return (
@@ -1633,6 +1737,7 @@ class Enemy extends Waters {
    * @param {number|null} shadowRow - Shadow cell row on own board (nullable)
    * @param {number|null} shadowCol - Shadow cell column on own board (nullable)
    * @returns {void}
+   * @memberof Enemy
    */
   deactivateWeapon (opponentRow, opponentCol, shadowRow, shadowCol) {
     this._deactivateOpponentWeapon(opponentRow, opponentCol)
@@ -1650,6 +1755,7 @@ class Enemy extends Waters {
    * @param {number|null} row - Row coordinate
    * @param {number|null} col - Column coordinate
    * @returns {void}
+   * @memberof Enemy
    */
   _deactivateOpponentWeapon (row, col) {
     this._callUIMethod(
@@ -1668,6 +1774,7 @@ class Enemy extends Waters {
    * @param {number} row - Row coordinate
    * @param {number} col - Column coordinate
    * @returns {void}
+   * @memberof Enemy
    */
   _deactivateShadowCell (row, col) {
     // @ts-ignore - this.UI.cellWeaponDeactivate is a real method
@@ -1682,6 +1789,7 @@ class Enemy extends Waters {
    * @param {number|null} row - Row coordinate
    * @param {number|null} col - Column coordinate
    * @returns {void}
+   * @memberof Enemy
    */
   _deactivateOpponentHint (row, col) {
     // @ts-ignore - opponent UI type compatibility
@@ -1708,6 +1816,7 @@ class Enemy extends Waters {
    * @param {number|null} col - Column coordinate (may be null; skips call if null)
    * @param {boolean} [force] - Optional force flag passed to method (e.g., force=true to override UI state)
    * @returns {void}
+   * @memberof Enemy
    */
   _callUIMethod (ui, methodName, row, col, force) {
     if (row != null && col != null && ui) {
@@ -1735,6 +1844,7 @@ class Enemy extends Waters {
    * @param {*} _rack - The weapon rack (unused; uses current weapon system instead)
    * @param {Object} _cursorInfo - Cursor information (unused)
    * @returns {void}
+   * @memberof Enemy
    */
   updateWeaponStatus (_rack, _cursorInfo) {
     const loadOut = /** @type {LoadOutType|undefined} */ (this.loadOut)
@@ -1754,6 +1864,7 @@ class Enemy extends Waters {
    * Refreshes mode display based on current weapon system.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   updateWeaponMode () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
@@ -1800,6 +1911,7 @@ class Enemy extends Waters {
    *
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   _handleWeaponChange () {
     // CRITICAL: Reset two-click weapon selection before weapon is changed
@@ -1839,6 +1951,7 @@ class Enemy extends Waters {
    * intentional to ensure selection state is reset first.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   onClickSingleShotButton () {
     this._handleWeaponChange()
@@ -1881,6 +1994,7 @@ class Enemy extends Waters {
    * @public
    * @param {string} letter - The weapon letter
    * @returns {void}
+   * @memberof Enemy
    */
   onClickWeaponButtons (letter) {
     this._handleWeaponChange()
@@ -1903,6 +2017,7 @@ class Enemy extends Waters {
    * Reveals all ships if not already revealed.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   onClickReveal () {
     if (!this.isRevealed) {
@@ -1916,6 +2031,7 @@ class Enemy extends Waters {
    * Attaches click event listeners to weapon and reveal buttons.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   wireupButtons () {
     if (this.weaponSelectHandler == null) {
@@ -1943,6 +2059,7 @@ class Enemy extends Waters {
    * Clears score, map, and UI. Sets up ammo depletion handlers.
    * @public
    * @returns {void}
+   * @memberof Enemy
    */
   resetModel () {
     const score = /** @type {Score|undefined} */ (this.score)
@@ -1979,6 +2096,7 @@ class Enemy extends Waters {
    *
    * @private
    * @returns {void}
+   * @memberof Enemy
    */
   buildBoard () {
     // @ts-ignore - this.UI is typed as Object
@@ -1992,8 +2110,10 @@ class Enemy extends Waters {
   /**
    * Resets the UI and places ships.
    * @public
+   * @async
    * @param {Array<ShipCell>} ships - The ships to place
    * @returns {Promise<void>}
+   * @memberof Enemy
    */
   async resetUI (ships) {
     // @ts-ignore - this.UI is typed as Object

@@ -173,15 +173,6 @@ canvas.addEventListener('mouseup', () => {
   redraw()
 })
 
-function drawGhost (ctx, bb, valid) {
-  ctx.globalAlpha = 0.4
-  forEachBit(bb, i => {
-    const [q, r] = hex.coords[i]
-    const { x, y } = hexToPixel(q, r, S)
-    drawHex(ctx, x + offsetX, y + offsetY, S, valid ? '#00ff88' : '#ff4444')
-  })
-  ctx.globalAlpha = 1
-}
 /*
 Call during render:
 

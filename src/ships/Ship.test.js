@@ -27,7 +27,7 @@ describe('Ship basic behaviors', () => {
     expect(s.id).toBe(5)
     expect(s.symmetry).toBe('sym')
     expect(s.letter).toBe('X')
-    expect(Array.isArray(s.cells)).toBe(true)
+    expect(s.cells).toStrictEqual(expect.any(Array))
     expect(s.board).toBeInstanceOf(Mask)
     expect(s.sunk).toBe(false)
     expect(s.variant).toBe(0)
@@ -318,10 +318,6 @@ describe('Ship - static methods with shapes', () => {
     expect(ships[1].id).toBe(2)
   })
 
-  /**
-   * Test filtering shapes during ship creation
-   * @test {Ship.extraShipsFromShapes} Creates ships with filter applied
-   */
   /**
    * Test filtering shapes during ship creation
    * @test {Ship.extraShipsFromShapes} Creates ships with filter applied

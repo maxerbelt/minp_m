@@ -135,25 +135,6 @@ import { Zip } from '../core/Zip.js'
  */
 
 /**
- * Internal: Get first element from array or iterator
- * Handles strings, arrays, and iterators safely with type checking.
- * @param {string | any[] | IterableIterator<any>} arr - Array, string, or iterable
- * @returns {any|null} First element or null if empty/invalid
- * @private
- */
-function firstElement (arr) {
-  if (!arr) return null
-  if (typeof arr === 'string' && arr.length > 0) return arr[0]
-  if (Array.isArray(arr) && arr.length > 0) return arr[0]
-  // For iterators, convert to array first
-  if (arr && typeof arr[Symbol.iterator] === 'function') {
-    const arr_temp = Array.from(arr)
-    return arr_temp.length > 0 ? arr_temp[0] : null
-  }
-  return null
-}
-
-/**
  * Ship - Represents a single game ship with placement, weapons, and hit tracking
  *
  * Ships maintain their own state including:
@@ -171,15 +152,16 @@ function firstElement (arr) {
  * @property {string} symmetry - Ship symmetry type
  * @property {string} letter - Single letter identifier (A-Z)
  * @property {SubBoard|Mask} hits - Mask tracking hit locations on this ship
- * @property {SubBoard} [_board] - Board representing ship cells (internal)
+ * @property {SubBoard} [_board] - Board representing ship cells (internal, private)
  * @property {number} size - Number of cells occupied by ship
  * @property {boolean} placed - Whether ship has been placed on board
  * @property {boolean} sunk - Whether all cells have been hit
  * @property {number} variant - Current placement variant index
- * @property {ShipShape} [_shape] - Ship shape definition (cached, internal)
- * @property {[number, number][]} [_cellsArray] - Array of ship cells (cached, internal)
- * @property {Map<number, Rack>} [_weaponsById] - Weapons indexed by ID (cached, internal)
- * @property {Object<string, Rack>} [_weapons] - Weapons indexed by coordinate (cached, internal)
+ * @property {ShipShape} [_shape] - Ship shape definition (cached, internal, private)
+ * @property {CoordinatePair[]} [_cellsArray] - Array of ship cells (cached, internal, private)
+ * @property {Map<number, Rack>} [_weaponsById] - Weapons indexed by ID (cached, internal, private)
+ * @property {Object<string, Rack>} [_weapons] - Weapons indexed by coordinate (cached, internal, private)
+ * @property {Rack[]} [__weaponArray] - Cached weapon array (internal, private)
  */
 export class Ship {
   /**
@@ -767,11 +749,12 @@ export class Ship {
 
   /**
    * Get first weapon system from all weapons
-   * Returns the primary (first) weapon system or undefined if no weapons.
-   * @returns {Rack|undefined} First weapon system or undefined
+   * Returns the primary (first) weapon system or null if no weapons.
+   * @returns {Rack|null} First weapon system or null if none available
    */
   get primaryWeaponSystem () {
-    return firstElement(this._weaponArray)
+    const weaponArray = this._weaponArray
+    return weaponArray && weaponArray.length > 0 ? weaponArray[0] : null
   }
 
   /**
@@ -780,11 +763,12 @@ export class Ship {
    * @returns {any|undefined} Weapon instance from primary system or undefined
    */
   get primaryWeapon () {
-    return this.primaryWeaponSystem?.weapon
+    const sys = this.primaryWeaponSystem
+    return sys?.weapon
   }
   /**
    * Find closest loaded weapon rack to given coordinates
-   * Searches among all loaded (ammunition-carrying) weapons for the closest one by distance.
+   * Searches among all loaded (ammunition-carrying) weapons for the closest one by Euclidean distance.
    * @param {number} r - Row coordinate to measure distance from
    * @param {number} c - Column coordinate to measure distance from
    * @returns {Array<[string, Rack]>|null} [coordKey, weapon] pair of closest loaded weapon or null if none
@@ -916,7 +900,8 @@ export class Ship {
    * @returns {Rack|null} First loaded weapon or null if none
    */
   get firstLoadedWeapon () {
-    return firstElement(this.loadedWeapons)
+    const loadedWeapons = this.loadedWeapons
+    return loadedWeapons && loadedWeapons.length > 0 ? loadedWeapons[0] : null
   }
 
   /**
