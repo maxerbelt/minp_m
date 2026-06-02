@@ -26,13 +26,13 @@ import { getCopyNumKey, makeTitle } from './makeTitle.js'
  * Geometry helper for checking if a point falls within a row range.
  * Used to test if coordinates fall within a RangeElement land area.
  *
- * @param {number} r - Row coordinate to check
- * @param {number} c - Column coordinate to check
+ * @param {number} r - Row coordinate to check (0-based)
+ * @param {number} c - Column coordinate to check (0-based)
  * @returns {(element: RangeElement) => boolean} Predicate function testing if element [row, colStart, colEnd] contains point (r, c)
  * @example
  * const checker = inRange(5, 10)
  * const range = [5, 8, 12]
- * checker(range) // returns true
+ * checker(range) // returns true because 8 <= 10 && 12 >= 10
  */
 export const inRange = (r, c) => element =>
   element[0] === r && element[1] <= c && element[2] >= c
@@ -60,7 +60,7 @@ export class BhMap {
   landArea
   /** @type {Set<string>} - Set of land cell coordinates as "r,c" strings for custom maps */
   land
-  /** @type {Object} - Terrain configuration object with subterrains and display properties */
+  /** @type {Object<string, any>} - Terrain configuration object with subterrains and display properties */
   terrain
   /** @type {bigint} - Bitfield/bitboard representation of land cells for efficient queries */
   landBits
@@ -419,11 +419,12 @@ export class BhMap {
    * Helper method used by surroundArea() and surround().
    *
    * @public
-   * @param {number} y - Center row coordinate
-   * @param {number} x - Center column coordinate
-   * @param {(rr: number, cc: number) => boolean} isValid - Validation function for coordinates
+   * @param {number} y - Center row coordinate (0-based)
+   * @param {number} x - Center column coordinate (0-based)
+   * @param {(rr: number, cc: number) => boolean} isValid - Validation function for coordinates; returns true if coordinate is valid
    * @param {Array<Array<number>>} surroundings - Array to populate with valid [row, col] coordinates
    * @returns {void}
+   * @description Checks all 9 cells in 3×3 grid centered at (y, x) and adds valid ones to surroundings array
    */
   surroundBase (x, y, isValid, surroundings) {
     for (let rr = y - 1; rr <= y + 1; rr++) {
@@ -844,10 +845,12 @@ export class CustomMap extends BhMap {
  * Mixin that adds land modification capabilities to map classes.
  * Provides methods to add, remove, and modify land at map coordinates.
  * Ensures all modifications respect map bounds via inBounds checks.
+ * Applied to CustomMap to create CustomBlankMap, and to SavedCustomMap to create EditedCustomMap.
  *
- * @param {Constructor} Base - The base class to extend (must have land Set and inBounds method)
+ * @param {Constructor} Base - The base class to extend (must have land Set, inBounds method, and terrain property)
  * @returns {Constructor} The extended class with modification methods: addLand, removeLand, addShips, setLand
  * @description Mixin pattern using higher-order function returns a new class extending Base.
+ * The returned class has methods for land modification while preserving Base class methods and properties.
  */
 const withModifyable = Base =>
   class extends Base {
@@ -857,9 +860,10 @@ const withModifyable = Base =>
      * Uses makeKey to convert [r,c] to Set key format.
      *
      * @public
-     * @param {number} y - Row coordinate
-     * @param {number} x - Column coordinate
+     * @param {number} x - Column coordinate (0-based)
+     * @param {number} y - Row coordinate (0-based)
      * @returns {void}
+     * @modifies this.land - Adds coordinate key to the land Set
      */
     addLand (x, y) {
       if (this.inBounds(y, x)) this.land.add(makeKey(y, x))
@@ -871,9 +875,10 @@ const withModifyable = Base =>
      * Uses makeKey to convert [r,c] to Set key format.
      *
      * @public
-     * @param {number} y - Row coordinate
-     * @param {number} x - Column coordinate
+     * @param {number} x - Column coordinate (0-based)
+     * @param {number} y - Row coordinate (0-based)
      * @returns {void}
+     * @modifies this.land - Removes coordinate key from the land Set
      */
     removeLand (x, y) {
       if (this.inBounds(y, x)) this.land.delete(makeKey(y, x))
@@ -885,9 +890,10 @@ const withModifyable = Base =>
      * Aggregates ship counts by letter property for each ship in the array.
      *
      * @public
-     * @param {Array<Object>} ships - Array of ship objects, each with a letter property
+     * @param {Array<{letter: string}>} ships - Array of ship objects, each with a letter property
      * @returns {void}
      * @description Resets shipNum to {} then counts each ship by its letter property.
+     * @modifies this.shipNum - Replaces with object mapping letter to count
      */
     addShips (ships) {
       this.shipNum = {}
@@ -902,11 +908,12 @@ const withModifyable = Base =>
      * Otherwise adds land (making it solid terrain).
      *
      * @public
-     * @param {number} x - X coordinate
-     * @param {number} y - Y coordinate
-     * @param {Object} subterrain - The subterrain object with isDefault property
+     * @param {number} x - Column coordinate (0-based)
+     * @param {number} y - Row coordinate (0-based)
+     * @param {Object<string, any>} subterrain - The subterrain object with isDefault property
      * @returns {void}
      * @description Subterrain.isDefault=true means water/default terrain; false means land.
+     * @modifies this.land - Adds or removes coordinate based on subterrain type
      */
     setLand (x, y, subterrain) {
       if (subterrain.isDefault) {
@@ -934,11 +941,12 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
    * Ship count starts at 0 and must be set via addShips().
    *
    * @constructor
-   * @param {number} rows - Number of rows for the map grid (positive integer)
-   * @param {number} cols - Number of columns for the map grid (positive integer)
-   * @param {Object} [mapTerrain] - Optional terrain configuration; uses bh.terrain (default) if omitted
+   * @param {number} rows - Number of rows for the map grid (positive integer, 1+)
+   * @param {number} cols - Number of columns for the map grid (positive integer, 1+)
+   * @param {Object<string, any>} [mapTerrain] - Optional terrain configuration; uses bh.terrain (default) if omitted
    * @returns {void}
    * @description Title format: "{terrain.key}-{copyNum}-{cols}x{rows}"
+   * Initializes with empty land Set, no ships, and specified terrain
    */
   constructor (rows, cols, mapTerrain) {
     super(
@@ -971,10 +979,11 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
    * Updates the map title to reflect new dimensions.
    *
    * @public
-   * @param {number} rows - New number of rows for the map
-   * @param {number} cols - New number of columns for the map
+   * @param {number} rows - New number of rows for the map (positive integer, 1+)
+   * @param {number} cols - New number of columns for the map (positive integer, 1+)
    * @returns {void}
    * @description Iterates land Set and deletes entries where coordinates exceed new bounds.
+   * @modifies this.rows, this.cols, this.title, this.land - Updates all dimensions and removes out-of-bounds land
    */
   setSize (rows, cols) {
     this.title = makeTitle(this.terrain, cols, rows)
@@ -1004,15 +1013,15 @@ export class SavedCustomMap extends CustomMap {
    * Combines terrain weapons with any custom saved weapons.
    *
    * @constructor
-   * @param {Object} data - The saved map data object from localStorage
+   * @param {Object<string, any>} data - The saved map data object from localStorage
    * @param {string} data.title - Map title shown to players
-   * @param {number} data.rows - Number of rows in the grid
-   * @param {number} data.cols - Number of columns in the grid
+   * @param {number} data.rows - Number of rows in the grid (positive integer)
+   * @param {number} data.cols - Number of columns in the grid (positive integer)
    * @param {number|Object<string, number>} data.shipNum - Ship counts by type letter
-   * @param {Array<string>} data.land - Array of land cell coordinates as strings
-   * @param {string|Object} data.terrain - Terrain name or terrain object with subterrains
-   * @param {Array<Object>} [data.weapons] - Array of weapon specs with letter and ammo properties
-   * @param {Object} [data.example] - Optional example or reference data
+   * @param {Array<string>} data.land - Array of land cell coordinates as strings "r,c"
+   * @param {string|Object<string, any>} data.terrain - Terrain name or terrain object with subterrains
+   * @param {Array<Object<string, any>>} [data.weapons] - Array of weapon specs with letter and ammo properties
+   * @param {Object<string, any>} [data.example] - Optional example or reference data
    * @returns {void}
    * @description Reconstructs weapons array with standardShot + terrain weapons + custom weapons.
    */
@@ -1171,12 +1180,15 @@ export class EditedCustomMap extends withModifyable(SavedCustomMap) {
    * Loads an edited custom map from localStorage.
    * Returns null if not found; no log message is printed (unlike SavedCustomMap.load).
    * Factory method specifically for loading EditedCustomMap instances.
+   * The loaded map has full editing capabilities via withModifyable mixin.
    *
    * @public
    * @static
-   * @param {string} title - The map title to load from localStorage
+   * @param {string} title - The map title to load from localStorage (non-empty string)
    * @returns {EditedCustomMap|null} The loaded EditedCustomMap with edit capabilities, or null if not found
    * @description Silent failure (no console.log) to allow conditional loading.
+   * Loaded map includes methods: addLand, removeLand, addShips, setLand (from withModifyable)
+   * and load, loadObj, localStorageKey, remove, rename, clone (from SavedCustomMap)
    * @see SavedCustomMap.load - prints console message on load failure
    */
   static load (title) {

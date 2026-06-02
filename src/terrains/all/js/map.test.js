@@ -1,6 +1,5 @@
 import { inRange, CustomBlankMap, SavedCustomMap } from './map.js'
 import { oldToken } from './terrain.js'
-import { jest } from '@jest/globals'
 
 describe('map.js basic utilities', () => {
   let origLocalStorage
