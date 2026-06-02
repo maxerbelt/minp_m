@@ -2043,7 +2043,7 @@ export class Waters {
       // @ts-ignore - shipCells method available at runtime
       const cells = oppo.shipCells(ship.id)
       // @ts-ignore - surroundCellElement method available at runtime
-      const surround = oppo.UI.surroundCellElement(cells)
+      const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
         // @ts-ignore - _clickOppoHandler is dynamically attached
         if (cell._clickOppoHandler) {
@@ -2073,7 +2073,7 @@ export class Waters {
       // @ts-ignore - shipCells method available at runtime
       const cells = oppo.shipCells(ship.id)
       // @ts-ignore - surroundCellElement method available at runtime
-      const surround = oppo.UI.surroundCellElement(cells)
+      const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
         cellsToListen.add(cell)
       }
