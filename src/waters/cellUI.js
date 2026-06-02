@@ -63,6 +63,7 @@ export class CellUI {
   /**
    * Retrieves the DOM element at specified board coordinates.
    * Returns the child element corresponding to the calculated grid index.
+   * Returns null if map is undefined or element not found.
    * @static
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
@@ -72,6 +73,7 @@ export class CellUI {
    */
   static nodeAt (board, x, y, map) {
     const currentMap = map || bh.map
+    if (!currentMap) return null
     return /** @type {HTMLDivElement|null} */ (
       board?.children?.[this.gridIndex(x, y, currentMap)]
     )
@@ -95,9 +97,10 @@ export class CellUI {
       if (node) return node
       throw new Error(`child not found in board at coordinates (${x}, ${y})`)
     }
-    throw new Error(
-      `Invalid coordinates (${x}, ${y}) for map of size ${currentMap.cols}x${currentMap.rows}`
-    )
+    const mapInfo = currentMap
+      ? `for map of size ${currentMap.cols}x${currentMap.rows}`
+      : 'with undefined map'
+    throw new Error(`Invalid coordinates (${x}, ${y}) ${mapInfo}`)
   }
 
   /**
@@ -237,6 +240,7 @@ export class CellUI {
   /**
    * Marks a friendly weapon rack cell with weapon CSS class if equipped.
    * Queries ship for weapon at coordinates and adds WEAPON class if present.
+   * Silently skips if cell cannot be found at coordinates.
    * @static
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
@@ -248,7 +252,12 @@ export class CellUI {
   static markFriendlyWeapon (board, x, y, ship, map) {
     const weaponSlot = ship.rackAt?.(x, y)
     if (weaponSlot) {
-      const cell = this.node(board, x, y, map)
+      // Try using nodeAt for flexible lookup (works with or without map)
+      let cell = this.nodeAt(board, x, y, map)
+      // If no map available, try looking up by data attributes instead
+      if (!cell && board) {
+        cell = board.querySelector(`[data-r="${y}"][data-c="${x}"]`)
+      }
       if (cell) {
         cell.classList.add(UI_CLASSES.WEAPON)
       }
@@ -334,27 +343,31 @@ export class CellUI {
   /**
    * Calculates linear array index from 2D grid coordinates.
    * Uses standard row-major ordering: index = (row * columnCount) + column.
+   * Returns 0 if map is undefined (safe fallback).
    * @static
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} map - Map configuration with cols/rows dimensions
-   * @returns {number} Linear array index in flattened grid representation
+   * @param {GridMap} [map] - Map configuration with cols/rows dimensions
+   * @returns {number} Linear array index in flattened grid representation, or 0 if map undefined
    */
   static gridIndex (x, y, map) {
+    if (!map) return 0
     return y * map.cols + x
   }
 
   /**
    * Validates if coordinates are within map bounds.
    * Returns true if x and y are within [0, cols) and [0, rows) respectively.
+   * Returns false if map is undefined/unavailable.
    * @static
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} map - Map configuration with cols/rows dimensions
+   * @param {GridMap} [map] - Map configuration with cols/rows dimensions
    * @returns {boolean} True if coordinates are valid, false otherwise
    */
   static isValid (x, y, map) {
     const m = map || bh.map
+    if (!m) return false
     return x >= 0 && x < m.cols && y >= 0 && y < m.rows
   }
 

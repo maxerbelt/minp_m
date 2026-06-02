@@ -5,6 +5,7 @@ import { jest } from '@jest/globals'
 describe('FriendUI - markFleetWeapons', () => {
   let friendUI
   let mockShips
+  let mockMap
 
   beforeEach(() => {
     friendUI = new FriendUI()
@@ -31,6 +32,19 @@ describe('FriendUI - markFleetWeapons', () => {
       return boardDiv.querySelector(`[data-r="${r}"][data-c="${c}"]`)
     })
 
+    friendUI.grid.nodeAt = jest.fn((r, c) => {
+      return boardDiv.querySelector(`[data-r="${r}"][data-c="${c}"]`)
+    })
+
+    friendUI.grid.node = jest.fn((r, c) => {
+      return boardDiv.querySelector(`[data-r="${r}"][data-c="${c}"]`)
+    })
+    mockMap = {
+      rows: 9,
+      cols: 18
+    }
+   
+    friendUI.grid._map = mockMap
     // Create mock ships with weapons at specific positions
     mockShips = [
       {
@@ -82,7 +96,7 @@ describe('FriendUI - markFleetWeapons', () => {
   })
 
   it('should add weapon class to cells with weapons', () => {
-    friendUI.grid.markFleetWeapons(mockShips)
+    friendUI.grid.markFleetWeapons(mockShips )
 
     // Check that cells with weapons have the 'weapon' class
     const cell_0_0 = friendUI.gridCellAt(0, 0)
@@ -95,7 +109,7 @@ describe('FriendUI - markFleetWeapons', () => {
   })
 
   it('should not add weapon class to cells without weapons', () => {
-    friendUI.grid.markFleetWeapons(mockShips)
+    friendUI.grid.markFleetWeapons(mockShips )
 
     // Check that cells without weapons don't have the 'weapon' class
     const cell_1_0 = friendUI.gridCellAt(0, 1) // Ship 1 cell without weapon
@@ -133,6 +147,6 @@ describe('FriendUI - markFleetWeapons', () => {
     // Ship 2: 2 cells, 1 with weapons
     // Ship 3: 3 cells, 0 with weapons
     // Total: 3 calls (2 + 1 + 0)
-    expect(friendUI.gridCellAt).toHaveBeenCalledTimes(3)
+    expect(friendUI.grid.node).toHaveBeenCalledTimes(3)
   })
 })

@@ -5,7 +5,19 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 import { makeKey, parsePair } from '../core/utilities.js'
 import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
 import { dragNDrop } from '../selection/dragndrop.js'
-
+/** @enum {string} */
+const UI_CLASSES = {
+  HIDDEN: 'hidden',
+  DESTROYED: 'destroyed',
+  HIT: 'hit',
+  PLACED: 'placed',
+  ACTIVE: 'active',
+  EMPTY: 'empty',
+  WEAPON: 'weapon',
+  MEDIUM: 'medium',
+  SMALL: 'small',
+  ALT: 'alt'
+}
 /**
  * @typedef {(weaponSource: any, row: number, col: number) => void} CellHoverEnterCallback
  * Callback fired when mouse enters a cell during hover targeting.
@@ -52,8 +64,48 @@ export class GridBoard {
     return new GridBoard(board, map)
   }
   nodeAt (x, y) {
-    return CellUI.nodeAt(this.board, x, y)
+    return CellUI.nodeAt(this.board, x, y, this.map)
   }
+
+  node (x, y) {
+    return CellUI.node(this.board, x, y, this.map)
+  }
+
+  /**
+   * Marks a friendly weapon rack cell with weapon CSS class if equipped.
+   * Queries ship for weapon at coordinates and adds WEAPON class if present.
+ 
+   * @param {number} x - Column coordinate (0-based, x-axis)
+   * @param {number} y - Row coordinate (0-based, y-axis)
+   * @param {Ship} ship - Ship object with weapon rack information
+   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @returns {void}
+   */
+  markFriendlyWeapon (x, y, ship) {
+    const weaponSlot = ship.rackAt?.(x, y)
+    if (weaponSlot) {
+      // Try using node for flexible lookup (works with or without map)
+      let cell = this.node(x, y)
+      if (cell) {
+        cell.classList.add(UI_CLASSES.WEAPON)
+      }
+    }
+  }
+
+  /**
+   * Marks all weapon rack cells for a ship with weapon CSS class.
+   * Iterates through ship's cells and applies weapon marking to each.
+   * @param {Ship} ship - Ship object with weapon rack and cell occupation data
+   * @returns {void}
+   */
+  markShipsWeapons (ship) {
+    if (!ship.cells) return
+
+    for (const [x, y] of ship.cells) {
+      this.markFriendlyWeapon(x, y, ship)
+    }
+  }
+
   /**
    * Displays surrounding ship cell attributes.
    * @param {Ship} ship - Ship object
@@ -211,10 +263,9 @@ export class GridBoard {
    * @returns {Set<string>} Set of surrounding cell keys
    */
   surroundCells (cells) {
-    const map = bh.map
     const surroundings = new Set()
     for (const [x, y] of cells) {
-      this.surround(x, y, surroundings, map)
+      this.surround(x, y, surroundings)
     }
     return surroundings
   }
@@ -227,14 +278,11 @@ export class GridBoard {
    * @param {number} x - Column coordinate of center cell
    * @param {Set<string>|Object<string, HTMLElement>|any[]} container - Container to accumulate results
    * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
    * @returns {void}
    * @throws {Error} If maker callback required but not provided for chosen strategy
    */
-  #addSurroundingCells (x, y, container, strategy, map, maker) {
-    const currentMap = map || bh.map
-    if (!currentMap) return
+  #addSurroundingCells (x, y, container, strategy, maker) {
     let result
 
     switch (strategy) {
@@ -269,12 +317,12 @@ export class GridBoard {
    * @param {number} y - Row coordinate of center cell
    * @param {number} x - Column coordinate of center cell
    * @param {Set<string>} container - Set to accumulate surrounding cell keys
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
+ 
    * @returns {void}
    */
-  surround (x, y, container, map) {
+  surround (x, y, container) {
     // @ts-ignore - map compatible with GridMap when defined
-    this.#addSurroundingCells(x, y, container, 'keySet', map)
+    this.#addSurroundingCells(x, y, container, 'keySet')
   }
 
   /**
@@ -285,11 +333,10 @@ export class GridBoard {
    * @param {number} y - Row coordinate of center cell
    * @param {Object} container - Object to accumulate surrounding cell mappings
    * @param {CoordToElementCallback} maker - Callback to transform [row, col] → HTMLElement
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
    */
-  surroundObj (x, y, container, maker, map) {
-    this.#addSurroundingCells(x, y, container, 'objectMap', map, maker)
+  surroundObj (x, y, container, maker) {
+    this.#addSurroundingCells(x, y, container, 'objectMap', maker)
   }
 
   /**
@@ -300,11 +347,10 @@ export class GridBoard {
    * @param {number} x - Column coordinate of center cell
    * @param {any[]} container - Array to accumulate surrounding cell elements
    * @param {CoordToValueCallback} maker - Callback to transform [row, col] → any value
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
    */
-  surroundList (x, y, container, maker, map) {
-    this.#addSurroundingCells(x, y, container, 'array', map, maker)
+  surroundList (x, y, container, maker) {
+    this.#addSurroundingCells(x, y, container, 'array', maker)
   }
 
   /**
@@ -498,9 +544,8 @@ export class GridBoard {
    */
   markFleetWeapons (ships) {
     if (!ships) return
-
     for (const ship of ships) {
-      CellUI.markShipsWeapons(this.board, ship, this.map)
+      this.markShipsWeapons(ship)
     }
   }
   /**
