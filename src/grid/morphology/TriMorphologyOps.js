@@ -1,64 +1,59 @@
-import { Hex1BitMorphology } from './strategies/Hex1BitMorphology.js'
-import { HexMultiBitMorphology } from './strategies/HexMultiBitMorphology.js'
-
-/** @type {import('./types/index.js').HexMask} */
-/** @type {import('./types/index.js').HexIndexer} */
-/** @type {import('./types/index.js').AnyStore} */
+import { Tri1BitMorphology } from './strategies/Tri1BitMorphology.js'
+import { TriMultiBitMorphology } from './strategies/TriMultiBitMorphology.js'
 
 /**
- * @fileoverview HexMorphologyOps - Orchestration layer for hexagonal grid morphology.
+ * @fileoverview TriMorphologyOps - Orchestration layer for triangular grid morphology.
  *
- * High-level morphological operations for hexagonal grids. Acts as a facade that
+ * High-level morphological operations for triangular grids. Acts as a facade that
  * coordinates morphology operations across different storage types (1-bit vs multi-bit)
  * using a strategy pattern.
  *
  * Delegates to specialized strategy classes:
- * - Hex1BitMorphology: Fast bit shift operations for occupancy grids (6-connectivity)
- * - HexMultiBitMorphology: Per-cell color propagation for colored grids
+ * - Tri1BitMorphology: Fast bit shift operations for occupancy grids
+ * - TriMultiBitMorphology: Per-cell color propagation for colored grids
  *
  * This class handles:
  * - Strategy selection based on store type
  * - Mutating/non-mutating variant coordination
  * - Edge case handling (radius validation, empty grids)
  *
- * Hexagonal grids have 6-neighbor connectivity. Each hex cell is adjacent to
- * 6 neighbors in cardinal and diagonal directions.
+ * Triangular grids have variable connectivity based on triangle orientation.
  *
- * @module grid/morphology/HexMorphologyOps
- * @requires src/grid/morphology/strategies/Hex1BitMorphology.js
- * @requires src/grid/morphology/strategies/HexMultiBitMorphology.js
+ * @module grid/morphology/TriMorphologyOps
+ * @requires src/grid/morphology/strategies/Tri1BitMorphology.js
+ * @requires src/grid/morphology/strategies/TriMultiBitMorphology.js
  */
 
 /**
- * HexMorphologyOps - Morphological operations orchestration for hexagonal grids.
+ * TriMorphologyOps - Morphological operations orchestration for triangular grids.
  *
  * High-level facade for morphological operations that delegates to specialized
  * strategy classes based on store type:
- * - Hex1BitMorphology: For 1-bit (occupancy) stores using fast bit shifts
- * - HexMultiBitMorphology: For multi-bit (colored) stores using per-cell operations
+ * - Tri1BitMorphology: For 1-bit (occupancy) stores using fast bit shifts
+ * - TriMultiBitMorphology: For multi-bit (colored) stores using per-cell operations
  *
  * Supported operations:
- * - **Dilation**: Expand occupied regions into all 6 hex neighbors
+ * - **Dilation**: Expand occupied regions into all triangle neighbors
  * - **Erosion**: Shrink occupied regions by removing edge cells with neighbor constraints
  *
  * All operations provide both mutating (returns mask for chaining) and non-mutating
  * (returns modified bits) variants for flexible integration.
  *
- * @class HexMorphologyOps
- * @see Hex1BitMorphology for 1-bit strategy implementation
- * @see HexMultiBitMorphology for multi-bit strategy implementation
+ * @class TriMorphologyOps
+ * @see Tri1BitMorphology for 1-bit strategy implementation
+ * @see TriMultiBitMorphology for multi-bit strategy implementation
  * @see BigStoreMorphology for BigInt helper operations
  * @see Store32Morphology for Uint32Array helper operations
  *
  * @example
- * const morph = new HexMorphologyOps(mask);
+ * const morph = new TriMorphologyOps(mask);
  * // Mutating: dilate and return mask for chaining
  * morph.dilate(2).erode(1);
  *
  * // Non-mutating: get modified bits without affecting mask
  * const expandedBits = morph.dilateBits(2);
  */
-export class HexMorphologyOps {
+export class TriMorphologyOps {
   /**
    * Reference to the mask being operated on.
    * @type {Object}
@@ -81,21 +76,21 @@ export class HexMorphologyOps {
   bits
 
   /**
-   * Grid width in cells (hex coordinate space).
+   * Grid width in cells (triangular coordinate space).
    * @type {number}
    * @private
    */
   width
 
   /**
-   * Grid height in cells (hex coordinate space).
+   * Grid height in cells (triangular coordinate space).
    * @type {number}
    * @private
    */
   height
 
   /**
-   * Grid indexer for hex-specific coordinate operations.
+   * Grid indexer for triangle-specific coordinate operations.
    * @type {Object}
    * @private
    */
@@ -103,17 +98,17 @@ export class HexMorphologyOps {
 
   /**
    * Cached strategy instance for lazy initialization.
-   * @type {Hex1BitMorphology|HexMultiBitMorphology|undefined}
+   * @type {Tri1BitMorphology|TriMultiBitMorphology|undefined}
    * @private
    */
   _strategy
 
   /**
-   * Creates a morphology operation handler for hexagonal grids.
+   * Creates a morphology operation handler for triangular grids.
    *
    * Initializes the facade with references to mask, storage, bits, and indexer.
    *
-   * @param {import('./types/index.js').HexMask} mask - Hexagonal mask instance
+   * @param {Object} mask - Triangular mask instance
    * @throws {Error} If mask lacks required properties
    */
   constructor (mask) {
@@ -132,7 +127,7 @@ export class HexMorphologyOps {
    * Lazy-initializes strategy on first use. Selects between 1-bit and multi-bit
    * implementations based on the store's isMultiBit property.
    *
-   * @returns {Hex1BitMorphology|HexMultiBitMorphology} Initialized strategy instance
+   * @returns {Tri1BitMorphology|TriMultiBitMorphology} Initialized strategy instance
    * @private
    */
   _getStrategy () {
@@ -141,7 +136,7 @@ export class HexMorphologyOps {
     }
 
     if (this.store.isMultiBit) {
-      this._strategy = new HexMultiBitMorphology(
+      this._strategy = new TriMultiBitMorphology(
         this.mask,
         this.store,
         this.bits,
@@ -150,7 +145,7 @@ export class HexMorphologyOps {
         this.indexer
       )
     } else {
-      this._strategy = new Hex1BitMorphology(
+      this._strategy = new Tri1BitMorphology(
         this.mask,
         this.store,
         this.bits,
@@ -167,13 +162,13 @@ export class HexMorphologyOps {
   // ============================================================================
 
   /**
-   * Dilate hexagonal grid by expanding occupied cells into hex neighbors (mutating).
+   * Dilate triangular grid by expanding occupied cells into triangle neighbors (mutating).
    *
-   * Expands the occupied region into all 6 neighbors of each cell. Updates mask.bits
+   * Expands the occupied region into all neighbors of each cell. Updates mask.bits
    * in-place and returns mask for method chaining.
    *
    * @param {number} [radius=1] - Number of dilation expansion steps (must be >= 0)
-   * @returns {import('./types/index.js').HexMask} this.mask for method chaining
+   * @returns {Object} this.mask for method chaining
    */
   dilate (radius = 1) {
     this.mask.bits = this.dilateBits(radius)
@@ -181,9 +176,9 @@ export class HexMorphologyOps {
   }
 
   /**
-   * Perform hex dilation and return bits without mutation.
+   * Perform triangle dilation and return bits without mutation.
    *
-   * Expands occupied cells into all 6 hex neighbors for each step. Returns new bits
+   * Expands occupied cells into all triangle neighbors for each step. Returns new bits
    * without modifying this.bits, enabling non-mutating operation patterns.
    *
    * @param {number} [radius=1] - Number of expansion steps (non-negative integer)
@@ -200,13 +195,13 @@ export class HexMorphologyOps {
   // ============================================================================
 
   /**
-   * Erode hexagonal grid by removing cells that lack complete hex neighbors (mutating).
+   * Erode triangular grid by removing cells that lack complete neighborhood (mutating).
    *
-   * Shrinks the occupied region to keep only cells with all 6 hex neighbors occupied.
+   * Shrinks the occupied region to keep only cells with expected neighbors.
    * Updates mask.bits in-place and returns mask for method chaining.
    *
    * @param {number} [radius=1] - Number of erosion removal steps (must be >= 0)
-   * @returns {import('./types/index.js').HexMask} this.mask for method chaining
+   * @returns {Object} this.mask for method chaining
    */
   erode (radius = 1) {
     this.mask.bits = this.erodeBits(radius)
@@ -214,9 +209,9 @@ export class HexMorphologyOps {
   }
 
   /**
-   * Perform hex erosion and return bits without mutation.
+   * Perform triangle erosion and return bits without mutation.
    *
-   * Shrinks occupied region to keep only cells with all 6 hex neighbors occupied.
+   * Shrinks occupied region to keep only cells with expected triangle neighbors.
    * Returns new bits without modifying this.bits, enabling non-mutating patterns.
    *
    * @param {number} [radius=1] - Number of shrink steps (non-negative integer)

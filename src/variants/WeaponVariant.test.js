@@ -1,3 +1,14 @@
+/**
+ * @typedef {import('../ships/SubShape.js').StandardCells} StandardCells
+ * @typedef {import('../ships/SubShape.js').SpecialCells} SpecialCells
+ * @typedef {import('./Placeable.js').Placeable} Placeable
+ * @typedef {import('./PlaceableW.js').PlaceableW} PlaceableW
+ * @typedef {import('./SpecialVariant.js').SpecialVariant} SpecialVariant
+ * @typedef {import('./WeaponVariant.js').WeaponVariant} WeaponVariant
+ * @typedef {import('./WeaponVariant.js').Armed} Armed
+ * @typedef {import('../grid/rectangle/mask.js').Mask} Mask
+ */
+
 import { jest } from '@jest/globals'
 
 jest.unstable_mockModule('../ships/SubShape.js', () => {
@@ -78,29 +89,85 @@ jest.unstable_mockModule('./SpecialVariant.js', () => {
 })
 
 import { Mask } from '../grid/rectangle/mask.js'
-// Variables for dynamically imported modules
-let WeaponVariant,
-  StandardCells,
-  SpecialCells,
-  parsePair,
-  Placeable,
-  PlaceableW,
-  SpecialVariant,
-  Armed
 
+/**
+ * Test suite for WeaponVariant class.
+ * Tests variant creation, weapon mapping, group initialization, and placeable generation.
+ * Uses mock modules for SubShape, utilities, Placeable, PlaceableW, and SpecialVariant.
+ *
+ * SKIPPED: These tests require further investigation of mock behavior and parent prototype chain.
+ * The describe.skip prevents execution until implementation details are clarified.
+ *
+ * @suite WeaponVariant
+ */
 describe.skip('WeaponVariant', () => {
+  // Dynamically imported module variables
+  /** @type {typeof import('./WeaponVariant.js').WeaponVariant} */
+  let WeaponVariant
+  /** @type {typeof import('../ships/SubShape.js').StandardCells} */
+  let StandardCells
+  /** @type {typeof import('../ships/SubShape.js').SpecialCells} */
+  let SpecialCells
+  /** @type {typeof import('../core/utilities.js').parsePair} */
+  let parsePair
+  /** @type {typeof import('./Placeable.js').Placeable} */
+  let Placeable
+  /** @type {typeof import('./PlaceableW.js').PlaceableW} */
+  let PlaceableW
+  /** @type {typeof import('./SpecialVariant.js').SpecialVariant} */
+  let SpecialVariant
+  /** @type {typeof import('./WeaponVariant.js').Armed} */
+  let Armed
+  /**
+   * Test fixture: Full 2x2 mask covering all cells.
+   * Used as the board layout for variant construction.
+   * @type {Mask}
+   */
   const full = Mask.fromCoords([
     [0, 0],
     [1, 0],
     [0, 1],
     [1, 1]
   ])
+
+  /**
+   * Test fixture: Weapon system configuration.
+   * Maps weapon identifiers to weapon definitions with name property.
+   * @type {Object<string, Object>}
+   */
   const weapons = { wp1: { name: 'X' }, wp2: { name: 'Y' } }
+
+  /**
+   * Test fixture: Symmetry type for variant.
+   * @type {string}
+   */
   const symmetry = 'SYM'
+
+  /**
+   * Test fixture: Validation function.
+   * Always returns true for test purposes.
+   * @type {(arg: any) => boolean}
+   */
   const validator = () => true
+
+  /**
+   * Test fixture: Zone detail level.
+   * @type {number}
+   */
   const zoneDetail = 9
+
+  /**
+   * Test fixture: Subterrain identifier.
+   * @type {string}
+   */
   const subterrain = 'sub'
 
+  /**
+   * Setup: Import dynamically loaded modules and reset mocks.
+   * Runs before each test to ensure clean mock state.
+   * Imports all modules under test and their dependencies.
+   * @returns {Promise<void>}
+   */
   beforeEach(async () => {
     const weaponVariantModule = await import('./WeaponVariant.js')
     WeaponVariant = weaponVariantModule.WeaponVariant
@@ -125,6 +192,16 @@ describe.skip('WeaponVariant', () => {
     jest.clearAllMocks()
   })
 
+  /**
+   * Test: Constructor properly maps weapons and initializes groups.
+   * Validates that:
+   * - parsePair is called once per weapon
+   * - weapons array contains values in key order
+   * - StandardCells and SpecialCells are instantiated
+   * - setCells is called with correct parameters
+   * - Faction assignments are correct (standardGroup=1, specialGroups=0)
+   * @returns {void}
+   */
   it('constructs and maps weapons keys/values and sets up groups', () => {
     const wv = new WeaponVariant(
       full,
@@ -157,21 +234,27 @@ describe.skip('WeaponVariant', () => {
     expect(wv.specialGroups.faction).toBe(0)
   })
 
+  /**
+   * Test: placeable() method returns correctly configured PlaceableW.
+   * Validates that:
+   * - PlaceableW is instantiated
+   * - variantIndex is set from instance index
+   * - weapons are copied to result
+   * - arr contains Placeable instances matching subGroups length
+   * - Each Placeable has string cells
+   * - parentPlaceable is correctly passed through
+   * @returns {void}
+   */
   it('placeable returns a PlaceableW with variantIndex and weapons and arr for each subgroup', () => {
-    let wv
-    try {
-      wv = new WeaponVariant(
-        full,
-        weapons,
-        symmetry,
-        validator,
-        zoneDetail,
-        subterrain
-      )
-    } catch (err) {
-      console.log(err.stack)
-      throw err
-    }
+    const wv = new WeaponVariant(
+      full,
+      weapons,
+      symmetry,
+      validator,
+      zoneDetail,
+      subterrain
+    )
+
     // ensure instance index exists for fallback when no arg
     wv.index = 7
 
@@ -198,32 +281,52 @@ describe.skip('WeaponVariant', () => {
     expect(result.parentPlaceable.idxArg).toBe(7)
   })
 
+  /**
+   * Test: placeable(index) uses provided index parameter.
+   * Validates that:
+   * - variantIndex is set to the provided index
+   * - parentPlaceable receives the explicit index
+   * @returns {void}
+   */
   it('placeable with explicit index uses that index', () => {
-    let wv
-    try {
-      wv = new WeaponVariant(
-        full,
-        weapons,
-        symmetry,
-        validator,
-        zoneDetail,
-        subterrain
-      )
-    } catch (err) {
-      console.log(err.stack)
-      throw err
-    }
+    const wv = new WeaponVariant(
+      full,
+      weapons,
+      symmetry,
+      validator,
+      zoneDetail,
+      subterrain
+    )
+
     const result = wv.placeable(3)
     expect(result.variantIndex).toBe(3)
     // parentPlaceable idxArg should reflect explicit index
     expect(result.parentPlaceable.idxArg).toBe(3)
   })
 
+  /**
+   * Test: Static setBehaviour method is delegated to SpecialVariant.
+   * Validates that WeaponVariant.setBehaviour is the same function as SpecialVariant.setBehaviourTo.
+   * @returns {void}
+   */
   it('static setBehaviour is delegated to SpecialVariant.setBehaviourTo', () => {
     expect(WeaponVariant.setBehaviour).toBe(SpecialVariant.setBehaviourTo)
   })
 
+  /**
+   * Test: Armed mixin augments class with variants() method.
+   * Validates that:
+   * - Armed(Base) returns a class that can be instantiated
+   * - Instance has variants() method
+   * - variants() returns WeaponVariant instance
+   * - Returned variant has correct weapons array
+   * @returns {void}
+   */
   it('Armed mixin returns a class whose variants() builds a WeaponVariant', () => {
+    /**
+     * Test fixture: Base class with weapon variant properties.
+     * @constructor
+     */
     class Base {
       constructor () {
         this.cells = full
@@ -234,6 +337,7 @@ describe.skip('WeaponVariant', () => {
         this.subterrain = subterrain
       }
     }
+
     const ArmedClass = Armed(Base)
     const inst = new ArmedClass()
     const variants = inst.variants()

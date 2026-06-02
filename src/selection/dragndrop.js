@@ -1,4 +1,24 @@
 /**
+ * @fileoverview Drag-and-drop system for ship placement, weapon management, and terrain painting.
+ * Orchestrates drag state management, ghost preview generation, highlight rendering, and drop
+ * operations across the game board. Provides unified coordination for multiple drag-drop types:
+ * ship placement during setup, ship repositioning during gameplay, weapon dragging, and terrain
+ * brush painting. Handles both mouse events and keyboard shortcuts for transformation controls.
+ *
+ * @module dragndrop
+ * @requires src/terrains/all/js/bh.js - Terrain configuration and biome helpers
+ * @requires src/selection/DraggedShip.js - Ghost ship preview class
+ * @requires src/selection/Brush.js - Terrain brush painting class
+ * @requires src/selection/cursor.js - Cursor management module
+ * @requires src/core/utilities.js - Coordinate conversion and grid utilities
+ *
+ * @typedef {Object} DragDropEventData
+ * @property {DraggedShip|DraggedWeapon|Brush|null} selection - Currently selected drag item
+ * @property {[number, number]} lastEntered - Last entered cell coordinates [row, col]
+ * @property {Object|null} clickedShip - Ship selected via UI for transforms
+ * @property {string} lastModifier - Last keyboard modifier ('shift', 'ctrl', 'alt', etc.)
+ * @property {number} dragCounter - Counter for nested drag events (dragenter/dragleave)
+ *
  * @import type { ViewModel, ShipElement } from './types/ui.types.js';
  * @import type { Model, Weapon, PlacementData } from './types/placement.types.js';
  * @import type { Ship } from './types/domain.types.js';

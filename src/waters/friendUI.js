@@ -97,29 +97,89 @@ const UI_CLASSES = {
  */
 
 /**
- * Mode-to-tab-text mapping for UI display.
- * Maps each game mode to its corresponding tab label.
- * @type {Object<string, string>}
- * @readonly
- */
-const MODE_TAB_TEXT = {
-  [UI_MODES.PLACING]: 'Hide and Seek Game',
-  [UI_MODES.READY]: 'Hide Game',
-  [UI_MODES.TESTING]: 'Hide Game',
-  [UI_MODES.SEEKING]: 'Hide and Seek Game'
-}
-
-/**
- * Score label keys for iteration and lookup.
- * Defines the order and names of score label properties.
- * @type {string[]}
+ * Score label property names for iteration.
+ * @type {Array<'placed'|'shots'|'hits'|'sunk'|'reveals'|'hints'>}
  * @readonly
  */
 const SCORE_LABEL_KEYS = ['placed', 'shots', 'hits', 'sunk', 'reveals', 'hints']
 
 /**
+ * Mode-to-configuration mapping.
+ * Centralized configuration for all game mode UI states.
+ * Eliminates duplication across mode application methods.
+ * @type {Object<string, FriendUIConfig & {modeSetupCallback?: Function}>}
+ * @readonly
+ */
+const MODE_CONFIGURATIONS = {
+  [UI_MODES.PLACING]: {
+    tabText: 'Hide and Seek Game',
+    showPlacingControls: true,
+    showGameControls: false,
+    showShipTrays: true,
+    showTransformBtns: true,
+    showTips: true,
+    showStatus: true,
+    standardPanels: true,
+    clearBoardCells: false,
+    addAltPanels: false
+  },
+  [UI_MODES.READY]: {
+    tabText: 'Hide Game',
+    showPlacingControls: false,
+    showGameControls: true,
+    showShipTrays: false,
+    showTransformBtns: false,
+    showTips: false,
+    showStatus: true,
+    standardPanels: true,
+    clearBoardCells: true,
+    addAltPanels: false,
+    modeSetupCallback: _ui => {
+      gameStatus.addToQueue(
+        'test your placement or play a game against the computer',
+        /** @type {boolean} */ (false)
+      )
+    }
+  },
+  [UI_MODES.TESTING]: {
+    tabText: 'Hide Game',
+    showPlacingControls: false,
+    showGameControls: true,
+    showShipTrays: false,
+    showTransformBtns: false,
+    showTips: false,
+    showStatus: false,
+    standardPanels: false,
+    clearBoardCells: false,
+    addAltPanels: false,
+    modeSetupCallback: _ui => {
+      gameStatus.line.classList.add(UI_CLASSES.MEDIUM)
+      gameStatus.game.classList.remove(UI_CLASSES.HIDDEN)
+      gameStatus.mode.classList.remove(UI_CLASSES.HIDDEN)
+      gameStatus.line.classList.remove(UI_CLASSES.HIDDEN)
+    }
+  },
+  [UI_MODES.SEEKING]: {
+    tabText: 'Hide and Seek Game',
+    showPlacingControls: false,
+    showGameControls: false,
+    showShipTrays: false,
+    showTransformBtns: false,
+    showTips: false,
+    showStatus: false,
+    standardPanels: false,
+    clearBoardCells: false,
+    addAltPanels: true,
+    modeSetupCallback: _ui => {
+      gameStatus.line.classList.remove(UI_CLASSES.MEDIUM)
+      gameStatus.line2.classList.remove(UI_CLASSES.MEDIUM)
+      gameStatus.line2.classList.add(UI_CLASSES.SMALL)
+    }
+  }
+}
+
+/**
  * Mode-to-score-label visibility mapping.
- * Defines which score labels are visible in each game mode.
  * @type {Object<string, ScoreLabelVisibility>}
  * @readonly
  */
@@ -143,28 +203,28 @@ const MODE_SCORE_LABELS = {
 }
 
 /**
- * UI class for friendly game mode, handling ship placement and game states.
- * Manages UI state transitions between placing, ready, testing, and seeking modes.
- * Extends PlacementUI with friendly-specific game mechanics and visual management.
+ * UI for friendly game mode with ship placement and game state management.
+ * Manages mode transitions between placing, ready, testing, and seeking phases.
+ * Extends PlacementUI with friendly-specific mechanics and visual management.
  *
  * @class FriendUI
  * @extends PlacementUI
  */
 export class FriendUI extends PlacementUI {
   /**
-   * Initializes the FriendUI with default mode and UI elements.
-   * Sets up all necessary properties for friendly game mode management.
-   * Caches DOM references and configures initial game state.
+   * Initializes FriendUI with game mode and UI elements.
+   * Sets up friendly game mode properties and caches DOM references.
+   * Initializes help tips and mode-specific text strings.
    *
    * @constructor
    */
   constructor () {
     super('friend', 'Friendly')
-    /** @type {string} - Current UI mode from UI_MODES enum */
+    /** @type {string} Current game mode from UI_MODES */
     this.mode = UI_MODES.PLACING
-    /** @type {boolean} - Whether ships are visible on the board */
+    /** @type {boolean} Whether ships are visible on board */
     this.showShips = true
-    /** @type {Array<string>} - Help text tips for player guidance */
+    /** @type {Array<string>} Help text tips for player guidance */
     this.tips = [
       'Drag ships from the trays onto the board.',
       'Click a ship in the tray to select it, then click on the buttons to rotate and flip',
@@ -173,26 +233,24 @@ export class FriendUI extends PlacementUI {
       'Use the undo button to remove the last placed ship.',
       'Once all ships are placed, you can test your placement or start a game against the computer.'
     ]
-
-    /** @type {string} - Text appended to ship name when placed */
+    /** @type {string} Text appended to ship name when placed */
     this.addText = ' placed'
-    /** @type {string} - Text appended to ship name when unplaced */
+    /** @type {string} Text appended to ship name when unplaced */
     this.removeText = ' unplaced'
     this._initializeUIElements()
-    /** @type {Function|null} - Callback to play battle hide game */
+    /** @type {Function|null} Callback to play battle hide game */
     this._playBattleHide = null
-    /** @type {HTMLElement|null} - DOM element for choose controls section */
+    /** @type {HTMLElement|null} DOM element for choose controls */
     this.chooseControls = null
-    /** @type {HTMLElement|null} - DOM element for hide tab */
+    /** @type {HTMLElement|null} DOM element for hide tab */
     this.tabElement = null
-    /** @type {Function|undefined} - Callback fired when fleet is successfully placed */
+    /** @type {Function|undefined} Callback when fleet is placed */
     this.onFleetPlaced = undefined
   }
 
   /**
-   * Initializes UI elements by caching DOM references.
-   * Queries the DOM once and stores references for performance.
-   * Uses type assertions for accurate element typing.
+   * Initializes UI element references.
+   * Caches DOM queries for performance optimization.
    *
    * @private
    * @returns {void}
@@ -209,11 +267,11 @@ export class FriendUI extends PlacementUI {
   // ============ DOM Helpers ============
 
   /**
-   * Sets the text content of the tab element.
-   * Updates the game mode display in the tab to reflect current mode.
+   * Updates tab element text content.
+   * Reflects current game mode in UI.
    *
    * @public
-   * @param {string} text - The text to set for the tab element
+   * @param {string} text - Tab text to display
    * @returns {void}
    */
   setTabText (text) {
@@ -223,12 +281,13 @@ export class FriendUI extends PlacementUI {
   }
 
   /**
-   * Applies or removes CSS classes on an element based on a class map.
-   * Safely handles null elements using optional chaining for robustness.
+   * Sets CSS classes on element based on class map.
+   * Safely handles null elements with optional chaining.
+   * Uses destructuring for cleaner class application.
    *
    * @public
-   * @param {HTMLElement|null} element - The element to modify, nullable for safety
-   * @param {Object<string, boolean>} classMap - Map of class names to boolean flags (true to add, false to remove)
+   * @param {HTMLElement|null} element - Element to modify (nullable)
+   * @param {Object<string, boolean>} classMap - Classes to add/remove (true=add, false=remove)
    * @returns {void}
    */
   setClasses (element, classMap) {
@@ -243,11 +302,11 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Toggles visibility of multiple elements.
-   * Adds or removes the hidden CSS class from each element in the array.
+   * Adds/removes hidden class based on isVisible flag.
    *
    * @public
-   * @param {Array<HTMLElement>} elements - Array of elements to toggle visibility on
-   * @param {boolean} isVisible - True to show elements (removes hidden class), false to hide
+   * @param {Array<HTMLElement>} elements - Elements to toggle
+   * @param {boolean} isVisible - True to show, false to hide
    * @returns {void}
    */
   toggleElements (elements, isVisible) {
@@ -260,258 +319,107 @@ export class FriendUI extends PlacementUI {
 
   /**
    * Sets the current UI mode and applies the corresponding configuration.
-   * Dispatcher that routes to appropriate mode setup method based on newMode.
-   * Only changes mode if handler exists for the specified mode.
+   * Routes mode change through MODE_CONFIGURATIONS mapping for DRY principle.
    *
    * @public
    * @param {string} newMode - The mode to switch to (must be a value from UI_MODES enum)
    * @returns {void}
    */
   setMode (newMode) {
-    const modeHandlers = {
-      [UI_MODES.PLACING]: () => this._applyPlacingMode(),
-      [UI_MODES.READY]: () => this._applyReadyMode(),
-      [UI_MODES.TESTING]: () => this._applyTestingMode(),
-      [UI_MODES.SEEKING]: () => this._applySeekingMode()
-    }
-
-    const handler = modeHandlers[newMode]
-    if (handler) {
+    const config = MODE_CONFIGURATIONS[newMode]
+    if (config) {
       this.mode = newMode
-      handler()
+      this._applyModeConfiguration(config)
     }
   }
 
   /**
-   * Synchronizes the tab text based on the current mode.
-   * Updates tab display to reflect active game mode from MODE_TAB_TEXT mapping.
+   * Synchronizes tab text to current mode.
+   * Updates tab display based on active game mode.
    *
    * @public
    * @returns {void}
    */
   syncTab () {
-    this.setTabText(MODE_TAB_TEXT[this.mode] || '')
+    const modeText = MODE_CONFIGURATIONS[this.mode]?.tabText || ''
+    this.setTabText(modeText)
   }
 
   /**
-   * Applies common UI configuration for modes.
-   * Central configuration handler for all mode transitions.
-   * Applies visibility, button, and panel state based on config object.
+   * Applies mode configuration to UI.
+   * Central handler for all mode transitions with SRP.
+   * Updates tab, controls, trays, buttons, and custom mode setup.
    *
    * @private
-   * @param {FriendUIConfig} config - Configuration object with UI state flags
+   * @param {FriendUIConfig & {modeSetupCallback?: Function}} config - Mode configuration
    * @returns {void}
    */
-  _applyCommonUIConfig (config) {
+  _applyModeConfiguration (config) {
     this.setTabText(config.tabText)
-    this._applyConfigState(
+    this._updateControlVisibility(
       config.showPlacingControls,
-      this._showPlacingControls,
-      this._hidePlacingControls
+      config.showGameControls
     )
-    this._applyConfigState(
-      config.showGameControls,
-      this._showGameControls,
-      this._hideGameControls
-    )
-    this._applyConfigState(
-      config.showShipTrays,
-      this.trayManager.showShipTrays.bind(this.trayManager),
-      this.trayManager.hideShipTrays.bind(this.trayManager)
-    )
-    this._applyConfigState(
-      config.showTransformBtns,
-      this.showTransformBtns,
-      this.hideTransformBtns
-    )
-    this._applyConfigState(config.showTips, this.showTips, this.hideTips)
-    if (config.showStatus) {
-      this.showStatus()
-    }
-    this._applyFeatureFlag(config.standardPanels, this.standardPanels)
-    this._applyFeatureFlag(config.clearBoardCells, this._clearBoardCells)
-    this._applyFeatureFlag(config.addAltPanels, this._addAltPanels)
+    this._updateTraysVisibility(config.showShipTrays)
+    this._updateButtonsVisibility(config.showTransformBtns, config.showTips)
+    if (config.showStatus) this.showStatus()
+    if (config.standardPanels) this.standardPanels()
+    if (config.clearBoardCells) this._clearBoardCells()
+    if (config.addAltPanels) this._addAltPanels()
+    if (config.modeSetupCallback) config.modeSetupCallback(this)
   }
 
   /**
-   * Calls the selected method based on a boolean feature flag.
-   * Applies conditional method invocation with proper context binding.
-   * Ensures 'this' context is maintained in called methods.
+   * Updates placement and game control visibility.
+   * Consolidated control visibility management.
    *
    * @private
-   * @param {boolean} active - Whether the feature is active
-   * @param {Function} onMethod - Method to invoke when active
-   * @param {Function} offMethod - Method to invoke when inactive
+   * @param {boolean} showPlacing - Show placement controls
+   * @param {boolean} showGame - Show game controls
    * @returns {void}
    */
-  _applyConfigState (active, onMethod, offMethod) {
-    const callback = active ? onMethod : offMethod
-    callback.call(this)
+  _updateControlVisibility (showPlacing, showGame) {
+    this.toggleElements(
+      [this.chooseControls, this.newPlacementBtn],
+      showPlacing
+    )
+    this._toggleGameControls(showGame)
   }
 
   /**
-   * Executes a method when a feature flag is enabled.
-   * Conditional method invocation for feature gates.
-   * Safely calls method with correct 'this' binding.
+   * Updates ship tray visibility.
    *
    * @private
-   * @param {boolean} active - Whether the feature flag is active
-   * @param {Function} method - Method to execute if active
+   * @param {boolean} isVisible - Show or hide trays
    * @returns {void}
    */
-  _applyFeatureFlag (active, method) {
-    if (active) {
-      method.call(this)
+  _updateTraysVisibility (isVisible) {
+    if (isVisible) {
+      this.trayManager.showShipTrays()
+    } else {
+      this.trayManager.hideShipTrays()
     }
   }
 
   /**
-   * Applies the placing mode configuration.
-   * Shows ship placement controls and trays during setup phase.
-   * Configures UI for initial fleet placement workflow.
+   * Updates ship transformation buttons and tips visibility.
    *
    * @private
+   * @param {boolean} showBtns - Show transformation buttons
+   * @param {boolean} showTipsFlag - Show help tips
    * @returns {void}
    */
-  _applyPlacingMode () {
-    this._applyCommonUIConfig({
-      tabText: 'Hide and Seek Game',
-      showPlacingControls: true,
-      showGameControls: false,
-      showShipTrays: true,
-      showTransformBtns: true,
-      showTips: true,
-      showStatus: true,
-      standardPanels: true,
-      clearBoardCells: false,
-      addAltPanels: false
-    })
-  }
-
-  /**
-   * Applies the ready mode configuration.
-   * Shows game mode selection controls after ship placement.
-   * Displays options to test or play against computer.
-   *
-   * @private
-   * @returns {void}
-   */
-  _applyReadyMode () {
-    this._applyCommonUIConfig({
-      tabText: 'Hide Game',
-      showPlacingControls: false,
-      showGameControls: true,
-      showShipTrays: false,
-      showTransformBtns: false,
-      showTips: false,
-      showStatus: true,
-      standardPanels: true,
-      clearBoardCells: true,
-      addAltPanels: false
-    })
-    gameStatus.addToQueue(
-      'test your placement or play a game against the computer',
-      /** @type {boolean} */ (false)
-    )
-  }
-
-  /**
-   * Applies the testing mode configuration.
-   * Displays game status during placement testing phase.
-   * Shows mode, game, and line status elements.
-   *
-   * @private
-   * @returns {void}
-   */
-  _applyTestingMode () {
-    this._applyCommonUIConfig({
-      tabText: 'Hide Game',
-      showPlacingControls: false,
-      showGameControls: true,
-      showShipTrays: false,
-      showTransformBtns: false,
-      showTips: false,
-      showStatus: false,
-      standardPanels: false,
-      clearBoardCells: false,
-      addAltPanels: false
-    })
-    gameStatus.line.classList.add(UI_CLASSES.MEDIUM)
-    gameStatus.game.classList.remove(UI_CLASSES.HIDDEN)
-    gameStatus.mode.classList.remove(UI_CLASSES.HIDDEN)
-    gameStatus.line.classList.remove(UI_CLASSES.HIDDEN)
-  }
-
-  /**
-   * Applies the seeking mode configuration.
-   * Activates alternate panel styling for seeking game phase.
-   * Prepares UI for active multiplayer game play.
-   *
-   * @private
-   * @returns {void}
-   */
-  _applySeekingMode () {
-    this._applyCommonUIConfig({
-      tabText: 'Hide and Seek Game',
-      showPlacingControls: false,
-      showGameControls: false,
-      showShipTrays: false,
-      showTransformBtns: false,
-      showTips: false,
-      showStatus: false,
-      standardPanels: false,
-      clearBoardCells: false,
-      addAltPanels: true
-    })
-    gameStatus.line.classList.remove(UI_CLASSES.MEDIUM)
-    gameStatus.line2.classList.remove(UI_CLASSES.MEDIUM)
-    gameStatus.line2.classList.add(UI_CLASSES.SMALL)
-  }
-
-  // ============ Control Visibility ============
-
-  /**
-   * Shows the placing-related controls.
-   * Displays placement button and controls panel for ship placement.
-   *
-   * @private
-   * @returns {void}
-   */
-  _showPlacingControls () {
-    this.toggleElements([this.chooseControls, this.newPlacementBtn], true)
-  }
-
-  /**
-   * Hides the placing-related controls.
-   * Hides placement button and controls panel during other modes.
-   *
-   * @private
-   * @returns {void}
-   */
-  _hidePlacingControls () {
-    this.toggleElements([this.chooseControls, this.newPlacementBtn], false)
-  }
-
-  /**
-   * Shows the game-related controls.
-   * Displays test and seek mode buttons for gameplay selection.
-   *
-   * @private
-   * @returns {void}
-   */
-  _showGameControls () {
-    this._toggleGameControls(true)
-  }
-
-  /**
-   * Hides the game-related controls.
-   * Hides test and seek mode buttons during placement phase.
-   *
-   * @private
-   * @returns {void}
-   */
-  _hideGameControls () {
-    this._toggleGameControls(false)
+  _updateButtonsVisibility (showBtns, showTipsFlag) {
+    if (showBtns) {
+      this.showTransformBtns(this)
+    } else {
+      this.hideTransformBtns(this)
+    }
+    if (showTipsFlag) {
+      this.showTips(this)
+    } else {
+      this.hideTips(this)
+    }
   }
 
   /**
@@ -530,34 +438,27 @@ export class FriendUI extends PlacementUI {
   // ============ Score Labels ============
 
   /**
-   * Updates the visibility of score labels based on the current mode.
-   * Shows/hides score UI elements according to MODE_SCORE_LABELS configuration.
-   * Iterates through all score label keys and applies visibility settings.
+   * Updates score label visibility for the given mode.
+   * Shows/hides score elements based on MODE_SCORE_LABELS configuration.
    *
    * @private
    * @param {string} mode - The game mode to configure labels for
    * @returns {void}
    */
   _updateScoreLabels (mode) {
+    if (!this.score) return
     const config = MODE_SCORE_LABELS[mode] || {}
-    if (!this.score) {
-      return
-    }
-
     SCORE_LABEL_KEYS.forEach(labelKey => {
       const labelElement = this.score[`${labelKey}Label`]
-      this.setClasses(labelElement, {
-        [UI_CLASSES.HIDDEN]: !config[labelKey]
-      })
+      this.setClasses(labelElement, { [UI_CLASSES.HIDDEN]: !config[labelKey] })
     })
   }
 
   // ============ Visual Management ============
 
   /**
-   * Clears hit and placed classes from all board cells.
-   * Removes visual state indicators from all cells for mode transitions.
-   * Safely checks for board existence before querying cells.
+   * Clears visual state indicators from all board cells.
+   * Removes hit/placed classes for clean mode transitions.
    *
    * @private
    * @returns {void}
@@ -571,9 +472,8 @@ export class FriendUI extends PlacementUI {
   }
 
   /**
-   * Adds the 'alt' class to all panel elements.
-   * Applies alternate styling for seeking game mode.
-   * Iterates through all panel elements in the DOM.
+   * Applies alternate panel styling for seeking mode.
+   * Adds 'alt' class to all panel elements.
    *
    * @private
    * @returns {void}
@@ -585,11 +485,11 @@ export class FriendUI extends PlacementUI {
     }
   }
 
-  // ============ Public Mode Methods (for backward compatibility) ============
+  // ============ Public Mode Methods ============
 
   /**
-   * Switches to placing mode and updates score labels.
-   * Entry point for ship placement phase. Configures UI for initial setup.
+   * Switches to placing mode.
+   * Entry point for ship placement phase.
    *
    * @public
    * @returns {void}
@@ -600,8 +500,8 @@ export class FriendUI extends PlacementUI {
   }
 
   /**
-   * Switches to ready mode and updates score labels.
-   * Transitions to game mode selection after placement complete.
+   * Switches to ready mode.
+   * Transitions to game mode selection after placement.
    *
    * @public
    * @returns {void}
@@ -636,33 +536,30 @@ export class FriendUI extends PlacementUI {
   // ============ Lifecycle & Game State ============
 
   /**
-   * Displays the fleet sunk state and tracks level end.
-   * Updates UI to show game over state with tracking for analytics.
-   * Flushes previous messages and shows defeat/enemy reveal messages.
+   * Displays fleet destroyed state and tracks game end.
+   * Shows defeat messages and applies destroyed styling.
+   * Triggers analytics tracking for level completion.
    *
    * @public
    * @returns {void}
    */
   displayFleetSunk () {
     gameStatus.flush()
-    gameStatus.addToQueue('Enemy Fleet Revealed', /** @type {boolean} */ (true))
-    gameStatus.addToQueue(
-      'Your Fleet is Destroyed',
-      /** @type {boolean} */ (true)
-    )
+    gameStatus.addToQueue('Enemy Fleet Revealed', true)
+    gameStatus.addToQueue('Your Fleet is Destroyed', true)
     this.board.classList.add(UI_CLASSES.DESTROYED)
     trackLevelEnd(bh.map, false)
   }
 
   /**
-   * Marks a cell as hit or damaged (override of parent method).
-   * Applies visual state to friendly board cell indicating hit/damage status.
-   * Delegates to CellClassManager for consistent cell state management.
+   * Marks a cell as hit (override of parent method).
+   * Applies visual state to friendly board cell.
+   * Delegates to CellClassManager for consistent state management.
    *
    * @public
-   * @param {number} r - Row index of the cell (0-based)
-   * @param {number} c - Column index of the cell (0-based)
-   * @param {string} [damageType] - Type of damage or empty string (matches parent signature)
+   * @param {number} r - Row index (0-based)
+   * @param {number} c - Column index (0-based)
+   * @param {string} [damageType] - Damage type or empty string
    * @returns {void}
    */
   cellHit (r, c, damageType) {
@@ -671,42 +568,27 @@ export class FriendUI extends PlacementUI {
   }
 
   /**
-   * Uses ammo in a cell and applies damage.
-   * Applies ammo depletion visual state to specified cell.
+   * Depletes ammo from a cell and applies damage visual state.
+   * Updates cell to reflect ammo consumption.
    *
    * @public
-   * @param {number} r - Row index of the cell (0-based)
-   * @param {number} c - Column index of the cell (0-based)
-   * @param {string} damage - Damage type classification or empty string
+   * @param {number} r - Row index (0-based)
+   * @param {number} c - Column index (0-based)
+   * @param {string} damage - Damage type or empty string
    * @returns {void}
    */
   cellUseAmmo (r, c, damage) {
     const cell = this.gridCellAt(r, c)
-    this.useAmmoInCell(cell, damage)
-  }
-
-  /**
-   * Applies ammo usage to a cell element.
-   * Updates cell state to reflect ammo consumption.
-   * Delegates to internal ammo state application method.
-   *
-   * @public
-   * @param {HTMLElement} cell - The cell DOM element to update
-   * @param {string} damage - Damage type classification or empty string
-   * @returns {void}
-   */
-  useAmmoInCell (cell, damage) {
     this._applyAmmoState(cell, damage)
   }
 
   /**
-   * Applies ammo state classes and dataset values for an ammo cell.
-   * Updates cell classes based on damage state and removes active/active status.
-   * Sets ammo dataset to '0' when consumed.
+   * Applies ammo depletion state to cell element.
+   * Updates classes and dataset based on damage type.
    *
    * @private
-   * @param {HTMLElement} cell - The cell DOM element to modify
-   * @param {string} damage - Damage type classification or empty string
+   * @param {HTMLElement} cell - Cell DOM element to modify
+   * @param {string} damage - Damage type or empty string
    * @returns {void}
    */
   _applyAmmoState (cell, damage) {
@@ -721,9 +603,9 @@ export class FriendUI extends PlacementUI {
   }
 
   /**
-   * Proceeds to the next stage after ship placement.
-   * Transitions to ready or seeking mode based on test environment status.
-   * In production, fires onFleetPlaced callback and launches battle game.
+   * Proceeds to next stage after ship placement.
+   * Clears grid and transitions to ready or seeking mode.
+   * In production, launches battle game.
    *
    * @public
    * @returns {void}
@@ -731,48 +613,22 @@ export class FriendUI extends PlacementUI {
   gotoNextStageAfterPlacement () {
     this.grid.clearClasses()
     if (this.isTestEnvironment()) {
-      this.setReadyModeAfterPlacement()
+      this.readyMode()
     } else {
-      this.setReadyAndSeekModeAfterPlacement()
+      this.readyMode()
+      this.seekMode()
       this._playBattleHide?.()
     }
   }
 
   /**
-   * Checks if the current environment is a test environment.
-   * Queries board helper test flag to determine execution context.
+   * Checks if environment is test mode.
+   * Queries board helper test flag.
    *
    * @public
    * @returns {boolean} True if in test mode
    */
   isTestEnvironment () {
     return bh.test
-  }
-
-  /**
-   * Sets ready mode after placement.
-   * Transitions UI to ready state without seeking mode.
-   * Used for test environment transitions.
-   *
-   * @public
-   * @returns {void}
-   */
-  setReadyModeAfterPlacement () {
-    this.readyMode()
-  }
-
-  /**
-   * Sets ready and seek modes after placement.
-   * Transitions to seeking mode and fires onFleetPlaced callback if defined.
-   * Used for production environment transitions to active gameplay.
-   *
-   * @public
-   * @returns {void}
-   */
-  setReadyAndSeekModeAfterPlacement () {
-    this.readyMode()
-    this.seekMode()
-
-    //   this.onFleetPlaced?.()
   }
 }

@@ -6,6 +6,12 @@ import { makeKey, parsePair } from '../core/utilities.js'
 import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
 import { dragNDrop } from '../selection/dragndrop.js'
 
+/**
+ * @fileoverview GridBoard class for managing game board cell interactions and displays
+ * Handles cell marking, hover effects, drag-drop zones, and board state visualization
+ * @module gridBoard
+ */
+
 /** @enum {string} */
 const UI_CLASSES = {
   HIDDEN: 'hidden',
@@ -30,6 +36,22 @@ const UI_CLASSES = {
 /**
  * @typedef {Object} GameModel
  * @property {Object} placement - Placement rules and state
+ * @property {any} [additionalConfig] - Additional game configuration
+ */
+
+/**
+ * @typedef {Object} WeaponSlot
+ * @property {Object} weapon - Weapon information
+ * @property {string} weapon.letter - Weapon identifier letter
+ * @property {number} ammo - Remaining ammunition count
+ */
+
+/**
+ * @typedef {Object} ShipObject
+ * @property {string} [id] - Ship unique identifier
+ * @property {string} [letter] - Ship letter designation
+ * @property {number[][]} [cells] - Array of [column, row] cell positions for ship
+ * @property {(column: number, row: number) => WeaponSlot|null} [rackAt] - Method to check weapon slot at coordinates
  */
 
 /**
@@ -39,24 +61,19 @@ const UI_CLASSES = {
  */
 
 /**
- * @typedef {Object} ShipObject
- * @property {number[][]} [cells] - Array of [column, row] cell positions for ship
- * @property {Function} [rackAt] - Method to check weapon slot at coordinates
- */
-
-/**
  * @typedef {(row: number, col: number) => void} CellHoverLeaveCallback
  * Callback fired when mouse leaves a cell during hover targeting.
  * @description Receives cell coordinates for cleanup of hover-related display
  */
 
 /**
- * @typedef {(row: number, col: number) => void} CellMissCallback
+ * @typedef {(row: number, col: number, damageType?: string) => void} CellMissCallback
  * Callback to mark a cell as a miss (no hit).
+ * @description Marks cell with miss/damage styling
  */
 
 /**
- * @typedef {(row: number, col: number, ship: any) => void} CellDisplayCallback
+ * @typedef {(row: number, col: number, ship: ShipObject) => void} CellDisplayCallback
  * Callback to display a cell with ship information.
  */
 
@@ -66,18 +83,20 @@ const UI_CLASSES = {
  */
 
 /**
- * @typedef {(row: number, col: number) => HTMLElement} CoordToElementCallback
+ * @typedef {(row: number, col: number) => HTMLElement|null} CoordToElementCallback
  * Callback that transforms coordinates to an HTMLElement.
  */
 
 /**
  * Retrieves all child elements from a board element.
  * @param {HTMLElement|null} board - The board element
- * @returns {HTMLCollection|Array} Child elements or empty collection
+ * @returns {HTMLCollection|Array<HTMLElement>} Child elements or empty array
  * @private
  */
-const getBoardChildren = (/** @type {HTMLElement|null} */ board) =>
-  board?.children || []
+const getBoardChildren = (/** @type {HTMLElement|null} */ board) => {
+  /** @type {HTMLCollection|Array<HTMLElement>} */
+  return board?.children || []
+}
 
 export class GridBoard {
   /**
@@ -86,7 +105,9 @@ export class GridBoard {
    * @param {GridMap} [map] - Optional map configuration (defaults to current map from bh)
    */
   constructor (boardElement, map) {
+    /** @type {HTMLElement|null} */
     this.board = boardElement
+    /** @type {GridMap|undefined} */
     this._map = map
   }
 
@@ -96,6 +117,7 @@ export class GridBoard {
    */
   get map () {
     if (this._map == null) {
+      /** @type {GridMap} */
       this._map = bh.map
     }
     return this._map
@@ -120,6 +142,7 @@ export class GridBoard {
    * @returns {HTMLElement|null} Node element or null if not found
    */
   nodeAt (x, y) {
+    /** @type {HTMLElement|null} */
     return CellUI.nodeAt(this.board, x, y, this.map)
   }
 
@@ -130,23 +153,24 @@ export class GridBoard {
    * @returns {HTMLElement} Node element
    */
   node (x, y) {
+    /** @type {HTMLElement} */
     return CellUI.node(this.board, x, y, this.map)
   }
 
   /**
    * Marks a friendly weapon rack cell with weapon CSS class if equipped.
    * Queries ship for weapon at coordinates and adds WEAPON class if present.
- 
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {Ship} ship - Ship object with weapon rack information
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {ShipObject} ship - Ship object with weapon rack information
    * @returns {void}
    */
   markFriendlyWeapon (x, y, ship) {
+    /** @type {WeaponSlot|null|undefined} */
     const weaponSlot = ship.rackAt?.(x, y)
     if (weaponSlot) {
       // Try using node for flexible lookup (works with or without map)
+      /** @type {HTMLElement|null} */
       let cell = this.node(x, y)
       if (cell) {
         cell.classList.add(UI_CLASSES.WEAPON)
@@ -157,7 +181,7 @@ export class GridBoard {
   /**
    * Marks all weapon rack cells for a ship with weapon CSS class.
    * Iterates through ship's cells and applies weapon marking to each.
-   * @param {Ship} ship - Ship object with weapon rack and cell occupation data
+   * @param {ShipObject} ship - Ship object with weapon rack and cell occupation data
    * @returns {void}
    */
   markShipsWeapons (ship) {
@@ -170,9 +194,9 @@ export class GridBoard {
 
   /**
    * Displays surrounding ship cell attributes.
-   * @param {Ship} ship - Ship object
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {ShipObject} ship - Ship object
    * @returns {void}
    */
   surroundShipAt (x, y, ship) {
@@ -186,16 +210,17 @@ export class GridBoard {
    *
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @param {Ship} ship - Ship object to display
+   * @param {ShipObject} ship - Ship object to display
    * @returns {void}
    */
   cellPlacedAt (x, y, ship) {
+    /** @type {GridMap} */
     const map = bh.map
     if (!map || !('inBounds' in map)) return
-    const inBoundsMethod = /** @type {(r: number, c: number) => boolean} */ (
-      map.inBounds
-    )
+    /** @type {(r: number, c: number) => boolean} */
+    const inBoundsMethod = map.inBounds
     if (!inBoundsMethod?.call(map, y, x)) return
+    /** @type {HTMLElement|null} */
     const cell = this.nodeAt(x, y)
     ShipCellDisplayer.displayPlacedCell(cell, ship, y, x)
   }
@@ -206,6 +231,7 @@ export class GridBoard {
    * @param {Set<string>} surroundingKeys - Set of surrounding cell keys
    * @param {CellMissCallback} cellMiss - Callback to mark cells as miss: (row, col) => void
    * @returns {void}
+   * @private
    */
   #displaySurroundingMisses (surroundingKeys, cellMiss) {
     for (const key of surroundingKeys) {
@@ -217,12 +243,13 @@ export class GridBoard {
    * Marks a cell as a miss (no ship hit).
    * Skips if cell already has a ship placed to protect ships.
    *
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @param {string} [damageType] - Optional damage indicator class
    * @returns {void}
    */
   cellMiss (x, y, damageType) {
+    /** @type {HTMLElement} */
     const cell = CellUI.node(this.board, x, y)
 
     if (cell.classList.contains('placed')) return
@@ -237,9 +264,10 @@ export class GridBoard {
    * Typically marks original cells with ship or hit indicators.
    *
    * @param {Iterable<[number, number]>} cells - Original cell coordinates
-   * @param {Ship} ship - Ship object for display
+   * @param {ShipObject} ship - Ship object for display
    * @param {CellDisplayCallback} displayFn - Callback to display cells: (row, col, ship) => void
    * @returns {void}
+   * @private
    */
   #displayCenterCells (cells, ship, displayFn) {
     for (const [row, column] of cells) {
@@ -252,12 +280,13 @@ export class GridBoard {
    * Used for area-of-effect visualization (e.g., weapon splash).
    *
    * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
-   * @param {Ship} ship - Ship object for center cell display
+   * @param {ShipObject} ship - Ship object for center cell display
    * @param {CellMissCallback} cellMiss - Callback to mark surrounding cells as miss
    * @param {CellDisplayCallback} [display] - Optional callback to display center cells
    * @returns {void}
    */
   displaySurround (cells, ship, cellMiss, display) {
+    /** @type {Set<string>} */
     const surroundingKeys = this.hollowCells(cells)
     this.#displaySurroundingMisses(surroundingKeys, cellMiss)
     if (display) {
@@ -274,7 +303,7 @@ export class GridBoard {
    * - Updates board display to show placement result
    *
    * @param {Array<[number, number]>} cells - Placed cell coordinates as [row, col] tuples
-   * @param {Ship} ship - Ship that was placed
+   * @param {ShipObject} ship - Ship that was placed
    * @returns {void}
    */
   markPlaced (cells, ship) {
@@ -294,8 +323,10 @@ export class GridBoard {
    *
    * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
    * @returns {Set<string>} Set of cell keys
+   * @private
    */
   #cellSet (cells) {
+    /** @type {Set<string>} */
     const result = new Set()
     for (const [row, column] of cells) {
       result.add(makeKey(column, row))
@@ -312,7 +343,9 @@ export class GridBoard {
    * @returns {Set<string>} Set of hollow cells (surrounding but not original)
    */
   hollowCells (cells) {
+    /** @type {Set<string>} */
     const surround = this.surroundCells(cells)
+    /** @type {Set<string>} */
     const original = this.#cellSet(cells)
     return surround.difference(original)
   }
@@ -325,6 +358,7 @@ export class GridBoard {
    * @returns {Set<string>} Set of surrounding cell keys
    */
   surroundCells (cells) {
+    /** @type {Set<string>} */
     const surroundings = new Set()
     for (const [x, y] of cells) {
       this.surround(x, y, surroundings)
@@ -336,16 +370,19 @@ export class GridBoard {
    * Adds surrounding cells to container using specified strategy.
    * Generic method that delegates to SurroundingCellsHelper with flexible result format.
    *
-   * @param {number} y - Row coordinate of center cell
    * @param {number} x - Column coordinate of center cell
+   * @param {number} y - Row coordinate of center cell
    * @param {Set<string>|Object<string, HTMLElement>|any[]} container - Container to accumulate results
    * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy
    * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
    * @returns {void}
    * @throws {Error} If maker callback required but not provided for chosen strategy
+   * @private
    */
   #addSurroundingCells (x, y, container, strategy, maker) {
+    /** @type {any} */
     let result
+    /** @type {GridMap} */
     const currentMap = this.map
 
     switch (strategy) {
@@ -377,10 +414,9 @@ export class GridBoard {
    * Adds surrounding cell keys to a set container.
    * Retrieves all neighbors of specified cell and adds their keys.
    *
-   * @param {number} y - Row coordinate of center cell
    * @param {number} x - Column coordinate of center cell
+   * @param {number} y - Row coordinate of center cell
    * @param {Set<string>} container - Set to accumulate surrounding cell keys
- 
    * @returns {void}
    */
   surround (x, y, container) {
@@ -394,7 +430,7 @@ export class GridBoard {
    *
    * @param {number} x - Column coordinate of center cell
    * @param {number} y - Row coordinate of center cell
-   * @param {Object} container - Object to accumulate surrounding cell mappings
+   * @param {Object<string, HTMLElement>} container - Object to accumulate surrounding cell mappings
    * @param {CoordToElementCallback} maker - Callback to transform [row, col] → HTMLElement
    * @returns {void}
    */
@@ -425,6 +461,7 @@ export class GridBoard {
    * @returns {HTMLElement[]} Array of surrounding cell elements
    */
   surroundCellElement (cells, container) {
+    /** @type {Object<string, HTMLElement>} */
     const surroundings = container || {}
     for (const cell of cells) {
       const { x, y } = CellUI.getCoords(cell)
@@ -450,6 +487,7 @@ export class GridBoard {
    * @static
    */
   static addHover (boardElement, map, onEnter, onLeave, thisRef, weaponSource) {
+    /** @type {GridBoard} */
     const grid = new GridBoard(boardElement, map)
     grid.addHover(onEnter, onLeave, thisRef, weaponSource)
   }
@@ -481,6 +519,7 @@ export class GridBoard {
    * @static
    */
   static removeHighlightAoE (boardElement) {
+    /** @type {GridBoard} */
     const grid = new GridBoard(boardElement)
     grid.removeHighlightAoE()
   }
@@ -491,19 +530,25 @@ export class GridBoard {
    * @returns {void}
    */
   removeHighlightAoE () {
+    /** @type {string[]} */
     const tags = ['target', ...Object.values(bh.splashTags)]
     this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
       el.classList.remove(...tags)
     )
   }
   /**
-   * Builds board grid for screen
-   * Creates grid with row/column labels for printing.
+   * Builds board grid for screen (static factory).
+   * Creates grid with row/column labels for interactive display.
    *
+   * @param {HTMLElement|null} boardElement - The board element
+   * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} onClick - Click handler
+   * @param {Object} [thisRef] - Context for click handler binding
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
+   * @static
    */
   static createScreenGrid (boardElement, onClick, thisRef, map) {
+    /** @type {GridBoard} */
     const grid = new GridBoard(boardElement, map)
     grid.createScreenGrid(onClick, thisRef)
   }
@@ -519,6 +564,7 @@ export class GridBoard {
     if (!this.board) return
 
     this.board.innerHTML = ''
+    /** @type {GridMap} */
     const map = this.map
 
     for (const [x, y] of this.locations()) {
@@ -536,13 +582,16 @@ export class GridBoard {
     }
   }
   /**
-   * Builds board grid for print output with labels.
+   * Builds board grid for print output with labels (static factory).
    * Creates grid with row/column labels for printing.
    *
+   * @param {HTMLElement|null} boardElement - The board element
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
+   * @static
    */
   static createPrintableGrid (boardElement, map) {
+    /** @type {GridBoard} */
     const grid = new GridBoard(boardElement, map)
     grid.createPrintableGrid()
   }
@@ -556,6 +605,7 @@ export class GridBoard {
     if (!this.board) return
 
     this.board.innerHTML = ''
+    /** @type {GridMap} */
     const map = this.map
     CellUI.createEmptyNodeAndAppendTo(this.board)
     for (let x = 0; x < map.cols; x++) {
@@ -586,7 +636,7 @@ export class GridBoard {
    * Generator for all cell coordinates in the board.
    * Yields coordinates in row-major order: top-left to bottom-right.
    * @yields {[number, number]} Cell coordinates as [x, y] tuples
-   * @returns {Generator<[number, number]>} Generator of coordinate pairs
+   * @returns {Generator<[number, number], void, void>} Generator of coordinate pairs
    */
   *locations () {
     for (let y = 0; y < this.map.rows; y++) {
@@ -634,6 +684,7 @@ export class GridBoard {
    * @param {GameModel} model - Game model containing placement rules and state
    * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration
    * @returns {void}
+   * @private
    */
   #configureBoardCellsForDrop (model, additionalSetup) {
     this.#forEachBoardCell(cell => {
@@ -666,6 +717,7 @@ export class GridBoard {
    * - Configures board cells with both standard and weapon-specific drop handlers
    *
    * @param {GameModel} model - Game model with weapon placement configuration
+   * @param {any} viewModel - View model for weapon placement
    * @returns {void}
    */
   makeAddDroppable (model, viewModel) {
