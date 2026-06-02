@@ -603,7 +603,7 @@ export class BhMap {
   #addEdgeTags (x, y, isLand, tags) {
     // Check right edge (water next to land)
     const columnRight = x + 1
-    if (!isLand && columnRight < this.cols && this.isLand(columnRight, y)) {
+    if (!isLand && columnRight < this.cols && this.isLandAt(columnRight, y)) {
       tags.push('rightEdge')
     }
 

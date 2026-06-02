@@ -32,12 +32,12 @@ describe('FriendUI - markFleetWeapons', () => {
       return boardDiv.querySelector(`[data-r="${r}"][data-c="${c}"]`)
     })
 
-    friendUI.grid.nodeAt = jest.fn((r, c) => {
-      return boardDiv.querySelector(`[data-r="${r}"][data-c="${c}"]`)
+    friendUI.grid.nodeAt = jest.fn((x, y) => {
+      return boardDiv.querySelector(`[data-r="${y}"][data-c="${x}"]`)
     })
 
-    friendUI.grid.node = jest.fn((r, c) => {
-      return boardDiv.querySelector(`[data-r="${r}"][data-c="${c}"]`)
+    friendUI.grid.node = jest.fn((x, y) => {
+      return boardDiv.querySelector(`[data-r="${y}"][data-c="${x}"]`)
     })
     mockMap = {
       rows: 9,
@@ -112,15 +112,15 @@ describe('FriendUI - markFleetWeapons', () => {
     friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells without weapons don't have the 'weapon' class
-    const cell_1_0 = friendUI.gridCellAt(1, 0) // Ship 1 cell without weapon
-    const cell_1_1 = friendUI.gridCellAt(1, 1) // Ship 3 cells (no weapons)
-    const cell_1_2 = friendUI.gridCellAt(2, 1)
-    const cell_1_3 = friendUI.gridCellAt(3, 1)
+    const cell_1_0 = friendUI.gridCellAt(0, 1) // Ship 1 cell without weapon (col 1, row 0)
+    const cell_2_0 = friendUI.gridCellAt(2, 0) // Ship 2 cell without weapon (col 0, row 2)
+    const cell_3_1 = friendUI.gridCellAt(1, 1) // Ship 3 cells (no weapons)
+    const cell_3_2 = friendUI.gridCellAt(1, 2)
 
     expect(cell_1_0.classList.contains('weapon')).toBe(false)
-    expect(cell_1_1.classList.contains('weapon')).toBe(false)
-    expect(cell_1_2.classList.contains('weapon')).toBe(false)
-    expect(cell_1_3.classList.contains('weapon')).toBe(false)
+    expect(cell_2_0.classList.contains('weapon')).toBe(false)
+    expect(cell_3_1.classList.contains('weapon')).toBe(false)
+    expect(cell_3_2.classList.contains('weapon')).toBe(false)
   })
 
   it('should handle null ships gracefully', () => {
