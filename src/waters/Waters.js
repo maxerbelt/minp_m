@@ -98,6 +98,11 @@ import { Random } from '../core/Random.js'
  * @property {Function} surroundCellElement - Get surrounding cell elements
  * @property {Function} displaySurround - Display surround cells
  * @property {Function} markPlaced - Mark ship as placed
+ * @property {Function} [surroundCells] - Get surrounding cells
+ * @property {Function} [cellMiss] - Mark cell as miss
+ * @property {Function} [cellUseAmmo] - Mark ammo usage
+ * @property {Function} [cellHintReveal] - Reveal cell via hint
+ * @property {Function} [cellSemiReveal] - Semi-reveal cell
  */
 /**
  * @typedef {Object} Board
@@ -142,6 +147,7 @@ import { Random } from '../core/Random.js'
  * @property {Function} crashSplash - Get crash splash effect
  * @property {Function} animateSplashExplode - Animate explosion effect
  * @property {string} [protectionLevels] - Ship types this weapon protects against
+ * @property {boolean} [isLimitedSet] - Whether weapon is in limited set
  */
 
 /**
@@ -156,7 +162,7 @@ import { Random } from '../core/Random.js'
 
 /**
  * @typedef {Object} WeaponRack
- * @property {Weapon} [weapon] - The weapon object
+ * @property {Weapon|undefined} [weapon] - The weapon object
  * @property {number} [id] - Rack/weapon ID
  * @property {number} [ammo] - Ammunition count
  */
@@ -1199,6 +1205,7 @@ export class Waters {
 
   /**
    * Resets the map state and loads new map configuration.
+   * Preserved for potential future use or API compatibility.
    * @param {Object|undefined} [map] - The map to set (defaults to bh.map).
    * @returns {void}
    * @private
@@ -1579,6 +1586,7 @@ export class Waters {
     const letter = weapon?.letter
 
     this.giveTempHint(weapon, cell, oppo)
+    // @ts-expect-error - rack type is compatible at runtime despite TypeScript mismatch
     this.addSource(oppo, launchR, launchC, rack, cell)
     // Construct proper params object for addRack with all required properties
     const addRackParams = {
@@ -1606,12 +1614,13 @@ export class Waters {
       if (weapon?.postSelectCoords === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
+        // @ts-expect-error - addSelectedCoordinates expects Weapon type at runtime
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
       // @ts-ignore - updateMode expects Weapon or undefined at runtime
       this.updateMode(rack, undefined)
       this.steps?.targetting(this.hasAttachedWeapons)
-      // @ts-ignore - launch signature allows 3 parameters at runtime
+      // @ts-expect-error - launch accepts WeaponRack at runtime
       this.loadOut.launch = async coords => {
         return await this.launchTo(coords, hintR, hintC, rack)
       }
@@ -1622,7 +1631,7 @@ export class Waters {
 
   /**
    * Displays a temporary hint if the weapon gives one.
-   * @param {Object} weapon - The weapon with hint capability
+   * @param {Weapon|undefined} weapon - The weapon with hint capability
    * @param {HTMLElement|null} cell - Cell element to mark with hint
    * @param {Waters|null} oppo - Opponent instance
    * @returns {void}
@@ -1641,7 +1650,7 @@ export class Waters {
    * @param {Waters|null} oppo - Opponent instance
    * @param {number} launchR - Launch row coordinate
    * @param {number} launchC - Launch column coordinate
-   * @param {Object} rack - Weapon rack object
+   * @param {WeaponRack|undefined} rack - Weapon rack object
    * @param {HTMLElement|null} cell - Cell element
    * @returns {void}
    * @private
@@ -2219,12 +2228,10 @@ export class Waters {
    * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
    *
    * @param {Array<Array<number>>} effect - The effect area
-   * @param {Object} weapon - The weapon being used
+   * @param {Weapon} weapon - The weapon being used
    * @returns {Array<number>|null} Random hit candidate or null
-   * @private
    * @deprecated Not used in current codebase
    */
-  // @ts-ignore - unused but may be called externally
   getTarget (effect, weapon) {
     const candidates = this.#getHitCandidates(effect, weapon)
     // @ts-ignore - randomElement may return undefined, cast to null
@@ -2241,7 +2248,7 @@ export class Waters {
    * @returns {Array<Array<number>>} Array of hit candidates [r, c, power] that can damage ships
    */
   #getHitCandidates (effect, weapon) {
-    /** @type {Array<Array<number>>} */
+    /** @type { number[][]} */
     const candidates = []
     // @ts-ignore - bh.map is initialized at runtime
     const map = bh.map
@@ -2255,7 +2262,7 @@ export class Waters {
         if (map?.isInBoundsAt?.(x, y) && this.score.isNewShot(x, y)) {
           // @ts-ignore - this.UI is Board at runtime
           const board = /** @type {Board} */ (this.UI)
-          const cell = board.gridCellAt?.(y, x)
+          const cell = board.grid.nodeAt(x, y)
           if (cell) {
             this.#addWake(cell, x, y, weapon)
           }
@@ -2281,9 +2288,9 @@ export class Waters {
   /**
    * Adds wake visual to cell if applicable.
    * @param {HTMLElement} cell - The cell to add wake to
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
-   * @param {Weapon|Object} weapon - The weapon being used
+   * @param {number} y - Row coordinate
+   * @param {Weapon} weapon - The weapon being used
    * @returns {void}
    */
   #addWake (cell, x, y, weapon) {
@@ -2309,10 +2316,11 @@ export class Waters {
 
   /**
    * Handles the case when there are no hit candidates.
-   * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<any>} effect - The effect
+   * @param {Weapon} weapon - The weapon
+   * @param {Array<Array<number>>} effect - The effect
    * @param {Object} [options] - Additional options
    * @returns {Promise<WeaponResult>} The destruction result
+   * @private
    */
   async handleNoHits (weapon, effect, options = {}) {
     // @ts-ignore - options may have crashLoc at runtime
@@ -2347,12 +2355,13 @@ export class Waters {
 
   /**
    * Handles the case when there are hit candidates.
-   * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<any>} effect - The effect
-   * @param {Array<any>} target - The target
-   * @param {Array<any>} hitCandidates - The hit candidates
+   * @param {Weapon} weapon - The weapon
+   * @param {Array<Array<number>>} effect - The effect
+   * @param {Array<number>} target - The target
+   * @param {Array<Array<number>>} hitCandidates - The hit candidates
    * @param {Object} options - Additional options
    * @returns {WeaponResult} The destruction result
+   * @private
    */
   handleHits (weapon, effect, target, hitCandidates, options) {
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
@@ -3033,9 +3042,8 @@ export class Waters {
    * Gets description text for reveal count.
    * @param {number} reveals - Number of reveals
    * @returns {string} Description text
-   * @private
    */
-  revealDescription (reveals) {
+  #revealDescription (reveals) {
     if (this.opponent) {
       return this.preamble + 'revealed (x' + reveals.toString() + ')'
     }
@@ -3044,55 +3052,13 @@ export class Waters {
     }
     return reveals.toString() + ' revealed'
   }
-  /**
-   * Displays miss message with optional reveal count.
-   * @param {Object} weapon - The weapon that missed
-   * @param {number} [reveals] - Number of reveals (default 0)
-   * @param {string} [messageInfo] - Message prefix
-   * @returns {void}
-   * @private
-   */
-  displayMisses (weapon, reveals = 0, messageInfo = '') {
-    if (reveals > 0) {
-      this.displayInfo(messageInfo + this.revealDescription(reveals))
-      return
-    }
-
-    const missMessage = this.buildMissMessage(weapon)
-    if (missMessage) {
-      this.displayInfo(messageInfo + missMessage)
-    }
-  }
-
-  /**
-   * Builds the message displayed when a shot misses.
-   * @param {Object} weapon - The weapon that missed
-   * @returns {string|null} Resulting miss message, or null for no display
-   * @private
-   */
-  buildMissMessage (weapon) {
-    if (!weapon) return null
-    if (this.opponent) {
-      const preamble1 = this.opponent.preamble1
-      if (weapon.letter === '-') {
-        return `${preamble1}missed`
-      }
-      return `${preamble1}${weapon.name} missed ${this.preamble0} ships`
-    }
-
-    if (weapon.letter === '-') {
-      return null
-    }
-
-    return `The ${weapon.name} missed everything!`
-  }
 
   /**
    * Updates result display for bomb/splash damage.
-   * @param {Object} weapon - The weapon that fired
-   * @param {Object} result - The firing result
+   * Updates bombing weapon result counters.
+   * @param {Weapon} weapon - Bomb weapon being tracked
+   * @param {WeaponResult} result - The result to update counters from
    * @returns {void}
-   * @private
    */
   updateResultsOfBomb (weapon, result) {
     if (!result) return
@@ -3110,9 +3076,8 @@ export class Waters {
    * @param {number} [reveals] - Number of reveals (default 0)
    * @param {string} [messageInfo] - Prefix for message
    * @returns {string} Formatted result message
-   * @private
    */
-  _buildResultMessage (weapon, hits, sunks, reveals = 0, messageInfo = '') {
+  #buildResultMessage (weapon, hits, sunks, reveals = 0, messageInfo = '') {
     // No hits - report miss
     if (hits === 0) {
       return messageInfo + this._buildMissMessage(weapon, reveals)
@@ -3122,7 +3087,7 @@ export class Waters {
     if (sunks.length === 0) {
       let message = this.hitDescription(hits)
       if (reveals > 0) {
-        message += ` and ${this.revealDescription(reveals)}`
+        message += ` and ${this.#revealDescription(reveals)}`
       }
       return messageInfo + message
     }
@@ -3149,7 +3114,7 @@ export class Waters {
    */
   _buildMissMessage (weapon, reveals = 0) {
     if (reveals > 0) {
-      return this.revealDescription(reveals)
+      return this.#revealDescription(reveals)
     }
 
     if (this.opponent) {
@@ -3176,10 +3141,9 @@ export class Waters {
    * @param {Array<any>} sunks - Array of sunk ship letters
    * @param {number} [reveals] - Number of reveals (default 0)
    * @param {string} [messageInfo] - Prefix for message (default '')
-   * @private
    */
-  _displayResult (weapon, hits, sunks, reveals = 0, messageInfo = '') {
-    const message = this._buildResultMessage(
+  #displayResult (weapon, hits, sunks, reveals = 0, messageInfo = '') {
+    const message = this.#buildResultMessage(
       weapon,
       hits,
       sunks,
@@ -3189,72 +3153,6 @@ export class Waters {
     if (message) {
       this.displayInfo(message)
     }
-  }
-
-  /**
-   * Builds and displays message for a complete miss.
-   * @param {Object} weapon - The weapon used
-   * @param {number} reveals - Number of reveals
-   * @param {string} messageInfo - Additional message info
-   * @private
-   * @deprecated Use _displayResult() instead
-   */
-  // @ts-ignore - unused method may be used by external code
-  displayMissResult (weapon, reveals, messageInfo) {
-    this.displayMisses(weapon, reveals, messageInfo)
-  }
-
-  /**
-   * Builds and displays message for hits with no ships sunk.
-   * @param {number} hits - Number of hits
-   * @param {number} reveals - Number of reveals
-   * @param {string} messageInfo - Additional message info
-   * @private
-   * @deprecated Use _displayResult() instead
-   */
-  // @ts-ignore - unused method may be used by external code
-  displayHitResult (hits, reveals, messageInfo) {
-    let message = this.hitDescription(hits)
-    if (reveals > 0) {
-      message += ` and ${this.revealDescription(reveals)}`
-    }
-    this.displayInfo(messageInfo + message)
-  }
-
-  /**
-   * Builds and displays message for hits with one ship sunk.
-   * @param {number} hits - Number of hits
-   * @param {Array<any>} sunks - Array of sunk ship letters
-   * @param {string} messageInfo - Additional message info
-   * @private
-   * @deprecated Use _displayResult() instead
-   */
-  // @ts-ignore - unused method may be used by external code
-  displaySingleSunkResult (hits, sunks, messageInfo) {
-    this.displayInfo(
-      messageInfo +
-        this.hitDescription(hits) +
-        ' and ' +
-        this.sunkLetterDescription(sunks[0])
-    )
-  }
-
-  /**
-   * Builds and displays message for hits with multiple ships sunk.
-   * @param {number} hits - Number of hits
-   * @param {Array<any>} sunks - Array of sunk ship letters
-   * @param {string} messageInfo - Additional message info
-   * @private
-   * @deprecated Use _displayResult() instead
-   */
-  // @ts-ignore - unused method may be used by external code
-  displayMultipleSunkResult (hits, sunks, messageInfo) {
-    let message = this.hitDescription(hits) + ','
-    for (let sunk of sunks) {
-      message += ' and ' + this.sunkLetterDescription(sunk)
-    }
-    message += ' Destroyed'
-    this.displayInfo(messageInfo + message)
   }
 
   /**
@@ -3286,7 +3184,7 @@ export class Waters {
     } else {
       sunkArray = []
     }
-    this._displayResult(weapon, hits, sunkArray, reveals, messageInfo)
+    this.#displayResult(weapon, hits, sunkArray, reveals, messageInfo)
   }
 
   /**
