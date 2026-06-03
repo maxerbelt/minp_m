@@ -1761,7 +1761,7 @@ describe('Enemy.updateWeaponStatus', () => {
       await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
 
       expect(enemy['_onFirstClickSelection']).toHaveBeenCalled()
-      expect(enemy.selectedCellCoordinates).toEqual({ r: 0, c: 0 })
+      expect(enemy.selectedCellCoordinates).toEqual([0, 0])
 
       await EnemyClass.prototype.onClickCell.call(enemy, 1, 1)
       expect(enemy['_onSecondClickFire']).toHaveBeenCalledWith(1, 1)
