@@ -21,7 +21,7 @@
 
 import { bh } from '../../../terrains/all/js/bh.js'
 import { Random } from '../../../core/Random.js'
-import { coordsFromCell } from '../../../core/utilities.js'
+import { xyFromCell } from '../../../core/utilities.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import { WeaponCatalogue } from '../../../weapon/WeaponCatalogue.js'
 import { Delay } from '../../../core/Delay.js'

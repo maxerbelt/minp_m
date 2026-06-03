@@ -346,7 +346,7 @@ export class WatersUI {
    * @throws {Error} If cell at coordinates is invalid or missing
    */
   gridCellAt (row, column) {
-    const result = CellUI.node(this.board, column, row)
+    const result = this.grid.node(column, row)
     if (result?.classList) return result
     throw new Error(
       `Invalid cell at ${row},${column}: ${JSON.stringify(result)}`
@@ -495,13 +495,13 @@ export class WatersUI {
 
   /**
    * Marks a cell at coordinates as sunk.
-   * @param {number} r - Row index
-   * @param {number} c - Column index
+   * @param {number} y - Row index
+   * @param {number} x - Column index
    * @param {string} letter - Ship letter
    * @returns {void}
    */
-  cellSunkAt (r, c, letter) {
-    const cell = CellUI.nodeAt(this.board, c, r)
+  cellSunkAt (x, y, letter) {
+    const cell = this.grid.node(this.board, x, y)
     this.displayAsSunk(cell, letter)
   }
 
@@ -509,13 +509,13 @@ export class WatersUI {
    * Marks a cell as hit at specified coordinates.
    * Applied when enemy successfully targets a location.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {string} [damageType] - Damage indicator class (e.g., 'skull')
    * @returns {void}
    */
-  cellHit (row, column, damageType) {
-    const cell = CellUI.nodeAt(this.board, column, row)
+  cellHit (x, y, damageType) {
+    const cell = this.grid.node(x, y)
     CellClassManager.applyEnemyHitCellState(cell, damageType)
     this._clearCellText(cell)
   }

@@ -223,7 +223,7 @@ export interface Board {
   gridCellAt: (r: number, c: number) => HTMLElement | null
 
   /** Mark cell as hit */
-  cellHit?: (r: number, c: number, letter?: string) => void
+  cellHit?: (x: number, y: number, letter?: string) => void
  
 
   /** Mark ammo usage at cell */

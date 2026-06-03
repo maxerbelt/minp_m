@@ -341,12 +341,11 @@ class BoardHighlighter {
    * - Power-level-based class (e.g., 'power-1', 'power-2') from bh.splashTags[powerLevel]
    * - 'target' class for unified styling and easy removal
    *
-   * @private
    * @param {Array<SplashCell>} splashCells - [row, col, powerLevel] cells.
    *                                         PowerLevel determines color intensity (0-n).
    * @returns {void}
    */
-  _applyHighlightsToCells (splashCells) {
+  #applyHighlightsToCells (splashCells) {
     for (const [cellRow, cellCol, powerLevel] of splashCells) {
       const cell = this.boardUI.gridCellAt(cellRow, cellCol)
       const cellClass = bh.splashTags[powerLevel]
@@ -383,7 +382,7 @@ class BoardHighlighter {
       this.boardMap,
       targetCoordinates
     )
-    this._applyHighlightsToCells(splashCells)
+    this.#applyHighlightsToCells(splashCells)
   }
 }
 

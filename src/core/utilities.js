@@ -295,7 +295,23 @@ export function coordsFromCell (cell) {
   const col = Number.parseInt(cell.dataset.c ?? '0', 10)
   return [row, col]
 }
-
+/**
+ * Extracts coordinates from a cell element's dataset attributes.
+ * Reads data-r and data-c attributes, defaulting to '0' if not present.
+ *
+ * @param {HTMLElement} cell - Cell element with data-r and data-c attributes
+ * @returns {[number, number]} [row, col] coordinates parsed from dataset, defaults to [0, 0]
+ * @example
+ * // <div data-r="5" data-c="10"></div>
+ * coordsFromCell(cell) // [5, 10]
+ * // <div></div>
+ * coordsFromCell(cell) // [0, 0] (defaults)
+ */
+export function xyFromCell (cell) {
+  const row = Number.parseInt(cell.dataset.r ?? '0', 10)
+  const col = Number.parseInt(cell.dataset.c ?? '0', 10)
+  return [col, row]
+}
 /**
  * Retrieves a list of numbers from a cell's data-numbers JSON attribute.
  * Parses JSON string and converts each string element to integer.

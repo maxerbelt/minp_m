@@ -1633,9 +1633,8 @@ export class Waters {
    * @param {WeaponSelection} selection - The weapon selection object
    * @param {Waters|null} oppo - The opponent instance
    * @returns {void}
-   * @private
    */
-  _armSelectedWeapon (selection, oppo) {
+  #armSelectedWeapon (selection, oppo) {
     // @ts-ignore - UI available at runtime on oppo or this
     const cell = oppo?.UI?.gridCellAt(selection.hintR, selection.hintC)
     this.selectAndArmWeaponId(
@@ -1661,7 +1660,7 @@ export class Waters {
   // @ts-ignore - method intentionally unused
   selectAttachedWeapon (cell, r, c, oppo) {
     const selection = this.selectWeaponId(cell, r, c, false, null, oppo)
-    this._armSelectedWeapon(selection, oppo)
+    this.#armSelectedWeapon(selection, oppo)
   }
 
   /**
@@ -1672,7 +1671,7 @@ export class Waters {
    */
   randomAttachedWeapon (oppo) {
     const selection = this.selectRandomWeapon()
-    this._armSelectedWeapon(selection, oppo)
+    this.#armSelectedWeapon(selection, oppo)
   }
 
   /**
@@ -2647,7 +2646,7 @@ export class Waters {
    */
   markHit (x, y, damaged) {
     this.score.reveal.clear(x, y)
-    this.UI.cellHit(y, x, damaged)
+    this.UI.cellHit(x, y, damaged)
   }
 
   /**

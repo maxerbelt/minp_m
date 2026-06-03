@@ -252,7 +252,6 @@ export class FriendUI extends PlacementUI {
    * Initializes UI element references.
    * Caches DOM queries for performance optimization.
    *
-   * @private
    * @returns {void}
    */
   _initializeUIElements () {
@@ -329,7 +328,7 @@ export class FriendUI extends PlacementUI {
     const config = MODE_CONFIGURATIONS[newMode]
     if (config) {
       this.mode = newMode
-      this._applyModeConfiguration(config)
+      this.#applyModeConfiguration(config)
     }
   }
 
@@ -350,11 +349,10 @@ export class FriendUI extends PlacementUI {
    * Central handler for all mode transitions with SRP.
    * Updates tab, controls, trays, buttons, and custom mode setup.
    *
-   * @private
    * @param {FriendUIConfig & {modeSetupCallback?: Function}} config - Mode configuration
    * @returns {void}
    */
-  _applyModeConfiguration (config) {
+  #applyModeConfiguration (config) {
     this.setTabText(config.tabText)
     this._updateControlVisibility(
       config.showPlacingControls,
@@ -364,8 +362,8 @@ export class FriendUI extends PlacementUI {
     this._updateButtonsVisibility(config.showTransformBtns, config.showTips)
     if (config.showStatus) this.showStatus()
     if (config.standardPanels) this.standardPanels()
-    if (config.clearBoardCells) this._clearBoardCells()
-    if (config.addAltPanels) this._addAltPanels()
+    if (config.clearBoardCells) this.#clearBoardCells()
+    if (config.addAltPanels) this.#addAltPanels()
     if (config.modeSetupCallback) config.modeSetupCallback(this)
   }
 
@@ -445,7 +443,7 @@ export class FriendUI extends PlacementUI {
    * @param {string} mode - The game mode to configure labels for
    * @returns {void}
    */
-  _updateScoreLabels (mode) {
+  #updateScoreLabels (mode) {
     if (!this.score) return
     const config = MODE_SCORE_LABELS[mode] || {}
     SCORE_LABEL_KEYS.forEach(labelKey => {
@@ -460,10 +458,9 @@ export class FriendUI extends PlacementUI {
    * Clears visual state indicators from all board cells.
    * Removes hit/placed classes for clean mode transitions.
    *
-   * @private
    * @returns {void}
    */
-  _clearBoardCells () {
+  #clearBoardCells () {
     const cells = this.board?.querySelectorAll('[data-row]')
     if (!cells) return
     for (const cell of cells) {
@@ -475,10 +472,9 @@ export class FriendUI extends PlacementUI {
    * Applies alternate panel styling for seeking mode.
    * Adds 'alt' class to all panel elements.
    *
-   * @private
    * @returns {void}
    */
-  _addAltPanels () {
+  #addAltPanels () {
     const panels = document.getElementsByClassName('panel')
     for (const panel of panels) {
       panel.classList.add(UI_CLASSES.ALT)
@@ -495,7 +491,7 @@ export class FriendUI extends PlacementUI {
    * @returns {void}
    */
   placeMode () {
-    this._updateScoreLabels(UI_MODES.PLACING)
+    this.#updateScoreLabels(UI_MODES.PLACING)
     this.setMode(UI_MODES.PLACING)
   }
 
@@ -507,7 +503,7 @@ export class FriendUI extends PlacementUI {
    * @returns {void}
    */
   readyMode () {
-    this._updateScoreLabels(UI_MODES.READY)
+    this.#updateScoreLabels(UI_MODES.READY)
     this.setMode(UI_MODES.READY)
   }
 
@@ -557,13 +553,13 @@ export class FriendUI extends PlacementUI {
    * Delegates to CellClassManager for consistent state management.
    *
    * @public
-   * @param {number} r - Row index (0-based)
-   * @param {number} c - Column index (0-based)
+   * @param {number} x - Column index (0-based)
+   * @param {number} y - Row index (0-based)
    * @param {string} [damageType] - Damage type or empty string
    * @returns {void}
    */
-  cellHit (r, c, damageType) {
-    const cell = this.gridCellAt(r, c)
+  cellHit (x, y, damageType) {
+    const cell = this.grid.node(x, y)
     CellClassManager.applyFriendlyHitCellState(cell, damageType)
   }
 
@@ -572,26 +568,25 @@ export class FriendUI extends PlacementUI {
    * Updates cell to reflect ammo consumption.
    *
    * @public
-   * @param {number} r - Row index (0-based)
-   * @param {number} c - Column index (0-based)
+   * @param {number} x - Column index (0-based)
+   * @param {number} y - Row index (0-based)
    * @param {string} damage - Damage type or empty string
    * @returns {void}
    */
-  cellUseAmmo (r, c, damage) {
-    const cell = this.gridCellAt(r, c)
-    this._applyAmmoState(cell, damage)
+  cellUseAmmo (x, y, damage) {
+    const cell = this.grid.node(x, y)
+    this.#applyAmmoState(cell, damage)
   }
 
   /**
    * Applies ammo depletion state to cell element.
    * Updates classes and dataset based on damage type.
    *
-   * @private
    * @param {HTMLElement} cell - Cell DOM element to modify
    * @param {string} damage - Damage type or empty string
    * @returns {void}
    */
-  _applyAmmoState (cell, damage) {
+  #applyAmmoState (cell, damage) {
     cell.classList.remove(UI_CLASSES.ACTIVE)
     if (damage) {
       cell.classList.add(damage)

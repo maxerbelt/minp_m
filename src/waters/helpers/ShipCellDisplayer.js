@@ -1,4 +1,4 @@
-import { addKeysToCell, coordsFromCell } from '../../core/utilities.js'
+import { addKeysToCell, xyFromCell } from '../../core/utilities.js'
 import { CellClassManager } from './CellClassManager.js'
 import { bh } from '../../terrains/all/js/bh.js'
 
@@ -183,7 +183,6 @@ export class ShipCellDisplayer {
    * Used by CellClassManager for consistent class application across all cells.
    *
    * @type {Readonly<Object<string, string>>}
-   * @private
    * @static
    */
   static #CSS_CLASSES = {
@@ -199,7 +198,6 @@ export class ShipCellDisplayer {
    * Provides safe defaults to prevent rendering errors when color data is missing.
    *
    * @type {Readonly<Object<string, string>>}
-   * @private
    * @static
    */
   static #DEFAULT_STYLES = {
@@ -213,7 +211,6 @@ export class ShipCellDisplayer {
    * Keys map to dataset properties that store game state on HTML elements.
    *
    * @type {Readonly<Object<string, string>>}
-   * @private
    * @static
    */
   static #DATA_ATTRIBUTES = {
@@ -252,24 +249,23 @@ export class ShipCellDisplayer {
    * - Surrounds: Weapon metadata (letter, ID, surrounds ID, keyIds, cursor, orientation) if hasWeapon
    *
    * @param {Ship} ship - Ship object with id, letter, rackAt(), hasWeapon, makeKeyIds(), primaryWeapon, getTurn() methods
-   * @param {number} row - Row coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
-   * @param {number} column - Column coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
+   * @param {number} y - Row coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
+   * @param {number} x - Column coordinate on ship's grid (0-based index, used for weapon lookup and turn calculation)
    * @param {HTMLElement} cell - DOM element to render into (cell.textContent, cell.classList, cell.dataset will be modified)
    * @returns {void}
    * @throws {TypeError} If cell is not a valid HTMLElement or ship lacks required methods
-   * @private
    * @static
    *
    * @example
    * // Internal use: Renders cell with weapon or letter based on what's at the position
    * ShipCellDisplayer.#displayShipCell(myShip, 3, 5, cellElement);
    */
-  static #displayShipCell (ship, row, column, cell) {
+  static #displayShipCell (ship, x, y, cell) {
     const colorMaps = this.#getColorMaps()
-    const weaponSlot = this.#getWeaponSlotAt(ship, column, row)
+    const weaponSlot = this.#getWeaponSlotAt(ship, x, y)
 
     this.#displayCellContent(cell, ship, weaponSlot, colorMaps)
-    this.displaySurroundAttributes(cell, ship, column, row)
+    this.displaySurroundAttributes(cell, ship, x, y)
   }
 
   /**
@@ -285,8 +281,8 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to render placement cell into (will add 'placed' class)
    * @param {Ship} ship - Ship object to display with id, letter, and grid methods
-   * @param {number} row - Row coordinate on ship's grid (0-based index)
-   * @param {number} column - Column coordinate on ship's grid (0-based index)
+   * @param {number} y - Row coordinate on ship's grid (0-based index)
+   * @param {number} x - Column coordinate on ship's grid (0-based index)
    * @returns {void}
    * @throws {TypeError} If cell is not a valid HTMLElement or ship lacks required properties
    * @public
@@ -296,9 +292,9 @@ export class ShipCellDisplayer {
    * ShipCellDisplayer.displayPlacedCell(cellElement, friendlyShip, 2, 4);
    * // Cell now shows ship letter with colors and 'placed' class
    */
-  static displayPlacedCell (cell, ship, row, column) {
+  static displayPlacedCell (cell, ship, y, x) {
     ///  CellClassManager.clearCell(cell)
-    this.#displayShipCell(ship, row, column, cell)
+    this.#displayShipCell(ship, x, y, cell)
     cell.classList.add(this.#CSS_CLASSES.PLACED)
   }
 
@@ -382,8 +378,8 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to annotate with weapon surround attributes
    * @param {Ship} ship - Ship object with id, hasWeapon flag, makeKeyIds(), primaryWeapon, and getTurn() methods
-   * @param {number} row - Row coordinate for turn/orientation calculation (passed to getTurn())
-   * @param {number} column - Column coordinate for turn/orientation calculation (passed to getTurn())
+   * @param {number} y - Row coordinate for turn/orientation calculation (passed to getTurn())
+   * @param {number} x - Column coordinate for turn/orientation calculation (passed to getTurn())
    * @returns {void}
    * @throws {TypeError} If cell is not an HTMLElement or ship lacks required methods
    * @public
@@ -396,7 +392,7 @@ export class ShipCellDisplayer {
    */
   static displaySurroundAttributes (cell, ship, x, y) {
     if (!this.#hasWeapons(ship)) return
-    this.#setSurroundAttributes(cell, ship, y, x)
+    this.#setSurroundAttributes(cell, ship, x, y)
   }
 
   /**
@@ -485,8 +481,8 @@ export class ShipCellDisplayer {
   static displayAsRevealed (cell, ship, colorMaps) {
     if (!cell) return
 
-    const [row, column] = coordsFromCell(cell)
-    const weaponSlot = this.#getWeaponSlotAt(ship, column, row)
+    const coords = xyFromCell(cell)
+    const weaponSlot = this.#getWeaponSlotAt(ship, ...coords)
 
     this.#displayCellContent(cell, ship, weaponSlot, colorMaps, false)
   }
@@ -563,10 +559,10 @@ export class ShipCellDisplayer {
    * Returns reference from current game state without caching.
    *
    * @returns {ColorMaps} Color map object with shipLetterColors and shipColors properties
-   * @private
    * @static
    */
   static #getColorMaps () {
+    // @ts-ignore - bh.maps contains required ColorMaps properties
     return bh.maps
   }
 
@@ -577,14 +573,13 @@ export class ShipCellDisplayer {
    * Returns null/undefined if ship is falsy or has no rackAt method.
    *
    * @param {Ship|null|undefined} ship - Ship object with rackAt() method
-   * @param {number} column - Column coordinate for weapon lookup
-   * @param {number} row - Row coordinate for weapon lookup
+   * @param {number} x - Column coordinate for weapon lookup
+   * @param {number} y - Row coordinate for weapon lookup
    * @returns {WeaponSlot|null|undefined} Weapon slot object if found, null/undefined otherwise
-   * @private
    * @static
    */
-  static #getWeaponSlotAt (ship, column, row) {
-    return ship?.rackAt?.(column, row)
+  static #getWeaponSlotAt (ship, x, y) {
+    return ship?.rackAt?.(x, y)
   }
 
   /**
@@ -599,7 +594,6 @@ export class ShipCellDisplayer {
    * @param {ColorMaps} colorMaps - Color mapping configuration
    * @param {boolean} [includeWeaponVisuals=true] - Whether to apply weapon-specific visual state (clears text, adds weapon class)
    * @returns {void}
-   * @private
    * @static
    */
   static #displayCellContent (
@@ -628,7 +622,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to render into
    * @param {string} letter - Ship letter to display
    * @returns {void}
-   * @private
    * @static
    */
   static #renderLetterCell (cell, letter) {
@@ -644,7 +637,6 @@ export class ShipCellDisplayer {
    * @param {WeaponSlot} weaponSlot - Weapon slot containing weapon and ammo data
    * @param {boolean} includeWeaponVisuals - Whether to apply weapon visual state (clear text, add class)
    * @returns {void}
-   * @private
    * @static
    */
   static #renderWeaponCell (cell, weaponSlot, includeWeaponVisuals) {
@@ -665,7 +657,6 @@ export class ShipCellDisplayer {
    *
    * @param {Ship|null|undefined} ship - Ship object with optional letter property
    * @returns {string} The ship's letter or '-' as fallback placeholder
-   * @private
    * @static
    */
   static #getShipLetter (ship) {
@@ -680,7 +671,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to annotate with ship data
    * @param {Ship|null|undefined} ship - Ship object containing id and letter
    * @returns {string} The ship letter (extracted for convenience in chaining)
-   * @private
    * @static
    */
   static #applyShipDatasetAttributes (cell, ship) {
@@ -699,7 +689,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to update
    * @param {WeaponSlot} weaponSlot - Weapon slot object with weapon, ammo, and id properties
    * @returns {void}
-   * @private
    * @static
    */
   static #setWeaponDataset (cell, weaponSlot) {
@@ -729,7 +718,6 @@ export class ShipCellDisplayer {
    * @param {string} key - Dataset key to set
    * @param {string|number|undefined|null} value - Value to assign, cast to string
    * @returns {void}
-   * @private
    * @static
    */
   static #setDatasetAttribute (cell, key, value) {
@@ -746,7 +734,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to annotate
    * @param {Ship} ship - Ship object containing letter and variant
    * @returns {void}
-   * @private
    * @static
    */
   static #applyShipMetadata (cell, ship) {
@@ -768,13 +755,12 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to annotate with weapon orientation
    * @param {Ship} ship - Ship object with primaryWeapon and getTurn() methods
-   * @param {number} row - Row coordinate for turn/rotation calculation
-   * @param {number} column - Column coordinate for turn/rotation calculation
+   * @param {number} y - Row coordinate for turn/rotation calculation
+   * @param {number} x - Column coordinate for turn/rotation calculation
    * @returns {void}
-   * @private
    * @static
    */
-  static #applyWeaponMetadata (cell, ship, row, column) {
+  static #applyWeaponMetadata (cell, ship, x, y) {
     const weaponLetterKey = this.#DATA_ATTRIBUTES.WEAPON_LETTER
     const primaryWeapon = ship?.primaryWeapon
     this.#setDatasetAttribute(cell, weaponLetterKey, primaryWeapon?.letter)
@@ -783,7 +769,7 @@ export class ShipCellDisplayer {
       this.#DATA_ATTRIBUTES.WEAPON_SURROUND,
       ship?.id
     )
-    this.#applyWeaponCursorStyles(cell, ship, row, column, primaryWeapon)
+    this.#applyWeaponCursorStyles(cell, ship, x, y, primaryWeapon)
   }
 
   /**
@@ -792,19 +778,18 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to update
    * @param {Ship} ship - Ship object
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {Weapon|null|undefined} primaryWeapon - Primary weapon object or null
    * @returns {void}
-   * @private
    * @static
    */
-  static #applyWeaponCursorStyles (cell, ship, row, column, primaryWeapon) {
+  static #applyWeaponCursorStyles (cell, ship, x, y, primaryWeapon) {
     const cursorClass = primaryWeapon?.launchCursor
     if (!cursorClass) return
 
     this.#applyWeaponCursorClass(cell, cursorClass)
-    this.#applyWeaponOrientationClass(cell, ship, row, column)
+    this.#applyWeaponOrientationClass(cell, ship, x, y)
   }
 
   /**
@@ -815,7 +800,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to update
    * @param {string} cursorClass - CSS class for cursor styling
    * @returns {void}
-   * @private
    * @static
    */
   static #applyWeaponCursorClass (cell, cursorClass) {
@@ -832,18 +816,17 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to update
    * @param {Ship} ship - Ship object with getTurn() method
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
-   * @private
    * @static
    */
-  static #applyWeaponOrientationClass (cell, ship, row, column) {
+  static #applyWeaponOrientationClass (cell, ship, x, y) {
     CellClassManager.clearCellClasses(cell, [
       CellClassManager.CELL_CLASSES.orientation
     ])
 
-    const turn = ship?.getTurn?.(row, column) ?? null
+    const turn = ship?.getTurn?.(x, y) ?? null
     if (turn) {
       cell.classList.add(turn)
     }
@@ -857,15 +840,14 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to update with weapon attributes
    * @param {Ship} ship - Ship object with makeKeyIds(), weapons, and getTurn() method
-   * @param {number} row - Row coordinate for key ID and turn calculations
-   * @param {number} column - Column coordinate for key ID and turn calculations
+   * @param {number} y - Row coordinate for key ID and turn calculations
+   * @param {number} x - Column coordinate for key ID and turn calculations
    * @returns {void}
-   * @private
    * @static
    */
-  static #setSurroundAttributes (cell, ship, row, column) {
+  static #setSurroundAttributes (cell, ship, x, y) {
     this.#applyShipMetadata(cell, ship)
-    this.#applyWeaponMetadata(cell, ship, row, column)
+    this.#applyWeaponMetadata(cell, ship, x, y)
 
     const keyIds = ship.makeKeyIds()
     addKeysToCell(cell, this.#DATA_ATTRIBUTES.WEAPON_KEY_IDS, keyIds.split('|'))
@@ -885,7 +867,6 @@ export class ShipCellDisplayer {
    * @param {string} letter - Ship letter used as key for color map lookup
    * @param {ColorMaps} colorMaps - Color mapping configuration with shipLetterColors and shipColors
    * @returns {void}
-   * @private
    * @static
    */
   static #applyShipStyles (cell, letter, colorMaps) {
@@ -906,7 +887,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to update with weapon visual state
    * @returns {void}
-   * @private
    * @static
    */
   static #applyWeaponVisuals (cell) {
@@ -921,7 +901,6 @@ export class ShipCellDisplayer {
    *
    * @param {Ship|null|undefined} ship - Ship object with hasWeapon property
    * @returns {boolean} True if ship has at least one armed weapon, false otherwise
-   * @private
    * @static
    */
   static #hasWeapons (ship) {
@@ -939,7 +918,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to clear of text
    * @returns {void}
-   * @private
    * @static
    */
   static #clearCellText (cell) {
@@ -953,7 +931,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to reset styling on
    * @returns {void}
-   * @private
    * @static
    */
   static #resetCellStyle (cell) {
@@ -969,7 +946,6 @@ export class ShipCellDisplayer {
    *
    * @param {HTMLElement} cell - DOM element to clear completely
    * @returns {void}
-   * @private
    * @static
    */
   static #clearCellTextAndStyle (cell) {
@@ -986,7 +962,6 @@ export class ShipCellDisplayer {
    * @param {HTMLElement} cell - DOM element to conditionally update
    * @param {string} letter - Ship letter to display if cell has no damage class
    * @returns {void}
-   * @private
    * @static
    */
   static #setLetterIfNotDamaged (cell, letter) {

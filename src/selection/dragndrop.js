@@ -26,11 +26,18 @@
  */
 
 import { bh } from '../terrains/all/js/bh.js'
-import { coordsFromCell } from '../core/utilities.js'
+import { xyFromCell } from '../core/utilities.js'
 import { DraggedShip } from './DraggedShip.js'
 import { Brush } from './Brush.js'
 import { cursor } from './cursor.js'
 import { CustomMap } from '../terrains/all/js/map.js'
+
+function strictEqual (a, b) {
+  return a.length === b.length && a.every((v, i) => v === b[i])
+}
+function pairEqual (a, b) {
+  return a[0] === b[0] && a[1] === b[1]
+}
 
 /**
  * Manages drag-and-drop state for ships and weapons.
@@ -777,7 +784,7 @@ class DragNDrop {
    * @private
    */
   _handleShipDrop (cell, model, viewModel, isAddition) {
-    const [y, x] = coordsFromCell(cell)
+    const [x, y] = xyFromCell(cell)
     const placed = state.selection.place(x, y, model.shipCellGrid)
 
     if (!placed) {
@@ -930,20 +937,20 @@ class DragNDrop {
   highlight (viewModel, shipCellGrid, cursorX, cursorY) {
     if (!state.selection?.ghost) return
 
-    const { x, y } = this._calculatePlacementPosition(cursorX, cursorY)
-    if (!bh.map.inBounds(y, x)) {
+    const { x, y } = this.#calculatePlacementPosition(cursorX, cursorY)
+    if (!bh.map.isInBoundsAt(x, y)) {
       console.log(`Placement 1 out of bounds at (${x}, ${y})`)
       return
     }
 
     viewModel.removeHighlight()
 
-    const { placement, canPlace, cells } = this._getPlacingAndCells(
+    const { placement, canPlace, cells } = this.#getPlacingAndCells(
       x,
       y,
       shipCellGrid
     )
-    this._applyHighlights(viewModel, cells, canPlace, placement)
+    this.#applyHighlights(viewModel, cells, canPlace, placement)
   }
 
   /**
@@ -953,12 +960,12 @@ class DragNDrop {
    * @param {number|null} cursorX - Column coordinate; null to use state.lastEntered[1]
    * @param {number|null} cursorY - Row coordinate; null to use state.lastEntered[0]
    *
-   * @returns {number[]} Array [x, y] with resolved coordinates
+   * @returns {[number, number]} Array [x, y] with resolved coordinates
    * @private
    */
-  _getCoordinates (cursorX, cursorY) {
-    const y = cursorY === null ? state.lastEntered[0] : cursorY
-    const x = cursorX === null ? state.lastEntered[1] : cursorX
+  #getCoordinates (cursorX, cursorY) {
+    const y = cursorY === null ? state.lastEntered[1] : cursorY
+    const x = cursorX === null ? state.lastEntered[0] : cursorX
     return [x, y]
   }
 
@@ -973,8 +980,8 @@ class DragNDrop {
    * @returns {Object} Object with x and y properties containing adjusted placement coordinates
    * @private
    */
-  _calculatePlacementPosition (cursorX, cursorY) {
-    const [x0, y0] = this._getCoordinates(cursorX, cursorY)
+  #calculatePlacementPosition (cursorX, cursorY) {
+    const [x0, y0] = this.#getCoordinates(cursorX, cursorY)
     const [x, y] = state.selection.offsetCell(x0, y0)
     return { x, y }
   }
@@ -994,7 +1001,7 @@ class DragNDrop {
    *   - cells: {Array<[number, number]>} Array of [col, row] occupied cells to highlight
    * @private
    */
-  _getPlacingAndCells (x, y, shipCellGrid) {
+  #getPlacingAndCells (x, y, shipCellGrid) {
     const placement = state.selection.placeable().placeAt(x, y)
     const canPlace = placement.canPlace(shipCellGrid)
     if (!canPlace) {
@@ -1019,11 +1026,11 @@ class DragNDrop {
    * @returns {void}
    * @private
    */
-  _applyHighlights (viewModel, cells, isPlacementValid, placement) {
-    for (const [cc, rr] of cells) {
-      if (bh.map.inBounds(rr, cc)) {
-        const cell = viewModel.gridCellAt(rr, cc)
-        const cellClass = this._getHighlightClass(
+  #applyHighlights (viewModel, cells, isPlacementValid, placement) {
+    for (const [x, y] of cells) {
+      if (bh.map.isInBoundsAt(x, y)) {
+        const cell = viewModel.gridCellAt(x, y)
+        const cellClass = this.#getHighlightClass(
           isPlacementValid,
           placement,
           cc,
@@ -1046,7 +1053,7 @@ class DragNDrop {
    * @returns {string} CSS class: 'good' (valid), 'notgood' (terrain conflict), 'bad' (collision)
    * @private
    */
-  _getHighlightClass (isPlacementValid, placement, x, y) {
+  #getHighlightClass (isPlacementValid, placement, x, y) {
     if (!isPlacementValid) {
       return this._getInvalidHighlightClass(placement, x, y)
     }
@@ -1094,11 +1101,11 @@ class DragNDrop {
       if (!isShip) return
 
       const el = /** @type {HTMLElement} */ (e.target)
-      const [r, c] = coordsFromCell(el)
-      if (state.lastEntered[0] === r && state.lastEntered[1] === c) return
+      const coords = xyFromCell(el)
+      if (strictEqual(coords, state.lastEntered)) return
 
-      state.lastEntered = [r, c]
-      this.highlight(viewModel, model.shipCellGrid, c, r)
+      state.lastEntered = coords
+      this.highlight(viewModel, model.shipCellGrid, ...coords)
     })
   }
 
@@ -1118,12 +1125,12 @@ class DragNDrop {
       const isBrush = e.dataTransfer.types.includes('brush')
       if (!isBrush) return
       const el = e.target
-      const [r, c] = coordsFromCell(el)
-      if (state.lastEntered[0] === r && state.lastEntered[1] === c) return
+      const coords = xyFromCell(el)
+      if (pairEqual(state.lastEntered, coords)) return
 
-      state.lastEntered = [r, c]
+      state.lastEntered = coords
 
-      this._applyBrushOperation(viewModel, r, c)
+      this.#applyBrushOperation(viewModel, ...coords)
       viewModel.score.displayZoneInfo()
       viewModel.updateChangeClearButton()
     }
@@ -1137,13 +1144,13 @@ class DragNDrop {
    * Called on each dragenter event during brush drag operation.
    *
    * @param {ViewModel} viewModel - The view model for cell recoloring
-   * @param {number} r - Center row coordinate for brush operation
-   * @param {number} c - Center column coordinate for brush operation
+   * @param {number} x - Center row coordinate for brush operation
+   * @param {number} y - Center column coordinate for brush operation
    *
    * @returns {void}
    * @private
    */
-  _applyBrushOperation (viewModel, r, c) {
+  #applyBrushOperation (viewModel, x, y) {
     const size = state.selection?.size
     const subterrain = state.selection?.subterrain
     const map = bh.map
@@ -1153,8 +1160,7 @@ class DragNDrop {
     const min = size > 2 ? -1 : 0
     const max = size < 2 ? 1 : 2
 
-    this.#setLandCells(r, c, min, max, map, subterrain)
-    this._recolorCells(viewModel, r, c, min, max, map)
+    this.#setLandCells(viewModel, x, y, min, max, map, subterrain)
   }
 
   /**
@@ -1166,8 +1172,8 @@ class DragNDrop {
    * Called by _applyBrushOperation to paint terrain.
    *
    * @param {ViewModel} viewModel - The view model providing recolor method
-   * @param {number} r - Center row coordinate
-   * @param {number} c - Center column coordinate
+   * @param {number} y - Center row coordinate
+   * @param {number} x - Center column coordinate
    * @param {number} min - Minimum offset from center (-1, 0, or -0.5)
    * @param {number} max - Maximum offset from center (1, 2, or 1.5)
    * @param {Object} map - CustomMap instance with setLand method
@@ -1175,18 +1181,16 @@ class DragNDrop {
    *
    * @returns {void}
    */
-  #setLandCells (viewModel, r, c, min, max, map, subterrain) {
+  #setLandCells (viewModel, x, y, min, max, map, subterrain) {
     for (let i = min; i < max; i++) {
       for (let j = min; j < max; j++) {
-        if (map.inBounds(r + i, c + j)) {
-          map.setLand(r + i, c + j, subterrain)
-          viewModel.recolor(r + i, c + j)
+        if (map.isInBoundsAt(x + i, y + j)) {
+          map.setLand(x + i, y + j, subterrain)
+          viewModel.recolor(x + i, y + j)
         }
       }
     }
   }
-
-  n
 
   // ============================================================================
   // Drag End Handlers
