@@ -530,7 +530,7 @@ export class WatersUI {
    * @returns {number|Object} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
    */
   cellSemiReveal (x, y) {
-    const cell = CellUI.nodeAt(this.board, x, y)
+    const cell = this.grid.node(x, y)
 
     if (!CellClassManager.applySemiRevealState(cell)) {
       return LoadOut.noResult
@@ -544,14 +544,14 @@ export class WatersUI {
    * Used to show aiming assistance or weapon spread hints.
    * Deactivates other hints to ensure only current hint is visible.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    */
-  cellHintReveal (row, column) {
-    const cell = this.gridCellAt(row, column)
+  cellHintReveal (y, x) {
+    const cell = this.grid.node(x, y)
 
-    if (!CellClassManager.applyHintState(cell)) {
+    if (cell == null || !CellClassManager.applyHintState(cell)) {
       return
     }
     this.deactivateTempHints()
@@ -609,24 +609,24 @@ export class WatersUI {
    * Deactivates weapon display on a cell.
    * Removes weapon and rotation indicators.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    */
-  cellWeaponDeactivate (row, column) {
-    const cell = this.gridCellAt(row, column)
+  cellWeaponDeactivate (y, x) {
+    const cell = this.grid.nodeAt(x, y)
     CellClassManager.deactivateWeapon(cell)
   }
 
   /**
    * Deactivates temporary hint display on a cell.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    */
-  cellHintDeactivate (row, column) {
-    const cell = this.gridCellAt(row, column)
+  cellHintDeactivate (y, x) {
+    const cell = this.grid.nodeAt(x, y)
     CellClassManager.deactivateTempHint(cell)
   }
 

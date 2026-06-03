@@ -334,12 +334,11 @@ class Enemy extends Waters {
    * Delegates to loadOut.clearSelectedCoordinates() to reset targeting coordinates.
    * Must be called before weapon switch to prevent stale coordinate state.
    *
-   * @private
    * @memberof Enemy
    * @see _handleWeaponChange for full context on why this is critical
    * @returns {void}
    */
-  _clearCoordinateState () {
+  #clearCoordinateState () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     if (loadOut?.clearSelectedCoordinates) {
       loadOut.clearSelectedCoordinates()
@@ -351,11 +350,10 @@ class Enemy extends Waters {
    * Deselects ship, removes weapon rack, and clears hint location on opponent board.
    * Resets game state machine and opponent UI state.
    *
-   * @private
    * @returns {void}
    * @memberof Enemy
    */
-  _clearSelectionVisualState () {
+  #clearSelectionVisualState () {
     const steps = /** @type {StepsManager|undefined} */ (this.steps)
     // @ts-ignore - steps is typed as Object but has clearSource method
     if (steps?.clearSource) {
@@ -373,12 +371,11 @@ class Enemy extends Waters {
    * Updates board cursor and mode display.
    * Triggers UI update for weapon status display.
    *
-   * @private
    * @param {string|null} oldCursor - Current cursor class to remove (nullable)
    * @memberof Enemy
    * @returns {void}
    */
-  _updateBoardCursor (oldCursor) {
+  #updateBoardCursor (oldCursor) {
     const oldCursorClass = oldCursor || this._extractCursorClass()
 
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
@@ -392,11 +389,10 @@ class Enemy extends Waters {
    * Reflects whether the current weapon requires two-click targeting (attached weapons).
    * Sets CSS class on board to indicate targeting mode.
    *
-   * @private
    * @returns {void}
    * @memberof Enemy
    */
-  _updateBoardTargetingState () {
+  #updateBoardTargetingState () {
     const hasUnattached = this._hasUnattachedForCurrentWeapon()
     this.setBoardTargetingState(hasUnattached)
   }
@@ -429,11 +425,10 @@ class Enemy extends Waters {
    * Clears all cursor classes from the board element and its child cells.
    * Removes stale cursor classes from entire grid to prevent accumulation.
    * Called when switching weapons or modes to reset visual cursor display.
-   * @private
    * @returns {void}
    * @memberof Enemy
    */
-  _clearBoardCursorClasses () {
+  #clearBoardCursorClasses () {
     // @ts-ignore - this.UI is typed as Object but has board property
     const board = /** @type {HTMLElement|undefined} */ (this.UI?.board)
     if (!board) return
@@ -1763,61 +1758,52 @@ class Enemy extends Waters {
    * @memberof Enemy
    */
   deactivateWeapon (opponentRow, opponentCol, shadowRow, shadowCol) {
-    this._deactivateOpponentWeapon(opponentRow, opponentCol)
+    this.#deactivateOpponentWeapon(opponentRow, opponentCol)
 
     if (shadowRow != null && shadowCol != null) {
-      this._deactivateShadowCell(shadowRow, shadowCol)
-      this._deactivateOpponentHint(shadowRow, shadowCol)
+      this.#deactivateShadowCell(shadowRow, shadowCol)
+      this.#deactivateOpponentHint(shadowRow, shadowCol)
     }
   }
 
   /**
    * Deactivates weapon display on opponent board.
    *
-   * @private
-   * @param {number|null} row - Row coordinate
-   * @param {number|null} col - Column coordinate
+   * @param {number|null} y - Row coordinate
+   * @param {number|null} x - Column coordinate
    * @returns {void}
    * @memberof Enemy
    */
-  _deactivateOpponentWeapon (row, col) {
-    this._callUIMethod(
-      this.opponent?.UI,
-      'cellWeaponDeactivate',
-      row,
-      col,
-      true
-    )
+  #deactivateOpponentWeapon (y, x) {
+    this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', y, x, true)
   }
 
   /**
    * Deactivates shadow cell display on own board.
    *
-   * @private
-   * @param {number} row - Row coordinate
-   * @param {number} col - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {void}
    * @memberof Enemy
    */
-  _deactivateShadowCell (row, col) {
+  #deactivateShadowCell (y, x) {
     // @ts-ignore - this.UI.cellWeaponDeactivate is a real method
     const ui = /** @type {any} */ (this.UI)
-    ui?.cellWeaponDeactivate?.(row, col)
+    ui?.cellWeaponDeactivate?.(y, x)
   }
 
   /**
    * Deactivates hint display on opponent board.
    *
-   * @private
-   * @param {number|null} row - Row coordinate
-   * @param {number|null} col - Column coordinate
+   * @param {number|null} y - Row coordinate
+   * @param {number|null} x - Column coordinate
    * @returns {void}
    * @memberof Enemy
    */
-  _deactivateOpponentHint (row, col) {
+  #deactivateOpponentHint (y, x) {
     // @ts-ignore - opponent UI type compatibility
     const opponentUI = /** @type {any} */ (this.opponent?.UI)
-    this._callUIMethod(opponentUI, 'cellHintDeactivate', row, col)
+    this.#callUIMethod(opponentUI, 'cellHintDeactivate', y, x)
   }
 
   /**
@@ -1827,27 +1813,26 @@ class Enemy extends Waters {
    *
    * USAGE PATTERN:
    * ```
-   * this._callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', row, col, true)
+   * this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', y, x, true)
    * // Equivalent to:
-   * this.opponent?.UI?.cellWeaponDeactivate?.(row, col, true)
+   * this.opponent?.UI?.cellWeaponDeactivate?.(y, x, true)
    * ```
    *
-   * @private
    * @param {any} ui - The UI instance (may be undefined or typed as Object)
    * @param {string} methodName - The method name to invoke
-   * @param {number|null} row - Row coordinate (may be null; skips call if null)
-   * @param {number|null} col - Column coordinate (may be null; skips call if null)
+   * @param {number|null} y - Row coordinate (may be null; skips call if null)
+   * @param {number|null} x - Column coordinate (may be null; skips call if null)
    * @param {boolean} [force] - Optional force flag passed to method (e.g., force=true to override UI state)
    * @returns {void}
    * @memberof Enemy
    */
-  _callUIMethod (ui, methodName, row, col, force) {
-    if (row != null && col != null && ui) {
+  #callUIMethod (ui, methodName, y, x, force) {
+    if (y != null && x != null && ui) {
       const method = ui[methodName]
       if (typeof method === 'function') {
         force === undefined
-          ? method.call(ui, row, col)
-          : method.call(ui, row, col, force)
+          ? method.call(ui, y, x)
+          : method.call(ui, y, x, force)
       }
     }
   }
@@ -1944,8 +1929,8 @@ class Enemy extends Waters {
     this.selectedCellCoordinates = null
 
     // Clear all state systems in logical order
-    this._clearCoordinateState()
-    this._clearSelectionVisualState()
+    this.#clearCoordinateState()
+    this.#clearSelectionVisualState()
     // Ensure cursor classes are cleared on the board element itself
     // (some tests spy on `_clearCursorClassesFromElement` directly)
     if (this._clearCursorClassesFromElement) {
@@ -1956,9 +1941,9 @@ class Enemy extends Waters {
         // ignore errors from mocked elements
       }
     }
-    this._clearBoardCursorClasses()
-    this._updateBoardCursor(null)
-    this._updateBoardTargetingState()
+    this.#clearBoardCursorClasses()
+    this.#updateBoardCursor(null)
+    this.#updateBoardTargetingState()
   }
 
   /**
@@ -1971,7 +1956,7 @@ class Enemy extends Waters {
    * so leaving those classes behind leads to stale UI state.
    *
    * Regression prevention: this method clears board cursor classes via
-   * `_clearBoardCursorClasses()` after calling `switchToSingleShot()`. Do not
+   * `#clearBoardCursorClasses()` after calling `switchToSingleShot()`. Do not
    * remove that cleanup or move it before `_handleWeaponChange()` — order is
    * intentional to ensure selection state is reset first.
    * @public
@@ -1984,7 +1969,7 @@ class Enemy extends Waters {
     this.loadOut?.switchToSingleShot?.()
     // Clear any cursor classes applied to board cells when switching to single-shot
     // Single-shot mode should show no cursor previews on the opponent board
-    this._clearBoardCursorClasses()
+    this.#clearBoardCursorClasses()
   }
 
   /**
