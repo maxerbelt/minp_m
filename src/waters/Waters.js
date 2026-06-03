@@ -1996,7 +1996,7 @@ export class Waters {
     ) => {
       // @ts-ignore - affectedArea is coordinate array at runtime
       const [ar, ac] = /** @type {[number, number]} */ (affectedArea?.[0] || [])
-      return this.processShot(weapon, ar, ac, 0)
+      return this.#processShot(weapon, ar, ac, 0)
     }
 
     // @ts-ignore - aimSingleShotInfo available at runtime
@@ -3007,9 +3007,8 @@ export class Waters {
    * @param {number} x - Target column coordinate
    * @param {number} power - Weapon power level (determines penetration of protection)
    * @returns {WeaponResult} Result object with hits, shots, and sunk ship info
-   * @private
    */
-  fireShot (weapon, x, y, power) {
+  #fireShot (weapon, x, y, power) {
     if (this.#isFreeAt(x, y)) {
       if (power > 0) {
         this.UI.grid.cellMiss(x, y)
@@ -3026,7 +3025,6 @@ export class Waters {
    * Gets description text for hit count.
    * @param {number} hits - Number of hits
    * @returns {string} Description text
-   * @private
    */
   #hitDescription (hits) {
     if (this.opponent) {
@@ -3249,18 +3247,17 @@ export class Waters {
    * Applies weapon effect to area of effect.
    * Iterates through each coordinate in the effect and applies the weapon.
    *
-   * @param {Array<Array<number>>} effect - Array of [r, c, power] coordinates
+   * @param { [number, number, number][] } effect - Array of [r, c, power] coordinates
    * @param {Weapon} weapon - The weapon being applied
    * @param {Object} options - Additional options (may include isSplash flag)
    * @returns {WeaponResult} Accumulated results object
-   * @private
    */
-  applyToAoE (effect, weapon, options) {
-    const normalizedEffect = this.normalizeEffect(effect, weapon, options)
+  #applyToAoE (effect, weapon, options) {
+    const normalizedEffect = this.#normalizeEffect(effect, weapon, options)
     let acc = LoadOut.noResult
 
     for (const [r, c, power] of normalizedEffect) {
-      acc = this.applyToPosition(r, c, weapon, power, acc)
+      acc = this.#applyToPosition(r, c, weapon, power, acc)
     }
     return acc
   }
@@ -3273,10 +3270,9 @@ export class Waters {
    * @param {Array<Array<number>>|Iterable} effect - Raw effect payload from a weapon (array of [r, c, power] entries)
    * @param {Weapon} weapon - The weapon generating the effect
    * @param {Object} options - Additional options and context
-   * @returns {Array<Array<number>>} Normalized effect payload as [r, c, power] array
-   * @private
+   * @returns { [number, number, number][] } Normalized effect payload as [r, c, power] array
    */
-  normalizeEffect (effect, weapon, options) {
+  #normalizeEffect (effect, weapon, options) {
     if (effect == null) {
       this.warnInvalidEffect(effect, weapon, options)
       return []
@@ -3348,10 +3344,10 @@ export class Waters {
    * @param {Array<Array<number>>} effect - Array of [row, col, power] coordinates
    * @param {Object} [options] - Additional options for firing
    * @returns {WeaponResult} Accumulated results object
-   * @private
+   * @protected
    */
   applyWeaponEffect (weapon, effect, options) {
-    const results = this.applyToAoE(effect, weapon, options)
+    const results = this.#applyToAoE(effect, weapon, options)
     this.flash(results.hits > 0 ? 'long' : undefined)
 
     this.score.dtaps += results.dtap || 0
@@ -3370,9 +3366,9 @@ export class Waters {
    * @returns {WeaponResult} Updated accumulator
    * @private
    */
-  applyToPosition (r, c, weapon, power, acc) {
+  #applyToPosition (r, c, weapon, power, acc) {
     if (bh.inBounds(r, c)) {
-      const result = this.processShot(weapon, r, c, power)
+      const result = this.#processShot(weapon, r, c, power)
       this.accumulateResult(result, acc)
     }
     return acc
@@ -3389,13 +3385,13 @@ export class Waters {
    * @returns {WeaponResult} Shot result with hits, shots fired, and sunk info
    * @private
    */
-  processShot (weapon, y, x, power) {
+  #processShot (weapon, y, x, power) {
     if (!bh.inBounds(y, x)) return LoadOut.noResult
     if (!weapon) return LoadOut.noResult
     if (this.isDTap(x, y, power, true, weapon.hasFlash))
       return LoadOut.doubleTapResult
 
-    const result = this.fireShot(weapon, x, y, power)
+    const result = this.#fireShot(weapon, x, y, power)
 
     return result
   }
