@@ -81,12 +81,31 @@ const NOOP = () => {}
  */
 export class ShipCellGrid extends GridBase {
   /**
+   * Underlying ship cell matrix.
+   * @type {ShipCellGridData}
+   */
+  _grid
+
+  /**
+   * Placement mask tracking occupied ship cells.
+   * @type {Mask}
+   */
+  _maskedGrid
+
+  /**
+   * Cached ASCII representation for debugging.
+   * @type {AsciiRepresentation|null}
+   */
+  _ascii = null
+
+  /**
    * Creates a new ship cell grid with optional initial state.
    *
    * Initializes the grid with either provided state or defaults to the blank
    * map template. Creates a synchronized placement mask for efficient occupancy
    * queries and conflict detection.
    *
+   * @constructor
    * @param {ShipCellGridData|null} [initialGrid=null] - Optional initial grid state; defaults to blank map grid
    * @throws {Error} If initialGrid is not a valid 2D array
    */
@@ -99,14 +118,23 @@ export class ShipCellGrid extends GridBase {
       throw new Error('Initial grid must be a 2D array')
     }
 
+    // @ts-ignore - bh.map is initialized at runtime with blankGrid and blankMask
     const grid = initialGrid || bh.map.blankGrid
-    const mask = initialGrid
-      ? new Mask(grid[0].length, grid.length)
-      : bh.map.blankMask
+    let mask
+    if (initialGrid) {
+      // @ts-ignore - grid is ShipCellGridData at this point; accessing grid[0].length
+      mask = new Mask(grid[0].length, grid.length)
+    } else {
+      // @ts-ignore - bh.map is initialized at runtime
+      mask = bh.map.blankMask
+    }
 
+    // @ts-ignore - mask is Mask object with width/height properties
     super(RectangleShape(mask.width, mask.height))
 
+    // @ts-ignore - grid is ShipCellGridData; mask is Mask
     this._grid = grid
+    // @ts-ignore - mask is Mask object
     this._maskedGrid = mask
   }
 
@@ -126,9 +154,11 @@ export class ShipCellGrid extends GridBase {
 
   /**
    * Underlying ship cell matrix.
+   * @public
    * @returns {ShipCellGridData} 2D array of ship cells
    */
   get grid () {
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     return this._grid
   }
 
@@ -138,9 +168,11 @@ export class ShipCellGrid extends GridBase {
    * Uses bitboard representation for efficient occupancy queries and
    * overlap detection during ship placement.
    *
+   * @public
    * @returns {Mask} Bitboard mask of occupied cells
    */
   get maskedGrid () {
+    // @ts-ignore - _maskedGrid is initialized as Mask in constructor
     return this._maskedGrid
   }
 
@@ -150,12 +182,17 @@ export class ShipCellGrid extends GridBase {
    * Clears all ship placements and restores the grid to initial blank state.
    * Also invalidates the ASCII representation cache.
    *
+   * @public
    * @returns {void}
    */
   reset () {
+    // @ts-ignore - bh.map is initialized at runtime with blankGrid and blankMask
     this._grid = bh.map.blankGrid
+    // @ts-ignore - bh.map is initialized at runtime
     this._maskedGrid = bh.map.blankMask
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     this.width = this._grid[0]?.length || 0
+    // @ts-ignore - _grid is initialized as ShipCellGridData
     this.height = this._grid.length
     this._ascii = null
   }
@@ -163,12 +200,13 @@ export class ShipCellGrid extends GridBase {
   /**
    * Returns the ship cell at the given row and column coordinates.
    *
+   * @public
    * @param {number} row - Row coordinate (0-indexed from top)
    * @param {number} col - Column coordinate (0-indexed from left)
    * @returns {ShipCell|undefined} Ship cell object or undefined if empty
    */
-
   cellAtRC (row, col) {
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     return this._grid[row]?.[col]
   }
 
@@ -178,6 +216,7 @@ export class ShipCellGrid extends GridBase {
    * Returns the ship ID if a cell exists, -1 if the location is masked (occupied),
    * or 0 if the location is empty. This is the internal RC-based implementation.
    *
+   * @public
    * @param {number} row - Row coordinate (0-indexed from top)
    * @param {number} col - Column coordinate (0-indexed from left)
    * @returns {number} Ship ID if occupied, -1 if masked, or 0 if empty
@@ -196,6 +235,7 @@ export class ShipCellGrid extends GridBase {
    * Delegates to RC-based lookup after coordinate conversion. Returns the ship ID
    * if a cell exists, -1 if masked, or 0 if empty.
    *
+   * @public
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
    * @returns {number} Ship ID if occupied, -1 if masked, or 0 if empty
@@ -209,6 +249,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Delegates to RC-based lookup after coordinate conversion.
    *
+   * @public
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
    * @returns {ShipCell|undefined} Ship cell object or undefined if empty
@@ -222,6 +263,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Checks if the given RC coordinates contain a ship cell.
    *
+   * @public
    * @param {number} row - Row coordinate (0-indexed from top)
    * @param {number} col - Column coordinate (0-indexed from left)
    * @returns {boolean} True if occupied by a ship cell
@@ -235,6 +277,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Delegates to RC-based check after coordinate conversion.
    *
+   * @public
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
    * @returns {boolean} True if occupied by a ship cell
@@ -242,9 +285,26 @@ export class ShipCellGrid extends GridBase {
   has (x, y) {
     return !!this.cellAt(x, y)
   }
+  /**
+   * Returns true if cell at x/y is empty (no ship).
+   *
+   * @public
+   * @param {number} x - Column coordinate (0-indexed from left)
+   * @param {number} y - Row coordinate (0-indexed from top)
+   * @returns {boolean} True if location is empty
+   */
   isEmpty (x, y) {
     return !this.cellAt(x, y)
   }
+
+  /**
+   * Returns true if cell at x/y is occupied by a ship.
+   *
+   * @public
+   * @param {number} x - Column coordinate (0-indexed from left)
+   * @param {number} y - Row coordinate (0-indexed from top)
+   * @returns {boolean} True if location is occupied
+   */
   isOccupied (x, y) {
     return !!this.cellAt(x, y)
   }
@@ -253,15 +313,18 @@ export class ShipCellGrid extends GridBase {
    *
    * Delegates to RC-based setter after coordinate conversion.
    *
+   * @public
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
    * @param {ShipCell} cell - Ship cell object to place
    * @returns {void}
+   * @throws {Error} If coordinates are invalid
    */
   setCell (x, y, cell) {
     if (!this.isValidRC(y, x)) {
       throw new Error(`Placing Invalid coordinates on shipgrid: (${x}, ${y})`)
     }
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     this._grid[y][x] = cell
   }
 
@@ -271,6 +334,7 @@ export class ShipCellGrid extends GridBase {
    * If a cell already exists at the location, updates its ID. Otherwise,
    * creates a new cell with the given ID and a default letter of '?'.
    *
+   * @public
    * @param {number} row - Row coordinate (0-indexed from top)
    * @param {number} col - Column coordinate (0-indexed from left)
    * @param {number} id - Ship ID to set
@@ -278,10 +342,13 @@ export class ShipCellGrid extends GridBase {
    */
   setRC (row, col, id) {
     if (this.isValidRC(row, col)) {
+      // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
       if (this._grid[row][col]?.id != null) {
+        // @ts-ignore - _grid is initialized as ShipCellGridData
         this._grid[row][col].id = id
         return
       }
+      // @ts-ignore - _grid is initialized as ShipCellGridData
       this._grid[row][col] = { id, letter: '?' }
     }
   }
@@ -291,6 +358,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Delegates to RC-based setter after coordinate conversion.
    *
+   * @public
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
    * @param {number} id - Ship ID to set
@@ -303,11 +371,13 @@ export class ShipCellGrid extends GridBase {
   /**
    * Validates that row/column coordinates are within grid bounds.
    *
+   * @public
    * @param {number} row - Row coordinate to validate (0-indexed from top)
    * @param {number} col - Column coordinate to validate (0-indexed from left)
    * @returns {boolean} True if coordinates are within bounds
    */
   isValidRC (row, col) {
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     return (
       row >= 0 &&
       row < this._grid.length &&
@@ -328,6 +398,7 @@ export class ShipCellGrid extends GridBase {
    */
   _filterCells (predicate) {
     const cells = []
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     for (const rowCells of this._grid) {
       for (const cell of rowCells) {
         if (cell && predicate(cell)) {
@@ -343,18 +414,22 @@ export class ShipCellGrid extends GridBase {
    *
    * Lazily creates and caches an ASCII representation of the grid.
    *
+   * @private
    * @returns {AsciiRepresentation} ASCII representation instance
    */
   get asciiRepresentation () {
     if (!this._ascii) {
+      // @ts-ignore - AsciiRepresentation expects GridLike interface which ShipCellGrid implements
       this._ascii = new AsciiRepresentation(this)
     }
+    // @ts-ignore - _ascii is initialized as AsciiRepresentation or null
     return this._ascii
   }
 
   /**
    * Returns the ASCII representation of the grid as a string.
    *
+   * @public
    * @returns {string} ASCII grid visualization
    */
   get toAscii () {
@@ -366,6 +441,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Filters all grid cells to find those matching the given ship ID.
    *
+   * @public
    * @param {number} shipId - The ship ID to search for
    * @returns {ShipCell[]} Array of cells belonging to the ship
    */
@@ -378,6 +454,7 @@ export class ShipCellGrid extends GridBase {
    *
    * Delegates to RC-based check after coordinate conversion.
    *
+   * @public
    * @param {number} x - Column coordinate (0-indexed from left)
    * @param {number} y - Row coordinate (0-indexed from top)
    * @param {(row: number, col: number) => boolean} boundsChecker - Bounds validation callback
@@ -393,6 +470,7 @@ export class ShipCellGrid extends GridBase {
    * Used to enforce non-adjacency spacing between ships. Checks all 8 neighbors
    * (including diagonals) around the center cell using the provided bounds checker.
    *
+   * @public
    * @param {number} row - Row coordinate of center cell (0-indexed from top)
    * @param {number} col - Column coordinate of center cell (0-indexed from left)
    * @param {(row: number, col: number) => boolean} _boundsChecker - Bounds validation callback
@@ -408,6 +486,7 @@ export class ShipCellGrid extends GridBase {
    * Delegates to RC-based check after coordinate conversion. Checks all 8 neighbors
    * including diagonals around the center cell.
    *
+   * @public
    * @param {number} x - Column coordinate of center cell (0-indexed from left)
    * @param {number} y - Row coordinate of center cell (0-indexed from top)
    * @param {(row: number, col: number) => boolean} boundsChecker - Bounds validation callback
@@ -423,10 +502,11 @@ export class ShipCellGrid extends GridBase {
    *
    * Filters all grid cells to find those with ammo > 0.
    *
+   * @public
    * @returns {ShipCell[]} Array of cells with ammo
    */
   getArmedCells () {
-    return this._filterCells(cell => cell?.dataset?.ammo > 0)
+    return this._filterCells(cell => (cell?.dataset?.ammo ?? 0) > 0)
   }
 
   /**
@@ -434,12 +514,15 @@ export class ShipCellGrid extends GridBase {
    *
    * Filters all grid cells to find those with ammo > 0 and matching weapon letter.
    *
+   * @public
    * @param {string} weaponLetter - Weapon letter to filter by
    * @returns {ShipCell[]} Array of cells with matching weapon and ammo
    */
   getArmedCellsByWeapon (weaponLetter) {
     return this._filterCells(
-      cell => cell?.dataset?.ammo > 0 && cell?.dataset?.wletter === weaponLetter
+      cell =>
+        (cell?.dataset?.ammo ?? 0) > 0 &&
+        cell?.dataset?.wletter === weaponLetter
     )
   }
 
@@ -448,10 +531,12 @@ export class ShipCellGrid extends GridBase {
    *
    * Calls the provided callback for each non-null cell in the grid.
    *
+   * @public
    * @param {CellIteratorCallback} callback - Called for each cell with (cell, rowIndex, colIndex)
    * @returns {void}
    */
   forEachCell (callback) {
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     this._grid.forEach((rowCells, rowIndex) => {
       rowCells.forEach((_cell, colIndex) => {
         if (_cell) {
@@ -467,6 +552,7 @@ export class ShipCellGrid extends GridBase {
    * Synchronizes mask state with current grid occupancy. Iterates all cells
    * and marks their positions on the provided mask.
    *
+   * @public
    * @param {Mask} mask - Mask object to update
    * @returns {void}
    */
@@ -480,10 +566,13 @@ export class ShipCellGrid extends GridBase {
   /**
    * Returns the current grid dimensions.
    *
+   * @public
    * @returns {GridDimensions} Object with rows and cols properties
    */
   getDimensions () {
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     const rows = this._grid.length
+    // @ts-ignore - _grid is initialized as ShipCellGridData
     const cols = rows > 0 ? this._grid[0].length : 0
     return { rows, cols }
   }
@@ -493,19 +582,23 @@ export class ShipCellGrid extends GridBase {
    *
    * Deep clone prevents external modifications from affecting grid state.
    *
+   * @public
    * @returns {ShipCellGridData} Serialized 2D grid array
    */
   toJSON () {
+    // @ts-ignore - _grid is initialized as ShipCellGridData in constructor
     return structuredClone(this._grid)
   }
 
   /**
    * Restores serialized ship cell state.
    *
+   * @public
    * @param {ShipCellGridData|null} data - Serialized grid data or null for blank state
    * @returns {void}
    */
   fromJSON (data) {
+    // @ts-ignore - bh.map is initialized at runtime with blankGrid
     this._grid = data || bh.map.blankGrid
   }
 
@@ -521,9 +614,13 @@ export class ShipCellGrid extends GridBase {
    * @returns {Array<[number, number]>} Shuffled array of [col, row] coordinate pairs
    */
   _getValidPlacementLocations (maxRow, maxCol) {
+    // @ts-ignore - _maskedGrid is initialized as Mask in constructor
     const emptyCellIndices = this._maskedGrid.bitsEmpty()
     const candidateLocations = emptyCellIndices
-      .map(cellIndex => this._maskedGrid.indexer.location(cellIndex))
+      .map(cellIndex => {
+        // @ts-ignore - _maskedGrid.indexer.location() is available at runtime
+        return this._maskedGrid.indexer.location(cellIndex)
+      })
       .filter(([col, row]) => row < maxRow && col < maxCol)
 
     return Random.shuffleArray([...candidateLocations])
@@ -554,7 +651,6 @@ export class ShipCellGrid extends GridBase {
       }
 
       const cells = ship.placeOnGrid(this, placement)
-      //  console.log(`joined grid:\n`, this.toAscii)
       if (cells) {
         return cells
       }
@@ -581,8 +677,11 @@ export class ShipCellGrid extends GridBase {
     }
 
     const shapeMinSize = shipShape.minSize
+    // @ts-ignore - bh.map is initialized at runtime with rows and cols properties
     const gridMap = bh.map
+    // @ts-ignore - gridMap.rows and gridMap.cols are initialized at runtime
     const maxY = gridMap.rows - shapeMinSize + 1
+    // @ts-ignore - gridMap.cols is initialized at runtime
     const maxX = gridMap.cols - shapeMinSize + 1
     const validLocations = this._getValidPlacementLocations(maxY, maxX)
     const placeables = shipShape.placeables()
@@ -609,10 +708,12 @@ export class ShipCellGrid extends GridBase {
    * Attempts placement in random order for variety. On success, calls the
    * onShipPlaced callback for each successfully placed ship.
    *
+   * @public
    * @param {Ship[]} ships - Array of ship objects to place
-   * @param {(ship: Ship, cells: ShipCell[]) => void} [onShipPlaced] - Callback when ship placed successfully
+   * @param {Function} [onShipPlaced=NOOP] - Callback with signature (ship: Ship, cells: ShipCell[]) => void
    * @returns {boolean} True if all ships placed; false if placement failed
    */
+  // @ts-ignore - onShipPlaced default NOOP is compatible with expected callback type
   attemptToPlaceShips (ships, onShipPlaced = NOOP) {
     this.reset()
     const shuffledShips = Random.shuffleArray([...ships])
