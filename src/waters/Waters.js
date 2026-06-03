@@ -3225,7 +3225,7 @@ export class Waters {
    * @param {boolean} hasFlame - Whether weapon has flame animation
    * @param {boolean} hasFlash - Whether weapon has flash effect
    * @returns {boolean} True if this cell was already shot (double tap), false otherwise
-   * @private
+   * @protected
    */
   isDTap (x, y, power, hasFlame, hasFlash) {
     if (hasFlame && power > 0) {
@@ -3267,7 +3267,7 @@ export class Waters {
    * Validates that the effect is iterable and contains [r, c, power] triples.
    * Logs warning if malformed entries are detected.
    *
-   * @param {Array<Array<number>>|Iterable} effect - Raw effect payload from a weapon (array of [r, c, power] entries)
+   * @param { [number, number, number][] | Iterable<number>} effect - Raw effect payload from a weapon (array of [r, c, power] entries)
    * @param {Weapon} weapon - The weapon generating the effect
    * @param {Object} options - Additional options and context
    * @returns { [number, number, number][] } Normalized effect payload as [r, c, power] array
