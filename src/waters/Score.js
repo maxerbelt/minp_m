@@ -28,6 +28,11 @@ import { bh } from '../terrains/all/js/bh.js'
  */
 export class Score {
   /**
+   * Initializes a new Score instance with blank masks and zero counters.
+   * All masks are initialized to bh.map.blankMask, counters to 0.
+   * @constructor
+   */
+  /**
    * Number of turns taken.
    * @type {number}
    */
@@ -43,30 +48,35 @@ export class Score {
    * Mask tracking all shots taken on the board.
    * @type {MaskInterface}
    */
+  // @ts-ignore - bh.map is initialized at runtime, blankMask is MaskInterface
   shot = bh.map.blankMask
 
   /**
    * Mask tracking cells that have been revealed (hit or miss).
    * @type {MaskInterface}
    */
+  // @ts-ignore - bh.map is initialized at runtime, blankMask is MaskInterface
   reveal = bh.map.blankMask
 
   /**
    * Mask tracking cells that have been hinted.
    * @type {MaskInterface}
    */
+  // @ts-ignore - bh.map is initialized at runtime, blankMask is MaskInterface
   hint = bh.map.blankMask
 
   /**
    * Mask tracking cells with wake effects from ship movement.
    * @type {MaskInterface}
    */
+  // @ts-ignore - bh.map is initialized at runtime, blankMask is MaskInterface
   wake = bh.map.blankMask
 
   /**
    * Mask tracking automatic misses (shots that don't count).
    * @type {MaskInterface}
    */
+  // @ts-ignore - bh.map is initialized at runtime, blankMask is MaskInterface
   auto = bh.map.blankMask
 
   /**
@@ -79,10 +89,15 @@ export class Score {
   reset () {
     this.turns = 0
     this.dtaps = 0
+    // @ts-ignore - bh.map is initialized at runtime
     this.shot = bh.map.blankMask
+    // @ts-ignore - bh.map is initialized at runtime
     this.reveal = bh.map.blankMask
+    // @ts-ignore - bh.map is initialized at runtime
     this.hint = bh.map.blankMask
+    // @ts-ignore - bh.map is initialized at runtime
     this.wake = bh.map.blankMask
+    // @ts-ignore - bh.map is initialized at runtime
     this.auto = bh.map.blankMask
   }
 
@@ -90,6 +105,7 @@ export class Score {
    * Increments the turn counter by one.
    * Called at the end of each player turn to track game progression.
    *
+   * @public
    * @returns {void}
    */
   finishTurn () {
@@ -100,6 +116,7 @@ export class Score {
    * Gets the count of automatic misses from the auto mask.
    * Automatic misses are shots that don't count toward the player's shot count.
    *
+   * @public
    * @returns {number} The occupancy count of automatic misses
    */
   get autoMisses () {
@@ -110,6 +127,7 @@ export class Score {
    * Checks if a coordinate has not been shot yet.
    * Returns true if the location is available for a new shot, null if already shot.
    *
+   * @public
    * @param {number} y - Row coordinate (0-based index)
    * @param {number} x - Column coordinate (0-based index)
    * @returns {true|null} True if location is unshot, null if already shot
@@ -120,22 +138,24 @@ export class Score {
   }
   /**
    * Checks if a coordinate has not been shot yet.
-   * Returns true if the location is available for a new shot, null if already shot.
+   * Returns true if the location is available for a new shot.
    *
-   * @param {number} y - Row coordinate (0-based index)
+   * @public
    * @param {number} x - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
    * @returns {boolean} True if location is unshot
    */
   isNewShot (x, y) {
     return !this.shot.test(x, y)
   }
   /**
-   * Checks if a coordinate has not been shot yet.
-   * Returns true if the location is available for a new shot, null if already shot.
+   * Checks if a coordinate has already been shot.
+   * Returns true if the location has been previously shot.
    *
-   * @param {number} y - Row coordinate (0-based index)
+   * @public
    * @param {number} x - Column coordinate (0-based index)
-   * @returns {boolean} True if location is unshot
+   * @param {number} y - Row coordinate (0-based index)
+   * @returns {boolean} True if location is already shot
    */
   isOldShot (x, y) {
     return this.shot.test(x, y)
@@ -145,8 +165,9 @@ export class Score {
    * Removes the location from active shots and marks it as temporarily revealed.
    * Used during shot animation/reveal phase before finalizing.
    *
-   * @param {number} y - Row coordinate (0-based index)
+   * @public
    * @param {number} x - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
    * @returns {void}
    */
   shotReveal (x, y) {
@@ -159,8 +180,9 @@ export class Score {
    * Only processes locations that are currently in the reveal mask.
    * Called after shot animation completes to persist the shot.
    *
-   * @param {number} y - Row coordinate (0-based index)
+   * @public
    * @param {number} x - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
    * @returns {void}
    */
   shotRevealFinalize (x, y) {
@@ -172,7 +194,9 @@ export class Score {
   /**
    * Marks a cell as hinted in the hint mask.
    * Records that the player has used a hint on this location.
+   * Internal storage swaps coordinates from (r, c) to (c, r) for mask operations.
    *
+   * @public
    * @param {number} r - Row coordinate (0-based index)
    * @param {number} c - Column coordinate (0-based index)
    * @returns {void}
@@ -186,8 +210,9 @@ export class Score {
    * Wake effects show ship movement paths and disturbances.
    * Records cells affected by ship wake for visual display.
    *
-   * @param {number} y - Row coordinate (0-based index)
+   * @public
    * @param {number} x - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
    * @returns {void}
    */
   wakeReveal (x, y) {
@@ -199,6 +224,7 @@ export class Score {
    * Registers a shot at the location only if it hasn't been shot before.
    * Returns true on successful creation, null if location already has a shot.
    *
+   * @public
    * @param {number} y - Row coordinate (0-based index)
    * @param {number} x - Column coordinate (0-based index)
    * @returns {true|null} True if shot key was created, null if location already shot
@@ -215,8 +241,9 @@ export class Score {
   /**
    * Gets a count array of all tracked metrics.
    * Provides a snapshot of current game state counters for display or scoring.
-   * Array contains: [turns, double-taps, shots, reveals, hints]
+   * Array contains: [turns, double-taps, shots, reveals, hints].
    *
+   * @public
    * @returns {number[]} Array containing counts of [turns, dtaps, noOfShots, reveal.occupancy, hint.occupancy]
    */
   counts () {
@@ -234,6 +261,7 @@ export class Score {
    * Returns the occupancy of shot mask minus automatic misses, with minimum of 0.
    * Provides accurate shot count for scoring purposes.
    *
+   * @public
    * @returns {number} Number of manual shots taken (automatic misses excluded)
    */
   noOfShots () {
@@ -246,8 +274,9 @@ export class Score {
    * Automatic misses are excluded from player's shot count.
    * Returns null if the location was already shot.
    *
-   * @param {number} y - Row coordinate (0-based index)
+   * @public
    * @param {number} x - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
    * @returns {true|null} True if automatic miss registered, null if location already shot
    */
   addAutoMiss (x, y) {
