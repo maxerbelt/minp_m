@@ -608,21 +608,7 @@ export class Friend extends Placement {
     // @ts-ignore - isDTap is inherited from Waters base class
     return this.map.isInBoundsAt(x, y) && !this.isDTap(x, y, 4, false, false)
   }
-  /**
-   * Handles transition to friendly player's turn in game flow.
-   * Clears weapon selection state, signals opponent turn transition, and initiates seek.
-   *
-   * @returns {Promise<void>}
-   */
-  async #handleBeginTurn () {
-    // Reset selected cell coordinates for two-click mode
-    this.selectedCellCoordinates = null
-    // @ts-ignore - opponent is Waters|null at runtime, _transitionToOpponentTurn is defined there
-    this.opponent?._transitionToOpponentTurn()
-    await Delay.wait(ENEMY_TURN_DELAY)
-    this.testContinue = true
-    await this.seekStep()
-  }
+
   /**
    * Seeks single ship target with single shot weapons.
    * Attempts to find and fire at valid untried locations up to SEEK_MAX_ATTEMPTS.
