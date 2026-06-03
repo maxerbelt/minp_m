@@ -2900,9 +2900,9 @@ export class Waters {
     let totalHits = 1
     let totalShots = initialShots
 
-    totalHits = this._applyHitEntries(hitEntries, totalHits)
+    totalHits = this.#applyHitEntries(hitEntries, totalHits)
     totalShots += hitEntries.length
-    totalShots = this._applyMissEntries(missEntries, totalShots)
+    totalShots = this.#applyMissEntries(missEntries, totalShots)
 
     if (hitShip.sunk) {
       this.markSunk(hitShip)
@@ -2921,9 +2921,8 @@ export class Waters {
    * @param {Array<Object>} hitEntries - Hit entry objects
    * @param {number} totalHits - Running total of hits
    * @returns {number} Updated hit total
-   * @private
    */
-  _applyHitEntries (hitEntries, totalHits) {
+  #applyHitEntries (hitEntries, totalHits) {
     for (const { cell, damaged } of hitEntries) {
       const [y, x] = /** @type {[number, number]} */ (cell)
       this.score.shotRevealFinalize(x, y)
@@ -2939,9 +2938,8 @@ export class Waters {
    * @param {Array<Object>} missEntries - Miss entry objects
    * @param {number} totalShots - Running total of shots
    * @returns {number} Updated shot total
-   * @private
    */
-  _applyMissEntries (missEntries, totalShots) {
+  #applyMissEntries (missEntries, totalShots) {
     for (const { cell, damaged } of missEntries) {
       const [y, x] = /** @type {[number, number]} */ (cell)
       this.score.shot.set(x, y)
@@ -2969,22 +2967,21 @@ export class Waters {
    * @param {Object} wps1 - Current weapon system
    * @param {Object} cursorInfo - Cursor info
    * @returns {void}
-   * @private
+   * @proteced
    */
   updateMode (wps1, cursorInfo) {
     if (this.isEnded) {
       return
     }
-    this.updateWeaponButtons()
+    this.#updateWeaponButtons()
     this.updateWeaponStatus(wps1 || this.loadOut?.selectedWeapon, cursorInfo)
   }
 
   /**
    * Updates visibility of weapon buttons.
    * @returns {void}
-   * @private
    */
-  updateWeaponButtons () {
+  #updateWeaponButtons () {
     if (this.UI?.weaponBtns == null) return
     for (const btn of this.UI.weaponBtns) {
       const letter = btn.dataset.letter
@@ -3078,7 +3075,7 @@ export class Waters {
   #buildResultMessage (weapon, hits, sunks, reveals = 0, messageInfo = '') {
     // No hits - report miss
     if (hits === 0) {
-      return messageInfo + this._buildMissMessage(weapon, reveals)
+      return messageInfo + this.#buildMissMessage(weapon, reveals)
     }
 
     // Hits but no sunk ships
@@ -3108,9 +3105,8 @@ export class Waters {
    * @param {Object} weapon - The weapon that missed
    * @param {number} [reveals] - Number of reveals
    * @returns {string} Miss message
-   * @private
    */
-  _buildMissMessage (weapon, reveals = 0) {
+  #buildMissMessage (weapon, reveals = 0) {
     if (reveals > 0) {
       return this.#revealDescription(reveals)
     }
