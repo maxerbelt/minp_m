@@ -99,7 +99,7 @@ export class HexMultiBitMorphology {
    * const morph = new HexMultiBitMorphology(mask, store, bits, width, height, indexer);
    */
   constructor (mask, store, bits, width, height, indexer) {
-    if (!store || !store.isMultiBit) {
+    if (!store?.isMultiBit) {
       throw new Error('HexMultiBitMorphology: store must be multi-bit')
     }
     this.mask = mask
