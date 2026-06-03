@@ -1199,7 +1199,7 @@ export class Waters {
 
   /**
    * Resets the map state and loads new map configuration.
-   * @param {Object} [map] - The map to set (defaults to bh.map).
+   * @param {Object|undefined} [map] - The map to set (defaults to bh.map).
    * @returns {void}
    * @private
    */
@@ -1207,7 +1207,10 @@ export class Waters {
     this.boardDestroyed = false
     this.isRevealed = false
     // @ts-ignore - bh.map is initialized at runtime
-    this.setMap(map || bh.map)
+    const mapToSet = map || bh.map
+    if (mapToSet) {
+      this.setMap(mapToSet)
+    }
   }
 
   /**
@@ -1215,12 +1218,18 @@ export class Waters {
    * @param {Object} [map] - The map to arm weapons for
    * @returns {void}
    */
+  /**
+   * Arms weapons for all ships on the map.
+   * @param {Object|undefined} [map] - The map to arm weapons for
+   * @returns {void}
+   */
   armWeapons (map) {
-    map = map || bh.map
-    if (!map) return
-    const weaponShips = this.determineWeaponShips(map)
+    // @ts-ignore - bh.map available at runtime
+    const activeMap = map || bh.map
+    if (!activeMap) return
+    const weaponShips = this.determineWeaponShips(activeMap)
 
-    this.configureLoadOut(map, weaponShips)
+    this.configureLoadOut(activeMap, weaponShips)
     this.setCursorChangeCallback()
     this.setupAttachedAim()
   }
@@ -1943,10 +1952,12 @@ export class Waters {
     const unAttached = this.firstUnattachedWeaponSystem
     if (unAttached) {
       // @ts-ignore - bh.map is initialized at runtime
-      const launch = async (/** @type {Array<number>} */ coords) => {
+      const launch = async (/** @type {number[]} */ coords) => {
+        // @ts-ignore - bh.map available at runtime, rows guaranteed to be number
+        const maxRows = /** @type {number[]} */ (bh.map?.rows ?? 0)
         return await this.launchTo(
           coords,
-          (bh.map?.rows ?? 0) - 1,
+          Math.max(0, maxRows - 1),
           0,
           unAttached
         )
@@ -1985,11 +1996,12 @@ export class Waters {
       r,
       c
     )
-    // @ts-ignore - bh.map is initialized at runtime
-    await this.launchTo(coordinates, (bh.map?.rows ?? 0) - 1, 0, wps)
+    // @ts-ignore - bh.map is initialized at runtime, ensure result is positive
+    const maxRows = Math.max(0, (bh.map?.rows ?? 1) - 1)
+    await this.launchTo(coordinates, maxRows, 0, wps)
 
     const score = fireSingleShot?.()
-    return { weapon: wps.weapon, score }
+    return { weapon: /** @type {any} */ (wps.weapon), score }
   }
 
   /**
@@ -2681,13 +2693,13 @@ export class Waters {
 
   /**
    * Checks if there is a ship at the given coordinates.
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {boolean} True if the cell is occupied by a ship, false otherwise
    * @private
    */
   isShipAt (x, y) {
-    return this.shipCellGrid.isOccupied(x, y)
+    return Boolean(this.shipCellGrid.isOccupied(x, y))
   }
 
   /**
@@ -2782,11 +2794,19 @@ export class Waters {
    * @returns {string} Description text
    * @private
    */
+  /**
+   * Gets description text for a sunk ship by letter.
+   * @param {string} letter - Ship letter
+   * @returns {string} Description text
+   * @private
+   */
   sunkLetterDescription (letter) {
     if (this.opponent) {
       return this.preamble0 + ' ' + bh.terrain.sunkDescription(letter, ' was ')
     }
-    return bh.shipSunkText(letter)
+    // @ts-ignore - bh.shipSunkText expects 2 args but handles 1 at runtime
+    const desc = bh.shipSunkText?.(letter, true)
+    return desc ?? ''
   }
 
   /**
