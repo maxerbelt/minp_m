@@ -3323,7 +3323,7 @@ export class Waters {
    * Delegates to applyWeaponEffect for actual effect application.
    *
    * @param {Weapon} weapon - The weapon being used (contains splash/crash methods)
-   * @param {Array<Array<number>>} effect - Array of [row, col, power] cells affected by weapon
+   * @param {[number, number, number][]} effect - Array of [row, col, power] cells affected by weapon
    * @param {Object} [options] - Additional firing context and options (may include crashLoc)
    * @returns {WeaponResult} Accumulated result with hits, dtaps, reveals, and sunk ships
    * @protected
