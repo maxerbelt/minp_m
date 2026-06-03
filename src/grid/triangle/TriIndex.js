@@ -389,9 +389,8 @@ export class TriIndex extends Indexer {
    * @param {number} deltaCubeR - Delta r per step
    * @param {number} deltaS - Delta s per step
    * @returns {CubeCoordinate} [q, r, s] rounded cube coordinates at this step
-   * @private
    */
-  _calculateCubePositionAtStep (
+  #calculateCubePositionAtStep (
     step,
     totalSteps,
     startQ,
@@ -509,7 +508,7 @@ export class TriIndex extends Indexer {
    * @private
    */
   _calculateCubePointAtStep (lineData, step, steps) {
-    const [q, cubeR, s] = this._calculateCubePositionAtStep(
+    const [q, cubeR, s] = this.#calculateCubePositionAtStep(
       step,
       steps,
       lineData.startQ,
