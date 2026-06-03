@@ -127,10 +127,10 @@ describe('Waters', () => {
    * @returns {void}
    */
   beforeEach(() => {
+    // @ts-expect-error - Test mock UI does not need all WatersUI properties
     waters = new Waters(mockUI)
-    // @ts-ignore - Test mock ship objects don't need full Ship type
     waters.ships = [
-      // @ts-ignore
+      // @ts-expect-error - Test mock ship objects don't need full Ship type
       {
         cells: [
           [0, 0],
@@ -146,7 +146,7 @@ describe('Waters', () => {
         weapons: {},
         sunk: false
       },
-      // @ts-ignore
+      // @ts-expect-error
       {
         cells: [
           [1, 0],
@@ -181,7 +181,7 @@ describe('Waters', () => {
      * @returns {void}
      */
     it('_getStorageKey returns correct string', () => {
-      // @ts-ignore - Testing private method access
+      // @ts-expect-error - Testing private method access
       expect(waters._getStorageKey()).toBe('geoffs-battleship.placed-ships')
     })
 
@@ -211,16 +211,16 @@ describe('Waters', () => {
      * @returns {void}
      */
     it('generateRandomSourceHint returns default coordinates for testing', () => {
-      // @ts-ignore - Mocking private property for testing
+      // @ts-expect-error - Mocking private property for testing
       waters.steps = { addHint: jest.fn() }
-      // @ts-ignore - Mocking UI method for testing
+      // @ts-expect-error - Mocking UI method for testing
       waters.UI.gridCellAt = jest.fn(() => ({ cell: 'mock' }))
 
-      // @ts-ignore - Testing private method access
+      // @ts-expect-error - Testing private method access
       const hint = waters.generateRandomSourceHint({ cells: [1, 2] }, null)
 
       expect(hint).toEqual([0, 0])
-      // @ts-ignore - Accessing mocked property
+      // @ts-expect-error - Accessing mocked property
       expect(waters.steps.addHint).not.toHaveBeenCalled()
     })
   })
@@ -285,7 +285,6 @@ describe('Waters', () => {
           }),
           addToGrid: jest.fn()
         },
-        // @ts-ignore
         {
           cells: [
             [1, 0],
@@ -309,7 +308,7 @@ describe('Waters', () => {
           addToGrid: jest.fn()
         }
       ]
-      // @ts-ignore - Mocking Ship type for testing
+      // @ts-expect-error - Ship mock doesn't have all required properties
       const result = waters.attemptToPlaceShips(ships, jest.fn())
       expect(result).toBe(true)
     })
@@ -330,7 +329,6 @@ describe('Waters', () => {
           minSize: 1,
           addToGrid: jest.fn()
         },
-        // @ts-ignore
         {
           cells: [
             [1, 0],
@@ -351,10 +349,10 @@ describe('Waters', () => {
       ]
       let result
       try {
-        // @ts-ignore - Mocking Ship type for testing
+        // @ts-expect-error - Ship mock doesn't have all required properties
         result = waters.attemptToPlaceShips(ships, jest.fn(), jest.fn())
       } catch (e) {
-        // @ts-ignore - e is unknown in catch block
+        // @ts-expect-error - e is unknown in catch block
         expect(e.message).toMatch('No shape for letter A')
         result = false
       }
@@ -368,7 +366,6 @@ describe('Waters', () => {
      * @returns {void}
      */
     it('autoPlace2 returns true if placement successful', () => {
-      // @ts-ignore - Mocking private method for testing
       waters.attemptToPlaceShips = jest.fn(() => true)
       expect(waters.autoPlace2()).toBe(true)
     })
@@ -380,7 +377,6 @@ describe('Waters', () => {
      * @returns {void}
      */
     it('autoPlace returns true if placement successful', () => {
-      // @ts-ignore - Mocking private method for testing
       waters.attemptToPlaceShips = jest.fn(() => true)
       expect(waters.autoPlace()).toBe(true)
     })
@@ -398,13 +394,12 @@ describe('Waters', () => {
      * @returns {void}
      */
     it('displays a warning using ship description when currentShip exists', () => {
-      // @ts-ignore - Mocking display method for testing
       waters.displayInfo = jest.fn()
       const currentShip = {
         shape: () => ({ descriptionText: 'the enemy ship' })
       }
 
-      // @ts-ignore - Testing private method
+      // @ts-expect-error - Testing private method
       waters.displayAutoSelectWarning('Torpedo', currentShip)
 
       expect(waters.displayInfo).toHaveBeenCalledWith(
@@ -419,10 +414,9 @@ describe('Waters', () => {
      * @returns {void}
      */
     it('falls back when currentShip is undefined', () => {
-      // @ts-ignore - Mocking display method for testing
       waters.displayInfo = jest.fn()
 
-      // @ts-ignore - Testing private method
+      // @ts-expect-error - Testing private method
       waters.displayAutoSelectWarning('Depth Charge', undefined)
 
       expect(waters.displayInfo).toHaveBeenCalledWith(
@@ -449,12 +443,11 @@ describe('Waters', () => {
           { letter: 'G', isLimited: true }
         ]
       }
-      // @ts-ignore - Mock terrain getter
+      // @ts-expect-error - Mock terrain getter
       const terrainSpy = jest.spyOn(bh, 'terrain', 'get').mockReturnValue({
         hasUnattachedWeapons: false
       })
-      // @ts-ignore - Testing private method
-
+      // @ts-expect-error - Testing private method
       const loadOut = waters.createLoadOut(map, [])
 
       expect(loadOut.unattachedWeapons).toEqual([
@@ -479,12 +472,11 @@ describe('Waters', () => {
           { letter: 'G', isLimited: true }
         ]
       }
-      // @ts-ignore - Mock terrain getter, skip TypeScript assertion
+      // @ts-expect-error - Mock terrain getter, skip TypeScript assertion
       const terrainSpy = jest.spyOn(bh, 'terrain', 'get').mockReturnValue({
         hasUnattachedWeapons: false
       })
-      // @ts-ignore - Testing private method
-
+      // @ts-expect-error - Testing private method
       const loadOut = waters.createLoadOut(map, [])
 
       // Limited weapons should NOT be in unattachedWeapons for firing
@@ -506,15 +498,16 @@ describe('Waters', () => {
   describe('loadForEdit', () => {
     it('loadForEdit initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships
+      // @ts-expect-error - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
       // Mock setMap to avoid real initialization
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - Accessing private method
       emptyWaters.setMap = jest.fn()
 
       // Mock autoPlace to avoid real placement logic
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Call loadForEdit with a map that has no example ships
@@ -526,11 +519,10 @@ describe('Waters', () => {
     })
 
     it('loadForEdit does not reinitialize ships if ships array already has ships', () => {
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       waters.autoPlace = jest.fn()
-      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - Accessing private property
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -561,9 +553,8 @@ describe('Waters', () => {
     })
 
     it('loadForEdit calls placeMatchingShips when map.example exists', () => {
-      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - Accessing private property
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -597,9 +588,9 @@ describe('Waters', () => {
     })
 
     it('loadForEdit calls autoPlace when map.example is null', () => {
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       waters.autoPlace = jest.fn()
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - Accessing private property
       waters.resetShipCells = jest.fn()
 
       const mockMap = { example: null }
@@ -611,15 +602,12 @@ describe('Waters', () => {
     })
 
     it('loadForEdit logs when ships are not matched', () => {
-      // @ts-ignore jest mock type issue
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
 
-      // @ts-ignore jest mock type issue
       waters.resetShipCells = jest.fn()
 
       // Mock placeMatchingShips to return unmatched ships
       const unmatchedShips = [{ cells: [5, 6], letter: 'C' }]
-      // @ts-ignore jest mock type issue
       waters.placeMatchingShips = jest.fn(() => unmatchedShips)
 
       const mockMap = {
@@ -648,11 +636,12 @@ describe('Waters', () => {
   describe('load', () => {
     it('load initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships
+      // @ts-expect-error - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
       // Mock autoPlace to avoid real placement logic
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -675,10 +664,11 @@ describe('Waters', () => {
     })
 
     it('load handles null placedShips gracefully', () => {
+      // @ts-expect-error - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -701,13 +691,13 @@ describe('Waters', () => {
     })
 
     it('load calls placeMatchingShips when map.example has placed ships', () => {
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       waters.resetShipCells = jest.fn()
 
       // Mock localStorage with placed ships data matching current map
-      const currentMapTitle = bh.map.title
+      const currentMapTitle = bh.map?.title ?? 'DefaultMap'
       const localStorageMock = {
         setItem: jest.fn(),
         getItem: jest.fn(() =>
@@ -743,10 +733,11 @@ describe('Waters', () => {
     })
 
     it('load calls autoPlace when placedShips map does not match current map', () => {
+      // @ts-expect-error - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // @ts-ignore jest mock type issue
+      // @ts-expect-error - jest mock type issue
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage with different map data
@@ -797,13 +788,12 @@ describe('Waters', () => {
      */
     it('resetPlacementStore is called during attemptToPlaceShips', () => {
       // Spy on resetPlacementStore
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       const resetSpy = jest.spyOn(waters, 'resetPlacementStore')
 
       // Create a mock shipCellGrid that returns false (failed placement)
-      waters.shipCellGrid.attemptToPlaceShips = jest.fn(
-        (_ships, _callback) => false
-      )
+      // @ts-expect-error - Mocking shipCellGrid method for testing
+      waters.shipCellGrid.attemptToPlaceShips = jest.fn(() => false)
 
       const onPlacementReset = jest.fn()
       waters.attemptToPlaceShips([], undefined, onPlacementReset)
@@ -822,7 +812,7 @@ describe('Waters', () => {
      */
     it('tempPlacement is initialized as an empty array', () => {
       // Call resetPlacementStore to initialize tempPlacement
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Mocking shipCellGrid method for testing
       waters.resetPlacementStore()
 
       // Verify tempPlacement is initialized as an array
@@ -838,11 +828,11 @@ describe('Waters', () => {
      */
     it('storeShipPlacement can be called safely without undefined error', () => {
       // Initialize tempPlacement
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.resetPlacementStore()
 
       // Create mock ship
-      // @ts-ignore - Mocking Ship type for testing
+      // @ts-expect-error - Mocking Ship type for testing
       const mockShip = { letter: 'A', cells: [1, 2] }
       const mockPlacedCells = [
         [0, 0],
@@ -851,7 +841,7 @@ describe('Waters', () => {
 
       // Should not throw
       expect(() => {
-        // @ts-ignore - Private method for testing
+        // @ts-expect-error - Private method for testing
         waters.storeShipPlacement(mockPlacedCells, mockShip)
       }).not.toThrow()
 
@@ -871,28 +861,27 @@ describe('Waters', () => {
      */
     it('storeShipPlacement accumulates multiple ship placements', () => {
       // Initialize tempPlacement
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.resetPlacementStore()
 
       // Store first ship
-      // @ts-ignore - Mocking Ship type for testing
+      // @ts-expect-error - Mocking Ship type for testing
       const ship1 = { letter: 'A', cells: [1, 2] }
       const cells1 = [
         [0, 0],
         [0, 1]
       ]
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.storeShipPlacement(cells1, ship1)
 
       // Store second ship
-      // @ts-ignore - Mocking Ship type for testing
       const ship2 = { letter: 'B', cells: [3, 4, 5] }
       const cells2 = [
         [1, 0],
         [1, 1],
         [1, 2]
       ]
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.storeShipPlacement(cells2, ship2)
 
       // Verify both placements were stored
@@ -911,14 +900,12 @@ describe('Waters', () => {
      */
     it('handlePlacementFailure is called when attemptToPlaceShips fails', () => {
       // Spy on handlePlacementFailure
-      // @ts-ignore - Testing private method
-
+      // @ts-expect-error - Private method for testing
       const failureSpy = jest.spyOn(waters, 'handlePlacementFailure')
 
       // Create a mock shipCellGrid that returns false (failed placement)
-      waters.shipCellGrid.attemptToPlaceShips = jest.fn(
-        (_ships, _callback) => false
-      )
+      // @ts-expect-error - Mocking shipCellGrid method for testing
+      waters.shipCellGrid.attemptToPlaceShips = jest.fn(() => false)
 
       const onPlacementReset = jest.fn()
       const result = waters.attemptToPlaceShips([], undefined, onPlacementReset)
@@ -940,17 +927,17 @@ describe('Waters', () => {
      */
     it('tempPlacement is reset between placement attempts', () => {
       // First attempt - store a placement
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.resetPlacementStore()
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.storeShipPlacement([[[0, 0]]], { letter: 'A', cells: [1] })
       expect(waters.tempPlacement).toHaveLength(1)
 
       // Second attempt - reset and store new placement
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.resetPlacementStore()
       expect(waters.tempPlacement).toHaveLength(0)
-      // @ts-ignore - Private method for testing
+      // @ts-expect-error - Private method for testing
       waters.storeShipPlacement([[[1, 0]]], { letter: 'B', cells: [2] })
       expect(waters.tempPlacement).toHaveLength(1)
       expect(waters.tempPlacement?.[0]?.ship.letter).toBe('B')
@@ -964,14 +951,12 @@ describe('Waters', () => {
      */
     it('handlePlacementFailure calls resetShipCells', () => {
       // Spy on resetShipCells
-      // @ts-ignore - Testing private method
-
+      // @ts-expect-error - Private method for testing
       const resetCellsSpy = jest.spyOn(waters, 'resetShipCells')
 
       // Call handlePlacementFailure
       const onPlacementReset = jest.fn()
-      // @ts-ignore - Testing private method
-
+      // @ts-expect-error - Private method for testing
       waters.handlePlacementFailure(onPlacementReset)
 
       // Verify resetShipCells was called
