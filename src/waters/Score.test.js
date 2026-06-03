@@ -6,7 +6,15 @@ import { Mask } from '../grid/rectangle/mask.js'
  * @typedef {import('./Score.js').Score} Score
  */
 
-// Test coordinate constants to replace magic numbers
+/**
+ * @typedef {readonly [number, number]} CoordTuple
+ * Coordinate tuple pair [row, col]
+ */
+
+/**
+ * Test coordinate constants to replace magic numbers.
+ * @type {Object<string, CoordTuple>}
+ */
 const COORDS = {
   ORIGIN: [0, 0],
   DIAGONAL_1: [1, 1],
@@ -22,6 +30,11 @@ const COORDS = {
   POS_5_6: [5, 6],
   NEGATIVE: [-1, -2]
 }
+
+/**
+ * XY coordinate variants (swapped for different coordinate systems).
+ * @type {Object<string, CoordTuple>}
+ */
 const XY = {
   ORIGIN: [0, 0],
   DIAGONAL_1: [1, 1],
