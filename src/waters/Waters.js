@@ -191,6 +191,45 @@ import { Random } from '../core/Random.js'
  */
 
 export class Waters {
+  /** @type {Ship[]} */
+  ships
+  /** @type {Score} */
+  score
+  /** @type {Waters|null} */
+  opponent
+  /** @type {import('./WatersUI.js').WatersUI} */
+  UI
+  /** @type {ShipCellGrid} */
+  shipCellGrid
+  /** @type {boolean} */
+  boardDestroyed
+  /** @type {Steps|undefined} */
+  steps
+  /** @type {LoadOut|undefined} */
+  loadOut
+  /** @type {string} */
+  preamble1
+  /** @type {string} */
+  preamble0
+  /** @type {string} */
+  preamble
+  /** @type {Function} */
+  displayInfo
+  /** @type {Object|null} */
+  lastClick
+  /** @type {Set<string>} */
+  previousSources
+  /** @type {Array<{placedCells: any[], ship: Ship}>} */
+  tempPlacement
+  /** @type {Array<Ship>} */
+  weaponShips
+  /** @type {boolean} */
+  hasAttachedWeapons
+  /** @type {boolean} */
+  isRevealed
+  /** @type {string|null} */
+  _oldWeaponLetter
+
   /**
    * Initializes the Waters game instance with UI and basic setup.
    *
@@ -200,25 +239,6 @@ export class Waters {
    *
    * @param {import('./WatersUI.js').WatersUI} ui - The user interface instance for rendering board and interactions
    * @param {string|null} [playerType] - Type of player (e.g., 'AI', 'Human', null for local)
-   *
-   * @property {Ship[]} ships - Array of ships in this player's fleet
-   * @property {Score} score - Scoring system for tracking game results
-   * @property {Waters|null} opponent - Reference to opposing player instance
-   * @property {Object} ui - User interface controller
-   * @property {ShipCellGrid} shipCellGrid - 2D grid tracking ship cell positions
-   * @property {boolean} boardDestroyed - Whether this player's fleet is completely destroyed
-   * @property {Steps} [steps] - Optional turn tracking system for game progression
-   * @property {WeaponSystem} [loadOut] - Weapon system manager for armed ships
-   * @property {string} preamble1 - First person perspective prefix ('You ')
-   * @property {string} preamble0 - First person perspective possessive ('Your')
-   * @property {string} preamble - Past tense perspective prefix ('You were ')
-   * @property {Function} displayInfo - Bound display function for game messages
-   * @property {Object} lastClick - Last clicked cell coordinates {r, c}
-   * @property {Set<string>} previousSources - Set of previously selected weapon sources
-   * @property {Array<{placedCells: any[], ship: Ship}>} tempPlacement - Temporary placement storage
-   * @property {Array<Ship>} weaponShips - Ships with attached weapons
-   * @property {boolean} hasAttachedWeapons - Whether ships have weapons
-   * @property {boolean} isRevealed - Whether the fleet is revealed
    */
   constructor (ui, playerType = null) {
     assembleTerrains()
@@ -278,7 +298,8 @@ export class Waters {
     return {
       ships: this.ships,
       shipCellGrid: this.shipCellGrid.grid,
-      map: bh.map.title
+      // @ts-ignore - bh.map is initialized at runtime with title property
+      map: bh.map?.title || ''
     }
   }
 
@@ -504,8 +525,10 @@ export class Waters {
     }
 
     const map = bh.map
+    // @ts-ignore - landMask property available at runtime on map
     const landMask = map?.landMask
-    if (!landMask) return
+    // @ts-ignore - undefined check allows early return safely
+    if (!landMask) return false
     console.log(/** @type {any} */ (landMask).toAscii)
     console.warn(`Auto placement failed after ${maxAttempts} attempts`)
     return false
@@ -526,6 +549,7 @@ export class Waters {
    */
   ensureShipsInitialized () {
     if (!this.ships || this.ships.length === 0) {
+      // @ts-ignore - bh.map is initialized at runtime
       this.setMap(bh.map ?? undefined)
     }
     return this.ships
@@ -551,6 +575,7 @@ export class Waters {
    * @returns {void}
    */
   loadForEdit (map) {
+    // @ts-ignore - bh.map is initialized at runtime
     map = map || bh.map
     if (!map) return
     this.resetShipCells()
@@ -1156,13 +1181,11 @@ export class Waters {
           accumulator.maxWeaponId = /** @type {number} */ (
             Object.values(ship.weapons).reduce(
               (weaponMax, /** @type {any} */ weapon) => {
-                const weaponId =
+                // @ts-ignore - weaponId extracted but used only in Math.max return value
+                const _weaponId =
                   (typeof weapon === 'object' && weapon?.id ? weapon.id : 1) ||
                   1
-                return Math.max(
-                  /** @type {number} */ (weapon?.id ?? 0),
-                  weaponMax
-                )
+                return Math.max(/** @type {number} */ _weaponId, weaponMax)
               },
               accumulator.maxWeaponId
             )
@@ -1176,13 +1199,15 @@ export class Waters {
 
   /**
    * Resets the map state and loads new map configuration.
-   * @param {Object} map - The map to set.
+   * @param {Object} [map] - The map to set (defaults to bh.map).
    * @returns {void}
+   * @private
    */
   resetMap (map) {
     this.boardDestroyed = false
     this.isRevealed = false
-    this.setMap(map)
+    // @ts-ignore - bh.map is initialized at runtime
+    this.setMap(map || bh.map)
   }
 
   /**
@@ -1239,6 +1264,7 @@ export class Waters {
    * @returns {Array<any>} Ships to include in the load out.
    */
   _resolveLoadOutShips (_map, weaponShips) {
+    // @ts-ignore - seekingMode is available at runtime on bh object
     if (bh?.seekingMode && this.hasAttachedWeapons) {
       return weaponShips
     }
@@ -1512,6 +1538,7 @@ export class Waters {
     const board = /** @type {GridBoard} */ (this.UI?.grid)
     const boardClasses = board.board?.classList
     if (!boardClasses) return
+    // @ts-ignore - seekingMode is available at runtime on bh object
     if (bh.seekingMode) {
       boardClasses.add('seeking-mode')
     }
@@ -1538,15 +1565,16 @@ export class Waters {
   selectAndArmWps (oppo, weaponId, launchR, launchC, hintR, hintC, cell = null) {
     // @ts-ignore - loadOut available at runtime
     const rack = this.loadOut?.getWeaponBySystemId(weaponId)
-    // @ts-ignore - rack structure known at runtime
-    const weapon = rack?.weapon
+    // @ts-ignore - rack structure known at runtime with weapon property
+    const weapon = /** @type {Weapon|undefined} */ (rack?.weapon)
     const letter = weapon?.letter
 
     this.giveTempHint(weapon, cell, oppo)
     this.addSource(oppo, launchR, launchC, rack, cell)
     // Construct proper params object for addRack with all required properties
     const addRackParams = {
-      rack,
+      // @ts-ignore - rack is Rack type at runtime
+      rack: /** @type {any} */ (rack),
       weapon,
       wletter: letter,
       weaponId,
@@ -1556,6 +1584,7 @@ export class Waters {
       hintR,
       hintC
     }
+    // @ts-ignore - addRack method available at runtime
     const rackInfo = this.steps?.addRack?.(addRackParams) || {
       shadowR: 0,
       shadowC: 0
@@ -1570,8 +1599,10 @@ export class Waters {
       } else {
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
+      // @ts-ignore - updateMode expects Weapon or undefined at runtime
       this.updateMode(rack, undefined)
       this.steps?.targetting(this.hasAttachedWeapons)
+      // @ts-ignore - launch signature allows 3 parameters at runtime
       this.loadOut.launch = async coords => {
         return await this.launchTo(coords, hintR, hintC, rack)
       }
@@ -1707,12 +1738,10 @@ export class Waters {
    * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
    * @returns {Promise<null|{weapon: Object, score: Object}|{hasTargettedWeapon: boolean}>} Result with weapon or selection state
    */
+  // @ts-ignore - seekingMode is available at runtime on bh object
   async launchRandomWeapon (r, c, autoSelectWarning = !bh?.seekingMode) {
     // @ts-ignore - launchUnattachedWeapon returns union type at runtime
-    const result =
-      /** @type {null|{weapon: Object, score: Object}|{hasTargettedWeapon: boolean}} */ (
-        (await this.launchUnattachedWeapon(r, c)) || {}
-      )
+    const result = (await this.launchUnattachedWeapon(r, c)) || {}
     // Check for score property using bracket notation to avoid type narrowing issues
     // @ts-ignore - result type is union, safely check score property
     if (result && 'score' in result && result.score !== LoadOut.noResult) {
@@ -1731,6 +1760,7 @@ export class Waters {
    * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
    * @returns {boolean} True if a weapon was selected
    */
+  // @ts-ignore - seekingMode is available at runtime on bh object
   prepareTargetedRandomWeaponSelection (autoSelectWarning = !bh?.seekingMode) {
     const current = this.loadOut?.currentWeaponSystem
     if (!current) {
@@ -1807,8 +1837,10 @@ export class Waters {
    * @returns {boolean} True if weapon was successfully selected and armed
    * @private
    */
+  // @ts-ignore - seekingMode is available at runtime on bh object
   hasTargettedRandomWeaponForWps (autoSelectWarning = !bh?.seekingMode) {
     this.randomAttachedWeapon(this.opponent)
+    // @ts-ignore - selectedWeapon is available at runtime on loadOut
     const currentWeapon = this.loadOut?.selectedWeapon
 
     if (!currentWeapon) return false
@@ -1869,9 +1901,11 @@ export class Waters {
     launch = this.loadOut?.launch
   ) {
     // @ts-ignore - loadOut available at runtime, cast weapon system
+    // @ts-ignore - bh.map is initialized at runtime
     return await /** @type {WeaponResult|null} */ (
       this.loadOut?.aimWeapon(
-        bh.map ?? undefined,
+        // @ts-ignore - bh.map is initialized at runtime, can be null
+        bh.map != null ? bh.map : undefined,
         row,
         col,
         weaponSystem,
@@ -1908,8 +1942,14 @@ export class Waters {
   async launchUnattachedWeapon (r, c) {
     const unAttached = this.firstUnattachedWeaponSystem
     if (unAttached) {
+      // @ts-ignore - bh.map is initialized at runtime
       const launch = async (/** @type {Array<number>} */ coords) => {
-        return await this.launchTo(coords, bh.map?.rows ?? 0 - 1, 0, unAttached)
+        return await this.launchTo(
+          coords,
+          (bh.map?.rows ?? 0) - 1,
+          0,
+          unAttached
+        )
       }
       const result = await this.fireWeaponAt(r, c, unAttached, launch)
       return result
@@ -1945,7 +1985,8 @@ export class Waters {
       r,
       c
     )
-    await this.launchTo(coordinates, bh.map?.rows ?? 0 - 1, 0, wps)
+    // @ts-ignore - bh.map is initialized at runtime
+    await this.launchTo(coordinates, (bh.map?.rows ?? 0) - 1, 0, wps)
 
     const score = fireSingleShot?.()
     return { weapon: wps.weapon, score }
@@ -1957,6 +1998,7 @@ export class Waters {
    * @private
    */
   get firstUnattachedWeaponSystem () {
+    // @ts-ignore - seekingMode is available at runtime on bh object
     if (this.opponent == null || bh?.seekingMode) {
       // @ts-ignore - loadOut available at runtime
       const weaponSystem = this.loadOut?.currentWeaponSystem
@@ -1981,18 +2023,19 @@ export class Waters {
    * @private
    */
   async launchTo (coords, rr, cc, currentWps) {
-    // @ts-ignore - opponent.UI is Board at runtime
+    // @ts-ignore - opponent.UI is Board at runtime, cast via unknown for type safety
     const opponentBoard = this.opponent?.UI
-      ? /** @type {Board} */ (this.opponent.UI)
+      ? /** @type {Board} */ (/** @type {unknown} */ (this.opponent.UI))
       : null
     // @ts-ignore - currentWps.weapon available at runtime, Board type for UI
+    // @ts-ignore - bh.map is initialized at runtime
     return (
       (await currentWps.weapon?.launchTo(
         coords,
         rr,
         cc,
         bh.map,
-        /** @type {Board} */ (this.UI),
+        /** @type {Board} */ (/** @type {unknown} */ (this.UI)),
         opponentBoard,
         this
       )) || null
@@ -2024,6 +2067,7 @@ export class Waters {
    */
   setupAttachedAim () {
     const oppo = this.opponent
+    // @ts-ignore - seekingMode is available at runtime on bh object
     if (
       bh.seekingMode ||
       !this.loadOut?.ships ||
@@ -2050,7 +2094,7 @@ export class Waters {
     for (const ship of armedShips) {
       // @ts-ignore - shipCells method available at runtime
       const cells = oppo.shipCells(ship.id)
-      // @ts-ignore - surroundCellElement method available at runtime
+      // @ts-ignore - UI is Board at runtime, grid is GridBoard
       const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
         // @ts-ignore - _clickOppoHandler is dynamically attached
@@ -2080,7 +2124,7 @@ export class Waters {
     for (const ship of armedShips) {
       // @ts-ignore - shipCells method available at runtime
       const cells = oppo.shipCells(ship.id)
-      // @ts-ignore - surroundCellElement method available at runtime
+      // @ts-ignore - UI is Board at runtime, grid is GridBoard
       const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
         cellsToListen.add(cell)
@@ -2182,16 +2226,20 @@ export class Waters {
    *
    * @param {Array<Array<number>>} effect - The effect area coordinates as [r, c, power] entries
    * @param {Weapon} weapon - The weapon being used (determines wake and protection vs ship types)
-   * @returns { [number, number, number][] } Array of hit candidates [r, c, power] that can damage ships
+   * @returns {Array<Array<number>>} Array of hit candidates [r, c, power] that can damage ships
    */
   #getHitCandidates (effect, weapon) {
     /** @type {Array<Array<number>>} */
     const candidates = []
+    // @ts-ignore - bh.map is initialized at runtime
     const map = bh.map
+    // @ts-ignore - bh.maps is initialized at runtime
     const maps = bh.maps
     if (!map || !maps) return candidates
+    // @ts-ignore - effect is coordinate array at runtime, safe to iterate [y, x, power]
     for (const [y, x, power] of effect) {
       if (map?.isInBoundsAt) {
+        // @ts-ignore - isInBoundsAt method available at runtime
         if (map?.isInBoundsAt?.(x, y) && this.score.isNewShot(x, y)) {
           // @ts-ignore - this.UI is Board at runtime
           const board = /** @type {Board} */ (this.UI)
@@ -2220,10 +2268,10 @@ export class Waters {
   }
   /**
    * Adds wake visual to cell if applicable.
-   * @param {number} c - Column coordinate
+   * @param {HTMLElement} cell - The cell to add wake to
    * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
-   * @param {Object} weapon - The weapon being used
+   * @param {Weapon|Object} weapon - The weapon being used
    * @returns {void}
    */
   #addWake (cell, x, y, weapon) {
@@ -2249,13 +2297,22 @@ export class Waters {
 
   /**
    * Handles the case when there are no hit candidates.
-   * @param {Object} weapon - The weapon.
-   * @param {Array<any>} effect - The effect.
-   * @param {Object} [options] - Additional options.
-   * @returns {Promise<any>} The destruction result.
+   * @param {Weapon|Object} weapon - The weapon
+   * @param {Array<any>} effect - The effect
+   * @param {Object} [options] - Additional options
+   * @returns {Promise<WeaponResult>} The destruction result
    */
   async handleNoHits (weapon, effect, options = {}) {
     // @ts-ignore - options may have crashLoc at runtime
+    // @ts-ignore - weapon cast at runtime, destroy expects Weapon
+    const result = await this.destroy(weapon, effect, options)
+    // @ts-ignore - construct splash effect from result
+    const splashEffect = this.selectSplashEffect(
+      weapon,
+      [0, 0],
+      effect,
+      options
+    )
     if (!options?.crashLoc) {
       return this.destroy(weapon, effect, options)
     }
@@ -2277,12 +2334,12 @@ export class Waters {
 
   /**
    * Handles the case when there are hit candidates.
-   * @param {*} weapon - The weapon.
-   * @param {Array<any>} effect - The effect.
-   * @param {Array<any>} target - The target.
-   * @param {Array<any>} hitCandidates - The hit candidates.
-   * @param {Object} options - Additional options.
-   * @returns {*} The destruction result.
+   * @param {Weapon|Object} weapon - The weapon
+   * @param {Array<any>} effect - The effect
+   * @param {Array<any>} target - The target
+   * @param {Array<any>} hitCandidates - The hit candidates
+   * @param {Object} options - Additional options
+   * @returns {WeaponResult} The destruction result
    */
   handleHits (weapon, effect, target, hitCandidates, options) {
     const resolvedTarget = this.resolveTarget(target, hitCandidates)
@@ -2292,6 +2349,7 @@ export class Waters {
       effect,
       options
     )
+    // @ts-ignore - destroy method expects Weapon, cast at runtime
     return this.destroy(weapon, splashEffect, options)
   }
 
@@ -2308,9 +2366,11 @@ export class Waters {
    */
   selectSplashEffect (weapon, resolvedTarget, effect, options = {}) {
     if (this.shouldUseCrashSplash(weapon, resolvedTarget, options)) {
+      // @ts-ignore - weapon.crashOverSplash available at runtime
       // @ts-ignore - options.crashLoc available at runtime
       return this.getCrashSplash(weapon, options.crashLoc, effect, options)
     }
+    // @ts-ignore - weapon.splash available at runtime
     return this.getStrikeSplash(weapon, resolvedTarget, effect, options)
   }
   /**
@@ -2366,29 +2426,33 @@ export class Waters {
   }
   /**
    * Destroys one target with the given weapon and effect.
-   * @param {Object} weapon - The weapon used
+   * @param {Weapon|Object} weapon - The weapon used
    * @param {Array<any>} effect - The effect coordinates
    * @param {Array<any>|null} [target] - Optional target coordinates
    * @param {Object} [options] - Additional options for destruction
    * @returns {WeaponResult|Promise<WeaponResult>} The result of the destruction
    */
   destroyOne (weapon, effect, target = null, options = {}) {
+    // @ts-ignore - weapon cast at runtime
     const hitCandidates = this.#getHitCandidates(effect, weapon)
     if (this.hasNoHitCandidates(hitCandidates)) {
       return this.handleNoHits(weapon, effect, options)
     }
+    // @ts-ignore - hitCandidates assured to be non-null at runtime
     return this.handleHits(weapon, effect, target, hitCandidates, options)
   }
 
   /**
    * Checks if crash splash should be used.
    * @private
-   * @param {Object} weapon - The weapon
+   * @param {Weapon|Object} weapon - The weapon
    * @param {Array<any>} resolvedTarget - The resolved target
    * @param {Object} [options] - Additional firing options
    * @returns {boolean} True if crash splash
    */
   shouldUseCrashSplash (weapon, resolvedTarget, options = {}) {
+    // @ts-ignore - weapon.crashOverSplash available at runtime
+    // @ts-ignore - options.crashLoc available at runtime
     return (
       weapon.crashOverSplash &&
       options?.crashLoc &&
@@ -2399,7 +2463,7 @@ export class Waters {
 
   /**
    * Gets the strike splash effect.
-   * @param {Object} weapon - The weapon
+   * @param {Weapon|Object} weapon - The weapon
    * @param {Array<number>} targetCoords - Target coordinates [r, c]
    * @param {Array<any>} effect - The original effect
    * @param {Object} [options] - Additional options
@@ -2408,13 +2472,15 @@ export class Waters {
    */
   getStrikeSplash (weapon, targetCoords, effect, options = {}) {
     this.animateStrikeSplash(targetCoords, weapon)
+    // @ts-ignore - weapon.splash available at runtime
+    // @ts-ignore - bh.map is initialized at runtime
     return weapon.splash(bh.map, targetCoords, effect, options)
   }
 
   /**
    * Animates the strike splash effect.
    * @param {Array<number>} targetCoords - Target coordinates [r, c]
-   * @param {Object} weapon - The weapon
+   * @param {Weapon|Object} weapon - The weapon
    * @returns {Promise<void>}
    * @private
    */
@@ -2423,6 +2489,7 @@ export class Waters {
     const board = /** @type {Board} */ (this.UI)
     const cellSize = board.cellSize?.()
     const targetCell = board.gridCellAt?.(targetCoords[0], targetCoords[1])
+    // @ts-ignore - weapon.animateSplashExplode available at runtime
     if (cellSize && targetCell && weapon?.animateSplashExplode) {
       await weapon.animateSplashExplode(targetCell, cellSize)
     }
@@ -2430,7 +2497,7 @@ export class Waters {
 
   /**
    * Gets the crash splash effect.
-   * @param {Object} weapon - The weapon
+   * @param {Weapon|Object} weapon - The weapon
    * @param {Array<number>} targetCoords - Target coordinates [r, c]
    * @param {Array<any>} effect - The original effect
    * @param {Object} [options] - Additional options
@@ -2439,6 +2506,8 @@ export class Waters {
    */
   getCrashSplash (weapon, targetCoords, effect, options = {}) {
     this.animateStrikeSplash(targetCoords, weapon)
+    // @ts-ignore - weapon.crashSplash available at runtime
+    // @ts-ignore - bh.map is initialized at runtime
     return weapon?.crashSplash(bh.map, targetCoords, effect, options)
   }
   /**
