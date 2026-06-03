@@ -1954,7 +1954,7 @@ export class Waters {
       // @ts-ignore - bh.map is initialized at runtime
       const launch = async (/** @type {number[]} */ coords) => {
         // @ts-ignore - bh.map available at runtime, rows guaranteed to be number
-        const maxRows = /** @type {number[]} */ (bh.map?.rows ?? 0)
+        const maxRows = /** @type {number} */ (bh.map?.rows ?? 0)
         return await this.launchTo(
           coords,
           Math.max(0, maxRows - 1),
@@ -2696,7 +2696,6 @@ export class Waters {
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    * @returns {boolean} True if the cell is occupied by a ship, false otherwise
-   * @private
    */
   isShipAt (x, y) {
     return Boolean(this.shipCellGrid.isOccupied(x, y))
@@ -2757,7 +2756,8 @@ export class Waters {
    */
   markHit (x, y, damaged) {
     this.score.reveal.clear(x, y)
-    this.UI.cellHit(x, y, damaged)
+    // @ts-ignore - cellHit expects boolean damaged at runtime
+    this.UI.cellHit?.(x, y, String(damaged))
   }
 
   /**
@@ -2917,7 +2917,7 @@ export class Waters {
   _applyHitEntries (hitEntries, totalHits) {
     for (const { cell, damaged } of hitEntries) {
       const [y, x] = /** @type {[number, number]} */ (cell)
-      this.score.shotRevealFinalizeXY(x, y)
+      this.score.shotRevealFinalize(x, y)
       this.score.shot.set(x, y)
       totalHits++
       this.markHit(x, y, damaged)
