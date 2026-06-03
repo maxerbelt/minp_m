@@ -3272,7 +3272,7 @@ export class Waters {
    */
   #normalizeEffect (effect, weapon, options) {
     if (effect == null) {
-      this.warnInvalidEffect(effect, weapon, options)
+      this.#warnInvalidEffect(effect, weapon, options)
       return []
     }
 
@@ -3285,7 +3285,7 @@ export class Waters {
     ) {
       normalized = Array.from(effect)
     } else {
-      this.warnInvalidEffect(effect, weapon, options)
+      this.#warnInvalidEffect(effect, weapon, options)
       return []
     }
 
@@ -3293,7 +3293,7 @@ export class Waters {
       (/** @type {any} */ item) => Array.isArray(item) && item.length >= 3
     )
     if (filtered.length !== normalized.length) {
-      this.warnInvalidEffect(effect, weapon, options)
+      this.#warnInvalidEffect(effect, weapon, options)
     }
     return filtered
   }
@@ -3306,9 +3306,8 @@ export class Waters {
    * @param {Weapon} weapon - The weapon generating the payload
    * @param {Object} options - Additional options and context
    * @returns {void}
-   * @private
    */
-  warnInvalidEffect (effect, weapon, options) {
+  #warnInvalidEffect (effect, weapon, options) {
     if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'test') {
       console.warn('Invalid weapon effect payload:', {
         effect,
@@ -3327,7 +3326,7 @@ export class Waters {
    * @param {Array<Array<number>>} effect - Array of [row, col, power] cells affected by weapon
    * @param {Object} [options] - Additional firing context and options (may include crashLoc)
    * @returns {WeaponResult} Accumulated result with hits, dtaps, reveals, and sunk ships
-   * @private
+   * @protected
    */
   destroy (weapon, effect, options) {
     if (!weapon || !effect) return LoadOut.noResult
@@ -3362,7 +3361,6 @@ export class Waters {
    * @param {number} power - Weapon power level
    * @param {WeaponResult} acc - Accumulator object to update
    * @returns {WeaponResult} Updated accumulator
-   * @private
    */
   #applyToPosition (r, c, weapon, power, acc) {
     if (bh.inBounds(r, c)) {
