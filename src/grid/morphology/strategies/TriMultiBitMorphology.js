@@ -99,7 +99,7 @@ export class TriMultiBitMorphology {
    * const morph = new TriMultiBitMorphology(mask, store, bits, width, height, indexer);
    */
   constructor (mask, store, bits, width, height, indexer) {
-    if (!store || !store.isMultiBit) {
+    if (!store?.isMultiBit) {
       throw new Error('TriMultiBitMorphology: store must be multi-bit')
     }
     this.mask = mask
