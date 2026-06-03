@@ -391,18 +391,6 @@ export class Friend extends Placement {
    * @param {MapInfo} map - Map with rows and cols properties
    * @returns {Location} Location object with r (row) and c (col)
    */
-  #randomLocation (map) {
-    const r = Math.floor(Math.random() * (map.rows - 2)) + 1
-    const c = Math.floor(Math.random() * (map.cols - 2)) + 1
-    return { r, c }
-  }
-  /**
-   * Generates a random location within map boundaries (not on edges).
-   * Excludes edge cells to avoid placing weapons near board perimeter.
-   *
-   * @param {MapInfo} map - Map with rows and cols properties
-   * @returns {Location} Location object with r (row) and c (col)
-   */
   #randomXY (map) {
     const y = Math.floor(Math.random() * (map.rows - 2)) + 1
     const x = Math.floor(Math.random() * (map.cols - 2)) + 1
