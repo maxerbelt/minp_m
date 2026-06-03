@@ -24,8 +24,20 @@ import { Zip } from '../core/Zip.js'
  */
 
 /**
- * @typedef {Object|PositionedWeaponSystem} Rack
- * Weapon rack (WeaponSystem or positioned variant)
+ * @typedef {Object} Rack
+ * Weapon rack - weapon system with optional positioning and state
+ * @property {number} [id] - Unique identifier for weapon system
+ * @property {Object} [weapon] - Weapon instance with damage/hit properties
+ * @property {number} [row] - Row coordinate of weapon on board
+ * @property {number} [col] - Column coordinate of weapon on board
+ * @property {boolean} [hit] - Whether weapon has been hit by enemy fire
+ * @property {boolean} [damaged] - Whether weapon is damaged but not hit (unloaded)
+ * @property {number} [ammo] - Current ammunition count
+ * @property {boolean} [hasAmmo] - Check if weapon has ammunition
+ * @property {number} [ammoRemaining] - Get remaining ammunition
+ * @property {number} [ammoCapacity] - Get ammunition capacity
+ * @property {Function} [animateDetonation] - Animation function for detonation
+ * @property {Function} [reset] - Reset weapon state
  */
 
 /**
@@ -130,8 +142,8 @@ import { Zip } from '../core/Zip.js'
  * Result of magazine hit processing
  * @property {string} damaged - Damage type indicator
  * @property {string|null} info - Hit information message
- * @property {Array} hits - Hit cells from detonation
- * @property {Array} misses - Miss cells from detonation
+ * @property {Array<{key: string, cell: CoordinatePair, damaged: string}>} [hits] - Hit cells from detonation
+ * @property {Array<{key: string, cell: CoordinatePair, damaged: string}>} [misses] - Miss cells from detonation
  */
 
 /**
@@ -183,10 +195,14 @@ export class Ship {
     this.variant = 0
     this._board = undefined
     this._shape = undefined
-    this._cellsArray = undefined
-    this._weaponsById = undefined
-    this.__weaponArray = undefined
-    this._weapons = undefined
+    /** @type {CoordinatePair[]} */
+    this._cellsArray = []
+    /** @type {Map<number, Rack>} */
+    this._weaponsById = new Map()
+    /** @type {Rack[]} */
+    this.__weaponArray = []
+    /** @type {Object<string, Rack>} */
+    this._weapons = {}
     if (weapons) {
       this.weapons = weapons
     }
@@ -198,7 +214,7 @@ export class Ship {
    * @returns {Map<number, Rack>} Map of weapon systems by ID
    */
   get weaponsById () {
-    if (this._weaponsById) {
+    if (this._weaponsById instanceof Map) {
       return this._weaponsById
     }
     this._weaponsById = new Map()
@@ -213,7 +229,10 @@ export class Ship {
     if (this._weapons) {
       return this._weapons
     }
-    if (!this._weaponsById?.size && !this._weaponArray?.length) return {}
+    const wbid =
+      this._weaponsById instanceof Map ? this._weaponsById : new Map()
+    if (!wbid.size && (!this._weaponArray || this._weaponArray.length === 0))
+      return {}
     this._weapons = this._idWeaponMapToWeaponPositionObject()
     return this._weapons
   }
@@ -245,9 +264,16 @@ export class Ship {
       {}
     )
     // Also include weapons without IDs from the array
-    if (this._weaponArray) {
-      for (const weapon of this._weaponArray) {
-        if (weapon.id == null && weapon.row != null && weapon.col != null) {
+    const wepArray = this._weaponArray
+    if (wepArray && Array.isArray(wepArray)) {
+      for (const weapon of wepArray) {
+        if (
+          weapon &&
+          typeof weapon === 'object' &&
+          weapon.id == null &&
+          weapon.row != null &&
+          weapon.col != null
+        ) {
           const key = `${weapon.row},${weapon.col}`
           result[key] = weapon
         }
@@ -269,21 +295,28 @@ export class Ship {
     // Handle null or undefined weapons
     if (weapons == null) {
       this._weaponsById = new Map()
-      this._weaponArray = []
+      this.__weaponArray = []
       this._weapons = {}
       return
     }
     const type = Zip.getType(weapons)
     switch (type) {
       case 'array':
-      case 'set':
-        this._createOrUpdateWeaponsArray([...weapons])
+      case 'set': {
+        const arr = Array.isArray(weapons)
+          ? weapons
+          : Array.from(/** @type {any} */ (weapons))
+        this._createOrUpdateWeaponsArray(arr)
         return
-      case 'map':
-        this._weaponsById = weapons
+      }
+      case 'map': {
+        this._weaponsById = /** @type {Map<number, Rack>} */ (weapons)
         return
+      }
       case 'object':
-        this._createOrUpdateWeaponsRaw(Object.entries(weapons))
+        this._createOrUpdateWeaponsRaw(
+          Object.entries(/** @type {Object<string, Rack>} */ (weapons))
+        )
         return
       default:
         throw new Error(
@@ -318,12 +351,15 @@ export class Ship {
    * @private
    */
   _createOrUpdateWeaponsArray (weapons) {
-    const allAreArrays = weapons.every(Array.isArray)
+    const allAreArrays =
+      Array.isArray(weapons) && weapons.every(w => Array.isArray(w))
     if (allAreArrays) {
-      this._createOrUpdateWeaponsRaw(weapons)
+      this._createOrUpdateWeaponsRaw(
+        /** @type {Array<[string, Rack]>} */ (weapons)
+      )
       return
     }
-    this._weaponArray = weapons
+    this.__weaponArray = /** @type {Array<Rack>} */ (weapons)
   }
   /**
    * Internal: Create or update weapons from raw entries (coordinate-keyed pairs)
@@ -339,11 +375,15 @@ export class Ship {
     if (numNew === 0) {
       return
     }
-    const { weaponsById, weaponArray } = this._importWeapons(weapons)
-    if (!weaponsById?.size && !weaponArray?.length) return {}
-    this._weaponsById = weaponsById
-    this._weaponArray = weaponArray
-    this._weapons = this._idWeaponMapToWeaponPositionObject()
+    const result = this._importWeapons(weapons)
+    if (result && !result.weaponsById?.size && !result.weaponArray?.length) {
+      return
+    }
+    if (result) {
+      this._weaponsById = result.weaponsById || new Map()
+      this.__weaponArray = result.weaponArray || []
+      this._weapons = this._idWeaponMapToWeaponPositionObject()
+    }
   }
   /**
    * Internal: Get cached weapon array or initialize from default
@@ -352,7 +392,7 @@ export class Ship {
    * @private
    */
   get _weaponArray () {
-    if (this.__weaponArray) {
+    if (this.__weaponArray && Array.isArray(this.__weaponArray)) {
       return this.__weaponArray
     }
     this.__weaponArray = this._defaultWeaponArray
@@ -365,14 +405,15 @@ export class Ship {
    * @private
    */
   get _defaultWeaponArray () {
-    const values = this._weaponsById?.values()
+    const wbid =
+      this._weaponsById instanceof Map ? this._weaponsById : new Map()
+    const values = wbid.values()
     return values ? Array.from(values) : []
   }
   /**
    * Internal: Set cached weapon array
    * Creates a copy of the weapons array to maintain independence.
    * @param {Rack[]} weapons - Array of weapon systems to cache
-   * @returns {void}
    * @private
    */
   set _weaponArray (weapons) {
@@ -399,18 +440,31 @@ export class Ship {
    * @returns {CoordinatePair[]} Array of [row, col] cell coordinates (empty if no board)
    */
   get cells () {
-    if (this._cellsArray && this._cellsArray.length > 0) {
-      return this._cellsArray
+    const cachedCells = this._cellsArray
+    if (cachedCells && Array.isArray(cachedCells) && cachedCells.length > 0) {
+      return cachedCells
     }
     const board = this.board
     if (board && typeof board === 'object' && 'toCoords' in board) {
       const coords = board.toCoords
       if (Array.isArray(coords)) {
-        return coords.map(cell =>
-          Array.isArray(cell)
-            ? [cell[0], cell[1]]
-            : [cell?.r ?? 0, cell?.c ?? 0]
-        )
+        return coords.map(cell => {
+          if (Array.isArray(cell) && cell.length >= 2) {
+            return [cell[0], cell[1]]
+          }
+          if (cell && typeof cell === 'object') {
+            const r =
+              cell && typeof cell === 'object' && 'r' in cell
+                ? cell.r
+                : (Array.isArray(cell) ? cell[0] : 0) ?? 0
+            const c =
+              cell && typeof cell === 'object' && 'c' in cell
+                ? cell.c
+                : (Array.isArray(cell) ? cell[1] : 0) ?? 0
+            return [r, c]
+          }
+          return [0, 0]
+        })
       }
     }
     return []
@@ -419,7 +473,6 @@ export class Ship {
    * Set cells and update board
    * Normalizes cells to standard format and creates board from cell coordinates.
    * @param {CoordinatePair[]} cells - Array of cells to set in [row, col] format
-   * @returns {void}
    */
   set cells (cells) {
     const normalizedCells = this._normalizeCells(cells)
@@ -438,7 +491,6 @@ export class Ship {
    * Set board and update ship properties
    * Updates size from board occupancy and resets hit tracking to board's empty mask.
    * @param {SubBoard|Mask|unknown} board - Board to assign
-   * @returns {void}
    */
   set board (board) {
     /** @type {any} */
@@ -596,8 +648,17 @@ export class Ship {
    * @private
    */
   _resetAllWeapons () {
-    for (const weapon of this._weaponArray) {
-      weapon.reset?.()
+    const wepArray = this._weaponArray
+    if (wepArray && Array.isArray(wepArray)) {
+      for (const weapon of wepArray) {
+        if (
+          weapon &&
+          typeof weapon === 'object' &&
+          typeof weapon.reset === 'function'
+        ) {
+          weapon.reset()
+        }
+      }
     }
   }
   /**
@@ -660,12 +721,14 @@ export class Ship {
   /**
    * Internal: Get [coordKey, weapon] entries from weapons ID map
    * Converts weaponsById Map to array of [coordKey, weapon] pairs.
-   * @returns {Array<[string, any]>} Array of [coordinate key, weapon] pairs
+   * @returns {Array<[string, Rack]>} Array of [coordinate key, weapon] pairs
    * @private
    */
   _weaponEntriesFromIdMap () {
-    if (!this._weaponsById) return []
-    return Array.from(this._weaponsById, ([, weapon]) => {
+    const wbid =
+      this._weaponsById instanceof Map ? this._weaponsById : new Map()
+    if (!wbid.size) return []
+    return Array.from(wbid, ([_k, weapon]) => {
       const positioned = /** @type {PositionedWeaponSystem} */ (weapon)
       return [`${positioned.row},${positioned.col}`, weapon]
     })
@@ -764,7 +827,10 @@ export class Ship {
    */
   get primaryWeapon () {
     const sys = this.primaryWeaponSystem
-    return sys?.weapon
+    if (sys && typeof sys === 'object' && 'weapon' in sys) {
+      return sys.weapon
+    }
+    return undefined
   }
   /**
    * Find closest loaded weapon rack to given coordinates
@@ -790,18 +856,26 @@ export class Ship {
    */
   _findClosestRack (entries, r, c) {
     if (entries.length === 0) return null
-    if (entries.length === 1) return entries[0]
+    if (entries.length === 1) {
+      return entries[0]
+    }
     const result = entries
       .slice(1)
-      .reduce((/** @type {[any]} */ closest, /** @type {[any]} */ current) => {
-        const [closestKey] = closest
-        const [currentKey] = current
-        const [closestR, closestC] = closestKey.split(',').map(Number)
-        const [currentR, currentC] = currentKey.split(',').map(Number)
-        const closestDist = Math.hypot(closestR - r, closestC - c)
-        const currentDist = Math.hypot(currentR - r, currentC - c)
-        return currentDist < closestDist ? current : closest
-      }, entries[0])
+      .reduce(
+        (
+          /** @type {[string, Rack]} */ closest,
+          /** @type {[string, Rack]} */ current
+        ) => {
+          const [closestKey] = closest
+          const [currentKey] = current
+          const [closestR, closestC] = closestKey.split(',').map(Number)
+          const [currentR, currentC] = currentKey.split(',').map(Number)
+          const closestDist = Math.hypot(closestR - r, closestC - c)
+          const currentDist = Math.hypot(currentR - r, currentC - c)
+          return currentDist < closestDist ? current : closest
+        },
+        entries[0]
+      )
     return result
   }
   /**
@@ -811,10 +885,20 @@ export class Ship {
    * @returns {Rack|undefined} Weapon system with matching ID or undefined if not found
    */
   getWeaponBySystemId (id) {
-    if (this.weaponsById.has(id)) {
-      return this.weaponsById.get(id)
+    const wbid =
+      this._weaponsById instanceof Map ? this._weaponsById : new Map()
+    if (wbid.has(id)) {
+      return wbid.get(id)
     }
-    return this._weaponArray.find(weapon => weapon.id === id)
+    const wepArray = this._weaponArray
+    if (wepArray && Array.isArray(wepArray)) {
+      for (const weapon of wepArray) {
+        if (weapon && typeof weapon === 'object' && weapon.id === id) {
+          return weapon
+        }
+      }
+    }
+    return undefined
   }
 
   /**
@@ -862,12 +946,15 @@ export class Ship {
    * @returns {boolean} True if weapon is loaded and has ammunition
    */
   _isWeaponLoaded (weapon) {
-    if (weapon.hasAmmo != null) {
-      return typeof weapon.hasAmmo === 'function'
-        ? weapon.hasAmmo()
-        : weapon.hasAmmo
+    if (weapon && typeof weapon === 'object') {
+      if (weapon.hasAmmo != null) {
+        return typeof weapon.hasAmmo === 'function'
+          ? weapon.hasAmmo()
+          : Boolean(weapon.hasAmmo)
+      }
+      return (weapon.ammo ?? 0) > 0
     }
-    return weapon.ammo > 0
+    return false
   }
 
   /**
@@ -927,7 +1014,14 @@ export class Ship {
    */
   get ammoRemainingTotal () {
     if (this.sunk) return 0
-    return this.allWeapons.reduce((sum, w) => sum + (w.ammoRemaining ?? 0), 0)
+    const wepArray = this._weaponArray
+    if (!wepArray || !Array.isArray(wepArray)) return 0
+    return wepArray.reduce((sum, w) => {
+      if (w && typeof w === 'object' && typeof w.ammoRemaining === 'number') {
+        return sum + w.ammoRemaining
+      }
+      return sum
+    }, 0)
   }
 
   /**
@@ -936,7 +1030,14 @@ export class Ship {
    */
   get ammoCapacityTotal () {
     if (this.sunk) return 0
-    return this.allWeapons.reduce((sum, w) => sum + (w.ammoCapacity ?? 0), 0)
+    const wepArray = this._weaponArray
+    if (!wepArray || !Array.isArray(wepArray)) return 0
+    return wepArray.reduce((sum, w) => {
+      if (w && typeof w === 'object' && typeof w.ammoCapacity === 'number') {
+        return sum + w.ammoCapacity
+      }
+      return sum
+    }, 0)
   }
 
   /**
@@ -1002,7 +1103,7 @@ export class Ship {
   }
 
   /**
-   * Internal: Process single weapon item and update collections
+   * Internal: Process weapon item and update collections
    * Extracts coordinate key and weapon system, assigns coordinates, and updates maps.
    * @param {[string|number, Rack]|Rack} item
    *   [key, weaponSystem] pair or single Rack
@@ -1017,11 +1118,11 @@ export class Ship {
     const [key, weaponSystem] = Array.isArray(item) ? item : [undefined, item]
 
     // Skip non-object values (test mocks, invalid data)
-    if (typeof weaponSystem !== 'object' || weaponSystem === null) {
+    if (!weaponSystem || typeof weaponSystem !== 'object') {
       return
     }
 
-    const [r, c] = parsePair(key)
+    const [r, c] = parsePair(key ?? '')
     if (r != null && c != null) {
       this._assignCoordinatesToWeapon(weaponSystem, r, c)
       this._updateWeaponCollections(
@@ -1065,10 +1166,17 @@ export class Ship {
     weaponArray,
     preserveExisting
   ) {
-    if (weaponSystem.id != null) {
+    if (
+      weaponSystem &&
+      typeof weaponSystem === 'object' &&
+      weaponSystem.id != null
+    ) {
       weaponsById.set(weaponSystem.id, weaponSystem)
     }
-    if (!preserveExisting || !weaponArray.includes(weaponSystem)) {
+    if (
+      !preserveExisting ||
+      (weaponArray && !weaponArray.includes(weaponSystem))
+    ) {
       weaponArray.push(weaponSystem)
     }
   }
@@ -1116,6 +1224,9 @@ export class Ship {
    */
   clone () {
     const shape = this.shape()
+    if (!shape) {
+      throw new Error('Cannot clone ship without a shape definition')
+    }
     const clonedShip = Ship.createFromShape(shape)
     Ship.next()
     return clonedShip
@@ -1202,7 +1313,9 @@ export class Ship {
     const weaponAtPosition = this.rackAt(x, y)
     let info = null
     let damaged = null
+    /** @type {Array<{key: string, cell: CoordinatePair, damaged: string}>} */
     let hits = []
+    /** @type {Array<{key: string, cell: CoordinatePair, damaged: string}>} */
     let misses = []
 
     if (weaponAtPosition && model) {
@@ -1247,7 +1360,9 @@ export class Ship {
    * @private
    */
   _handleUnloadedWeaponHit (weaponSystem, model) {
-    weaponSystem.damaged = true
+    if (weaponSystem && typeof weaponSystem === 'object') {
+      weaponSystem.damaged = true
+    }
     model.updateUI()
     return { damaged: 'damaged', info: null, hits: [], misses: [] }
   }
@@ -1264,12 +1379,17 @@ export class Ship {
    * @private
    */
   _handleLoadedWeaponHit (weaponSystem, model, x, y) {
-    weaponSystem.hit = true
+    if (weaponSystem && typeof weaponSystem === 'object') {
+      weaponSystem.hit = true
+    }
     const damaged = 'skull'
-    // model.opponent?.updateUI()
 
     const viewModel = model.UI
-    if (!bh.seekingMode) {
+    const seekingMode =
+      bh && typeof bh === 'object' && 'seekingMode' in bh
+        ? bh.seekingMode
+        : false
+    if (!seekingMode) {
       model.loadOut.useAmmo(weaponSystem)
     }
 
@@ -1277,7 +1397,15 @@ export class Ship {
     viewModel.useAmmoInCell(cell, damaged)
     model.updateUI()
 
-    if (weaponSystem.weapon?.volatile) {
+    if (
+      weaponSystem &&
+      typeof weaponSystem === 'object' &&
+      'weapon' in weaponSystem &&
+      weaponSystem.weapon &&
+      typeof weaponSystem.weapon === 'object' &&
+      'volatile' in weaponSystem.weapon &&
+      weaponSystem.weapon.volatile
+    ) {
       return this._processDetonation(
         weaponSystem.weapon,
         cell,
@@ -1308,11 +1436,24 @@ export class Ship {
    */
   _processDetonation (weapon, cell, viewModel, model, x, y, damaged) {
     const detonationInfo = 'Magazine Detonated'
-    weapon.animateDetonation(cell, viewModel.cellSize())
-    const { hits, misses } = this._processCellDamage(
-      model,
-      bh.map.surround(x, y)
-    )
+    if (
+      weapon &&
+      typeof weapon === 'object' &&
+      typeof weapon.animateDetonation === 'function'
+    ) {
+      weapon.animateDetonation(cell, viewModel.cellSize())
+    }
+    const surroundingCells =
+      bh &&
+      typeof bh === 'object' &&
+      'map' in bh &&
+      bh.map &&
+      typeof bh.map === 'object' &&
+      'surround' in bh.map &&
+      typeof bh.map.surround === 'function'
+        ? /** @type {Array<CoordinatePair>} */(bh.map.surround(x, y))
+        : []
+    const { hits, misses } = this._processCellDamage(model, surroundingCells)
     return { damaged, info: detonationInfo, hits, misses }
   }
 
@@ -1352,7 +1493,7 @@ export class Ship {
    * Internal: Normalize cells to standard [row, col] format
    * Converts various cell formats (arrays, objects with r/c or [0]/[1]) to standard pairs.
    * @param {CoordinatePair[]|any[]} cells - Array of cells in various formats
-   * @returns {[number, number][]} Normalized cells as [row, col] pairs
+   * @returns {CoordinatePair[]} Normalized cells as [row, col] pairs
    * @private
    */
   _normalizeCells (cells) {
@@ -1376,7 +1517,7 @@ export class Ship {
    * Place ship at cells with board creation
    * Creates a SubBoard from normalized cell coordinates and places ship at that board.
    * @param {CoordinatePair[]} cells - Array of [row, col] cells to place ship at
-   * @returns {[number, number][]} Normalized cells that were placed
+   * @returns {CoordinatePair[]} Normalized cells that were placed
    */
   placeAtCells (cells) {
     const normalizedCells = this._normalizeCells(cells)
@@ -1421,8 +1562,16 @@ export class Ship {
   placePlacement (placement) {
     this.placed = true
     this.board = placement.board
-    if (placement.weapons) {
-      this.variant = placement.variant
+    if (
+      placement &&
+      typeof placement === 'object' &&
+      'weapons' in placement &&
+      placement.weapons
+    ) {
+      const vari = placement.variant
+      if (vari != null && typeof vari === 'number') {
+        this.variant = vari
+      }
       if (Object.keys(placement.weapons).length > 0) {
         this.weapons = placement.weapons
       }
@@ -1452,7 +1601,15 @@ export class Ship {
    */
   isRightZone (r, c) {
     const shipType = this.type()
-    const isLand = bh.map?.isLand(r, c) ?? false
+    const isLand =
+      bh &&
+      typeof bh === 'object' &&
+      'map' in bh &&
+      bh.map &&
+      typeof bh.map === 'object' &&
+      typeof bh.map.isLand === 'function'
+        ? bh.map.isLand(r, c)
+        : false
     // Ground ships must be on land, sea ships must be on water
     if (shipType === 'G' && !isLand) return false
     if (shipType === 'S' && isLand) return false
@@ -1464,10 +1621,14 @@ export class Ship {
    * Serialize ship state to JSON-compatible object
    * Converts ship data to a serializable format excluding non-JSON objects and BigInt values.
    * Excludes internal caches and derived properties to keep payload minimal.
-   * @returns {{id: number, symmetry: string, letter: string, size: number, sunk: boolean, variant: number, cells: CoordinatePair[], weapons: Object<string, {id: number, letter?: string, ammo?: number}>, hitPositions: CoordinatePair[]}}
+   * @returns {{id: number, symmetry: string, letter: string, size: number, sunk: boolean, variant: number, cells: CoordinatePair[], weapons: Object<string, {id?: number, letter?: string, ammo?: number}>, hitPositions: CoordinatePair[]}}
    *   Ship state as JSON-compatible object
    */
   toJSON () {
+    const hitCoords =
+      this.hits && typeof this.hits === 'object' && 'toCoords' in this.hits
+        ? this.hits.toCoords
+        : []
     return {
       id: this.id,
       symmetry: this.symmetry,
@@ -1477,25 +1638,28 @@ export class Ship {
       variant: this.variant,
       cells: this.cells,
       weapons: this._serializeWeapons(),
-      hitPositions: this.hits.toCoords
+      hitPositions: hitCoords
     }
   }
 
   /**
    * Internal: Serialize weapons object for JSON, filtering out non-serializable properties
    * Extracts only id, letter, and ammo from each weapon to avoid BigInt and circular references.
-   * @returns {Object<string, {id: number, letter?: string, ammo?: number}>} Serialized weapons object indexed by coordinate key
+   * @returns {Record<string, {id?: number, letter?: string, ammo?: number}>} Serialized weapons object indexed by coordinate key
    * @private
    */
   _serializeWeapons () {
+    /** @type {Record<string, {id?: number, letter?: string, ammo?: number}>} */
     const serialized = {}
     const weapons = this.weapons
     for (const [key, weapon] of Object.entries(weapons)) {
-      // Only serialize basic properties to avoid BigInt and complex objects
-      serialized[key] = {
-        id: weapon.id,
-        letter: weapon.letter,
-        ammo: weapon.ammo
+      if (weapon && typeof weapon === 'object') {
+        // Only serialize basic properties to avoid BigInt and complex objects
+        serialized[key] = {
+          id: weapon.id,
+          letter: weapon.letter,
+          ammo: weapon.ammo
+        }
       }
     }
     return serialized
