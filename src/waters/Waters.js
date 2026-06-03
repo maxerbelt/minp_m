@@ -3028,7 +3028,7 @@ export class Waters {
    * @returns {string} Description text
    * @private
    */
-  hitDescription (hits) {
+  #hitDescription (hits) {
     if (this.opponent) {
       return this.preamble + 'Hit (x' + hits.toString() + ')'
     }
@@ -3063,7 +3063,7 @@ export class Waters {
   updateResultsOfBomb (weapon, result) {
     if (!result) return
     const { hits, sunk, reveals, info } = result
-    this.updateResultsOfTurn(weapon, hits, sunk, reveals, info)
+    this.#updateResultsOfTurn(weapon, hits, sunk, reveals, info)
   }
   /**
    * Builds message for firing results based on hit/miss/sunk counts.
@@ -3085,7 +3085,7 @@ export class Waters {
 
     // Hits but no sunk ships
     if (sunks.length === 0) {
-      let message = this.hitDescription(hits)
+      let message = this.#hitDescription(hits)
       if (reveals > 0) {
         message += ` and ${this.#revealDescription(reveals)}`
       }
@@ -3093,7 +3093,7 @@ export class Waters {
     }
 
     // Hits with sunk ships - single or multiple
-    let message = this.hitDescription(hits) + ','
+    let message = this.#hitDescription(hits) + ','
     for (const sunk of sunks) {
       message += ' and ' + this.sunkLetterDescription(sunk)
     }
@@ -3167,9 +3167,8 @@ export class Waters {
    * @param {number} [reveals] - Number of reveals (default 0)
    * @param {string} [info] - Additional message info (default '')
    * @returns {void}
-   * @private
    */
-  updateResultsOfTurn (weapon, hits, _dtaps, sunks, reveals = 0, info = '') {
+  #updateResultsOfTurn (weapon, hits, _dtaps, sunks, reveals = 0, info = '') {
     const messageInfo = info ? info + ' ' : ''
     if (this.boardDestroyed) {
       return
