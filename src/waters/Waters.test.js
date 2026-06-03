@@ -604,6 +604,7 @@ describe('Waters', () => {
     it('loadForEdit logs when ships are not matched', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
 
+      // @ts-expect-error - Accessing private property
       waters.resetShipCells = jest.fn()
 
       // Mock placeMatchingShips to return unmatched ships
@@ -691,7 +692,6 @@ describe('Waters', () => {
     })
 
     it('load calls placeMatchingShips when map.example has placed ships', () => {
-      // @ts-expect-error - jest mock type issue
       waters.placeMatchingShips = jest.fn(() => [])
       // @ts-expect-error - jest mock type issue
       waters.resetShipCells = jest.fn()
@@ -792,7 +792,6 @@ describe('Waters', () => {
       const resetSpy = jest.spyOn(waters, 'resetPlacementStore')
 
       // Create a mock shipCellGrid that returns false (failed placement)
-      // @ts-expect-error - Mocking shipCellGrid method for testing
       waters.shipCellGrid.attemptToPlaceShips = jest.fn(() => false)
 
       const onPlacementReset = jest.fn()
@@ -832,7 +831,6 @@ describe('Waters', () => {
       waters.resetPlacementStore()
 
       // Create mock ship
-      // @ts-expect-error - Mocking Ship type for testing
       const mockShip = { letter: 'A', cells: [1, 2] }
       const mockPlacedCells = [
         [0, 0],
@@ -865,7 +863,6 @@ describe('Waters', () => {
       waters.resetPlacementStore()
 
       // Store first ship
-      // @ts-expect-error - Mocking Ship type for testing
       const ship1 = { letter: 'A', cells: [1, 2] }
       const cells1 = [
         [0, 0],
@@ -904,7 +901,6 @@ describe('Waters', () => {
       const failureSpy = jest.spyOn(waters, 'handlePlacementFailure')
 
       // Create a mock shipCellGrid that returns false (failed placement)
-      // @ts-expect-error - Mocking shipCellGrid method for testing
       waters.shipCellGrid.attemptToPlaceShips = jest.fn(() => false)
 
       const onPlacementReset = jest.fn()
