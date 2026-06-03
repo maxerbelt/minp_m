@@ -2305,7 +2305,7 @@ export class Waters {
   async handleNoHits (weapon, effect, options = {}) {
     // @ts-ignore - options may have crashLoc at runtime
     // @ts-ignore - weapon cast at runtime, destroy expects Weapon
-    const result = await this.destroy(weapon, effect, options)
+    const result = this.destroy(weapon, effect, options)
     // @ts-ignore - construct splash effect from result
     const splashEffect = this.selectSplashEffect(
       weapon,
