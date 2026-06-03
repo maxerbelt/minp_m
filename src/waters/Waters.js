@@ -3188,9 +3188,8 @@ export class Waters {
    * Flashes the board with burst animation.
    * @param {string} [long] - Animation duration
    * @returns {void}
-   * @private
    */
-  flash (long) {
+  #flash (long) {
     Animator.runId('battleship-game', 'flash')
     if (this.UI?.board) {
       Animator.run(this.UI.board, 'burst', long)
@@ -3203,9 +3202,8 @@ export class Waters {
    * @param {number} x - Column coordinate
    * @param {boolean} bomb - Whether it's a bomb animation
    * @returns {void}
-   * @private
    */
-  flame (x, y, bomb) {
+  #flame (x, y, bomb) {
     const cell = this.UI.grid.nodeAt(x, y)
     if (!cell) return
     if (bomb) {
@@ -3229,7 +3227,7 @@ export class Waters {
    */
   isDTap (x, y, power, hasFlame, hasFlash) {
     if (hasFlame && power > 0) {
-      this.flame(x, y, hasFlash)
+      this.#flame(x, y, hasFlash)
     }
     const isOld = this.score.isOldShot(x, y)
 
@@ -3348,7 +3346,7 @@ export class Waters {
    */
   applyWeaponEffect (weapon, effect, options) {
     const results = this.#applyToAoE(effect, weapon, options)
-    this.flash(results.hits > 0 ? 'long' : undefined)
+    this.#flash(results.hits > 0 ? 'long' : undefined)
 
     this.score.dtaps += results.dtap || 0
     return results

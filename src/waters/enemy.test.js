@@ -1684,7 +1684,7 @@ describe('Enemy.updateWeaponStatus', () => {
         loadOut: {
           isSingleShot: false,
           selectedWeapon: null,
-          firstUnattachedWeaponSystem: { id: 'M1' },
+          firstUnattachedWeapon: { id: 'M1' },
           currentWeaponSystem: {
             id: 'M1',
             weapon: { letter: 'M' }

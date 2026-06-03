@@ -1509,7 +1509,7 @@ class Enemy extends Waters {
       }
 
       this._onFirstClickSelection(r, c)
-      this.selectedCellCoordinates = { r, c }
+      this.selectedCellCoordinates = [r, c]
       return
     }
 
