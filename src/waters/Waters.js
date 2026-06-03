@@ -3008,6 +3008,8 @@ export class Waters {
       }
       return LoadOut.noResult
     }
+    // @ts-ignore - shipCell might be undefined at runtime, checked in checkForHit
+    const shipCell = this.#shipCellAt(x, y)
     return this.checkForHit(weapon, x, y, power, shipCell)
   }
 
