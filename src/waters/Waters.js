@@ -1905,7 +1905,7 @@ export class Waters {
     return await /** @type {WeaponResult|null} */ (
       this.loadOut?.aimWeapon(
         // @ts-ignore - bh.map is initialized at runtime, can be null
-        bh.map != null ? bh.map : undefined,
+        bh.map == null ? undefined : bh.map,
         row,
         col,
         weaponSystem,
@@ -2305,31 +2305,32 @@ export class Waters {
   async handleNoHits (weapon, effect, options = {}) {
     // @ts-ignore - options may have crashLoc at runtime
     // @ts-ignore - weapon cast at runtime, destroy expects Weapon
-    const result = this.destroy(weapon, effect, options)
-    // @ts-ignore - construct splash effect from result
-    const splashEffect = this.selectSplashEffect(
-      weapon,
-      [0, 0],
-      effect,
-      options
-    )
     if (!options?.crashLoc) {
-      return this.destroy(weapon, effect, options)
+      // No crash location: simple destruction with splash
+      const splashEffect = this.selectSplashEffect(
+        weapon,
+        [0, 0],
+        effect,
+        options
+      )
+      return this.destroy(weapon, splashEffect, options)
     }
 
+    // With crash location: use crash splash effect
     // @ts-ignore - options.crashLoc available at runtime
-    const splashEffect = this.getCrashSplash(
+    const crashSplashEffect = this.getCrashSplash(
       weapon,
       options.crashLoc,
       effect,
       options
     )
-    const result = this.destroy(weapon, effect, options)
+    const firstResult = this.destroy(weapon, effect, options)
     // @ts-ignore - add isSplash property at runtime
     options.isSplash = true
     // @ts-ignore - accumulate result properly
-    this.accumulateResult(this.destroy(weapon, splashEffect, options), result)
-    return result
+    const splashResult = this.destroy(weapon, crashSplashEffect, options)
+    this.accumulateResult(splashResult, firstResult)
+    return firstResult
   }
 
   /**
