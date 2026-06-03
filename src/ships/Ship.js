@@ -448,26 +448,52 @@ export class Ship {
     if (board && typeof board === 'object' && 'toCoords' in board) {
       const coords = board.toCoords
       if (Array.isArray(coords)) {
-        return coords.map(cell => {
-          if (Array.isArray(cell) && cell.length >= 2) {
-            return [cell[0], cell[1]]
-          }
-          if (cell && typeof cell === 'object') {
-            const r =
-              cell && typeof cell === 'object' && 'r' in cell
-                ? cell.r
-                : (Array.isArray(cell) ? cell[0] : 0) ?? 0
-            const c =
-              cell && typeof cell === 'object' && 'c' in cell
-                ? cell.c
-                : (Array.isArray(cell) ? cell[1] : 0) ?? 0
-            return [r, c]
-          }
-          return [0, 0]
-        })
+        return coords.map(cell => this._extractCellCoordinates(cell))
       }
     }
     return []
+  }
+
+  /**
+   * Extract row/col from cell in various formats
+   * @param {any} cell - Cell in various formats
+   * @returns {CoordinatePair} [row, col] pair
+   * @private
+   */
+  _extractCellCoordinates (cell) {
+    if (Array.isArray(cell) && cell.length >= 2) {
+      return [cell[0], cell[1]]
+    }
+    if (cell && typeof cell === 'object') {
+      const r = this._extractCellR(cell)
+      const c = this._extractCellC(cell)
+      return [r, c]
+    }
+    return [0, 0]
+  }
+
+  /**
+   * Extract r coordinate from cell
+   * @param {any} cell - Cell object
+   * @returns {number} Row coordinate
+   * @private
+   */
+  _extractCellR (cell) {
+    if ('r' in cell) return cell.r
+    if (Array.isArray(cell) && cell[0] != null) return cell[0]
+    return 0
+  }
+
+  /**
+   * Extract c coordinate from cell
+   * @param {any} cell - Cell object
+   * @returns {number} Column coordinate
+   * @private
+   */
+  _extractCellC (cell) {
+    if ('c' in cell) return cell.c
+    if (Array.isArray(cell) && cell[1] != null) return cell[1]
+    return 0
   }
   /**
    * Set cells and update board
@@ -487,11 +513,6 @@ export class Ship {
   get board () {
     return this._board || Mask.empty(0, 0)
   }
-  /**
-   * Set board and update ship properties
-   * Updates size from board occupancy and resets hit tracking to board's empty mask.
-   * @param {SubBoard|Mask|unknown} board - Board to assign
-   */
   set board (board) {
     /** @type {any} */
     const b = board
@@ -837,7 +858,7 @@ export class Ship {
    * Searches among all loaded (ammunition-carrying) weapons for the closest one by Euclidean distance.
    * @param {number} r - Row coordinate to measure distance from
    * @param {number} c - Column coordinate to measure distance from
-   * @returns {Array<[string, Rack]>|null} [coordKey, weapon] pair of closest loaded weapon or null if none
+   * @returns {[string, Rack]|null} [coordKey, weapon] pair of closest loaded weapon or null if none
    */
   findClosestLoadedRack (r, c) {
     const loadedRacks = this.loadedWeaponEntries
@@ -851,7 +872,7 @@ export class Ship {
    * @param {Array<[string, Rack]>} entries - Array of [coordKey, weapon] entries
    * @param {number} r - Row coordinate to measure distance from
    * @param {number} c - Column coordinate to measure distance from
-   * @returns {Array<[string, Rack]>|null} Closest [coordKey, weapon] pair or null if entries empty
+   * @returns {[string, Rack]|null} Closest [coordKey, weapon] pair or null if entries empty
    * @private
    */
   _findClosestRack (entries, r, c) {
@@ -859,6 +880,7 @@ export class Ship {
     if (entries.length === 1) {
       return entries[0]
     }
+    const closestEntry = entries[0]
     const result = entries
       .slice(1)
       .reduce(
@@ -874,7 +896,7 @@ export class Ship {
           const currentDist = Math.hypot(currentR - r, currentC - c)
           return currentDist < closestDist ? current : closest
         },
-        entries[0]
+        closestEntry
       )
     return result
   }
@@ -1122,7 +1144,7 @@ export class Ship {
       return
     }
 
-    const [r, c] = parsePair(key ?? '')
+    const [r, c] = parsePair(typeof key === 'string' ? key : String(key ?? ''))
     if (r != null && c != null) {
       this._assignCoordinatesToWeapon(weaponSystem, r, c)
       this._updateWeaponCollections(
@@ -1407,7 +1429,7 @@ export class Ship {
       weaponSystem.weapon.volatile
     ) {
       return this._processDetonation(
-        weaponSystem.weapon,
+        /** @type {any} */ (weaponSystem.weapon),
         cell,
         viewModel,
         model,
@@ -1451,7 +1473,7 @@ export class Ship {
       typeof bh.map === 'object' &&
       'surround' in bh.map &&
       typeof bh.map.surround === 'function'
-        ? /** @type {Array<CoordinatePair>} */(bh.map.surround(x, y))
+        ? /** @type {Array<CoordinatePair>} */ (bh.map.surround(x, y))
         : []
     const { hits, misses } = this._processCellDamage(model, surroundingCells)
     return { damaged, info: detonationInfo, hits, misses }
@@ -1500,15 +1522,7 @@ export class Ship {
     if (!Array.isArray(cells)) return []
     const result = []
     for (const cell of cells) {
-      if (Array.isArray(cell) && cell.length >= 2) {
-        result.push([cell[0], cell[1]])
-      } else if (cell && typeof cell === 'object') {
-        const r = cell.r ?? cell[0] ?? 0
-        const c = cell.c ?? cell[1] ?? 0
-        result.push([r, c])
-      } else {
-        result.push([0, 0])
-      }
+      result.push(this._extractCellCoordinates(cell))
     }
     return result
   }
@@ -1533,6 +1547,7 @@ export class Ship {
    * @returns {void}
    */
   placeAtBoard (board) {
+    /** @type {any} */
     const b = board
     if (b && typeof b === 'object' && 'toCoords' in b) {
       const toCoords = b.toCoords
@@ -1550,7 +1565,7 @@ export class Ship {
         })
       }
     }
-    this.board = board
+    this.board = /** @type {any} */ (board)
     this.sunk = false
   }
 
@@ -1589,7 +1604,10 @@ export class Ship {
     if (!shape || typeof shape.placeables !== 'function') {
       return []
     }
-    return shape.placeables() || []
+    const result = shape.placeables() || []
+    return /** @type {Placement[]} */ (
+      /** @type {unknown} */ (Array.isArray(result) ? result : [])
+    )
   }
 
   /**
@@ -1638,7 +1656,7 @@ export class Ship {
       variant: this.variant,
       cells: this.cells,
       weapons: this._serializeWeapons(),
-      hitPositions: hitCoords
+      hitPositions: /** @type {CoordinatePair[]} */ (hitCoords)
     }
   }
 
@@ -1650,15 +1668,18 @@ export class Ship {
    */
   _serializeWeapons () {
     /** @type {Record<string, {id?: number, letter?: string, ammo?: number}>} */
+    /** @type {Record<string, {id?: number, letter?: string, ammo?: number}>} */
     const serialized = {}
     const weapons = this.weapons
     for (const [key, weapon] of Object.entries(weapons)) {
       if (weapon && typeof weapon === 'object') {
         // Only serialize basic properties to avoid BigInt and complex objects
+        /** @type {any} */
+        const w = weapon
         serialized[key] = {
-          id: weapon.id,
-          letter: weapon.letter,
-          ammo: weapon.ammo
+          id: w.id,
+          letter: w.letter,
+          ammo: w.ammo
         }
       }
     }
@@ -1674,7 +1695,9 @@ export class Ship {
    * @returns {CoordinatePair[]|null} Ship cells [row, col] pairs if placement succeeded, null if validation failed
    */
   placeOnGrid (shipCellGrid, placement) {
-    if (!placement.canPlace(shipCellGrid)) {
+    /** @type {any} */
+    const p = placement
+    if (!p || typeof p.canPlace !== 'function' || !p.canPlace(shipCellGrid)) {
       return null
     }
     this.addUnplacedShipToGrid(shipCellGrid, placement)
@@ -1692,12 +1715,17 @@ export class Ship {
   addUnplacedShipToGrid (shipCellGrid, placement) {
     // Placement succeeded: update ship and mask
     this.placePlacement(placement)
-    const displacedCells = placement.displacedArea(
-      shipCellGrid._maskedGrid.width,
-      shipCellGrid._maskedGrid.height
-    )
-
-    shipCellGrid._maskedGrid.joinWith(displacedCells)
+    /** @type {any} */
+    const p = placement
+    /** @type {any} */
+    const grid = shipCellGrid
+    if (grid?._maskedGrid && typeof p.displacedArea === 'function') {
+      const displacedCells = p.displacedArea(
+        grid._maskedGrid.width,
+        grid._maskedGrid.height
+      )
+      grid._maskedGrid?.joinWith?.(displacedCells)
+    }
 
     this.addToGrid(shipCellGrid)
   }
@@ -1792,9 +1820,12 @@ export class Ship {
    * @returns {ShipShape|undefined} Shape object defining this ship's form and properties
    */
   shape () {
-    if (this._shape) return this._shape
-    this._shape = bh.shapesByLetter?.(this.letter)
-    return this._shape
+    if (this._shape) {
+      return /** @type {ShipShape|undefined} */ (this._shape)
+    }
+    const s = bh.shapesByLetter?.(this.letter)
+    this._shape = s
+    return /** @type {ShipShape|undefined} */ (this._shape)
   }
 
   /**
@@ -1804,7 +1835,8 @@ export class Ship {
    * @returns {string} Ship type code ('G' for ground, 'S' for sea)
    */
   type () {
-    return bh.shipType(this.letter)
+    const t = bh.shipType?.(this.letter)
+    return typeof t === 'string' ? t : ''
   }
 
   /**
@@ -1815,7 +1847,8 @@ export class Ship {
    * @returns {string} Description text for sunk ship state (e.g., "Battleship Sunk")
    */
   getSunkDescription (middle = ' ') {
-    return bh.shipSunkText(this.letter, middle)
+    const desc = bh.shipSunkText?.(this.letter, middle === ' ')
+    return desc ?? ''
   }
 
   /**
@@ -1827,10 +1860,13 @@ export class Ship {
    * @public
    */
   getDescription () {
-    return bh.shipDescription(this.letter)
+    const desc = bh.shipDescription?.(this.letter)
+    return desc ?? ''
   }
 }
 
-bh.shipBuilder = Ship.createFromShape
-bh.fleetBuilder = Ship.createShipsFromShapes
-bh.extraFleetBuilder = Ship.extraShipsFromShapes
+/** @type {any} */
+const bhAny = bh
+bhAny.shipBuilder = Ship.createFromShape
+bhAny.fleetBuilder = Ship.createShipsFromShapes
+bhAny.extraFleetBuilder = Ship.extraShipsFromShapes
