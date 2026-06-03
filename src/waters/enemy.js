@@ -198,7 +198,6 @@ const MESSAGES = {
 /**
  * @typedef {Object} Score
  * @description Score tracking interface for recording hits, misses, and game statistics.
- * @property {() => boolean} newShotKey - Check if current shot is a new hit location
  * @property {() => void} finishTurn - Finalize current turn and record score
  * @property {() => void} reset - Reset score to initial state
  * @memberof Enemy
@@ -904,10 +903,8 @@ class Enemy extends Waters {
     const ui = /** @type {EnemyUI|undefined} */ (this.UI)
     ui?.grid?.clearClasses?.()
     ui?.revealAll?.(this.ships)
-    this._hideWaiting()
-    // @ts-ignore - opponent type compatibility and hideWaiting method
-    const opponent = /** @type {any} */ (this.opponent)
-    opponent?.hideWaiting?.()
+    this.hideWaiting()
+
     this.boardDestroyed = true
     this.isRevealed = true
   }

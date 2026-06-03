@@ -390,12 +390,23 @@ export class Friend extends Placement {
    *
    * @param {MapInfo} map - Map with rows and cols properties
    * @returns {Location} Location object with r (row) and c (col)
-   * @private
    */
-  randomLocation (map) {
+  #randomLocation (map) {
     const r = Math.floor(Math.random() * (map.rows - 2)) + 1
     const c = Math.floor(Math.random() * (map.cols - 2)) + 1
     return { r, c }
+  }
+  /**
+   * Generates a random location within map boundaries (not on edges).
+   * Excludes edge cells to avoid placing weapons near board perimeter.
+   *
+   * @param {MapInfo} map - Map with rows and cols properties
+   * @returns {Location} Location object with r (row) and c (col)
+   */
+  #randomXY (map) {
+    const y = Math.floor(Math.random() * (map.rows - 2)) + 1
+    const x = Math.floor(Math.random() * (map.cols - 2)) + 1
+    return { x, y }
   }
 
   /**
@@ -501,17 +512,17 @@ export class Friend extends Placement {
    * Delegates to loadOut.aimWeapon with current weapon system and launch function.
    * Processes both click coordinates and weapon targeting logic.
    *
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
+   * @param {number} y - Target row coordinate
+   * @param {number} x - Target column coordinate
    * @returns {Promise<WeaponLaunchResult>} Result with weapon and score information
    */
-  async launchCurrentWeapon (r, c) {
+  async launchCurrentWeapon (x, y) {
     const launch = this._createCurrentLaunchFunction()
     // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class at runtime
     return await this.loadOut.aimWeapon(
       this.map,
-      r,
-      c,
+      y,
+      x,
       /** @type {any} */ (this.currentWeaponSystem),
       launch
     )
@@ -521,15 +532,14 @@ export class Friend extends Placement {
    * Attempts weapon launch and falls back to a secondary aim coordinate.
    * If initial target returns noResult or fails, retries with fallback coordinates.
    * Used for boundary-aware targeting in random strategies.
-   * @param {number} r - Initial target row coordinate
-   * @param {number} c - Initial target column coordinate
-   * @param {number} [fallbackR=r] - Fallback row coordinate (defaults to r)
-   * @param {number} [fallbackC=c] - Fallback column coordinate (defaults to c)
+   * @param {number} y - Initial target row coordinate
+   * @param {number} x - Initial target column coordinate
+   * @param {number} [fallbackY=y] - Fallback row coordinate (defaults to y)
+   * @param {number} [fallbackX=x] - Fallback column coordinate (defaults to x)
    * @returns {Promise<WeaponLaunchResult>} Launch result from initial or fallback target
-   * @private
    */
-  async _attemptLaunchWithFallback (r, c, fallbackR = r, fallbackC = c) {
-    const result = await this.launchCurrentWeapon(r, c)
+  async #attemptLaunchWithFallback (x, y, fallbackX = x, fallbackY = y) {
+    const result = await this.launchCurrentWeapon(x, y)
     if (result?.score && result.score !== LoadOut.noResult) {
       return result
     }
@@ -538,8 +548,8 @@ export class Friend extends Placement {
     // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class
     return await this.loadOut.aimWeapon(
       this.map,
-      fallbackR,
-      fallbackC,
+      fallbackY,
+      fallbackX,
       // @ts-ignore - currentWeaponSystem type may be broader at runtime, casting to any for aimWeapon method
       /** @type {any} */ (this.currentWeaponSystem),
       launch
@@ -572,11 +582,11 @@ export class Friend extends Placement {
   async #attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
       if (this.isCancelled()) return this.noResult
-      // @ts-ignore - this.map is MapInfo at runtime with randomLocation compat
-      const { r, c } = this.randomLocation(/** @type {MapInfo} */ (this.map))
+      // @ts-ignore - this.map is MapInfo at runtime with randomXY compat
+      const { x, y } = this.#randomXY(/** @type {MapInfo} */ (this.map))
       // @ts-ignore - this.score.isNewShot() is Score method available at runtime
-      if (this.score.isNewShot(c, r)) {
-        return await this._attemptLaunchWithFallback(r, c)
+      if (this.score.isNewShot(x, y)) {
+        return await this.#attemptLaunchWithFallback(x, y)
       }
     }
     return null
@@ -593,31 +603,30 @@ export class Friend extends Placement {
     if (this.isCancelled()) return this.noResult
     const r = this.getMostFrequentRowNumber()
     // @ts-ignore - this.map.cols is number property available at runtime
-    return await this._attemptLaunchWithFallback(r, 0, r, this.map.cols - 1)
+    return await this.#attemptLaunchWithFallback(0, r, this.map.cols - 1, r)
   }
 
   /**
    * Validates if location is valid target for seeking.
    * Checks if location is in bounds and hasn't been double-tapped (clicked twice).
    *
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {boolean} True if valid target location (in bounds and not double-tapped)
    * @private
    */
-  isHitValid (r, c) {
+  isHitValid (x, y) {
     // @ts-ignore - map.inBounds is available at runtime
     // @ts-ignore - isDTap is inherited from Waters base class
-    return this.map.inBounds(r, c) && !this.isDTap(r, c, 4, false, false)
+    return this.map.isInBoundsAt(x, y) && !this.isDTap(x, y, 4, false, false)
   }
   /**
    * Handles transition to friendly player's turn in game flow.
    * Clears weapon selection state, signals opponent turn transition, and initiates seek.
    *
-   * @private
    * @returns {Promise<void>}
    */
-  async _handleBeginTurn () {
+  async #handleBeginTurn () {
     // Reset selected cell coordinates for two-click mode
     this.selectedCellCoordinates = null
     // @ts-ignore - opponent is Waters|null at runtime, _transitionToOpponentTurn is defined there
@@ -647,9 +656,9 @@ export class Friend extends Placement {
         this._handleSeekFailure()
         return this.noResult
       }
-      if (this.isHitValid(loc[1], loc[0])) {
+      if (this.isHitValid(...loc)) {
         // @ts-ignore - launchCurrentWeapon is method defined in this class at runtime
-        return await this.launchCurrentWeapon(loc[1], loc[0])
+        return await this.launchCurrentWeapon(...loc)
       }
     }
     return null
@@ -682,19 +691,17 @@ export class Friend extends Placement {
     this.loadOut.onReveal = this.scan.bind(this)
     if (this.isCancelled()) return this.noResult
     // @ts-ignore - this.map is MapInfo at runtime
-    const { r, c } = this.randomLocation(/** @type {MapInfo} */ (this.map))
+    const { x, y } = this.#randomXY(/** @type {MapInfo} */ (this.map))
     // @ts-ignore - this.map is MapInfo at runtime
-    const { r: r1, c: c1 } = this.randomLocation(
-      /** @type {MapInfo} */ (this.map)
-    )
+    const { x: x1, y: y1 } = this.#randomXY(/** @type {MapInfo} */ (this.map))
     // @ts-ignore - currentWeaponSystem is available at runtime, wps.weapon is Weapon object
     const wps = /** @type {any} */ (this.currentWeaponSystem)
     // @ts-ignore - wps.weapon is Weapon object available at runtime
     const weapon = wps.weapon
     // @ts-ignore - loadOut.aimWeapon is method available at runtime
-    await this.loadOut.aimWeapon(this.map, r, c)
+    await this.loadOut.aimWeapon(this.map, y, x)
     // @ts-ignore - loadOut.aimWeapon returns Promise<WeaponLaunchResult> at runtime
-    const score = await this.loadOut.aimWeapon(this.map, r1, c1, wps)
+    const score = await this.loadOut.aimWeapon(this.map, y1, x1, wps)
     return { weapon, score }
   }
 
@@ -712,9 +719,9 @@ export class Friend extends Placement {
     // @ts-ignore - updateUI is inherited from Waters base class at runtime
     this.updateUI()
     for (const position of effect) {
-      const [r, c] = position
+      const [y, x] = position
       // @ts-ignore - this.map.inBounds is function available at runtime
-      if (this.map.inBounds(r, c)) {
+      if (this.map.isInBoundsAt(x, y)) {
         // reveal what is in this position
       }
     }
@@ -734,7 +741,7 @@ export class Friend extends Placement {
   async randomEffect (effect) {
     /** @type {EffectHandlerMap} */
     const effectHandlers = {
-      DestroyOne: () => this.randomDestroyOne(),
+      DestroyOne: () => this.#randomDestroyOne(),
       Bomb: () => this.#randomBomb(),
       Scan: () => this.#randomScan(),
       Seek: () => this.#randomSeek()
@@ -900,9 +907,9 @@ export class Friend extends Placement {
     // @ts-ignore - loadOut.switchToSingleShot is method at runtime
     this.loadOut.switchToSingleShot()
     // @ts-ignore - candidate.randomOccupied is [col, row] tuple at runtime
-    const [c, r] = candidate.randomOccupied
+    const loc = candidate.randomOccupied
     // @ts-ignore - launchCurrentWeapon is method defined in this class at runtime
-    return await this.launchCurrentWeapon(r, c)
+    return await this.launchCurrentWeapon(...loc)
   }
 
   /**

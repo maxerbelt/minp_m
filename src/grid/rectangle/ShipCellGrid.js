@@ -242,7 +242,12 @@ export class ShipCellGrid extends GridBase {
   has (x, y) {
     return !!this.cellAt(x, y)
   }
-
+  isEmpty (x, y) {
+    return !this.cellAt(x, y)
+  }
+  isOccupied (x, y) {
+    return !!this.cellAt(x, y)
+  }
   /**
    * Sets a ship cell at the given x/y coordinates.
    *

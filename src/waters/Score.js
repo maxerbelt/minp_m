@@ -110,12 +110,12 @@ export class Score {
    * Checks if a coordinate has not been shot yet.
    * Returns true if the location is available for a new shot, null if already shot.
    *
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {true|null} True if location is unshot, null if already shot
    */
-  newShotKey (r, c) {
-    if (this.shot.test(c, r)) return null
+  newShotKey (y, x) {
+    if (this.shot.test(x, y)) return null
     return true
   }
   /**
@@ -186,12 +186,12 @@ export class Score {
    * Wake effects show ship movement paths and disturbances.
    * Records cells affected by ship wake for visual display.
    *
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {void}
    */
-  wakeReveal (r, c) {
-    this.wake.set(c, r)
+  wakeReveal (x, y) {
+    this.wake.set(x, y)
   }
 
   /**
@@ -199,14 +199,14 @@ export class Score {
    * Registers a shot at the location only if it hasn't been shot before.
    * Returns true on successful creation, null if location already has a shot.
    *
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {true|null} True if shot key was created, null if location already shot
    */
-  createShotKey (r, c) {
-    const isCreated = this.newShotKey(r, c)
-    if (isCreated) {
-      this.shot.set(c, r)
+  createShotKey (y, x) {
+    const isNew = this.isNewShot(x, y)
+    if (isNew) {
+      this.shot.set(x, y)
       return true
     }
     return null
@@ -251,9 +251,10 @@ export class Score {
    * @returns {true|null} True if automatic miss registered, null if location already shot
    */
   addAutoMiss (x, y) {
-    const isCreated = this.createShotKey(y, x)
-    if (!isCreated) return null
+    const isOld = this.isOldShot(x, y)
+    if (isOld) return null
     this.auto.set(x, y)
+    this.shot.set(x, y)
     return true
   }
 }

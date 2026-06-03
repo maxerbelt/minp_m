@@ -22,7 +22,21 @@ const COORDS = {
   POS_5_6: [5, 6],
   NEGATIVE: [-1, -2]
 }
-
+const XY = {
+  ORIGIN: [0, 0],
+  DIAGONAL_1: [1, 1],
+  DIAGONAL_2: [2, 2],
+  DIAGONAL_3: [3, 3],
+  DIAGONAL_4: [4, 4],
+  DIAGONAL_5: [5, 5],
+  POS_2_3: [3, 2],
+  POS_4_5: [5, 4],
+  POS_5_7: [5, 7],
+  POS_3_4: [4, 3],
+  POS_7_8: [8, 7],
+  POS_5_6: [6, 5],
+  NEGATIVE: [-1, -2]
+}
 // Score will be imported after mocking bh so that our mock takes effect
 let Score
 
@@ -96,31 +110,31 @@ describe('Score', () => {
     })
   })
 
-  describe('newShotKey', () => {
+  describe('isOldShot', () => {
     it('should return true for new shot location', () => {
-      const key = score.newShotKey(...COORDS.ORIGIN)
-      expect(key).toBe(true)
+      const key = score.isOldShot(...COORDS.ORIGIN)
+      expect(key).toBe(false)
     })
 
     it('should return true for different coordinates', () => {
-      const key = score.newShotKey(...COORDS.POS_5_7)
+      const key = score.isNewShot(...XY.POS_5_7)
       expect(key).toBe(true)
     })
 
     it('should return null if shot already exists', () => {
       score.createShotKey(...COORDS.POS_3_4)
-      const key = score.newShotKey(...COORDS.POS_3_4)
-      expect(key).toBeNull()
+      const key = score.isOldShot(...XY.POS_3_4)
+      expect(key).toBe(true)
     })
 
     it('should not add to shot set', () => {
-      score.newShotKey(...COORDS.DIAGONAL_1)
+      score.isOldShot(...COORDS.DIAGONAL_1)
       expect(score.shot.occupancy).toBe(0)
     })
 
     it('should handle negative coordinates', () => {
-      const key = score.newShotKey(...COORDS.NEGATIVE)
-      expect(key).toBe(true)
+      const key = score.isOldShot(...XY.NEGATIVE)
+      expect(key).toBe(false)
     })
   })
 

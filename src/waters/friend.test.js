@@ -160,7 +160,6 @@ jest.unstable_mockModule('./Waters.js', () => ({
       this.ships = []
       this.score = {
         createShotKey: () => null,
-        newShotKey: () => null,
         reset: () => {}
       }
     }

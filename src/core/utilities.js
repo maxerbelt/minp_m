@@ -296,16 +296,17 @@ export function coordsFromCell (cell) {
   return [row, col]
 }
 /**
- * Extracts coordinates from a cell element's dataset attributes.
+ * Extracts coordinates from a cell element's dataset attributes in [col, row] order.
  * Reads data-r and data-c attributes, defaulting to '0' if not present.
+ * Unlike coordsFromCell, returns [col, row] (x, y) order instead of [row, col].
  *
  * @param {HTMLElement} cell - Cell element with data-r and data-c attributes
- * @returns {[number, number]} [row, col] coordinates parsed from dataset, defaults to [0, 0]
+ * @returns {[number, number]} [col, row] coordinates parsed from dataset, defaults to [0, 0]
  * @example
  * // <div data-r="5" data-c="10"></div>
- * coordsFromCell(cell) // [5, 10]
+ * xyFromCell(cell) // [10, 5] (col, row - note the order differs from coordsFromCell)
  * // <div></div>
- * coordsFromCell(cell) // [0, 0] (defaults)
+ * xyFromCell(cell) // [0, 0] (defaults)
  */
 export function xyFromCell (cell) {
   const row = Number.parseInt(cell.dataset.r ?? '0', 10)
@@ -473,9 +474,10 @@ export function findClosestCoordKey (coordsList, refRow, refCol) {
  * @param {T[]} coordsList - List of coordinates (raw or opaque)
  * @param {number} refRow - Reference row coordinate
  * @param {number} refCol - Reference column coordinate
- * @param {Function} [getter] - Function to extract [row, col] from coordinate.
+ * @param {(item: T) => [number, number]|undefined} [getter] - Function to extract [row, col] from coordinate.
  *   If omitted, assumes coordinate is directly [number, number].
  * @returns {T|null} Closest coordinate from list, or null if list empty
+ * @throws Will not throw, but will return null if coordsList is empty or falsy
  * @example
  * findClosestCoord([[0, 0], [5, 5], [10, 10]], 6, 6) // [5, 5]
  * findClosestCoord(['0,0', '5,5'], 6, 6, parsePair) // '5,5' (with getter)
@@ -484,7 +486,9 @@ export function findClosestCoord (
   coordsList,
   refRow,
   refCol,
-  getter = /** @type {any} */ (undefined)
+  getter = /** @type {((item: any) => [number, number])|undefined} */ (
+    undefined
+  )
 ) {
   let closestCoord = null
   let minDistance = Infinity
@@ -492,6 +496,7 @@ export function findClosestCoord (
     const point = getter
       ? getter(coord)
       : /** @type {[number, number]} */ (coord)
+    if (!point) continue
     const row = point[0]
     const col = point[1]
     const distance = Math.sqrt(
@@ -512,9 +517,10 @@ export function findClosestCoord (
  * On first access, invokes fn to compute the value, then replaces the getter with a data property.
  * Subsequent accesses return the cached value without recomputation.
  *
+ * @template T
  * @param {Record<string, any>} obj - The object to define property on
  * @param {string} prop - Property name to create
- * @param {Function} fn - Function to compute the value (called with `this` context)
+ * @param {(this: Record<string, any>) => T} fn - Function to compute the value (called with `this` context)
  * @returns {void}
  * @example
  * const obj = {};
@@ -605,10 +611,10 @@ export function minMaxXY (arr) {
 /**
  * Clones an element multiple times with numeric suffixes on the ID.
  * Inserts all clones immediately after the original node.
- * Does nothing if node has no parent element.
+ * Does nothing if node has no parent element (silently skips operation).
  *
  * @param {HTMLElement} node - Element to clone (must have parentElement)
- * @param {number} count - Number of clones to create (should be non-negative)
+ * @param {number} count - Number of clones to create (should be non-negative; 0 creates no clones)
  * @returns {void}
  * @since 1.0.0
  * @example
@@ -641,10 +647,10 @@ export function cloneWithSuffix (node, count) {
  * Clones an element deeply multiple times with numeric suffixes on all IDs (including children).
  * Appends suffix to the root element's ID and all descendant IDs.
  * Inserts all clones immediately after the original node.
- * Does nothing if node has no parent element or clone is not an HTMLElement.
+ * Does nothing if node has no parent element or clone is not an HTMLElement (silently skips).
  *
  * @param {HTMLElement} node - Element to clone (must have parentElement and id)
- * @param {number} count - Number of clones to create (should be non-negative)
+ * @param {number} count - Number of clones to create (should be non-negative; 0 creates no clones)
  * @returns {void}
  * @since 1.0.0
  * @example
@@ -686,10 +692,10 @@ export function cloneWithSuffixDeep (node, count) {
  * Clones an element with lifecycle management: removes old clones before creating new ones.
  * Tracks clones via CSS class based on original node's ID (format: "nodeid-clone").
  * Appends numeric suffixes to IDs of root and descendant elements.
- * Does nothing if node has no parent element or clone is not an HTMLElement.
+ * Does nothing if node has no parent element or clone is not an HTMLElement (silently skips).
  *
  * @param {HTMLElement} node - Element to clone (must have id and parentElement)
- * @param {number} count - Number of clones to create (should be non-negative)
+ * @param {number} count - Number of clones to create (should be non-negative; 0 removes all existing clones)
  * @returns {void}
  * @since 1.0.0
  * @example
