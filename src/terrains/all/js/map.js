@@ -172,6 +172,7 @@ export class BhMap {
    * @readonly
    * @returns {Mask} A new empty mask with dimensions matching this map (cols × rows)
    * @see Mask.empty
+   * @description Returns fresh Mask instance without modifications. Use for temporary calculations.
    */
   get blankMask () {
     return Mask.empty(this.cols, this.rows)
@@ -186,6 +187,7 @@ export class BhMap {
    * @readonly
    * @returns {Mask} A new full mask with all cells enabled and dimensions matching this map
    * @see Mask.full
+   * @description Returns completely filled Mask. Use for universal set or coverage calculations.
    */
   get fullMask () {
     return Mask.full(this.cols, this.rows)
@@ -200,6 +202,7 @@ export class BhMap {
    * @readonly
    * @returns {Array<Object>} Array of ship shape objects with armed weapons attached to racks
    * @see newFleetForMap
+   * @description Filters shapes to include only those with weapons attached. Subset of newFleetForMap.
    */
   get extraArmedFleetForMap () {
     const repeatShapes = this.newShapesForMap
@@ -216,6 +219,7 @@ export class BhMap {
    * @readonly
    * @returns {Array<Object>} Array of ship shape objects ready for placement on this map
    * @see newShapesForMap
+   * @description Uses fleetBuilder to generate full fleet. Includes all ship types based on configuration.
    */
   get newFleetForMap () {
     const repeatShapes = this.newShapesForMap
@@ -233,6 +237,7 @@ export class BhMap {
    * @returns {Array<Object>} Array of repeated ship shape objects for fleet composition
    * @description If shipNum is a single number, all base shapes are repeated that many times.
    * If shipNum is an object {letter: count}, each base shape is repeated by its letter count.
+   * Returns empty array if no ships configured.
    */
   get newShapesForMap () {
     const terrain = this.terrain
@@ -529,6 +534,7 @@ export class BhMap {
   /**
    * Checks if the specified coordinates are land.
    * Uses the landMask bitboard to efficiently determine if a cell is land or water.
+   * Legacy method name using (row, col) parameter order.
    *
    * @public
    * @param {number} y - Row coordinate
@@ -538,13 +544,15 @@ export class BhMap {
   isLand (y, x) {
     return this.landMask.test(x, y)
   }
+
   /**
    * Checks if the specified coordinates are land.
    * Uses the landMask bitboard to efficiently determine if a cell is land or water.
+   * Preferred method name using (col, row) parameter order.
    *
    * @public
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {boolean} True if the position is land, false if water/default terrain
    */
   isLandAt (x, y) {
@@ -556,7 +564,7 @@ export class BhMap {
    * Aggregates all subterrain tags into a single concatenated string.
    * Used to pre-load all terrain CSS classes for a map.
    *
-   * @public
+   * @private
    * @returns {string} Concatenated string of all subterrain tags
    */
   #allTags () {
@@ -565,16 +573,16 @@ export class BhMap {
 
   /**
    * Applies terrain tags and checkerboard styling to a cell element.
-   * Removes all existing terrain tags and applies the appropriate one.
-   * Also applies light/dark checkerboard styling based on row+col parity.
+   * Generates terrain-specific tags and applies light/dark checkerboard styling.
+   * Also determines and applies edge tags for water cells adjacent to land.
    * Used for map rendering and visual updates.
    *
    * @public
-   * @param {Object} cell - DOM element or object with add/remove methods for CSS classes
-   * @param {number} y - Row coordinate
-   * @param {number} x - Column coordinate
-   * @returns {void}
-   * @description Even parity (y+x) % 2 === 0 gets 'light' class, odd gets 'dark' class
+   * @param {number} x - Column coordinate (0-based, x-axis)
+   * @param {number} y - Row coordinate (0-based, y-axis)
+   * @returns {{newTags: Array<string>, oldTags: string}} Object with newTags array and oldTags string
+   * @description Even parity (y+x) % 2 === 0 gets 'light' class, odd gets 'dark' class.
+   * Calls #addEdgeTags to apply edge classes for land-water boundaries.
    */
   tagsAt (x, y) {
     const oldTags = this.#allTags()
@@ -593,13 +601,16 @@ export class BhMap {
   /**
    * Checks if cell has edges with land and applies corresponding CSS classes.
    * Adds edge classes for water cells adjacent to land cells.
+   * Modifies tags array in-place to include edge classification CSS classes.
    *
-   * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {number} x - Column coordinate (0-based, x-axis)
-   * @param {boolean} isLand - Whether current cell is land terrain
-   * @returns {void}
-   * @description Applies CSS classes: rightEdge, leftEdge, topEdge, bottomEdge as appropriate
    * @private
+   * @param {number} x - Column coordinate (0-based, x-axis)
+   * @param {number} y - Row coordinate (0-based, y-axis)
+   * @param {boolean} isLand - Whether current cell is land terrain
+   * @param {Array<string>} tags - Array to populate with edge CSS classes (modified in-place)
+   * @returns {Array<string>} The tags array with edge classes added
+   * @description Applies CSS classes: rightEdge, leftEdge, topEdge, bottomEdge as appropriate.
+   * Checks adjacent cells and marks edges where water meets land boundaries.
    */
   #addEdgeTags (x, y, isLand, tags) {
     // Check right edge (water next to land)

@@ -94,7 +94,7 @@ export class RectMultiBitMorphology {
    * const morph = new RectMultiBitMorphology(mask, store, bits, width, height);
    */
   constructor (mask, store, bits, width, height) {
-    if (!store || !store.isMultiBit) {
+    if (!store?.isMultiBit) {
       throw new Error(
         'RectMultiBitMorphology: store must support multi-bit operations'
       )

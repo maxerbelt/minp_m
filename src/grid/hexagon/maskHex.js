@@ -4,20 +4,48 @@ import { HexagonShape } from './HexagonShape.js'
 import { ForLocation } from '../ForLocation.js'
 
 /**
+ * @typedef {Object} CubeCoordinates
+ * @property {number} q - Q coordinate in cube coordinate system
+ * @property {number} r - R coordinate in cube coordinate system
+ * @property {number} s - S coordinate in cube coordinate system (often computed as -q-r)
+ */
+
+/**
+ * @typedef {Object} MinimumCoordinates
+ * @property {number} minQ - Minimum Q coordinate
+ * @property {number} minR - Minimum R coordinate
+ * @property {number} minS - Minimum S coordinate
+ */
+
+/**
  * MaskHex - Hexagonal grid mask implementation
  *
  * Provides bitmask operations for hexagonal grids using cube coordinates (q, r, s).
  * Supports morphological operations (dilate, erode), coordinate conversion,
  * and grid transformations specific to hexagonal topology.
  *
+ * Uses cube coordinates as the canonical representation for hexagonal cells,
+ * where q + r + s = 0 is maintained as an invariant. This enables efficient
+ * neighbor calculations and symmetrical transformations.
+ *
  * @extends MaskBase
+ * @class MaskHex
  */
 export class MaskHex extends MaskBase {
   /**
-   * Create a new hexagonal grid mask
-   * @param {number} radius - The radius of the hexagonal grid
-   * @param {*} [bits] - Bit representation of the mask data (optional)
-   * @param {Object} [store] - Bit storage implementation (optional)
+   * Create a new hexagonal grid mask with given radius and optional state.
+   *
+   * Initializes a hexagonal grid mask using cube coordinates. The radius
+   * defines the distance from the center cell to the edge of the hexagon.
+   * Automatically creates a HexagonShape and passes it to MaskBase.
+   *
+   * @param {number} radius - Hexagon radius (distance from center to edge)
+   * @param {bigint} [bits] - Bitboard representation of the mask data (optional)
+   * @param {Object} [store] - Bit storage backend implementation (optional, defaults to StoreBig)
+   *
+   * @example
+   * const mask = new MaskHex(5); // Create 5-radius hexagon
+   * const cloned = new MaskHex(5, bits, store); // Create with existing state
    */
   constructor (radius, bits, store) {
     super(HexagonShape(radius), bits, store)
@@ -29,8 +57,12 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Create a clone of this hex mask with same radius and depth
-   * @returns {MaskHex} Cloned mask instance
+   * Create a deep clone of this hex mask with same radius and depth.
+   *
+   * Copies the radius, depth, and bitboard data, creating a new independent
+   * mask instance with identical state. The store backend is shared for efficiency.
+   *
+   * @returns {MaskHex} Independently cloned mask instance with same dimensions
    */
   get clone () {
     const cloned = new MaskHex(this.radius, null, null)
@@ -41,16 +73,24 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Create empty hex mask of same radius
-   * @returns {MaskHex} New empty mask with same dimensions
+   * Create a new empty hex mask with the same radius.
+   *
+   * Creates a new mask instance with all cells cleared (bits set to 0).
+   * Useful for creating a blank canvas for subsequent operations.
+   *
+   * @returns {MaskHex} New empty mask with same radius as this instance
    */
   get emptyMask () {
     return new MaskHex(this.radius)
   }
 
   /**
-   * Create hex mask with all bits set
-   * @returns {MaskHex} New mask with all cells occupied
+   * Create a new hex mask with all cells set.
+   *
+   * Creates a new mask instance with all cells occupied (all bits set to 1).
+   * Represents the fully-filled hexagonal region.
+   *
+   * @returns {MaskHex} New fully-occupied mask with same radius
    */
   get fullMask () {
     const mask = this.emptyMask
@@ -59,8 +99,13 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Create hex mask with inverted bits
-   * @returns {MaskHex} New mask with inverted occupancy
+   * Create a new hex mask with inverted occupancy.
+   *
+   * Creates a new mask instance where all cell states are flipped:
+   * empty cells become occupied and occupied cells become empty.
+   * Useful for complement operations and region calculations.
+   *
+   * @returns {MaskHex} New mask with all bits inverted
    */
   get invertedMask () {
     const mask = this.emptyMask
@@ -73,12 +118,21 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Get index from cube coordinates (q, r, s)
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {number} Linear index for the cell
-   * @throws {Error} If coordinates are invalid for this hexagon
+   * Get the linear array index for a cell at given cube coordinates.
+   *
+   * Converts hexagonal cube coordinates (q, r, s) into a linear index
+   * suitable for bitboard operations. Validates that the coordinates
+   * are within the valid hexagon bounds.
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} s - S coordinate in cube system (should satisfy q+r+s=0)
+   * @returns {number} Linear cell index (0-based)
+   * @throws {Error} If cube coordinates are outside the hexagon bounds
+   *
+   * @example
+   * const idx = mask.index(0, 0, 0); // Center cell (always 0 for origin)
+   * const idx2 = mask.index(1, 0, -1); // Adjacent cell
    */
   index (q, r, s) {
     const i = this.indexer.index(q, r, s)
@@ -89,24 +143,38 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Get bit position from cube coordinates
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {*} Bit position in the store
+   * Get the bit position (same as linear index) for cube coordinates.
+   *
+   * Wrapper around index() that returns the bit position within storage.
+   * For hexagonal grids, this is typically equivalent to the linear index.
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} s - S coordinate in cube system
+   * @returns {number} Bit position for store operations
+   * @throws {Error} If coordinates are invalid
    */
   bitPos (q, r, s) {
     return this.index(q, r, s)
   }
 
   /**
-   * Create a ForLocation helper for the specified cube coordinates
-   * Encapsulates bit position and provides location-specific operations
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {ForLocation} Location helper object
+   * Create a ForLocation helper for cell access at cube coordinates.
+   *
+   * Encapsulates the bit position and provides a convenient accessor
+   * for reading/writing cell values at the specified location.
+   * Automatically computes s from q and r if omitted (s = -q - r).
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} [s] - S coordinate (optional, computed if omitted)
+   * @returns {ForLocation} Location accessor for this cell
+   * @throws {Error} If coordinates are invalid
    * @private
+   *
+   * @example
+   * const loc = this.for(0, 1, -1);
+   * const value = loc.readCellValue();
    */
   for (q, r, s) {
     if (s == null) {
@@ -121,13 +189,17 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Add bit at cube coordinates to bits value
+   * Add (OR) a bit at cube coordinates into the given bits value.
+   *
+   * Computes the bit mask for the cell and ORs it into the provided bits,
+   * setting the bit at the specified coordinates to 1.
+   *
+   * @param {bigint} bb - Current bits value to modify
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} s - S coordinate in cube system
+   * @returns {bigint} Updated bits value with bit set at coordinates
    * @private
-   * @param {*} bb - Current bits value
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {*} Updated bits value with bit set
    */
   addBit (bb, q, r, s) {
     const i = this._getBitMaskAtCoords(q, r, s)
@@ -135,12 +207,16 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Get bit mask for hex at cube coordinates
+   * Get the bit mask for a hexagonal cell at cube coordinates.
+   *
+   * Creates a bit mask with a single bit set at the position
+   * corresponding to the given cube coordinates.
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} s - S coordinate in cube system
+   * @returns {bigint} Bit mask with single bit set at position
    * @private
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {*} Bit mask for the coordinate
    */
   _getBitMaskAtCoords (q, r, s) {
     const i = this.bitPos(q, r, s)
@@ -148,22 +224,35 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Get bit mask for hex at index (internal helper)
+   * Get the bit mask for a hexagonal cell at a linear index.
+   *
+   * Computes the bit position and creates a mask with a single bit set
+   * at that position in the storage representation.
+   *
+   * @param {number} i - Linear cell index
+   * @returns {bigint} Bit mask with single bit set at index position
    * @private
-   * @param {number} i - Linear index
-   * @returns {*} Bit mask for the index
    */
   _getBitMaskAtIndex (i) {
     return this.store.bitMaskByPos(this.store.bitPos(i))
   }
 
   /**
-   * Set cell at cube coordinates with optional color
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @param {number} [color=1] - Value to set
-   * @returns {*} Updated bits value
+   * Set a cell value at cube coordinates with optional color.
+   *
+   * Writes a color value to the specified cell, updating this.bits.
+   * Automatically computes s from q and r if omitted.
+   * Returns the updated bits for method chaining.
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} [s] - S coordinate (optional, computed if omitted)
+   * @param {number} [color=1] - Color value to write (0-3 depending on depth)
+   * @returns {bigint} Updated bits value after write
+   *
+   * @example
+   * mask.set(0, 1, -1, 2); // Set cell to color 2
+   * mask.set(1, 0, -1); // Set cell to default color 1
    */
   set (q, r, s, color = 1) {
     if (s == null) {
@@ -175,11 +264,15 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Set cell by store index (internal helper)
+   * Set a cell value at linear index with optional color (internal helper).
+   *
+   * Low-level method for setting a cell value using linear array index
+   * instead of cube coordinates. Directly manipulates store bits.
+   *
+   * @param {number} i - Linear cell index
+   * @param {number} [color=1] - Color value to write
+   * @returns {bigint} Updated bits value after write
    * @private
-   * @param {number} i - Linear index
-   * @param {number} [color=1] - Value to set
-   * @returns {*} Updated bits value
    */
   setIndex (i, color = 1) {
     const bitPosition = this.store.bitPos(i)
@@ -194,34 +287,57 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Get cell value at cube coordinates
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {*} Cell value at the coordinates
+   * Get cell value at cube coordinates.
+   *
+   * Reads the color value stored at the specified cell location.
+   * Returns the numeric color value (0 for empty, 1+ for occupied).
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} [s] - S coordinate (optional, computed if omitted)
+   * @returns {number} Cell color value at the coordinates (0+)
+   *
+   * @example
+   * const color = mask.at(0, 1, -1); // Get cell color
    */
   at (q, r, s) {
-    return this.for(q, r, s).at()
+    return this.for(q, r, s).readCellValue()
   }
 
   /**
-   * Test if cell at cube coordinates matches color
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @param {number} [color=1] - Color value to test for
-   * @returns {boolean} True if cell matches the color
+   * Test if cell at cube coordinates matches a specific color.
+   *
+   * Checks whether the cell at the given coordinates contains the specified
+   * color value. Provides a semantic wrapper around readCellValue() === color.
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} [s] - S coordinate (optional, computed if omitted)
+   * @param {number} [color=1] - Expected color value to test for
+   * @returns {boolean} True if cell contains the specified color
+   *
+   * @example
+   * if (mask.test(0, 1, -1, 2)) { // Check if cell is color 2
+   *   console.log('Cell matches');
+   * }
    */
   test (q, r, s, color = 1) {
-    return this.for(q, r, s).test(color)
+    return this.for(q, r, s).hasColor(color)
   }
 
   /**
-   * Clear (zero out) cell at cube coordinates
-   * @param {number} q - The q coordinate
-   * @param {number} r - The r coordinate
-   * @param {number} s - The s coordinate
-   * @returns {*} Updated bits value
+   * Clear (set to 0) a cell at cube coordinates.
+   *
+   * Sets the cell value to 0 (empty state). Equivalent to set(q, r, s, 0).
+   * Useful for marking cells as unoccupied.
+   *
+   * @param {number} q - Q coordinate in cube system
+   * @param {number} r - R coordinate in cube system
+   * @param {number} [s] - S coordinate (optional, computed if omitted)
+   * @returns {bigint} Updated bits value after clear
+   *
+   * @example
+   * mask.clear(0, 1, -1); // Empty the cell
    */
   clear (q, r, s) {
     return this.set(q, r, s, 0)
@@ -232,8 +348,14 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Get cached actions instance for transformations
-   * @returns {ActionsHex} Actions instance for this mask
+   * Get or create a cached actions instance for grid transformations.
+   *
+   * Returns a cached ActionsHex instance if one exists and is still valid
+   * (i.e., wraps the current bits state). Otherwise creates a new instance.
+   * This enables efficient reuse of transformation objects across multiple
+   * operations without invalidating the cache.
+   *
+   * @returns {ActionsHex} Actions transformer instance for this mask
    */
   get actions () {
     if (this._actions && this._actions?.original?.bits === this.bits) {
@@ -248,8 +370,18 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Iterate over [q, r, s, index] tuples for all cells
-   * @yields {Array<number>} [q, r, s, index] for each cell
+   * Iterate over cube coordinate tuples for all cells in the grid.
+   *
+   * Yields [q, r, s, index] for each cell, including both occupied and empty cells.
+   * Provides convenient iteration over all hexagonal positions.
+   *
+   * @generator
+   * @yields {Array<number>} [q, r, s, linearIndex] for each cell
+   *
+   * @example
+   * for (const [q, r, s, idx] of mask.keys()) {
+   *   console.log(`Cell at (${q},${r},${s}) has index ${idx}`);
+   * }
    */
   *keys () {
     for (const [q, r, s, i] of this._allCellCoordinates()) {
@@ -258,8 +390,19 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Iterate over [q, r, s, value, index, mask] tuples for all cells
-   * @yields {Array} [q, r, s, value, index, mask] for each cell
+   * Iterate over complete cell information tuples for all cells.
+   *
+   * Yields [q, r, s, value, index, mask] for each cell, providing complete
+   * information including position, color value, array index, and reference
+   * to this mask instance.
+   *
+   * @generator
+   * @yields {Array} [q, r, s, colorValue, linearIndex, this] for each cell
+   *
+   * @example
+   * for (const [q, r, s, color, idx, mask] of mask.entries()) {
+   *   if (color > 0) console.log(`Occupied cell at (${q},${r},${s})`);
+   * }
    */
   *entries () {
     for (const [q, r, s, i] of this._allCellCoordinates()) {
@@ -268,8 +411,16 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Iterate over values of all cells
-   * @yields {*} Value of each cell
+   * Iterate over color values of all cells in the grid.
+   *
+   * Yields the color value for each cell in row-major order.
+   * Returns 0 for empty cells and 1+ for occupied cells depending on depth.
+   *
+   * @generator
+   * @yields {number} Color value of each cell (0 for empty, 1+ for occupied)
+   *
+   * @example
+   * const occupiedCount = [...mask.values()].filter(v => v > 0).length;
    */
   *values () {
     for (const [q, r, s] of this._allCellCoordinates()) {
@@ -278,35 +429,69 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Iterate over indices of set bits
-   * @yields {number} Index of each set bit
+   * Iterate over linear indices of all set (occupied) cells.
+   *
+   * Yields the linear array index for each cell that contains a non-zero value.
+   * Delegates to the indexer for efficient iteration over set bits.
+   *
+   * @generator
+   * @yields {number} Linear index of each occupied cell
+   *
+   * @example
+   * for (const idx of mask.bitsIndices()) {
+   *   console.log(`Occupied cell at index ${idx}`);
+   * }
    */
   *bitsIndices () {
     yield* this.indexer.bitsIndices(this.bits)
   }
 
   /**
-   * Iterate over [q, r, s] coordinates of set bits
-   * @yields {Array<number>} [q, r, s] coordinates of set cells
+   * Iterate over cube coordinates of all occupied cells.
+   *
+   * Yields [q, r, s] coordinate arrays for each cell that contains a non-zero value.
+   * Provides semantic alternative to bitsIndices() for coordinate-based iteration.
+   *
+   * @generator
+   * @yields {Array<number>} [q, r, s] coordinates of each occupied cell
+   *
+   * @example
+   * for (const [q, r, s] of mask.bitKeys()) {
+   *   console.log(`Occupied cell at cube coords (${q},${r},${s})`);
+   * }
    */
   *bitKeys () {
     yield* this.indexer.bitKeys(this.bits)
   }
 
   /**
-   * Parse cube coordinate string "q,r,s" to array
+   * Parse a cube coordinate string into an array of numbers.
+   *
+   * Converts comma-separated coordinate strings (e.g., "0,1,-1") into
+   * numeric arrays for coordinate operations. Internal helper used by
+   * iteration methods.
+   *
+   * @param {string} loc - Comma-separated coordinate string ("q,r,s")
+   * @returns {number[]} Parsed [q, r, s] coordinates as numbers
    * @private
-   * @param {string} loc - Coordinate string in format "q,r,s"
-   * @returns {number[]} Array of [q, r, s]
+   *
+   * @example
+   * const coords = this._parseCubeCoordinates("0,1,-1"); // [0, 1, -1]
    */
   _parseCubeCoordinates (loc) {
     return loc.split(',').map(Number)
   }
 
   /**
-   * Iterate over all cell coordinates with their indices
+   * Iterate over all cell coordinates with their linear indices (internal).
+   *
+   * Generator that yields [q, r, s, index] tuples for every cell in the hexagon,
+   * including both occupied and empty cells. Delegates to the indexer's
+   * coordinate mapping.
+   *
+   * @generator
+   * @yields {Array<number>} [q, r, s, linearIndex] for each cell
    * @private
-   * @yields {Array<number>} [q, r, s, index] for each cell
    */
   *_allCellCoordinates () {
     for (const [loc, i] of this.indexer.qrsToI) {
@@ -320,16 +505,33 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Load coordinates into this mask
-   * @param {Array<Array<number>>} coords - Array of [q, r, s] or [q, r, s, value] coordinates
+   * Load cube coordinates into this mask, optionally with values.
+   *
+   * Populates the mask from an array of coordinate tuples. Each tuple
+   * can be either [q, r, s] (sets color to 1) or [q, r, s, color]
+   * (sets specified color). Delegates to CoordinateConversion helper.
+   *
+   * @param {Array<Array<number>>} coords - Array of coordinate tuples
+   *   - [q, r, s] sets color 1
+   *   - [q, r, s, color] sets specified color
+   *
+   * @example
+   * mask.fromCoords([[0, 0, 0], [1, 0, -1, 2]]); // Set cells
    */
   fromCoords (coords) {
     this._coords.fromCoordinates(coords)
   }
 
   /**
-   * Get all occupied cells as cube coordinate tuples
-   * @returns {Array<Array<number>>} Array of [q, r, s] coordinates
+   * Get all occupied cells as cube coordinate tuples.
+   *
+   * Extracts the cube coordinates of all cells with non-zero values,
+   * returning them as an array of [q, r, s] tuples. Inverse of fromCoords().
+   *
+   * @returns {Array<Array<number>>} Array of [q, r, s] coordinates for set cells
+   *
+   * @example
+   * const occupied = mask.toCoords(); // Get all occupied cell positions
    */
   get toCoords () {
     return this._coords.bitsToCoordinates()
@@ -340,10 +542,14 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Get normalized bits with minimum coordinates at (0, 0, 0)
-   * Useful for canonical representation and comparison
+   * Get normalized bits with minimum coordinates translated to (0, 0, 0).
+   *
+   * Computes a canonical representation by translating all coordinates
+   * so that the minimum q, r, s values become 0. Useful for shape
+   * comparison and canonical representation independent of position.
+   *
+   * @returns {bigint} Normalized bitboard with shape translated to origin
    * @private
-   * @returns {*} Normalized bits value
    */
   normalized () {
     const cells = this._extractSetCells()
@@ -352,19 +558,27 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Extract all set cells as [q, r, s] coordinates
+   * Extract all occupied cells as [q, r, s] coordinate arrays (internal).
+   *
+   * Collects the cube coordinates of all non-zero cells into an array
+   * suitable for normalization operations.
+   *
+   * @returns {Array<Array<number>>} Array of [q, r, s] for occupied cells
    * @private
-   * @returns {Array<Array<number>>} Array of [q, r, s] coordinates
    */
   _extractSetCells () {
     return [...this.bitKeys()].map(([q, r, s]) => [q, r, s])
   }
 
   /**
-   * Find minimum q, r, s values across cells
+   * Find minimum q, r, s coordinate values across all cells (internal).
+   *
+   * Computes the bounding box minimum coordinates by finding the smallest
+   * q, r, and s values across all cell positions.
+   *
+   * @param {Array<Array<number>>} cells - Array of [q, r, s] coordinate tuples
+   * @returns {MinimumCoordinates} Object with minQ, minR, minS properties
    * @private
-   * @param {Array<Array<number>>} cells - Array of [q, r, s] coordinates
-   * @returns {Object} Object with minQ, minR, minS properties
    */
   _findMinimumCoordinates (cells) {
     if (cells.length === 0) return { minQ: 0, minR: 0, minS: 0 }
@@ -376,11 +590,16 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Create bits with normalized coordinates
-   * @private
+   * Create normalized bitboard from cells and minimum coordinates (internal).
+   *
+   * Translates all coordinates by subtracting the minimum values, then
+   * creates a new bitboard with the translated cell positions. Used by
+   * normalized() to produce a canonical shape representation.
+   *
    * @param {Array<Array<number>>} cells - Array of [q, r, s] coordinates
-   * @param {Object} minCoords - Object with minQ, minR, minS
-   * @returns {*} Normalized bits value
+   * @param {MinimumCoordinates} minCoords - Minimum q, r, s values
+   * @returns {bigint} Normalized bitboard with origin at (0, 0, 0)
+   * @private
    */
   _createNormalizedBits (cells, { minQ, minR, minS }) {
     let normalizedBits = 0n
@@ -398,10 +617,18 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Expand set bits by radius using CubeIndex axis maps
-   * Mutates this.bits and returns this for chaining
-   * @param {number} [radius=1] - Expansion radius
-   * @returns {MaskHex} This instance for chaining
+   * Expand occupied cells by a given radius (dilation).
+   *
+   * Performs morphological dilation using the hexagonal distance metric.
+   * All cells within the specified radius of any occupied cell become occupied.
+   * Mutates this.bits and returns this for method chaining.
+   *
+   * @param {number} [radius=1] - Expansion radius in hexagonal distance
+   * @returns {MaskHex} This instance for method chaining
+   * @throws {Error} If indexer lacks dilate method
+   *
+   * @example
+   * mask.dilate(2); // Expand all occupied regions by 2 cells
    */
   dilate (radius = 1) {
     this._assertIndexerHasMethod('dilate')
@@ -410,10 +637,18 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Shrink set bits by radius using CubeIndex axis maps
-   * Mutates this.bits and returns this for chaining
-   * @param {number} [radius=1] - Erosion radius
-   * @returns {MaskHex} This instance for chaining
+   * Shrink occupied cells by a given radius (erosion).
+   *
+   * Performs morphological erosion using the hexagonal distance metric.
+   * Only cells with all neighbors within the radius occupied remain occupied.
+   * Mutates this.bits and returns this for method chaining.
+   *
+   * @param {number} [radius=1] - Erosion radius in hexagonal distance
+   * @returns {MaskHex} This instance for method chaining
+   * @throws {Error} If indexer lacks erode method
+   *
+   * @example
+   * mask.erode(1); // Remove boundary cells from all regions
    */
   erode (radius = 1) {
     this._assertIndexerHasMethod('erode')
@@ -422,21 +657,33 @@ export class MaskHex extends MaskBase {
   }
 
   /**
-   * Cross (cardinal direction) dilation for hex grids
-   * Approximated as single dilate step (hex grids don't have traditional cross pattern)
-   * Mutates this.bits and returns this for chaining
-   * @param {number} [radius=1] - Expansion radius (ignored, uses 1)
-   * @returns {MaskHex} This instance for chaining
+   * Expand occupied cells in cardinal directions only (cross dilation).
+   *
+   * For hexagonal grids, this is approximated as a standard dilation
+   * since hex grids don't have a traditional cardinal-only pattern.
+   * The radius parameter is accepted for API compatibility but uses 1.
+   * Mutates this.bits and returns this for method chaining.
+   *
+   * @param {number} [radius=1] - Expansion radius (parameter kept for API compatibility)
+   * @returns {MaskHex} This instance for method chaining
+   *
+   * @example
+   * mask.dilateCross(); // Cardinal-only expansion (same as dilate for hex)
    */
   dilateCross (radius = 1) {
     return this.dilate(radius)
   }
 
   /**
-   * Check that indexer has required method
+   * Assert that the indexer has a required method (internal validation).
+   *
+   * Verifies that the hexagon indexer supports a specific operation method.
+   * Throws an error if the method is missing, preventing silent failures
+   * in morphological operations.
+   *
+   * @param {string} methodName - Name of the required method (e.g., 'dilate')
+   * @throws {Error} If the indexer lacks the specified method
    * @private
-   * @param {string} methodName - Name of the method to check
-   * @throws {Error} If the method is missing
    */
   _assertIndexerHasMethod (methodName) {
     if (!this.indexer[methodName]) {
@@ -449,10 +696,14 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Return edge masks for hex grid
-   * Hex grids don't have rectangular edges, so return null for fallback logic
+   * Get edge masks for the hexagonal grid (returns null).
+   *
+   * Hex grids don't have rectangular edges like rectangular grids.
+   * Returns null to signal that rectangular edge detection doesn't apply.
+   * Subclasses or consumers can provide fallback logic when null is returned.
+   *
+   * @returns {null} Always returns null for hexagonal grids
    * @private
-   * @returns {null} Always returns null
    */
   edgeMasks () {
     return null
@@ -463,10 +714,23 @@ export class MaskHex extends MaskBase {
   // ============================================================================
 
   /**
-   * Create hex mask from coordinate array
-   * @param {number} radius - The radius of the hexagonal grid
-   * @param {Array<Array<number>>} coords - Array of [q, r, s] or [q, r, s, value] coordinates
-   * @returns {MaskHex} New hex mask instance
+   * Create a new hex mask from cube coordinate tuples (static factory).
+   *
+   * Factory method for conveniently creating a hex mask initialized with
+   * the given coordinate data. Equivalent to:
+   * ```
+   * const mask = new MaskHex(radius);
+   * mask.fromCoords(coords);
+   * return mask;
+   * ```
+   *
+   * @static
+   * @param {number} radius - Hexagon radius
+   * @param {Array<Array<number>>} coords - Array of [q, r, s] or [q, r, s, color] tuples
+   * @returns {MaskHex} New hex mask initialized with the given coordinates
+   *
+   * @example
+   * const mask = MaskHex.fromCoords(5, [[0, 0, 0], [1, 0, -1]]);
    */
   static fromCoords (radius, coords) {
     const mask = new MaskHex(radius)

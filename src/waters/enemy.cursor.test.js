@@ -18,7 +18,17 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals'
  * Provides minimal implementation to satisfy Enemy class terrain interface.
  *
  * @private
- * @returns {Object<string, any>} Mock terrain with required game properties
+ * @returns {Object} Mock terrain with required game properties
+ * @returns {boolean} returns.hasAttachedWeapons - Whether terrain has attached weapons
+ * @returns {string} returns.tag - Terrain identifier tag
+ * @returns {string} returns.title - Terrain display title
+ * @returns {Array} returns.subterrains - Array of sub-terrain configurations
+ * @returns {Object} returns.ships - Ship configuration object
+ * @returns {Object} returns.weapons - Weapon configuration object
+ * @returns {Function} returns.subterrainTag - Function to get sub-terrain tag
+ * @returns {Function} returns.allSubterrainTag - Function to get all sub-terrain tags
+ * @returns {Function} returns.getNewWeapon - Function to create new weapon
+ * @returns {jest.Mock} returns.updateCustomMaps - Mock function for custom map updates
  */
 const createTerrainMock = () => ({
   hasAttachedWeapons: false,
@@ -38,7 +48,12 @@ const createTerrainMock = () => ({
  * Represents empty grid mask state for terrain operations.
  *
  * @private
- * @returns {Object<string, any>} Mock mask with required bitboard properties
+ * @returns {Object} Mock mask with required bitboard properties
+ * @returns {Uint8Array} returns.bits - Bit representation array
+ * @returns {Function} returns.test - Function to test bit values
+ * @returns {Array} returns.toCoords - Coordinate array representation
+ * @returns {jest.Mock} returns.setRanges - Mock function for range setting
+ * @returns {number} returns.length - Mask length in bits
  */
 const createBlankMaskMock = () => ({
   bits: new Uint8Array(100),
@@ -51,25 +66,26 @@ const createBlankMaskMock = () => ({
 /**
  * Mock StatusUI module for game status tracking.
  * Provides status display methods used by enemy weapon management.
+ *
  * @type {jest.Mock}
  */
 jest.unstable_mockModule('./StatusUI.js', () => ({
   gameStatus: {
-    /** @type {jest.Mock} Mock ammo status display */
+    /** @type {jest.Mock<void>} Mock ammo status display */
     displayAmmoStatus: jest.fn(),
-    /** @type {jest.Mock} Mock ammo display */
+    /** @type {jest.Mock<void>} Mock ammo display */
     displayAmmo: jest.fn(),
-    /** @type {jest.Mock} Mock mode display */
+    /** @type {jest.Mock<void>} Mock mode display */
     showMode: jest.fn(),
-    /** @type {jest.Mock} Mock queue message addition */
+    /** @type {jest.Mock<void>} Mock queue message addition */
     addToQueue: jest.fn(),
-    /** @type {jest.Mock} Mock tips setter */
+    /** @type {jest.Mock<void>} Mock tips setter */
     setTips: jest.fn(),
-    /** @type {jest.Mock} Mock queue clear */
+    /** @type {jest.Mock<void>} Mock queue clear */
     clearQueue: jest.fn(),
-    /** @type {jest.Mock} Mock selection mode reset */
+    /** @type {jest.Mock<void>} Mock selection mode reset */
     resetToSelectionMode: jest.fn(),
-    /** @type {jest.Mock} Mock info display */
+    /** @type {jest.Mock<void>} Mock info display */
     info2: jest.fn()
   }
 }))
@@ -77,6 +93,7 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
 /**
  * Mock bh terrain module for game configuration.
  * Provides terrain, map, and weapon system configuration for enemy AI.
+ *
  * @type {jest.Mock}
  */
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
@@ -89,10 +106,15 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
     maps: {},
     /** @type {Object} Current game map with dimensions */
     map: {
+      /** @type {number} Map row count */
       rows: 10,
+      /** @type {number} Map column count */
       cols: 10,
+      /** @type {Object} Blank mask template */
       blankMask: createBlankMaskMock(),
+      /** @type {Array} Blank grid state */
       blankGrid: [],
+      /** @type {Function} Bounds checking function */
       inBounds: () => true
     },
     /** @type {Function} Terrain lookup by tag */
@@ -107,34 +129,35 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
 /**
  * Mock enemyUI module for board display and interaction.
  * Provides board element and control methods for visual feedback.
+ *
  * @type {jest.Mock}
  */
 jest.unstable_mockModule('./enemyUI.js', () => ({
   enemyUI: {
     /** @type {HTMLElement} Mock board DOM element */
     board: /** @type {HTMLElement} */ (document.createElement('div')),
-    /** @type {Object<string, jest.Mock>} Grid manipulation methods */
+    /** @type {Object} Grid manipulation methods */
     grid: {
-      /** @type {jest.Mock} Mock hover effect addition */
+      /** @type {jest.Mock<void>} Mock hover effect addition */
       addHover: jest.fn(),
-      /** @type {jest.Mock} Mock class clearing */
+      /** @type {jest.Mock<void>} Mock class clearing */
       clearClasses: jest.fn(),
-      /** @type {jest.Mock} Mock AoE highlight removal */
+      /** @type {jest.Mock<void>} Mock AoE highlight removal */
       removeHighlightAoE: jest.fn()
     },
-    /** @type {jest.Mock} Mock play mode activation */
+    /** @type {jest.Mock<void>} Mock play mode activation */
     playMode: jest.fn(),
-    /** @type {jest.Mock} Mock board construction */
+    /** @type {jest.Mock<void>} Mock board construction */
     buildBoard: jest.fn(),
-    /** @type {jest.Mock} Mock UI reset */
+    /** @type {jest.Mock<void>} Mock UI reset */
     reset: jest.fn(),
-    /** @type {jest.Mock} Mock weapon cell activation */
+    /** @type {jest.Mock<void>} Mock weapon cell activation */
     cellWeaponActive: jest.fn(),
-    /** @type {jest.Mock} Mock weapon button display */
+    /** @type {jest.Mock<void>} Mock weapon button display */
     weaponButtons: jest.fn(),
-    /** @type {jest.Mock} Mock board reveal */
+    /** @type {jest.Mock<void>} Mock board reveal */
     revealAll: jest.fn(),
-    /** @type {jest.Mock} Mock button enable */
+    /** @type {jest.Mock<void>} Mock button enable */
     enableBtns: jest.fn()
   }
 }))
@@ -147,9 +170,9 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
  * @suite Enemy Cursor Cleanup
  */
 describe('Enemy cursor cleanup on single-shot switch', () => {
-  /** @type {typeof import('./enemy.js')} Imported enemy module */
+  /** @type {any} Imported enemy module */
   let enemyModule
-  /** @type {typeof import('./helpers/CellClassManager.js')} Imported CellClassManager module */
+  /** @type {any} Imported CellClassManager module */
   let CellClassManagerModule
 
   /**
@@ -179,20 +202,23 @@ describe('Enemy cursor cleanup on single-shot switch', () => {
     const { CellClassManager } = CellClassManagerModule
 
     // Prepare board with mock cell elements for testing
-    const board = enemy.UI.board
+    const board = /** @type {HTMLElement} */ (enemy.UI.board)
+    if (!board) {
+      throw new Error('Board element is required for test')
+    }
+
     // Clear any existing children to start fresh
-    while (board.firstChild) board.firstChild.remove()
+    while (board.firstChild) {
+      board.firstChild.remove()
+    }
 
     // Create test cell elements to verify cursor removal
-    /** @type {HTMLElement} Test cell A */
-    const cellA = document.createElement('div')
-    /** @type {HTMLElement} Test cell B */
-    const cellB = document.createElement('div')
+    const cellA = /** @type {HTMLElement} */ (document.createElement('div'))
+    const cellB = /** @type {HTMLElement} */ (document.createElement('div'))
     board.appendChild(cellA)
     board.appendChild(cellB)
 
     // Spy on removeCursorClasses to verify it's called for board and cells
-    /** @type {jest.SpyInstance} Spy on CellClassManager.removeCursorClasses */
     const spy = jest.spyOn(CellClassManager, 'removeCursorClasses')
 
     // Mock _handleWeaponChange to prevent side effects during test
@@ -201,7 +227,6 @@ describe('Enemy cursor cleanup on single-shot switch', () => {
     })
 
     // Configure mock loadOut with switchToSingleShot method
-    /** @type {Object<string, jest.Mock>} Mock loadOut with weapon switch method */
     enemy.loadOut = { switchToSingleShot: jest.fn() }
 
     // Invoke single-shot button handler to trigger cursor cleanup

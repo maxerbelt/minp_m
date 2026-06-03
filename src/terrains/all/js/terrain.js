@@ -191,11 +191,12 @@ export class Terrain {
    * Customizes unit descriptions for a given element tag.
    * Applies text content and/or HTML customization to all unit elements with the given tag.
    *
-   * @param {string} elementTag - The element tag to customize
-   * @param {TextContentRenderer} [textContent] - Function to set text content. Called with (letter, description, el, key)
-   * @param {InnerHTMLRenderer} [innerHTML] - Function to set inner HTML. Called with (letter, description, el, key)
+   * @param {string} elementTag - The element tag to customize (e.g., 'ship', 'weapon')
+   * @param {TextContentRenderer} [textContent] - Function to set text content. Called with (letter, description, el, key). Return value is set as el.textContent.
+   * @param {InnerHTMLRenderer} [innerHTML] - Function to set inner HTML. Called with (letter, description, el, key). Return value is set as el.innerHTML.
    *
    * @returns {void}
+   * @description Both callbacks are optional; at least one should be provided. Runs across all elements matching the tag.
    * @static
    * @public
    * @example
@@ -227,11 +228,12 @@ export class Terrain {
    * Shows or hides units based on a condition.
    * Applies a CSS class to units based on whether a predicate function returns true.
    *
-   * @param {string} elementTag - The element tag to process
-   * @param {ClassPredicate} [hasClass] - Function to determine if class should be added. Called with (letter, description, el, key, className)
-   * @param {string} [className='hidden'] - The class name to toggle
+   * @param {string} elementTag - The element tag to process (e.g., 'ship', 'weapon')
+   * @param {ClassPredicate} [hasClass] - Function to determine if class should be removed. When returns true, removes className; when false, adds className.
+   * @param {string} [className='hidden'] - The CSS class name to toggle (default: 'hidden')
    *
    * @returns {void}
+   * @description Runs across all elements matching the tag and applies class toggling based on predicate result.
    * @static
    * @public
    * @example
@@ -267,7 +269,8 @@ export class Terrain {
    * at game initialization to set up a player's starting fleet. The fleet is built from
    * the ship catalogue's base shapes which are specific to this terrain.
    *
-   * @type {*}
+   * @returns {*} A new fleet instance populated with ships from baseShapes
+   * @description Returns a new fleet object each invocation; pure getter with no side effects. Fleet composition varies by terrain type (sea vs space vs air).
    * @throws {Error} If ships catalogue is null or lacks baseShapes property
    *
    * @public
@@ -293,6 +296,7 @@ export class Terrain {
    *
    * @param {boolean} isLand - Whether to return land subterrain tag (true) or default (false)
    * @returns {string} The corresponding subterrain tag (e.g., "water", "land", "space")
+   * @description Returns non-empty string guaranteed by subterrain initialization. Pure function with no side effects. Tag is typically used for CSS body class and terrain styling.
    *
    * @public
    * @example
@@ -317,6 +321,7 @@ export class Terrain {
    * that need to iterate over all available subterrains.
    *
    * @returns {string[]} Array of all subterrain tags in registration order
+   * @description Pure function that maps over internal subterrains array. Returns empty array if no subterrains (should not occur in practice). Tags preserve registration order.
    *
    * @public
    * @example
@@ -342,6 +347,7 @@ export class Terrain {
    *
    * @param {string} letter - The weapon letter to search for (case-sensitive, typically uppercase)
    * @returns {Weapon|null} The weapon object if found, null otherwise
+   * @description Pure function that performs case-sensitive letter matching against weapon catalogue. Handles both public methods and legacy direct property access for backward compatibility.
    *
    * @public
    * @example
@@ -379,9 +385,10 @@ export class Terrain {
    * Creates a clone of a weapon for the given letter with the specified ammo
    * configuration. Returns null if the weapon is not found or cannot be cloned.
    *
-   * @param {string} letter - The weapon letter to clone
+   * @param {string} letter - The weapon letter to clone (case-sensitive)
    * @param {unknown} ammo - The ammo configuration for the new weapon instance
    * @returns {Weapon|null} A cloned weapon instance, or null if not found or not clonable
+   * @description Delegates to getWeapon() then calls clone(ammo) if weapon supports it. Returns independent weapon instances suitable for ammo customization.
    *
    * @public
    * @example
@@ -412,6 +419,7 @@ export class Terrain {
    * Used to store comma-separated list of custom map titles.
    *
    * @returns {string} The localStorage key for this terrain's custom maps index
+   * @description Generates localStorage key by combining oldToken prefix with terrain key suffix "-custom-maps". Pure function with no side effects.
    *
    * @public
    * @example
@@ -427,6 +435,7 @@ export class Terrain {
    * Retrieves the comma-separated list of custom map titles stored for this terrain.
    *
    * @returns {string} The raw CSV string of custom map titles, or empty string if none exist
+   * @description Pure function that reads from localStorage at customMapsLocalStorageKey. Returns empty string if not found.
    *
    * @public
    * @example
@@ -441,8 +450,10 @@ export class Terrain {
    * Sets the raw custom maps string in localStorage.
    * Stores a comma-separated list of custom map titles for this terrain.
    *
-   * @param {string} csv - The CSV string of custom map titles
+   * @param {string} csv - The CSV string of custom map titles (comma-separated)
    * @returns {void}
+   * @description Writes csv string to localStorage at customMapsLocalStorageKey. Updates terrain's custom map index.
+   * @modifies localStorage - Writes to the custom maps index key
    *
    * @public
    * @example
@@ -457,6 +468,7 @@ export class Terrain {
    * Parses the raw custom maps string and returns a Set for easy manipulation.
    *
    * @returns {Set<string>} Set of custom map titles, empty Set if none exist
+   * @description Pure function that reads and parses CSV string into Set. Enables deduplication and membership testing.
    *
    * @public
    * @example
@@ -474,8 +486,9 @@ export class Terrain {
    * Gets the localStorage key for a specific map title.
    * Constructs a unique key for storing a custom map's configuration data.
    *
-   * @param {string} title - The map title
+   * @param {string} title - The map title (non-empty string)
    * @returns {string} The localStorage key for this map's data
+   * @description Generates key by combining oldToken prefix with title suffix. Pure function. Used for storing individual map configurations.
    *
    * @public
    * @example
@@ -492,6 +505,7 @@ export class Terrain {
    *
    * @private
    * @returns {Set<string>} Set of custom map titles
+   * @description Reads raw CSV from localStorage and parses into Set. Returns empty Set if storage key not found. Used internally by update/delete/rename methods.
    *
    * @example
    * const maps = this._getCustomMapSet()
@@ -510,6 +524,8 @@ export class Terrain {
    * @private
    * @param {Set<string>} customMapSet - The set of custom map titles to persist
    * @returns {void}
+   * @description Filters customMapSet to include only valid titles with existing localStorage entries. Persists filtered list as CSV string.
+   * @modifies localStorage - Updates the custom maps index key with filtered titles
    *
    * @example
    * const maps = new Set(['Map1', 'Map2'])
@@ -530,8 +546,10 @@ export class Terrain {
    * Adds a new custom map to the terrain's collection if it's not already present.
    * Does nothing if the map title already exists.
    *
-   * @param {string} title - The title of the custom map to add
+   * @param {string} title - The title of the custom map to add (non-empty string)
    * @returns {void}
+   * @description Deduplicates before adding; silently skips if title already exists. Persists to localStorage.
+   * @modifies this - Updates localStorage via _setCustomMapSet()
    *
    * @public
    * @example
@@ -553,6 +571,8 @@ export class Terrain {
    *
    * @param {string} title - The title of the custom map to delete
    * @returns {void}
+   * @description Removes title from Set and persists change to localStorage. Silent no-op if title not found.
+   * @modifies this - Updates localStorage via _setCustomMapSet()
    *
    * @public
    * @example
@@ -568,9 +588,12 @@ export class Terrain {
    * Renames a custom map.
    * Updates a custom map's title in both the map object and the terrain's collection.
    *
-   * @param {CustomMap} oldMap - The custom map object to rename
+   * @param {CustomMap} oldMap - The custom map object to rename (must have title property)
    * @param {string} newTitle - The new title for the map
    * @returns {void}
+   * @description Mutates oldMap.title and updates internal Set. Persists to localStorage via _setCustomMapSet().
+   * @modifies oldMap.title - Updates the title property of the passed map object
+   * @modifies this - Updates localStorage via _setCustomMapSet()
    *
    * @public
    * @example
@@ -591,8 +614,9 @@ export class Terrain {
    * Maps over custom map titles, building objects for each using the provided factory function.
    * Filters out any null results from the builder.
    *
-   * @param {(title: string) => unknown} builder - Factory function that takes a title and returns a custom map object
+   * @param {(title: string) => unknown} builder - Factory function that takes a title and returns a custom map object (or null to exclude)
    * @returns {Array<unknown>} Array of built custom map objects, excluding nulls
+   * @description Transforms custom map titles into objects via builder function. Deduplicates results and filters out null/undefined values. Pure function over internal Set.
    *
    * @public
    * @example
@@ -612,6 +636,7 @@ export class Terrain {
    * Returns an array of all custom map titles for this terrain.
    *
    * @returns {string[]} Array of custom map titles
+   * @description Pure function that converts internal Set to array. Preserves no particular order. Empty array if no custom maps exist.
    *
    * @public
    * @example
@@ -626,11 +651,12 @@ export class Terrain {
    * Gets the sunk description for a ship letter.
    * Generates a descriptive string for when a ship with the given letter is sunk.
    *
-   * @param {string} letter - The ship letter
-   * @param {string} [middle=' '] - The middle string to insert in the description
-   * @returns {string} The sunk description or empty string if ships catalogue unavailable
+   * @param {string} letter - The ship letter (case-sensitive, typically uppercase)
+   * @param {string} [middle=' '] - The middle string to insert in the description (e.g., ' was ', ' has been ')
+   * @returns {string} The sunk description (e.g., "Ship A was sunk") or empty string if unavailable
+   * @description Delegates to ships catalogue's sunkDescription method. Format typically: "Ship {letter}{middle}sunk".
    *
-   * @throws {Error} If ships catalogue is null and method is called
+   * @throws {Error} If ships catalogue is null
    * @public
    * @example
    * const desc = terrain.sunkDescription('A', ' was ')
@@ -647,8 +673,10 @@ export class Terrain {
    * Adds shapes to the ships catalogue.
    * Registers shape definitions with the terrain's ship collection.
    *
-   * @param {*} shapes - The shapes to add to the ships catalogue
+   * @param {unknown} shapes - The shapes to add to the ships catalogue (format depends on ship catalogue implementation)
    * @returns {void}
+   * @description Delegates to ships catalogue's addShapes method. Modifies internal ship definitions for fleet building.
+   * @modifies this.ships - Adds new shape definitions to the catalogue
    *
    * @throws {Error} If ships catalogue is null
    * @public
@@ -672,6 +700,8 @@ export class Terrain {
    *
    * @param {Weapon[]} weapons - The weapons array to add to the catalogue
    * @returns {void}
+   * @description Tries public addWeapons() method first, falls back to direct property assignment with _indexWeaponsByLetter() reindexing for legacy support. Modifies catalogue state.
+   * @modifies this.weapons - Adds or replaces weapons in the catalogue and rebuilds index
    *
    * @throws {Error} If weapons catalogue is null
    * @public

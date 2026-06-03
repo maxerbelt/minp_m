@@ -1194,11 +1194,10 @@ export class Store32 extends StoreBase {
         this._applyBitSub3(a, b, mask, out, min)
         break
       case OP_SUBMANY:
-        if (b0 == null || b == null || a == null || b.length !== a.length) {
+        if (b0 == null || b == null || b.length !== a?.length)
           throw new Error(
             'sub many requires all of a, b  arrays of the same length'
           )
-        }
         this._applyBitSubMany(a, b, out, min)
         break
       case OP_OR_INTO:
@@ -1975,8 +1974,8 @@ export class Store32 extends StoreBase {
    * @returns {boolean} True if predicate is true for all words
    */
   _checkAllWords (board, predicate) {
-    for (let i = 0; i < board.length; i++) {
-      if (!predicate(board[i])) return false
+    for (const element of board) {
+      if (!predicate(element)) return false
     }
     return true
   }

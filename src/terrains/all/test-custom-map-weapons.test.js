@@ -1,7 +1,7 @@
 /**
  * Test: Verify custom maps have correct weapons in space terrain
  */
-import { CustomBlankMap, SavedCustomMap } from './js/map.js'
+import { CustomBlankMap } from './js/map.js'
 
 describe('Custom Maps Weapon Initialization', () => {
   describe('CustomBlankMap in space terrain', () => {
