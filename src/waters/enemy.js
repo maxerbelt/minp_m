@@ -811,10 +811,12 @@ class Enemy extends Waters {
    */
   _attemptShipPlacement (ships) {
     for (let trial = 0; trial < MAX_PLACEMENT_ATTEMPTS; trial++) {
-      if (this.shipCellGrid.attemptToPlaceShips(
-        // @ts-ignore - Object[] to Ship[] type cast (parent class loose typing)
-        ships
-      )) {
+      if (
+        this.shipCellGrid.attemptToPlaceShips(
+          // @ts-ignore - Object[] to Ship[] type cast (parent class loose typing)
+          ships
+        )
+      ) {
         return true
       }
     }
@@ -1507,7 +1509,7 @@ class Enemy extends Waters {
       }
 
       this._onFirstClickSelection(r, c)
-      this.selectedCellCoordinates = [r, c]
+      this.selectedCellCoordinates = { r, c }
       return
     }
 
