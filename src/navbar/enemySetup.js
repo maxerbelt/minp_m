@@ -791,11 +791,11 @@ function _attachClickHandler (element, handler) {
  *                          Must be called to deactivate keyboard listeners.
  *
  * @example
- * const cleanup = wireUpButtonHandlers(onPlace, onTest);
+ * const cleanup = _wireUpButtonHandlers(onPlace, onTest);
  * // ... game runs ...
  * cleanup();  // Cleanup when transitioning to next phase
  */
-function wireUpButtonHandlers (placementHandler, testHandler) {
+function _wireUpButtonHandlers (placementHandler, testHandler) {
   // Refresh button states
   enemy.UI?.refreshButtons?.()
 
@@ -851,7 +851,7 @@ function wireUpButtonHandlers (placementHandler, testHandler) {
  * cleanup();
  */
 export function setupEnemy (placementHandler, testHandler) {
-  return wireUpButtonHandlers(placementHandler, testHandler)
+  return _wireUpButtonHandlers(placementHandler, testHandler)
 }
 
 /**
