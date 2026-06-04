@@ -588,9 +588,8 @@ export class Friend extends Placement {
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    * @returns {boolean} True if valid target location (in bounds and not double-tapped)
-   * @private
    */
-  isHitValid (x, y) {
+  #isHitValid (x, y) {
     // @ts-ignore - map.inBounds is available at runtime
     // @ts-ignore - isDTap is inherited from Waters base class
     return this.map.isInBoundsAt(x, y) && !this.isDTap(x, y, 4, false, false)
@@ -614,10 +613,10 @@ export class Friend extends Placement {
       const loc = this.getRandomUntriedCoordinate()
 
       if (!loc) {
-        this._handleSeekFailure()
+        this.#handleSeekFailure()
         return this.noResult
       }
-      if (this.isHitValid(...loc)) {
+      if (this.#isHitValid(...loc)) {
         // @ts-ignore - launchCurrentWeapon is method defined in this class at runtime
         return await this.launchCurrentWeapon(...loc)
       }
@@ -628,10 +627,9 @@ export class Friend extends Placement {
   /**
    * Handles failure to find valid seek locations during autonomous play.
    * Displays error message and halts test mode.
-   * @private
    * @returns {void}
    */
-  _handleSeekFailure () {
+  #handleSeekFailure () {
     // @ts-ignore - UI.showNotice is defined in Board class at runtime
     this.UI.showNotice('something went wrong!')
     this.boardDestroyed = true
