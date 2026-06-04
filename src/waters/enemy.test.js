@@ -208,9 +208,9 @@ describe('Enemy.updateWeaponStatus', () => {
     ])
     gameStatus = /** @type {any} */ (modules[0]).gameStatus
     bh = /** @type {any} */ (modules[1]).bh
-    bh.seekingMode = false(
-      /** @type {any} */ bh.terrain
-    ).hasAttachedWeapons = false
+    bh.seekingMode = false
+
+    bh.terrain.hasAttachedWeapons = false
 
     // Reset all mocks
     jest.clearAllMocks()

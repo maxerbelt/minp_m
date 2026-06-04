@@ -1,15 +1,24 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach } from '@jest/globals'
 import { StoreBig } from './storeBig.js'
 import { Mask } from '../rectangle/mask.js'
 
+/**
+ * @param {number} width
+ * @param {number} height
+ * @param {bigint} bits
+ * @param {number} depth
+ * @returns {string}
+ */
 function ascii (width, height, bits, depth = 2) {
-  const m = new Mask(width, height, bits, null, depth)
+  const m = new Mask(width, height, bits, undefined, depth)
   return m.toAscii
 }
+// @ts-ignore - Adding toJSON to BigInt prototype for JSON serialization
 BigInt.prototype.toJSON = function () {
   return this.toString()
 }
 describe('StoreBig', () => {
+  /** @type {StoreBig} */
   let store
   beforeEach(() => {
     store = new StoreBig(1, 100, 1, 10, 10)
@@ -74,6 +83,7 @@ describe('StoreBig', () => {
 
   describe('occupancy1Bit', () => {
     it('should handle empty source', () => {
+      /** @type {bigint[]} */
       const src = []
       const result = store.occupancy1Bit(src, 4, 4)
       expect(result).toBe(0n)
@@ -88,21 +98,25 @@ describe('StoreBig', () => {
 
   describe('setBitInBigInt', () => {
     it('should set a bit at position 0', () => {
+      // @ts-ignore - Testing private method
       const result = store.setBitInBigInt(0n, BigInt(0))
       expect(result).toBe(1n)
     })
 
     it('should set a bit at position 3', () => {
+      // @ts-ignore - Testing private method
       const result = store.setBitInBigInt(0n, BigInt(3))
       expect(result).toBe(8n)
     })
 
     it('should preserve existing bits', () => {
+      // @ts-ignore - Testing private method
       const result = store.setBitInBigInt(5n, BigInt(3)) // 0101 | 1000 = 1101
       expect(result).toBe(13n)
     })
 
     it('should not change if bit already set', () => {
+      // @ts-ignore - Testing private method
       const result = store.setBitInBigInt(1n, BigInt(0))
       expect(result).toBe(1n)
     })
@@ -194,8 +208,11 @@ describe('StoreBig', () => {
     it('should create single color layer for 1-bit board', () => {
       const store1 = new StoreBig(1, 16, 1, 4, 4)
       let bitboard = 0n
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 0)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 5)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 10)
 
       const result = store1.extractColorLayers(bitboard, 4, 4)
@@ -294,9 +311,13 @@ describe('StoreBig', () => {
       const store1 = new StoreBig(1, 16, 1, 4, 4)
       let bitboard = 0n
       // Set entire first row
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 0)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 1)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 2)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 3)
 
       const result = store1.extractColorLayers(bitboard, 4, 4)
@@ -306,9 +327,13 @@ describe('StoreBig', () => {
     it('should handle all positions with same color', () => {
       const store1 = new StoreBig(1, 100, 1, 2, 2)
       let bitboard = 0n
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 0)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 1)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 2)
+      // @ts-ignore - addBit parameter coercion from number to bigint is handled by storeType
       bitboard = store1.addBit(bitboard, 3)
 
       const result = store1.extractColorLayers(bitboard, 2, 2)

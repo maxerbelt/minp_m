@@ -16,7 +16,7 @@ export class HexNormalCover extends HexCoverBase {
   }
 
   *line (startQ, startR, endQ, endR, exitCondition) {
-    const boundaryExit = this.cubeIndex._boundaryExitCondition
+    const boundaryExit = this.cubeIndex._createBoundaryExitCondition()
     const useBresenham = exitCondition === boundaryExit
 
     exitCondition = this.cubeIndex._ensureExitCondition(

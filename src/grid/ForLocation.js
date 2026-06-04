@@ -230,4 +230,13 @@ export class ForLocation {
   test (color = 1) {
     return this.hasColor(color)
   }
+
+  /**
+   * Alias to bitStore property for backward compatibility.
+   * @deprecated Access bitStore directly instead (marked private for encapsulation)
+   * @type {Store}
+   */
+  get store () {
+    return this.bitStore
+  }
 }

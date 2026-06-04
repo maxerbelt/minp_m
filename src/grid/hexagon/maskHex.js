@@ -632,7 +632,7 @@ export class MaskHex extends MaskBase {
    */
   dilate (radius = 1) {
     this._assertIndexerHasMethod('dilate')
-    this.bits = this.indexer.dilate(this.bits, radius, this.store)
+    this.bits = this.indexer.dilate(this.bits, this.store, radius)
     return this
   }
 
@@ -652,7 +652,7 @@ export class MaskHex extends MaskBase {
    */
   erode (radius = 1) {
     this._assertIndexerHasMethod('erode')
-    this.bits = this.indexer.erode(this.bits, radius, this.store)
+    this.bits = this.indexer.erode(this.bits, this.store, radius)
     return this
   }
 
