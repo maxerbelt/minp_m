@@ -1583,7 +1583,7 @@ describe('Enemy.updateWeaponStatus', () => {
         ),
         _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
           const result = { weapon: 'Missile', score: { hits: 1 } }
-          await this.fireWeaponAt(r, c, this.loadOut.currentWeaponSystem)
+          await this.fireWeaponAt(c, r, this.loadOut.currentWeaponSystem)
           this._processWeaponResult(result)
           this._finalizeTurn()
           return result

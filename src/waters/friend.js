@@ -1172,7 +1172,7 @@ export class Friend extends Placement {
         ? undefined
         : this.loadOut.currentWeaponSystem
     // @ts-ignore - fireWeaponAt is method defined in base Waters class at runtime
-    const result = await this.fireWeaponAt(r, c, weaponSystem)
+    const result = await this.fireWeaponAt(c, r, weaponSystem)
     // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
       // @ts-ignore - opponent is Waters|null at runtime

@@ -1137,17 +1137,17 @@ class Enemy extends Waters {
    * Orchestrates the full weapon launch flow from preparation through execution.
    *
    * @async
-   * @param {number} y - Target row coordinate (0-indexed)
-   * @param {number} x - Target column coordinate (0-indexed)
+   * @param {number} r - Target row coordinate (0-indexed)
+   * @param {number} c - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} Result containing weapon, score, or targeting state
    * @memberof Enemy
    */
-  async #prepareWeaponLaunch (y, x) {
+  async #prepareWeaponLaunch (r, c) {
     // @ts-ignore - this.UI.removeHighlightAoE is a real method
     this.UI?.removeHighlightAoE?.()
     // @ts-ignore - setWeaponFireHandlers is parent method
     this.setWeaponFireHandlers?.()
-    return await this.#launchWeaponSequence(x, y)
+    return await this.#launchWeaponSequence(c, r)
   }
 
   /**
@@ -1164,8 +1164,8 @@ class Enemy extends Waters {
    * 6. Fall back to default weapon launch
    *
    * @async
-   * @param {number} y - Target row coordinate (0-indexed)
    * @param {number} x - Target column coordinate (0-indexed)
+   * @param {number} y - Target row coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} The final launch result
    * @memberof Enemy
    */
@@ -1194,8 +1194,8 @@ class Enemy extends Waters {
 
     // @ts-ignore - fireWeaponAt is parent method, LoadOut type issue
     return await this.fireWeaponAt?.(
-      y,
       x,
+      y,
       undefined,
       // @ts-ignore - LoadOut.launchDefault parameter type
       LoadOut.launchDefault.bind(this, this.UI)

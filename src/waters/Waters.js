@@ -1968,8 +1968,8 @@ export class Waters {
    * @protected
    */
   async fireWeaponAt (
-    y,
     x,
+    y,
     weaponSystem = this.loadOut?.selectedWeapon || undefined,
     launch = this.loadOut?.launch
   ) {
@@ -1998,8 +1998,8 @@ export class Waters {
   async launchSelectedWeapon (x, y) {
     if (this.loadOut?.isArmed) {
       return await this.fireWeaponAt(
-        y,
         x,
+        y,
         this.loadOut.selectedWeapon || undefined
       )
     }
@@ -2027,7 +2027,7 @@ export class Waters {
           unAttached
         )
       }
-      const result = await this.fireWeaponAt(y, x, unAttached, launch)
+      const result = await this.fireWeaponAt(x, y, unAttached, launch)
       return result
     }
     return null
