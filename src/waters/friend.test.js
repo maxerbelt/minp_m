@@ -229,15 +229,15 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
 
       if (weapon) {
         // Always set the weapon mode and reset icons to ensure UI updates on weapon change
-        this._setWeaponMode(weapon)
-        this._resetAmmoIcons()
+        this.setWeaponMode(weapon)
+        this.resetAmmoIcons()
         this.displayAmmoStatus(weaponSystem, maps, numCoords, null, unattached)
       }
     },
     /** @type {jest.Mock} */
-    _setWeaponMode: jest.fn(),
+    setWeaponMode: jest.fn(),
     /** @type {jest.Mock} */
-    _resetAmmoIcons: jest.fn(),
+    resetAmmoIcons: jest.fn(),
     /** @type {jest.Mock} */
     displayAmmoStatus: jest.fn(),
     /** @type {jest.Mock} */
@@ -361,8 +361,8 @@ describe('Friend', () => {
   describe('updateWeaponStatus', () => {
     beforeEach(() => {
       // Mock gameStatus methods to verify they are called
-      gameStatus._setWeaponMode = jest.fn()
-      gameStatus._resetAmmoIcons = jest.fn()
+      gameStatus.setWeaponMode = jest.fn()
+      gameStatus.resetAmmoIcons = jest.fn()
       gameStatus.displayAmmoStatus = jest.fn()
 
       // Mock loadOut
@@ -376,17 +376,17 @@ describe('Friend', () => {
       }
     })
 
-    it('calls gameStatus._setWeaponMode with current weapon', () => {
+    it('calls gameStatus.setWeaponMode with current weapon', () => {
       friend.updateWeaponStatus()
-      expect(gameStatus._setWeaponMode).toHaveBeenCalledWith({
+      expect(gameStatus.setWeaponMode).toHaveBeenCalledWith({
         name: 'RailGun',
         letter: 'R'
       })
     })
 
-    it('calls gameStatus._resetAmmoIcons to prepare icon display', () => {
+    it('calls gameStatus.resetAmmoIcons to prepare icon display', () => {
       friend.updateWeaponStatus()
-      expect(gameStatus._resetAmmoIcons).toHaveBeenCalled()
+      expect(gameStatus.resetAmmoIcons).toHaveBeenCalled()
     })
 
     it('calls gameStatus.displayAmmoStatus with correct parameters', () => {
@@ -403,8 +403,8 @@ describe('Friend', () => {
     it('does not call UI methods if no weapon is available', () => {
       friend.loadOut.currentWeaponSystem = null
       friend.updateWeaponStatus()
-      expect(gameStatus._setWeaponMode).not.toHaveBeenCalled()
-      expect(gameStatus._resetAmmoIcons).not.toHaveBeenCalled()
+      expect(gameStatus.setWeaponMode).not.toHaveBeenCalled()
+      expect(gameStatus.resetAmmoIcons).not.toHaveBeenCalled()
       expect(gameStatus.displayAmmoStatus).not.toHaveBeenCalled()
     })
 
@@ -412,7 +412,7 @@ describe('Friend', () => {
       const _rack = {}
       const _cursorInfo = { x: 10, y: 20 }
       friend.updateWeaponStatus(_rack, _cursorInfo)
-      expect(gameStatus._setWeaponMode).toHaveBeenCalled()
+      expect(gameStatus.setWeaponMode).toHaveBeenCalled()
     })
 
     it('includes unattached weapon status in displayAmmoStatus call', () => {

@@ -327,10 +327,8 @@ export class Friend extends Placement {
 
     if (weapon) {
       // Always set the weapon mode and reset icons to ensure UI updates on weapon change
-      // @ts-ignore - _setWeaponMode and _resetAmmoIcons are private StatusUI methods
-      gameStatus._setWeaponMode(weapon)
-      // @ts-ignore - _setWeaponMode and _resetAmmoIcons are private StatusUI methods
-      gameStatus._resetAmmoIcons()
+      gameStatus.setWeaponMode(weapon)
+      gameStatus.resetAmmoIcons()
       // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class at runtime
       const selectedCoords = this.loadOut.selectedCoordinates || []
       gameStatus.displayAmmoStatus(
@@ -503,8 +501,8 @@ export class Friend extends Placement {
    * Delegates to loadOut.aimWeapon with current weapon system and launch function.
    * Processes both click coordinates and weapon targeting logic.
    *
-   * @param {number} y - Target row coordinate
    * @param {number} x - Target column coordinate
+   * @param {number} y - Target row coordinate
    * @returns {Promise<WeaponLaunchResult>} Result with weapon and score information
    */
   async launchCurrentWeapon (x, y) {
@@ -523,10 +521,10 @@ export class Friend extends Placement {
    * Attempts weapon launch and falls back to a secondary aim coordinate.
    * If initial target returns noResult or fails, retries with fallback coordinates.
    * Used for boundary-aware targeting in random strategies.
-   * @param {number} y - Initial target row coordinate
    * @param {number} x - Initial target column coordinate
-   * @param {number} [fallbackY=y] - Fallback row coordinate (defaults to y)
+   * @param {number} y - Initial target row coordinate
    * @param {number} [fallbackX=x] - Fallback column coordinate (defaults to x)
+   * @param {number} [fallbackY=y] - Fallback row coordinate (defaults to y)
    * @returns {Promise<WeaponLaunchResult>} Launch result from initial or fallback target
    */
   async #attemptLaunchWithFallback (x, y, fallbackX = x, fallbackY = y) {
@@ -601,8 +599,8 @@ export class Friend extends Placement {
    * Validates if location is valid target for seeking.
    * Checks if location is in bounds and hasn't been double-tapped (clicked twice).
    *
-   * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @returns {boolean} True if valid target location (in bounds and not double-tapped)
    * @private
    */
