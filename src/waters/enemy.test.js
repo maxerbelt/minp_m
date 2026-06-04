@@ -208,14 +208,15 @@ describe('Enemy.updateWeaponStatus', () => {
     ])
     gameStatus = /** @type {any} */ (modules[0]).gameStatus
     bh = /** @type {any} */ (modules[1]).bh
-    bh.seekingMode = false
-    bh.terrain = /** @type {any} */ (bh.terrain)
-    bh.terrain.hasAttachedWeapons = false
+    bh.seekingMode = false(
+      /** @type {any} */ bh.terrain
+    ).hasAttachedWeapons = false
 
     // Reset all mocks
     jest.clearAllMocks()
 
     // Create a mock loadOut that will be used by Enemy instances
+    /** @type {any} */
     mockLoadOut = {
       currentWeaponSystem: null,
       selectedCoordinates: [],
@@ -266,7 +267,9 @@ describe('Enemy.updateWeaponStatus', () => {
         this.UI = mockUI
         this.steps = mockSteps
         this.loadOut = mockLoadOut
+        /** @type {any} */
         this.opponent = null
+        /** @type {any} */
         this.timeoutId = null
         this.boardDestroyed = false
         this.isRevealed = false
@@ -335,6 +338,7 @@ describe('Enemy.updateWeaponStatus', () => {
        * @returns {void}
        */
       cursorChange (oldCursor, newCursorInfo) {
+        // @ts-ignore - newCursorInfo is a test object with dynamic properties
         const newCursor = newCursorInfo?.cursor
         if (newCursor === oldCursor) return
         const board = this.UI.board.classList
@@ -363,6 +367,7 @@ describe('Enemy.updateWeaponStatus', () => {
           // prior weapon cursor visible.
         }
 
+        // @ts-ignore - newCursorInfo is a test object with dynamic properties
         this.updateMode(newCursorInfo.wps, newCursorInfo)
       }
 
@@ -1145,7 +1150,8 @@ describe('Enemy.updateWeaponStatus', () => {
           const shipsWithWeapon = this.opponent.ships.filter(ship => {
             const entries = ship.loadedWeaponEntries
             return entries.some(
-              ([_key, weapon]) => weapon?.weapon?.letter === targetLetter
+              ([/** @type {any} */ _key, /** @type {any} */ weapon]) =>
+                weapon?.weapon?.letter === targetLetter
             )
           })
 
@@ -1161,7 +1167,8 @@ describe('Enemy.updateWeaponStatus', () => {
 
           const entries = selectedShip.loadedWeaponEntries
           const [key, weapon] = entries.find(
-            ([_k, w]) => /** @type {any} */ (w).weapon?.letter === targetLetter
+            ([/** @type {any} */ _k, /** @type {any} */ w]) =>
+              /** @type {any} */ (w).weapon?.letter === targetLetter
           )
 
           if (!key || !weapon) {
@@ -1317,6 +1324,7 @@ describe('Enemy.updateWeaponStatus', () => {
           // NOSONAR - Test mock class
           this.opponent = mockOpponent
           this.loadOut = { currentWeaponSystem: null }
+          /** @type {any} */
           this.timeoutId = null
 
           this._onFirstClickSelection = jest.fn()
@@ -1342,6 +1350,7 @@ describe('Enemy.updateWeaponStatus', () => {
           }
         }
 
+        /** @type {any} */
         selectedCellCoordinates = null
       }
     })
@@ -1386,6 +1395,7 @@ describe('Enemy.updateWeaponStatus', () => {
           score: { hits: 0 }
         })),
         setWeaponFireHandlers: jest.fn(),
+        // @ts-ignore - accessing private method for testing
         _handleSingleShotClick: /** @type {any} */ (
           EnemyClass.prototype._handleSingleShotClick
         ),
@@ -1434,6 +1444,7 @@ describe('Enemy.updateWeaponStatus', () => {
         loadOut: { selectedWeapon: { id: 'mock-weapon' }, isSingleShot: false },
         timeoutId: null,
         canTakeTurn: true,
+        // @ts-ignore - accessing private method for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
