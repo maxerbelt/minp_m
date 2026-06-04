@@ -47,14 +47,14 @@ export class BitGrid {
    * Initializes a BitGrid with optional dimension overrides.
    *
    * @param {BitStore} store - Bit store implementation with index/get/has operations
-   * @param {number} [width=null] - Grid width in cells; defaults to store.width if omitted
-   * @param {number} [height=null] - Grid height in cells; defaults to store.height if omitted
+   * @param {number} [width] - Grid width in cells; defaults to store.width if omitted
+   * @param {number} [height] - Grid height in cells; defaults to store.height if omitted
    * @param {boolean} [fast=false] - Enable fast path optimization via store.bitsOccupied() for 1-bit stores
    */
-  constructor (store, width = null, height = null, fast = false) {
+  constructor (store, width, height, fast = false) {
     this.store = store
-    this.width = width || this.store.width || 0
-    this.height = height || this.store.height || 0
+    this.width = width ?? this.store.width ?? 0
+    this.height = height ?? this.store.height ?? 0
     this.fast = fast
   }
 
@@ -62,8 +62,7 @@ export class BitGrid {
    * Total cell count (width × height).
    * Represents the number of cells in the grid.
    *
-   * @type {number}
-   * @readonly
+   * @returns {number}
    */
   get area () {
     return this.width * this.height
@@ -105,7 +104,6 @@ export class BitGrid {
    * @param {number} count - Number of iterations (0 to count-1)
    * @param {(index: number) => void} callback - Function called for each sequential index
    * @returns {void}
-   * @private
    */
   #forEachInRange (count, callback) {
     for (let index = 0; index < count; index++) {
@@ -139,7 +137,10 @@ export class BitGrid {
    * }
    */
   *locations (bitboard) {
-    const cellIndices = this.#getIndices(bitboard, bitboard != null)
+    const cellIndices = this.#getIndices(
+      /** @type {bigint} */ (bitboard),
+      bitboard != null
+    )
     for (const index of cellIndices) {
       const { x, y } = this.indexToLocation(index)
       yield [x, y]
@@ -185,7 +186,6 @@ export class BitGrid {
    * @param {bigint} bitboard - Bitboard to iterate
    * @generator
    * @yields {number} Index of each occupied (non-zero) cell
-   * @private
    */
   *#occupiedIndices (bitboard) {
     if (this.fast && this.store.bitsOccupied) {
@@ -207,7 +207,6 @@ export class BitGrid {
    * @param {boolean} occupiedOnly - If true, yields only occupied cell indices; if false, yields all
    * @returns {Generator<number>} Iterator over cell indices
    * @generator
-   * @private
    */
   *#getIndices (bitboard, occupiedOnly) {
     yield* occupiedOnly ? this.#occupiedIndices(bitboard) : this.indices()
@@ -224,10 +223,9 @@ export class BitGrid {
    *
    * @param {bigint} _bitboard - Bitboard to check (parameter unused, included for consistency)
    * @returns {boolean} True if fast path should be used for value retrieval
-   * @private
    */
   #shouldUseFastPath (_bitboard) {
-    return this.fast && this.store.bitsOccupied && this.store.bitWidth === 1
+    return !!(this.fast && this.store.bitsOccupied && this.store.bitWidth === 1)
   }
 
   /**
@@ -357,11 +355,10 @@ export class BitGrid {
    * Determines if fast path optimization is currently enabled.
    * Returns true when fast mode is active and store.bitsOccupied is available.
    *
-   * @type {boolean}
-   * @readonly
+   * @returns {boolean}
    */
   get isFastPathEnabled () {
-    return this.fast && this.store.bitsOccupied
+    return !!(this.fast && this.store.bitsOccupied)
   }
 
   /**
@@ -419,7 +416,7 @@ export class BitGrid {
    * @param {bigint} bitboard - Bitboard to iterate
    * @generator
    * @yields {[number, bigint]} [index, value] pairs via bitsOccupied fast path
-   * @private
+
    */
   *#occupiedIndexAndValuesFast (bitboard) {
     for (const index of this.occupiedIndicesFast(bitboard)) {
@@ -437,7 +434,9 @@ export class BitGrid {
    * @yields {number} Index of each occupied cell
    */
   *occupiedIndicesFast (bitboard) {
-    yield* this.store.bitsOccupied(bitboard, this.area)
+    if (this.store.bitsOccupied) {
+      yield* this.store.bitsOccupied(bitboard, this.area)
+    }
   }
 
   /**
@@ -475,7 +474,9 @@ export class BitGrid {
    * console.log(`Highest color: ${maxVal}`);
    */
   maxValue (bitboard) {
-    return this.#extremeValue(bitboard, (a, b) => a > b, 0n)
+    return /** @type {bigint} */ (
+      this.#extremeValue(bitboard, (a, b) => a > b, 0n)
+    )
   }
 
   /**
@@ -503,7 +504,9 @@ export class BitGrid {
    * console.log(`Lowest color: ${minVal}`);
    */
   minValue (bitboard) {
-    return this.#extremeValue(bitboard, (a, b) => a < b, Infinity)
+    return /** @type {bigint} */ (
+      this.#extremeValue(bitboard, (a, b) => a < b, 0n)
+    )
   }
 
   /**
@@ -524,9 +527,8 @@ export class BitGrid {
    *
    * @param {bigint} bitboard - Bitboard to analyze
    * @param {(current: bigint|number, extreme: bigint|number) => boolean} comparator - Comparison function; returns true if current is more extreme than extreme
-   * @param {bigint|number} initialValue - Starting value for comparison (0n for max, Infinity for min)
+   * @param {bigint|number} initialValue - Starting value for comparison (0n for max, 0n for min)
    * @returns {bigint|number} Extreme value found using comparator
-   * @private
    */
   #extremeValue (bitboard, comparator, initialValue) {
     let extremeValue = initialValue
@@ -556,7 +558,6 @@ export class BitGrid {
    * @param {number} count - Number of values to yield
    * @generator
    * @yields {number} Integers 0 through count-1 (inclusive)
-   * @private
    */
   *#rangeGenerator (count) {
     for (let i = 0; i < count; i++) {
@@ -583,6 +584,9 @@ export class BitGrid {
    * @returns {bigint} Bit mask representing one full row (width cells)
    */
   rowMask () {
-    return this.store.rowMaskForWidth(this.width)
+    if (this.store.rowMaskForWidth) {
+      return this.store.rowMaskForWidth(this.width)
+    }
+    return 0n
   }
 }

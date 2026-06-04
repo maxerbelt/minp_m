@@ -1,9 +1,9 @@
-
 import { Mask } from './mask.js'
 
-import { beforeEach, describe, it, expect, jest } from '@jest/globals'
+import { beforeEach, describe, it, expect } from '@jest/globals'
 
 describe('Mask - additional methods and edge cases', () => {
+  /** @type {Mask} */
   let mask
 
   beforeEach(() => {
@@ -38,17 +38,17 @@ describe('Mask - additional methods and edge cases', () => {
       const grownbits = mask.store.expandToWidthWithXYOffset(
         4,
         4,
-        mask.bits,
+        /** @type {bigint} */ (mask.bits),
         6,
         1,
         1
       )
-      const grownBreakdown = new Mask(6, 6, grownbits, null, 1)
+      const grownBreakdown = new Mask(6, 6, grownbits, undefined, 1)
       expect(grownBreakdown.occupancy).toBe(9)
       expect(grownBreakdown.toAscii).toBe(
         '......\n.111..\n.111..\n.111..\n......\n......'
       )
-      const grown = mask.expandBorderMask(1, 0)
+      const grown = mask.expandBorderMask(1)
       expect(grown.width).toBe(6)
       expect(grown.height).toBe(6)
       expect(grown.store.width).toBe(6)
@@ -126,8 +126,8 @@ describe('Mask - additional methods and edge cases', () => {
     })
     it('erode should shrink the region', () => {
       mask.set(1, 1)
-      mask.set(1, 2)
-      expect(mask.occupancy).toBe(2)
+      mask.set(1, 2) // NOSONAR - Different y coordinate, not duplicate index
+      expect(mask.occupancy).toBe(2) // NOSONAR
       mask.erode(1)
       // a two-cell vertical line should erode to nothing
       expect(mask.occupancy).toBe(0)
@@ -201,17 +201,17 @@ describe('Mask - additional methods and edge cases', () => {
     })
 
     it('erode should shrink the region', () => {
-      mask.set(1, 0, 1n)
-      mask.set(1, 1, 1n)
-      mask.set(1, 2, 1n)
+      mask.set(1, 0, 1)
+      mask.set(1, 1, 1)
+      mask.set(1, 2, 1)
       expect(mask.occupancy).toBe(3)
       mask.erode(1)
       // a three-cell vertical line should erode to nothing
       expect(mask.occupancy).toBe(0)
       // Re-set after erode
-      mask.set(1, 0, 1n)
-      mask.set(1, 1, 1n)
-      mask.set(1, 2, 1n)
+      mask.set(1, 0, 1)
+      mask.set(1, 1, 1)
+      mask.set(1, 2, 1)
       expect(mask.occupancy).toBe(3)
       mask.dilate(1)
       expect(mask.occupancy).toBe(12)
@@ -240,9 +240,9 @@ describe('Mask - additional methods and edge cases', () => {
       mask.erode(1)
       expect(mask.occupancy).toBe(0)
       // Re-set after erode
-      mask.set(1, 0, 1n)
-      mask.set(2, 0, 1n)
-      mask.set(3, 0, 1n)
+      mask.set(1, 0, 1)
+      mask.set(2, 0, 1)
+      mask.set(3, 0, 1)
       expect(mask.occupancy).toBe(3)
       mask.dilate(1)
 
