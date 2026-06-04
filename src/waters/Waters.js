@@ -1806,15 +1806,16 @@ export class Waters {
    * If an unattached weapon fires, returns that result.
    * Otherwise, attempts to select a targeted attached weapon system.
    *
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
+   * @param {number} y - Target row coordinate
+   * @param {number} x - Target column coordinate
    * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
    * @returns {Promise<WeaponResult|null>} Result with weapon or null if selection
+   * @protected
    */
   // @ts-ignore - seekingMode is available at runtime on bh object
-  async launchRandomWeapon (r, c, autoSelectWarning = !bh?.seekingMode) {
+  async launchRandomWeapon (x, y, autoSelectWarning = !bh?.seekingMode) {
     // @ts-ignore - launchUnattachedWeapon returns WeaponResult or null at runtime
-    const result = await this.launchUnattachedWeapon(r, c)
+    const result = await this.launchUnattachedWeapon(x, y)
 
     // If unattached weapon fired successfully, return result
     if (result && typeof result === 'object' && 'score' in result) {
@@ -1991,9 +1992,10 @@ export class Waters {
    * @param {number} y - Target row coordinate
    * @param {number} x   - Target column coordinate
    * @returns {Promise<Object|null>} Fire result or null
+   * @protected
    */
   // @ts-ignore - unused but may be called externally
-  async launchSelectedWeapon (y, x) {
+  async launchSelectedWeapon (x, y) {
     if (this.loadOut?.isArmed) {
       return await this.fireWeaponAt(
         y,
@@ -2011,7 +2013,7 @@ export class Waters {
    * @returns {Promise<WeaponResult|null>} Fire result or null
    * @private
    */
-  async launchUnattachedWeapon (y, x) {
+  async launchUnattachedWeapon (x, y) {
     const unAttached = this.firstUnattachedWeaponSystem
     if (unAttached) {
       // @ts-ignore - bh.map is initialized at runtime
@@ -3053,14 +3055,14 @@ export class Waters {
   /**
    * Updates visibility of weapon buttons.
    * Shows/hides weapon buttons based on available ammunition.
-   * 
+   *
    * @returns {void}
    */
   #updateWeaponButtons () {
     // @ts-ignore - weaponBtns is defined at runtime on UI
     const btns = this.UI?.weaponBtns
     if (!btns) return
-    
+
     for (const btn of btns) {
       // @ts-ignore - dataset property available at runtime on button elements
       const letter = btn.dataset?.letter

@@ -684,7 +684,7 @@ class Enemy extends Waters {
 
     if (!board) return
 
-    this._updateBoardCursorDisplay(newCursor, oldCursor, board)
+    this.#updateBoardCursorDisplay(newCursor, oldCursor, board)
 
     const wps = /** @type {WeaponSystem|undefined} */ (newCursorInfo?.wps)
     if (wps) {
@@ -698,13 +698,12 @@ class Enemy extends Waters {
    * Handles adding new cursor classes and removing stale ones.
    * Extracted from cursorChange() to reduce cognitive complexity.
    *
-   * @private
    * @param {string} newCursor - The new cursor class (may be empty string)
    * @param {string|null} oldCursor - The old cursor class (may be null)
    * @param {DOMTokenList} board - The board classList element
    * @returns {void}
    */
-  _updateBoardCursorDisplay (newCursor, oldCursor, board) {
+  #updateBoardCursorDisplay (newCursor, oldCursor, board) {
     // When switching to a new non-empty cursor, remove any stale cursor classes
     // from the board before adding the new one. This prevents multiple cursor
     // classes from accumulating during weapon/step changes.
@@ -712,7 +711,7 @@ class Enemy extends Waters {
       if (oldCursor) {
         board.remove(oldCursor)
       }
-      this._removeStaleCursorClasses(board)
+      this.#removeStaleCursorClasses(board)
       if (newCursor) {
         board.add(newCursor)
       }
@@ -728,11 +727,10 @@ class Enemy extends Waters {
    * Identifies and removes classes that match cursor patterns.
    * Extracted from cursorChange() to reduce cognitive complexity.
    *
-   * @private
    * @param {DOMTokenList} board - The board classList element
    * @returns {void}
    */
-  _removeStaleCursorClasses (board) {
+  #removeStaleCursorClasses (board) {
     const staleCursorClasses = /** @type {string[]} */ ([])
     for (const cls of board) {
       if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
@@ -830,12 +828,11 @@ class Enemy extends Waters {
    * - May partially populate board on failed attempts
    * - Does not guarantee placement (placement may fail after all retries)
    *
-   * @private
-   * @param {Array<ShipCell>} ships - Array of Ship objects to place on board (passed to parent method)
+   * @param {ShipCell[]} ships - Array of Ship objects to place on board (passed to parent method)
    * @returns {boolean} True if all ships placed successfully on any attempt; false if placement failed after MAX_PLACEMENT_ATTEMPTS
    * @memberof Enemy
    */
-  _attemptShipPlacement (ships) {
+  #attemptShipPlacement (ships) {
     for (let trial = 0; trial < MAX_PLACEMENT_ATTEMPTS; trial++) {
       if (
         this.shipCellGrid.attemptToPlaceShips(
@@ -866,9 +863,8 @@ class Enemy extends Waters {
    * - Calls _finalizePlacementFailure() which disables UI and throws error
    * - Sets this.boardDestroyed = true on final failure
    *
-   * @private
    * @async
-   * @param {Array<ShipCell>} ships - Array of Ship objects to retry placing via _attemptShipPlacement()
+   * @param {ShipCell[]} ships - Array of Ship objects to retry placing via #attemptShipPlacement()
    * @param {number} attempt - Current retry attempt number (0-indexed); used for exponential backoff calculation
    * @returns {Promise<boolean>} Promise resolving to true if placement succeeded after retry; false returned early if max retries exceeded
    * @throws {Error} Throws with PLACEMENT_FAILED message when max retries exhausted
@@ -880,33 +876,32 @@ class Enemy extends Waters {
 
     if (attempt < MAX_PLACEMENT_RETRIES) {
       await Delay.yield()
-      return this._attemptShipPlacementWithRetry(ships)
+      return this.#attemptShipPlacementWithRetry(ships)
     }
 
-    this._finalizePlacementFailure()
+    this.#finalizePlacementFailure()
     return false
   }
 
   /**
    * Attempts to place ships and returns the result.
-   * @private
-   * @param {Array<ShipCell>} ships - The ships to place
+
+   * @param {ShipCell[]} ships - The ships to place
    * @returns {boolean} True if all ships placed successfully
    * @memberof Enemy
    */
-  _attemptShipPlacementWithRetry (ships) {
-    return this._attemptShipPlacement(ships)
+  #attemptShipPlacementWithRetry (ships) {
+    return this.#attemptShipPlacement(ships)
   }
 
   /**
    * Finalizes placement failure state after all retries have been exhausted.
    * Enables buttons, shows failure message, and throws error.
-   * @private
    * @throws {Error} Always throws with placement failed message
    * @returns {void}
    * @memberof Enemy
    */
-  _finalizePlacementFailure () {
+  #finalizePlacementFailure () {
     // @ts-ignore - this.UI is typed as Object but has enableBtns method
     this.UI?.enableBtns?.()
     gameStatus.addToQueue(MESSAGES.PLACEMENT_FAILED, true)
@@ -923,13 +918,13 @@ class Enemy extends Waters {
    * 1. Get ships to place (use provided array or default to this.ships)
    * 2. Enable UI buttons
    * 3. Yield control with Delay.yield() to allow UI to update
-   * 4. Attempt placement via _attemptShipPlacement()
+   * 4. Attempt placement via #attemptShipPlacement()
    * 5. If successful, add click-to-fire message; otherwise handle via _handlePlacementFailure()
    *
    * SIDE EFFECTS:
    * - Enables UI buttons via this.UI?.enableBtns?.()
    * - Yields to event loop via Delay.yield()
-   * - Mutates board state via _attemptShipPlacement()
+   * - Mutates board state via #attemptShipPlacement()
    * - Updates game status messages
    * - May throw error via _handlePlacementFailure()
    *
@@ -945,7 +940,7 @@ class Enemy extends Waters {
     // @ts-ignore - this.UI is typed as Object but has enableBtns method
     this.UI?.enableBtns?.()
     await Delay.yield()
-    if (this._attemptShipPlacement(shipsToPlace)) {
+    if (this.#attemptShipPlacement(shipsToPlace)) {
       gameStatus.setTips([MESSAGES.CLICK_TO_FIRE])
       // @ts-ignore - this.UI is typed as Object but has enableBtns method
       this.UI?.enableBtns?.()
@@ -986,9 +981,7 @@ class Enemy extends Waters {
    * Updates all UI components.
    * Refreshes weapon UI, tally, and button availability based on game state.
    * Orchestrates parent UI updates with current weapon system display.
-   *
-   * ORCHESTRATION:
-   * 1. Update button states via _updateButtonStates()
+   *#updateButtonStates()
    * 2. Call parent's updateUI() via super.updateUI()
    * 3. Update weapon status display via gameStatus.updateWeaponStatus()
    *
@@ -1002,7 +995,7 @@ class Enemy extends Waters {
    * @memberof Enemy
    */
   updateUI () {
-    this._updateButtonStates()
+    this.#updateButtonStates()
     // @ts-ignore - Parent class updateUI is private but we call it here
     super.updateUI(this.ships)
     const weaponSystem = /** @type {WeaponSystem|undefined} */ (
@@ -1017,11 +1010,10 @@ class Enemy extends Waters {
   /**
    * Updates the state of buttons based on game status.
    * Disables buttons when game is over or out of ammo.
-   * @private
    * @returns {void}
    * @memberof Enemy
    */
-  _updateButtonStates () {
+  #updateButtonStates () {
     const isGameOver = this.isGameOver
     const isOutOfAmmo = this.hasNoAmmo
     const shouldDisableWeapon = isGameOver || isOutOfAmmo
@@ -1144,19 +1136,18 @@ class Enemy extends Waters {
    * Removes highlight, sets fire handlers, and initiates launch sequence.
    * Orchestrates the full weapon launch flow from preparation through execution.
    *
-   * @private
    * @async
-   * @param {number} r - Target row coordinate (0-indexed)
-   * @param {number} c - Target column coordinate (0-indexed)
+   * @param {number} y - Target row coordinate (0-indexed)
+   * @param {number} x - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} Result containing weapon, score, or targeting state
    * @memberof Enemy
    */
-  async _prepareWeaponLaunch (r, c) {
+  async #prepareWeaponLaunch (y, x) {
     // @ts-ignore - this.UI.removeHighlightAoE is a real method
     this.UI?.removeHighlightAoE?.()
     // @ts-ignore - setWeaponFireHandlers is parent method
     this.setWeaponFireHandlers?.()
-    return await this._launchWeaponSequence(r, c)
+    return await this.#launchWeaponSequence(x, y)
   }
 
   /**
@@ -1172,17 +1163,16 @@ class Enemy extends Waters {
    * 5. If result is final, return it
    * 6. Fall back to default weapon launch
    *
-   * @private
    * @async
-   * @param {number} r - Target row coordinate (0-indexed)
-   * @param {number} c - Target column coordinate (0-indexed)
+   * @param {number} y - Target row coordinate (0-indexed)
+   * @param {number} x - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} The final launch result
    * @memberof Enemy
    */
-  async _launchWeaponSequence (r, c) {
+  async #launchWeaponSequence (x, y) {
     // @ts-ignore - launchSelectedWeapon is parent method
-    let result = await this.launchSelectedWeapon?.(r, c)
-    if (this._isFinalLaunchResult(result)) {
+    let result = await this.launchSelectedWeapon?.(x, y)
+    if (this.#isFinalLaunchResult(result)) {
       return result
     }
 
@@ -1197,15 +1187,15 @@ class Enemy extends Waters {
     }
 
     // @ts-ignore - launchRandomWeapon is parent method
-    result = await this.launchRandomWeapon?.(r, c, !bh.seekingMode)
-    if (this._isFinalLaunchResult(result)) {
+    result = await this.launchRandomWeapon?.(x, y, !bh.seekingMode)
+    if (this.#isFinalLaunchResult(result)) {
       return result
     }
 
     // @ts-ignore - fireWeaponAt is parent method, LoadOut type issue
     return await this.fireWeaponAt?.(
-      r,
-      c,
+      y,
+      x,
       undefined,
       // @ts-ignore - LoadOut.launchDefault parameter type
       LoadOut.launchDefault.bind(this, this.UI)
@@ -1215,7 +1205,7 @@ class Enemy extends Waters {
   /**
    * Sets up and launches a weapon at the specified location.
    * Public interface for weapon firing with preparation sequence.
-   * Routes to _prepareWeaponLaunch which handles UI cleanup and handler setup.
+   * Routes to #prepareWeaponLaunch which handles UI cleanup and handler setup.
    *
    * @public
    * @async
@@ -1225,18 +1215,17 @@ class Enemy extends Waters {
    * @memberof Enemy
    */
   async setupWeapon (r, c) {
-    return await this._prepareWeaponLaunch(r, c)
+    return await this.#prepareWeaponLaunch(r, c)
   }
 
   /**
    * Determines whether a weapon launch requires no further action.
    * A final result is one that completes weapon firing without further selection.
-   * @private
    * @param {WeaponLaunchResult|null} result - The weapon launch result to evaluate
    * @returns {boolean} True if result is complete and requires no further action
    * @memberof Enemy
    */
-  _isFinalLaunchResult (result) {
+  #isFinalLaunchResult (result) {
     return !!(
       result?.score ||
       result?.hasTargettedWeapon ||
