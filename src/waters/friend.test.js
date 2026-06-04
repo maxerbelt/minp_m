@@ -185,7 +185,6 @@ jest.unstable_mockModule('./Waters.js', () => ({
 }))
 
 // Mock drag handlers to avoid DOM setup errors in tests
-// Mock drag handlers to avoid DOM setup errors in tests
 // Export both the local and parent-relative specifiers used across modules
 const mockDragModule = {
   setupDragHandlers: jest.fn(),
@@ -397,9 +396,7 @@ describe('Friend', () => {
     })
 
     it('handles optional parameters gracefully', () => {
-      const _rack = {}
-      const _cursorInfo = { x: 10, y: 20 }
-      friend.updateWeaponStatus(_rack, _cursorInfo)
+      friend.updateWeaponStatus({}, { x: 10, y: 20 })
       expect(gameStatus?.setWeaponMode).toHaveBeenCalled()
     })
 
@@ -428,7 +425,7 @@ describe('Friend', () => {
     })
 
     it('returns true when in seeking mode', () => {
-      const originalSeekingMode = bh?.seekingMode
+      const originalSeekingMode = bh?.seekingMode ?? false
       if (bh) bh.seekingMode = true
       try {
         expect(friend._hasUnattachedForCurrentWeapon()).toBe(true)
@@ -450,7 +447,7 @@ describe('Friend', () => {
     })
 
     it('returns false when no unattached weapons or seeking mode', () => {
-      const originalSeekingMode = bh?.seekingMode
+      const originalSeekingMode = bh?.seekingMode ?? false
       if (bh) bh.seekingMode = false
       friend.loadOut.isSingleShot = false
       friend.loadOut.firstUnattachedWeaponSystem = null
@@ -481,18 +478,18 @@ describe('Friend', () => {
     })
 
     it('only processes clicks when in seeking mode', () => {
-      const originalSeekingMode = bh?.seekingMode
+      const originalSeekingMode = bh?.seekingMode ?? false
       if (bh) bh.seekingMode = false
       try {
         friend.onClickCell(5, 5)
         expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
 
     it('only processes clicks when terrain has attached weapons', () => {
-      const originalSeekingMode = bh?.seekingMode
+      const originalSeekingMode = bh?.seekingMode ?? false
       if (bh) {
         bh.seekingMode = true
         bh.terrain = { hasAttachedWeapons: false }
@@ -506,7 +503,7 @@ describe('Friend', () => {
     })
 
     it('first click calls randomAttachedWeapon in seeking mode', () => {
-      const originalSeekingMode = bh?.seekingMode
+      const originalSeekingMode = bh?.seekingMode ?? false
       if (bh) {
         bh.seekingMode = true
         bh.terrain = { hasAttachedWeapons: true }
@@ -518,7 +515,7 @@ describe('Friend', () => {
         )
         expect(friend.selectedCellCoordinates).toEqual({ r: 3, c: 7 })
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
 
@@ -545,7 +542,7 @@ describe('Friend', () => {
     })
 
     it('returns early if seeking mode is false and hasAttachedWeapons is true', () => {
-      const originalSeekingMode = bh?.seekingMode
+      const originalSeekingMode = bh?.seekingMode ?? false
       if (bh) {
         bh.seekingMode = false
         bh.terrain = { hasAttachedWeapons: true }
@@ -554,7 +551,7 @@ describe('Friend', () => {
         friend.onClickCell(5, 5)
         expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
   })

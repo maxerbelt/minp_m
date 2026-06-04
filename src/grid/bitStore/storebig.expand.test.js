@@ -182,10 +182,12 @@ describe('StoreBig expand', () => {
     })
 
     it('should handle expansion calls', () => {
-      const store1 = new StoreBig(1, 100, 1, 4, 4)
+      const store1 = new StoreBig(1, 16, 1, 4, 4)
       const bitboard = 0b1111n
       // expandToSquare calls expandToWidth, so we test it exists and is callable
       expect(typeof store1.expandToSquare).toBe('function')
+      const s = store1.expandToSquare(bitboard, 4, 3)
+      expect(s).toBeDefined()
     })
     it('extractRow should handle a simple shape', () => {
       const store1 = new StoreBig(2, 6, 1, 2, 3)

@@ -1159,11 +1159,11 @@ export class Friend extends Placement {
    * Updates opponent board and UI after firing.
    *
    * @private
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
+   * @param {number} y - Target row coordinate
+   * @param {number} x - Target column coordinate
    * @returns {Promise<void>}
    */
-  async _fireCurrentWeaponImmediately (r, c) {
+  async _fireCurrentWeaponImmediately (y, x) {
     // @ts-ignore - setWeaponFireHandlers is method defined in base Waters class at runtime
     this.setWeaponFireHandlers()
     // @ts-ignore - loadOut.currentWeaponSystem is method at runtime
@@ -1172,7 +1172,7 @@ export class Friend extends Placement {
         ? undefined
         : this.loadOut.currentWeaponSystem
     // @ts-ignore - fireWeaponAt is method defined in base Waters class at runtime
-    const result = await this.fireWeaponAt(c, r, weaponSystem)
+    const result = await this.fireWeaponAt(x, y, weaponSystem)
     // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
       // @ts-ignore - opponent is Waters|null at runtime
@@ -1204,14 +1204,14 @@ export class Friend extends Placement {
    * Clears the selected cell coordinates and updates opponent UI after firing.
    *
    * @private
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
+   * @param {number} y - Target row coordinate
+   * @param {number} x - Target column coordinate
    * @returns {Promise<void>}
    */
-  async _onSecondClickFire (r, c) {
+  async _onSecondClickFire (y, x) {
     this.selectedCellCoordinates = null
     // @ts-ignore - loadOut.selectedWeapon is WeaponSystem available at runtime
-    const result = await this.fireWeaponAt(r, c, this.loadOut.selectedWeapon)
+    const result = await this.fireWeaponAt(x, y, this.loadOut.selectedWeapon)
     // @ts-ignore - result.score exists on WeaponLaunchResult at runtime
     if (result?.score) {
       // @ts-ignore - opponent is Waters|null at runtime

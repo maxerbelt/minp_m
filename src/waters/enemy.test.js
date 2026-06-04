@@ -74,7 +74,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
       tag: 'demo',
       allSubterrainTag: () => ''
     })),
-    terrainByTitle: title => ({ title }),
+    terrainByTitle: /** @param {string} title */ title => ({ title }),
     map: {
       rows: 10,
       cols: 10,
@@ -105,7 +105,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
  * @property {boolean} boardDestroyed - Flag indicating game end state
  */
 jest.unstable_mockModule('./Waters.js', () => ({
-  Waters: /** @constructor @this {any} */ function Waters (ui) {
+  Waters: /** @constructor @this {any} @param {any} ui */ function Waters (ui) {
     this.UI = ui
     this.steps = {
       onBeginTurn: null,
@@ -176,14 +176,13 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
  * @suite Enemy.updateWeaponStatus
  */
 describe('Enemy.updateWeaponStatus', () => {
-  /** @type {typeof Enemy} */
+  /** @type {any} */
   let Enemy
-  /** @type {MockGameStatus} */
+  /** @type {any} */
   let gameStatus
-  /** @type {MockBh} */
+  /** @type {any} */
   let bh
-  /** @type {Object} */
-  let mockLoadOut
+  /** @type {any} */
 
   /**
    * Setup test fixtures before each test.
@@ -205,9 +204,10 @@ describe('Enemy.updateWeaponStatus', () => {
       import('./StatusUI.js'),
       import('../terrains/all/js/bh.js')
     ])
-    gameStatus = modules[0].gameStatus
-    bh = modules[1].bh
+    gameStatus = /** @type {any} */ (modules[0]).gameStatus
+    bh = /** @type {any} */ (modules[1]).bh
     bh.seekingMode = false
+    bh.terrain = /** @type {any} */ (bh.terrain)
     bh.terrain.hasAttachedWeapons = false
 
     // Reset all mocks
@@ -234,7 +234,7 @@ describe('Enemy.updateWeaponStatus', () => {
     }
 
     // Create a basic mock UI
-    const mockUI = {
+    const mockUI = /** @type {any} */ ({
       board: {
         classList: {
           add: jest.fn(),
@@ -246,7 +246,7 @@ describe('Enemy.updateWeaponStatus', () => {
       enableBtns: jest.fn(),
       cellWeaponActive: jest.fn(),
       removeHighlightAoE: jest.fn()
-    }
+    })
 
     /**
      * Enemy class for testing weapon status and targeting.
@@ -613,7 +613,7 @@ describe('Enemy.updateWeaponStatus', () => {
       )
 
       const callArgs = gameStatus.displayAmmoStatus.mock.calls[0]
-      expect(callArgs[0].weapon.letter).toBe('R')
+      expect(/** @type {any} */ (callArgs[0]).weapon.letter).toBe('R')
     })
 
     it('should always call displayAmmoStatus (not displayAmmo)', () => {
@@ -1045,7 +1045,14 @@ describe('Enemy.updateWeaponStatus', () => {
    *           before selecting a random ship.
    */
   describe('_selectCurrentWeaponOnRandomShip - weapon selection respects player choice', () => {
-    let Enemy, mockOpponent, mockWeaponSystemR, mockWeaponSystemM
+    /** @type {any} */
+    let Enemy
+    /** @type {any} */
+    let mockOpponent
+    /** @type {any} */
+    let mockWeaponSystemR
+    /** @type {any} */
+    let mockWeaponSystemM
 
     beforeEach(async () => {
       // Note: StatusUI and bh are mocked at the top but not used directly in this test block
@@ -1152,7 +1159,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
           const entries = selectedShip.loadedWeaponEntries
           const [key, weapon] = entries.find(
-            ([_k, w]) => w.weapon?.letter === targetLetter
+            ([_k, w]) => /** @type {any} */ (w).weapon?.letter === targetLetter
           )
 
           if (!key || !weapon) {
@@ -1290,7 +1297,10 @@ describe('Enemy.updateWeaponStatus', () => {
   })
 
   describe('onClickCell - two-click mode respects opponent hasAttachedWeapons', () => {
-    let Enemy, mockOpponent
+    /** @type {any} */
+    let Enemy
+    /** @type {any} */
+    let mockOpponent
 
     beforeEach(async () => {
       jest.clearAllMocks()
@@ -1315,7 +1325,7 @@ describe('Enemy.updateWeaponStatus', () => {
           return !this.timeoutId
         }
 
-        async onClickCell (r, c) {
+        async onClickCell (/** @type {any} */ r, /** @type {any} */ c) {
           if (!this.canTakeTurn) return
 
           if (this.opponent?.hasAttachedWeapons) {
@@ -1883,7 +1893,7 @@ describe('Enemy.updateWeaponStatus', () => {
         selectedCellCoordinates: { r: 2, c: 3 },
         loadOut: { selectedWeapon: { id: 'mock-weapon' } },
         setWeaponFireHandlers: jest.fn(),
-        fireWeaponAt: jest.fn(async (_r, _c, _weapon) => ({
+        fireWeaponAt: jest.fn(async (_x, _y, _weapon) => ({
           weapon: 'mock-weapon',
           score: { hits: 1, shots: 1 }
         })),
@@ -1900,8 +1910,8 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.setWeaponFireHandlers).toHaveBeenCalled()
       expect(enemy.selectedCellCoordinates).toBeNull()
       expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
-        4,
         5,
+        4,
         enemy.loadOut.selectedWeapon
       )
       expect(enemy.opponent.updateResultsOfBomb).toHaveBeenCalledWith(
@@ -1936,8 +1946,8 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.setWeaponFireHandlers).toHaveBeenCalled()
       expect(enemy.selectedCellCoordinates).toBeNull()
       expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
-        4,
         5,
+        4,
         enemy.loadOut.selectedWeapon
       )
       expect(enemy.updateUI).toHaveBeenCalled()

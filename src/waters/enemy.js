@@ -1447,12 +1447,12 @@ class Enemy extends Waters {
    *
    * @private
    * @async
-   * @param {number} r - Target row coordinate (0-indexed); final target for weapon firing
-   * @param {number} c - Target column coordinate (0-indexed); final target for weapon firing
+   * @param {number} y - Target row coordinate (0-indexed); final target for weapon firing
+   * @param {number} x - Target column coordinate (0-indexed); final target for weapon firing
    * @returns {Promise<void>} Resolves when weapon is fired and turn finalized
    * @memberof Enemy
    */
-  async _onSecondClickFire (r, c) {
+  async _onSecondClickFire (y, x) {
     // Ensure fire handlers are attached before firing.
     // This is required for the two-click Hide/Seek path because the selected
     // weapon may be armed earlier on the first click, but the actual fire
@@ -1463,8 +1463,8 @@ class Enemy extends Waters {
     this.selectedCellCoordinates = null
     // @ts-ignore - fireWeaponAt is parent method, loadOut selectedWeapon may be null
     const result = await this.fireWeaponAt?.(
-      r,
-      c,
+      x,
+      y,
       this.loadOut?.selectedWeapon ?? undefined
     )
     // @ts-ignore - fireWeaponAt return type includes score property
@@ -1555,14 +1555,13 @@ class Enemy extends Waters {
    * not when the weapon was initially selected. The callbacks are needed for
    * the shot to register hits/misses on the opponent board.
    *
-   * @private
    * @async
-   * @param {number} r - Target row coordinate (0-indexed)
-   * @param {number} c - Target column coordinate (0-indexed)
+   * @param {number} y - Target row coordinate (0-indexed)
+   * @param {number} x - Target column coordinate (0-indexed)
    * @returns {Promise<void>} Resolves when single-shot handling completes
    * @memberof Enemy
    */
-  async _handleSingleShotClick (r, c) {
+  async _handleSingleShotClick (y, x) {
     // CRITICAL: Ensure fire handlers are attached before firing.
     // Without this call, the shot animates but never delivers hit/miss results.
     // This is required because the onDestroy callbacks are only finalized here,
@@ -1574,8 +1573,8 @@ class Enemy extends Waters {
     this.selectedCellCoordinates = null
     // @ts-ignore - fireWeaponAt is parent method, currentWeaponSystem type incompatibility (WeaponsSystem vs WeaponSystemType)
     const result = await this.fireWeaponAt?.(
-      r,
-      c,
+      x,
+      y,
       // @ts-ignore - currentWeaponSystem type incompatibility (WeaponsSystem vs WeaponSystemType)
       this.loadOut?.currentWeaponSystem
     )
@@ -1683,7 +1682,7 @@ class Enemy extends Waters {
     const weapon = weaponSystem?.weapon
     loadOut?.addSelectedCoordinates?.(r0, c0, weapon)
     // @ts-ignore - fireWeaponAt is parent method
-    const result = await this.fireWeaponAt?.(r, c, weaponSystem)
+    const result = await this.fireWeaponAt?.(c, r, weaponSystem)
     // @ts-ignore - WeaponResult vs WeaponLaunchResult type incompatibility
     if (this._shouldWaitForWeaponResult(result)) return
     // @ts-ignore - WeaponResult vs WeaponLaunchResult type incompatibility

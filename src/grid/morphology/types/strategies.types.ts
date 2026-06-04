@@ -8,7 +8,7 @@
  */
 
 import type { Bitboard, MorphologyRadius } from './bitboard.types.js';
-import type { BaseMask, GridIndexer, HexIndexer } from './masks.types.js';
+import type { BaseMask } from './masks.types.js';
 import type { BaseStore } from './stores.types.js';
 
 /**

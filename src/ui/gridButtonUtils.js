@@ -118,7 +118,7 @@ function setElementsDisabled (ids, disabled) {
   ids.forEach(id => {
     const el = getElementByIdSafe(id)
     if (el) {
-      /** @type {HTMLInputElement} */ ;(el).disabled = disabled
+      /** @type {HTMLInputElement} */ el.disabled = disabled
     }
   })
 }
@@ -256,8 +256,9 @@ export function applyMaskMutation (mask, x, y, operation) {
  * applyPackedMutation(terrainGrid, 5, 10, 2); // Set cell to color 2
  */
 export function applyPackedMutation (packed, x, y, color) {
-  if (!packed) return
-  ;/** @type {any} */ (packed).set(x, y, color)
+  if (packed) {
+    /** @type {any} */ ;(packed).set(x, y, color)
+  }
 }
 
 /**
@@ -369,13 +370,13 @@ export function setMorphologyButtonStates (
   const crossBtn = getElementByIdSafe(`cross-dilate${suffix}`)
 
   if (dilateBtn) {
-    /** @type {HTMLButtonElement} */ ;(dilateBtn).disabled = dilateDisabled
+    /** @type {HTMLButtonElement} */ dilateBtn.disabled = dilateDisabled
   }
   if (erodeBtn) {
-    /** @type {HTMLButtonElement} */ ;(erodeBtn).disabled = erodeDisabled
+    /** @type {HTMLButtonElement} */ erodeBtn.disabled = erodeDisabled
   }
   if (crossBtn) {
-    /** @type {HTMLButtonElement} */ ;(crossBtn).disabled = crossDisabled
+    /** @type {HTMLButtonElement} */ crossBtn.disabled = crossDisabled
   }
 }
 
