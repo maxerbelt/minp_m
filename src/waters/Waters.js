@@ -136,16 +136,22 @@ import { Random } from '../core/Random.js'
  * @typedef {Object} Weapon
  * @property {string} letter - Weapon letter identifier (e.g., 'M', 'R', 'T', '-')
  * @property {string} name - Weapon display name
+ * @property {boolean} isLimited - Whether weapon has limited ammo
+ * @property {boolean} hasExtraSelectCursor - Whether weapon has extra select step
+ * @property {number} numStep - Number of targeting steps (1 or 2)
+ * @property {string} classname - CSS class name for styling
+ * @property {(stepIndex: number) => string} stepHint - Returns hint text for given step
+ * @property {(numCoords: number, stepIdxArg: number) => number} stepIdx - Calculates step index from coordinates and argument
+ * @property {number} [postUnattached] - Post-unattached step offset
  * @property {number} [postSelectCoords] - Post-selection coordinates mode
  * @property {boolean} [hasWake] - Whether weapon creates wake effect on miss
  * @property {boolean} [givesHint] - Whether weapon provides targeting hint
  * @property {boolean} [hasFlash] - Whether weapon has flash/explosion animation
  * @property {boolean} [crashOverSplash] - Whether crash splash overrides regular splash
- * @property {boolean} [isLimited] - Whether weapon is limited (display only)
- * @property {Function} launchTo - Launch weapon to coordinates
- * @property {Function} splash - Get splash effect for hit location
- * @property {Function} crashSplash - Get crash splash effect
- * @property {Function} animateSplashExplode - Animate explosion effect
+ * @property {Function} [launchTo] - Launch weapon to coordinates
+ * @property {Function} [splash] - Get splash effect for hit location
+ * @property {Function} [crashSplash] - Get crash splash effect
+ * @property {Function} [animateSplashExplode] - Animate explosion effect
  * @property {string} [protectionLevels] - Ship types this weapon protects against
  * @property {boolean} [isLimitedSet] - Whether weapon is in limited set
  */
@@ -201,6 +207,37 @@ import { Random } from '../core/Random.js'
  * @property {Function} [landMask] - Land mask for map
  * @property {number} [rows] - Number of rows on map
  * @property {number} [cols] - Number of columns on map
+ */
+
+/**
+ * @typedef {Object} BattleHandler
+ * @property {boolean} [seekingMode] - Whether game is in seeking mode
+ * @property {MapType} map - Current map configuration
+ */
+
+/**
+ * @typedef {Object} HitEntry
+ * @property {number} cell - Cell coordinate
+ * @property {boolean} damaged - Whether cell was damaged
+ */
+
+/**
+ * @typedef {Object} ShipHitResult
+ * @property {string} letter - Ship letter identifier
+ * @property {string} info - Hit information message
+ * @property {boolean} damaged - Whether ship cell was damaged
+ * @property {Array<HitEntry>} list - List of hit cell entries
+ * @property {Array<HitEntry>} misses - List of miss cell entries
+ * @property {boolean} sunk - Whether ship was sunk
+ * @property {(r: number, c: number) => Object} hitAt - Get hit result at coordinates
+ */
+
+/**
+ * @typedef {Object} WatersUI
+ * @property {(r: number, c: number, damaged?: boolean) => void} cellMiss - Mark cell as miss
+ * @property {(shipLetter: string, info: string) => void} cellSunkAt - Mark cell as sunk
+ * @property {(r: number, c: number) => void} cellHit - Mark cell as hit
+ * @property {(r: number, c: number) => HTMLElement} gridCellAt - Get cell element
  */
 
 /**
@@ -1135,7 +1172,7 @@ export class Waters {
       return
     }
 
-    this.updateGlobalIds(placedShips)
+    this.#updateGlobalIds(placedShips)
     const unmatchedShips = this.placeMatchingShips(
       placedShips,
       this.placeMatchingShip.bind(this)
@@ -1168,22 +1205,31 @@ export class Waters {
   }
 
   /**
-   * Updates global ID counters based on loaded ships.
-   * @param {ShipPlacement|null} placedShips - The placed ships data.
+   * Resets the map state and loads new map configuration.
+   * Preserved for potential future use or API compatibility.
+   * @param {Object|undefined} [map] - The map to set (defaults to bh.map).
    * @returns {void}
-   * @private
+   * @protected
    */
+  resetMap (map) {
+    this.boardDestroyed = false
+    this.isRevealed = false
+    // @ts-ignore - bh.map is initialized at runtime
+    const mapToSet = map || bh.map
+    if (mapToSet) {
+      this.setMap(mapToSet)
+    }
+  }
   /**
    * Updates global ship and weapon ID counters from loaded ships.
    * Ensures new ships and weapons get higher IDs than loaded ones to prevent collisions.
    *
    * @param {ShipPlacement|null} placedShips - The placed ships data with ship array
    * @returns {void}
-   * @private
    */
-  updateGlobalIds (placedShips) {
+  #updateGlobalIds (placedShips) {
     if (!placedShips?.ships) return
-    const { maxShipId, maxWeaponId } = this._getMaxIdsFromShips(
+    const { maxShipId, maxWeaponId } = this.#getMaxIdsFromShips(
       placedShips.ships
     )
     // @ts-ignore - Static property assignment for ID management
@@ -1196,11 +1242,10 @@ export class Waters {
    * Calculates the maximum ship and weapon IDs from placed ships.
    * Iterates through all ships and their weapons to find highest ID values.
    *
-   * @private
    * @param {Ship[]} ships - Array of ships to inspect.
    * @returns {{maxShipId: number, maxWeaponId: number}} Object with max ship ID and max weapon ID
    */
-  _getMaxIdsFromShips (ships) {
+  #getMaxIdsFromShips (ships) {
     return ships.reduce(
       (accumulator, ship) => {
         accumulator.maxShipId = Math.max(ship.id || 1, accumulator.maxShipId)
@@ -1240,20 +1285,18 @@ export class Waters {
     // @ts-ignore - bh.map available at runtime
     const activeMap = map || bh.map
     if (!activeMap) return
-    const weaponShips = this.determineWeaponShips(activeMap)
+    const weaponShips = this.#determineWeaponShips()
 
-    this.configureLoadOut(activeMap, weaponShips)
-    this.setCursorChangeCallback()
+    this.#configureLoadOut(activeMap, weaponShips)
+    this.#setCursorChangeCallback()
     this.setupAttachedAim()
   }
 
   /**
    * Determines which ships should have weapons based on map configuration.
-   * @param {Object} _map - The map object (unused, kept for API compatibility)
    * @returns {Array<any>} Array of ships with weapons
-   * @private
    */
-  determineWeaponShips (_map) {
+  #determineWeaponShips () {
     if (!this.ships) {
       this.ships = []
     }
@@ -1270,22 +1313,20 @@ export class Waters {
    * @param {Object} map - The map object.
    * @param {Array<any>} weaponShips - Ships with weapons.
    * @returns {void}
-   * @private
    */
-  configureLoadOut (map, weaponShips) {
-    const shipsForLoadOut = this._resolveLoadOutShips(map, weaponShips)
+  #configureLoadOut (map, weaponShips) {
+    const shipsForLoadOut = this.#resolveLoadOutShips(map, weaponShips)
     // @ts-ignore - loadOut is assigned at runtime
     this.loadOut = this.createLoadOut(map, shipsForLoadOut)
   }
 
   /**
    * Resolves the ship list to be used for load out creation.
-   * @private
    * @param {Object} _map - The map (unused)
    * @param {Array<any>} weaponShips - Default weapon ships.
    * @returns {Array<any>} Ships to include in the load out.
    */
-  _resolveLoadOutShips (_map, weaponShips) {
+  #resolveLoadOutShips (_map, weaponShips) {
     // @ts-ignore - seekingMode is available at runtime on bh object
     if (bh?.seekingMode && this.hasAttachedWeapons) {
       return weaponShips
@@ -1302,9 +1343,8 @@ export class Waters {
   /**
    * Sets up cursor change callback if available.
    * @returns {void}
-   * @private
    */
-  setCursorChangeCallback () {
+  #setCursorChangeCallback () {
     if (this.loadOut) {
       // @ts-ignore - onCursorChangeCallback available at runtime
       this.loadOut.onCursorChangeCallback = this.cursorChange.bind(this)
@@ -1344,6 +1384,7 @@ export class Waters {
         )
         if (!exists) {
           // Create a weapon system for display purposes
+          // @ts-ignore - limitedWeapon is Weapon-like at runtime, createWeaponSystems handles it
           const weaponSystem = LoadOut.createWeaponSystems([limitedWeapon])[0]
           if (weaponSystem) {
             loadOut.allWeaponSystems.push(weaponSystem)
@@ -1628,7 +1669,13 @@ export class Waters {
       this.steps?.targetting(this.hasAttachedWeapons)
       // @ts-expect-error - launch accepts WeaponRack at runtime
       this.loadOut.launch = async coords => {
-        return await this.launchTo(coords, hintR, hintC, rack)
+        // @ts-ignore - rack is WeaponSystemType compatible at runtime
+        return await this.launchTo(
+          coords,
+          hintR,
+          hintC,
+          /** @type {any} */ (rack)
+        )
       }
       // @ts-ignore - selectedWeapon accepts weapon system at runtime
       this.loadOut.selectedWeapon = rack
@@ -2481,7 +2528,8 @@ export class Waters {
    */
   resolveTarget (target, hitCandidates) {
     if (!target || target.length < 2) {
-      return Random.element(hitCandidates)
+      // @ts-ignore - Random.element returns undefined for empty array, handled at runtime
+      return Random.element(hitCandidates) || []
     }
     return target
   }
@@ -2761,7 +2809,7 @@ export class Waters {
 
   /**
    * Marks a ship as sunk and updates UI.
-   * @param {Object} ship - The sunk ship
+   * @param {Ship} ship - The sunk ship
    * @returns {void}
    * @private
    */
@@ -2878,12 +2926,12 @@ export class Waters {
 
   /**
    * Checks whether a weapon fire results in a hit.
-   * @param {Object} weapon - The weapon being fired
+   * @param {Weapon} weapon - The weapon being fired
    * @param {number} y - Target row
    * @param {number} x - Target column
    * @param {number} power - Weapon power
    * @param {Object|null} shipCell - The ship cell at target
-   * @returns {Object} Hit result with hits, shots, sunk, info
+   * @returns {WeaponResult} Hit result with hits, shots, sunk, info
    * @private
    */
   checkForHit (weapon, x, y, power, shipCell) {
