@@ -4,11 +4,17 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 /**
  * @typedef {Object} Weapon
  * @property {string} letter - Weapon identifier letter
- * @property {string} [name] - Weapon display name
+ * @property {string} name - Weapon display name
+ * @property {boolean} isLimited - Whether the weapon has limited ammo
+ * @property {boolean} hasExtraSelectCursor - Whether the weapon uses an extra select cursor
+ * @property {number} numStep - Number of targeting steps (1 or 2)
+ * @property {number} [postUnattached] - Post-unattached step offset
+ * @property {string} classname - CSS class name for weapon icon styling
+ * @property {(stepIndex: number) => string} stepHint - Returns hint text for given step
+ * @property {(numCoords: number, stepIdxArg: number) => number} stepIdx - Calculates step index from coordinates and argument
  * @property {string} [tag] - Weapon tag used for styling and selection UI
  * @property {string[]} [cursors] - Cursor types for selection
  * @property {string} [launchCursor] - Cursor class for launch state
- * @property {boolean} [isLimited] - Whether the weapon has limited ammo
  * @property {number} [points] - Number of points required for firing
  * @property {boolean} [destroys] - Whether the weapon destroys targets
  * @property {boolean} [isOneAndDone] - Whether the weapon is single-use
@@ -16,8 +22,6 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @property {number} [postSelectCursor] - Cursor value after selection
  * @property {number} [postSelectCoords] - Number of coordinates after post-selection
  * @property {boolean} [postSelectShadow] - Whether the weapon displays a post-select shadow
- * @property {boolean} [hasExtraSelectCursor] - Whether the weapon uses an extra select cursor
- * @property {string} [classname] - CSS class name for weapon icon styling
  * @property {function(Object, number[]): Object} [aoePlus] - Computes affected area
  * @property {function(HTMLElement, number, null, null): Promise<Object>} [animateExplodeRaw] - Explosion animation
  */

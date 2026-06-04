@@ -22,13 +22,19 @@ import { Placement } from './placement.js'
 /**
  * @typedef {Object} Weapon
  * @property {string} letter - Single character weapon identifier
- * @property {string} [name] - Human-readable weapon name
+ * @property {string} name - Weapon display name
+ * @property {boolean} isLimited - Whether weapon has limited ammo
+ * @property {boolean} hasExtraSelectCursor - Whether weapon has extra select step
+ * @property {number} numStep - Number of targeting steps (1 or 2)
+ * @property {number} [postUnattached] - Post-unattached step offset
+ * @property {string} classname - CSS class name for styling
+ * @property {(stepIndex: number) => string} stepHint - Returns hint text for given step
+ * @property {(numCoords: number, stepIdxArg: number) => number} stepIdx - Calculates step index from coordinates and argument
  * @property {Array<string>} [cursors] - Array of cursor class names for weapon modes
  * @property {string} [launchCursor] - Cursor class when ready to launch
  * @property {string} [tag] - Weapon tag identifier for filtering/targeting
  * @property {boolean} [postSelectShadow] - Whether weapon shows shadow after selection
  * @property {number} [postSelectCoords] - Number of additional coordinates needed after selection
- * @property {boolean} [isLimited] - Whether weapon has limited ammo
  * @property {() => void} [playWarnSound] - Optional callback to play warning sound
  */
 

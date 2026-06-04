@@ -154,12 +154,11 @@ class StatusUI {
    * Handles a delay with potential cancellation.
    * Waits for specified milliseconds (can be cancelled via #cancelQueueLoop).
    *
-   * @private
    * @async
    * @param {number} ms - Milliseconds to wait
    * @returns {Promise<void>}
    */
-  async _waitWithCancellation (ms) {
+  async #waitWithCancellation (ms) {
     await Delay.wait(ms)
   }
 
@@ -180,20 +179,19 @@ class StatusUI {
    * Displays the item and waits before returning.
    * Continues with queue loop if more items exist.
    *
-   * @private
    * @async
    * @returns {Promise<void>}
    */
-  async _processNextInQueue () {
+  async #processNextInQueue () {
     const next = this.scoreQueue.shift()
     if (next) {
       this.current = next.item
       this.show(next.item, next.isImportant)
-      await this._waitWithCancellation(2500)
+      await this.#waitWithCancellation(2500)
       return
     }
     if (this.scoreQueue.length === 0) {
-      await this._runQueueLoop()
+      await this.#runQueueLoop()
     }
   }
 
@@ -202,12 +200,11 @@ class StatusUI {
    * Cycles through queued items and tips with delays, cancellable at any time.
    * Continues indefinitely until cancelled or an error occurs.
    *
-   * @private
    * @async
    * @returns {Promise<void>}
    * @throws {Error} Caught and logged to console on queue loop error
    */
-  async _runQueueLoop () {
+  async #runQueueLoop () {
     this.#queueLoopActive = true
     this.#shouldCancelQueueLoop = false
 
@@ -218,7 +215,7 @@ class StatusUI {
       }
 
       this.waiting = true
-      await this._waitWithCancellation(1500)
+      await this.#waitWithCancellation(1500)
 
       if (this.#shouldCancelQueueLoop) {
         this.#queueLoopActive = false
@@ -231,7 +228,7 @@ class StatusUI {
       const tip = this.newTip
 
       if (this.scoreQueue.length > 0) {
-        await this._processNextInQueue()
+        await this.#processNextInQueue()
         return
       } else if (tip && tip !== old) {
         this.showSoon(tip, false, 3000)
@@ -397,14 +394,16 @@ class StatusUI {
    * Special case: One-step weapons with extra select cursor show step 1 icon active.
    *
    * @public
-   * @param {Weapon} [weapon=this.currentWeapon] - The weapon to reset for
+   * @param {Weapon|undefined} [weapon] - The weapon to reset for (defaults to currentWeapon)
    * @returns {void}
    */
-  resetToSelectionMode (weapon = this.currentWeapon) {
+  resetToSelectionMode (weapon) {
+    // Use currentWeapon if weapon param not provided
+    const weaponToCheck = weapon ?? this.currentWeapon
     // If the current weapon is a one-step weapon using an extra select cursor,
     // there is no separate selection icon to show. In that case the active
     // mode indicator should remain on step 1 so icon2 stays active.
-    if (weapon?.numStep === 1 && weapon.hasExtraSelectCursor) {
+    if (weaponToCheck?.numStep === 1 && weaponToCheck?.hasExtraSelectCursor) {
       this.#displayWhichLaunchStep(1)
       return
     }
@@ -445,7 +444,7 @@ class StatusUI {
    * Replaces the entire tips queue and displays specified or first available tip.
    *
    * @public
-   * @param {Array<string>} tips - Array of tips to add to queue
+   * @param {string[]} tips - Array of tips to add to queue
    * @param {string} [showFirst] - Optional specific tip to show first
    * @returns {void}
    */
@@ -566,6 +565,7 @@ class StatusUI {
       )
     }
   }
+
   /**
    * Displays ammo status for a weapon system.
    * Updates weapon mode, resets icons, and queues step hints if maps provided.
@@ -665,12 +665,13 @@ class StatusUI {
   /**
    * Displays the ammo count for the weapon system.
    * Calls #displayAmmoCounter with capacity and remaining values.
+   * Invokes ammoRemaining function to get current ammo count.
    *
    * @param {WeaponSystem} wps - The weapon system
    * @returns {void}
    */
   #displayAmmoCount (wps) {
-    this.#displayAmmoCounter(wps.ammoCapacity, wps.ammoRemaining)
+    this.#displayAmmoCounter(wps.ammoCapacity, wps.ammoRemaining())
   }
 
   /**
