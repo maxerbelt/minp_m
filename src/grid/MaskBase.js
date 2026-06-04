@@ -139,7 +139,6 @@ export class MaskBase extends CanvasGrid {
    * @param {string} name - Name of the helper property (without underscore)
    * @param {Function} Constructor - Constructor function for the helper
    * @returns {T} The helper instance
-   * @private
    */
   #getHelper (name, Constructor) {
     const propName = `__${name}`
@@ -943,23 +942,14 @@ export class MaskBase extends CanvasGrid {
   }
 
   /**
-   * Iterate over occupied locations with their values
-   * @returns {Generator<[number, number, number]>} Generator yielding [row, col, value] tuples
-   * @public
-   */
-  *occupiedLocationsAndValues () {
-    const all = this.store.all
-    return yield* all.occupiedLocationsAndValues(this.bits)
-  }
-
-  /**
    * Iterate over occupied cell locations
-   * @returns {Generator<[number, number]>} Generator yielding [row, col] tuples
+   * @generator
+   * @yields {[number, number]} [x, y] coordinate tuples
    * @public
    */
   *occupiedLocations () {
     const all = this.store.all
-    return yield* all.occupiedLocations(this.bits)
+    return yield* all.locations(this.bits)
   }
 
   /**
