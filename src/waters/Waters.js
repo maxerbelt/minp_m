@@ -1743,7 +1743,7 @@ export class Waters {
   #armSelectedWeapon (selection, oppo) {
     // @ts-ignore - UI available at runtime on oppo or this
     const cell = oppo?.UI?.gridCellAt(selection.hintR, selection.hintC)
-    this.#setCursorChangeCallbackselectAndArmWeaponId(
+    this.#selectAndArmWeaponId(
       selection.weaponId || -1,
       oppo,
       selection.launchR || 0,
