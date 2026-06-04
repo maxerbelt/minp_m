@@ -205,7 +205,7 @@ export class Indexer {
    * Returns a predicate that tests if a coordinate is outside the grid bounds.
    * Used to terminate ray tracing at the grid edge.
    *
-   * @private
+   * @protected
    * @access private
    * @returns {Function} Predicate function(x, y) → boolean (true if outside bounds)
    * @unused Used indirectly through delegation pattern

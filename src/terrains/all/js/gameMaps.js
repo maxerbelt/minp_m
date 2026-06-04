@@ -111,8 +111,15 @@ const DEFAULT_TERRAIN_MAPS = {
 export function assembleTerrains () {
   if (TerrainMaps.numTerrains > 1) return
 
-  TerrainMaps.currentTerrainMaps(DEFAULT_TERRAIN_MAPS.seaAndLand)
-  TerrainMaps.currentTerrainMaps(DEFAULT_TERRAIN_MAPS.spaceAndAsteroids)
+  // @ts-ignore
+  const seaAndLand = DEFAULT_TERRAIN_MAPS['seaAndLand']
+  // @ts-ignore
+  const spaceAndAsteroids = DEFAULT_TERRAIN_MAPS['spaceAndAsteroids']
+
+  TerrainMaps.currentTerrainMaps(/** @type {TerrainMapsType} */ (seaAndLand))
+  TerrainMaps.currentTerrainMaps(
+    /** @type {TerrainMapsType} */ (spaceAndAsteroids)
+  )
 }
 
 /**
@@ -154,7 +161,8 @@ function _ensureTerrainsAssembled () {
  */
 function _getCurrentTerrainMaps () {
   _ensureTerrainsAssembled()
-  return TerrainMaps.currentTerrainMaps()
+  const current = TerrainMaps.currentTerrainMaps()
+  return /** @type {TerrainMapsType} */ (current)
 }
 
 /**
@@ -191,8 +199,11 @@ function _getCurrentTerrainMaps () {
  */
 function _ensureDefaultMaps (currentMaps) {
   if (currentMaps === null) {
-    TerrainMaps.currentTerrainMaps(DEFAULT_TERRAIN_MAPS.seaAndLand)
-    return TerrainMaps.currentTerrainMaps()
+    // @ts-ignore
+    const defaultMaps = DEFAULT_TERRAIN_MAPS['seaAndLand']
+    TerrainMaps.currentTerrainMaps(/** @type {TerrainMapsType} */ (defaultMaps))
+    const result = TerrainMaps.currentTerrainMaps()
+    return /** @type {TerrainMapsType} */ (result)
   }
   return currentMaps
 }
@@ -250,7 +261,8 @@ export function gameMaps (maps) {
 
   if (maps) {
     TerrainMaps.currentTerrainMaps(maps)
-    return TerrainMaps.currentTerrainMaps()
+    const result = TerrainMaps.currentTerrainMaps()
+    return /** @type {TerrainMapsType} */ (result)
   }
 
   return _ensureDefaultMaps(currentMaps)
