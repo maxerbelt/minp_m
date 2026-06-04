@@ -331,12 +331,13 @@ export class Friend extends Placement {
       gameStatus._setWeaponMode(weapon)
       // @ts-ignore - _setWeaponMode and _resetAmmoIcons are private StatusUI methods
       gameStatus._resetAmmoIcons()
-      // @ts-ignore - loadOut.selectedCoordinates is Array available in base Placement class at runtime
+      // @ts-ignore - loadOut and currentWeaponSystem are defined in base Placement class at runtime
+      const selectedCoords = this.loadOut.selectedCoordinates || []
       gameStatus.displayAmmoStatus(
         // @ts-ignore - WeaponSystem vs WeaponsSystem type difference in LoadOut vs StatusUI
         weaponSystem,
         bh.maps,
-        this.loadOut.selectedCoordinates?.length ?? 0,
+        selectedCoords.length ?? 0,
         null,
         this._hasUnattachedForCurrentWeapon?.()
       )
@@ -436,7 +437,7 @@ export class Friend extends Placement {
    * Returns ['0', 0] if no locations remain.
    *
    * @private
-   * @returns {Array<string|number>} [rowNumber, frequency] or ['0', 0] if exhausted
+   * @returns {[string|number, number]} [rowNumber, frequency] or ['0', 0] if exhausted
    */
   getMostFrequentRow () {
     this.syncUntried()
