@@ -392,10 +392,10 @@ export class Friend extends Placement {
    * Removes all shot cells from untried set to track remaining candidates.
    * Updates this.untried to be the intersection of untried ∩ ¬shot (not yet shot).
    *
-   * @private
+
    * @returns {void}
    */
-  syncUntried () {
+  #syncUntried () {
     // @ts-ignore - untried.take() is Bitmask method at runtime, removes shot cells
     this.untried = this.untried.take(this.score.shot)
   }
@@ -409,7 +409,7 @@ export class Friend extends Placement {
    * @returns {GridCoordinate|null} Random [col, row] coordinate or null if exhausted
    */
   getRandomUntriedCoordinate () {
-    this.syncUntried()
+    this.#syncUntried()
     // @ts-ignore - untried.toCoords is Bitmask method returning GridCoordinate[] at runtime
     const locs = this.untried.toCoords
     const result = locs.length === 0 ? null : Random.element(locs)
@@ -422,11 +422,10 @@ export class Friend extends Placement {
    * Used for line-based targeting strategy in randomDestroyOne().
    * Returns ['0', 0] if no locations remain.
    *
-   * @private
    * @returns {[string|number, number]} [rowNumber, frequency] or ['0', 0] if exhausted
    */
-  getMostFrequentRow () {
-    this.syncUntried()
+  #getMostFrequentRow () {
+    this.#syncUntried()
     // @ts-ignore - untried.toCoords is Bitmask method returning GridCoordinate[] at runtime
     const locs = this.untried.toCoords
     if (locs.length === 0) {
@@ -447,11 +446,10 @@ export class Friend extends Placement {
 
   /**
    * Gets the row number for the most tried line.
-   * @returns {number} Row number (0 if no lines remain)
-   * @private
+   * @returns {number} Row number (0 if no lines remain
    */
-  getMostFrequentRowNumber () {
-    const r = this.getMostFrequentRow()
+  #getMostFrequentRowNumber () {
+    const r = this.#getMostFrequentRow()
     // @ts-ignore - r is [string|number, number], parseInt handles number
     return Number.parseInt(String(r?.[0]) || '0')
   }
@@ -578,7 +576,7 @@ export class Friend extends Placement {
    */
   async #randomDestroyOne () {
     if (this.isCancelled()) return this.noResult
-    const r = this.getMostFrequentRowNumber()
+    const r = this.#getMostFrequentRowNumber()
     // @ts-ignore - this.map.cols is number property available at runtime
     return await this.#attemptLaunchWithFallback(0, r, this.map.cols - 1, r)
   }

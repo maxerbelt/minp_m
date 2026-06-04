@@ -687,7 +687,7 @@ export class Terrain {
     if (!this.ships) {
       throw new Error('Ships catalogue is not available for this terrain')
     }
-    this.ships.addShapes(shapes)
+    this.ships.addShapes(/** @type {any} */ (shapes))
   }
 
   /**

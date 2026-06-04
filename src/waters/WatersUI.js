@@ -171,7 +171,6 @@ export class WatersUI {
    * @constructor
    * @param {string} territory - Territory identifier (e.g., 'friend', 'enemy') used for DOM element IDs
    * @param {string} title - Display title for this territory's board shown in UI header
-   * @returns {void}
    * @description Creates references to board DOM element, score UI, and initializes state flags.
    * Board element ID format: "{territory}-board", Title element: "{territory}-title"
    */
@@ -252,7 +251,9 @@ export class WatersUI {
    * @returns {void}
    */
   showMapTitle () {
-    this.showTitle(bh.mapHeading)
+    if (bh.mapHeading) {
+      this.showTitle(bh.mapHeading)
+    }
   }
 
   /**
@@ -260,7 +261,9 @@ export class WatersUI {
    * @returns {void}
    */
   showFleetTitle () {
-    this.showTitle(bh.fleetHeading)
+    if (bh.fleetHeading) {
+      this.showTitle(bh.fleetHeading)
+    }
   }
 
   /**
@@ -291,9 +294,10 @@ export class WatersUI {
     if (!config) throw new Error(`Unknown cell size mode: ${mode}`)
 
     const currentMap = map || bh.map
+    if (!currentMap) throw new Error('Map is not available')
     const width =
       mode === 'PRINT' ? 600 : containerWidthOverride || this.containerWidth
-    const divisor = config.getDivisor(currentMap)
+    const divisor = config.getDivisor(/** @type {GridMap} */ (currentMap))
     return width / divisor
   }
 
@@ -347,7 +351,9 @@ export class WatersUI {
    */
   gridCellAt (row, column) {
     const result = this.grid.node(column, row)
-    if (result?.classList) return result
+    if (result?.classList) {
+      return /** @type {HTMLDivElement} */ (result)
+    }
     throw new Error(
       `Invalid cell at ${row},${column}: ${JSON.stringify(result)}`
     )
@@ -457,7 +463,11 @@ export class WatersUI {
     const colorMaps = bh.maps
     // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
     for (const [x, y] of ship.cells) {
-      const cell = CellUI.nodeAt(this.board, x, y, colorMaps)
+      const board = this.board
+      if (!board) return
+      const cell =
+        // @ts-ignore - colorMaps type incompatibility across modules
+        CellUI.nodeAt(/** @type {HTMLDivElement} */ (board), x, y, colorMaps)
       // @ts-ignore - ship matches Ship type for display
       ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
     }
@@ -501,8 +511,10 @@ export class WatersUI {
    * @returns {void}
    */
   cellSunkAt (x, y, letter) {
-    const cell = this.grid.node(this.board, x, y)
-    this.displayAsSunk(cell, letter)
+    const cell = this.grid.node(x, y)
+    if (cell) {
+      this.displayAsSunk(/** @type {HTMLDivElement} */ (cell), letter)
+    }
   }
 
   /**
@@ -668,9 +680,16 @@ export class WatersUI {
    * @returns {void}
    */
   recolor (x, y) {
-    const cellUI = CellUI.fromBoard(this.board, x, y)
-    if (cellUI) {
-      cellUI.recolor()
+    const board = this.board
+    if (board) {
+      const cellUI = CellUI.fromBoard(
+        /** @type {HTMLDivElement} */ (board),
+        x,
+        y
+      )
+      if (cellUI) {
+        cellUI.recolor()
+      }
     }
   }
 
@@ -694,7 +713,7 @@ export class WatersUI {
    * @returns {void}
    */
   refreshColor (cell) {
-    const cellUI = CellUI.fromHtmlElement(cell)
+    const cellUI = CellUI.fromHtmlElement(/** @type {HTMLDivElement} */ (cell))
     cellUI.recolor()
   }
 

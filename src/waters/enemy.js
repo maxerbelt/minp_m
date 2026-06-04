@@ -281,18 +281,17 @@ class Enemy extends Waters {
     /** @type {Array<number>|null} Stores [row, col] for two-click hide/seek weapon targeting. */
     this.selectedCellCoordinates = null
 
-    this._initializeSteps()
+    this.#initializeSteps()
   }
 
   /**
    * Initializes the steps event handlers.
    * Registers callbacks for all turn-based game state transitions.
    * Called during constructor to set up event handlers before turn begins.
-   * @private
    * @returns {void}
    * @memberof Enemy
    */
-  _initializeSteps () {
+  #initializeSteps () {
     if (!this.steps) return
     this.steps.onBeginTurn = this._handleBeginTurn.bind(this)
     this.steps.onDeactivate = this.deactivateWeapon.bind(this)
@@ -308,11 +307,10 @@ class Enemy extends Waters {
    * Searches for classes starting with 'cursor-' prefix to determine
    * the currently active weapon cursor display.
    *
-   * @private
    * @returns {string} The cursor class name or empty string if not found
    * @memberof Enemy
    */
-  _extractCursorClass () {
+  #extractCursorClass () {
     // @ts-ignore - this.UI is typed as Object but has board property
     const board = /** @type {HTMLElement|undefined} */ (this.UI?.board)
     if (!board?.classList) {
@@ -376,7 +374,7 @@ class Enemy extends Waters {
    * @returns {void}
    */
   #updateBoardCursor (oldCursor) {
-    const oldCursorClass = oldCursor || this._extractCursorClass()
+    const oldCursorClass = oldCursor || this.#extractCursorClass()
 
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     if (loadOut?.notifyCursorChange) {
