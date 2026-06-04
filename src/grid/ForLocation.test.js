@@ -53,8 +53,8 @@ describe('ForLocation', () => {
     const loc = new ForLocation(pos, bits, store)
 
     expect(loc.at()).toBe(1)
-    expect(loc.test(1)).toBe(true)
-    expect(loc.test(0)).toBe(false)
+    expect(loc.hasColor(1)).toBe(true)
+    expect(loc.hasColor(0)).toBe(false)
     expect(loc.isOccupied()).toBe(true)
 
     // underlying store helpers were used
