@@ -605,19 +605,18 @@ class Enemy extends Waters {
   _transitionToOpponentTurn () {
     const ui = /** @type {EnemyUI|undefined} */ (this.UI)
     ui?.deactivateWeapons?.()
-    this._setSpinnerState(true, MESSAGES.ENEMY_TURN)
+    this.#setSpinnerState(true, MESSAGES.ENEMY_TURN)
   }
 
   /**
    * Updates the spinner display state and game status.
    * Shows/hides the loading spinner and updates game status message.
-   * @private
    * @param {boolean} show - Whether to show the spinner
    * @param {string} mode - The mode text to display in game status
    * @returns {void}
    * @memberof Enemy
    */
-  _setSpinnerState (show, mode) {
+  #setSpinnerState (show, mode) {
     const spinner = document.getElementById('spinner')
     if (spinner instanceof HTMLImageElement) {
       spinner.classList.toggle(CSS_CLASSES.WAITING, show)
@@ -640,7 +639,7 @@ class Enemy extends Waters {
    * @memberof Enemy
    */
   async _handleBeginTurn () {
-    this._setSpinnerState(false, '')
+    this.#setSpinnerState(false, '')
     // Reset selected cell coordinates for two-click mode
     this.selectedCellCoordinates = null
     if (this.isGameOver) {
