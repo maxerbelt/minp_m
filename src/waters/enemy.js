@@ -535,14 +535,16 @@ class Enemy extends Waters {
 
   /**
    * Handles the selection event by updating the board classes.
-   * Updates targeting state to reflect whether two-click targeting is needed.
+   * Callback invoked after transitioning to selection mode.
+   * Called from steps.onSelect when mode changes to sourceSelect.
    * @private
    * @returns {void}
    * @memberof Enemy
    */
   _handleSelect () {
-    // @ts-ignore - this.steps is typed as Object but has select method
-    this.steps?.select()
+    // Placeholder callback for when weapon selection mode is activated
+    // UI updates are handled elsewhere; this prevents infinite recursion
+    // when steps.select() calls the onSelect callback
   }
 
   /**
