@@ -177,7 +177,7 @@ export class PackedHexDraw extends DrawBase {
       this.offsetY
     )
     const i = this.indexer.qrsToI.get(`${q},${r},${s}`)
-    return i !== undefined ? i : null
+    return i === undefined ? null : i
   }
 
   /**

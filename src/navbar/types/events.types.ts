@@ -3,7 +3,7 @@
  * EventAggregator, event names, payloads, and related types
  */
 
-import type { StringMap, Nullable } from './shared.types.js';
+import type { StringMap } from './shared.types.js';
 
 // ============================================================================
 // Event Definitions
@@ -204,7 +204,5 @@ export interface CustomEventDetail {
 
 /** Custom event with typed detail */
 export class TypedCustomEvent<T extends CustomEventDetail = CustomEventDetail> extends CustomEvent<T> {
-  constructor(type: string, init?: CustomEventInit<T>) {
-    super(type, init);
-  }
+  
 }

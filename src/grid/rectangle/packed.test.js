@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { Packed } from './packed.js'
 import { Store32 } from '../bitStore/store32.js'
@@ -414,7 +413,6 @@ describe('Packed', () => {
         const p2 = new Packed(3, 3)
         p2.set(2, 2, 1)
 
-        const oldDepth = p1.depth
         const oldBits = p1.bits.slice() // clone
         p1.addLayers([p2])
 

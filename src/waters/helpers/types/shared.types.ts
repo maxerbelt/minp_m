@@ -10,7 +10,6 @@
  */
 
 import type { ZoneSizes } from './geometry.types'
-import type { ZoneRecalcCallback } from './callbacks.types'
 
 /**
  * Zone tracker for managing zone size calculations.

@@ -101,7 +101,7 @@ export class NavigationService {
    * @returns {void}
    */
   switchToSeek (huntMode = '') {
-    this._switchToMode(NavigationService.MODES.SEEK, huntMode)
+    this.#switchToMode(NavigationService.MODES.SEEK, huntMode)
   }
 
   /**
@@ -112,7 +112,7 @@ export class NavigationService {
    * @returns {void}
    */
   switchToHide (huntMode = '') {
-    this._switchToMode(NavigationService.MODES.HIDE, huntMode)
+    this.#switchToMode(NavigationService.MODES.HIDE, huntMode)
   }
 
   /**
@@ -123,7 +123,7 @@ export class NavigationService {
    * @returns {void}
    */
   switchToBuild (huntMode = '') {
-    this._switchToMode(NavigationService.MODES.BUILD, huntMode)
+    this.#switchToMode(NavigationService.MODES.BUILD, huntMode)
   }
 
   /**
@@ -134,7 +134,7 @@ export class NavigationService {
    * @returns {void}
    */
   switchToList (huntMode = '') {
-    this._switchToMode(NavigationService.MODES.LIST, huntMode)
+    this.#switchToMode(NavigationService.MODES.LIST, huntMode)
   }
 
   /**
@@ -145,7 +145,7 @@ export class NavigationService {
    * @returns {void}
    */
   switchToRules (huntMode = '') {
-    this._switchToMode(NavigationService.MODES.RULES, huntMode)
+    this.#switchToMode(NavigationService.MODES.RULES, huntMode)
   }
 
   /**
@@ -160,7 +160,7 @@ export class NavigationService {
   switchToMode (target, huntMode = '', mapName = null) {
     const modeConfig = NavigationService.MODE_BY_PAGE[target]
     if (modeConfig) {
-      this._switchToMode(modeConfig, huntMode, mapName)
+      this.#switchToMode(modeConfig, huntMode, mapName)
     }
   }
 
@@ -174,11 +174,11 @@ export class NavigationService {
    * @returns {void}
    */
   switchToImportMode (SavedCustomMapClass, mapProvider) {
-    const fileInput = this._createFileInput()
+    const fileInput = this.#createFileInput()
     fileInput.addEventListener(
       'change',
       async event => {
-        await this._handleImportFile(event, SavedCustomMapClass, mapProvider)
+        await this.#handleImportFile(event, SavedCustomMapClass, mapProvider)
       },
       { once: true }
     )
@@ -243,18 +243,17 @@ export class NavigationService {
    * Builds navigation parameters from current map, stores state via storeShips,
    * and updates browser location to new page.
    *
-   * @private
    * @param {NavigationModeConfig} modeConfig - Mode configuration with page and tracking info.
    * @param {string|boolean} huntMode - Hunt mode flag or mode identifier string.
    * @param {string|null} [mapName=null] - Optional specific map name for navigation.
    * @returns {void}
    */
-  _switchToMode (modeConfig, huntMode, mapName = null) {
+  #switchToMode (modeConfig, huntMode, mapName = null) {
     if (!modeConfig?.page) return
 
     trackTab(modeConfig.trackLabel)
-    const params = this._buildModeParams(mapName)
-    this._storeAndNavigate(params, huntMode, modeConfig.page)
+    const params = this.#buildModeParams(mapName)
+    this.#storeAndNavigate(params, huntMode, modeConfig.page)
   }
 
   /**
@@ -262,21 +261,20 @@ export class NavigationService {
    * Extracts map metadata and constructs URLSearchParams for navigation.
    * Includes map dimensions, terrain type, and map name when available.
    *
-   * @private
    * @param {string|null} [mapName=null] - Optional map name to override current map.
    * @returns {URLSearchParams} Navigation parameters ready for URL.
    */
-  _buildModeParams (mapName = null) {
+  #buildModeParams (mapName = null) {
     const params = new URLSearchParams()
-    const map = this._getCurrentMap()
+    const map = this.#getCurrentMap()
 
     if (map) {
-      this._appendMapDimensions(params, map)
-      this._appendTerrainParam(params, map)
+      this.#appendMapDimensions(params, map)
+      this.#appendTerrainParam(params, map)
     }
 
     const finalMapName = mapName || map?.title
-    this._appendMapName(params, finalMapName)
+    this.#appendMapName(params, finalMapName)
     return params
   }
 
@@ -284,10 +282,9 @@ export class NavigationService {
    * Return the current map from the provider.
    * Safely accesses the map provider's current map method.
    *
-   * @private
    * @returns {MapWithTerrain|null} Current map object or null if none selected.
    */
-  _getCurrentMap () {
+  #getCurrentMap () {
     return this.mapProvider?.getCurrentMap?.() || null
   }
 
@@ -295,12 +292,11 @@ export class NavigationService {
    * Append width and height parameters for a map.
    * Sets 'height' and 'width' URL parameters from map row/col properties.
    *
-   * @private
    * @param {URLSearchParams} params - URL parameters to modify.
    * @param {MapWithTerrain} map - Map object with dimensions.
    * @returns {void}
    */
-  _appendMapDimensions (params, map) {
+  #appendMapDimensions (params, map) {
     if (map.rows || map.cols) {
       params.set('height', String(map.rows || ''))
       params.set('width', String(map.cols || ''))
@@ -312,12 +308,11 @@ export class NavigationService {
    * Extracts terrain identifier from map terrain property.
    * Handles both string and object terrain configurations.
    *
-   * @private
    * @param {URLSearchParams} params - URL parameters to modify.
    * @param {MapWithTerrain} map - Map object with terrain info.
    * @returns {void}
    */
-  _appendTerrainParam (params, map) {
+  #appendTerrainParam (params, map) {
     let terrainTag = null
 
     if (typeof map.terrain === 'string') {
@@ -335,12 +330,11 @@ export class NavigationService {
    * Append map name parameter when available.
    * Sets 'mapName' URL parameter if provided or from current map.
    *
-   * @private
    * @param {URLSearchParams} params - URL parameters to modify.
    * @param {string|null} [mapName=null] - Optional map name to append.
    * @returns {void}
    */
-  _appendMapName (params, mapName) {
+  #appendMapName (params, mapName) {
     if (mapName) {
       params.set('mapName', mapName)
     }
@@ -351,15 +345,14 @@ export class NavigationService {
    * Calls storeShips to persist game state and updates browser location.
    * Handles errors with console logging.
    *
-   * @private
    * @param {URLSearchParams} params - URL parameters for navigation.
    * @param {string|boolean} huntMode - Hunt mode flag or mode identifier.
    * @param {string} targetPage - Target page identifier.
    * @returns {void}
    */
-  _storeAndNavigate (params, huntMode, targetPage) {
+  #storeAndNavigate (params, huntMode, targetPage) {
     try {
-      const map = this._getCurrentMap()
+      const map = this.#getCurrentMap()
       const huntModeStr = String(huntMode)
       const url = storeShips(params, huntModeStr, targetPage, map || {})
       if (typeof url === 'string') {
@@ -374,10 +367,10 @@ export class NavigationService {
    * Create file input element for JSON import.
    * Constructs a hidden input element configured for JSON file selection.
    *
-   * @private
+   *
    * @returns {HTMLInputElement} Configured file input element.
    */
-  _createFileInput () {
+  #createFileInput () {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'application/json'
@@ -390,23 +383,23 @@ export class NavigationService {
    * saves to local storage, and shows user feedback.
    * Catches and displays any errors encountered.
    *
-   * @private
+   *
    * @param {Event} event - File input change event with file data.
    * @param {*} SavedCustomMapClass - Custom map constructor class for validation.
    * @param {MapProviderInterface} mapProvider - Map provider for storage access.
    * @returns {Promise<void>}
    */
-  async _handleImportFile (event, SavedCustomMapClass, mapProvider) {
-    const file = this._getSelectedFile(event)
+  async #handleImportFile (event, SavedCustomMapClass, mapProvider) {
+    const file = this.#getSelectedFile(event)
     if (!file) return
 
     try {
-      const map = await this._parseMapFromFile(file, SavedCustomMapClass)
+      const map = await this.#parseMapFromFile(file, SavedCustomMapClass)
       if (!map) return
-      await this._validateAndSaveMap(map, mapProvider)
+      await this.#validateAndSaveMap(map, mapProvider)
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err))
-      this._showImportError(error)
+      this.#showImportError(error)
     }
   }
 
@@ -414,11 +407,10 @@ export class NavigationService {
    * Get the selected file from a file change event.
    * Safely extracts the first file from the input element.
    *
-   * @private
    * @param {Event} event - File input change event.
    * @returns {File|null} Selected file or null if none found.
    */
-  _getSelectedFile (event) {
+  #getSelectedFile (event) {
     const target = /** @type {HTMLInputElement} */ (event.target)
     return target?.files?.[0] || null
   }
@@ -428,13 +420,12 @@ export class NavigationService {
    * Reads file text, parses JSON, and constructs map instance.
    * Throws error if file format is invalid.
    *
-   * @private
    * @param {File} file - JSON file to parse.
    * @param {*} SavedCustomMapClass - Map class constructor for instantiation.
    * @returns {Promise<MapWithTerrain|null>} Parsed map instance or null if invalid.
    * @throws {Error} If file parsing or JSON validation fails.
    */
-  async _parseMapFromFile (file, SavedCustomMapClass) {
+  async #parseMapFromFile (file, SavedCustomMapClass) {
     try {
       const text = await file.text()
       const data = JSON.parse(text)
@@ -450,17 +441,16 @@ export class NavigationService {
    * Checks for duplicate map titles, prompts for overwrite confirmation if needed,
    * saves map to local storage, and shows success feedback.
    *
-   * @private
    * @param {MapWithTerrain} map - Map object to validate and save.
    * @param {MapProviderInterface} mapProvider - Map provider for storage access and duplication check.
    * @returns {Promise<void>}
    */
-  async _validateAndSaveMap (map, mapProvider) {
+  async #validateAndSaveMap (map, mapProvider) {
     const maps = mapProvider.getMaps()
     const mapTitle = map.title || ''
     const isDuplicate = maps.getMap(mapTitle) || maps.getCustomMap(mapTitle)
 
-    if (isDuplicate && !this._confirmOverwrite(mapTitle)) {
+    if (isDuplicate && !this.#confirmOverwrite(mapTitle)) {
       return
     }
 
@@ -478,11 +468,10 @@ export class NavigationService {
    * Confirm whether to overwrite an existing map.
    * Prompts user with confirmation dialog for duplicate map titles.
    *
-   * @private
    * @param {string} title - Title of the map being imported.
    * @returns {boolean} True if user confirms overwrite, false otherwise.
    */
-  _confirmOverwrite (title) {
+  #confirmOverwrite (title) {
     return confirm(`A map with title "${title}" already exists. Overwrite it?`)
   }
 
@@ -490,11 +479,10 @@ export class NavigationService {
    * Display import error to user.
    * Shows alert dialog with error message from import process.
    *
-   * @private
    * @param {Error} error - Error object from import process.
    * @returns {void}
    */
-  _showImportError (error) {
+  #showImportError (error) {
     const message = error?.message || 'Failed to import map'
     alert(`Import error: ${message}`)
   }

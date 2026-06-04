@@ -9,7 +9,7 @@
  */
 
 import type { Ship, Board, WeaponSystem, Weapon } from './domain.types'
-import type { GameModel, ViewModel, GridCellOptions, ShipInfo } from './ui-models.types'
+import type { GameModel  } from './ui-models.types'
 
 /**
  * Placement UI interface for managing ship placement interactions.

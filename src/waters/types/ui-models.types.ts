@@ -9,7 +9,7 @@
  * - Display state and element caching
  */
 
-import type { Ship, Weapon, Board, WeaponSystem } from './domain.types'
+import type { Ship, WeaponSystem } from './domain.types'
 
 /**
  * Game model containing game state and configuration.

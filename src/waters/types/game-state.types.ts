@@ -9,8 +9,8 @@
  * - Ship placement state
  */
 
-import type { Weapon, WeaponSystem, Ship } from './domain.types'
-import type { Location } from './coordinates.types'
+import type { Weapon,  Ship } from './domain.types'
+ 
 
 /**
  * Result of a weapon firing action.

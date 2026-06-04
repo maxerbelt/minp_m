@@ -3,10 +3,10 @@
  * Core abstractions for all weapon types
  */
 
-import type { Coord, CoordPair, PixelCoord } from './coordinates.types'
-import type { AoePattern, AoeCell } from './aoe.types'
+import type { Coord } from './coordinates.types'
+import type { AoePattern  } from './aoe.types'
 import type { MapLike, TerrainType } from './map.types'
-import type { AnimationOptions, ExplodeOptions, AnimationResult, AnimatorContext } from './animation.types'
+import type { AnimationOptions, ExplodeOptions, AnimationResult } from './animation.types'
 import type { LaunchContext } from './launcher.types'
 
 /**

@@ -5,7 +5,7 @@
 
 import type { Board } from "./geometry.types.js";
 import type { SubTerrain } from "./interfaces.types.js";
-import type { SubShapeValidator, BoardExpander } from "./callbacks.types.js";
+import type { SubShapeValidator } from "./callbacks.types.js";
 
 /**
  * Base sub-shape configuration

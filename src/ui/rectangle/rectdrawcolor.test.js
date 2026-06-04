@@ -8,37 +8,38 @@ import {
 } from '@jest/globals'
 import { RectDrawColor } from './rectdrawcolor.js'
 
+// Mock canvas context for jsdom environment
+function mockCanvasContext () {
+  const mockCtx = {
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    fillRect: () => {},
+    strokeRect: () => {},
+    clearRect: () => {}
+  }
+
+  HTMLCanvasElement.prototype.getContext = () => mockCtx
+  return mockCtx
+}
+
+// Helper to create test canvas
+function createTestCanvas () {
+  mockCanvasContext()
+  const canvas = document.createElement('canvas')
+  canvas.id = 'test-color-canvas'
+  canvas.width = 500
+  canvas.height = 500
+  document.body.appendChild(canvas)
+  return canvas
+}
+
+function removeTestCanvas () {
+  const canvas = document.getElementById('test-color-canvas')
+  if (canvas) canvas.remove()
+}
+
 describe('RectDrawColor - Multi-Color Support', () => {
-  // Mock canvas context for jsdom environment
-  function mockCanvasContext () {
-    const mockCtx = {
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 1,
-      fillRect: () => {},
-      strokeRect: () => {},
-      clearRect: () => {}
-    }
-
-    HTMLCanvasElement.prototype.getContext = () => mockCtx
-    return mockCtx
-  }
-
-  // Helper to create test canvas
-  function createTestCanvas () {
-    mockCanvasContext()
-    const canvas = document.createElement('canvas')
-    canvas.id = 'test-color-canvas'
-    canvas.width = 500
-    canvas.height = 500
-    document.body.appendChild(canvas)
-    return canvas
-  }
-
-  function removeTestCanvas () {
-    const canvas = document.getElementById('test-color-canvas')
-    if (canvas) canvas.remove()
-  }
 
   // Test 2-Color (1 bit per cell)
   describe('2-Color Mode (1 bit)', () => {

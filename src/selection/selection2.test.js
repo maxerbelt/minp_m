@@ -1,9 +1,7 @@
-
 import { Ghost } from './Ghost.js'
 import { Brush } from './Brush.js'
 import {
   describe,
-  beforeAll,
   jest,
   it,
   expect,
@@ -11,11 +9,8 @@ import {
   afterEach
 } from '@jest/globals'
 
-/**
- * @jest-environment jsdom
- */
-
 describe('selection Ghost', () => {
+  /** @type {string} */
   let originalBody
 
   beforeEach(() => {
@@ -28,15 +23,17 @@ describe('selection Ghost', () => {
   })
 
   it('constructor should append element to document.body and set properties', () => {
-    const contentBuilder = jest.fn((el, variant, letter) => {
+    const contentBuilder = jest.fn((el, board, letter) => {
+      const variant = typeof board === 'object' ? board.variant : board
       el.innerHTML = `${variant}-${letter}`
     })
 
-    const g = new Ghost('v1', 'A', contentBuilder)
+    const board = { variant: 'v1' }
+    const g = new Ghost(board, 'A', contentBuilder)
     expect(document.body.contains(g.element)).toBe(true)
-    expect(g.letter).toBe('A')
     expect(g.element.className).toBe('ship-ghost')
     expect(g.element.innerHTML).toBe('v1-A')
+    expect(contentBuilder).toHaveBeenCalledWith(g.element, board, 'A')
 
     // cleanup
     g.remove()
@@ -44,7 +41,7 @@ describe('selection Ghost', () => {
 
   it('hide and show should change opacity', () => {
     const contentBuilder = jest.fn(() => {})
-    const g = new Ghost('v', 'B', contentBuilder, null)
+    const g = new Ghost({}, 'B', contentBuilder)
 
     g.hide()
     expect(g.element.style.opacity).toBe('0')
@@ -57,7 +54,7 @@ describe('selection Ghost', () => {
 
   it('moveTo should set left and top styles', () => {
     const contentBuilder = jest.fn(() => {})
-    const g = new Ghost('v', 'C', contentBuilder, null)
+    const g = new Ghost({}, 'C', contentBuilder)
 
     g.moveTo(10, 20)
     expect(g.element.style.left).toBe('10px')
@@ -67,12 +64,15 @@ describe('selection Ghost', () => {
   })
 
   it('setVariant should replace innerHTML using contentBuilder', () => {
-    const contentBuilder = jest.fn((el, variant, letter) => {
+    const contentBuilder = jest.fn((el, board, letter) => {
+      const variant = typeof board === 'object' ? board.variant : board
       el.innerHTML = `variant:${variant},letter:${letter}`
     })
-    const g = new Ghost('v1', 'D', contentBuilder, null)
+    const initialBoard = { variant: 'v1' }
+    const g = new Ghost(initialBoard, 'D', contentBuilder)
     // replace contents
-    g.setVariant('v2')
+    const newBoard = { variant: 'v2' }
+    g.setVariant(newBoard)
     expect(g.element.innerHTML).toBe('variant:v2,letter:D')
 
     g.remove()
@@ -80,7 +80,7 @@ describe('selection Ghost', () => {
 
   it('remove should remove element and null it out', () => {
     const contentBuilder = jest.fn(() => {})
-    const g = new Ghost('v', 'E', contentBuilder, null)
+    const g = new Ghost({}, 'E', contentBuilder)
     const el = g.element
     g.remove()
     expect(document.body.contains(el)).toBe(false)

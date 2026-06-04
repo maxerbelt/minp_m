@@ -47,7 +47,7 @@ export type ExplodeOptions = {
   readonly end?: PixelCoord
   readonly type?: string
   readonly power?: number
-  readonly shake?: 'shake' | 'shake-heavy' | string
+  readonly shake?:  string
   readonly animator?: any // Animator instance
   readonly viewModel?: any
   readonly id?: string | null

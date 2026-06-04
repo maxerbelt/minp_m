@@ -34,6 +34,7 @@ describe('HexDraw', () => {
       stroke: jest.fn()
     }
 
+    // @ts-ignore - mocking for test purposes
     HTMLCanvasElement.prototype.getContext = jest.fn(() => ctx)
     mockCtx = ctx
     return ctx
@@ -51,7 +52,12 @@ describe('HexDraw', () => {
       left: 0,
       top: 0,
       width: 600,
-      height: 600
+      height: 600,
+      x: 0,
+      y: 0,
+      bottom: 600,
+      right: 600,
+      toJSON: jest.fn()
     }))
     document.body.appendChild(mockCanvas)
     return mockCanvas
@@ -108,9 +114,10 @@ describe('HexDraw', () => {
     it('should throw error if canvas element not found', () => {
       const originalGetElementById = document.getElementById
       document.getElementById = jest.fn(() => null)
-      expect(() => {
-        new HexDraw('nonexistent-canvas')
-      }).toThrow(`Canvas element with id "nonexistent-canvas" not found`)
+      const throwFn = () => new HexDraw('nonexistent-canvas')
+      expect(throwFn).toThrow(
+        `Canvas element with id "nonexistent-canvas" not found`
+      )
       document.getElementById = originalGetElementById
     })
 
@@ -252,10 +259,6 @@ describe('HexDraw', () => {
   })
 
   describe('_drawGrid', () => {
-    // This method has been removed - grid is now drawn as part of _drawShape
-  })
-
-  describe('_drawGrid', () => {
     beforeEach(() => {
       hexDraw = new HexDraw('test-canvas', 2)
     })
@@ -287,8 +290,11 @@ describe('HexDraw', () => {
   })
 
   describe('_bindMouseEvents', () => {
-    it('should bind mousemove event listener', () => {
+    beforeEach(() => {
       mockCanvas.addEventListener = jest.fn()
+    })
+
+    it('should bind mousemove event listener', () => {
       hexDraw = new HexDraw('test-canvas')
       expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
         'mousemove',
@@ -297,7 +303,7 @@ describe('HexDraw', () => {
     })
 
     it('should bind mouseleave event listener', () => {
-      mockCanvas.addEventListener = jest.fn()
+      mockCanvas.addEventListener.mockClear()
       hexDraw = new HexDraw('test-canvas')
       expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
         'mouseleave',
@@ -306,7 +312,7 @@ describe('HexDraw', () => {
     })
 
     it('should bind click event listener', () => {
-      mockCanvas.addEventListener = jest.fn()
+      mockCanvas.addEventListener.mockClear()
       hexDraw = new HexDraw('test-canvas')
       expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
         'click',

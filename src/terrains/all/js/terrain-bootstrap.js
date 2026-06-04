@@ -1,6 +1,6 @@
 !(function () {
   try {
-    var p = new URLSearchParams(location.search).get('terrain'),
+    const p = new URLSearchParams(location.search).get('terrain'),
       t = p || localStorage.terrain,
       l = document.createElement('link'),
       f = document.getElementById('favicon')
