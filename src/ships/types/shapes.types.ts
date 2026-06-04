@@ -4,8 +4,8 @@
  */
 
 import type { CoordinatePair, CellCoordinates } from "./coordinates.types.js";
-import type { Board, Mask, LayerBoards } from "./geometry.types.js";
-import type { RackInput, WeaponMap, Rack } from "./weapons.types.js";
+import type { Board  } from "./geometry.types.js";
+import type {  WeaponMap  } from "./weapons.types.js";
 import type { SubTerrain, VariantFactory } from "./interfaces.types.js";
 import type { PlacementFilter } from "./callbacks.types.js";
 
