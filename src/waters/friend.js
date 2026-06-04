@@ -937,7 +937,6 @@ export class Friend extends Placement {
    * @returns {void}
    */
   restartBoard (friendlyMode = false) {
-    // Reset board state (replaces deprecated resetBase())
     this.boardDestroyed = false
     // @ts-ignore - this.UI.board is HTMLElement at runtime with classList property
     this.UI.board?.classList?.remove('destroyed')
@@ -1357,7 +1356,6 @@ export class Friend extends Placement {
    * @returns {void}
    */
   resetUI (ships) {
-    // Reset board state (replaces deprecated resetBase())
     this.boardDestroyed = false
     // @ts-ignore - this.UI.board is HTMLElement at runtime with classList property
     this.UI.board?.classList?.remove('destroyed')

@@ -197,12 +197,12 @@ export class Score {
    * Internal storage swaps coordinates from (r, c) to (c, r) for mask operations.
    *
    * @public
-   * @param {number} r - Row coordinate (0-based index)
-   * @param {number} c - Column coordinate (0-based index)
+   * @param {number} y - Row coordinate (0-based index)
+   * @param {number} x - Column coordinate (0-based index)
    * @returns {void}
    */
-  hintReveal (r, c) {
-    this.hint.set(c, r)
+  hintReveal (x, y) {
+    this.hint.set(x, y)
   }
 
   /**
