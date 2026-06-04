@@ -751,8 +751,11 @@ class Enemy extends Waters {
   /**
    * Checks if the enemy has ammo available.
    * Getter convenience method that inverts hasNoAmmo logic.
+   * Delegates to loadOut.isOutOfAmmo property check.
+   *
    * @public
-   * @returns {boolean} True if ammo is available; false if out of ammo
+   * @returns {boolean} True if ammo is available (any weapon has ammo); false if out of ammo (all weapons exhausted)
+   * @memberof Enemy
    */
   get hasAmmo () {
     return !this.hasNoAmmo
@@ -761,9 +764,11 @@ class Enemy extends Waters {
   /**
    * Checks if the enemy has no ammo.
    * Queries the loadOut weapon system to determine ammo availability.
-   * Returns true only when all ammunition is depleted.
+   * Returns true only when all ammunition is depleted for all weapons.
+   *
    * @public
-   * @returns {boolean} True if no ammo is available; false if ammo remains
+   * @returns {boolean} True if all ammunition is depleted (all weapons exhausted); false if any weapon has ammo
+   * @memberof Enemy
    */
   get hasNoAmmo () {
     // @ts-ignore - this.loadOut is typed as Object but has isOutOfAmmo property
@@ -773,8 +778,19 @@ class Enemy extends Waters {
   /**
    * Switches the weapon mode if possible.
    * Only switches if game is not over and ammo is available.
+   * Delegates to loadOut.switchToNextWeaponSystem() for weapon selection.
+   *
+   * VALIDATION:
+   * - Returns early if isGameOver is true
+   * - Returns early if hasNoAmmo is true
+   *
+   * SIDE EFFECTS:
+   * - Calls loadOut.switchToNextWeaponSystem() which mutates weapon selection state
+   * - Calls updateUI() which refreshes all UI components
+   *
    * @public
-   * @returns {void}
+   * @returns {void} No explicit return; updates game state and UI via side effects
+   * @memberof Enemy
    */
   switchMode () {
     if (this.isGameOver || this.hasNoAmmo) return
@@ -787,8 +803,15 @@ class Enemy extends Waters {
    * Checks if the game is over for the enemy.
    * Game is over when board is destroyed or ships are revealed.
    * Either condition results in game over state.
+   *
+   * LOGIC:
+   * - Returns true if boardDestroyed is true (board destroyed by opponent)
+   * - Returns true if isRevealed is true (all ships revealed)
+   * - Returns false only if both conditions are false
+   *
    * @public
-   * @returns {boolean} True if board is destroyed or ships revealed; false otherwise
+   * @returns {boolean} True if board is destroyed or ships revealed; false otherwise (game continues)
+   * @memberof Enemy
    */
   get isGameOver () {
     return this.boardDestroyed || this.isRevealed
@@ -799,9 +822,20 @@ class Enemy extends Waters {
    * Makes up to MAX_PLACEMENT_ATTEMPTS sequential tries to position all ships.
    * Each attempt randomizes ship positions and rotations independently.
    *
+   * ALGORITHM:
+   * 1. Loop MAX_PLACEMENT_ATTEMPTS times
+   * 2. Call attemptToPlaceShips() (parent method) which places all ships at once
+   * 3. Return true on first success
+   * 4. Return false if all attempts exhausted
+   *
+   * SIDE EFFECTS:
+   * - Mutates board state via attemptToPlaceShips() (parent method)
+   * - May partially populate board on failed attempts
+   * - Does not guarantee placement (placement may fail after all retries)
+   *
    * @private
-   * @param {Array<ShipCell>} ships - Array of Ship objects to place on board
-   * @returns {boolean} True if all ships placed successfully; false if placement failed
+   * @param {Array<ShipCell>} ships - Array of Ship objects to place on board (passed to parent method)
+   * @returns {boolean} True if all ships placed successfully on any attempt; false if placement failed after MAX_PLACEMENT_ATTEMPTS
    * @memberof Enemy
    */
   _attemptShipPlacement (ships) {
@@ -823,10 +857,24 @@ class Enemy extends Waters {
    * Shows exponentially-increasing attempt counter to player and schedules retry.
    * Implements exponential backoff: attempt N shows (N+1) × ATTEMPTS_PER_RETRY attempts.
    *
+   * ALGORITHM:
+   * 1. Calculate totalAttempts = (attempt + 1) × ATTEMPTS_PER_RETRY
+   * 2. Add difficulty message with attempt count to game status queue
+   * 3. If attempt < MAX_PLACEMENT_RETRIES, schedule async retry with Delay.promise()
+   * 4. If max retries exceeded, finalize failure and throw error
+   *
+   * SIDE EFFECTS:
+   * - Updates game status via gameStatus.addToQueue()
+   * - May schedule async retry via Delay.promise()
+   * - Calls _finalizePlacementFailure() which disables UI and throws error
+   * - Sets this.boardDestroyed = true on final failure
+   *
    * @private
-   * @param {Array<ShipCell>} ships - Array of Ship objects to retry placing
-   * @param {number} attempt - Current retry attempt number (0-indexed)
-   * @returns {Promise<boolean>} True if placement succeeded after retry; false if max retries exceeded
+   * @async
+   * @param {Array<ShipCell>} ships - Array of Ship objects to retry placing via _attemptShipPlacement()
+   * @param {number} attempt - Current retry attempt number (0-indexed); used for exponential backoff calculation
+   * @returns {Promise<boolean>} Promise resolving to true if placement succeeded after retry; false returned early if max retries exceeded
+   * @throws {Error} Throws with PLACEMENT_FAILED message when max retries exhausted
    * @memberof Enemy
    */
   async _handlePlacementFailure (ships, attempt) {
@@ -873,10 +921,26 @@ class Enemy extends Waters {
    * Places all ships on the board asynchronously.
    * Uses retry logic to handle placement difficulties. Yields control to let UI update.
    * Enables buttons after placement and provides click-to-fire instruction.
+   *
+   * ALGORITHM:
+   * 1. Get ships to place (use provided array or default to this.ships)
+   * 2. Enable UI buttons
+   * 3. Yield control with Delay.yield() to allow UI to update
+   * 4. Attempt placement via _attemptShipPlacement()
+   * 5. If successful, add click-to-fire message; otherwise handle via _handlePlacementFailure()
+   *
+   * SIDE EFFECTS:
+   * - Enables UI buttons via this.UI?.enableBtns?.()
+   * - Yields to event loop via Delay.yield()
+   * - Mutates board state via _attemptShipPlacement()
+   * - Updates game status messages
+   * - May throw error via _handlePlacementFailure()
+   *
    * @public
    * @async
-   * @param {Array<ShipCell>} [ships] - The ships to place (defaults to this.ships)
-   * @returns {Promise<void>}
+   * @param {Array<ShipCell>} [ships] - The ships to place (defaults to this.ships if not provided)
+   * @returns {Promise<void>} Resolves when ships are placed or placement fails with error thrown
+   * @throws {Error} Throws from _handlePlacementFailure() if placement fails after all retries
    * @memberof Enemy
    */
   async placeAll (ships) {
@@ -897,8 +961,16 @@ class Enemy extends Waters {
    * Reveals all ships on the board.
    * Clears UI classes, shows all ships, and marks board as destroyed/revealed.
    * Called when game ends to show opponent's ship positions.
+   *
+   * SIDE EFFECTS:
+   * - Clears all CSS classes from board via ui?.grid?.clearClasses?.()
+   * - Displays ships via ui?.revealAll?.()
+   * - Hides waiting/spinner via hideWaiting()
+   * - Sets this.boardDestroyed = true
+   * - Sets this.isRevealed = true
+   *
    * @public
-   * @returns {void}
+   * @returns {void} No explicit return; mutates board state and UI
    * @memberof Enemy
    */
   revealAll () {
@@ -917,8 +989,19 @@ class Enemy extends Waters {
    * Updates all UI components.
    * Refreshes weapon UI, tally, and button availability based on game state.
    * Orchestrates parent UI updates with current weapon system display.
+   *
+   * ORCHESTRATION:
+   * 1. Update button states via _updateButtonStates()
+   * 2. Call parent's updateUI() via super.updateUI()
+   * 3. Update weapon status display via gameStatus.updateWeaponStatus()
+   *
+   * SIDE EFFECTS:
+   * - Mutates button DOM elements
+   * - Updates parent class UI components
+   * - Updates game status display
+   *
    * @public
-   * @returns {void}
+   * @returns {void} No explicit return; mutates UI via side effects
    * @memberof Enemy
    */
   updateUI () {
@@ -960,8 +1043,15 @@ class Enemy extends Waters {
    * Initializes weapon button event handlers.
    * Creates buttons for each available weapon system and wires click handlers.
    * Includes debug logging for weapon system inspection.
+   *
+   * SIDE EFFECTS:
+   * - Logs debug information to console (weapon systems)
+   * - Creates weapon buttons via ui?.weaponButtons?.()
+   * - Assigns ui.weaponBtns array with created buttons
+   * - Wires onClickWeaponButtons() handler to each button click
+   *
    * @public
-   * @returns {void}
+   * @returns {void} No explicit return; initializes handlers and creates UI elements
    * @memberof Enemy
    */
   setupWeaponButtonHandlers () {
@@ -1019,10 +1109,20 @@ class Enemy extends Waters {
 
   /**
    * Checks if the enemy can take a turn.
-   * Validates multiple conditions: game not over, ammo available, opponent alive, and no pending action.
+   * Validates multiple conditions: game not over, ammo available, no pending timeout, and opponent alive.
    * Updates game status with appropriate message if turn cannot be taken.
+   *
+   * VALIDATION SEQUENCE:
+   * 1. Game not over (not boardDestroyed and not revealed)
+   * 2. Has ammo remaining (inverse of hasNoAmmo)
+   * 3. No pending timeout (timeoutId is null)
+   * 4. Opponent board not destroyed (game not over)
+   *
+   * SIDE EFFECTS:
+   * - Calls gameStatus.addToQueue() which may update game UI messages
+   *
    * @public
-   * @returns {boolean} True if game is not over, ammo available, opponent alive, and no pending timeout; false otherwise
+   * @returns {boolean} True if all conditions met (game not over, ammo available, no pending timeout, opponent alive); false otherwise
    * @memberof Enemy
    */
   get canTakeTurn () {
@@ -1160,15 +1260,25 @@ class Enemy extends Waters {
    * - FIX: Filter opponent ships to only those with the selected weapon loaded
    *
    * SIDE EFFECTS:
-   * - Updates this.steps with selected ship
-   * - Updates this.steps with selected weapon source location
+   * - Mutates this.steps with selected ship via addShip()
+   * - Mutates this.steps with selected weapon source location via addSource()
    * - Creates weapon selection state via createWeaponSelection()
    * - Arms the selected weapon via _armSelectedWeapon()
+   * - May call randomAttachedWeapon() fallback if weapon unavailable
+   *
+   * ALGORITHM:
+   * 1. Get currently selected weapon from loadOut
+   * 2. If no weapon selected, fallback to random weapon selection
+   * 3. Filter opponent ships to only those with selected weapon loaded
+   * 4. Select random ship from filtered candidates
+   * 5. Extract weapon entry matching selected weapon letter
+   * 6. Create weapon selection and arm for next firing phase
    *
    * @private
-   * @param {number} r - Target row coordinate (used in seek mode source hint)
-   * @param {number} c - Target column coordinate (used in seek mode source hint)
-   * @returns {void}
+   * @param {number} r - Target row coordinate (0-indexed); used as source hint in seek mode for multi-step weapons
+   * @param {number} c - Target column coordinate (0-indexed); used as source hint in seek mode for multi-step weapons
+   * @throws {void} Returns early via random fallback if weapon not found or no ships available
+   * @returns {void} No explicit return; mutates game state via side effects
    * @memberof Enemy
    */
   _selectCurrentWeaponOnRandomShip (r, c) {
@@ -1279,9 +1389,16 @@ class Enemy extends Waters {
   /**
    * Normalizes hint coordinates returned by generateSourceHint.
    * Ensures the result is always a valid [row, col] tuple.
+   * Returns [0, 0] fallback if input is invalid, undefined, or null.
+   *
+   * VALIDATION:
+   * - Checks if input is an array with at least 2 elements
+   * - Validates both coordinates are not null/undefined
+   * - Returns fallback [0, 0] for any invalid input
+   *
    * @private
-   * @param {Array<number>|undefined|null} hintCoords - Hint coordinates from source hint generator
-   * @returns {Array<number>} Normalized hint coordinates as [row, col] array
+   * @param {Array<number>|undefined|null} hintCoords - Hint coordinates from source hint generator (may be undefined, null, or invalid array)
+   * @returns {Array<number>} Normalized hint coordinates as [row, col] array; [0, 0] if invalid
    * @memberof Enemy
    */
   _normalizeSourceHint (hintCoords) {
@@ -1310,10 +1427,14 @@ class Enemy extends Waters {
    *   - Player clicks enemy board again (triggered from stored selectedCellCoordinates)
    *   - Fire is executed at the new target location
    *
+   * SIDE EFFECTS:
+   * - Updates game status message with ENEMY_SELECTING_TARGET
+   * - Delegates state mutation to _selectCurrentWeaponOnRandomShip()
+   *
    * @private
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
-   * @returns {void}
+   * @param {number} r - Target row coordinate (0-indexed); passed to weapon selection for source hint in seek mode
+   * @param {number} c - Target column coordinate (0-indexed); passed to weapon selection for source hint in seek mode
+   * @returns {void} No explicit return; updates UI and game state via side effects
    * @memberof Enemy
    */
   _onFirstClickSelection (r, c) {
@@ -1325,11 +1446,24 @@ class Enemy extends Waters {
    * Handles the second click in hide/seek mode: fires the selected weapon at the target.
    * Ensures fire handlers are properly set before executing the attack.
    * Updates opponent UI with results and finalizes turn.
+   *
+   * CRITICAL SEQUENCING:
+   * Fire handlers must be set BEFORE calling fireWeaponAt().
+   * The two-click Hide/Seek path arms weapons on the first click, but the actual
+   * fire callbacks are only finalized here. Without setWeaponFireHandlers(), the shot
+   * animates but never delivers hit/miss results on the opponent board.
+   *
+   * SIDE EFFECTS:
+   * - Clears selectedCellCoordinates to reset two-click mode
+   * - Calls fireWeaponAt() which mutates board state and opponent UI
+   * - Processes weapon result via _processWeaponResult() if final
+   * - Finalizes turn via _finalizeTurn()
+   *
    * @private
    * @async
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
-   * @returns {Promise<void>}
+   * @param {number} r - Target row coordinate (0-indexed); final target for weapon firing
+   * @param {number} c - Target column coordinate (0-indexed); final target for weapon firing
+   * @returns {Promise<void>} Resolves when weapon is fired and turn finalized
    * @memberof Enemy
    */
   async _onSecondClickFire (r, c) {
@@ -1376,12 +1510,23 @@ class Enemy extends Waters {
    * - In pure Seek: opponent generates ships with weapons → hasAttachedWeapons = true
    * - In modes without attached weapons: hasAttachedWeapons = false → single-click fires
    *
+   * FLOW ROUTING:
+   * 1. Validate canTakeTurn (game not over, ammo available, no pending timeout)
+   * 2. Check for seek-mode missile immediate fire condition
+   * 3. Route to two-click flow if opponent has attached weapons
+   * 4. Otherwise route to single-click fire via _fireWeaponViaSetup()
+   *
+   * SIDE EFFECTS:
+   * - May call canTakeTurn which updates game status if turn invalid
+   * - Modifies selectedCellCoordinates for two-click tracking
+   * - Calls weapon firing methods which mutate board and opponent UI state
+   * - Updates game status messages for each flow path
+   *
    * @public
    * @async
-   * @param {number} r - Row coordinate (0-indexed)
-   * @param {number} c - Column coordinate (0-indexed)
-   * @returns {Promise<void>} Resolves when cell click handling completes
-   * @throws {void} Does not throw; instead handles errors via game status messages
+   * @param {number} r - Row coordinate (0-indexed) on opponent board
+   * @param {number} c - Column coordinate (0-indexed) on opponent board
+   * @returns {Promise<void>} Resolves when cell click handling and weapon firing completes
    * @memberof Enemy
    */
   async onClickCell (r, c) {
@@ -1687,19 +1832,24 @@ class Enemy extends Waters {
    * Overrides parent's private destroy() method with public API for enemy-specific logic.
    *
    * VALIDATION (unless isSplash=true):
-   * - Checks shot hasn't already hit the same cell (prevents double-tap)
+   * - Calls _isInvalidShot() to check if already hit this cell (prevents double-tap)
    * - Ensures effect array contains at least one coordinate
    *
    * RETURN VALUES:
    * - score object: Shot was valid and applied successfully
-   * - LoadOut.noResult: Shot was invalid or had no effect
+   * - LoadOut.noResult sentinel: Shot was invalid or had no effect
+   *
+   * SIDE EFFECTS:
+   * - Mutates board state via Waters.destroy() (parent method)
+   * - Updates opponent UI with hit/miss results
+   * - May update score tracking
    *
    * @public
-   * @param {Weapon} weapon - The weapon being fired
-   * @param {number[][]} effect - Array of effect coordinates [row, col] with optional [row, col, power]
-   * @param {Object} [options] - Additional firing options
-   * @param {boolean} [options.isSplash=false] - If true, skips shot validity checks (for splash damage)
-   * @returns {Object|Symbol} The weapon effect result or LoadOut.noResult sentinel
+   * @param {Weapon} weapon - The weapon object being fired (includes letter, name, tag properties)
+   * @param {Array<Array<number>>} effect - Array of effect coordinates where each is [row, col] with optional [row, col, power] tuple
+   * @param {Object} [options] - Additional firing options object
+   * @param {boolean} [options.isSplash=false] - If true, skips shot validity checks (used for splash damage which is inherently valid)
+   * @returns {Object|Symbol} The weapon effect result object or LoadOut.noResult sentinel Symbol
    * @memberof Enemy
    */
   // @ts-ignore - Intentionally overrides parent's private destroy with public implementation
@@ -1740,21 +1890,26 @@ class Enemy extends Waters {
    * Separates concerns between opponent weapon display and player shadow display.
    *
    * CLEARING LOGIC:
-   * 1. Deactivates weapon display on opponent board (where enemy is targeting)
-   * 2. Deactivates shadow cell on own board (visual feedback showing power)
-   * 3. Deactivates hint cell on opponent board (targeting line/hint display)
+   * 1. Calls #deactivateOpponentWeapon() to remove weapon display on opponent board
+   * 2. Calls #deactivateShadowCell() to remove visual feedback on own board
+   * 3. Calls #deactivateOpponentHint() to remove targeting hint on opponent board
    *
    * PARAMETERS:
-   * - All parameters accept null to skip that UI element
+   * - All parameters accept null to skip that UI element (null bypasses #callUIMethod checks)
    * - Shadow coordinates (if non-null) trigger both shadow and hint deactivation
    * - Opponent weapon uses same coordinates as shadow row/col
    *
+   * SIDE EFFECTS:
+   * - Mutates opponent UI by removing CSS classes from weapon cells
+   * - Mutates own UI by removing CSS classes from shadow cells
+   * - Mutates opponent UI by removing CSS classes from hint cells
+   *
    * @public
-   * @param {number|null} opponentRow - Opponent board row to deactivate (nullable, often same as shadowRow)
-   * @param {number|null} opponentCol - Opponent board column to deactivate (nullable)
-   * @param {number|null} shadowRow - Shadow cell row on own board (nullable)
-   * @param {number|null} shadowCol - Shadow cell column on own board (nullable)
-   * @returns {void}
+   * @param {number|null} opponentRow - Opponent board row (0-indexed) to deactivate weapon display (nullable; often same as shadowRow)
+   * @param {number|null} opponentCol - Opponent board column (0-indexed) to deactivate (nullable)
+   * @param {number|null} shadowRow - Shadow cell row (0-indexed) on own board for deactivation (nullable)
+   * @param {number|null} shadowCol - Shadow cell column (0-indexed) on own board for deactivation (nullable)
+   * @returns {void} No explicit return; mutates UI state via side effects
    * @memberof Enemy
    */
   deactivateWeapon (opponentRow, opponentCol, shadowRow, shadowCol) {
@@ -1811,6 +1966,11 @@ class Enemy extends Waters {
    * Generic helper to reduce duplication in UI method invocation.
    * Handles null UI gracefully and passes optional force parameter if provided.
    *
+   * VALIDATION:
+   * - Returns early if ui is falsy (undefined, null, false)
+   * - Returns early if x or y is null (allows coordinate validation)
+   * - Safely invokes method via optional chaining (?.) to handle missing methods
+   *
    * USAGE PATTERN:
    * ```
    * this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', x, y, true)
@@ -1818,12 +1978,16 @@ class Enemy extends Waters {
    * this.opponent?.UI?.cellWeaponDeactivate?.(x, y, true)
    * ```
    *
-   * @param {any} ui - The UI instance (may be undefined or typed as Object)
-   * @param {string} methodName - The method name to invoke
-   * @param {number|null} y - Row coordinate (may be null; skips call if null)
-   * @param {number|null} x - Column coordinate (may be null; skips call if null)
-   * @param {boolean} [force] - Optional force flag passed to method (e.g., force=true to override UI state)
-   * @returns {void}
+   * SIDE EFFECTS:
+   * - Invokes ui[methodName]() which may mutate UI DOM elements
+   * - Passes force parameter to method (optional, used by some UI methods)
+   *
+   * @param {any} ui - The UI instance object (may be undefined or typed as Object with dynamic methods)
+   * @param {string} methodName - The method name to invoke on ui object
+   * @param {number|null} x - Column coordinate (0-indexed; null skips call with early return)
+   * @param {number|null} y - Row coordinate (0-indexed; null skips call with early return)
+   * @param {boolean} [force] - Optional force flag passed as third argument to method (e.g., force=true to override UI state)
+   * @returns {void} No explicit return; invokes ui method via side effects
    * @memberof Enemy
    */
   #callUIMethod (ui, methodName, x, y, force) {
@@ -1843,15 +2007,20 @@ class Enemy extends Waters {
    * Invokes gameStatus.updateWeaponStatus with weapon information and targeting state.
    *
    * PARAMETERS PASSED TO gameStatus:
-   * - Current weapon system object
-   * - Map configuration (bh.maps)
-   * - Number of selected coordinates (for multi-step weapons)
+   * - Current weapon system object from loadOut
+   * - Map configuration (bh.maps for context)
+   * - Number of selected coordinates (length for multi-step weapons)
    * - Targeting mode flag (whether weapon needs target selection)
    *
+   * SIDE EFFECTS:
+   * - Updates game status UI by calling gameStatus.updateWeaponStatus()
+   * - May mutate UI DOM elements showing weapon info
+   * - Displays mode icons based on targeting state
+   *
    * @public
-   * @param {*} _rack - The weapon rack (unused; uses current weapon system instead)
-   * @param {Object} _cursorInfo - Cursor information (unused)
-   * @returns {void}
+   * @param {*} _rack - The weapon rack (unused; uses current weapon system via loadOut instead)
+   * @param {Object} _cursorInfo - Cursor information (unused; kept for interface compatibility)
+   * @returns {void} No explicit return; updates UI via side effects
    * @memberof Enemy
    */
   updateWeaponStatus (_rack, _cursorInfo) {
@@ -1870,10 +2039,16 @@ class Enemy extends Waters {
   }
 
   /**
-   * Updates the weapon mode.
-   * Refreshes mode display based on current weapon system.
+   * Updates the weapon mode display.
+   * Refreshes mode icons and indicator based on current weapon system and targeting state.
+   * Delegates to gameStatus.updateWeaponStatus() for UI updates.
+   *
+   * SIDE EFFECTS:
+   * - Updates game status display
+   * - May mutate UI DOM elements showing mode indicators
+   *
    * @public
-   * @returns {void}
+   * @returns {void} No explicit return; updates UI via side effects
    * @memberof Enemy
    */
   updateWeaponMode () {
