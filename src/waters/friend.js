@@ -375,24 +375,6 @@ export class Friend extends Placement {
   // ============ Location Selection ============
 
   /**
-   * Selects a random hit coordinate from candidates.
-   * Returns null if empty, first element if only one, random element otherwise.
-   * Note: Used in test suite for randomization testing.
-   *
-   * @param {Array<GridCoordinate>} hitCoordinates - Candidate [row, col] coordinates
-   * @returns {GridCoordinate|null} Random [row, col] or null if empty
-   * @private
-   */
-  // @ts-ignore - unused but may be used by external code
-  getRandomHitCoordinate (hitCoordinates) {
-    const totalHits = hitCoordinates.length
-    if (totalHits < 1) return null
-    if (totalHits === 1) return hitCoordinates[0]
-    const randomIndex = Math.floor(Math.random() * totalHits)
-    return hitCoordinates[randomIndex]
-  }
-
-  /**
    * Generates a random location within map boundaries (not on edges).
    * Excludes edge cells to avoid placing weapons near board perimeter.
    *

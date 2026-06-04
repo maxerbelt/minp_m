@@ -42,7 +42,7 @@ import { Delay } from '../core/Delay.js'
  * @property {HTMLCanvasElement} canvas - Canvas element
  * @property {Function} _hitTest - Hit test method
  * @property {Object} mask - Mask object with bits and methods
- * @property {Array} previewCells - Preview cells for rendering
+ * @property {Array<unknown>} previewCells - Preview cells for rendering
  * @property {Function} redraw - Redraw method
  * @property {Object} store - Store object
  * @property {Object} indexer - Indexer object
@@ -77,6 +77,8 @@ import { Delay } from '../core/Delay.js'
  * @property {string} [template] - Template name
  * @property {Function} [classifyOrbitType] - Symmetry classification function
  * @property {Function} [applyMap] - Apply transformation map
+ * @property {Object} [store] - Store reference for transformations
+ * @property {Object} [indexer] - Indexer reference for transformations
  */
 
 /**
@@ -115,7 +117,9 @@ function getElementByIdSafe (id) {
 function setElementsDisabled (ids, disabled) {
   ids.forEach(id => {
     const el = getElementByIdSafe(id)
-    if (el) el.disabled = disabled
+    if (el) {
+      /** @type {HTMLInputElement} */ ;(el).disabled = disabled
+    }
   })
 }
 
@@ -243,7 +247,7 @@ export function applyMaskMutation (mask, x, y, operation) {
  * Sets a cell to a specific color value in a multi-layer packed grid.
  * Typically used for terrain or multi-color grids.
  *
- * @param {Object|null} packed - Packed grid object with set method
+ * @param {any} packed - Packed grid object with set method
  * @param {number} x - X coordinate of the cell
  * @param {number} y - Y coordinate of the cell
  * @param {number} color - Color value to set at the cell
@@ -253,7 +257,7 @@ export function applyMaskMutation (mask, x, y, operation) {
  */
 export function applyPackedMutation (packed, x, y, color) {
   if (!packed) return
-  packed.set(x, y, color)
+  ;/** @type {any} */ (packed).set(x, y, color)
 }
 
 /**
@@ -269,13 +273,13 @@ export function applyPackedMutation (packed, x, y, color) {
  */
 export function createMaskMutationMap () {
   return {
-    empty: grid => grid.mask.emptyMask.bits,
-    full: grid => grid.mask.fullMask.bits,
-    inverse: grid => grid.mask.invertedMask.bits,
-    'outer-border': grid => grid.mask.outerBorderMask.bits,
-    'outer-area': grid => grid.mask.outerAreaMask.bits,
-    'inner-border': grid => grid.mask.innerBorderMask.bits,
-    'inner-area': grid => grid.mask.innerAreaMask.bits
+    empty: (/** @type {any} */ grid) => grid.mask.emptyMask.bits,
+    full: (/** @type {any} */ grid) => grid.mask.fullMask.bits,
+    inverse: (/** @type {any} */ grid) => grid.mask.invertedMask.bits,
+    'outer-border': (/** @type {any} */ grid) => grid.mask.outerBorderMask.bits,
+    'outer-area': (/** @type {any} */ grid) => grid.mask.outerAreaMask.bits,
+    'inner-border': (/** @type {any} */ grid) => grid.mask.innerBorderMask.bits,
+    'inner-area': (/** @type {any} */ grid) => grid.mask.innerAreaMask.bits
   }
 }
 
@@ -364,9 +368,15 @@ export function setMorphologyButtonStates (
   const erodeBtn = getElementByIdSafe(`erode${suffix}`)
   const crossBtn = getElementByIdSafe(`cross-dilate${suffix}`)
 
-  if (dilateBtn) dilateBtn.disabled = dilateDisabled
-  if (erodeBtn) erodeBtn.disabled = erodeDisabled
-  if (crossBtn) crossBtn.disabled = crossDisabled
+  if (dilateBtn) {
+    /** @type {HTMLButtonElement} */ ;(dilateBtn).disabled = dilateDisabled
+  }
+  if (erodeBtn) {
+    /** @type {HTMLButtonElement} */ ;(erodeBtn).disabled = erodeDisabled
+  }
+  if (crossBtn) {
+    /** @type {HTMLButtonElement} */ ;(crossBtn).disabled = crossDisabled
+  }
 }
 
 /**
@@ -436,7 +446,9 @@ export function wireLineToolButton (buttonId, toolValue, setToolFn) {
   if (!btn) return
 
   const handler = () => {
-    if (btn.checked) setToolFn(toolValue)
+    if (/** @type {HTMLInputElement} */ (btn).checked) {
+      setToolFn(toolValue)
+    }
   }
 
   btn.addEventListener('change', handler)
@@ -485,8 +497,9 @@ export function wireAllLineToolButtons (radioSelector, toolMap, setToolFn) {
   const radioButtons = document.querySelectorAll(radioSelector)
   radioButtons.forEach(radio => {
     radio.addEventListener('change', e => {
-      if (e.target.checked) {
-        setToolFn(toolMap[e.target.value])
+      const target = /** @type {HTMLInputElement|null} */ (e.target)
+      if (target?.checked) {
+        setToolFn(toolMap[target.value])
       }
     })
   })
@@ -553,7 +566,7 @@ export async function showMorphLog (logElement, text, timeout = 3000) {
 /**
  * Helper: Find first rotation key in object format
  * @private
- * @param {Object} maps - Transform maps object
+ * @param {Record<string, any>} maps - Transform maps object
  * @returns {string|null} First rotation key or null
  */
 function findRotationKeyInObject (maps) {
@@ -576,7 +589,7 @@ function findRotationKeyInObject (maps) {
 /**
  * Helper: Find first rotation index in array format
  * @private
- * @param {Array} maps - Transform maps array
+ * @param {Array<any>} maps - Transform maps array
  * @returns {number|null} First rotation index or null
  */
 function findRotationIndexInArray (maps) {
@@ -597,7 +610,7 @@ function findRotationIndexInArray (maps) {
  * - Object: {id: null, r120: 'R', r240: 'R2', f0: 'F'} - returns 'r120'
  * - Array: [identity, (unused), rotMap1, (unused), rotMap2] - returns 2
  *
- * @param {TransformMaps|Array|null} maps - Transform maps object or array
+ * @param {TransformMaps|Array<any>|null} maps - Transform maps object or array
  * @returns {string|number|null} Key/index of first rotation map or null
  * @example
  * // Object format
@@ -611,9 +624,9 @@ function findRotationIndexInArray (maps) {
 export function findRotationStepIndex (maps) {
   if (!maps) return null
   if (!Array.isArray(maps)) {
-    return findRotationKeyInObject(maps)
+    return findRotationKeyInObject(/** @type {Record<string, any>} */ (maps))
   }
-  return findRotationIndexInArray(maps)
+  return findRotationIndexInArray(/** @type {Array<any>} */ (maps))
 }
 
 /**
@@ -629,25 +642,25 @@ export function findRotationStepIndex (maps) {
  *
  * @param {MaskObject} mask - Mask object with bits property
  * @param {Array<number>|null} map - Transformation map array (index→index mapping)
- * @param {ActionsObject} actions - Actions object with store, indexer, applyMap methods
+ * @param {any} actions - Actions object with store, indexer, applyMap methods
  * @returns {number} Transformed bitboard value
  * @example
  * const newBits = computeTransformedBits(mask, rotationMap, actions);
  */
 export function computeTransformedBits (mask, map, actions) {
   if (!map) return mask.bits
-  const store = actions?.store || mask.store
-  const indexer = actions?.indexer || mask.indexer
+  const store = actions?.store || /** @type {any} */ (mask).store
+  const indexer = actions?.indexer || /** @type {any} */ (mask).indexer
 
   if (store && indexer) {
     let out = store.empty
-    for (const i of indexer.bitsIndices(mask.bits)) {
-      out = store.addBit(out, map[i])
+    for (const i of /** @type {any} */ (indexer).bitsIndices(mask.bits)) {
+      out = /** @type {any} */ (store).addBit(out, map[i])
     }
     return out
   }
   try {
-    return actions?.applyMap?.(map) || mask.bits
+    return /** @type {any} */ (actions)?.applyMap?.(map) || mask.bits
   } catch {
     return mask.bits
   }
@@ -659,8 +672,8 @@ export function computeTransformedBits (mask, map, actions) {
  * Attempts to classify the current symmetry type. Tries primary actions first,
  * then falls back to maskActions if available. Returns 'n/a' if classification fails.
  *
- * @param {ActionsObject|null} actions - Primary actions object with classifyOrbitType
- * @param {ActionsObject|null} maskActions - Fallback actions object
+ * @param {any} actions - Primary actions object with classifyOrbitType
+ * @param {any} maskActions - Fallback actions object
  * @returns {string} Symmetry classification (e.g., 'C4v', 'D4', etc.) or 'n/a'
  * @example
  * const sym = getSymmetryClass(actions, maskActions);
@@ -672,13 +685,13 @@ export function getSymmetryClass (actions, maskActions) {
       actions?.classifyOrbitType &&
       typeof actions.classifyOrbitType === 'function'
     ) {
-      return actions.classifyOrbitType()
+      return /** @type {Function} */ (actions.classifyOrbitType)()
     }
     if (
       maskActions?.classifyOrbitType &&
       typeof maskActions.classifyOrbitType === 'function'
     ) {
-      return maskActions.classifyOrbitType()
+      return /** @type {Function} */ (maskActions.classifyOrbitType)()
     }
   } catch {
     // Silently handle error and return fallback
@@ -698,8 +711,8 @@ export function getSymmetryClass (actions, maskActions) {
  *
  * @param {HTMLElement|null} symElement - Element to update with symmetry text
  * @param {HTMLElement|null} detailsElement - Element to update with details text
- * @param {ActionsObject|null} actions - Primary actions object
- * @param {ActionsObject|null} maskActions - Fallback actions object
+ * @param {any} actions - Primary actions object
+ * @param {any} maskActions - Fallback actions object
  * @returns {void}
  * @example
  * updateSymmetryAndDetails(

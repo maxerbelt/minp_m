@@ -26,6 +26,7 @@ import {
   coordsFromCell
 } from '../core/utilities.js'
 import { placedShipsInstance } from '../selection/PlacedShips.js'
+import { Random } from '../core/Random.js'
 
 /* global process */
 import { Score } from './Score.js'
@@ -1222,6 +1223,7 @@ export class Waters {
   /**
    * Updates global ship and weapon ID counters from loaded ships.
    * Ensures new ships and weapons get higher IDs than loaded ones to prevent collisions.
+   * Prevents ID reuse between persisted ships and newly created ones.
    *
    * @param {ShipPlacement|null} placedShips - The placed ships data with ship array
    * @returns {void}
@@ -1231,17 +1233,17 @@ export class Waters {
     const { maxShipId, maxWeaponId } = this.#getMaxIdsFromShips(
       placedShips.ships
     )
-    // @ts-ignore - Static property assignment for ID management
+    // @ts-ignore - Static property assignment for ID management on Ship class
     Ship.id = maxShipId + 1
-    // @ts-ignore - Static property assignment for ID management
+    // @ts-ignore - Static property assignment for ID management on WeaponSystem class
     WeaponSystem.id = maxWeaponId + 1
   }
 
   /**
    * Calculates the maximum ship and weapon IDs from placed ships.
-   * Iterates through all ships and their weapons to find highest ID values.
+   * Iterates through all ships and their weapons to find highest ID values for ID management.
    *
-   * @param {Ship[]} ships - Array of ships to inspect.
+   * @param {Ship[]} ships - Array of ships to inspect
    * @returns {{maxShipId: number, maxWeaponId: number}} Object with max ship ID and max weapon ID
    */
   #getMaxIdsFromShips (ships) {
@@ -1807,22 +1809,24 @@ export class Waters {
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
    * @param {boolean} [autoSelectWarning] - Whether to display an auto-select warning
-   * @returns {Promise<null|{weapon: Object, score: Object}|{hasTargettedWeapon: boolean}>} Result with weapon or selection state
+   * @returns {Promise<WeaponResult|null>} Result with weapon or null if selection
    */
   // @ts-ignore - seekingMode is available at runtime on bh object
   async launchRandomWeapon (r, c, autoSelectWarning = !bh?.seekingMode) {
-    // @ts-ignore - launchUnattachedWeapon returns union type at runtime
-    const result = (await this.launchUnattachedWeapon(r, c)) || {}
-    // Check for score property using bracket notation to avoid type narrowing issues
-    // @ts-ignore - result type is union, safely check score property
-    if (result && 'score' in result && result.score !== LoadOut.noResult) {
+    // @ts-ignore - launchUnattachedWeapon returns WeaponResult or null at runtime
+    const result = await this.launchUnattachedWeapon(r, c)
+
+    // If unattached weapon fired successfully, return result
+    if (result && typeof result === 'object' && 'score' in result) {
       return result
     }
-    // @ts-ignore - add hasTargettedWeapon property to result
-    if (result) {
+
+    // Otherwise attempt to select targeted weapon
+    if (result == null) {
       this.prepareTargetedRandomWeaponSelection(autoSelectWarning)
     }
-    return result
+
+    return null
   }
 
   /**
@@ -2029,18 +2033,20 @@ export class Waters {
 
   /**
    * Gets the unattached weapon system.
-   * @returns {WeaponSystemType|null} Unattached weapon system or null
+   * Returns first loaded weapon if in seeking mode or no opponent, otherwise returns first unattached system.
+   *
+   * @returns {WeaponSystemType|null} Unattached weapon system or null if unavailable
    * @protected
    */
   get firstUnattachedWeaponSystem () {
     // @ts-ignore - seekingMode is available at runtime on bh object
     if (this.opponent == null || bh?.seekingMode) {
-      // @ts-ignore - loadOut available at runtime
+      // @ts-ignore - loadOut available at runtime, currentWeaponSystem is WeaponSystemType
       const weaponSystem = this.loadOut?.currentWeaponSystem
-      // @ts-ignore - firstLoadedWeapon getter available at runtime
+      // @ts-ignore - firstLoadedWeapon getter available at runtime, returns WeaponSystemType
       return weaponSystem?.firstLoadedWeapon || null
     } else {
-      // @ts-ignore - loadOut available at runtime
+      // @ts-ignore - loadOut available at runtime, firstUnattachedWeaponSystem is WeaponSystemType
       return this.loadOut?.firstUnattachedWeaponSystem || null
     }
   }
@@ -2055,7 +2061,6 @@ export class Waters {
    * @param {number} x   - Reference column position for launch fallback (usually source column)
    * @param {WeaponSystemType|WeaponRack} currentWps - Current weapon system with weapon and ID reference
    * @returns {Promise<WeaponResult|null>} Weapon launch result with hit/miss information
-   * @private
    */
   async launchTo (coords, y, x, currentWps) {
     // @ts-ignore - opponent.UI is Board at runtime, cast via unknown for type safety
@@ -2065,8 +2070,14 @@ export class Waters {
     // @ts-ignore - currentWps.weapon available at runtime, Board type for UI
     const weapon = /** @type {Weapon|undefined} */ (currentWps?.weapon)
     // @ts-ignore - bh.map is initialized at runtime
+
+    // Ensure weapon and method exist before calling
+    if (!weapon?.launchTo) {
+      return null
+    }
+
     return (
-      (await weapon?.launchTo(
+      (await weapon.launchTo(
         coords,
         y,
         x,
@@ -2304,7 +2315,7 @@ export class Waters {
     ) {
       return true
     }
-    return candidates
+    return false
   }
   /**
    * Adds wake visual to cell if applicable.
@@ -2714,10 +2725,10 @@ export class Waters {
   }
 
   /**
-   * Checks if there is a ship at the given coordinates.
-   * @param {number} y - Row coordinate
+   * Checks if a cell is free (no ship occupies it).
    * @param {number} x - Column coordinate
-   * @returns {boolean} True if the cell is occupied by a ship, false otherwise
+   * @param {number} y - Row coordinate
+   * @returns {boolean} True if the cell is empty, false if occupied by a ship
    */
   #isFreeAt (x, y) {
     return this.shipCellGrid.isEmpty(x, y)
@@ -2725,6 +2736,8 @@ export class Waters {
 
   /**
    * Checks if there is a ship at the given coordinates.
+   * Public API for checking ship occupancy at a position.
+   *
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    * @returns {boolean} True if the cell is occupied by a ship, false otherwise
@@ -2734,10 +2747,12 @@ export class Waters {
   }
 
   /**
-   * Checks if there is a ship at the given coordinates.
-   * @param {number} y - Row coordinate
+   * Gets the ship cell object at the given coordinates.
+   * Returns the ship cell object containing letter and ID information.
+   *
    * @param {number} x - Column coordinate
-   * @returns {boolean} True if the cell is occupied by a ship, false otherwise
+   * @param {number} y - Row coordinate
+   * @returns {Object|null|undefined} Ship cell object or undefined if no ship present
    */
   #shipCellAt (x, y) {
     return this.shipCellGrid.cellAt(x, y)
@@ -2779,27 +2794,31 @@ export class Waters {
   }
 
   /**
-   * Marks a cell as hit.
-   * @param {number} y - Row coordinate
-   * @param {number} x - Column coordinate
-   * @param {boolean} damaged - Whether the cell was damaged
+   * Marks a cell as hit and updates UI display.
+   * Records the hit in scoring system and displays visual feedback on the board.
+   *
+   * @param {number} x - Column coordinate of hit
+   * @param {number} y - Row coordinate of hit
+   * @param {boolean} damaged - Whether the cell was damaged (hit or miss)
    * @returns {void}
    * @private
    */
   markHit (x, y, damaged) {
     this.score.reveal.clear(x, y)
-    // @ts-ignore - cellHit expects boolean damaged at runtime
-    this.UI.cellHit?.(x, y, String(damaged))
+    // @ts-ignore - cellHit expects damaged as boolean string or value at runtime
+    this.UI?.cellHit?.(x, y, damaged)
   }
 
   /**
    * Gets the ship associated with a ship cell.
-   * @param {Object} shipCell - The ship cell
-   * @returns {any} The ship or undefined
+   * Looks up the ship by ID from the ship cell to find the parent ship object.
+   *
+   * @param {Object|null|undefined} shipCell - The ship cell with id property
+   * @returns {Ship|undefined} The ship or undefined if not found
    */
   #getShipFromCell (shipCell) {
     if (!shipCell) return undefined
-    // @ts-ignore - ship.id available at runtime
+    // @ts-ignore - shipCell.id available at runtime, ships array of Ship objects
     return this.ships.find((/** @type {any} */ s) => s.id === shipCell.id)
   }
   /**
@@ -2844,13 +2863,12 @@ export class Waters {
    * Displays a sunk ship warning.
    * Shows a message about a destroyed ship to the player.
    *
-   * @param {Object|null|undefined} ship - The sunk ship (may be null)
-   * @param {string} [info] - Additional info to prepend
+   * @param {Ship|null|undefined} ship - The sunk ship (may be null)
+   * @param {string} [info=''] - Additional info to prepend to sunk message
    * @returns {void}
-   * @private
+   * @internal External API method for display purposes
    * @deprecated Currently unused, kept for potential external API compatibility
    */
-  // @ts-ignore - currently unused but may be used externally
   sunkWarning (ship, info = '') {
     if (!info) {
       info = ''
@@ -2860,12 +2878,14 @@ export class Waters {
 
   /**
    * Checks whether a weapon fire results in a hit.
-   * @param {Weapon} weapon - The weapon being fired
-   * @param {number} y - Target row
-   * @param {number} x - Target column
-   * @param {number} power - Weapon power
-   * @param {Object|null} shipCell - The ship cell at target
-   * @returns {WeaponResult} Hit result with hits, shots, sunk, info
+   * Determines hit/miss and applies protection rules based on weapon power and ship type.
+   *
+   * @param {Weapon} weapon - The weapon being fired with letter and protection properties
+   * @param {number} x - Target column coordinate
+   * @param {number} y - Target row coordinate
+   * @param {number} power - Weapon power level for damage calculation
+   * @param {Object|null|undefined} shipCell - The ship cell at target with letter property
+   * @returns {WeaponResult} Hit result with hits, shots, sunk, info properties
    * @private
    */
   checkForHit (weapon, x, y, power, shipCell) {
@@ -2876,16 +2896,19 @@ export class Waters {
     const hitShip = this.#getShipFromCell(shipCell)
 
     if (!hitShip) {
-      this.UI.grid.cellMiss(x, y)
+      // @ts-ignore - cellMiss method available at runtime on UI.grid
+      this.UI.grid?.cellMiss?.(x, y)
       return LoadOut.missResult
     }
 
     // @ts-ignore - shapesByLetter available at runtime
-    const shape = bh.shapesByLetter(shipCell.letter)
-    const protection = shape.protectionAgainst(weapon.letter)
+    const shape = bh?.shapesByLetter?.(shipCell.letter)
+    // @ts-ignore - protectionAgainst available at runtime on shape
+    const protection = shape?.protectionAgainst?.(weapon.letter) || 0
     if (power === 1 && protection === 2 && hitShip) {
       this.score.shotReveal(x, y)
-      return this.UI.cellSemiReveal(x, y)
+      // @ts-ignore - cellSemiReveal returns WeaponResult at runtime
+      return this.UI?.cellSemiReveal?.(x, y) || LoadOut.noResult
     }
 
     if (protection > power) {
@@ -2902,30 +2925,45 @@ export class Waters {
 
   /**
    * Shows and processes a hit on a ship.
-   * @param {number} x - Hit column
-   * @param {number} y - Hit row
-   * @param {Object} hitShip - The ship that was hit
-   * @param {number} initialShots - Initial shot count
-   * @returns {Object} Result with hits, shots, reveals, sunk, info
-   * @private
+   * Resolves hit results, updates ship state, and generates result object.
+   *
+   * @param {number} x - Hit column coordinate
+   * @param {number} y - Hit row coordinate
+   * @param {Ship} hitShip - The ship that was hit
+   * @param {number} initialShots - Initial shot count (usually 0 or 1)
+   * @returns {WeaponResult} Result with hits, shots, reveals, sunk, info
    */
   showHit (x, y, hitShip, initialShots) {
-    const {
-      letter,
-      info,
-      damaged,
-      list: hitEntries,
-      misses: missEntries
-    } = hitShip.hitAt(this, x, y)
+    // @ts-ignore - hitShip.hitAt available at runtime on Ship, returns ship hit result object
+    const hitResult = hitShip.hitAt(this, x, y)
+
+    // Extract and normalize properties from hit result
+    // @ts-ignore - properties available at runtime, may be string values
+    const letter = hitResult?.letter || ''
+    // @ts-ignore - damaged can be string or boolean at runtime
+    const damaged = Boolean(hitResult?.damaged)
+    // @ts-ignore - info can be string or null at runtime
+    const info = hitResult?.info || ''
+    // @ts-ignore - hit/miss entries available at runtime, cast to proper type
+    const hitEntries = hitResult?.list || []
+    const missEntries = hitResult?.misses || []
+
     this.markHit(x, y, damaged)
     this.score.shotRevealFinalize(x, y)
     let totalHits = 1
     let totalShots = initialShots
 
-    totalHits = this.#applyHitEntries(hitEntries, totalHits)
+    totalHits = this.#applyHitEntries(
+      /** @type {any} */ (hitEntries),
+      totalHits
+    )
     totalShots += hitEntries.length
-    totalShots = this.#applyMissEntries(missEntries, totalShots)
+    totalShots = this.#applyMissEntries(
+      /** @type {any} */ (missEntries),
+      totalShots
+    )
 
+    // @ts-ignore - hitShip.sunk available at runtime on Ship
     if (hitShip.sunk) {
       this.markSunk(hitShip)
     }
@@ -2940,13 +2978,19 @@ export class Waters {
 
   /**
    * Applies hit entries to score and display.
-   * @param {Array<Object>} hitEntries - Hit entry objects
+   * Updates scoring for each hit and marks cells as hit on the board.
+   *
+   * @param {Array<{cell: [number, number], damaged: boolean}>} hitEntries - Hit entry objects
    * @param {number} totalHits - Running total of hits
    * @returns {number} Updated hit total
    */
   #applyHitEntries (hitEntries, totalHits) {
-    for (const { cell, damaged } of hitEntries) {
-      const [y, x] = /** @type {[number, number]} */ (cell)
+    for (const entry of hitEntries) {
+      // @ts-ignore - cell property available at runtime, cast to tuple
+      const cell = /** @type {[number, number]} */ (entry.cell)
+      const [y, x] = cell
+      // @ts-ignore - damaged property available at runtime
+      const damaged = entry.damaged
       this.score.shotRevealFinalize(x, y)
       this.score.shot.set(x, y)
       totalHits++
@@ -2957,16 +3001,23 @@ export class Waters {
 
   /**
    * Applies miss entries to score and display.
-   * @param {Array<Object>} missEntries - Miss entry objects
+   * Updates scoring for each miss and marks cells as missed on the board.
+   *
+   * @param {Array<{cell: [number, number], damaged: boolean}>} missEntries - Miss entry objects
    * @param {number} totalShots - Running total of shots
    * @returns {number} Updated shot total
    */
   #applyMissEntries (missEntries, totalShots) {
-    for (const { cell, damaged } of missEntries) {
-      const [y, x] = /** @type {[number, number]} */ (cell)
+    for (const entry of missEntries) {
+      // @ts-ignore - cell property available at runtime, cast to tuple
+      const cell = /** @type {[number, number]} */ (entry.cell)
+      const [y, x] = cell
+      // @ts-ignore - damaged property available at runtime
+      const damaged = entry.damaged
       this.score.shot.set(x, y)
       totalShots++
-      this.UI.cellMiss(cell[0], cell[1], damaged)
+      // @ts-ignore - cellMiss method available at runtime on UI.grid
+      this.UI?.grid?.cellMiss?.(x, y, damaged)
     }
     return totalShots
   }
@@ -3001,12 +3052,19 @@ export class Waters {
 
   /**
    * Updates visibility of weapon buttons.
+   * Shows/hides weapon buttons based on available ammunition.
+   * 
    * @returns {void}
    */
   #updateWeaponButtons () {
-    if (this.UI?.weaponBtns == null) return
-    for (const btn of this.UI.weaponBtns) {
-      const letter = btn.dataset.letter
+    // @ts-ignore - weaponBtns is defined at runtime on UI
+    const btns = this.UI?.weaponBtns
+    if (!btns) return
+    
+    for (const btn of btns) {
+      // @ts-ignore - dataset property available at runtime on button elements
+      const letter = btn.dataset?.letter
+      // @ts-ignore - hasAmmoForWeaponLetter available at runtime on loadOut
       const hasAmmo = this.loadOut?.hasAmmoForWeaponLetter?.(letter)
       if (hasAmmo) {
         btn.classList.remove('hidden')
@@ -3124,9 +3182,9 @@ export class Waters {
    * Builds miss message accounting for reveals and weapon type.
    * CONSOLIDATED: unified miss message construction.
    *
-   * @param {Object} weapon - The weapon that missed
+   * @param {Weapon|Object} weapon - The weapon that missed (may not have all properties)
    * @param {number} [reveals] - Number of reveals
-   * @returns {string} Miss message
+   * @returns {string|null} Miss message or null if no message needed
    */
   #buildMissMessage (weapon, reveals = 0) {
     if (reveals > 0) {
@@ -3135,17 +3193,22 @@ export class Waters {
 
     if (this.opponent) {
       const preamble1 = this.opponent.preamble1
-      if (weapon.letter === '-') {
+      // @ts-ignore - weapon.letter available at runtime on Weapon objects
+      if (weapon?.letter === '-') {
+        // @ts-ignore - weapon.name available at runtime on Weapon objects
         return `${preamble1}${weapon.name} missed`
       }
-      return `${preamble1}${weapon.name} missed ${this.preamble0} ships`
+      // @ts-ignore - weapon.name available at runtime on Weapon objects
+      return `${preamble1}${weapon?.name} missed ${this.preamble0} ships`
     }
 
-    if (weapon.letter === '-') {
+    // @ts-ignore - weapon.letter available at runtime on Weapon objects
+    if (weapon?.letter === '-') {
       return null
     }
 
-    return `The ${weapon.name} missed everything!`
+    // @ts-ignore - weapon.name available at runtime on Weapon objects
+    return `The ${weapon?.name} missed everything!`
   }
 
   /**
@@ -3397,7 +3460,6 @@ export class Waters {
    * @param {number} x - Column coordinate of the shot
    * @param {number} power - Weapon power level for penetration calculation
    * @returns {WeaponResult} Shot result with hits, shots fired, and sunk info
-   * @private
    */
   #processShot (weapon, y, x, power) {
     if (!bh.inBounds(y, x)) return LoadOut.noResult
@@ -3424,7 +3486,7 @@ export class Waters {
    * Updates all UI elements.
    * @param {Ship[]} ships - Ships to display
    * @returns {void}
-   * @private
+   * @internal External API method for UI updates
    */
   updateUI (ships) {
     this.updateTally(ships, this.loadOut?.getAllLimitedWeaponSystems?.())

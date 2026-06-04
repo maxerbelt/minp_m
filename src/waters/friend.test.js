@@ -57,7 +57,7 @@ import { it, describe, expect, beforeEach, jest } from '@jest/globals'
  * @property {jest.Mock} getWeaponBySystemId - Find weapon by system ID
  */
 
-/** @type {typeof Friend} */
+/** @type {any} */
 let Friend
 
 // ============================================================================
@@ -70,56 +70,58 @@ let Friend
  * @returns {MockUI} Mock UI with all required methods and properties
  */
 const getMockUI = () =>
-  /** @type {MockUI} */ ({
-    showNotice: jest.fn(),
-    clearVisuals: jest.fn(),
-    clearFriendVisuals: jest.fn(),
-    revealShip: jest.fn(),
-    revealShips: jest.fn(),
-    resetShips: jest.fn(),
-    buildBoard: jest.fn(),
-    grid: {
-      makeDroppable: jest.fn(),
-      markFleetWeapons: jest.fn()
-    },
-    buildTrays: jest.fn(),
-    reset: jest.fn(),
-    board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
-    itMode: jest.fn(),
-    itBtn: {
-      disabled: false,
-      classList: { add: jest.fn(), remove: jest.fn() }
-    },
-    seekBtn: {
-      disabled: false,
-      classList: { add: jest.fn(), remove: jest.fn() }
-    },
-    stopBtn: {
-      disabled: false,
-      classList: { add: jest.fn(), remove: jest.fn() }
-    },
-    showStatus: jest.fn(),
-    showTips: jest.fn(),
-    hideTips: jest.fn(),
-    trayManager: {
-      showShipTrays: jest.fn(),
-      hideShipTrays: jest.fn()
-    },
-    showTransformBtns: jest.fn(),
-    hideTransformBtns: jest.fn(),
-    standardPanels: jest.fn(),
-    newPlacementBtn: { classList: { add: jest.fn(), remove: jest.fn() } },
-    score: {
-      display: jest.fn(),
-      buildTally: jest.fn(),
-      shotsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-      hitsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-      sunkLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-      revealsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-      hintsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
-      placedLabel: { classList: { add: jest.fn(), remove: jest.fn() } }
-    }
-  })
+  /** @type {MockUI} */ (
+    /** @type {unknown} */ ({
+      showNotice: jest.fn(),
+      clearVisuals: jest.fn(),
+      clearFriendVisuals: jest.fn(),
+      revealShip: jest.fn(),
+      revealShips: jest.fn(),
+      resetShips: jest.fn(),
+      buildBoard: jest.fn(),
+      grid: {
+        makeDroppable: jest.fn(),
+        markFleetWeapons: jest.fn()
+      },
+      buildTrays: jest.fn(),
+      reset: jest.fn(),
+      board: { classList: { add: jest.fn(), remove: jest.fn() }, children: [] },
+      itMode: jest.fn(),
+      itBtn: {
+        disabled: false,
+        classList: { add: jest.fn(), remove: jest.fn() }
+      },
+      seekBtn: {
+        disabled: false,
+        classList: { add: jest.fn(), remove: jest.fn() }
+      },
+      stopBtn: {
+        disabled: false,
+        classList: { add: jest.fn(), remove: jest.fn() }
+      },
+      showStatus: jest.fn(),
+      showTips: jest.fn(),
+      hideTips: jest.fn(),
+      trayManager: {
+        showShipTrays: jest.fn(),
+        hideShipTrays: jest.fn()
+      },
+      showTransformBtns: jest.fn(),
+      hideTransformBtns: jest.fn(),
+      standardPanels: jest.fn(),
+      newPlacementBtn: { classList: { add: jest.fn(), remove: jest.fn() } },
+      score: {
+        display: jest.fn(),
+        buildTally: jest.fn(),
+        shotsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+        hitsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+        sunkLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+        revealsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+        hintsLabel: { classList: { add: jest.fn(), remove: jest.fn() } },
+        placedLabel: { classList: { add: jest.fn(), remove: jest.fn() } }
+      }
+    })
+  )
 
 // Minimal mocks for bh and dependencies
 jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
@@ -144,19 +146,23 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
     },
     seekingMode: false,
     it: true,
-    getTerrainByTag: tag => ({ tag }),
+    getTerrainByTag: (/** @type {string} */ tag) => ({ tag }),
     // some modules call terrainByTitle; provide alias for its
-    terrainByTitle: title => ({ title })
+    terrainByTitle: (/** @type {string} */ title) => ({ title })
   }
 }))
 
 // Mock Waters base class to avoid importing heavy dependencies during its
 jest.unstable_mockModule('./Waters.js', () => ({
   Waters: class {
+    /**
+     * @param {any} ui - User interface instance
+     */
     constructor (ui) {
       this.UI = ui
       this.steps = {}
       this.loadOut = { SShot: () => ({}) }
+      /** @type {Array<any>} */
       this.ships = []
       this.score = {
         createShotKey: () => null,
@@ -184,7 +190,9 @@ jest.unstable_mockModule('./Waters.js', () => ({
 const mockDragModule = {
   setupDragHandlers: jest.fn(),
   setupDragBrushHandlers: jest.fn(),
-  getShipIdFromElement: jest.fn(el => Number.parseInt(el?.dataset?.id || '')),
+  getShipIdFromElement: jest.fn((/** @type {any} */ el) =>
+    Number.parseInt(el?.dataset?.id || '')
+  ),
   dragNDrop: {
     getClickedShip: jest.fn(() => null),
     setClickedShip: jest.fn(),
@@ -225,7 +233,7 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
       _reserved,
       unattached
     ) {
-      const weapon = weaponSystem?.weapon
+      const weapon = /** @type {any} */ (weaponSystem)?.weapon
 
       if (weapon) {
         // Always set the weapon mode and reset icons to ensure UI updates on weapon change
@@ -248,11 +256,11 @@ jest.unstable_mockModule('./StatusUI.js', () => ({
 }))
 
 describe('Friend', () => {
-  /** @type {Friend|undefined} */
+  /** @type {any} */
   let friend
-  /** @type {Object|undefined} */
+  /** @type {any} */
   let gameStatus
-  /** @type {Object|undefined} */
+  /** @type {any} */
   let bh
   /** @type {MockUI|undefined} */
   let mockUI
@@ -305,28 +313,6 @@ describe('Friend', () => {
     }
   })
 
-  it('getRandomHitCoordinate returns null for empty', () => {
-    // @ts-ignore: testing deprecated method
-    expect(friend.getRandomHitCoordinate([])).toBeNull()
-  })
-
-  it('getRandomHitCoordinate returns only element for single', () => {
-    // @ts-ignore: testing deprecated method
-    expect(friend.getRandomHitCoordinate([[1, 2]])).toEqual([1, 2])
-  })
-
-  it('getRandomHitCoordinate returns one of the elements for multiple', () => {
-    // @ts-ignore: testing deprecated method
-    const result = friend.getRandomHitCoordinate([
-      [1, 2],
-      [3, 4]
-    ])
-    expect([
-      [1, 2],
-      [3, 4]
-    ]).toContainEqual(result)
-  })
-
   it('hasFewShips returns boolean', () => {
     friend.getDisplacementRatio = jest.fn(() => 0.1)
     expect(typeof friend.hasFewShips()).toBe('boolean')
@@ -361,9 +347,11 @@ describe('Friend', () => {
   describe('updateWeaponStatus', () => {
     beforeEach(() => {
       // Mock gameStatus methods to verify they are called
-      gameStatus.setWeaponMode = jest.fn()
-      gameStatus.resetAmmoIcons = jest.fn()
-      gameStatus.displayAmmoStatus = jest.fn()
+      if (gameStatus) {
+        gameStatus.setWeaponMode = jest.fn()
+        gameStatus.resetAmmoIcons = jest.fn()
+        gameStatus.displayAmmoStatus = jest.fn()
+      }
 
       // Mock loadOut
       friend.loadOut = {
@@ -378,7 +366,7 @@ describe('Friend', () => {
 
     it('calls gameStatus.setWeaponMode with current weapon', () => {
       friend.updateWeaponStatus()
-      expect(gameStatus.setWeaponMode).toHaveBeenCalledWith({
+      expect(gameStatus?.setWeaponMode).toHaveBeenCalledWith({
         name: 'RailGun',
         letter: 'R'
       })
@@ -386,14 +374,14 @@ describe('Friend', () => {
 
     it('calls gameStatus.resetAmmoIcons to prepare icon display', () => {
       friend.updateWeaponStatus()
-      expect(gameStatus.resetAmmoIcons).toHaveBeenCalled()
+      expect(gameStatus?.resetAmmoIcons).toHaveBeenCalled()
     })
 
     it('calls gameStatus.displayAmmoStatus with correct parameters', () => {
       friend.updateWeaponStatus()
-      expect(gameStatus.displayAmmoStatus).toHaveBeenCalledWith(
+      expect(gameStatus?.displayAmmoStatus).toHaveBeenCalledWith(
         expect.objectContaining({ weapon: { name: 'RailGun', letter: 'R' } }),
-        bh.maps,
+        bh?.maps,
         1,
         null,
         expect.any(Boolean)
@@ -403,22 +391,22 @@ describe('Friend', () => {
     it('does not call UI methods if no weapon is available', () => {
       friend.loadOut.currentWeaponSystem = null
       friend.updateWeaponStatus()
-      expect(gameStatus.setWeaponMode).not.toHaveBeenCalled()
-      expect(gameStatus.resetAmmoIcons).not.toHaveBeenCalled()
-      expect(gameStatus.displayAmmoStatus).not.toHaveBeenCalled()
+      expect(gameStatus?.setWeaponMode).not.toHaveBeenCalled()
+      expect(gameStatus?.resetAmmoIcons).not.toHaveBeenCalled()
+      expect(gameStatus?.displayAmmoStatus).not.toHaveBeenCalled()
     })
 
     it('handles optional parameters gracefully', () => {
       const _rack = {}
       const _cursorInfo = { x: 10, y: 20 }
       friend.updateWeaponStatus(_rack, _cursorInfo)
-      expect(gameStatus.setWeaponMode).toHaveBeenCalled()
+      expect(gameStatus?.setWeaponMode).toHaveBeenCalled()
     })
 
     it('includes unattached weapon status in displayAmmoStatus call', () => {
       friend.loadOut.isSingleShot = true
       friend.updateWeaponStatus()
-      expect(gameStatus.displayAmmoStatus).toHaveBeenCalledWith(
+      expect(gameStatus?.displayAmmoStatus).toHaveBeenCalledWith(
         expect.any(Object),
         expect.any(Object),
         expect.any(Number),
@@ -440,12 +428,12 @@ describe('Friend', () => {
     })
 
     it('returns true when in seeking mode', () => {
-      const originalSeekingMode = bh.seekingMode
-      bh.seekingMode = true
+      const originalSeekingMode = bh?.seekingMode
+      if (bh) bh.seekingMode = true
       try {
         expect(friend._hasUnattachedForCurrentWeapon()).toBe(true)
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
 
@@ -462,14 +450,14 @@ describe('Friend', () => {
     })
 
     it('returns false when no unattached weapons or seeking mode', () => {
-      const originalSeekingMode = bh.seekingMode
-      bh.seekingMode = false
+      const originalSeekingMode = bh?.seekingMode
+      if (bh) bh.seekingMode = false
       friend.loadOut.isSingleShot = false
       friend.loadOut.firstUnattachedWeaponSystem = null
       try {
         expect(friend._hasUnattachedForCurrentWeapon()).toBe(false)
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
   })
@@ -493,8 +481,8 @@ describe('Friend', () => {
     })
 
     it('only processes clicks when in seeking mode', () => {
-      const originalSeekingMode = bh.seekingMode
-      bh.seekingMode = false
+      const originalSeekingMode = bh?.seekingMode
+      if (bh) bh.seekingMode = false
       try {
         friend.onClickCell(5, 5)
         expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
@@ -504,21 +492,25 @@ describe('Friend', () => {
     })
 
     it('only processes clicks when terrain has attached weapons', () => {
-      const originalSeekingMode = bh.seekingMode
-      bh.seekingMode = true
-      bh.terrain = { hasAttachedWeapons: false }
+      const originalSeekingMode = bh?.seekingMode
+      if (bh) {
+        bh.seekingMode = true
+        bh.terrain = { hasAttachedWeapons: false }
+      }
       try {
         friend.onClickCell(5, 5)
         expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
 
     it('first click calls randomAttachedWeapon in seeking mode', () => {
-      const originalSeekingMode = bh.seekingMode
-      bh.seekingMode = true
-      bh.terrain = { hasAttachedWeapons: true }
+      const originalSeekingMode = bh?.seekingMode
+      if (bh) {
+        bh.seekingMode = true
+        bh.terrain = { hasAttachedWeapons: true }
+      }
       try {
         friend.onClickCell(3, 7)
         expect(friend.randomAttachedWeapon).toHaveBeenCalledWith(
@@ -548,14 +540,16 @@ describe('Friend', () => {
         )
         expect(friend.steps.endTurn).toHaveBeenCalled()
       } finally {
-        bh.seekingMode = originalSeekingMode
+        if (bh) bh.seekingMode = originalSeekingMode
       }
     })
 
     it('returns early if seeking mode is false and hasAttachedWeapons is true', () => {
-      const originalSeekingMode = bh.seekingMode
-      bh.seekingMode = false
-      bh.terrain = { hasAttachedWeapons: true }
+      const originalSeekingMode = bh?.seekingMode
+      if (bh) {
+        bh.seekingMode = false
+        bh.terrain = { hasAttachedWeapons: true }
+      }
       try {
         friend.onClickCell(5, 5)
         expect(friend.randomAttachedWeapon).not.toHaveBeenCalled()
@@ -593,6 +587,7 @@ describe('Friend', () => {
     })
 
     it('calls all setup methods in correct sequence', () => {
+      /** @type {Array<string>} */
       const callOrder = []
       friend.UI.buildBoard = jest.fn(() => callOrder.push('buildBoard'))
       friend.resetShipCells = jest.fn(() => callOrder.push('resetShipCells'))
