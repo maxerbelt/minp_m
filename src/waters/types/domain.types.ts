@@ -291,10 +291,10 @@ export interface Board {
   cellWeaponActive?: (r: number, c: number, rotation?: string, extra?: string) => void
 
   /** Deactivate weapon at cell */
-  cellWeaponDeactivate?: (r: number, c: number, force?: boolean) => void
+  cellWeaponDeactivate?: (x: number, y: number, force?: boolean) => void
 
   /** Deactivate hint at cell */
-  cellHintDeactivate?: (r: number, c: number) => void
+  cellHintDeactivate?: (x: number, y: number) => void
 
   /** Remove area-of-effect highlight */
   removeHighlightAoE?: () => void

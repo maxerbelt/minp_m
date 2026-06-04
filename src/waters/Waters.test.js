@@ -245,20 +245,23 @@ describe('Waters', () => {
         removeItem: jest.fn(),
         clear: jest.fn()
       }
-      Object.defineProperty(globalThis, 'localStorage', {
-        value: localStorageMock,
-        configurable: true
-      })
-      waters.store()
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'geoffs-battleship.placed-ships',
-        expect.any(String)
-      )
-      // Restore original localStorage
-      Object.defineProperty(globalThis, 'localStorage', {
-        value: originalLocalStorage,
-        configurable: true
-      })
+      try {
+        Object.defineProperty(globalThis, 'localStorage', {
+          value: localStorageMock,
+          configurable: true
+        })
+        waters.store()
+        expect(localStorageMock.setItem).toHaveBeenCalledWith(
+          'geoffs-battleship.placed-ships',
+          expect.any(String)
+        )
+      } finally {
+        // Restore original localStorage
+        Object.defineProperty(globalThis, 'localStorage', {
+          value: originalLocalStorage,
+          configurable: true
+        })
+      }
     })
 
     it.skip('attemptToPlaceShips returns true if all ships placed', () => {
@@ -498,16 +501,12 @@ describe('Waters', () => {
   describe('loadForEdit', () => {
     it('loadForEdit initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships
-      // @ts-expect-error - Test mock UI does not need all WatersUI properties
+      // @ts-expect-error TS2345 - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // Mock setMap to avoid real initialization
-      // @ts-expect-error - Accessing private method
-      emptyWaters.setMap = jest.fn()
-
       // Mock autoPlace to avoid real placement logic
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       emptyWaters.autoPlace = jest.fn()
 
       // Call loadForEdit with a map that has no example ships
@@ -519,10 +518,11 @@ describe('Waters', () => {
     })
 
     it('loadForEdit does not reinitialize ships if ships array already has ships', () => {
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.autoPlace = jest.fn()
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-expect-error - Accessing private property
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -553,8 +553,9 @@ describe('Waters', () => {
     })
 
     it('loadForEdit calls placeMatchingShips when map.example exists', () => {
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-expect-error - Accessing private property
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
 
       const mockMap = {
@@ -588,9 +589,9 @@ describe('Waters', () => {
     })
 
     it('loadForEdit calls autoPlace when map.example is null', () => {
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.autoPlace = jest.fn()
-      // @ts-expect-error - Accessing private property
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
 
       const mockMap = { example: null }
@@ -604,7 +605,7 @@ describe('Waters', () => {
     it('loadForEdit logs when ships are not matched', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
 
-      // @ts-expect-error - Accessing private property
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
 
       // Mock placeMatchingShips to return unmatched ships
@@ -637,12 +638,12 @@ describe('Waters', () => {
   describe('load', () => {
     it('load initializes ships from createCandidateShips when ships array is empty', () => {
       // Create a waters instance with empty ships
-      // @ts-expect-error - Test mock UI does not need all WatersUI properties
+      // @ts-expect-error TS2345 - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
       // Mock autoPlace to avoid real placement logic
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -665,11 +666,11 @@ describe('Waters', () => {
     })
 
     it('load handles null placedShips gracefully', () => {
-      // @ts-expect-error - Test mock UI does not need all WatersUI properties
+      // @ts-expect-error TS2345 - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage to return null
@@ -692,8 +693,9 @@ describe('Waters', () => {
     })
 
     it('load calls placeMatchingShips when map.example has placed ships', () => {
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.placeMatchingShips = jest.fn(() => [])
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
 
       // Mock localStorage with placed ships data matching current map
@@ -733,11 +735,11 @@ describe('Waters', () => {
     })
 
     it('load calls autoPlace when placedShips map does not match current map', () => {
-      // @ts-expect-error - Test mock UI does not need all WatersUI properties
+      // @ts-expect-error TS2345 - Test mock UI does not need all WatersUI properties
       const emptyWaters = new Waters(mockUI)
       emptyWaters.ships = []
 
-      // @ts-expect-error - jest mock type issue
+      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       emptyWaters.autoPlace = jest.fn()
 
       // Mock localStorage with different map data
@@ -811,7 +813,7 @@ describe('Waters', () => {
      */
     it('tempPlacement is initialized as an empty array', () => {
       // Call resetPlacementStore to initialize tempPlacement
-      // @ts-expect-error - Mocking shipCellGrid method for testing
+      // @ts-expect-error TS2345 - Testing private method
       waters.resetPlacementStore()
 
       // Verify tempPlacement is initialized as an array
@@ -839,7 +841,7 @@ describe('Waters', () => {
 
       // Should not throw
       expect(() => {
-        // @ts-expect-error - Private method for testing
+        // @ts-expect-error TS2345 - Testing private method
         waters.storeShipPlacement(mockPlacedCells, mockShip)
       }).not.toThrow()
 
@@ -868,7 +870,7 @@ describe('Waters', () => {
         [0, 0],
         [0, 1]
       ]
-      // @ts-expect-error - Private method for testing
+      // @ts-expect-error TS2345 - Testing private method
       waters.storeShipPlacement(cells1, ship1)
 
       // Store second ship
@@ -878,7 +880,7 @@ describe('Waters', () => {
         [1, 1],
         [1, 2]
       ]
-      // @ts-expect-error - Private method for testing
+      // @ts-expect-error TS2345 - Testing private method
       waters.storeShipPlacement(cells2, ship2)
 
       // Verify both placements were stored
@@ -930,10 +932,10 @@ describe('Waters', () => {
       expect(waters.tempPlacement).toHaveLength(1)
 
       // Second attempt - reset and store new placement
-      // @ts-expect-error - Private method for testing
+      // @ts-expect-error TS2345 - Testing private method
       waters.resetPlacementStore()
       expect(waters.tempPlacement).toHaveLength(0)
-      // @ts-expect-error - Private method for testing
+      // @ts-expect-error TS2345 - Testing private method
       waters.storeShipPlacement([[[1, 0]]], { letter: 'B', cells: [2] })
       expect(waters.tempPlacement).toHaveLength(1)
       expect(waters.tempPlacement?.[0]?.ship.letter).toBe('B')

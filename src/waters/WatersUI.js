@@ -613,8 +613,9 @@ export class WatersUI {
    * @param {number} x - Column coordinate
    * @returns {void}
    */
-  cellWeaponDeactivate (y, x) {
+  cellWeaponDeactivate (x, y) {
     const cell = this.grid.nodeAt(x, y)
+    if (cell == null) return
     CellClassManager.deactivateWeapon(cell)
   }
 
@@ -625,8 +626,9 @@ export class WatersUI {
    * @param {number} x - Column coordinate
    * @returns {void}
    */
-  cellHintDeactivate (y, x) {
+  cellHintDeactivate (x, y) {
     const cell = this.grid.nodeAt(x, y)
+    if (cell == null) return
     CellClassManager.deactivateTempHint(cell)
   }
 

@@ -122,8 +122,8 @@ const MESSAGES = {
  * @property {HTMLButtonElement} [revealBtn] - Reveal ships button
  * @property {Array<HTMLButtonElement>} [weaponBtns] - Array of weapon buttons
  * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
- * @property {(row: number, column: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
- * @property {(row: number, col: number) => void} [cellHintDeactivate] - Deactivate hint display
+ * @property {(x: number, y: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
+ * @property {(x: number, y: number) => void} [cellHintDeactivate] - Deactivate hint display
  * @property {() => void} [clearClasses] - Clear all CSS classes from board
  * @property {(ships: Array<Object>) => void} [revealAll] - Reveal all ships on board
  * @property {() => void} [playMode] - Switch to play mode display
@@ -1758,11 +1758,11 @@ class Enemy extends Waters {
    * @memberof Enemy
    */
   deactivateWeapon (opponentRow, opponentCol, shadowRow, shadowCol) {
-    this.#deactivateOpponentWeapon(opponentRow, opponentCol)
+    this.#deactivateOpponentWeapon(opponentCol, opponentRow)
 
     if (shadowRow != null && shadowCol != null) {
-      this.#deactivateShadowCell(shadowRow, shadowCol)
-      this.#deactivateOpponentHint(shadowRow, shadowCol)
+      this.#deactivateShadowCell(shadowCol, shadowRow)
+      this.#deactivateOpponentHint(shadowCol, shadowRow)
     }
   }
 
@@ -1774,8 +1774,8 @@ class Enemy extends Waters {
    * @returns {void}
    * @memberof Enemy
    */
-  #deactivateOpponentWeapon (y, x) {
-    this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', y, x, true)
+  #deactivateOpponentWeapon (x, y) {
+    this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', x, y, true)
   }
 
   /**
@@ -1786,10 +1786,10 @@ class Enemy extends Waters {
    * @returns {void}
    * @memberof Enemy
    */
-  #deactivateShadowCell (y, x) {
+  #deactivateShadowCell (x, y) {
     // @ts-ignore - this.UI.cellWeaponDeactivate is a real method
     const ui = /** @type {any} */ (this.UI)
-    ui?.cellWeaponDeactivate?.(y, x)
+    ui?.cellWeaponDeactivate?.(x, y)
   }
 
   /**
@@ -1800,10 +1800,10 @@ class Enemy extends Waters {
    * @returns {void}
    * @memberof Enemy
    */
-  #deactivateOpponentHint (y, x) {
+  #deactivateOpponentHint (x, y) {
     // @ts-ignore - opponent UI type compatibility
     const opponentUI = /** @type {any} */ (this.opponent?.UI)
-    this.#callUIMethod(opponentUI, 'cellHintDeactivate', y, x)
+    this.#callUIMethod(opponentUI, 'cellHintDeactivate', x, y)
   }
 
   /**
@@ -1813,9 +1813,9 @@ class Enemy extends Waters {
    *
    * USAGE PATTERN:
    * ```
-   * this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', y, x, true)
+   * this.#callUIMethod(this.opponent?.UI, 'cellWeaponDeactivate', x, y, true)
    * // Equivalent to:
-   * this.opponent?.UI?.cellWeaponDeactivate?.(y, x, true)
+   * this.opponent?.UI?.cellWeaponDeactivate?.(x, y, true)
    * ```
    *
    * @param {any} ui - The UI instance (may be undefined or typed as Object)
@@ -1826,13 +1826,13 @@ class Enemy extends Waters {
    * @returns {void}
    * @memberof Enemy
    */
-  #callUIMethod (ui, methodName, y, x, force) {
+  #callUIMethod (ui, methodName, x, y, force) {
     if (y != null && x != null && ui) {
       const method = ui[methodName]
       if (typeof method === 'function') {
         force === undefined
-          ? method.call(ui, y, x)
-          : method.call(ui, y, x, force)
+          ? method.call(ui, x, y)
+          : method.call(ui, x, y, force)
       }
     }
   }
