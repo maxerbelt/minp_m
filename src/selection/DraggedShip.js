@@ -3,8 +3,55 @@ import { Ghost } from './Ghost.js'
 import { placedShipsInstance } from './PlacedShips.js'
 
 /**
- * @import type { CursorPosition, OffsetVector, MouseDragEvent } from './types/ui.types.js';
- * @import type { Ship, ShipCellGrid, Placeable } from './types/domain.types.js';
+ * @typedef {[number, number]} CursorPosition
+ */
+
+/**
+ * @typedef {[number, number]} OffsetVector
+ */
+
+/**
+ * @typedef {Object} MouseDragEvent
+ * @property {number} clientX - X coordinate relative to viewport
+ * @property {number} clientY - Y coordinate relative to viewport
+ */
+
+/**
+ * @typedef {Object} Ship
+ * @property {string|number} id - Unique ship identifier
+ * @property {string} letter - Single character label (A, B, C, etc.)
+ * @property {Function} shape - Returns shape object with geometry
+ * @property {Function} placeable - Returns placeable interface
+ * @property {Function} placeOnGrid - Places ship on grid at given position
+ */
+
+/**
+ * @typedef {Object} ShipCellGrid
+ * @property {number} [occupancy] - Grid occupancy metadata
+ */
+
+/**
+ * @typedef {Object} Placeable
+ * @property {Function} canPlace - Validates if placement is possible
+ * @property {Function} placeAt - Places entity at coordinates
+ * @property {Function} cantPlaceReason - Returns reason why placement invalid
+ */
+
+/**
+ * @typedef {(element: HTMLElement, board: Record<string, unknown>, letter: string) => void} ContentBuilderFunction
+ */
+
+/**
+ * @typedef {Object} GhostMethods
+ * @property {Function} hide - Hide the ghost
+ * @property {Function} show - Show the ghost
+ * @property {Function} remove - Remove the ghost from DOM
+ * @property {Function} moveTo - Move ghost to screen coordinates
+ * @property {Function} setVariant - Update ghost display for variant
+ */
+
+/**
+ * @typedef {Ghost|null} GhostInstance
  */
 
 /**
@@ -33,8 +80,7 @@ export class DraggedShip extends SelectedShip {
    * @param {number} cellSize - Size of each grid cell in pixels
    * @param {HTMLElement} source - Source element being dragged
    * @param {number} variantIndex - Index of the current ship variant (0-based)
-   * @param {Function} contentBuilder - Function(element, board, letter) to render ship content
-   * @returns {void}
+   * @param {ContentBuilderFunction} contentBuilder - Function(element, board, letter) to render ship content
    */
   constructor (
     ship,
@@ -50,7 +96,7 @@ export class DraggedShip extends SelectedShip {
     this.source = source
     this.cursor = DraggedShip.#computeCursor(dragOffsetX, dragOffsetY, cellSize)
     this.offset = [dragOffsetX, dragOffsetY]
-    this.ghost = this.#()
+    this.ghost = this.#createGhost()
     this.shown = true
   }
 
@@ -66,10 +112,12 @@ export class DraggedShip extends SelectedShip {
    * @static
    */
   static #computeCursor (dragOffsetX, dragOffsetY, cellSize) {
-    return [
+    /** @type {CursorPosition} */
+    const result = [
       Math.floor(dragOffsetY / cellSize),
       Math.floor(dragOffsetX / cellSize)
     ]
+    return result
   }
 
   /**
@@ -77,7 +125,7 @@ export class DraggedShip extends SelectedShip {
    * Ghost displays visual feedback of ship placement and current rotation/orientation
    * as user drags the ship across the board. Initialized with current board state.
    *
-   * @returns {GhostType} New Ghost instance attached to current board
+   * @returns {Ghost} New Ghost instance attached to current board
    */
   #createGhost () {
     return new Ghost(super.board(), this.ship.letter, this.contentBuilder)
@@ -126,6 +174,7 @@ export class DraggedShip extends SelectedShip {
    */
   remove () {
     this.#ghostAction('remove')
+    /** @type {GhostInstance} */
     this.ghost = null
   }
 
@@ -147,7 +196,7 @@ export class DraggedShip extends SelectedShip {
    * Called during mousemove to track ship position as user drags.
    * Subtracts offset and margin (13px) to align ghost preview with cursor.
    *
-   * @param {MouseDragEvent} event - Mouse event with clientX and clientY
+   * @param {MouseDragEvent|MouseEvent} event - Mouse event with clientX and clientY
    * @returns {void}
    */
   move (event) {
@@ -186,8 +235,9 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   resetOffset () {
-    this.offset = /** @type {OffsetVector} */ ([0, 0])
-    this.cursor = /** @type {CursorPosition} */ ([0, 0])
+    this.offset = [0, 0]
+    // @ts-ignore - Array literal [0, 0] matches CursorPosition [number, number]
+    this.cursor = [0, 0]
   }
 
   /**
@@ -224,10 +274,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {CursorPosition} [rowOffset, colOffset] from cursor to target
    */
   offsetCell (x, y) {
-    return /** @type {CursorPosition} */ ([
-      x - this.cursor[0],
-      y - this.cursor[1]
-    ])
+    return [x - this.cursor[0], y - this.cursor[1]]
   }
 
   /**
@@ -272,7 +319,6 @@ export class DraggedShip extends SelectedShip {
    * Private helper that maintains visual consistency after shape changes.
    *
    * @returns {void}
-   * @private
    */
   #handleTransformation () {
     this.resetOffset()
@@ -282,13 +328,14 @@ export class DraggedShip extends SelectedShip {
   /**
    * Safely invokes a ghost method when the ghost exists.
    * Uses optional chaining to prevent errors if ghost has been removed.
-   * Private helper for delegating actions to ghost preview instance.
+   * Helper for delegating actions to ghost preview instance.
    *
    * @param {string} method - Name of ghost method to invoke
    * @param {...any} args - Arguments to pass to ghost method
    * @returns {void}
    */
   #ghostAction (method, ...args) {
+    // @ts-ignore - Dynamic method call on ghost object
     this.ghost?.[method]?.(...args)
   }
 
@@ -297,7 +344,7 @@ export class DraggedShip extends SelectedShip {
    * Subtracts drag offset and 13px margin to align ghost visual with cursor.
    * The 13px offset centers the ghost preview on the cursor position.
    *
-   * @param {MouseDragEvent} event - Mouse event with clientX and clientY
+   * @param {MouseDragEvent|MouseEvent} event - Mouse event with clientX and clientY
    * @returns {Array<number>} [screenX, screenY] position for ghost element
    */
   #calculateGhostPosition (event) {
@@ -310,11 +357,12 @@ export class DraggedShip extends SelectedShip {
   /**
    * Gets the current placeable object from the selected ship.
    * Accesses placeable() method from parent SelectedShip to get current variant's placement interface.
-   * Private helper for accessing placement validation during drag operations.
+   * Helper for accessing placement validation during drag operations.
    *
    * @returns {Placeable|null} Current placeable if available, null otherwise
    */
   #currentPlaceable () {
+    // @ts-ignore - Parent class placeable method returns Placeable
     return this.placeable()
   }
 
@@ -326,11 +374,11 @@ export class DraggedShip extends SelectedShip {
    * @param {number} x - Target grid column
    * @param {number} y - Target grid row
    * @param {ShipCellGrid} shipCellGrid - Grid tracking all placed ship cells
-   * @returns {null|number[][]} Array of [row, col] cells if placement valid, null if invalid
-   * @private
+   * @returns {null|Array<Array<number>>} Array of [row, col] cells if placement valid, null if invalid
    */
   addCurrentToShipCells (x, y, shipCellGrid) {
     const placeable = this.#currentPlaceable()
+    if (!placeable) return null
     const placement = placeable.placeAt(x, y)
     return this.ship.placeOnGrid(shipCellGrid, placement)
   }
