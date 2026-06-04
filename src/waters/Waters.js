@@ -2523,97 +2523,6 @@ export class Waters {
   }
 
   /**
-   * Destroys cells in an area with a weapon and effect.
-   * Applies weapon effects to target cells and handles hit/miss results.
-   *
-   * @param {Weapon|Object} weapon - The weapon being used
-   * @param {[number, number, number][]} effect - The effect area as coordinate array
-   * @param {LaunchOptions} [options] - Additional destruction options
-   * @returns {WeaponResult} The destruction result with hit/miss/sunk counts
-   */
-  destroy (weapon, effect, options = {}) {
-    // @ts-ignore - effect and options available at runtime
-    const normalized = this.#normalizeEffectArray(effect)
-    if (!normalized.isValid || normalized.filtered.length === 0) {
-      return {
-        hits: 0,
-        shots: 0,
-        dtap: 0,
-        sunk: 0,
-        reveals: 0,
-        info: 'Invalid effect'
-      }
-    }
-    // Accumulate hits from all affected cells
-    const accumulator = {
-      hits: 0,
-      shots: 0,
-      dtap: 0,
-      sunk: 0,
-      reveals: 0,
-      info: ''
-    }
-    for (const [r, c, power] of normalized.filtered) {
-      // @ts-ignore - applyToPosition available at runtime
-      const result = this.#applyToPosition(r, c, weapon, power, accumulator)
-      this.accumulateResult(result, accumulator)
-    }
-    return accumulator
-  }
-
-  /**
-   * Normalizes effect array to ensure all entries have [r, c, power] format.
-   * Filters out entries that don't have at least 3 elements.
-   *
-   * @param {Array<Array<number>>} effect - The effect array to normalize
-   * @returns {EffectNormalizationResult} Normalized effect with validity flag
-   * @private
-   */
-  #normalizeEffectArray (effect) {
-    // @ts-ignore - effect is array at runtime
-    const filtered = effect.filter((entry) => Array.isArray(entry) && entry.length >= 3)
-    return {
-      normalized: filtered,
-      isValid: Array.isArray(effect),
-      filtered: filtered
-    }
-  }
-
-  /**
-   * Applies weapon effect to a single position.
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
-   * @param {Weapon|Object} weapon - The weapon
-   * @param {number} power - Weapon power
-   * @param {WeaponResult} accumulator - Result accumulator
-   * @returns {WeaponResult} Position result
-   * @private
-   */
-  #applyToPosition (r, c, weapon, power, accumulator) {
-    // @ts-ignore - checkForHit available at runtime
-    return this.checkForHit(weapon, c, r, power, null) || accumulator
-  }
-
-  /**
-   * Processes a single cell hit or miss.
-   * @param {Weapon|Object} weapon - The weapon
-   * @param {number} x - Column
-   * @param {number} y - Row
-   * @param {number} power - Power level
-   * @param {Object} [shipCell] - The ship cell if hit
-   * @returns {WeaponResult|null} Hit result
-   * @private
-   */
-  checkForHit (weapon, x, y, power, shipCell) {
-    const ship = this.#shipAt(x, y)
-    if (!ship) {
-      return this.#processMiss(weapon, x, y)
-    }
-    // @ts-ignore - ship.hitAt available at runtime
-    return this.#processHit(weapon, ship, x, y, power)
-  }
-
-  /**
    * Processes a hit on a ship.
    * @param {Weapon|Object} weapon - The weapon
    * @param {Ship|Object} ship - The hit ship
@@ -2638,13 +2547,11 @@ export class Waters {
 
   /**
    * Processes a miss.
-   * @param {Weapon|Object} weapon - The weapon
    * @param {number} x - Column
    * @param {number} y - Row
    * @returns {WeaponResult} Miss result
-   * @private
    */
-  #processMiss (weapon, x, y) {
+  #processMiss (x, y) {
     return {
       hits: 0,
       shots: 1,
@@ -2664,7 +2571,7 @@ export class Waters {
   #shipAt (x, y) {
     for (const ship of this.ships) {
       // @ts-ignore - ship.cells available at runtime
-      if (ship.cells?.some((cell) => cell[0] === x && cell[1] === y)) {
+      if (ship.cells?.some(cell => cell[0] === x && cell[1] === y)) {
         return ship
       }
     }
