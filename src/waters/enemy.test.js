@@ -86,7 +86,8 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
         length: 2
       },
       blankGrid: [],
-      inBounds: () => true
+      inBounds: () => true,
+      isInBoundsAt: () => true
     }
   }
 }))
@@ -157,6 +158,7 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
   }
 }))
 
+let mockLoadOut = null
 /**
  * TEST SUITE: Enemy.updateWeaponStatus
  *
@@ -1398,8 +1400,8 @@ describe('Enemy.updateWeaponStatus', () => {
 
       expect(enemy.setWeaponFireHandlers).toHaveBeenCalled()
       expect(enemy.fireWeaponAt).toHaveBeenCalledWith(
-        1,
         2,
+        1,
         enemy.loadOut.currentWeaponSystem
       )
       expect(enemy._processWeaponResult).toHaveBeenCalledWith({
