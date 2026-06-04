@@ -2523,62 +2523,6 @@ export class Waters {
   }
 
   /**
-   * Processes a hit on a ship.
-   * @param {Weapon|Object} weapon - The weapon
-   * @param {Ship|Object} ship - The hit ship
-   * @param {number} x - Column
-   * @param {number} y - Row
-   * @param {number} power - Power
-   * @returns {WeaponResult} Hit result
-   */
-  #processHit (weapon, ship, x, y, power) {
-    // @ts-ignore - ship.hitAt available at runtime
-    const hitResult = ship.hitAt?.(this, x, y)
-    return {
-      hits: hitResult ? 1 : 0,
-      shots: 1,
-      dtap: 0,
-      // @ts-ignore - ship.sunk is boolean at runtime
-      sunk: ship.sunk ? 1 : 0,
-      reveals: 0,
-      info: hitResult?.info || ''
-    }
-  }
-
-  /**
-   * Processes a miss.
-   * @param {number} x - Column
-   * @param {number} y - Row
-   * @returns {WeaponResult} Miss result
-   */
-  #processMiss (x, y) {
-    return {
-      hits: 0,
-      shots: 1,
-      dtap: 0,
-      sunk: 0,
-      reveals: 0,
-      info: `Miss at (${x}, ${y})`
-    }
-  }
-
-  /**
-   * Gets ship at coordinates.
-   * @param {number} x - Column
-   * @param {number} y - Row
-   * @returns {Ship|null} Ship or null
-   */
-  #shipAt (x, y) {
-    for (const ship of this.ships) {
-      // @ts-ignore - ship.cells available at runtime
-      if (ship.cells?.some(cell => cell[0] === x && cell[1] === y)) {
-        return ship
-      }
-    }
-    return null
-  }
-
-  /**
    * Gets the strike splash effect.
    * @param {Weapon|Object} weapon - The weapon
    * @param {Array<number>} targetCoords - Target coordinates [r, c]
