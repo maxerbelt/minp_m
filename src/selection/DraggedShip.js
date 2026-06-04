@@ -48,9 +48,9 @@ export class DraggedShip extends SelectedShip {
     super(ship, variantIndex, contentBuilder)
 
     this.source = source
-    this.cursor = DraggedShip._computeCursor(dragOffsetX, dragOffsetY, cellSize)
+    this.cursor = DraggedShip.#computeCursor(dragOffsetX, dragOffsetY, cellSize)
     this.offset = [dragOffsetX, dragOffsetY]
-    this.ghost = this._createGhost()
+    this.ghost = this.#()
     this.shown = true
   }
 
@@ -64,9 +64,8 @@ export class DraggedShip extends SelectedShip {
    * @param {number} cellSize - Size of each grid cell in pixels
    * @returns {CursorPosition} [row, column] grid position
    * @static
-   * @private
    */
-  static _computeCursor (dragOffsetX, dragOffsetY, cellSize) {
+  static #computeCursor (dragOffsetX, dragOffsetY, cellSize) {
     return [
       Math.floor(dragOffsetY / cellSize),
       Math.floor(dragOffsetX / cellSize)
@@ -79,9 +78,8 @@ export class DraggedShip extends SelectedShip {
    * as user drags the ship across the board. Initialized with current board state.
    *
    * @returns {GhostType} New Ghost instance attached to current board
-   * @private
    */
-  _createGhost () {
+  #createGhost () {
     return new Ghost(super.board(), this.ship.letter, this.contentBuilder)
   }
 
@@ -104,7 +102,7 @@ export class DraggedShip extends SelectedShip {
    */
   hide () {
     this.shown = false
-    this._ghostAction('hide')
+    this.#ghostAction('hide')
   }
 
   /**
@@ -116,7 +114,7 @@ export class DraggedShip extends SelectedShip {
    */
   show () {
     this.shown = true
-    this._ghostAction('show')
+    this.#ghostAction('show')
   }
 
   /**
@@ -127,7 +125,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   remove () {
-    this._ghostAction('remove')
+    this.#ghostAction('remove')
     this.ghost = null
   }
 
@@ -141,7 +139,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   moveTo (x, y) {
-    this._ghostAction('moveTo', x, y)
+    this.#ghostAction('moveTo', x, y)
   }
 
   /**
@@ -153,7 +151,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   move (event) {
-    const [x, y] = this._calculateGhostPosition(event)
+    const [x, y] = this.#calculateGhostPosition(event)
     this.moveTo(x, y)
   }
 
@@ -165,7 +163,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    */
   setGhostVariant () {
-    this._ghostAction('setVariant', this.board())
+    this.#ghostAction('setVariant', this.board())
   }
 
   /**
@@ -176,7 +174,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {Object} Rotation result object from parent class
    */
   rotate () {
-    this._handleTransformation()
+    this.#handleTransformation()
     return super.rotate()
   }
 
@@ -200,7 +198,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {Object} Counter-rotation result object from parent class
    */
   leftRotate () {
-    this._handleTransformation()
+    this.#handleTransformation()
     return super.leftRotate()
   }
 
@@ -212,7 +210,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {Object} Flip result object from parent class
    */
   flip () {
-    this._handleTransformation()
+    this.#handleTransformation()
     return super.flip()
   }
 
@@ -276,7 +274,7 @@ export class DraggedShip extends SelectedShip {
    * @returns {void}
    * @private
    */
-  _handleTransformation () {
+  #handleTransformation () {
     this.resetOffset()
     this.setGhostVariant()
   }
@@ -289,9 +287,8 @@ export class DraggedShip extends SelectedShip {
    * @param {string} method - Name of ghost method to invoke
    * @param {...any} args - Arguments to pass to ghost method
    * @returns {void}
-   * @private
    */
-  _ghostAction (method, ...args) {
+  #ghostAction (method, ...args) {
     this.ghost?.[method]?.(...args)
   }
 
@@ -302,9 +299,8 @@ export class DraggedShip extends SelectedShip {
    *
    * @param {MouseDragEvent} event - Mouse event with clientX and clientY
    * @returns {Array<number>} [screenX, screenY] position for ghost element
-   * @private
    */
-  _calculateGhostPosition (event) {
+  #calculateGhostPosition (event) {
     return [
       event.clientX - this.offset[0] - 13,
       event.clientY - this.offset[1] - 13
@@ -317,9 +313,8 @@ export class DraggedShip extends SelectedShip {
    * Private helper for accessing placement validation during drag operations.
    *
    * @returns {Placeable|null} Current placeable if available, null otherwise
-   * @private
    */
-  _currentPlaceable () {
+  #currentPlaceable () {
     return this.placeable()
   }
 
@@ -335,7 +330,7 @@ export class DraggedShip extends SelectedShip {
    * @private
    */
   addCurrentToShipCells (x, y, shipCellGrid) {
-    const placeable = this._currentPlaceable()
+    const placeable = this.#currentPlaceable()
     const placement = placeable.placeAt(x, y)
     return this.ship.placeOnGrid(shipCellGrid, placement)
   }
