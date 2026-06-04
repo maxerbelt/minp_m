@@ -733,11 +733,10 @@ export class Friend extends Placement {
    * Attempts strategies in order, returning first non-null result.
    * Used to try multiple targeting patterns before falling back to scanning.
    *
-   * @private
    * @param {Array<() => Promise<WeaponLaunchResult|null>>} strategies - Array of asynchronous strategy functions
    * @returns {Promise<WeaponLaunchResult|null>} Strategy result or null if all exhausted
    */
-  async _executeFinishStrategies (strategies) {
+  async #executeFinishStrategies (strategies) {
     for (const strategy of strategies) {
       const result = await strategy()
       if (result) return result
@@ -889,7 +888,7 @@ export class Friend extends Placement {
       () => this.#finishHints()
     ]
 
-    const strategyResult = await this._executeFinishStrategies(finishMethods)
+    const strategyResult = await this.#executeFinishStrategies(finishMethods)
     if (strategyResult) return strategyResult
 
     // @ts-ignore - loadOut.switchToPreferredWeapon returns EffectType|null at runtime
@@ -961,27 +960,11 @@ export class Friend extends Placement {
       if (!ship.hits?.occupancy) {
         return acc
       }
-      //   this._logShipHits(ship, acc)
       // @ts-ignore - acc.join is Bitmask method at runtime
       const result = acc.join(ship.hits)
       //console.log('combined hits', result, result.toAscii)
       return result
     }, blankMask)
-  }
-
-  /**
-   * Logs ship hits information.
-   * @param {Object} _ship - Ship object (unused)
-   * @param {Bitmask} _existingHits - Existing hits mask (unused)
-   * @private
-   * @deprecated Not used in current codebase
-   */
-  // @ts-ignore - unused but may be used by external code
-  _logShipHits (_ship, _existingHits) {
-    // @ts-ignore - debug logging on Ship/Bitmask properties
-    console.log('unsunk ship', _ship.hits, _ship.hits.toAscii)
-    // @ts-ignore - debug logging on Bitmask properties
-    console.log('existing hits', _existingHits, _existingHits.toAscii)
   }
 
   // ============ Test/Seek Loop ============
