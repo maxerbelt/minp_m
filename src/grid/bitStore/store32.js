@@ -1241,7 +1241,7 @@ export class Store32 extends StoreBase {
     if (offset >= lenA) return out
 
     const max = lenB ? offset + lenB : lenA
-    const end = max < lenA ? max : lenA
+    const end = Math.min(max, lenA)
 
     let ai = offset
     let bi = 0
