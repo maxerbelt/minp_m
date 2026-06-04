@@ -940,6 +940,19 @@ export class MaskBase extends CanvasGrid {
     result.height = newHeight
     return result
   }
+  /**
+   * Iterate over occupied locations with their values
+   * @generator
+   * @yields {[number, number, bigint]} [x, y, value] coordinate and value tuples
+   *
+   * @public
+   */
+  *occupiedLocationsAndValues () {
+    const bits = this.bits
+    if (typeof bits !== 'bigint' || bits === 0n) return // early exit for empty mask
+    const all = this.store.all
+    return yield* all.locationsWithValues(bits, true)
+  }
 
   /**
    * Iterate over occupied cell locations
