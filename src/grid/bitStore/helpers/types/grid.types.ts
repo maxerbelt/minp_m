@@ -5,7 +5,7 @@
  * and other grid iteration utilities.
  */
 
-import type { Bitboard, BitPosition, CoordinateGenerator, CoordinateValueGenerator } from './bitboard.types';
+import type { Bitboard, BitPosition  } from './bitboard.types';
 import type { BitStore } from './store.types';
 
 /**

@@ -97,60 +97,52 @@ export interface MaskOperationResult {
  *
  * @interface DilationMutating
  */
-export interface DilationMutating {
-  /**
+/**
    * Dilate mask in-place and return for chaining
    *
    * @param radius - Number of expansion steps
    * @returns This mask (mutated)
    */
-  (radius?: MorphologyRadius): BaseMask;
-}
+export type DilationMutating = (radius?: MorphologyRadius) => BaseMask;
 
 /**
  * Dilation operation signature - non-mutating variant.
  *
  * @interface DilationNonMutating
  */
-export interface DilationNonMutating {
-  /**
+/**
    * Dilate and return new bits without mutation
    *
    * @param radius - Number of expansion steps
    * @returns New dilated bitboard
    */
-  (radius?: MorphologyRadius): Bitboard;
-}
+export type DilationNonMutating = (radius?: MorphologyRadius) => Bitboard;
 
 /**
  * Erosion operation signature - mutating variant.
  *
  * @interface ErosionMutating
  */
-export interface ErosionMutating {
-  /**
+/**
    * Erode mask in-place and return for chaining
    *
    * @param radius - Number of contraction steps
    * @returns This mask (mutated)
    */
-  (radius?: MorphologyRadius): BaseMask;
-}
+export type ErosionMutating = (radius?: MorphologyRadius) => BaseMask;
 
 /**
  * Erosion operation signature - non-mutating variant.
  *
  * @interface ErosionNonMutating
  */
-export interface ErosionNonMutating {
-  /**
+/**
    * Erode and return new bits without mutation
    *
    * @param radius - Number of contraction steps
    * @returns New eroded bitboard
    */
-  (radius?: MorphologyRadius): Bitboard;
-}
+export type ErosionNonMutating = (radius?: MorphologyRadius) => Bitboard;
 
 /**
  * Cross dilation operation signature - mutating variant.
@@ -160,28 +152,24 @@ export interface ErosionNonMutating {
  *
  * @interface CrossDilationMutating
  */
-export interface CrossDilationMutating {
-  /**
+/**
    * Apply cross dilation in-place
    *
    * @returns This mask (mutated)
    */
-  (): BaseMask;
-}
+export type CrossDilationMutating = () => BaseMask;
 
 /**
  * Cross dilation operation signature - non-mutating variant.
  *
  * @interface CrossDilationNonMutating
  */
-export interface CrossDilationNonMutating {
-  /**
+/**
    * Apply cross dilation and return new bits
    *
    * @returns New cross-dilated bitboard
    */
-  (): Bitboard;
-}
+export type CrossDilationNonMutating = () => Bitboard;
 
 /**
  * Morphology operation class contract.

@@ -43,8 +43,8 @@ export class TriHalfCover extends TriCoverBase {
 
       if (index + 1 < coordinates.length) {
         const [nextR, nextC] = coordinates[index + 1]
-        const moveInR = nextR !== currentR ? 1 : 0
-        const moveInC = nextC !== currentC ? 1 : 0
+        const moveInR = nextR === currentR ? 0 : 1
+        const moveInC = nextC === currentC ? 0 : 1
 
         step = yield* this.yieldHalfCoverCornerCells(
           moveInR,

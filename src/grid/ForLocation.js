@@ -9,7 +9,10 @@
  * delegating all bit manipulation to the backing store for consistency and
  * separation of concerns.
  *
+ * @class ForLocation
  * @template Store - The bit storage backend (e.g., StoreBig)
+ * @description Provides single-cell access patterns for bit-packed storage systems,
+ * handling color values and occupancy states through delegated bit operations.
  *
  * @example
  * // Reading a cell value
@@ -18,7 +21,6 @@
  * @example
  * // Writing a color to a cell
  * accessor.set(2);
- */
 
 /**
  * Type definition for the bit storage backend interface.
@@ -26,13 +28,13 @@
  * Specifies all operations required by ForLocation to interact with
  * underlying bit-packed storage.
  *
- * @typedef {object} Store
- * @property {function(number): void} check - Validates that a color value is valid
- * @property {function(bigint, bigint): bigint} clearBits - Clears bits matching a mask from a value
- * @property {function(bigint, number): bigint} value - Extracts bit value at position
- * @property {function(bigint, number): number} numValue - Extracts numeric value at position
- * @property {function(number): bigint} bitMaskByPos - Creates bit mask for a position
- * @property {function(number, number): bigint} setMask - Creates value mask for position and color
+ * @typedef {Object} Store
+ * @property {Function} check - Validates that a color value is valid (color: number) => void
+ * @property {Function} clearBits - Clears bits matching a mask from a value (bits: bigint, mask: bigint) => bigint
+ * @property {Function} value - Extracts bit value at position (bits: bigint, position: number) => bigint
+ * @property {Function} numValue - Extracts numeric value at position (bits: bigint, position: number) => number
+ * @property {Function} bitMaskByPos - Creates bit mask for a position (position: number) => bigint
+ * @property {Function} setMask - Creates value mask for position and color (position: number, color: number) => bigint
  * @property {bigint} empty - Sentinel value representing empty/zero state
  */
 export class ForLocation {
@@ -43,9 +45,9 @@ export class ForLocation {
    * a reference to the backing storage. The accessor uses delegation to
    * defer all bit manipulation to the store.
    *
-   * @param {number} bitPosition - The bit-level position in the storage system (0-based index)
-   * @param {bigint} cellBits - The current cell value bits from the storage (may be empty)
-   * @param {Store} bitStore - Reference to the backing bit storage for operations
+   * @param {number} bitPosition - The bit-level position in the storage system (0-based index, must be non-negative)
+   * @param {bigint} cellBits - The current cell value bits from the storage (may be empty, represents compressed color data)
+   * @param {Store} bitStore - Reference to the backing bit storage for operations (must implement Store interface)
    *
    * @example
    * const accessor = new ForLocation(42, 0n, store);
@@ -68,8 +70,6 @@ export class ForLocation {
     /**
      * Reference to the backing bit storage for operations.
      * @type {Store}
-     * @private
-     * @access private
      */
     this.bitStore = bitStore
   }
@@ -86,7 +86,7 @@ export class ForLocation {
    * 2. Clear existing bits at this position
    * 3. Set new bits with the provided color value
    *
-   * @param {number} [color=1] - Color value to write (must be valid per store.check)
+   * @param {number} [color=1] - Color value to write (must be valid per store.check, typically 0-3)
    * @returns {bigint} Updated cell bits after the write (also stored in this.cellBits)
    * @throws {Error} If color is invalid (from bitStore.check)
    *
@@ -105,7 +105,7 @@ export class ForLocation {
    * Retrieves the color stored at this position from the cell bits
    * using the backing store's value reader. Does not modify any state.
    *
-   * @returns {number} Color value (typically 0-3 depending on bit depth, never negative)
+   * @returns {number} Color value (typically 0-3 depending on bit depth, non-negative integer)
    *
    * @example
    * const color = accessor.readCellValue(); // e.g., 2
@@ -121,8 +121,8 @@ export class ForLocation {
    * Does not affect bits outside the mask. Note: Does NOT update this.cellBits,
    * the returned value must be assigned back if persistence is desired.
    *
-   * @param {bigint} maskBits - Bit mask specifying which bits to clear (non-zero bits = clear)
-   * @returns {bigint} Cell bits after clearing the masked bits (not automatically stored)
+   * @param {bigint} maskBits - Bit mask specifying which bits to clear (non-zero bits = clear those positions)
+   * @returns {bigint} Cell bits after clearing the masked bits (not automatically stored in this.cellBits)
    *
    * @example
    * const result = accessor.clearMaskBits(0b111000n); // Clear specific bits
@@ -138,11 +138,11 @@ export class ForLocation {
    * Semantic alternative to `readCellValue() === color` for clarity and readability.
    * Does not modify any state.
    *
-   * @param {number} [color=1] - Expected color value to test for (must be valid)
+   * @param {number} [color=1] - Expected color value to test for (must be valid per store.check, typically 0-3)
    * @returns {boolean} True if cell contains the specified color, false otherwise
    *
    * @example
-   * if (accessor.hasColor(2)) { // cell is red
+   * if (accessor.hasColor(2)) { // cell contains color 2
    */
   hasColor (color = 1) {
     return this.readCellValue() === color
@@ -180,8 +180,6 @@ export class ForLocation {
    * 3. Create new value mask with the provided color
    * 4. Combine cleared bits with new value mask
    *
-   * @private
-   * @access private
    * @param {number} color - Color value to apply (must be validated)
    * @returns {bigint} Updated bits with color applied at bitPosition
    */
@@ -189,6 +187,7 @@ export class ForLocation {
     const positionMask = this.bitStore.bitMaskByPos(this.bitPosition)
     const clearedBits = this.bitStore.clearBits(this.cellBits, positionMask)
     const newValueMask = this.bitStore.setMask(this.bitPosition, color)
+    // @ts-ignore - bigint bitwise OR returns bigint, TypeScript inference issue
     return clearedBits | newValueMask
   }
 
@@ -199,8 +198,6 @@ export class ForLocation {
    * and ensure consistent use of store operations throughout the class.
    * This method provides a single point for all value reads.
    *
-   * @private
-   * @access private
    * @returns {number} Color value at this position (typically 0-3)
    */
   _readValueFromStore () {
@@ -214,30 +211,23 @@ export class ForLocation {
   // Marked as @deprecated to encourage migration to new method names.
 
   /**
+   * Read the current color value at this cell location.
+   *
    * @deprecated Use readCellValue() instead - provides more explicit naming
-   * @returns {number} Color value at this position
+   * @returns {number} Color value at this position (typically 0-3)
    */
   at () {
     return this.readCellValue()
   }
 
   /**
+   * Test if the cell contains a specific color value.
+   *
    * @deprecated Use hasColor() instead - provides more explicit naming
-   * @param {number} [color=1] Expected color value to test for
-   * @returns {boolean} True if cell contains the specified color
+   * @param {number} [color=1] - Expected color value to test for (typically 0-3)
+   * @returns {boolean} True if cell contains the specified color, false otherwise
    */
   test (color = 1) {
     return this.hasColor(color)
-  }
-
-  /**
-   * Alias to bitStore property for backward compatibility.
-   * @deprecated Access bitStore directly instead (marked private for encapsulation)
-   * @private
-   * @access private
-   * @type {Store}
-   */
-  get store () {
-    return this.bitStore
   }
 }

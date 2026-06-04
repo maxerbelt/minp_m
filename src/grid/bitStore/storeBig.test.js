@@ -11,10 +11,8 @@ BigInt.prototype.toJSON = function () {
 }
 describe('StoreBig', () => {
   let store
-  let mask
   beforeEach(() => {
     store = new StoreBig(1, 100, 1, 10, 10)
-    mask = new Mask(10, 10, 0n, store)
   })
 
   describe('constructor', () => {

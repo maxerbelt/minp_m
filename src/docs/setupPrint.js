@@ -18,6 +18,7 @@ import { enemy } from '../waters/enemy.js'
 import { fetchComponent } from '../network/network.js'
 import { setupPrintOptions } from '../navbar/setupOptions.js'
 import { showRules, makeFriend } from '../navbar/headerUtils.js'
+import { type } from 'node:os'
 
 /**
  * Resets board size for both friend and enemy fleets
@@ -83,7 +84,7 @@ function refreshDisplay (friend, enemy) {
   }
   if (bh?.map) {
     // @ts-ignore - bh.map has dynamic structure
-    const mapTitle = bh.map.title
+    const mapTitle = /** @type {string} */ (bh.map.title)
     if (mapTitle) {
       document.title = "Geoff's Hidden Battle - " + mapTitle
     }

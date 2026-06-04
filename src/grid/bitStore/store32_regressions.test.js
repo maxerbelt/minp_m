@@ -41,13 +41,13 @@ describe('store32 regressions', () => {
 
         // normalize ASCII occupancy: Mask uses '#' '.'; Packed uses digits
         const aBig = big.toAscii
-          .replace(/\n/g, '')
-          .replace(/#/g, '1')
-          .replace(/\./g, '0')
+          .replaceAll('\n', '')
+          .replaceAll('#', '1')
+          .replaceAll('.', '0')
         const aPacked = packed.toAscii
-          .replace(/\n/g, '')
-          .replace(/[^.]/g, '1')
-          .replace(/\./g, '0')
+          .replaceAll('\n', '')
+          .replaceAll(/[^.]/g, '1')
+          .replaceAll('.', '0')
 
         expect(aPacked).toBe(aBig)
       }

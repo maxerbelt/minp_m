@@ -261,9 +261,9 @@ export class GameStateManager {
    */
   _updateHistoryState (params) {
     try {
-      const newUrl = new URL(window.location)
+      const newUrl = new URL(globalThis.location)
       newUrl.searchParams.set('mode', params.mode)
-      window.history.replaceState({ mode: params.mode }, '', newUrl)
+      globalThis.history.replaceState({ mode: params.mode }, '', newUrl)
     } catch (error) {
       // Silently fail in test environments without proper history API
       console.debug('History update skipped:', error.message)

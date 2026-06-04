@@ -4,7 +4,7 @@
  */
 
 import type { CoordinatePair, CoordinateKey } from "./coordinates.types.js";
-import type { Board, Mask } from "./geometry.types.js";
+import type { Board} from "./geometry.types.js";
 import type { Rack } from "./weapons.types.js";
 
 /**

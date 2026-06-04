@@ -5,8 +5,11 @@
 import { PolyominoGridManager } from './polyominoGrid.js'
 
 describe('PolyominoGridManager', () => {
+  /** @type {PolyominoGridManager} */
   let manager
+  /** @type {HTMLCanvasElement} */
   let mockCanvas
+  /** @type {CanvasRenderingContext2D} */
   let mockContext
 
   beforeEach(() => {
@@ -40,9 +43,7 @@ describe('PolyominoGridManager', () => {
 
   afterEach(() => {
     // Clean up
-    if (mockCanvas && mockCanvas.parentNode) {
-      mockCanvas.parentNode.removeChild(mockCanvas)
-    }
+    mockCanvas.remove()
   })
 
   test('should initialize with correct grid dimensions', () => {

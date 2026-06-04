@@ -9,9 +9,17 @@ import {
 import { HexDraw } from './hexDraw.js'
 import { pixelToHex, cubeRound } from './hexdrawhelper.js'
 
+function removeTestCanvas () {
+  const canvas = document.getElementById('test-canvas')
+  if (canvas) canvas.remove()
+}
+
 describe('HexDraw', () => {
+  /** @type {any} */
   let hexDraw
+  /** @type {any} */
   let mockCanvas
+  /** @type {any} */
   let mockCtx
 
   // Mock canvas context for jsdom environment
@@ -47,11 +55,6 @@ describe('HexDraw', () => {
     }))
     document.body.appendChild(mockCanvas)
     return mockCanvas
-  }
-
-  function removeTestCanvas () {
-    const canvas = document.getElementById('test-canvas')
-    if (canvas) canvas.remove()
   }
 
   beforeEach(() => {

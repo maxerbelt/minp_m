@@ -523,7 +523,6 @@ describe('SubMask', () => {
       // Set bits outside window in parent
       parentMask.set(0, 0)
       parentMask.set(9, 9)
-      const parentOccupancyBefore = parentMask.occupancy
 
       // Modify window
       subMask.set(0, 0)

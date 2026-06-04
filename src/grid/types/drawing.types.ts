@@ -7,7 +7,7 @@
  * @module grid/types/drawing
  */
 
-import type { Coordinate, LineParameters, InterceptResult } from './shared.types.js';
+import type { Coordinate,  InterceptResult } from './shared.types.js';
 
 /**
  * Canvas surface interface for drawing operations.
