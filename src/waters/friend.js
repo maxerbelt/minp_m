@@ -670,7 +670,7 @@ export class Friend extends Placement {
    *
    * @private
    * @param {Weapon} _weapon - The scan weapon (unused, not needed for reveal processing)
-   * @param {Array<GridCoordinate>} effect - Array of [row, col, power] coordinate tuples to reveal
+   * @param {GridCoordinate[]} effect - Array of [row, col, power] coordinate tuples to reveal
    * @returns {void}
    */
   scan (_weapon, effect) {
@@ -692,11 +692,10 @@ export class Friend extends Placement {
    * Routes effect types to specialized targeting strategies.
    * Returns noResult if effect type is not recognized or handler fails.
    *
-   * @private
    * @param {EffectType} effect - Effect type: 'DestroyOne' | 'Bomb' | 'Scan' | 'Seek'
    * @returns {Promise<WeaponLaunchResult|null>} Result from effect handler or noResult
    */
-  async randomEffect (effect) {
+  async #randomEffect (effect) {
     /** @type {EffectHandlerMap} */
     const effectHandlers = {
       DestroyOne: () => this.#randomDestroyOne(),
@@ -896,7 +895,7 @@ export class Friend extends Placement {
     // @ts-ignore - loadOut.switchToPreferredWeapon returns EffectType|null at runtime
     const op = this.loadOut.switchToPreferredWeapon()
     if (op) {
-      return await this.randomEffect(op)
+      return await this.#randomEffect(op)
     }
 
     // @ts-ignore - loadOut.switchToSingleShot is method at runtime
