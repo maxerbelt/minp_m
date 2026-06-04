@@ -187,14 +187,13 @@ export class PackedHexDraw extends DrawBase {
   _pixelToHex (x, y) {
     const q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / this.hexSize
     const r = ((2 / 3) * y) / this.hexSize
-    return this._cubeRound(q, r, -q - r)
+    return this.cubeRound(q, r, -q - r)
   }
 
   /**
    * Round pixel coordinates to nearest cube coordinates
-   * @private
    */
-  _cubeRound (q, r, s) {
+  cubeRound (q, r, s) {
     let rq = Math.round(q)
     let rr = Math.round(r)
     let rs = Math.round(s)

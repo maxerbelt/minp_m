@@ -175,7 +175,7 @@ export class CubeIndex extends Indexer {
     }
   }
 
-  _cubeRound (q, r, s) {
+  cubeRound (q, r, s) {
     let rq = Math.round(q)
     let rr = Math.round(r)
     let rs = Math.round(s)

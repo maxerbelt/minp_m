@@ -44,7 +44,7 @@ export class HexNormalCover extends HexCoverBase {
       let step = 1
       for (let i = 0; i <= steps; i++) {
         const t = i / steps
-        const [currentQ, currentR] = this.cubeIndex._cubeRound(
+        const [currentQ, currentR] = this.cubeIndex.cubeRound(
           startQ + deltaQ * t,
           startR + deltaR * t,
           startS + deltaS * t
