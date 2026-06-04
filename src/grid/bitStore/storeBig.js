@@ -42,6 +42,10 @@ const zero = 0n
  */
 
 /**
+ * @typedef {Object.<number, StoreBig>} MultiBitStoreCache
+ */
+
+/**
  * BigInt-based bitboard store with support for multi-bit color layers.
  * Provides bit-level manipulation, morphological operations, and color layer management.
  * Extends StoreBase with BigInt-specific implementations for efficient large bitboards.
@@ -77,6 +81,23 @@ export class StoreBig extends StoreBase {
     // wordsPerRow should divide grid width by cells-per-word
     this.wordsPerRow = width ? Math.ceil(width / this.cellsPerWord) : 0
     this.maxCellInWord = this.cellsPerWord - 1
+
+    /** @type {StoreBig|null} */
+    this._singleBitStoreCache = null
+    /** @type {MultiBitStoreCache} */
+    this._multiBitStoreCache = {}
+  }
+
+  /**
+   * Get the full bits mask for this store (overrides parent with bigint return type)
+   * @returns {bigint} Mask with all bits set for the store size
+   * @public
+   * @override
+   */
+  // @ts-expect-error - Intentional override: StoreBig returns bigint, StoreBase returns number
+  get fullBits () {
+    const size = typeof this.size === 'bigint' ? this.size : BigInt(this.size)
+    return (1n << size) - 1n
   }
 
   /**
@@ -104,12 +125,18 @@ export class StoreBig extends StoreBase {
   /**
    * Iterate over occupied bit indices in the bitboard
    * @param {bigint} bitboard - Source bitboard
-   * @param {number} [size=this.size] - Total number of cells
+   * @param {number} [size] - Total number of cells
    * @returns {Generator<number>} Generator yielding occupied bit indices
    * @public
    */
-  *bitsOccupied (bitboard, size = this.size) {
-    return yield* bitsSafeBI(size, bitboard)
+  *bitsOccupied (bitboard, size) {
+    const sizeParam =
+      size ??
+      (typeof this.size === 'bigint'
+        ? Number(this.size)
+        : Number(this.size) || 0)
+    // @ts-expect-error - sizeParam is guaranteed to be a number at runtime
+    return yield* bitsSafeBI(sizeParam, bitboard)
   }
 
   /**
@@ -181,8 +208,8 @@ export class StoreBig extends StoreBase {
    * @public
    */
   invertedBits (bitboard) {
-    if (bitboard === 0n) return BigInt(this.fullBits)
-    return BigInt(this.fullBits) & ~bitboard
+    if (bitboard === 0n) return this.fullBits
+    return this.fullBits & ~bitboard
   }
 
   /**
@@ -454,8 +481,8 @@ export class StoreBig extends StoreBase {
    * @public
    */
   dilateCrossFast (bitboard, gridWidth, edgeMasks) {
-    const notLeft = edgeMasks?.notLeft ?? BigInt(this.fullBits)
-    const notRight = edgeMasks?.notRight ?? BigInt(this.fullBits)
+    const notLeft = edgeMasks?.notLeft ?? this.fullBits
+    const notRight = edgeMasks?.notRight ?? this.fullBits
 
     const left = this.maskedShiftRight(bitboard, notLeft, 1)
     const right = this.maskedShiftLeft(bitboard, notRight, 1)
@@ -852,7 +879,7 @@ export class StoreBig extends StoreBase {
    * @param {number} width - Current width
    * @param {number} height - Height
    * @param {number} newWidth - Target width
-   * @param {Function} transform - Transformation function for each row
+   * @param {function} transform - Transformation function taking (rowBits: bigint, rowIndex: number): bigint
    * @returns {bigint} Transformed bitboard
    * @private
    */
@@ -864,6 +891,7 @@ export class StoreBig extends StoreBase {
 
     for (const row of grid.rows()) {
       const rowBits = this.extractRowAtIndex(bits, row, width, rowMask)
+      /** @type {bigint} */
       const newRow = transform(rowBits, row)
       result |= BigInt(newRow) << BigInt(this.bitPos(row * newWidth))
     }
@@ -880,7 +908,9 @@ export class StoreBig extends StoreBase {
    * @public
    */
   expandToWidth (gridWidth, gridHeight, bits, newWidth) {
-    return this.mapRows(bits, gridWidth, gridHeight, newWidth, row => row)
+    /** @param {bigint} row */
+    const transform = row => row
+    return this.mapRows(bits, gridWidth, gridHeight, newWidth, transform)
   }
 
   /**
@@ -893,7 +923,9 @@ export class StoreBig extends StoreBase {
    * @public
    */
   shrinkTo (gridWidth, bits, newWidth, newHeight) {
-    return this.mapRows(bits, gridWidth, newHeight, newWidth, row => row)
+    /** @param {bigint} row */
+    const transform = row => row
+    return this.mapRows(bits, gridWidth, newHeight, newWidth, transform)
   }
 
   /**
@@ -1310,10 +1342,10 @@ export class StoreBig extends StoreBase {
    */
   rowMask (gridWidth) {
     const widthInBits = this.bitPos(gridWidth)
-    // Convert BigInt to number for shift operation
+    // Convert to number for shift operation, then back to BigInt
     const widthNum =
       typeof widthInBits === 'bigint' ? Number(widthInBits) : widthInBits
-    return (1n << widthNum) - 1n
+    return (1n << BigInt(widthNum)) - 1n
   }
 
   /**
@@ -1335,9 +1367,10 @@ export class StoreBig extends StoreBase {
 
   /**
    * Shift bitboard to origin (0, 0)
-   * @param {bigint} bitboard - Source bitboard
    * @param {number} gridWidth - Grid width
    * @param {number} minRowIndex - Minimum row to shift from
+   * @param {number} gridHeight - Grid height
+   * @param {bigint} bitboard - Source bitboard
    * @param {number} minColIndex - Minimum column to shift from
    * @returns {bigint} Shifted bitboard
    * @public
@@ -1566,8 +1599,9 @@ export class StoreBig extends StoreBase {
     if (!this._multiBitStoreCache) {
       this._multiBitStoreCache = {}
     }
-    if (this._multiBitStoreCache[bitsPerCell])
+    if (this._multiBitStoreCache[bitsPerCell]) {
       return this._multiBitStoreCache[bitsPerCell]
+    }
     const bitWidth = BigInt(bitsPerCell)
     const numOfColors = Number(2n ** bitWidth)
     this._multiBitStoreCache[bitsPerCell] = new StoreBig(

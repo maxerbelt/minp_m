@@ -1,10 +1,12 @@
-import { it, describe, expect, beforeEach, jest } from '@jest/globals'
+import { it, describe, expect, beforeEach } from '@jest/globals'
 
 import { SubMask } from './SubMask.js'
 import { Mask } from './rectangle/mask.js'
 
 describe('SubMask', () => {
+  /** @type {Mask} */
   let parentMask
+  /** @type {SubMask} */
   let subMask
 
   beforeEach(() => {
@@ -47,7 +49,7 @@ describe('SubMask', () => {
       expect(subMask.bits).toBe(initialBits)
 
       // Setting bits should update parent mask
-      const newBits = parentMask.store.empty
+      const newBits = 0n
       subMask.bits = newBits
       expect(parentMask.bits).toBe(newBits)
     })
@@ -60,22 +62,30 @@ describe('SubMask', () => {
   describe('coordinate offset and boundaries', () => {
     it('translates window-relative coordinates to absolute coordinates', () => {
       // Window at (2,2), so window (0,0) should map to absolute (2,2)
+      // @ts-ignore - Testing private method _applyOffset
       const [absX, absY] = subMask._applyOffset(0, 0)
       expect(absX).toBe(2)
       expect(absY).toBe(2)
 
       // Window (3,4) should map to absolute (5,6)
+      // @ts-ignore - Testing private method _applyOffset
       const [absX2, absY2] = subMask._applyOffset(3, 4)
       expect(absX2).toBe(5)
       expect(absY2).toBe(6)
     })
 
     it('correctly identifies coordinates within window bounds', () => {
+      // @ts-ignore - Testing private method _isInWindow
       expect(subMask._isInWindow(0, 0)).toBe(true)
+      // @ts-ignore - Testing private method _isInWindow
       expect(subMask._isInWindow(4, 4)).toBe(true)
+      // @ts-ignore - Testing private method _isInWindow
       expect(subMask._isInWindow(5, 0)).toBe(false)
+      // @ts-ignore - Testing private method _isInWindow
       expect(subMask._isInWindow(0, 5)).toBe(false)
+      // @ts-ignore - Testing private method _isInWindow
       expect(subMask._isInWindow(-1, 0)).toBe(false)
+      // @ts-ignore - Testing private method _isInWindow
       expect(subMask._isInWindow(0, -1)).toBe(false)
     })
 

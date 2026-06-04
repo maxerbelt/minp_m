@@ -397,7 +397,7 @@ class BoardHighlighter {
  * @param {number} cellCol - Current cursor column (0-based).
  * @returns {void}
  */
-function createAreaOfEffectHighlighter (model, cellRow, cellCol) {
+function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
   const boardMap = bh.map
 
   // Validate cursor position
@@ -551,7 +551,7 @@ const BoardInitializer = {
     GridBoard.addHover(
       enemy.UI.board,
       bh.map,
-      createAreaOfEffectHighlighter,
+      _createAreaOfEffectHighlighter,
       enemy.UI.removeHighlightAoE,
       enemy.UI,
       enemy
@@ -757,10 +757,10 @@ function initializeSeekModeShortcuts (placementHandler, testHandler) {
  *
  * @example
  * // Safely attach with fallback to null
- * attachClickHandler(document.getElementById('btn'), () => { ... });
+ * _attachClickHandler(document.getElementById('btn'), () => { ... });
  * // Safe even if element or handler is null/undefined
  */
-function attachClickHandler (element, handler) {
+function _attachClickHandler (element, handler) {
   if (element?.addEventListener && typeof handler === 'function') {
     element.addEventListener('click', /** @type {EventListener} */ (handler))
   }
@@ -800,15 +800,15 @@ function wireUpButtonHandlers (placementHandler, testHandler) {
   enemy.UI?.refreshButtons?.()
 
   // Wire game control buttons
-  attachClickHandler(
+  _attachClickHandler(
     enemy.UI?.buttons?.restart,
     newGame.bind(null, GAME_MODE_SEEK, null)
   )
   enemy.wireupButtons()
 
   // Wire mode toggle buttons
-  attachClickHandler(enemy.UI?.buttons?.place, placementHandler)
-  attachClickHandler(enemy.UI?.buttons?.test, testHandler)
+  _attachClickHandler(enemy.UI?.buttons?.place, placementHandler)
+  _attachClickHandler(enemy.UI?.buttons?.test, testHandler)
 
   // Initialize keyboard shortcuts
   return initializeSeekModeShortcuts(placementHandler, testHandler)

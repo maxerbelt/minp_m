@@ -76,6 +76,13 @@ import { minMaxXY } from '../core/utilities.js'
  * @extends SubMask
  * @class SubBoard
  */
+/**
+ * @ts-expect-error SubBoard overrides private methods from SubMask (_removeOffset, _isInWindow)
+ * which is necessary for transparent world-coordinate transformation. The overrides are internal
+ * implementation details that don't affect the public API contract.
+ * @class SubBoard
+ */
+// @ts-expect-error
 export class SubBoard extends SubMask {
   /**
    * Create a windowed grid view with world-relative coordinate system.
@@ -190,6 +197,7 @@ export class SubBoard extends SubMask {
    * transformation for public APIs. Delegates to _worldToLocal for consistent
    * offset handling throughout the class.
    *
+   * @ts-expect-error Override of private method - necessary for world coordinate system
    * @protected
    * @param {number} worldX - World space X coordinate (absolute board position).
    * @param {number} worldY - World space Y coordinate (absolute board position).
@@ -208,6 +216,7 @@ export class SubBoard extends SubMask {
    * transformation for public APIs. Delegates to _localToWorld for consistent
    * offset handling throughout the class.
    *
+   * @ts-expect-error Override of private method - necessary for world coordinate system
    * @protected
    * @param {number} localX - Window-local X coordinate (relative to window origin).
    * @param {number} localY - Window-local Y coordinate (relative to window origin).
@@ -217,6 +226,25 @@ export class SubBoard extends SubMask {
    */
   _removeOffset (localX, localY) {
     return this._localToWorld(localX, localY)
+  }
+
+  /**
+   * Check if world coordinates are within window (override of SubMask method).
+   *
+   * Override of SubMask's _isInWindow method for consistency with world-coordinate
+   * semantics. Delegates to _isInWorldBounds which checks against the window's
+   * absolute position on the board.
+   *
+   * @ts-expect-error Override of private method - necessary for world coordinate system
+   * @protected
+   * @param {number} worldX - World space X coordinate (absolute board position).
+   * @param {number} worldY - World space Y coordinate (absolute board position).
+   * @returns {boolean} True if coordinates fall within this window's bounds;
+   * false otherwise.
+   * @see _isInWorldBounds
+   */
+  _isInWindow (worldX, worldY) {
+    return this._isInWorldBounds(worldX, worldY)
   }
 
   /**
@@ -245,24 +273,6 @@ export class SubBoard extends SubMask {
       worldY >= this.offsetY &&
       worldY < this.offsetY + this.windowHeight
     )
-  }
-
-  /**
-   * Check if world coordinates are within window (override of SubMask method).
-   *
-   * Override of SubMask's _isInWindow method for consistency with world-coordinate
-   * semantics. Delegates to _isInWorldBounds which checks against the window's
-   * absolute position on the board.
-   *
-   * @protected
-   * @param {number} worldX - World space X coordinate (absolute board position).
-   * @param {number} worldY - World space Y coordinate (absolute board position).
-   * @returns {boolean} True if coordinates fall within this window's bounds;
-   * false otherwise.
-   * @see _isInWorldBounds
-   */
-  _isInWindow (worldX, worldY) {
-    return this._isInWorldBounds(worldX, worldY)
   }
 
   /**
@@ -391,6 +401,26 @@ export class SubBoard extends SubMask {
     return this.mask.index(localX, localY)
   }
 
+  /**
+   * Check if world-relative coordinates are valid (within window bounds).
+   *
+   * Override of SubMask's isValid method to work with world-space coordinates
+   * instead of local coordinates. Returns true if the world coordinate falls
+   * within this window's bounds.
+   *
+   * @param {number} worldX - World space X coordinate (absolute board position).
+   * @param {number} worldY - World space Y coordinate (absolute board position).
+   * @returns {boolean} True if coordinate is within window bounds; false otherwise.
+   *
+   * @example
+   * const board = new SubBoard(10, 5, 8, 8, ...);
+   * board.isValid(15, 10); // true (within bounds)
+   * board.isValid(5, 10);  // false (outside window)
+   */
+  isValid (worldX, worldY) {
+    return this._isInWorldBounds(worldX, worldY)
+  }
+
   // ============================================================================
   // ITERATION - Generators for occupied cells in world coordinates
   // ============================================================================
@@ -483,7 +513,6 @@ export class SubBoard extends SubMask {
    * (occupiedCellCount / totalCellCount) where 0 = completely empty, 1 = completely full.
    *
    * @type {number}
-   * @readonly
    *
    * @example
    * const board = new SubBoard(10, 5, 8, 8, ...);
@@ -501,7 +530,6 @@ export class SubBoard extends SubMask {
    * Multi-color grids use 0-9 for colors. Useful for debugging and visualization.
    *
    * @type {string}
-   * @readonly
    *
    * @example
    * const board = new SubBoard(10, 5, 3, 3, ...);
@@ -541,10 +569,10 @@ export class SubBoard extends SubMask {
    * Returns 0 if no cells are occupied.
    *
    * @type {number}
-   * @readonly
    *
-   * @returns {number} The minimum of (maxX - minX) and (maxY - minY)
-   * for occupied cells. 0 if window is empty.
+   * @example
+   * const board = new SubBoard(10, 5, 8, 8, ...);
+   * console.log(board.minSize); // Minimum of width and height of occupied cells
    */
   get minSize () {
     return this.mask.minSize
@@ -557,10 +585,10 @@ export class SubBoard extends SubMask {
    * the occupied region's width and height.
    *
    * @type {number}
-   * @readonly
    *
-   * @returns {number} The maximum of (maxX - minX) and (maxY - minY)
-   * for occupied cells. 0 if window is empty.
+   * @example
+   * const board = new SubBoard(10, 5, 8, 8, ...);
+   * console.log(board.maxSize); // Maximum of width and height of occupied cells
    */
   get maxSize () {
     return this.mask.maxSize
@@ -573,9 +601,6 @@ export class SubBoard extends SubMask {
    * the occupied region's height exceeds its width. Useful for shape analysis.
    *
    * @type {boolean}
-   * @readonly
-   *
-   * @returns {boolean} True if (maxY - minY) > (maxX - minX); false otherwise.
    */
   get isTall () {
     return this.mask.isTall
@@ -588,9 +613,6 @@ export class SubBoard extends SubMask {
    * the occupied region's width exceeds its height.
    *
    * @type {boolean}
-   * @readonly
-   *
-   * @returns {boolean} True if (maxX - minX) > (maxY - minY); false otherwise.
    */
   get isWide () {
     return this.mask.isWide
@@ -603,9 +625,6 @@ export class SubBoard extends SubMask {
    * the occupied region's width equals its height.
    *
    * @type {boolean}
-   * @readonly
-   *
-   * @returns {boolean} True if (maxX - minX) === (maxY - minY); false otherwise.
    */
   get isSquare () {
     return this.mask.isSquare
@@ -874,7 +893,11 @@ export class SubBoard extends SubMask {
    * // layers.length === 3, each containing single color
    */
   extractColorLayers () {
-    return this.mask.extractColorLayers().map(layer => this.shiftToThis(layer))
+    return this.mask
+      .extractColorLayers()
+      .map((/** @type {MaskLike} */ layer) => {
+        return this.shiftToThis(layer)
+      })
   }
 
   // ============================================================================
@@ -917,12 +940,6 @@ export class SubBoard extends SubMask {
    * are occupied.
    *
    * @type {(CoordinatePair|CoordinateTuple)[]}
-   * @readonly
-   *
-   * @returns {(CoordinatePair|CoordinateTuple)[]} Array of coordinate tuples.
-   * Tuples are in world space (absolute board positions). Empty array if no cells
-   * are occupied. Format depends on bitsPerCell > 0: multi-bit returns [x,y,value],
-   * single-bit returns [x,y].
    *
    * @example
    * const board = new SubBoard(10, 5, 8, 8, ...); // Multi-color
@@ -930,7 +947,7 @@ export class SubBoard extends SubMask {
    * // [[15, 10, 3], [16, 10, 2], [17, 11, 1], ...]
    */
   get toCoords () {
-    const coords = []
+    const coords = /** @type {(CoordinatePair|CoordinateTuple)[]} */ ([])
     const isMultiBit = this.store.bitsPerCell > 0
 
     for (const [
@@ -939,7 +956,9 @@ export class SubBoard extends SubMask {
       value
     ] of this.mask.occupiedLocationsAndValues()) {
       const [worldX, worldY] = this._localToWorld(localX, localY)
-      coords.push(isMultiBit ? [worldX, worldY, value] : [worldX, worldY])
+      coords.push(
+        isMultiBit ? [worldX, worldY, Number(value)] : [worldX, worldY]
+      )
     }
 
     return coords
@@ -1339,10 +1358,6 @@ export class SubBoard extends SubMask {
    * temporary working masks or accumulation buffers.
    *
    * @type {SubBoard}
-   * @readonly
-   *
-   * @returns {SubBoard} Empty SubBoard at same position and size as this window.
-   * Template and depth inherited from this window's mask.
    *
    * @example
    * const empty = this.emptyMask;
