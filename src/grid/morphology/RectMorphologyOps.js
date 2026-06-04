@@ -1,9 +1,30 @@
 import { Rect1BitMorphology } from './strategies/Rect1BitMorphology.js'
 import { RectMultiBitMorphology } from './strategies/RectMultiBitMorphology.js'
 
-/** @type {import('./types/index.js').RectMask} */
-/** @type {import('./types/index.js').AnyStore} */
-/** @type {import('./types/index.js').EdgeMaskCollection} */
+/**
+ * @typedef {object} RectMask
+ * @property {object} store - Storage backend for bitboard operations
+ * @property {bigint|Uint32Array} bits - Current bitboard state
+ * @property {number} width - Grid width in cells
+ * @property {number} height - Grid height in cells
+ * @property {number} depth - Color bit depth per cell (1 = occupancy, 2+ = color)
+ * @property {object} indexer - Coordinate conversion utility
+ * @property {() => Generator<[number, number, number]>} occupiedLocationsAndValues - Iterate occupied cells
+ * @property {(x: number, y: number) => boolean} isValid - Check if coordinates are in bounds
+ * @property {(x: number, y: number, value?: number) => void} set - Set cell value at coordinates
+ * @property {(width: number, height: number, depth: number) => RectMask} emptyMaskOfSize - Create new mask
+ */
+
+/**
+ * @typedef {object & {isMultiBit?: boolean}} AnyStore
+ * @property {boolean} [isMultiBit] - True if store supports multi-bit cells
+ */
+
+/**
+ * @typedef {object} EdgeMaskCollection
+ * @property {bigint|Uint32Array} notLeft - Mask excluding left edge
+ * @property {bigint|Uint32Array} notRight - Mask excluding right edge
+ */
 
 /**
  * @fileoverview RectMorphologyOps - Orchestration layer for rectangular grid morphology.
@@ -62,14 +83,14 @@ import { RectMultiBitMorphology } from './strategies/RectMultiBitMorphology.js'
 export class RectMorphologyOps {
   /**
    * Reference to the mask being operated on.
-   * @type {Object}
+   * @type {RectMask}
    * @private
    */
   mask
 
   /**
    * Reference to the bitboard store.
-   * @type {Object}
+   * @type {object & {isMultiBit?: boolean}}
    * @private
    */
   store
@@ -97,10 +118,12 @@ export class RectMorphologyOps {
 
   /**
    * Grid indexer for coordinate conversion.
-   * @type {Object}
+   * Stored for potential future use in grid transformations.
+   * @type {object}
    * @private
    */
-  indexer
+  // noinspection JSUnusedLocalSymbols - Intentionally unused, retained for API extensibility
+  _indexer
 
   /**
    * Cached morphology strategy (1-bit or multi-bit).
@@ -116,12 +139,13 @@ export class RectMorphologyOps {
    * Caches mask properties and prepares for strategy-based morphological operations.
    * Strategy selection (1-bit vs multi-bit) happens lazily on first operation.
    *
-   * @param {Object} mask - Mask instance with required properties:
+   * @param {RectMask} mask - Mask instance with required properties:
    *   - store: Storage backend (StoreBig or Store32)
    *   - bits: Current bitboard state
    *   - width: Grid width in cells
    *   - height: Grid height in cells
    *   - indexer: Coordinate conversion utility
+   *   - depth: Color bit depth per cell
    * @throws {Error} If mask is missing required properties
    *
    * @example
@@ -134,7 +158,8 @@ export class RectMorphologyOps {
     this.bits = mask.bits
     this.width = mask.width
     this.height = mask.height
-    this.indexer = mask.indexer
+    // @ts-ignore - Storing indexer for potential future grid transformation methods
+    this._indexer = mask.indexer
     this._strategy = null
   }
 
@@ -145,8 +170,9 @@ export class RectMorphologyOps {
    * - Rect1BitMorphology for 1-bit stores (fast bit shift operations)
    * - RectMultiBitMorphology for multi-bit stores (per-cell operations)
    *
-   * @returns {Rect1BitMorphology|RectMultiBitMorphology} Morphology strategy
+   * @returns {Rect1BitMorphology|RectMultiBitMorphology} Morphology strategy instance
    * @private
+   * @throws {Error} If mask properties are insufficient for strategy initialization
    */
   _getStrategy () {
     if (this._strategy) return this._strategy
@@ -187,7 +213,7 @@ export class RectMorphologyOps {
    * - Multi-bit stores: Per-cell color propagation
    *
    * @param {number} [radius=1] - Number of dilation steps (non-negative integer)
-   * @returns {Object} This mask instance (mutated) for chainable operations
+   * @returns {RectMask} This mask instance (mutated) for chainable operations
    * @chainable
    * @see dilateBits for non-mutating variant
    * @see dilateCross for cross-pattern dilation
@@ -231,7 +257,7 @@ export class RectMorphologyOps {
    *
    * Delegates to strategy class for optimized store-specific implementation.
    *
-   * @returns {Object} This mask instance (mutated) for chainable operations
+   * @returns {RectMask} This mask instance (mutated) for chainable operations
    * @chainable
    * @see dilateCrossBits for non-mutating variant
    * @see dilate for full rectangular dilation
@@ -264,6 +290,7 @@ export class RectMorphologyOps {
       return strategy.dilateCross()
     }
     // Multi-bit stores don't have cross dilation specialized
+    // noinspection JSUnreachableSwitchBranch - Intentional fallback for multi-bit stores
     return this.bits
   }
 
@@ -283,7 +310,7 @@ export class RectMorphologyOps {
    * - Multi-bit stores: Per-cell neighbor verification
    *
    * @param {number} [radius=1] - Number of erosion steps (non-negative integer)
-   * @returns {Object} This mask instance (mutated) for chainable operations
+   * @returns {RectMask} This mask instance (mutated) for chainable operations
    * @chainable
    * @see erodeBits for non-mutating variant
    * @see dilate for dilation (inverse operation)
@@ -332,7 +359,7 @@ export class RectMorphologyOps {
    *
    * @param {number} [borderSize=1] - Border size to add on all sides (pixels)
    * @param {number} [_fillValue=0] - Color value for border (reserved for future use)
-   * @returns {Object} New expanded and dilated mask (original unchanged)
+   * @returns {RectMask} New expanded and dilated mask (original unchanged)
    *
    * @example
    * // Create 2-cell border and dilate into it
@@ -365,7 +392,7 @@ export class RectMorphologyOps {
    * where boundary context matters but expansion does not.
    *
    * @param {number} [borderSize=1] - Border size to add on all sides (pixels)
-   * @returns {Object} New expanded mask without dilation (original unchanged)
+   * @returns {RectMask} New expanded mask without dilation (original unchanged)
    *
    * @example
    * // Create grid with 1-cell border but no dilation
@@ -392,8 +419,9 @@ export class RectMorphologyOps {
    * Positions original mask at offset (borderSize, borderSize) in the new grid.
    * Respects expanded grid bounds; cells outside the new grid are not copied.
    *
-   * @param {Object} expandedMask - Target expanded mask to copy into
+   * @param {RectMask} expandedMask - Target expanded mask to copy into
    * @param {number} borderSize - Offset/border size from edges
+   * @returns {void}
    * @private
    */
   _copyToCenter (expandedMask, borderSize) {

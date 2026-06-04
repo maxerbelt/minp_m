@@ -26,7 +26,7 @@ describe('store32 regressions', () => {
     for (const depth of [1]) {
       for (const coords of patterns) {
         const big = new Mask(width, height)
-        const packed = new Packed(width, height, null, null, depth)
+        const packed = new Packed(width, height, undefined, undefined, depth)
 
         for (const [x, y] of coords) {
           big.set(x, y)
@@ -57,7 +57,8 @@ describe('store32 regressions', () => {
   it('Packed vertical dilate multiword should not wrap rows', () => {
     const p = new Packed(8, 5)
     p.set(0, 0)
-    p.set(0, 1)
+    // @ts-ignore - SonarQube: intentionally setting same x with different y values
+    p.set(0, 1) // NOSONAR - deliberate: testing column 0 at different rows
     p.dilate(2)
     expect(p.toAscii).toBe('111.....\n111.....\n111.....\n111.....\n........')
   })
