@@ -158,13 +158,36 @@ import { Random } from '../core/Random.js'
  * @property {boolean} [hasAmmo] - Check if weapon has ammo
  * @property {Weapon} [firstLoadedWeapon] - Get loaded weapon variant
  * @property {Weapon[]} [loadedWeapons] - Get all loaded weapons
+ * @property {Object} [firstUnattachedWeapon] - First unattached weapon in system
  */
 
 /**
  * @typedef {Object} WeaponRack
- * @property {Weapon|undefined} [weapon] - The weapon object
- * @property {number} [id] - Rack/weapon ID
- * @property {number} [ammo] - Ammunition count
+ * @property {Weapon} weapon - The weapon object
+ * @property {number} id - Rack/weapon ID
+ * @property {number} ammo - Ammunition count
+ */
+
+/**
+ * @typedef {Object} WeaponSystemBase
+ * @property {Weapon} weapon - The weapon object
+ * @property {number} id - Weapon system ID
+ */
+
+/**
+ * @typedef {Object} LaunchOptions
+ * @property {Array<number>} [crashLoc] - Crash location coordinates [r, c]
+ * @property {boolean} [isSplash] - Whether this is a splash effect
+ */
+
+/**
+ * @typedef {Object} FireResult
+ * @property {number} hits - Number of hits scored
+ * @property {number} shots - Number of shots fired
+ * @property {string} sunk - Ship letter or count of sunk ships
+ * @property {number} dtap - Double-tap count
+ * @property {number} reveals - Cells revealed
+ * @property {string} info - Info message
  */
 
 /**
@@ -1942,7 +1965,7 @@ export class Waters {
    * Fires unattached weapon system at target coordinates.
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @returns {Promise<Object|null>} Fire result or null
+   * @returns {Promise<WeaponResult|null>} Fire result or null
    * @private
    */
   async launchUnattachedWeapon (r, c) {
@@ -1970,7 +1993,7 @@ export class Waters {
    *
    * @param {number} r - Target row coordinate
    * @param {number} c - Target column coordinate
-   * @param {WeaponSystem} sShot - Single shot weapon data with fire configuration
+   * @param {WeaponSystemType} sShot - Single shot weapon data with fire configuration
    * @returns {Promise<{weapon: Weapon, score: Object}|void>}
    * @private
    * @deprecated Not used in current codebase
@@ -2027,8 +2050,8 @@ export class Waters {
    * @param {Array<number>|Object} coords - Target coordinate as array [r,c] or object {r,c}
    * @param {number} rr - Reference row position for launch fallback (usually source row)
    * @param {number} cc - Reference column position for launch fallback (usually source column)
-   * @param {Object} currentWps - Current weapon system with weapon and ID reference
-   * @returns {Promise<Object|null>} Weapon launch result with hit/miss information
+   * @param {WeaponSystemType|WeaponRack} currentWps - Current weapon system with weapon and ID reference
+   * @returns {Promise<WeaponResult|null>} Weapon launch result with hit/miss information
    * @private
    */
   async launchTo (coords, rr, cc, currentWps) {
@@ -2037,9 +2060,10 @@ export class Waters {
       ? /** @type {Board} */ (/** @type {unknown} */ (this.opponent.UI))
       : null
     // @ts-ignore - currentWps.weapon available at runtime, Board type for UI
+    const weapon = /** @type {Weapon|undefined} */ (currentWps?.weapon)
     // @ts-ignore - bh.map is initialized at runtime
     return (
-      (await currentWps.weapon?.launchTo(
+      (await weapon?.launchTo(
         coords,
         rr,
         cc,
@@ -2054,7 +2078,7 @@ export class Waters {
    * Launches weapon system to coordinate from stored source hint.
    * Uses the source hint coordinates stored in steps for the launch reference.
    *
-   * @param {WeaponSystemType} wps - Weapon system to launch
+   * @param {WeaponSystemType|WeaponRack} wps - Weapon system to launch
    * @param {Array<number>|Object} coords - Target coordinate destination
    * @returns {Promise<WeaponResult|null>} Weapon launch result
    * @private
@@ -2062,6 +2086,7 @@ export class Waters {
   async launchWeapon (wps, coords) {
     // @ts-ignore - this.steps available at runtime, default to origin if no hint
     const { r, c } = this.steps?.sourceHint || { r: 0, c: 0 }
+    // @ts-ignore - wps is WeaponSystemType at runtime
     return await this.launchTo(coords, r, c, wps)
   }
 
@@ -2076,9 +2101,9 @@ export class Waters {
    */
   setupAttachedAim () {
     const oppo = this.opponent
-    // @ts-ignore - seekingMode is available at runtime on bh object
+    // @ts-ignore - seekingMode is available at runtime on bh object, bh type has it
     if (
-      bh.seekingMode ||
+      bh?.seekingMode ||
       !this.loadOut?.ships ||
       !oppo ||
       this.loadOut.ships.length === 0 ||
@@ -2216,7 +2241,7 @@ export class Waters {
    * DEPRECATED: Method is not currently used in codebase. Kept for API compatibility.
    *
    * @param {Array<Array<number>>} effect - The effect area
-   * @param {Weapon} weapon - The weapon being used
+   * @param {Weapon|Object} weapon - The weapon being used
    * @returns {Array<number>|null} Random hit candidate or null
    * @deprecated Not used in current codebase
    */
@@ -2232,11 +2257,11 @@ export class Waters {
    * Applies weapon protection rules and adds wake effects to misses if applicable.
    *
    * @param {Array<Array<number>>} effect - The effect area coordinates as [r, c, power] entries
-   * @param {Weapon} weapon - The weapon being used (determines wake and protection vs ship types)
+   * @param {Weapon|Object} weapon - The weapon being used (determines wake and protection vs ship types)
    * @returns {Array<Array<number>>} Array of hit candidates [r, c, power] that can damage ships
    */
   #getHitCandidates (effect, weapon) {
-    /** @type { number[][]} */
+    /** @type {Array<Array<number>>} */
     const candidates = []
     // @ts-ignore - bh.map is initialized at runtime
     const map = bh.map
@@ -2258,13 +2283,14 @@ export class Waters {
    * @param {number} y - Row coordinate
    * @param {number} power - Weapon power
    * @param {Weapon|Object} weapon - The weapon being checked
-   * @param {Object} map - The map object
+   * @param {MapType} map - The map object
    * @param {Object} maps - The maps object with shapes
    * @returns {boolean} True if cell should be added as candidate
    */
   #shouldAddCandidate (x, y, power, weapon, map, maps) {
+    // @ts-ignore - map is MapType at runtime
     if (!map?.isInBoundsAt) return false
-    // @ts-ignore - isInBoundsAt method available at runtime
+    // @ts-ignore - isInBoundsAt method available at runtime on MapType
     if (!map.isInBoundsAt?.(x, y) || !this.score.isNewShot(x, y)) {
       return false
     }
@@ -2272,7 +2298,7 @@ export class Waters {
     // Add wake effect
     // @ts-ignore - this.UI is Board at runtime
     const board = /** @type {Board} */ (this.UI)
-    const cell = board.grid.nodeAt(x, y)
+    const cell = board.grid?.nodeAt(x, y)
     if (cell) {
       this.#addWake(cell, x, y, weapon)
     }
@@ -2285,7 +2311,7 @@ export class Waters {
     // Check protection
     const shipCell = this.#shipCellAt(x, y)
     // @ts-ignore - shapesByLetter available at runtime
-    const shape = maps.shapesByLetter[shipCell.letter]
+    const shape = maps?.shapesByLetter?.[shipCell?.letter]
     // @ts-ignore - weapon is Weapon at runtime with letter property
     const protection = shape?.protectionAgainst?.(weapon?.letter)
 
@@ -2302,7 +2328,7 @@ export class Waters {
    * @param {HTMLElement} cell - The cell to add wake to
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @param {Weapon} weapon - The weapon being used
+   * @param {Weapon|Object} weapon - The weapon being used
    * @returns {void}
    */
   #addWake (cell, x, y, weapon) {
@@ -2328,15 +2354,14 @@ export class Waters {
 
   /**
    * Handles the case when there are no hit candidates.
-   * @param {Weapon} weapon - The weapon
+   * @param {Weapon|Object} weapon - The weapon
    * @param {Array<Array<number>>} effect - The effect
-   * @param {Object} [options] - Additional options
-   * @returns {Promise<WeaponResult>} The destruction result
+   * @param {LaunchOptions} [options] - Additional options
+   * @returns {WeaponResult} The destruction result
    * @private
    */
-  async handleNoHits (weapon, effect, options = {}) {
+  handleNoHits (weapon, effect, options = {}) {
     // @ts-ignore - options may have crashLoc at runtime
-    // @ts-ignore - weapon cast at runtime, destroy expects Weapon
     if (!options?.crashLoc) {
       // No crash location: simple destruction with splash
       const splashEffect = this.selectSplashEffect(
@@ -2345,6 +2370,7 @@ export class Waters {
         effect,
         options
       )
+      // @ts-ignore - destroy expects [r,c,power][] array, cast at runtime
       return this.destroy(weapon, splashEffect, options)
     }
 
@@ -2356,6 +2382,7 @@ export class Waters {
       effect,
       options
     )
+    // @ts-ignore - destroy expects [r,c,power][] array, cast at runtime
     const firstResult = this.destroy(weapon, effect, options)
     // @ts-ignore - add isSplash property at runtime
     options.isSplash = true
@@ -2367,11 +2394,11 @@ export class Waters {
 
   /**
    * Handles the case when there are hit candidates.
-   * @param {Weapon} weapon - The weapon
+   * @param {Weapon|Object} weapon - The weapon
    * @param {Array<Array<number>>} effect - The effect
    * @param {Array<number>} target - The target
    * @param {Array<Array<number>>} hitCandidates - The hit candidates
-   * @param {Object} options - Additional options
+   * @param {LaunchOptions} options - Additional options
    * @returns {WeaponResult} The destruction result
    * @private
    */
@@ -2383,7 +2410,7 @@ export class Waters {
       effect,
       options
     )
-    // @ts-ignore - destroy method expects Weapon, cast at runtime
+    // @ts-ignore - destroy method expects [r,c,power][] array, cast at runtime
     return this.destroy(weapon, splashEffect, options)
   }
 
@@ -2391,10 +2418,10 @@ export class Waters {
    * Chooses the correct splash effect based on weapon state.
    * Determines whether to use crash splash or strike splash based on weapon configuration.
    *
-   * @param {Weapon} weapon - The weapon with splash configuration
+   * @param {Weapon|Object} weapon - The weapon with splash configuration
    * @param {Array<number>} resolvedTarget - Resolved hit target [r, c]
    * @param {Array<Array<number>>} effect - The original effect array
-   * @param {Object} [options] - Additional options (may include crashLoc)
+   * @param {LaunchOptions} [options] - Additional options (may include crashLoc)
    * @returns {Array<Array<number>>} The splash effect as [r, c, power] array
    * @private
    */
@@ -2448,9 +2475,9 @@ export class Waters {
   }
   /**
    * Resolves the target from hit candidates.
-   * @param {Array<any>} target - The provided target.
-   * @param {Array<any>} hitCandidates - The candidates.
-   * @returns {Array<any>} The resolved target.
+   * @param {Array<number>|null} target - The provided target.
+   * @param {Array<Array<number>>} hitCandidates - The candidates.
+   * @returns {Array<number>} The resolved target.
    */
   resolveTarget (target, hitCandidates) {
     if (!target || target.length < 2) {
@@ -2461,10 +2488,10 @@ export class Waters {
   /**
    * Destroys one target with the given weapon and effect.
    * @param {Weapon|Object} weapon - The weapon used
-   * @param {Array<any>} effect - The effect coordinates
-   * @param {Array<any>|null} [target] - Optional target coordinates
-   * @param {Object} [options] - Additional options for destruction
-   * @returns {WeaponResult|Promise<WeaponResult>} The result of the destruction
+   * @param {Array<Array<number>>} effect - The effect coordinates
+   * @param {Array<number>|null} [target] - Optional target coordinates
+   * @param {LaunchOptions} [options] - Additional options for destruction
+   * @returns {WeaponResult} The result of the destruction
    */
   destroyOne (weapon, effect, target = null, options = {}) {
     // @ts-ignore - weapon cast at runtime
@@ -2480,19 +2507,168 @@ export class Waters {
    * Checks if crash splash should be used.
    * @private
    * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<any>} resolvedTarget - The resolved target
-   * @param {Object} [options] - Additional firing options
+   * @param {Array<number>} resolvedTarget - The resolved target
+   * @param {LaunchOptions} [options] - Additional firing options
    * @returns {boolean} True if crash splash
    */
   shouldUseCrashSplash (weapon, resolvedTarget, options = {}) {
     // @ts-ignore - weapon.crashOverSplash available at runtime
+    if (!weapon?.crashOverSplash) return false
     // @ts-ignore - options.crashLoc available at runtime
+    if (!options?.crashLoc) return false
     return (
-      weapon.crashOverSplash &&
-      options?.crashLoc &&
-      resolvedTarget[0] === options?.crashLoc[0] &&
-      resolvedTarget[1] === options?.crashLoc[1]
+      resolvedTarget[0] === options.crashLoc[0] &&
+      resolvedTarget[1] === options.crashLoc[1]
     )
+  }
+
+  /**
+   * Destroys cells in an area with a weapon and effect.
+   * Applies weapon effects to target cells and handles hit/miss results.
+   *
+   * @param {Weapon|Object} weapon - The weapon being used
+   * @param {[number, number, number][]} effect - The effect area as coordinate array
+   * @param {LaunchOptions} [options] - Additional destruction options
+   * @returns {WeaponResult} The destruction result with hit/miss/sunk counts
+   */
+  destroy (weapon, effect, options = {}) {
+    // @ts-ignore - effect and options available at runtime
+    const normalized = this.#normalizeEffectArray(effect)
+    if (!normalized.isValid || normalized.filtered.length === 0) {
+      return {
+        hits: 0,
+        shots: 0,
+        dtap: 0,
+        sunk: 0,
+        reveals: 0,
+        info: 'Invalid effect'
+      }
+    }
+    // Accumulate hits from all affected cells
+    const accumulator = {
+      hits: 0,
+      shots: 0,
+      dtap: 0,
+      sunk: 0,
+      reveals: 0,
+      info: ''
+    }
+    for (const [r, c, power] of normalized.filtered) {
+      // @ts-ignore - applyToPosition available at runtime
+      const result = this.#applyToPosition(r, c, weapon, power, accumulator)
+      this.accumulateResult(result, accumulator)
+    }
+    return accumulator
+  }
+
+  /**
+   * Normalizes effect array to ensure all entries have [r, c, power] format.
+   * Filters out entries that don't have at least 3 elements.
+   *
+   * @param {Array<Array<number>>} effect - The effect array to normalize
+   * @returns {EffectNormalizationResult} Normalized effect with validity flag
+   * @private
+   */
+  #normalizeEffectArray (effect) {
+    // @ts-ignore - effect is array at runtime
+    const filtered = effect.filter((entry) => Array.isArray(entry) && entry.length >= 3)
+    return {
+      normalized: filtered,
+      isValid: Array.isArray(effect),
+      filtered: filtered
+    }
+  }
+
+  /**
+   * Applies weapon effect to a single position.
+   * @param {number} r - Row coordinate
+   * @param {number} c - Column coordinate
+   * @param {Weapon|Object} weapon - The weapon
+   * @param {number} power - Weapon power
+   * @param {WeaponResult} accumulator - Result accumulator
+   * @returns {WeaponResult} Position result
+   * @private
+   */
+  #applyToPosition (r, c, weapon, power, accumulator) {
+    // @ts-ignore - checkForHit available at runtime
+    return this.checkForHit(weapon, c, r, power, null) || accumulator
+  }
+
+  /**
+   * Processes a single cell hit or miss.
+   * @param {Weapon|Object} weapon - The weapon
+   * @param {number} x - Column
+   * @param {number} y - Row
+   * @param {number} power - Power level
+   * @param {Object} [shipCell] - The ship cell if hit
+   * @returns {WeaponResult|null} Hit result
+   * @private
+   */
+  checkForHit (weapon, x, y, power, shipCell) {
+    const ship = this.#shipAt(x, y)
+    if (!ship) {
+      return this.#processMiss(weapon, x, y)
+    }
+    // @ts-ignore - ship.hitAt available at runtime
+    return this.#processHit(weapon, ship, x, y, power)
+  }
+
+  /**
+   * Processes a hit on a ship.
+   * @param {Weapon|Object} weapon - The weapon
+   * @param {Ship|Object} ship - The hit ship
+   * @param {number} x - Column
+   * @param {number} y - Row
+   * @param {number} power - Power
+   * @returns {WeaponResult} Hit result
+   */
+  #processHit (weapon, ship, x, y, power) {
+    // @ts-ignore - ship.hitAt available at runtime
+    const hitResult = ship.hitAt?.(this, x, y)
+    return {
+      hits: hitResult ? 1 : 0,
+      shots: 1,
+      dtap: 0,
+      // @ts-ignore - ship.sunk is boolean at runtime
+      sunk: ship.sunk ? 1 : 0,
+      reveals: 0,
+      info: hitResult?.info || ''
+    }
+  }
+
+  /**
+   * Processes a miss.
+   * @param {Weapon|Object} weapon - The weapon
+   * @param {number} x - Column
+   * @param {number} y - Row
+   * @returns {WeaponResult} Miss result
+   * @private
+   */
+  #processMiss (weapon, x, y) {
+    return {
+      hits: 0,
+      shots: 1,
+      dtap: 0,
+      sunk: 0,
+      reveals: 0,
+      info: `Miss at (${x}, ${y})`
+    }
+  }
+
+  /**
+   * Gets ship at coordinates.
+   * @param {number} x - Column
+   * @param {number} y - Row
+   * @returns {Ship|null} Ship or null
+   */
+  #shipAt (x, y) {
+    for (const ship of this.ships) {
+      // @ts-ignore - ship.cells available at runtime
+      if (ship.cells?.some((cell) => cell[0] === x && cell[1] === y)) {
+        return ship
+      }
+    }
+    return null
   }
 
   /**
