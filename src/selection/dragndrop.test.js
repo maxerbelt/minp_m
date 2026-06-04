@@ -255,26 +255,6 @@ describe('dragndrop module', () => {
       })
 
       it('should handle highlight cells when ghost exists', () => {
-        const placeable = {
-          placeAt: jest.fn().mockReturnValue({
-            canPlace: jest.fn().mockReturnValue(true),
-            cells: [[0, 0, 1]]
-          })
-        }
-
-        const mockSelection = {
-          ghost: { setVariant: jest.fn() },
-          offsetCell: jest.fn().mockReturnValue([0, 0]),
-          placeable: jest.fn().mockReturnValue(placeable)
-        }
-
-        const mockViewmodel = {
-          removeHighlight: jest.fn(),
-          gridCellAt: jest.fn().mockReturnValue({
-            classList: { add: jest.fn() }
-          })
-        }
-
         // We can't easily test this without accessing internal state
         // but we can verify the functions exist
         expect(dragNDrop.highlight).toBeDefined()
