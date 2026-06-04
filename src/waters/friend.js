@@ -11,8 +11,6 @@ import { Placement } from './placement.js'
 // Constants
 // ============================================================================
 
-const ENEMY_TURN_DELAY = 50
-
 /**
  * @typedef {Object} WeaponLaunchResult
  * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used
@@ -159,7 +157,7 @@ const ENEMY_TURN_DELAY = 50
  */
 
 /**
- * @typedef {(weapon: Weapon, effect: Array) => void} RevealCallback
+ * @typedef {(weapon: Weapon, effect: Array<GridCoordinate>) => void} RevealCallback
  * Callback to handle scan weapon reveal effect.
  * @description Processes revealed cells from scan weapon area-of-effect
  */
@@ -180,7 +178,7 @@ const ENEMY_TURN_DELAY = 50
  * @property {HTMLElement} board - The main game board elemenT
  * @property {GridBoard} grid - The grid board instance
  * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
- * @property {(row: number, column: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
+ * @property {(x: number, y: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
  * @property {() => void} [clearVisuals] - Clear all visual effects from board
  * @property {() => void} [resetShips] - Reset ship cell styling
  * @property {(ships: Array<Object>) => void} [reset] - Reset UI with new ships
@@ -262,6 +260,7 @@ export class Friend extends Placement {
    * @property {Object|null} selectedCellCoordinates - Tracks selected target cell for two-click weapon firing in hide/seek mode
    */
   constructor (friendUI) {
+    // @ts-ignore - PlacementUI board may be null at runtime but required by Placement
     super(friendUI, Player.friend)
     /** @type {boolean} Controls test continuation */
     this.testContinue = true
@@ -296,6 +295,7 @@ export class Friend extends Placement {
 
   /**
    * Checks if autonomous test/seek mode should be cancelled.
+   * Used to stop test loop when user clicks stop button.
    * @returns {boolean} True if test should stop (testContinue is false)
    */
   isCancelled () {
@@ -327,13 +327,16 @@ export class Friend extends Placement {
 
     if (weapon) {
       // Always set the weapon mode and reset icons to ensure UI updates on weapon change
+      // @ts-ignore - _setWeaponMode and _resetAmmoIcons are private StatusUI methods
       gameStatus._setWeaponMode(weapon)
+      // @ts-ignore - _setWeaponMode and _resetAmmoIcons are private StatusUI methods
       gameStatus._resetAmmoIcons()
       // @ts-ignore - loadOut.selectedCoordinates is Array available in base Placement class at runtime
       gameStatus.displayAmmoStatus(
+        // @ts-ignore - WeaponSystem vs WeaponsSystem type difference in LoadOut vs StatusUI
         weaponSystem,
         bh.maps,
-        this.loadOut.selectedCoordinates.length,
+        this.loadOut.selectedCoordinates?.length ?? 0,
         null,
         this._hasUnattachedForCurrentWeapon?.()
       )
@@ -351,11 +354,11 @@ export class Friend extends Placement {
    * This information is passed to displayAmmoStatus to determine how to render
    * the ammo counter display (limited ammo vs step indicators).
    *
-   * @private
    * @returns {boolean} True if current weapon has unattached variants or is single shot
    */
   _hasUnattachedForCurrentWeapon () {
     return (
+      // @ts-ignore - seekingMode property available at runtime on bh
       bh.seekingMode ||
       // @ts-ignore - loadOut.isSingleShot is defined in base Placement class at runtime
       this.loadOut.isSingleShot ||
@@ -389,7 +392,7 @@ export class Friend extends Placement {
    * Excludes edge cells to avoid placing weapons near board perimeter.
    *
    * @param {MapInfo} map - Map with rows and cols properties
-   * @returns {Location} Location object with r (row) and c (col)
+   * @returns {{x: number, y: number}} Location object with x (col) and y (row)
    */
   #randomXY (map) {
     const y = Math.floor(Math.random() * (map.rows - 2)) + 1
@@ -473,13 +476,12 @@ export class Friend extends Placement {
    * Returns a function that launches the weapon at specified coordinates.
    * The returned function is bound to current map and game state.
    *
-   * @private
    * @param {WeaponSystem} weaponSystem - The weapon system to create launch function for
-   * @returns {(coords: Location) => Promise<WeaponLaunchResult>} Async function(coords) that launches weapon at target
+   * @returns {(coords: Location) => Promise<WeaponLaunchResult|Object|null>} Async function(coords) that launches weapon at target
    */
   createLaunchFunction (weaponSystem) {
     return async (/** @type {Location} */ coords) => {
-      // @ts-ignore - launchTo is private in Waters but accessible in subclass Friend
+      // @ts-ignore - launchTo is private in Waters but accessible in subclass Friend; may return Object at runtime
       return await this.launchTo(coords, bh.map.rows - 1, 0, weaponSystem)
     }
   }
@@ -565,7 +567,7 @@ export class Friend extends Placement {
    * Iterates through BOMB_ATTEMPTS tries, checking if coordinates are new shots.
    * Respects isCancelled() state and returns early if test is cancelled.
    *
-   * @returns {Promise<WeaponLaunchResult|null>} Result if successful, null if all BOMB_ATTEMPTS exhausted
+   * @returns {Promise<WeaponLaunchResult>} Result if successful, noResult if all BOMB_ATTEMPTS exhausted
    */
   async #attemptBomb () {
     for (let attempt = 0; attempt < SEEK_CONSTANTS.BOMB_ATTEMPTS; attempt++) {
@@ -577,7 +579,7 @@ export class Friend extends Placement {
         return await this.#attemptLaunchWithFallback(x, y)
       }
     }
-    return null
+    return this.noResult
   }
 
   /**
@@ -635,7 +637,7 @@ export class Friend extends Placement {
         return await this.launchCurrentWeapon(...loc)
       }
     }
-    return null
+    return this.noResult
   }
 
   /**
@@ -657,7 +659,6 @@ export class Friend extends Placement {
    * Sets up reveal handler (scan callback) before launching scan weapon.
    * Returns result with scan weapon and score information.
    *
-   * @private
    * @returns {Promise<WeaponLaunchResult>} Result with scan weapon and score
    */
   async #randomScan () {
@@ -786,13 +787,17 @@ export class Friend extends Placement {
    * @returns {Promise<WeaponLaunchResult|null>} Result from finish strategy or null if no revealed targets
    */
   async #finishRevealed () {
-    // @ts-ignore - score.reveal is Bitmask at runtime with occupancy property
-    const reveal = /** @type {Bitmask} */ (this.score.reveal)
+    // @ts-ignore - score.reveal is Bitmask at runtime with occupancy property, cast via unknown
+    const reveal = /** @type {Bitmask} */ (
+      /** @type {unknown} */ (this.score.reveal)
+    )
     if (reveal.occupancy === 0) return null
     // @ts-ignore - score.reveal and score.shot are Bitmask methods available at runtime
+    // @ts-ignore - reveal.take returns Bitmask at runtime
     this.score.reveal = reveal.take(this.score.shot)
     return await this.#finishMaskCandidates(
-      /** @type {Bitmask} */ (this.score.reveal)
+      // @ts-ignore - score.reveal is Bitmask at runtime, cast via unknown for type safety
+      /** @type {Bitmask} */ (/** @type {unknown} */ (this.score.reveal))
     )
   }
 
@@ -1166,6 +1171,7 @@ export class Friend extends Placement {
       weaponSystem = this.loadOut.currentWeaponSystem
     }
 
+    // @ts-ignore - seekingMode property available at runtime on bh
     if (!bh.seekingMode || bh.terrain?.title !== 'Space and Asteroids') {
       return false
     }
@@ -1290,6 +1296,7 @@ export class Friend extends Placement {
     }
 
     // Only allow weapon selection in hide/seek mode with attached weapons
+    // @ts-ignore - seekingMode property available at runtime on bh
     if (!bh.seekingMode || !bh.terrain.hasAttachedWeapons) {
       return
     }
@@ -1341,7 +1348,7 @@ export class Friend extends Placement {
    * Comprehensive board initialization including ship placement and weapon UI.
    * Rebuilds board, trays, and updates display with ship information.
    *
-   * @param {Ship[]} [ships] - The ships to place. Uses this.ships if not provided.
+   * @param {Object[]} [ships] - The ships to place. Uses this.ships if not provided.
    * @returns {void}
    */
   resetUI (ships) {
