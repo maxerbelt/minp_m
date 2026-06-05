@@ -1414,7 +1414,7 @@ export class Ship {
       model.loadOut.useAmmo(weaponSystem)
     }
 
-    const cell = viewModel.gridCellAt(y, x)
+    const cell = viewModel.grid.nodeAt(x, y)
     viewModel.useAmmoInCell(cell, damaged)
     model.updateUI()
 

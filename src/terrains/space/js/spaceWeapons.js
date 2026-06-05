@@ -63,7 +63,6 @@ import { coordToKey } from '../../../core/utilities.js'
  * Used for animation target selection and coordinate-to-element mapping.
  *
  * @typedef {Object} ViewModel
- * @property {(row: number, col: number) => HTMLElement} gridCellAt - Returns HTML element for board cell at coordinates
  * @property {() => number} cellSize - Returns size in pixels of each grid cell
  */
 
@@ -367,8 +366,11 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
   // RailBolt visuals should mark the full line across the board, not only the
   // selected rack-to-target segment. `redoCoords()` on Strike-derived weapons
   // normalizes the line to map intercepts, which is the intended portal path.
-  const [[lineStartRow, lineStartCol], [lineEndRow, lineEndCol]] =
-    weapon.redoCoords(map, [sourceRow, sourceCol], coords)
+  const [[lineStartY, lineStartX], [lineEndY, lineEndX]] = weapon.redoCoords(
+    map,
+    [sourceRow, sourceCol],
+    coords
+  )
 
   // Resolve the actual hit target separately so launch semantics remain correct.
   // The portal markers are purely decorative: they do not affect whether the
@@ -381,10 +383,10 @@ async function performPortalAnimation (weapon, coords, context, map, gameModel) 
   )
 
   const cells = {
-    sourceCell1: opposingViewModel.gridCellAt(lineStartRow, lineStartCol),
-    targetCell1: opposingViewModel.gridCellAt(lineEndRow, lineEndCol),
-    sourceCell2: viewModel.gridCellAt(lineStartRow, lineStartCol),
-    targetCell2: viewModel.gridCellAt(lineEndRow, lineEndCol)
+    sourceCell1: opposingViewModel.grid.nodeAt(lineStartX, lineStartY),
+    targetCell1: opposingViewModel.grid.nodeAt(lineEndX, lineEndY),
+    sourceCell2: viewModel.grid.nodeAt(lineStartX, lineStartY),
+    targetCell2: viewModel.grid.nodeAt(lineEndX, lineEndY)
   }
   addPortalClasses(cells)
 
@@ -585,8 +587,8 @@ export class Missile extends Bomb {
       coords
     )
 
-    const sourceCell = opposingViewModel.gridCellAt(startRow, startCol)
-    const targetCell = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+    const sourceCell = opposingViewModel.grid.nodeAt(startCol, startRow)
+    const targetCell = viewModel.grid.nodeAt(targetCoord[1], targetCoord[0])
 
     // Perform the animation (does not return target info), then
     // return the resolved target so upstream callers can use it
@@ -1114,9 +1116,9 @@ export class GaussRound extends Fish {
     // Use the hint/source coordinates for portal decoration on both boards.
     // GaussRound portals should appear at the hinted launch source, not at a
     // normalized line origin if the path is adjusted separately for impact.
-    const sourceCell1 = opposingViewModel.gridCellAt(sourceRow, sourceCol)
-    const sourceCell2 = viewModel.gridCellAt(sourceRow, sourceCol)
-    const targetCell2 = viewModel.gridCellAt(targetCoord[0], targetCoord[1])
+    const sourceCell1 = opposingViewModel.grid.nodeAt(sourceCol, sourceRow)
+    const sourceCell2 = viewModel.grid.nodeAt(sourceCol, sourceRow)
+    const targetCell2 = viewModel.grid.nodeAt(targetCoord[1], targetCoord[0])
 
     const oldClassName1 = sourceCell1.className
     const oldClassName2 = sourceCell2.className

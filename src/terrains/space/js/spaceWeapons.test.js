@@ -127,6 +127,22 @@ describe('spaceWeapons basic behavior', () => {
     const viewCells = new Map()
     const oppoCells = new Map()
     const viewModel = {
+      grid: {
+        nodeAt: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!viewCells.has(key)) viewCells.set(key, createPortalCell(key))
+          return viewCells.get(key)
+        }),
+        node: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!viewCells.has(key)) viewCells.set(key, createPortalCell(key))
+          return viewCells.get(key)
+        })
+      },
       gridCellAt: jest.fn((row, col) => {
         const rowIndex = Number(row)
         const colIndex = Number(col)
@@ -137,6 +153,22 @@ describe('spaceWeapons basic behavior', () => {
       cellSize: () => 10
     }
     const opposingViewModel = {
+      grid: {
+        nodeAt: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!oppoCells.has(key)) oppoCells.set(key, createPortalCell(key))
+          return oppoCells.get(key)
+        }),
+        node: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!oppoCells.has(key)) oppoCells.set(key, createPortalCell(key))
+          return oppoCells.get(key)
+        })
+      },
       gridCellAt: jest.fn((row, col) => {
         const rowIndex = Number(row)
         const colIndex = Number(col)
@@ -163,10 +195,10 @@ describe('spaceWeapons basic behavior', () => {
       gameModel
     )
 
-    expect(opposingViewModel.gridCellAt).toHaveBeenCalledWith(0, 0)
-    expect(opposingViewModel.gridCellAt).toHaveBeenCalledWith(9, 9)
-    expect(viewModel.gridCellAt).toHaveBeenCalledWith(0, 0)
-    expect(viewModel.gridCellAt).toHaveBeenCalledWith(9, 9)
+    expect(opposingViewModel.grid.nodeAt).toHaveBeenCalledWith(0, 0)
+    expect(opposingViewModel.grid.nodeAt).toHaveBeenCalledWith(9, 9)
+    expect(viewModel.grid.nodeAt).toHaveBeenCalledWith(0, 0)
+    expect(viewModel.grid.nodeAt).toHaveBeenCalledWith(9, 9)
 
     const sourceOpposite = oppoCells.get('0,0')
     const targetOpposite = oppoCells.get('9,9')
@@ -258,6 +290,14 @@ describe('spaceWeapons basic behavior', () => {
       .mockImplementation(async () => ({}))
 
     const viewModel = {
+      grid: {
+        nodeAt: jest.fn(() => ({
+          classList: { add: jest.fn(), remove: jest.fn() }
+        })),
+        node: jest.fn(() => ({
+          classList: { add: jest.fn(), remove: jest.fn() }
+        }))
+      },
       gridCellAt: jest.fn(() => ({
         classList: { add: jest.fn(), remove: jest.fn() }
       })),
@@ -285,7 +325,7 @@ describe('spaceWeapons basic behavior', () => {
     )
 
     expect(result).toEqual({})
-    expect(viewModel.gridCellAt).toHaveBeenCalled()
+    expect(viewModel.grid.nodeAt).toHaveBeenCalled()
   })
 
   it('GaussRound.processCoords accepts flat target coordinates without throwing', () => {

@@ -156,7 +156,7 @@ export class Weapon {
    * @param {any} [opposingViewModel] - Optional opposing player view model
    * @returns {any} Selected grid cell DOM element
    */
-  #getSourceCell (y, x, viewModel, opposingViewModel) {
+  #getSourceCell (x, y, viewModel, opposingViewModel) {
     if (this.nonAttached) {
       return viewModel.grid.nodeAt(x, y)
     }
@@ -185,7 +185,6 @@ export class Weapon {
    * Get flight sound URL for this weapon.
    * Override in subclasses to provide weapon-specific sound.
    *
-   * @readonly
    * @returns {URL|null} URL to flight sound file, or null if silent
    */
   get flightSound () {
@@ -196,7 +195,6 @@ export class Weapon {
    * Get CSS class name for weapon selection button.
    * Automatically generated from weapon tag.
    *
-   * @readonly
    * @returns {string} CSS class identifier for button
    */
   get btnClass () {
@@ -219,7 +217,6 @@ export class Weapon {
    * Get boom/explosion sound URL for this weapon.
    * Override in subclasses to provide weapon-specific boom sound.
    *
-   * @readonly
    * @returns {URL|null} URL to boom sound file, or null for default
    */
   get boomSound () {
@@ -635,14 +632,14 @@ export class Weapon {
     }
 
     const processCoords = processor || this.redoCoords.bind(this)
-    const [[r, c], target, hasCandidates] = processCoords(
+    const [[y, x], target, hasCandidates] = processCoords(
       map,
       [rr, cc],
       coords,
       model
     )
-    const sourceCell = this.#getSourceCell(r, c, viewModel, opposingViewModel)
-    const targetCell = viewModel.gridCellAt(target[0], target[1])
+    const sourceCell = this.#getSourceCell(x, y, viewModel, opposingViewModel)
+    const targetCell = viewModel.grid.nodeAt(target[1], target[0])
     await this.animateFlyingOnVM(sourceCell, targetCell, viewModel)
     return hasCandidates ? { target } : {}
   }

@@ -927,7 +927,7 @@ class DragNDrop {
    * Called during dragenter and when transformations occur to update visual feedback.
    * Applies 'good' class for valid placements, 'notgood' for terrain conflicts, 'bad' for collisions.
    *
-   * @param {ViewModel} viewModel - The view model providing gridCellAt and removeHighlight
+   * @param {ViewModel} viewModel - The view model providing grid and removeHighlight
    * @param {Object} shipCellGrid - The multi-bit grid for collision detection and placement validation
    * @param {number} [cursorX] - Column coordinate; uses state.lastEntered[1] if null/undefined
    * @param {number} [cursorY] - Row coordinate; uses state.lastEntered[0] if null/undefined
@@ -1018,7 +1018,7 @@ class DragNDrop {
    * Iterates through cells, validates bounds, adds 'good'/'notgood'/'bad' class.
    * Skips cells outside map bounds to prevent console errors.
    *
-   * @param {ViewModel} viewModel - The view model providing gridCellAt for DOM access
+   * @param {ViewModel} viewModel - The view model providing grid.nodeAt for DOM access
    * @param {Array<[number, number]>} cells - Array of [col, row] cells to highlight
    * @param {boolean} isPlacementValid - Whether placement is valid (determines class type)
    * @param {Object} placement - Placement object with notGood constraint grid
