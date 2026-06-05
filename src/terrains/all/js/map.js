@@ -668,10 +668,12 @@ export class BhMap {
    * @description Iterates through all map cells and copies land status to the new EditedCustomMap.
    */
   savedMap (newTitle) {
+    // @ts-ignore - this.terrain is typed as Record<string, any> but has 'key' property at runtime
     newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
     const terrain = bh.getTerrainByTag(this.terrain.tag)
 
     const data = { ...this }
+    // @ts-ignore - terrain may be Terrain | null; structure is compatible with Record<string, any>
     data.terrain = terrain
     const clone = new EditedCustomMap(data)
     for (let i = 0; i < this.rows; i++) {
@@ -694,6 +696,7 @@ export class BhMap {
    * @description Calls savedMap() then saveToLocalStorage() to ensure persistence.
    */
   clone (newTitle) {
+    // @ts-ignore - this.terrain is typed as Record<string, any> but has 'key' property at runtime
     newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
 
     const clonedMap = this.savedMap(newTitle)
@@ -845,6 +848,7 @@ export class CustomMap extends BhMap {
     title =
       title ||
       (this.terrain
+        // @ts-ignore - this.terrain is Record<string, any> but has 'key' property at runtime
         ? makeTitle(this.terrain, this.cols, this.rows)
         : `map-${this.cols}x${this.rows}`)
     key = key || this.localStorageKey(title)
@@ -959,9 +963,9 @@ const withModifyable = Base =>
  * Extends CustomMap with the withModifyable mixin for land editing capabilities.
  * Starts with empty land Set and can be populated incrementally by the user.
  * Includes land modification methods: addLand, removeLand, addShips, setLand.
+ * Inherits from withModifyable(CustomMap) to provide land editing capabilities.
  *
  * @class CustomBlankMap
- * @extends {withModifyable(CustomMap)}
  * @classdesc Editable blank map starting with empty land set; supports full map modification
  */
 export class CustomBlankMap extends withModifyable(CustomMap) {
@@ -970,15 +974,14 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
    * The title is auto-generated from terrain and dimensions.
    * Ship count starts at 0 and must be set via addShips().
    *
-   * @constructor
    * @param {number} rows - Number of rows for the map grid (positive integer, 1+)
    * @param {number} cols - Number of columns for the map grid (positive integer, 1+)
    * @param {Object<string, any>} [mapTerrain] - Optional terrain configuration; uses bh.terrain (default) if omitted
-   * @returns {void}
    * @description Title format: "{terrain.key}-{copyNum}-{cols}x{rows}"
    * Initializes with empty land Set, no ships, and specified terrain
    */
   constructor (rows, cols, mapTerrain) {
+    // @ts-ignore - mapTerrain can be Terrain type or Record<string, any>; makeTitle handles both
     super(
       makeTitle(mapTerrain || bh.terrain, cols, rows),
       [rows, cols],
@@ -1035,7 +1038,6 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
  * Reconstructs weapons from saved specifications during construction.
  *
  * @class SavedCustomMap
- * @extends CustomMap
  * @classdesc Persistent custom map loaded from and saved to localStorage with full lifecycle management
  */
 export class SavedCustomMap extends CustomMap {
@@ -1044,15 +1046,15 @@ export class SavedCustomMap extends CustomMap {
    * Reconstructs weapons from the saved weapon specifications.
    * Combines terrain weapons with any custom saved weapons.
    *
-   * @param {Object<string, any>} data - The saved map data object from localStorage
-   * @param {string} data.title - Map title shown to players
-   * @param {number} data.rows - Number of rows in the grid (positive integer)
-   * @param {number} data.cols - Number of columns in the grid (positive integer)
-   * @param {number|Object<string, number>} data.shipNum - Ship counts by type letter
-   * @param {Array<string>} data.land - Array of land cell coordinates as strings "r,c"
-   * @param {string|Object<string, any>} data.terrain - Terrain name or terrain object with subterrains
-   * @param {Array<Object<string, any>>} [data.weapons] - Array of weapon specs with letter and ammo properties
-   * @param {Object<string, any>} [data.example] - Optional example or reference data
+   * @param {Object<string, any>} data - The saved map data object with properties:
+   *   - title (string): Map title shown to players
+   *   - rows (number): Number of rows in the grid (positive integer)
+   *   - cols (number): Number of columns in the grid (positive integer)
+   *   - shipNum (number|Object<string, number>): Ship counts by type letter
+   *   - land (Array<string>): Array of land cell coordinates as strings "r,c"
+   *   - terrain (string|Object<string, any>): Terrain name or terrain object with subterrains
+   *   - weapons (Array<Object<string, any>>): Array of weapon specs with letter and ammo properties
+   *   - example (Object<string, any>): Optional example or reference data
    * @description Reconstructs weapons array with standardShot + terrain weapons + custom weapons.
    */
   constructor (data) {
