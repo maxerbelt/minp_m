@@ -107,6 +107,7 @@ export class BhMap {
 
     const landMask = this.blankMask
     if (this.landArea && this.landArea.length > 0) {
+      // @ts-ignore - RangeElement[] compatible with LocationRange[] for setRanges operation
       landMask.setRanges(this.landArea)
     } else {
       for (const coord of this.land) {
@@ -115,6 +116,7 @@ export class BhMap {
       }
     }
     this.landMask = landMask
+    // @ts-ignore - mask.bits can be bigint or lazy-loaded function; direct assignment accepted here
     this.landBits = landMask.bits
 
     lazy(this, 'defaultTerrainBits', () => {
@@ -123,6 +125,7 @@ export class BhMap {
 
     lazy(this, 'defaultTerrainMask', () => {
       const mask = this.blankMask
+      // @ts-ignore - defaultTerrainBits is lazy-loaded and guaranteed to be bigint when accessed
       mask.bits = this.defaultTerrainBits
       return mask
     })
@@ -205,7 +208,11 @@ export class BhMap {
    */
   get extraArmedFleetForMap () {
     const repeatShapes = this.newShapesForMap
-    const ships = bh.extraFleetBuilder(repeatShapes, /** @type {(s: any) => boolean} */ (s => s.isAttachedToRack))
+    // @ts-ignore - extraFleetBuilder may not be typed in bh; creates filtered fleet with armed ships
+    const ships = bh.extraFleetBuilder(
+      repeatShapes,
+      /** @type {(s: any) => boolean} */ (s => s.isAttachedToRack)
+    )
     return ships
   }
 
@@ -222,6 +229,7 @@ export class BhMap {
    */
   get newFleetForMap () {
     const repeatShapes = this.newShapesForMap
+    /** @type {Array<Object>} */
     const ships = bh.fleetBuilder(repeatShapes)
     return ships
   }
@@ -243,7 +251,12 @@ export class BhMap {
     const baseShapes = terrain.ships.baseShapes
     const shipNum = this.shipNum
     const repeatShapes = baseShapes.flatMap(
-      /** @type {(s: any) => any[]} */ (s => new Array(/** @type {Record<string, number>} */ (shipNum)[s.letter] || 0).fill(s) || [])
+      /** @type {(s: any) => any[]} */ (
+        s =>
+          new Array(
+            /** @type {Record<string, number>} */ (shipNum)[s.letter] || 0
+          ).fill(s) || []
+      )
     )
     return repeatShapes
   }
@@ -263,7 +276,9 @@ export class BhMap {
    * randomEdge() // Returns random edge
    */
   randomEdge (r, c) {
+    /** @type {number|null} */
     let edge = null
+    /** @type {Array<number>} */
     let list = []
 
     if (r !== undefined) {
@@ -278,6 +293,7 @@ export class BhMap {
       edge = Random.element(list)
     }
 
+    // @ts-ignore - edge is guaranteed to be number or undefined here, null is filtered by randomEdgeFor
     return this.randomEdgeFor(edge)
   }
 
@@ -414,7 +430,9 @@ export class BhMap {
   surround (x, y) {
     /** @type {Array<Array<number>>} */
     const surroundings = []
-    const isValid = /** @type {(rr: number, cc: number) => boolean} */ ((rr, cc) => (cc !== x || rr !== y) && this.inBounds(rr, cc))
+    const isValid = /** @type {(rr: number, cc: number) => boolean} */ (
+      (rr, cc) => (cc !== x || rr !== y) && this.inBounds(rr, cc)
+    )
     this.surroundBase(x, y, isValid, surroundings)
     return surroundings
   }
@@ -525,10 +543,11 @@ export class BhMap {
    * @public
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @param {Object} [zoneDetail] - Optional pre-calculated zone detail (avoids recalculation)
+   * @param {number|Object} [zoneDetail] - Optional pre-calculated zone detail (avoids recalculation)
    * @returns {Object} Zone information object
    */
   zoneInfo (x, y, zoneDetail) {
+    // @ts-ignore - zoneDetail can be number or object depending on implementation
     return this.subterrainTrackers.zoneInfo(x, y, zoneDetail)
   }
 
@@ -1001,7 +1020,9 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
     this.rows = rows
     this.cols = cols
     for (const key of this.land) {
-      const [r, c] = key.split(',').map(/** @type {(n: string) => number} */ (n => Number.parseInt(n, 10)))
+      const [r, c] = key
+        .split(',')
+        .map(/** @type {(n: string) => number} */ (n => Number.parseInt(n, 10)))
       if (!this.inBounds(r, c)) this.land.delete(key)
     }
   }
@@ -1048,7 +1069,11 @@ export class SavedCustomMap extends CustomMap {
 
     // Get saved custom weapons
     const customWeapons = this.terrain
-      ? data.weapons.map(/** @type {(w: any) => any} */ (w => this.terrain.getNewWeapon(w.letter, w.ammo)))
+      ? data.weapons.map(
+          /** @type {(w: any) => any} */ (
+            w => this.terrain.getNewWeapon(w.letter, w.ammo)
+          )
+        )
       : []
 
     // Include terrain's default weapons plus any custom saved weapons
