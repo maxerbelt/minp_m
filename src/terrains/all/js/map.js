@@ -230,6 +230,7 @@ export class BhMap {
   get newFleetForMap () {
     const repeatShapes = this.newShapesForMap
     /** @type {Array<Object>} */
+    // @ts-ignore - bh.fleetBuilder is untyped but returns array-like structure at runtime
     const ships = bh.fleetBuilder(repeatShapes)
     return ships
   }
@@ -290,6 +291,7 @@ export class BhMap {
       list.push(edge)
     }
     if (list.length > 0) {
+      // @ts-ignore - Random.element can return undefined, but we know list has elements here
       edge = Random.element(list)
     }
 
@@ -848,8 +850,8 @@ export class CustomMap extends BhMap {
     title =
       title ||
       (this.terrain
-        // @ts-ignore - this.terrain is Record<string, any> but has 'key' property at runtime
-        ? makeTitle(this.terrain, this.cols, this.rows)
+        ? // @ts-ignore - this.terrain is Record<string, any> but has 'key' property at runtime
+          makeTitle(this.terrain, this.cols, this.rows)
         : `map-${this.cols}x${this.rows}`)
     key = key || this.localStorageKey(title)
 
@@ -870,6 +872,7 @@ export class CustomMap extends BhMap {
    * @returns {string} The localStorage key in format: `{oldToken}.{title}`
    */
   localStorageKey (title) {
+    // @ts-ignore - this.terrain is Record<string, any> but has 'key' property at runtime
     this.title = title || makeTitle(this.terrain, this.cols, this.rows)
     return `${oldToken}.${this.title}`
   }
@@ -930,6 +933,7 @@ const withModifyable = Base =>
      * @modifies this.shipNum - Replaces with object mapping letter to count
      */
     addShips (ships) {
+      /** @type {Record<string, number>} */
       this.shipNum = {}
       for (const ship of ships) {
         this.shipNum[ship.letter] = (this.shipNum[ship.letter] || 0) + 1
@@ -1186,6 +1190,7 @@ export class SavedCustomMap extends CustomMap {
    * @description Saves clone with same key as this map, ensuring proper localStorage persistence.
    */
   clone (newTitle) {
+    // @ts-ignore - this.terrain is Record<string, any> but has 'key' property at runtime
     newTitle = newTitle || makeTitle(this.terrain, this.cols, this.rows)
     this.title = newTitle
     const key = this.localStorageKey()
