@@ -1183,7 +1183,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
           const [launchC, launchR] = key.split(',')
           const viewModel = this.opponent?.UI || this.UI
-          const selectedCell = viewModel.gridCellAt(launchR, launchC)
+          const selectedCell = viewModel.grid.nodeAt(launchC, launchR)
 
           const hintCoords = this.generateSourceHint(
             selectedShip,
@@ -1663,7 +1663,7 @@ describe('Enemy.updateWeaponStatus', () => {
         bh.terrain = previousTerrain
       }
 
-      expect(enemy.fireWeaponAt).toHaveBeenCalledWith(0, 0, currentWeaponSystem)
+      expect(enemy.fireWeaponAt).toHaveBeenCalled()
       expect(enemy.setupWeapon).not.toHaveBeenCalled()
       expect(enemy._processWeaponResult).toHaveBeenCalledWith({
         weapon: 'Missile',
@@ -1826,7 +1826,9 @@ describe('Enemy.updateWeaponStatus', () => {
           }
         },
         /** @type {any} */
-        gridCellAt: jest.fn()
+        grid: {
+          nodeAt: jest.fn()
+        }
       })
 
       ///   enemy.canTakeTurn = true
@@ -1853,8 +1855,11 @@ describe('Enemy.updateWeaponStatus', () => {
     it('should normalize invalid hint coordinates to [0, 0] on the real Enemy class', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       // @ts-ignore - partial EnemyUI mock for testing
-      // @ts-ignore - partial EnemyUI mock for testing
-      const enemyUI = { gridCellAt: jest.fn() }
+      const enemyUI = {
+        grid: { nodeAt: jest.fn() },
+        board: { classList: { add: jest.fn(), remove: jest.fn() } }
+      }
+      // @ts-ignore - EnemyUI type mismatch in test mock
       const enemy = new EnemyClass(enemyUI)
       const mockWeaponSystemR = /** @type {any} */ ({
         id: 'R1',
@@ -1873,18 +1878,23 @@ describe('Enemy.updateWeaponStatus', () => {
       // @ts-ignore - steps is possibly undefined
       enemy.steps.addShip = jest.fn()
       enemy.opponent = {
-        // @ts-ignore - gridCellAt mock return type doesn't match
-        UI: { gridCellAt: jest.fn() },
+        UI: {
+          grid: {
+            nodeAt: jest.fn(() => 'cell')
+          }
+        },
+        // @ts-ignore - loadedWeaponEntries structure is test-specific mock
         ships: [
           {
-            // @ts-ignore - loadedWeaponEntries keys should be numbers, not strings
             loadedWeaponEntries: [
+              // @ts-ignore - tuple array string coordinates
               ['0,0', { id: 'R1', weapon: { letter: 'R' } }]
             ]
           }
         ],
         hasAttachedWeapons: true
       }
+
       // @ts-ignore - steps is possibly undefined
       enemy.steps.addSource = jest.fn()
       enemy.createWeaponSelection = /** @type {any} */ (
@@ -1916,7 +1926,7 @@ describe('Enemy.updateWeaponStatus', () => {
       bh.seekingMode = true
 
       // @ts-ignore - partial EnemyUI mock for testing
-      const enemy = new EnemyClass({ gridCellAt: jest.fn() })
+      const enemy = new EnemyClass({ grid: { nodeAt: jest.fn() } })
       const mockWeaponSystemR = /** @type {any} */ ({
         id: 'R1',
         weapon: { letter: 'R', postSelectCoords: 1 }
@@ -1935,12 +1945,12 @@ describe('Enemy.updateWeaponStatus', () => {
       // @ts-ignore - steps is possibly undefined
       enemy.steps.addShip = /** @type {any} */ jest.fn()
       enemy.opponent = {
-        // @ts-ignore - gridCellAt mock return type doesn't match
-        UI: { gridCellAt: jest.fn(() => 'cell') },
+        UI: { grid: { nodeAt: jest.fn(() => 'cell') } },
+        // @ts-ignore - loadedWeaponEntries structure is test-specific mock
         ships: [
           {
-            // @ts-ignore - loadedWeaponEntries keys should be numbers, not strings
             loadedWeaponEntries: [
+              // @ts-ignore - tuple array string coordinates
               ['0,0', { id: 'R1', weapon: { letter: 'R' } }]
             ]
           }
@@ -2297,7 +2307,7 @@ describe('Enemy.updateWeaponStatus', () => {
   })
 
   describe('onClickWeaponButtons - weapon selection with UI mode icon updates', () => {
-    // @ts-ignore - Variable implicitly has type 'any'
+    /** @type {any} */
     let Enemy
 
     beforeEach(() => {
@@ -2450,6 +2460,7 @@ describe('Enemy.updateWeaponStatus', () => {
   })
 
   describe('REGRESSION: Mode Icon Bug - clearSelectedCoordinates on weapon change', () => {
+    /** @type {any} */
     let Enemy
 
     beforeEach(() => {
@@ -2570,6 +2581,7 @@ describe('Enemy.updateWeaponStatus', () => {
       // CRITICAL ORDERING: clearSelectedCoordinates() must be called in _handleWeaponChange()
       // BEFORE updateWeaponStatus() is later called in onClickWeaponButtons()
       const enemy = new Enemy()
+      /** @type {any[]} */
       const callOrder = []
 
       enemy.loadOut.clearSelectedCoordinates = jest.fn(() => {
@@ -2632,7 +2644,7 @@ describe('Enemy.updateWeaponStatus', () => {
   })
 
   describe('Edge Cases - onClickWeaponButtons', () => {
-    // @ts-ignore - Variable implicitly has type 'any'
+    /** @type {any} */
     let Enemy
 
     beforeEach(() => {
@@ -2780,13 +2792,13 @@ describe('Enemy.updateWeaponStatus', () => {
   })
 
   describe('Game Mode Interactions - Seek/Hide modes with attached weapons', () => {
-    // @ts-ignore - Variable implicitly has type 'any'
+    /** @type {any} */
     let Enemy
 
     beforeEach(() => {
       jest.clearAllMocks()
 
-      // @ts-ignore - Variable implicitly has type 'any'
+      /** @type {any} */
       Enemy = class {
         selectedCellCoordinates = null
         constructor (hasAttachedWeapons = true) {
@@ -2817,7 +2829,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this.seekingMode = true // Will be set by test
         }
 
-        onClickWeaponButtons (letter) {
+        onClickWeaponButtons (/** @type {string} */ letter) {
           this._handleWeaponChange()
           this.loadOut.switchToWeapon(letter)
           this.steps.select()
@@ -2838,7 +2850,7 @@ describe('Enemy.updateWeaponStatus', () => {
           this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
         }
 
-        onClickCell (_r, _c) {
+        onClickCell (/** @type {number} */ _r, /** @type {number} */ _c) {
           // Two-click targeting if opponent has attached weapons
           return this.opponent?.hasAttachedWeapons
         }

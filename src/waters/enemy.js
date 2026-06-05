@@ -1344,10 +1344,9 @@ class Enemy extends Waters {
     const postSelectCoords = currentWeapon?.weapon?.postSelectCoords ?? 0
     // @ts-ignore - bh.seekingMode is dynamically set, not in type definition
     const isSeekSource = bh.seekingMode && postSelectCoords > 0
-    const sourceRow = isSeekSource ? r : launchR
-    const sourceCol = isSeekSource ? c : launchC
-    // @ts-ignore - gridCellAt is on EnemyUI
-    const sourceCell = viewModel?.nodeAt?.(sourceCol, sourceRow)
+    const sourceY = isSeekSource ? r : launchR
+    const sourceX = isSeekSource ? c : launchC
+    const sourceCell = viewModel?.grid.nodeAt?.(sourceX, sourceY)
 
     const hintCoords = isSeekSource
       ? [r, c]
@@ -1357,7 +1356,7 @@ class Enemy extends Waters {
         )
 
     // @ts-ignore - viewModel type is EnemyUI and this.steps is typed as Object
-    this.steps?.addSource?.(viewModel, sourceRow, sourceCol, sourceCell)
+    this.steps?.addSource?.(viewModel, sourceY, sourceX, sourceCell)
 
     // Create weapon selection for the current weapon. In pure seek mode,
     // the clicked location becomes the source hint for two-step weapons.
@@ -1711,7 +1710,7 @@ class Enemy extends Waters {
       return false
     }
 
-    const cell = this.UI.nodeAt(x, y)
+    const cell = this.UI.grid.nodeAt(x, y)
     if (bh.subTerrainTagFromCell(cell) !== 'asteroid') {
       return false
     }

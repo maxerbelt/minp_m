@@ -226,8 +226,8 @@ export class Steps {
    * @property {TurnCallback} onSelect - Callback when transitioning to selection mode
    */
   constructor (player) {
-    this._initializeState(player)
-    this._initializeCallbacks()
+    this.#initializeState(player)
+    this.#initializeCallbacks()
   }
 
   /**
@@ -235,13 +235,12 @@ export class Steps {
    * Sets player identifier and resets all source/targeting fields to null.
    * Mode is set to 'othersTurn' (waiting for turn to begin).
    *
-   * @private
    * @param {string} player - Player identifier (FRIEND or ENEMY)
    * @returns {void}
    */
-  _initializeState (player) {
+  #initializeState (player) {
     this.player = player
-    this._resetSourceFields()
+    this.#resetSourceFields()
     this.mode = WeaponMode.othersTurn
   }
 
@@ -251,10 +250,9 @@ export class Steps {
    * NOOP serves as default to prevent errors if callbacks are invoked before assignment.
    * Ensures all callbacks have defined functions even before game controller assignment.
    *
-   * @private
    * @returns {void}
    */
-  _initializeCallbacks () {
+  #initializeCallbacks () {
     /** @type {WeaponChangeCallback} */
     this.onChangeWeapon = NOOP
     /** @type {WeaponActivationCallback} */
@@ -278,10 +276,9 @@ export class Steps {
    * Called when deselecting a weapon or ending a turn.
    * Clears: wletter, sourceRack, source, sourceShip, sourceHint, sourceShadow, target.
    *
-   * @private
    * @returns {void}
    */
-  _resetSourceFields () {
+  #resetSourceFields () {
     /** @type {string|null} */
     this.wletter = null
     /** @type {SourceRack|null} */
@@ -303,10 +300,9 @@ export class Steps {
    * Validates that sourceRack exists and has a weaponId that is not -1.
    * A weaponId of -1 indicates a deactivated or empty rack.
    *
-   * @private
    * @returns {boolean} True if sourceRack exists and has a valid weaponId (not -1)
    */
-  _hasActiveRack () {
+  #hasActiveRack () {
     return Boolean(this.sourceRack && this.sourceRack.weaponId !== -1)
   }
 
@@ -315,11 +311,10 @@ export class Steps {
    * Compares against sourceRack?.weaponId to detect weapon changes.
    * Returns true if sourceRack is null (no current rack) or IDs differ.
    *
-   * @private
    * @param {number} weaponId - Weapon ID to check for difference
    * @returns {boolean} True if weaponId differs from current sourceRack.weaponId or sourceRack is null
    */
-  _isNewRackId (weaponId) {
+  #isNewRackId (weaponId) {
     return weaponId !== this.sourceRack?.weaponId
   }
 
@@ -328,12 +323,11 @@ export class Steps {
    * If weaponId is undefined, uses rack.id as the resolved ID.
    * Ensures a valid numeric ID is always returned for weapon tracking.
    *
-   * @private
    * @param {number|undefined} weaponId - Explicit weapon ID (may be undefined)
    * @param {Rack} rack - Weapon rack object with id property
    * @returns {number} Resolved weapon ID (from weaponId parameter or rack.id)
    */
-  _resolveWeaponId (weaponId, rack) {
+  #resolveWeaponId (weaponId, rack) {
     return weaponId === undefined ? rack.id : weaponId
   }
 
@@ -343,7 +337,6 @@ export class Steps {
    * Otherwise returns source coordinates (r, c).
    * Shadow is the visual indicator showing where the weapon will fire/effect.
    *
-   * @private
    * @param {Weapon} weapon - Weapon object to check for shadow properties
    * @param {number} r - Row coordinate of source (weapon location)
    * @param {number} c - Column coordinate of source (weapon location)
@@ -351,7 +344,7 @@ export class Steps {
    * @param {number} hintC - Column coordinate of hint/preview location
    * @returns {[number, number]} Tuple [shadowR, shadowC] - Shadow coordinates
    */
-  _resolveShadowCoords (weapon, r, c, hintR, hintC) {
+  #resolveShadowCoords (weapon, r, c, hintR, hintC) {
     return bh.seekingMode || weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
   }
 
@@ -360,11 +353,10 @@ export class Steps {
    * Used to detect when player switches to a different weapon type.
    * Returns true if sourceRack is null (no current weapon) or letters differ.
    *
-   * @private
    * @param {string} wletter - Weapon letter identifier to check
    * @returns {boolean} True if weapon letter differs from current sourceRack.wletter
    */
-  _isWeaponChangeRequired (wletter) {
+  #isWeaponChangeRequired (wletter) {
     return wletter !== this.sourceRack?.wletter
   }
 
@@ -373,7 +365,6 @@ export class Steps {
    * Routes to appropriate property based on key: source, sourceHint, sourceShadow, or target.
    * Creates a BoardContext object and assigns it to the specified property.
    *
-   * @private
    * @param {'source'|'sourceHint'|'sourceShadow'|'target'} key - Property name to set
    * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
@@ -382,8 +373,8 @@ export class Steps {
    * @returns {void}
    * @throws {Error} Implicitly throws if key is not a valid option (switch falls through)
    */
-  _setBoardContext (key, board, r, c, cell) {
-    const context = this._buildBoardContext(board, r, c, cell)
+  #setBoardContext (key, board, r, c, cell) {
+    const context = this.#buildBoardContext(board, r, c, cell)
     switch (key) {
       case 'source':
         this.source = context
@@ -404,14 +395,13 @@ export class Steps {
    * Build a BoardContext object from cell coordinates and elements.
    * Encapsulates location information for easy passing throughout the system.
    *
-   * @private
    * @param {Board} board - Game board object
    * @param {number} r - Row coordinate
    * @param {number} c - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell
    * @returns {BoardContext} Context object with board, r, c, and cell properties
    */
-  _buildBoardContext (board, r, c, cell) {
+  #buildBoardContext (board, r, c, cell) {
     return { board, r, c, cell }
   }
 
@@ -420,12 +410,11 @@ export class Steps {
    * Updates this.mode and immediately invokes callback with this Steps instance as argument.
    * Used to synchronize state transitions with UI updates.
    *
-   * @private
    * @param {'SELECT'|'AIM'|'OTHERS'} mode - New mode from WeaponMode (SELECT, AIM, or OTHERS)
    * @param {(steps: Steps) => void} callback - Callback function invoked with this Steps instance
    * @returns {void}
    */
-  _setMode (mode, callback) {
+  #setMode (mode, callback) {
     this.mode = mode
     callback(this)
   }
@@ -439,7 +428,7 @@ export class Steps {
    * @returns {boolean} True if the letter differs from current weapon
    */
   shouldChangeWeapon (wletter) {
-    return this._isWeaponChangeRequired(wletter)
+    return this.#isWeaponChangeRequired(wletter)
   }
 
   /**
@@ -451,7 +440,7 @@ export class Steps {
    * @returns {boolean} True if a new rack is being selected
    */
   shouldDeactivatePreviousRack (weaponId) {
-    return this._hasActiveRack() && this._isNewRackId(weaponId)
+    return this.#hasActiveRack() && this.#isNewRackId(weaponId)
   }
 
   /**
@@ -465,20 +454,20 @@ export class Steps {
    * @returns {boolean} True if weapon is valid, weaponId is not -1, and differs from current
    */
   shouldActivateNewRack (weapon, weaponId) {
-    return weapon && weaponId !== -1 && this._isNewRackId(weaponId)
+    return weapon && weaponId !== -1 && this.#isNewRackId(weaponId)
   }
 
   /**
    * Deactivate current rack if a new weapon ID is being selected.
-   * Calls _deactivateCurrentSourceRack() if the weaponId differs from current.
+   * Calls deactivateCurrentSourceRack() if the weaponId differs from current.
    *
    * @public
    * @param {number} weaponId - New weapon ID being activated
    * @returns {void}
    */
   deactivateOnNewRack (weaponId) {
-    if (this._isNewRackId(weaponId)) {
-      this._deactivateCurrentSourceRack()
+    if (this.#isNewRackId(weaponId)) {
+      this.deactivateCurrentSourceRack()
     }
   }
 
@@ -487,35 +476,25 @@ export class Steps {
    * Checks if a valid rack is active before attempting deactivation.
    * Invokes onDeactivate callback with current rack coordinates.
    *
-   * @private
+
+   * @public
    * @returns {void}
    */
-  _deactivateCurrentSourceRack () {
-    if (!this._hasActiveRack() || !this.sourceRack) return
+  deactivateCurrentSourceRack () {
+    if (!this.#hasActiveRack() || !this.sourceRack) return
     const { r, c, shadowR, shadowC } = this.sourceRack
     this.onDeactivate(r, c, shadowR, shadowC)
   }
 
   /**
-   * Public method to deactivate the current weapon rack.
-   * Delegates to _deactivateCurrentSourceRack().
-   *
-   * @public
-   * @returns {void}
-   */
-  deactivateCurrentSourceRack () {
-    this._deactivateCurrentSourceRack()
-  }
-
-  /**
    * Reset all source fields to null state.
-   * Delegates to _resetSourceFields().
+   * Delegates to #resetSourceFields().
    *
    * @public
    * @returns {void}
    */
   resetSourceState () {
-    this._resetSourceFields()
+    this.#resetSourceFields()
   }
 
   /**
@@ -526,7 +505,7 @@ export class Steps {
    * @returns {void}
    */
   select () {
-    this._setMode(WeaponMode.sourceSelect, () => this.onSelect(this))
+    this.#setMode(WeaponMode.sourceSelect, () => this.onSelect(this))
   }
 
   /**
@@ -538,7 +517,7 @@ export class Steps {
    * @returns {void}
    */
   targetting (hasAttached) {
-    this._setMode(WeaponMode.targetAim, () => this.onAim(this, hasAttached))
+    this.#setMode(WeaponMode.targetAim, () => this.onAim(this, hasAttached))
   }
 
   /**
@@ -555,12 +534,12 @@ export class Steps {
    * @returns {void}
    */
   fire () {
-    this._warnIfNoSourceShipForUnattachedWeapon()
+    this.#warnIfNoSourceShipForUnattachedWeapon()
     if (!this.source) return
 
-    this._deactivateCurrentSourceRack()
-    this._useSourceAmmo()
-    this._revealHintIfRequired()
+    this.deactivateCurrentSourceRack()
+    this.#useSourceAmmo()
+    this.#revealHintIfRequired()
     this.select()
   }
 
@@ -569,12 +548,11 @@ export class Steps {
    * Calls cellUseAmmo on the source board to decrement ammo count.
    * Does nothing if source is not registered.
    *
-   * @private
    * @returns {void}
    */
-  _useSourceAmmo () {
+  #useSourceAmmo () {
     if (!this.source) return
-    this.source.board.cellUseAmmo(this.source.r, this.source.c)
+    this.source.board.cellUseAmmo(this.source.c, this.source.r)
   }
 
   /**
@@ -582,10 +560,9 @@ export class Steps {
    * Detects invalid state: terrain without unattached weapons, but weapon fired without ship.
    * This indicates a logic error in the game flow.
    *
-   * @private
    * @returns {void}
    */
-  _warnIfNoSourceShipForUnattachedWeapon () {
+  #warnIfNoSourceShipForUnattachedWeapon () {
     if (!bh.terrain.hasUnattachedWeapons && this.sourceShip === null) {
       console.warn(
         `${bh.terrain.name} does not have unattached weapons, but a weapon was fired without a source ship`
@@ -598,10 +575,9 @@ export class Steps {
    * Calls cellHintReveal on the source board and invokes onHint callback.
    * Does nothing if weapon doesn't provide hints or sourceHint is not set.
    *
-   * @private
    * @returns {void}
    */
-  _revealHintIfRequired () {
+  #revealHintIfRequired () {
     if (
       !this.sourceRack?.weapon ||
       !this.sourceRack.weapon.givesHint ||
@@ -625,10 +601,10 @@ export class Steps {
    */
   addRack (params) {
     const { rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC } = params
-    const resolvedWeaponId = this._resolveWeaponId(weaponId, rack)
-    this._maybeNotifyAttachedWeaponChange(wletter)
+    const resolvedWeaponId = this.#resolveWeaponId(weaponId, rack)
+    this.#maybeNotifyAttachedWeaponChange(wletter)
 
-    const [shadowR, shadowC] = this._resolveShadowCoords(
+    const [shadowR, shadowC] = this.#resolveShadowCoords(
       weapon,
       r,
       c,
@@ -648,7 +624,7 @@ export class Steps {
       shadowC
     })
 
-    this.sourceRack = this._buildSourceRack({
+    this.sourceRack = this.#buildSourceRack({
       rack,
       weapon,
       wletter,
@@ -666,7 +642,6 @@ export class Steps {
 
   /**
    * Build a SourceRack object from weapon and location information.
-   * @private
    * @param {Object} params - Parameters object
    * @param {Rack} params.rack - The weapon rack object
    * @param {Weapon} params.weapon - The weapon object
@@ -679,7 +654,7 @@ export class Steps {
    * @param {number} params.shadowC - Column coordinate of weapon shadow
    * @returns {SourceRack} Source rack object with all weapon information
    */
-  _buildSourceRack (params) {
+  #buildSourceRack (params) {
     const { rack, weapon, wletter, weaponId, r, c, cell, shadowR, shadowC } =
       params
     return {
@@ -701,11 +676,10 @@ export class Steps {
    * 1. Terrain has attached weapons feature enabled
    * 2. Weapon letter differs from currently selected
    *
-   * @private
    * @param {string} wletter - Weapon letter identifier
    * @returns {void}
    */
-  _maybeNotifyAttachedWeaponChange (wletter) {
+  #maybeNotifyAttachedWeaponChange (wletter) {
     if (bh.terrain.hasAttachedWeapons && this.shouldChangeWeapon(wletter)) {
       this.onChangeWeapon(wletter)
     }
@@ -747,7 +721,7 @@ export class Steps {
    * @returns {void}
    */
   clearSource () {
-    this._deactivateCurrentSourceRack()
+    this.deactivateCurrentSourceRack()
     this.resetSourceState()
   }
 
@@ -763,14 +737,14 @@ export class Steps {
    */
   addShip (ship) {
     this.sourceShip = ship
-    if (!this._isAttachedWeaponTerrain()) {
-      this._warnAttachedWeaponWithoutShip()
+    if (!this.#isAttachedWeaponTerrain()) {
+      this.#warnAttachedWeaponWithoutShip()
       return
     }
 
     const primaryWeapon = ship.primaryWeapon
     const letter = primaryWeapon.letter
-    if (this._isWeaponChangeRequired(letter)) {
+    if (this.#isWeaponChangeRequired(letter)) {
       this.onChangeWeapon(letter)
     }
     this.wletter = letter
@@ -781,10 +755,9 @@ export class Steps {
    * Attached weapons are bound to ship locations (e.g., ships with cannons).
    * Unattached weapons are placed independently on the board.
    *
-   * @private
    * @returns {boolean} True if terrain has attached weapons feature enabled
    */
-  _isAttachedWeaponTerrain () {
+  #isAttachedWeaponTerrain () {
     return bh.terrain.hasAttachedWeapons
   }
 
@@ -792,10 +765,9 @@ export class Steps {
    * Log a warning when attached weapon terrain receives a ship.
    * Indicates a logic error: addShip() called on non-attached-weapon terrain.
    *
-   * @private
    * @returns {void}
    */
-  _warnAttachedWeaponWithoutShip () {
+  #warnAttachedWeaponWithoutShip () {
     console.warn(
       'Terrain does not have attached weapons, but a ship was added to steps'
     )
@@ -803,7 +775,7 @@ export class Steps {
 
   /**
    * Register hint/preview location for weapon effect preview.
-   * Stores hint location in sourceHint property via _setBoardContext().
+   * Stores hint location in sourceHint property via #setBoardContext().
    * Used by weapons that provide targeting hints/previews.
    *
    * @public
@@ -814,12 +786,12 @@ export class Steps {
    * @returns {void}
    */
   addHint (board, r, c, cell) {
-    this._setBoardContext('sourceHint', board, r, c, cell)
+    this.#setBoardContext('sourceHint', board, r, c, cell)
   }
 
   /**
    * Register shadow/targeting indicator location.
-   * Stores shadow location in sourceShadow property via _setBoardContext().
+   * Stores shadow location in sourceShadow property via #setBoardContext().
    * Shadow is visual indicator showing weapon source or effect area.
    *
    * @public
@@ -830,12 +802,12 @@ export class Steps {
    * @returns {void}
    */
   addShadow (board, r, c, cell) {
-    this._setBoardContext('sourceShadow', board, r, c, cell)
+    this.#setBoardContext('sourceShadow', board, r, c, cell)
   }
 
   /**
    * Register weapon source location (where weapon is mounted/fired from).
-   * Stores source location in source property via _setBoardContext().
+   * Stores source location in source property via #setBoardContext().
    * Source is the actual location of the weapon on the board.
    *
    * @public
@@ -846,7 +818,7 @@ export class Steps {
    * @returns {void}
    */
   addSource (board, r, c, cell) {
-    this._setBoardContext('source', board, r, c, cell)
+    this.#setBoardContext('source', board, r, c, cell)
   }
 
   /**

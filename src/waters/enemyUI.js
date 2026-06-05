@@ -414,13 +414,13 @@ class EnemyUI extends WatersUI {
    * Uses ammo at specific coordinates.
    * Retrieves cell by grid coordinates and applies damage styling.
    *
-   * @param {number} r - Row index (0-based)
-   * @param {number} c - Column index (0-based)
+   * @param {number} y - Row index (0-based)
+   * @param {number} x - Column index (0-based)
    * @param {string} damage - Damage type/class name to apply
    * @returns {void}
    */
-  cellUseAmmo (r, c, damage) {
-    const cell = this.gridCellAt(r, c)
+  cellUseAmmo (y, x, damage) {
+    const cell = this.grid.nodeAt(x, y)
     this.useAmmoInCell(cell, damage)
   }
 
