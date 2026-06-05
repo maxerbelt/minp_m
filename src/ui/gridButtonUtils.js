@@ -174,7 +174,7 @@ function setElementsDisabled (ids, disabled) {
   ids.forEach(id => {
     const el = getElementByIdSafe(id)
     if (el) {
-      /** @type {HTMLInputElement} */ el.disabled = disabled
+      ;/** @type {any} */ (el).disabled = disabled
     }
   })
 }
@@ -354,20 +354,21 @@ export function createMaskMutationMap () {
  * and optionally trigger UI updates.
  *
  * @param {Object<string, MaskBitsGetter>} mutationMap - Map of button IDs to mask bit getters
+ * @param {any} grid - Grid object containing mask configuration (required for getMaskBits callbacks)
  * @param {MaskApplyCallback} applyFn - Function to invoke with retrieved mask bits
  * @param {MaskUpdateCallback} [updateFn] - Optional callback to invoke after applying
  * @returns {void}
  * @example
- * wireMaskMutationButtons(mutMap, (bits) => {
+ * wireMaskMutationButtons(mutMap, grid, (bits) => {
  *   grid.mask.bits = bits;
  * }, () => grid.redraw());
  */
-export function wireMaskMutationButtons (mutationMap, applyFn, updateFn) {
+export function wireMaskMutationButtons (mutationMap, grid, applyFn, updateFn) {
   Object.entries(mutationMap).forEach(([id, getMaskBits]) => {
     const el = getElementByIdSafe(id)
     if (el) {
       el.addEventListener('click', () => {
-        applyFn(getMaskBits())
+        applyFn(getMaskBits(grid))
         if (updateFn) updateFn()
       })
     }
@@ -433,13 +434,13 @@ export function setMorphologyButtonStates (
   const crossBtn = getElementByIdSafe(`cross-dilate${suffix}`)
 
   if (dilateBtn) {
-    /** @type {HTMLButtonElement} */ dilateBtn.disabled = dilateDisabled
+    ;/** @type {any} */ (dilateBtn).disabled = dilateDisabled
   }
   if (erodeBtn) {
-    /** @type {HTMLButtonElement} */ erodeBtn.disabled = erodeDisabled
+    ;/** @type {any} */ (erodeBtn).disabled = erodeDisabled
   }
   if (crossBtn) {
-    /** @type {HTMLButtonElement} */ crossBtn.disabled = crossDisabled
+    ;/** @type {any} */ (crossBtn).disabled = crossDisabled
   }
 }
 

@@ -28,9 +28,9 @@ import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 /**
  * @typedef {Object} WeaponButtonValidation
  * @property {boolean} isValid - Whether validation passed
- * @property {ParentNode} [parent] - Parent element if valid
- * @property {string} [cloneClass] - Clone class name if valid
- * @property {Array<[string, EnemyWeaponSystem]>} [weaponEntries] - Weapon entries if valid
+ * @property {ParentNode} [parent] - Parent element if valid; guaranteed non-null when isValid is true
+ * @property {string} [cloneClass] - Clone class name if valid; guaranteed non-null when isValid is true
+ * @property {Array<[string, EnemyWeaponSystem]>} [weaponEntries] - Weapon entries if valid; guaranteed non-null when isValid is true
  */
 
 /**
@@ -141,9 +141,15 @@ class EnemyUI extends WatersUI {
       return []
     }
 
-    const { parent, cloneClass, weaponEntries } = validation
+    const parent = /** @type {ParentNode} */ (validation.parent)
+    const cloneClass = /** @type {string} */ (validation.cloneClass)
+    const weaponEntries = /** @type {Array<[string, EnemyWeaponSystem]>} */ (
+      validation.weaponEntries
+    )
+
     this._removeWeaponButtonClones(parent, cloneClass)
 
+    /** @type {HTMLElement[]} */
     const weaponButtons = []
     let last = node
     weaponEntries.forEach(([index, wps]) => {
@@ -262,8 +268,13 @@ class EnemyUI extends WatersUI {
   displayFleetSunk () {
     gameStatus.showMode('Fleet Destroyed')
     gameStatus.addToQueue('All Units Destroyed - Well Done!', true)
-    this.board.classList.add('destroyed')
-    trackLevelEnd(bh.map, true)
+    if (this.board) {
+      this.board.classList.add('destroyed')
+    }
+    const currentMap = bh.map ?? undefined
+    if (currentMap) {
+      trackLevelEnd(/** @type {any} */ (currentMap), true)
+    }
   }
 
   /**
@@ -321,7 +332,7 @@ class EnemyUI extends WatersUI {
    */
   _setButtonsProperty (buttonKeys, property, value) {
     buttonKeys.forEach(key => {
-      const button = this.buttons[key]
+      const button = /** @type {any} */ (this.buttons)[key]
       if (!button) return
       if (property === 'hidden') {
         this._toggleElementHidden(button, value)
@@ -378,11 +389,13 @@ class EnemyUI extends WatersUI {
    * @returns {void}
    */
   revealAll (ships) {
-    this.revealShips(ships)
+    this.revealShips(/** @type {any} */ (ships))
     this.revealMode()
     gameStatus.showMode('Enemy Fleet Revealed')
     gameStatus.addToQueue('You Gave Up')
-    this.board.classList.add('destroyed')
+    if (this.board) {
+      this.board.classList.add('destroyed')
+    }
   }
 
   /**
@@ -404,8 +417,10 @@ class EnemyUI extends WatersUI {
    * @returns {void}
    */
   reset () {
-    this.board.innerHTML = ''
-    this.board.classList.remove('destroyed')
+    if (this.board) {
+      this.board.innerHTML = ''
+      this.board.classList.remove('destroyed')
+    }
     gameStatus.showMode('Single Shot')
     gameStatus.addToQueue('Click On Square To Fire', false)
   }
@@ -421,7 +436,9 @@ class EnemyUI extends WatersUI {
    */
   cellUseAmmo (y, x, damage) {
     const cell = this.grid.nodeAt(x, y)
-    this.useAmmoInCell(cell, damage)
+    if (cell) {
+      this.useAmmoInCell(cell, damage)
+    }
   }
 
   /**

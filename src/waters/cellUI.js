@@ -153,14 +153,15 @@ export class CellUI {
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {GridMap|null} [map] - Optional map configuration; defaults to bh.map if omitted
    * @returns {HTMLDivElement|null} DOM element at coordinates or null if not found
    */
   static nodeAt (board, x, y, map) {
-    const currentMap = map || /** @type {GridMap|null} */ (bh.map)
+    const currentMap = map ?? /** @type {GridMap|null} */ (bh.map)
     if (!currentMap) return null
+    const gridMap = /** @type {GridMap} */ (currentMap)
     return /** @type {HTMLDivElement|null} */ (
-      board?.children?.[this.gridIndex(x, y, currentMap)]
+      board?.children?.[this.gridIndex(x, y, gridMap)]
     )
   }
 
@@ -173,19 +174,20 @@ export class CellUI {
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {GridMap|null} [map] - Optional map configuration; defaults to bh.map if omitted
    * @returns {HTMLDivElement} DOM element at coordinates
    * @throws {Error} If coordinates are invalid or element not found at coordinates
    */
   static node (board, x, y, map) {
-    const currentMap = map || /** @type {GridMap|null} */ (bh.map)
+    const currentMap = map ?? /** @type {GridMap|null} */ (bh.map)
     if (this.isValid(x, y, currentMap)) {
       const node = this.nodeAt(board, x, y, currentMap)
       if (node) return node
       throw new Error(`child not found in board at coordinates (${x}, ${y})`)
     }
+    const gridMap = /** @type {GridMap} */ (currentMap)
     const mapInfo = currentMap
-      ? `for map of size ${currentMap.cols}x${currentMap.rows}`
+      ? `for map of size ${gridMap.cols}x${gridMap.rows}`
       : 'with undefined map'
     throw new Error(`Invalid coordinates (${x}, ${y}) ${mapInfo}`)
   }
@@ -249,7 +251,7 @@ export class CellUI {
    *
    * @static
    * @param {HTMLDivElement} node - DOM element with data-r and data-c attributes
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {GridMap|null} [map] - Optional map configuration; defaults to bh.map if omitted
    * @returns {CellUI} New CellUI instance wrapping the element
    */
   static fromHtmlElement (node, map) {
@@ -409,7 +411,7 @@ export class CellUI {
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {GridMap|null} [map] - Optional map configuration; defaults to bh.map if omitted
    * @param {((event: MouseEvent) => void)|null} [onClick] - Optional click event handler
    * @returns {CellUI} New CellUI instance appended to board
    * @side-effects Appends cell element to board, applies terrain coloring, attaches event listener if provided
@@ -445,12 +447,13 @@ export class CellUI {
    * Uses cached result on subsequent accesses for performance.
    *
    * @instance
-   * @returns {GridMap|undefined} Map configuration object for terrain queries and bounds validation, or undefined if unavailable
+   * @returns {GridMap|undefined} Map configuration object for terrain queries and bounds validation
    */
   get map () {
     if (this._map) return this._map
 
-    this._map = /** @type {GridMap|undefined} */ (bh.map ?? undefined)
+    const bhMap = /** @type {GridMap|null} */ (bh.map)
+    this._map = bhMap ?? undefined
     return this._map
   }
 
@@ -476,12 +479,13 @@ export class CellUI {
    * @static
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Map configuration with cols/rows dimensions
+   * @param {GridMap|null} [map] - Map configuration with cols/rows dimensions
    * @returns {number} Linear array index in flattened grid representation, or 0 if map undefined
    */
   static gridIndex (x, y, map) {
     if (!map) return 0
-    return y * map.cols + x
+    const gridMap = /** @type {GridMap} */ (map)
+    return y * gridMap.cols + x
   }
 
   /**
@@ -492,11 +496,11 @@ export class CellUI {
    * @static
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap|null} [map] - Map configuration with cols/rows dimensions
+   * @param {GridMap|null|undefined} [map] - Map configuration with cols/rows dimensions
    * @returns {boolean} True if coordinates are valid within bounds, false otherwise
    */
   static isValid (x, y, map) {
-    const m = map || /** @type {GridMap|null} */ (bh.map)
+    const m = map ?? /** @type {GridMap|null} */ (bh.map)
     if (!m) return false
     const gridMap = /** @type {GridMap} */ (m)
     return x >= 0 && x < gridMap.cols && y >= 0 && y < gridMap.rows
@@ -538,7 +542,7 @@ export class CellUI {
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {GridMap|null} [map] - Optional map configuration; defaults to bh.map if omitted
    * @returns {CellUI} CellUI instance for the cell at coordinates
    * @side-effects Modifies cell element's classList with terrain CSS classes
    */
@@ -577,7 +581,7 @@ export class CellUI {
    * @param {HTMLDivElement} board - Parent board container element
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Optional map configuration; defaults to bh.map if omitted
+   * @param {GridMap|null} [map] - Optional map configuration; defaults to bh.map if omitted
    * @returns {CellUI} CellUI instance for the recolored cell
    * @side-effects Removes old terrain edge classes and applies new terrain coloring to cell element
    */
