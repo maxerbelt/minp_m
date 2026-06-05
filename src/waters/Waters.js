@@ -1665,7 +1665,6 @@ export class Waters {
       if (weapon?.postSelectCoords === 0) {
         this.loadOut.clearSelectedCoordinates()
       } else {
-        // @ts-expect-error - addSelectedCoordinates expects Weapon type at runtime
         this.loadOut.addSelectedCoordinates(shadowR, shadowC, weapon)
       }
       // @ts-ignore - updateMode expects Weapon or undefined at runtime
@@ -1972,7 +1971,9 @@ export class Waters {
   async fireWeaponAt (
     x,
     y,
-    weaponSystem = this.loadOut?.selectedWeapon || undefined,
+    weaponSystem = /** @type {any} */ (
+      this.loadOut?.selectedWeapon || undefined
+    ),
     launch = this.loadOut?.launch
   ) {
     // @ts-ignore - loadOut available at runtime, cast weapon system
@@ -2002,7 +2003,7 @@ export class Waters {
       return await this.fireWeaponAt(
         x,
         y,
-        this.loadOut.selectedWeapon || undefined
+        /** @type {any} */ (this.loadOut.selectedWeapon || undefined)
       )
     }
     return null
@@ -3439,7 +3440,7 @@ export class Waters {
    * @returns {WeaponResult} Accumulated results object
    * @protected
    */
-  applyWeaponEffect (weapon, effect, options) {
+  applyWeaponEffect (weapon, effect, options = {}) {
     // @ts-ignore - effect is [number, number, number][] at runtime; array passed from weapon system
     const results = this.#applyToAoE(
       /** @type {[number, number, number][]} */ (effect),
