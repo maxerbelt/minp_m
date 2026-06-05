@@ -3,6 +3,58 @@ import { furtherestFrom } from '../core/utilities.js'
 import { Animator } from '../core/Animator.js'
 import { Random } from '../core/Random.js'
 
+/**
+ * @typedef {Object} LaunchContext
+ * @property {Object} map - Game map object
+ * @property {any} viewModel - Primary view model (Board)
+ * @property {any} [opposingViewModel] - Opposing player view model (Board)
+ * @property {any} [model] - Game model (Waters)
+ * @property {Function} [processCoords] - Optional coordinate processor
+ * @property {Function} [launch] - Optional custom launch handler
+ */
+
+/**
+ * @typedef {Object} ExplodeOptions
+ * @property {any} [container] - Optional animation container element
+ * @property {{x: number, y: number}} [end] - Optional end coordinates
+ * @property {string} [type] - Terrain type for explosion styling
+ * @property {number} [power] - Explosion power level
+ * @property {string} [shake] - Shake animation type
+ * @property {Animator} [animator] - Optional animator instance to reuse
+ * @property {any} [viewModel] - Optional view model
+ * @property {string} [id] - Optional id for animation tagging
+ */
+
+/**
+ * @typedef {Object} AnimationOptions
+ * @property {number} rotation - Rotation angle in degrees
+ * @property {number} duration - Animation duration in seconds
+ * @property {string} classname - CSS class names
+ * @property {boolean} doesExplode - Whether to explode on landing
+ * @property {boolean} animateOnTarget - Whether to animate on target
+ */
+
+/**
+ * @typedef {Object} AnimationResult
+ * @property {any} container - Animation container element
+ * @property {{x: number, y: number}} end - End coordinates
+ * @property {number} cellSize - Cell size in pixels
+ */
+
+/**
+ * @typedef {Object} AnimatorContext
+ * @property {Animator} animator - Animator instance
+ * @property {{x: number, y: number}} end - End coordinates
+ * @property {{x: number, y: number}} start - Start coordinates
+ * @property {number} cellSize - Cell size in pixels
+ */
+
+/**
+ * @typedef {Object} WeaponResult
+ * @property {number} hits - Number of hits
+ * @property {number} [dtap] - Damage points
+ */
+
 export class Weapon {
   /**
    * Base class for all weapon types in the game.
@@ -17,6 +69,34 @@ export class Weapon {
    * @param {boolean} destroys - Whether weapon destroys terrain
    * @param {number} points - Victory points awarded when hitting enemy
    * @throws {Error} If instantiated directly rather than through subclass
+   *
+   * @property {string} name - Weapon name
+   * @property {string} plural - Plural form of weapon name
+   * @property {string} letter - Single letter identifier
+   * @property {boolean} isLimited - Whether ammo is limited
+   * @property {boolean} destroys - Whether weapon destroys terrain
+   * @property {number} points - Victory points for hit
+   * @property {boolean} hasFlash - Whether weapon has flash effect
+   * @property {number} totalCursors - Total cursor count for targeting
+   * @property {string} tip - Tooltip text
+   * @property {boolean} isOneAndDone - Whether single-use only
+   * @property {number} splashPower - Splash damage power level
+   * @property {string|null} splashType - Type of splash damage
+   * @property {number|null} splashMin - Minimum splash size
+   * @property {number|null} splashMax - Maximum splash size
+   * @property {boolean} volatile - Whether weapon is volatile
+   * @property {number} unattachedCursor - Unattached cursor index
+   * @property {number} postSelectCursor - Post-select cursor index
+   * @property {number} postSelectCoords - Post-select coordinate count
+   * @property {boolean} explodeOnTarget - Whether to explode on target
+   * @property {boolean} explodeOnSplash - Whether to explode on splash
+   * @property {boolean} explodeOnHit - Whether to explode on hit
+   * @property {boolean} animateOnTarget - Whether to animate on target
+   * @property {boolean} animateOnAoe - Whether to animate on area
+   * @property {number} splashSize - Splash size modifier
+   * @property {boolean} nonAttached - Whether weapon is unattached
+   * @property {number} animateOffsetY - Animation Y offset
+   * @property {string} classname - CSS class name
    */
   constructor (name, letter, isLimited, destroys, points) {
     if (new.target === Weapon) {
@@ -24,32 +104,59 @@ export class Weapon {
         'base class cannot be instantiated directly. Please extend it.'
       )
     }
+    /** @type {string} */
     this.name = name
+    /** @type {string} */
     this.plural = name + 's'
+    /** @type {string} */
     this.letter = letter
+    /** @type {boolean} */
     this.isLimited = isLimited
+    /** @type {boolean} */
     this.destroys = destroys
+    /** @type {number} */
     this.points = points
+    /** @type {boolean} */
     this.hasFlash = false
+    /** @type {number} */
     this.totalCursors = 1
+    /** @type {string} */
     this.tip = `drag on to the map to increase the tally of ${this.name}`
+    /** @type {boolean} */
     this.isOneAndDone = false
+    /** @type {number} */
     this.splashPower = -1
+    /** @type {string|null} */
     this.splashType = null
+    /** @type {number|null} */
     this.splashMin = null
+    /** @type {number|null} */
     this.splashMax = null
+    /** @type {boolean} */
     this.volatile = false
+    /** @type {number} */
     this.unattachedCursor = 0
+    /** @type {number} */
     this.postSelectCursor = 0
+    /** @type {number} */
     this.postSelectCoords = 0
+    /** @type {boolean} */
     this.explodeOnTarget = false
+    /** @type {boolean} */
     this.explodeOnSplash = false
+    /** @type {boolean} */
     this.explodeOnHit = false
+    /** @type {boolean} */
     this.animateOnTarget = false
+    /** @type {boolean} */
     this.animateOnAoe = false
+    /** @type {number} */
     this.splashSize = 1.3
+    /** @type {boolean} */
     this.nonAttached = false
+    /** @type {number} */
     this.animateOffsetY = 0
+    /** @type {string} */
     this.classname = this.name.toLowerCase().replaceAll(' ', '-')
   }
   /**
@@ -62,17 +169,20 @@ export class Weapon {
    */
   _applyWeaponConfig (config) {
     Object.entries(config).forEach(([key, value]) => {
+      /** @type {any} */
       this[key] = value
     })
   }
   /**
    * Gets the audio file for warning sound.
    *
-   * @readonly
-   * @returns {URL} URL to warning sound asset
+   * @returns {string} URL string to warning sound asset
    */
   get warnSound () {
-    return new URL('../terrains/all/sounds/woodblock.mp3', import.meta.url)
+    return new URL(
+      '../terrains/all/sounds/woodblock.mp3',
+      import.meta.url
+    ).toString()
   }
   /**
    * Play the warning sound for this weapon.
@@ -88,12 +198,13 @@ export class Weapon {
    * Create a clone of this weapon with optional ammunition override.
    * Eliminates duplicate clone() implementations in subclasses.
    *
-   * @param {Function} weaponClass - Constructor for the weapon type to instantiate
+   * @template T
+   * @param {function(new:T): T} weaponClass - Constructor for the weapon type to instantiate
    * @param {number} [ammoOverride] - Optional ammo count for cloned weapon (defaults to this.ammo)
-   * @returns {Weapon} New weapon instance with specified ammo
+   * @returns {T} New weapon instance with specified ammo
    */
   createClone (weaponClass, ammoOverride) {
-    ammoOverride = ammoOverride || this.ammo
+    ammoOverride = ammoOverride || /** @type {any} */ (this).ammo
     return new weaponClass(ammoOverride)
   }
 
@@ -185,7 +296,7 @@ export class Weapon {
    * Get flight sound URL for this weapon.
    * Override in subclasses to provide weapon-specific sound.
    *
-   * @returns {URL|null} URL to flight sound file, or null if silent
+   * @returns {string|null} URL string to flight sound file, or null if silent
    */
   get flightSound () {
     return null
@@ -217,7 +328,7 @@ export class Weapon {
    * Get boom/explosion sound URL for this weapon.
    * Override in subclasses to provide weapon-specific boom sound.
    *
-   * @returns {URL|null} URL to boom sound file, or null for default
+   * @returns {string|null} URL string to boom sound file, or null for default
    */
   get boomSound () {
     return null
@@ -246,6 +357,7 @@ export class Weapon {
    * @returns {number} Adjusted step index for animation
    */
   stepIdx (numCoords, select) {
+    // @ts-ignore - bh.seekingMode available at runtime
     if (bh.seekingMode) {
       return numCoords
     }
@@ -276,10 +388,10 @@ export class Weapon {
   /**
    * Get total number of steps for weapon targeting sequence.
    *
-   * @readonly
    * @returns {number} Number of targeting steps (seeking mode: cursor count, else: total cursors)
    */
   get numStep () {
+    // @ts-ignore - bh.seekingMode available at runtime, cursors array always defined
     return bh.seekingMode ? this.cursors.length : this.totalCursors
   }
 
@@ -287,10 +399,10 @@ export class Weapon {
    * Check if weapon has extra/secondary selection cursor.
    * Differentiates between single-step and multi-step launch sequences.
    *
-   * @readonly
    * @returns {boolean} True if launchCursor exists and differs from first cursor
    */
   get hasExtraSelectCursor () {
+    // @ts-ignore - cursors array always defined at runtime
     return !!(this.launchCursor && this.launchCursor !== this.cursors[0])
   }
 
@@ -354,8 +466,8 @@ export class Weapon {
    * Base implementation returns empty (no splash).
    *
    * @param {Object} _map - Game map
-   * @param {Array} _resolvedTarget - Impact coordinate [row, col]
-   * @param {Array} _effect - Damage effect coordinates and power
+   * @param {number[]} _resolvedTarget - Impact coordinate [row, col]
+   * @param {Array<[number, number, number]>} _effect - Damage effect coordinates and power
    * @param {Object} _options - Additional options
    * @returns {Array<[number, number, number]>} Splash pattern cells as [row, col, power] tuples
    */
@@ -368,7 +480,7 @@ export class Weapon {
    * Base implementation returns empty (no splash).
    *
    * @param {Object} _map - Game map
-   * @param {Array} _coords - Impact coordinate [row, col]
+   * @param {number[]} _coords - Impact coordinate [row, col]
    * @param {Object} _options - Additional options
    * @returns {Array<[number, number, number]>} Splash pattern cells as [row, col, power] tuples
    */
@@ -491,6 +603,7 @@ export class Weapon {
       ? opposingViewModel.grid.nodeAt(sx, sy)
       : viewModel.grid.nodeAt(sx, sy)
     const endCell = viewModel.grid.nodeAt(...endPoint)
+    // @ts-ignore - cursors array always defined at runtime, at(-1) always returns a cursor
     const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
     const options = {
       rotation: 0,
@@ -551,12 +664,12 @@ export class Weapon {
    * @param {number[]} base - Base/source coordinates [row, col]
    * @param {number[][]} coords - Target coordinates array [row, col]
    * @param {any} model - Game model for target lookup
-   * @returns {number[]|[number[], number[], boolean]} Processed coordinate pair or triple with candidate flag
+   * @returns {number[][]|number[][][]} Processed coordinate pair or triple with candidate flag
    */
-  processCoords (map, [rr, cc], coords, model) {
+  processCoords (map, base, coords, model) {
     const effect = this.aoe(map, coords)
     const t = model.getTarget(effect, this)
-    const list = this.redoCoords(map, [rr, cc], coords)
+    const list = this.redoCoords(map, base, coords)
     if (t) {
       const source = furtherestFrom(t[0], t[1], list)
       return [source, t, true]
@@ -632,12 +745,9 @@ export class Weapon {
     }
 
     const processCoords = processor || this.redoCoords.bind(this)
-    const [[y, x], target, hasCandidates] = processCoords(
-      map,
-      [rr, cc],
-      coords,
-      model
-    )
+    /** @type {any} */
+    const result = processCoords(map, [rr, cc], coords, model)
+    const [[y, x], target, hasCandidates] = result
     const sourceCell = this.#getSourceCell(x, y, viewModel, opposingViewModel)
     const targetCell = viewModel.grid.nodeAt(target[1], target[0])
     await this.animateFlyingOnVM(sourceCell, targetCell, viewModel)
@@ -669,7 +779,13 @@ export class Weapon {
    */
   async animateSplashExplode (target, cellSize) {
     if (this.explodeOnSplash) {
-      await this.animateExplodeRaw(target, cellSize, this.splashType)
+      await this.animateExplodeRaw(
+        target,
+        cellSize,
+        this.splashType,
+        this.splashPower,
+        'shake-medium'
+      )
     }
   }
 
@@ -721,7 +837,7 @@ export class Weapon {
    * @param {any} target - Target element
    * @param {{x: number, y: number}} end - End position
    * @param {number} cellSize - Cell size in pixels
-   * @param {Animator} [animator] - Optional animator instance to reuse
+   * @param {Animator|null} [animator] - Optional animator instance to reuse
    * @param {any} [viewModel] - Optional view model
    * @returns {Promise<void>} Resolves when explosion animation completes
    */
@@ -747,6 +863,19 @@ export class Weapon {
    * @param {number} cellSize - Cell size in pixels
    * @param {string} type - Terrain type for explosion styling
    * @param {number} power - Explosion power level
+   * @param {string} [shake] - Shake animation type (default: 'shake')
+   * @param {any} [viewModel] - Optional view model
+   * @returns {Promise<void>} Resolves when explosion animation completes
+   */
+  /**
+   * Low-level explosion animation without options object.
+   * Direct control over explosion parameters for specific animation needs.
+   *
+   * @async
+   * @param {any} target - Target element for explosion
+   * @param {number} cellSize - Cell size in pixels
+   * @param {string} type - Terrain/explosion type name
+   * @param {number} power - Explosion power/intensity level
    * @param {string} [shake] - Shake animation type (default: 'shake')
    * @param {any} [viewModel] - Optional view model
    * @returns {Promise<void>} Resolves when explosion animation completes
