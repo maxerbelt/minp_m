@@ -1,4 +1,4 @@
-import { CellUI } from './CellUI.js'
+import { CellUI } from './cellUI.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { CellClassManager } from './helpers/CellClassManager.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
@@ -423,7 +423,19 @@ export class GridBoard {
     // @ts-ignore - map compatible with GridMap when defined
     this.#addSurroundingCells(x, y, container, 'keySet')
   }
-
+  /**
+   * Generator yielding cell elements for each coordinate in iterable.
+   * Provides lazy evaluation of coordinate-to-cell mapping.
+   *
+   * @param {Iterable<[number, number]>} coords - Iterable of [row, col] coordinate pairs
+   * @yields {HTMLElement} Cell element for each coordinate
+   * @generator
+   */
+  *cellsForRClist (coords) {
+    for (const [y, x] of coords) {
+      yield this.nodeAt(x, y)
+    }
+  }
   /**
    * Adds surrounding cells as object mappings to container.
    * Retrieves neighbors and applies maker function to each coordinate.
