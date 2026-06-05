@@ -57,7 +57,7 @@ export const WeaponMode = Object.freeze({
 /**
  * Ship object with weapon management methods.
  * @typedef {Object} Ship
- * @property {Object} primaryWeapon - The primary weapon object
+ * @property {Weapon} primaryWeapon - The primary weapon object
  */
 
 /**
@@ -345,6 +345,7 @@ export class Steps {
    * @returns {[number, number]} Tuple [shadowR, shadowC] - Shadow coordinates
    */
   #resolveShadowCoords (weapon, r, c, hintR, hintC) {
+    // @ts-ignore - bh is a global game state singleton with dynamic properties
     return bh.seekingMode || weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
   }
 
@@ -563,7 +564,9 @@ export class Steps {
    * @returns {void}
    */
   #warnIfNoSourceShipForUnattachedWeapon () {
+    // @ts-ignore - bh is a global game state singleton with dynamic properties
     if (!bh.terrain.hasUnattachedWeapons && this.sourceShip === null) {
+      // @ts-ignore - bh.terrain.name is a dynamic property
       console.warn(
         `${bh.terrain.name} does not have unattached weapons, but a weapon was fired without a source ship`
       )
@@ -742,6 +745,7 @@ export class Steps {
       return
     }
 
+    /** @type {Weapon} */
     const primaryWeapon = ship.primaryWeapon
     const letter = primaryWeapon.letter
     if (this.#isWeaponChangeRequired(letter)) {
@@ -830,7 +834,7 @@ export class Steps {
    * @returns {void}
    */
   endTurn () {
-    this._setMode(WeaponMode.othersTurn, () => this.onEndTurn(this))
+    this.#setMode(WeaponMode.othersTurn, () => this.onEndTurn(this))
   }
 
   /**
@@ -842,6 +846,6 @@ export class Steps {
    * @returns {void}
    */
   beginTurn () {
-    this._setMode(WeaponMode.sourceSelect, () => this.onBeginTurn(this))
+    this.#setMode(WeaponMode.sourceSelect, () => this.onBeginTurn(this))
   }
 }
