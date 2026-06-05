@@ -150,24 +150,23 @@ export class Weapon {
    * Internal: Determine source cell based on weapon state and view models.
    * Consolidates duplicate grid cell selection logic across launch methods.
    *
-   * @private
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {any} viewModel - Primary view model with gridCellAt method
    * @param {any} [opposingViewModel] - Optional opposing player view model
    * @returns {any} Selected grid cell DOM element
    */
-  #getSourceCell (r, c, viewModel, opposingViewModel) {
+  #getSourceCell (y, x, viewModel, opposingViewModel) {
     if (this.nonAttached) {
-      return viewModel.gridCellAt(r, c)
+      return viewModel.grid.nodeAt(x, y)
     }
     if (opposingViewModel) {
-      return opposingViewModel.gridCellAt(r, c)
+      return opposingViewModel.grid.nodeAt(x, y)
     }
     if (this.postSelectCursor > 0) {
-      return viewModel.gridCellAt(r, c)
+      return viewModel.grid.nodeAt(x, y)
     }
-    return viewModel.gridCellAt(0, 0)
+    return viewModel.grid.nodeAt(0, 0)
   }
 
   /**

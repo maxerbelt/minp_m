@@ -344,19 +344,17 @@ export class WatersUI {
    * Retrieves grid cell element at coordinates with validation.
    * Throws error if cell not found to catch coordinate errors early.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @returns {HTMLDivElement} Cell element (guaranteed valid)
    * @throws {Error} If cell at coordinates is invalid or missing
    */
-  gridCellAt (row, column) {
-    const result = this.grid.node(column, row)
+  gridCellAt (y, x) {
+    const result = this.grid.node(x, y)
     if (result?.classList) {
       return /** @type {HTMLDivElement} */ (result)
     }
-    throw new Error(
-      `Invalid cell at ${row},${column}: ${JSON.stringify(result)}`
-    )
+    throw new Error(`Invalid cell at ${x},${y}: ${JSON.stringify(result)}`)
   }
 
   /**

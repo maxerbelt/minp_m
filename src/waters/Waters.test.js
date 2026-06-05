@@ -60,7 +60,9 @@ const mockUI = {
     surroundCells: jest.fn(),
     cellMiss: jest.fn(),
     displaySurround: jest.fn(),
-    surroundCellElement: jest.fn()
+    surroundCellElement: jest.fn(),
+    nodeAt: jest.fn(),
+    node: jest.fn()
   },
   placeTally: jest.fn(),
   displayShipInfo: jest.fn(),
@@ -216,6 +218,8 @@ describe('Waters', () => {
       // @ts-expect-error - Mocking UI method for testing
       waters.UI.gridCellAt = jest.fn(() => ({ cell: 'mock' }))
 
+      waters.UI.grid.nodeAt = jest.fn(() => ({ cell: 'mock' }))
+      waters.UI.grid.node = jest.fn(() => ({ cell: 'mock' }))
       // @ts-expect-error - Testing private method access
       const hint = waters.generateRandomSourceHint({ cells: [1, 2] }, null)
 

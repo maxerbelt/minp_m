@@ -468,7 +468,7 @@ export function enterCursor (event, viewModel, model) {
   if (cursor.isDragging) return
   if (!cursor.isGrid) return
   event.preventDefault()
-  const cell = viewModel.gridCellAt(cursor.x, cursor.y)
+  const cell = viewModel.grid.nodeAt(cursor.x, cursor.y)
   dragNDrop.handleDropEvent(cell, model, viewModel)
 }
 
@@ -1029,7 +1029,7 @@ class DragNDrop {
   #applyHighlights (viewModel, cells, isPlacementValid, placement) {
     for (const [x, y] of cells) {
       if (bh.map.isInBoundsAt(x, y)) {
-        const cell = viewModel.gridCellAt(x, y)
+        const cell = viewModel.grid.nodeAt(x, y)
         const cellClass = this.#getHighlightClass(
           isPlacementValid,
           placement,

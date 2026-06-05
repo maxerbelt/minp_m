@@ -1858,7 +1858,7 @@ export class Waters {
   #createDefaultWeaponSelection (hintR, hintC) {
     // @ts-ignore - this.UI is Board at runtime
     const board = /** @type {Board} */ (this.UI)
-    this.addSelectionSource(board, 0, 0, board.gridCellAt?.(0, 0))
+    this.addSelectionSource(board, 0, 0, board.grid?.nodeAt?.(0, 0))
     return this.createWeaponSelection(0, 0, -1, hintR, hintC)
   }
 

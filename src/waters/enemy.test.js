@@ -1,6 +1,5 @@
 /**
  * @jest-environment jsdom
- * @ts-nocheck: test file with complex mock setup and dynamic imports
  */
 
 /**
@@ -158,6 +157,7 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
   }
 }))
 
+/** @type {any} */
 let mockLoadOut = null
 /**
  * TEST SUITE: Enemy.updateWeaponStatus
@@ -1035,6 +1035,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
       expect(enemy.canTakeTurn).toBe(true)
       expect(enemy.canTakeTurn).toBe(true)
+      // Third call
       expect(enemy.canTakeTurn).toBe(true)
     })
   })
@@ -1147,13 +1148,15 @@ describe('Enemy.updateWeaponStatus', () => {
 
           // @ts-ignore - weapon property exists on mock weapon system
           const targetLetter = currentWeapon?.weapon?.letter
-          const shipsWithWeapon = this.opponent.ships.filter(ship => {
-            const entries = ship.loadedWeaponEntries
-            return entries.some(
-              ([/** @type {any} */ _key, /** @type {any} */ weapon]) =>
-                weapon?.weapon?.letter === targetLetter
-            )
-          })
+          const shipsWithWeapon = this.opponent.ships.filter(
+            /** @param {any} ship */ ship => {
+              const entries = ship.loadedWeaponEntries
+              return entries.some(
+                (/** @type {any} */ [_key, weapon]) =>
+                  weapon?.weapon?.letter === targetLetter
+              )
+            }
+          )
 
           if (shipsWithWeapon.length === 0) {
             this.randomAttachedWeapon(this.opponent)
@@ -1167,7 +1170,7 @@ describe('Enemy.updateWeaponStatus', () => {
 
           const entries = selectedShip.loadedWeaponEntries
           const [key, weapon] = entries.find(
-            ([/** @type {any} */ _k, /** @type {any} */ w]) =>
+            (/** @type {any} */ [_k, w]) =>
               /** @type {any} */ (w).weapon?.letter === targetLetter
           )
 
@@ -1446,6 +1449,7 @@ describe('Enemy.updateWeaponStatus', () => {
         canTakeTurn: true,
         // @ts-ignore - accessing private method for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
         _onFirstClickSelection: jest.fn(),
@@ -1464,7 +1468,9 @@ describe('Enemy.updateWeaponStatus', () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const { bh } = await import('../terrains/all/js/bh.js')
 
+      // @ts-ignore - bh.seekingMode property is available at runtime
       bh.seekingMode = true
+      // @ts-ignore - bh.terrain partial assignment is safe for test
       bh.terrain = { title: 'Space and Asteroids' }
       bh.subTerrainTagFromCell = jest.fn(() => 'asteroid')
 
@@ -1483,10 +1489,14 @@ describe('Enemy.updateWeaponStatus', () => {
             classList: { contains: jest.fn(() => true) }
           }))
         },
+        // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
+        // @ts-ignore - private methods accessed for testing
         _shouldWarnOnGaussAsteroid: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._shouldWarnOnGaussAsteroid
         ),
         _hasUnattachedForCurrentWeapon: jest.fn(() => false),
@@ -1508,9 +1518,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const { bh } = await import('../terrains/all/js/bh.js')
 
+      // @ts-ignore - bh.seekingMode property is available at runtime
       const previousSeekingMode = bh.seekingMode
       const previousTerrain = bh.terrain
+      // @ts-ignore - bh.seekingMode property is available at runtime
       bh.seekingMode = true
+      // @ts-ignore - bh.terrain partial assignment is safe for test
       bh.terrain = { title: 'Space and Asteroids' }
 
       const enemy = {
@@ -1533,15 +1546,22 @@ describe('Enemy.updateWeaponStatus', () => {
         _shouldWaitForWeaponResult: jest.fn(() => false),
         _processWeaponResult: jest.fn(),
         _finalizeTurn: jest.fn(),
+        // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
+        // @ts-ignore - private methods accessed for testing
         _fireWeaponViaSetup: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._fireWeaponViaSetup
         ),
         _fireCurrentWeaponImmediately: jest.fn(async function (_r, _c) {
+          // @ts-ignore - this binding in test mock
           const result = { weapon: 'Missile', score: { hits: 1 } }
+          // @ts-ignore - this binding in test mock
           this._processWeaponResult(result)
+          // @ts-ignore - this binding in test mock
           this._finalizeTurn()
           return result
         }),
@@ -1556,6 +1576,7 @@ describe('Enemy.updateWeaponStatus', () => {
       try {
         await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
       } finally {
+        // @ts-ignore - bh.seekingMode property is available at runtime
         bh.seekingMode = previousSeekingMode
         bh.terrain = previousTerrain
       }
@@ -1575,9 +1596,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const { bh } = await import('../terrains/all/js/bh.js')
 
+      // @ts-ignore - bh.seekingMode property is available at runtime
       const previousSeekingMode = bh.seekingMode
       const previousTerrain = bh.terrain
+      // @ts-ignore - bh.seekingMode property is available at runtime
       bh.seekingMode = true
+      // @ts-ignore - bh.terrain partial assignment is safe for test
       bh.terrain = { title: 'Space and Asteroids', hasAttachedWeapons: true }
 
       const currentWeaponSystem = {
@@ -1601,13 +1625,17 @@ describe('Enemy.updateWeaponStatus', () => {
         _shouldWaitForWeaponResult: jest.fn(() => false),
         _processWeaponResult: jest.fn(),
         _finalizeTurn: jest.fn(),
+        // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
         _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
           const result = { weapon: 'Missile', score: { hits: 1 } }
+          // @ts-ignore - this binding in test mock
           await this.fireWeaponAt(c, r, this.loadOut.currentWeaponSystem)
+          // @ts-ignore - this binding in test mock
           this._processWeaponResult(result)
+          // @ts-ignore - this binding in test mock
           this._finalizeTurn()
           return result
         }),
@@ -1624,6 +1652,7 @@ describe('Enemy.updateWeaponStatus', () => {
       try {
         await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
       } finally {
+        // @ts-ignore - bh.seekingMode property is available at runtime
         bh.seekingMode = previousSeekingMode
         bh.terrain = previousTerrain
       }
@@ -1643,9 +1672,12 @@ describe('Enemy.updateWeaponStatus', () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
       const { bh } = await import('../terrains/all/js/bh.js')
 
+      // @ts-ignore - bh.seekingMode property is available at runtime
       const previousSeekingMode = bh.seekingMode
       const previousTerrain = bh.terrain
+      // @ts-ignore - bh.seekingMode property is available at runtime
       bh.seekingMode = true
+      // @ts-ignore - bh.terrain partial assignment is safe for test
       bh.terrain = { title: 'Normal Waters' }
 
       const enemy = {
@@ -1667,15 +1699,18 @@ describe('Enemy.updateWeaponStatus', () => {
           }))
         ),
         _hasUnattachedForCurrentWeapon: jest.fn(() => false),
+        // @ts-ignore - private methods accessed for testing
         _shouldWarnOnGaussAsteroid: /** @type {any} */ (
           EnemyClass.prototype._shouldWarnOnGaussAsteroid
         ),
         _shouldWaitForWeaponResult: jest.fn(() => false),
         _processWeaponResult: jest.fn(),
         _finalizeTurn: jest.fn(),
+        // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
+        // @ts-ignore - private methods accessed for testing
         _fireWeaponViaSetup: /** @type {any} */ (
           EnemyClass.prototype._fireWeaponViaSetup
         ),
@@ -1690,6 +1725,7 @@ describe('Enemy.updateWeaponStatus', () => {
       try {
         await EnemyClass.prototype.onClickCell.call(enemy, 0, 0)
       } finally {
+        // @ts-ignore - bh.seekingMode property is available at runtime
         bh.seekingMode = previousSeekingMode
         bh.terrain = previousTerrain
       }
@@ -1715,18 +1751,22 @@ describe('Enemy.updateWeaponStatus', () => {
         },
         timeoutId: null,
         canTakeTurn: true,
+        // @ts-ignore - private methods accessed for testing
         _hasUnattachedForCurrentWeapon: /** @type {any} */ (
           EnemyClass.prototype
         )._hasUnattachedForCurrentWeapon,
+        // @ts-ignore - private methods accessed for testing
         _shouldWarnOnGaussAsteroid: /** @type {any} */ (
           EnemyClass.prototype._shouldWarnOnGaussAsteroid
         ),
         _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
           EnemyClass.prototype
         )['_shouldFireSeekModeMissileImmediately'],
+        // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
+        // @ts-ignore - private methods accessed for testing
         _fireWeaponViaSetup: /** @type {any} */ (
           EnemyClass.prototype._fireWeaponViaSetup
         ),
@@ -1758,14 +1798,19 @@ describe('Enemy.updateWeaponStatus', () => {
 
     it('should support two-click targeting in pure Seek mode when attached weapons exist and opponent reference is absent', async () => {
       const { Enemy: EnemyClass } = await import('./enemy.js')
+      // @ts-ignore - partial EnemyUI mock for testing
       const enemy = new EnemyClass({
         board: {
           classList: {
             add: jest.fn(),
             remove: jest.fn(),
-            [Symbol.iterator]: function* () {}
+            [Symbol.iterator]: function* () {
+              // iterate over empty set
+              return
+            }
           }
         },
+        /** @type {any} */
         gridCellAt: jest.fn()
       })
 
