@@ -1627,6 +1627,7 @@ describe('Enemy.updateWeaponStatus', () => {
         _finalizeTurn: jest.fn(),
         // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
         _fireCurrentWeaponImmediately: jest.fn(async function (r, c) {
@@ -1757,17 +1758,21 @@ describe('Enemy.updateWeaponStatus', () => {
         )._hasUnattachedForCurrentWeapon,
         // @ts-ignore - private methods accessed for testing
         _shouldWarnOnGaussAsteroid: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._shouldWarnOnGaussAsteroid
         ),
         _shouldFireSeekModeMissileImmediately: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype
         )['_shouldFireSeekModeMissileImmediately'],
         // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._handleAttachedWeaponClick
         ),
         // @ts-ignore - private methods accessed for testing
         _fireWeaponViaSetup: /** @type {any} */ (
+          // @ts-ignore - private property access
           EnemyClass.prototype._fireWeaponViaSetup
         ),
         _onFirstClickSelection: jest.fn(),

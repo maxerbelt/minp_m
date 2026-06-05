@@ -24,10 +24,18 @@ describe('Space Weapons regression', () => {
       .mockImplementation(async () => {})
 
     const viewModel = {
+      grid: {
+        nodeAt: () => ({}),
+        node: () => ({})
+      },
       gridCellAt: () => ({}),
       cellSize: () => 10
     }
     const opposingViewModel = {
+      grid: {
+        nodeAt: () => ({}),
+        node: () => ({})
+      },
       gridCellAt: () => ({})
     }
 

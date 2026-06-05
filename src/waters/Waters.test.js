@@ -218,7 +218,9 @@ describe('Waters', () => {
       // @ts-expect-error - Mocking UI method for testing
       waters.UI.gridCellAt = jest.fn(() => ({ cell: 'mock' }))
 
+      // @ts-expect-error - Mock return type doesn't match interface
       waters.UI.grid.nodeAt = jest.fn(() => ({ cell: 'mock' }))
+      // @ts-expect-error - Mock return type doesn't match interface
       waters.UI.grid.node = jest.fn(() => ({ cell: 'mock' }))
       // @ts-expect-error - Testing private method access
       const hint = waters.generateRandomSourceHint({ cells: [1, 2] }, null)
@@ -524,7 +526,6 @@ describe('Waters', () => {
     it('loadForEdit does not reinitialize ships if ships array already has ships', () => {
       // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.autoPlace = jest.fn()
-      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.placeMatchingShips = jest.fn(() => [])
       // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
@@ -557,7 +558,6 @@ describe('Waters', () => {
     })
 
     it('loadForEdit calls placeMatchingShips when map.example exists', () => {
-      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.placeMatchingShips = jest.fn(() => [])
       // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
@@ -697,7 +697,6 @@ describe('Waters', () => {
     })
 
     it('load calls placeMatchingShips when map.example has placed ships', () => {
-      // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.placeMatchingShips = jest.fn(() => [])
       // @ts-expect-error TS2322 - jest.fn() is compatible with this signature
       waters.resetShipCells = jest.fn()
