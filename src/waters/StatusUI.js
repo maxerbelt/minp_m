@@ -21,7 +21,7 @@ import { Delay } from '../core/Delay.js'
  * @typedef {Object} WeaponSystem
  * @property {Weapon} weapon - The weapon object
  * @property {number} ammoCapacity - Total ammo capacity for the weapon
- * @property {() => number} ammoRemaining - Function returning remaining ammo count
+ * @property {number} ammoRemaining - Current ammo count
  */
 
 /**
@@ -665,7 +665,7 @@ class StatusUI {
   /**
    * Displays the ammo count for the weapon system.
    * Calls #displayAmmoCounter with capacity and remaining values.
-   * Invokes ammoRemaining function to get current ammo count.
+   * Invokes ammoRemaining property to get current ammo count.
    *
    * @param {WeaponSystem} wps - The weapon system
    * @returns {void}
