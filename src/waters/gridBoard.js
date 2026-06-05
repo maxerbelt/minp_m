@@ -114,6 +114,7 @@ export class GridBoard {
   /**
    * Gets the map configuration, defaulting to global bh.map if not set.
    * Safely handles null/undefined by loading from bh.map.
+   * Ensures map always has inBounds method for boundary validation.
    * @returns {GridMap} The map configuration object
    * @type {GridMap}
    */
@@ -122,7 +123,15 @@ export class GridBoard {
       /** @type {any} */
       const globalMap = bh.map
       /** @type {GridMap} */
-      this._map = globalMap ?? { rows: 0, cols: 0, inBounds: undefined }
+      this._map = globalMap ?? { rows: 0, cols: 0 }
+    }
+    // Ensure inBounds method exists for boundary checking
+    if (typeof this._map.inBounds !== 'function') {
+      const rows = this._map.rows ?? 0
+      const cols = this._map.cols ?? 0
+      this._map.inBounds = (row, col) => {
+        return row >= 0 && row < rows && col >= 0 && col < cols
+      }
     }
     return this._map
   }
@@ -246,6 +255,7 @@ export class GridBoard {
   /**
    * Displays surrounding cells with miss indicator.
    * Marks all neighbors (but not original cells) as miss for area-of-effect.
+   * Validates coordinates are in bounds before marking to prevent out-of-bounds errors.
    *
    * @param {Set<string>} surroundingKeys - Set of surrounding cell keys
    * @param {CellMissCallback} cellMiss - Callback to mark cells as miss: (row, col) => void
@@ -254,7 +264,10 @@ export class GridBoard {
   #displaySurroundingMisses (surroundingKeys, cellMiss) {
     for (const key of surroundingKeys) {
       const [y, x] = parsePair(key)
-      cellMiss(x, y)
+      // Validate coordinates are in bounds before calling cellMiss
+      if (this.map.inBounds(y, x)) {
+        cellMiss(x, y)
+      }
     }
   }
   /**
