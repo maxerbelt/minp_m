@@ -1106,7 +1106,9 @@ describe('Enemy.updateWeaponStatus', () => {
           }
         ],
         UI: {
-          gridCellAt: jest.fn((_r, _c) => ({ classList: { add: jest.fn() } }))
+          grid: {
+            nodeAt: jest.fn((_x, _y) => ({ classList: { add: jest.fn() } }))
+          }
         }
       }
 
@@ -1485,9 +1487,11 @@ describe('Enemy.updateWeaponStatus', () => {
         timeoutId: null,
         canTakeTurn: true,
         UI: {
-          gridCellAt: jest.fn(() => ({
-            classList: { contains: jest.fn(() => true) }
-          }))
+          grid: {
+            nodeAt: jest.fn(() => ({
+              classList: { contains: jest.fn(() => true) }
+            }))
+          }
         },
         // @ts-ignore - private methods accessed for testing
         _handleAttachedWeaponClick: /** @type {any} */ (

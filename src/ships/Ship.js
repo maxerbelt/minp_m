@@ -107,6 +107,8 @@ import { Zip } from '../core/Zip.js'
 /**
  * @typedef {Object} UIViewModel
  * UI view model interface
+ * @property {Object} grid - Grid object with nodeAt method
+ * @property {(r: number, c: number) => any} grid.nodeAt - Get cell element at row/col
  * @property {(cell: any, damaged: string) => void} useAmmoInCell - Mark ammo used in cell
  * @property {() => number} cellSize - Get cell size in pixels
  */

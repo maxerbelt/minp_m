@@ -161,8 +161,8 @@ const WEAPON_CONFIGS = {
  * @returns {LineIntercepts} Intercept points { x0, y0, x1, y1 }
  * @public
  */
-export function getIntercepts (row1, col1, row2, col2) {
-  const points = RectListCanvas.BhMapList()
+export function getIntercepts (row1, col1, row2, col2, map) {
+  const points = RectListCanvas.BhMapList(map)
   return points.intercepts(col1, row1, col2, row2)
 }
 
@@ -501,10 +501,11 @@ function calculateLineAreaOfEffect (
  * Handles degenerate cases (single point, invalid input) gracefully by returning safe defaults.
  * Accepts flat [row, col] as a degenerate line to both endpoints.
  * @param {number[][]|number[]} coords - Two-point coordinates [[row1, col1], [row2, col2]] or single point [row, col]
+ * @param {MapLike} map - Game map for bounds checking
  * @returns {number[][]} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
  * @private
  */
-function normalizeLineCoordinates (coords) {
+function normalizeLineCoordinates (coords, map) {
   if (!coords || !Array.isArray(coords) || coords.length === 0) {
     console.warn('normalizeLineCoordinates called with invalid coords', coords)
     return [
@@ -543,7 +544,7 @@ function normalizeLineCoordinates (coords) {
 
   const [row1, col1] = start
   const [row2, col2] = end
-  const { x0, y0, x1, y1 } = getIntercepts(row1, col1, row2, col2)
+  const { x0, y0, x1, y1 } = getIntercepts(row1, col1, row2, col2, map)
   return [
     [y0, x0],
     [y1, x1]
@@ -764,14 +765,14 @@ export class Strike extends WeapponWithPath {
   /**
    * Normalizes coordinates between two map coordinates.
    * Ensures actual line-of-sight boundaries are respected using line intercepts.
-   * @param {MapLike} _map - Game map (unused)
+   * @param {MapLike} map - Game map for bounds checking
    * @param {number[]} _base - Base coordinates [row, col] (unused)
    * @param {number[][]} coords - Coordinates to normalize [[row1, col1], [row2, col2]]
    * @returns {number[][]} Normalized coordinate pair [[startRow, startCol], [endRow, endCol]]
    * @public
    */
-  redoCoords (_map, _base, coords) {
-    return normalizeLineCoordinates(coords)
+  redoCoords (map, _base, coords) {
+    return normalizeLineCoordinates(coords, map)
   }
 
   /**

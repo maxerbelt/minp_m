@@ -129,7 +129,6 @@ const MESSAGES = {
  * @property {() => void} [playMode] - Switch to play mode display
  * @property {() => void} [reset] - Reset UI to initial state
  * @property {() => void} [deactivateTempHints] - Clear temporary hint displays
- * @property {(row: number, col: number) => HTMLElement} [gridCellAt] - Get cell element at coordinates
  * @property {() => void} [enableBtns] - Enable all control buttons
  * @property {() => void} [disableBtns] - Disable all control buttons
  * @property {(onClickCell?: Function, thisRef?: any, map?: any) => void} [buildBoard] - Build board UI with click handlers
@@ -1348,7 +1347,7 @@ class Enemy extends Waters {
     const sourceRow = isSeekSource ? r : launchR
     const sourceCol = isSeekSource ? c : launchC
     // @ts-ignore - gridCellAt is on EnemyUI
-    const sourceCell = viewModel?.gridCellAt?.(sourceRow, sourceCol)
+    const sourceCell = viewModel?.nodeAt?.(sourceCol, sourceRow)
 
     const hintCoords = isSeekSource
       ? [r, c]
@@ -1696,12 +1695,12 @@ class Enemy extends Waters {
    * Checks if Gauss Round should play warning sound for asteroid in seek mode.
    * @private
    * @param {WeaponSystem|undefined} currentWeapon - Current weapon system
-   * @param {number} r - Target row coordinate
-   * @param {number} c - Target column coordinate
+   * @param {number} x - Target column coordinate
+   * @param {number} y - Target row coordinate
    * @returns {boolean} True if warning should be played
    * @memberof Enemy
    */
-  _shouldWarnOnGaussAsteroid (currentWeapon, r, c) {
+  _shouldWarnOnGaussAsteroid (currentWeapon, x, y) {
     const isGaussRound =
       currentWeapon?.weapon?.name === 'Gauss Round' ||
       currentWeapon?.weapon?.letter === '^'
@@ -1712,7 +1711,7 @@ class Enemy extends Waters {
       return false
     }
 
-    const cell = this.UI.gridCellAt(r, c)
+    const cell = this.UI.nodeAt(x, y)
     if (bh.subTerrainTagFromCell(cell) !== 'asteroid') {
       return false
     }
@@ -1804,7 +1803,7 @@ class Enemy extends Waters {
     // Clear previous coordinate selections and setup new target
     loadOut?.clearSelectedCoordinates?.()
     // @ts-ignore - opponent UI type compatibility
-    const cell = opponent?.UI?.gridCellAt?.(hintR, hintC)
+    const cell = opponent?.UI?.grid.nodeAt?.(hintC, hintR)
     // @ts-ignore - this.steps is typed as Object but has addHint method
     this.steps?.addHint?.(opponent?.UI, hintR, hintC, cell)
     // @ts-ignore - createShadowSource is parent method

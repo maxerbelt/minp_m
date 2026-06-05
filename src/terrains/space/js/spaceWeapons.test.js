@@ -106,7 +106,7 @@ describe('spaceWeapons basic behavior', () => {
 
   it('RailBolt.redoCoords falls back to a degenerate line when given a single point', () => {
     const rail = new RailBolt(1)
-    const result = rail.redoCoords({ cols: 10, rows: 10 }, 0, 0, 3, 4)
+    const result = rail.redoCoords({ cols: 10, rows: 10 }, [0, 0], [[3, 4]])
     expect(result).toEqual([
       [3, 4],
       [3, 4]
@@ -222,14 +222,14 @@ describe('spaceWeapons basic behavior', () => {
     const oppoCells = new Map()
     const viewModel = {
       grid: {
-        nodeAt: jest.fn((row, col) => {
+        nodeAt: jest.fn((col, row) => {
           const rowIndex = Number(row)
           const colIndex = Number(col)
           const key = `${rowIndex},${colIndex}`
           if (!viewCells.has(key)) viewCells.set(key, makeCell(key))
           return viewCells.get(key)
         }),
-        node: jest.fn((row, col) => {
+        node: jest.fn((col, row) => {
           const rowIndex = Number(row)
           const colIndex = Number(col)
           const key = `${rowIndex},${colIndex}`
@@ -241,14 +241,14 @@ describe('spaceWeapons basic behavior', () => {
     }
     const opposingViewModel = {
       grid: {
-        nodeAt: jest.fn((row, col) => {
+        nodeAt: jest.fn((col, row) => {
           const rowIndex = Number(row)
           const colIndex = Number(col)
           const key = `${rowIndex},${colIndex}`
           if (!oppoCells.has(key)) oppoCells.set(key, makeCell(key))
           return oppoCells.get(key)
         }),
-        node: jest.fn((row, col) => {
+        node: jest.fn((col, row) => {
           const rowIndex = Number(row)
           const colIndex = Number(col)
           const key = `${rowIndex},${colIndex}`
@@ -281,12 +281,13 @@ describe('spaceWeapons basic behavior', () => {
       gameModel
     )
 
-    expect(opposingViewModel.grid.nodeAt).toHaveBeenCalledWith(hintR, hintC)
-    expect(viewModel.grid.nodeAt).toHaveBeenCalledWith(hintR, hintC)
+    expect(opposingViewModel.grid.nodeAt).toHaveBeenCalledWith(hintC, hintR)
+    expect(viewModel.grid.nodeAt).toHaveBeenCalledWith(hintC, hintR)
 
     const sourceOpposite = oppoCells.get(`${hintR},${hintC}`)
     const sourceView = viewCells.get(`${hintR},${hintC}`)
-
+    expect(sourceOpposite).toBeDefined()
+    expect(sourceView).toBeDefined()
     expect(sourceOpposite.classList.add).toHaveBeenCalledWith('portal')
     expect(sourceView.classList.add).toHaveBeenCalledWith('portal')
     expect(sourceOpposite.classList.remove).toHaveBeenCalledWith('portal')
