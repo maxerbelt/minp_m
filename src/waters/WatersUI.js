@@ -645,9 +645,10 @@ export class WatersUI {
    * Removes and reapplies terrain coloring to cell at coordinates.
    * Used when terrain has changed and colors need refresh.
    *
-   * @param {number} y - Row coordinate
-   * @param {number} x - Column coordinate
+   * @param {number} x - Column coordinate (0-indexed)
+   * @param {number} y - Row coordinate (0-indexed)
    * @returns {void}
+   * @public
    */
   recolor (x, y) {
     const board = this.board

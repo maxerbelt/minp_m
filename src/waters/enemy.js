@@ -1461,11 +1461,11 @@ class Enemy extends Waters {
     // @ts-ignore - setWeaponFireHandlers is parent method
     this.setWeaponFireHandlers?.()
     this.selectedCellCoordinates = null
-    // @ts-ignore - fireWeaponAt is parent method, loadOut selectedWeapon may be null
+    // @ts-ignore - fireWeaponAt is parent method, loadOut selectedWeapon type mismatch (WeaponsSystem vs WeaponSystemType)
     const result = await this.fireWeaponAt?.(
       x,
       y,
-      this.loadOut?.selectedWeapon ?? undefined
+      /** @type {any} */ (this.loadOut?.selectedWeapon ?? undefined)
     )
     // @ts-ignore - fireWeaponAt return type includes score property
     if (result?.score) {
@@ -1711,7 +1711,8 @@ class Enemy extends Waters {
     }
 
     const cell = this.UI.grid.nodeAt(x, y)
-    if (bh.subTerrainTagFromCell(cell) !== 'asteroid') {
+    // cell can be null if coordinates are out of bounds
+    if (!cell || bh.subTerrainTagFromCell(cell) !== 'asteroid') {
       return false
     }
 

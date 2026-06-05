@@ -19,10 +19,40 @@
  * @property {string} lastModifier - Last keyboard modifier ('shift', 'ctrl', 'alt', etc.)
  * @property {number} dragCounter - Counter for nested drag events (dragenter/dragleave)
  *
- * @import type { ViewModel, ShipElement } from './types/ui.types.js';
- * @import type { Model, Weapon, PlacementData } from './types/placement.types.js';
- * @import type { Ship } from './types/domain.types.js';
- * @import type { CursorPosition } from './types/ui.types.js';
+ * @typedef {Object} ViewModel
+ * @description View model interface expected by dragndrop handlers for board access and UI updates.
+ * Implemented by WatersUI, PlacementUI, and CustomUI classes.
+ * @property {HTMLElement} board - The main game board DOM element
+ * @property {Object} grid - Grid board instance with nodeAt method
+ * @property {(x: number, y: number) => HTMLElement|null} grid.nodeAt - Get cell element at coordinates
+ * @property {() => void} removeHighlight - Remove all highlight classes from board
+ * @property {(x: number, y: number) => void} recolor - Recolor cell at coordinates (applies terrain coloring)
+ * @property {() => void} clearVisuals - Clear all visual markers and temporary styling from board
+ * @property {Object} score - Score tracker with displayZoneInfo() method
+ * @property {() => void} score.displayZoneInfo - Display zone/statistics information
+ * @property {() => void} updateChangeClearButton - Update button states based on current state
+ *
+ * @typedef {Object} ShipElement
+ * @description DOM element representing a ship in ship tray UI
+ * @property {string} id - Unique ship identifier
+ * @property {string} dataset.id - Ship ID in element dataset
+ * @property {string} dataset.variant - Ship variant index
+ * @property {string} dataset.type - Ship type letter
+ *
+ * @typedef {Object} Model
+ * @description Model interface for game placement state
+ *
+ * @typedef {Object} Weapon
+ * @description Weapon configuration object
+ *
+ * @typedef {Object} PlacementData
+ * @description Ship/weapon placement information
+ *
+ * @typedef {Object} Ship
+ * @description Ship configuration object
+ *
+ * @typedef {[number, number]} CursorPosition
+ * @description Cursor position as [x, y] coordinate pair
  */
 
 import { bh } from '../terrains/all/js/bh.js'
