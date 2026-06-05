@@ -30,7 +30,7 @@ const UI_CLASSES = {
  * @typedef {Object} GridMap
  * @property {number} rows - Number of rows in grid
  * @property {number} cols - Number of columns in grid
- * @property {(row: number, col: number) => boolean} [inBounds] - Check if coordinate is in bounds
+ * @property {((row: number, col: number) => boolean)|undefined} [inBounds] - Check if coordinate is in bounds
  */
 
 /**
@@ -107,18 +107,22 @@ export class GridBoard {
   constructor (boardElement, map) {
     /** @type {HTMLElement|null} */
     this.board = boardElement
-    /** @type {GridMap|undefined} */
-    this._map = map
+    /** @type {GridMap|null} */
+    this._map = map ?? null
   }
 
   /**
    * Gets the map configuration, defaulting to global bh.map if not set.
+   * Safely handles null/undefined by loading from bh.map.
+   * @returns {GridMap} The map configuration object
    * @type {GridMap}
    */
   get map () {
     if (this._map == null) {
+      /** @type {any} */
+      const globalMap = bh.map
       /** @type {GridMap} */
-      this._map = bh.map
+      this._map = globalMap ?? { rows: 0, cols: 0, inBounds: undefined }
     }
     return this._map
   }
@@ -143,7 +147,12 @@ export class GridBoard {
    */
   nodeAt (x, y) {
     /** @type {HTMLElement|null} */
-    return CellUI.nodeAt(this.board, x, y, this.map)
+    return CellUI.nodeAt(
+      this.board ?? /** @type {HTMLDivElement} */ (undefined),
+      x,
+      y,
+      this.map
+    )
   }
 
   /**
@@ -154,7 +163,12 @@ export class GridBoard {
    */
   node (x, y) {
     /** @type {HTMLElement} */
-    return CellUI.node(this.board, x, y, this.map)
+    return CellUI.node(
+      this.board ?? /** @type {HTMLDivElement} */ (undefined),
+      x,
+      y,
+      this.map
+    )
   }
 
   /**
@@ -200,7 +214,12 @@ export class GridBoard {
    * @returns {void}
    */
   surroundShipAt (x, y, ship) {
-    return CellUI.surroundShipAt(this.board, x, y, ship)
+    return CellUI.surroundShipAt(
+      this.board ?? /** @type {HTMLDivElement} */ (undefined),
+      x,
+      y,
+      ship
+    )
   }
 
   /**
@@ -214,15 +233,15 @@ export class GridBoard {
    * @returns {void}
    */
   cellPlacedAt (x, y, ship) {
-    /** @type {GridMap} */
-    const map = bh.map
-    if (!map || !('inBounds' in map)) return
-    /** @type {(r: number, c: number) => boolean} */
-    const inBoundsMethod = map.inBounds
-    if (!inBoundsMethod?.call(map, y, x)) return
+    /** @type {any} */
+    const mapObj = bh.map
+    if (!mapObj || typeof mapObj.inBounds !== 'function') return
+    if (!mapObj.inBounds(y, x)) return
     /** @type {HTMLElement|null} */
     const cell = this.nodeAt(x, y)
-    ShipCellDisplayer.displayPlacedCell(cell, ship, y, x)
+    if (cell !== null) {
+      ShipCellDisplayer.displayPlacedCell(cell, ship, y, x)
+    }
   }
   /**
    * Displays surrounding cells with miss indicator.
@@ -231,7 +250,6 @@ export class GridBoard {
    * @param {Set<string>} surroundingKeys - Set of surrounding cell keys
    * @param {CellMissCallback} cellMiss - Callback to mark cells as miss: (row, col) => void
    * @returns {void}
-   * @private
    */
   #displaySurroundingMisses (surroundingKeys, cellMiss) {
     for (const key of surroundingKeys) {
@@ -250,7 +268,11 @@ export class GridBoard {
    */
   cellMiss (x, y, damageType) {
     /** @type {HTMLElement} */
-    const cell = CellUI.node(this.board, x, y)
+    const cell = CellUI.node(
+      this.board ?? /** @type {HTMLDivElement} */ (undefined),
+      x,
+      y
+    )
 
     if (cell.classList.contains('placed')) return
     cell.classList.add('miss')
@@ -267,7 +289,6 @@ export class GridBoard {
    * @param {ShipObject} ship - Ship object for display
    * @param {CellDisplayCallback} displayFn - Callback to display cells: (row, col, ship) => void
    * @returns {void}
-   * @private
    */
   #displayCenterCells (cells, ship, displayFn) {
     for (const [row, column] of cells) {
@@ -323,7 +344,6 @@ export class GridBoard {
    *
    * @param {Iterable<[number, number]>} cells - Iterable of [row, col] coordinate pairs
    * @returns {Set<string>} Set of cell keys
-   * @private
    */
   #cellSet (cells) {
     /** @type {Set<string>} */
@@ -377,7 +397,6 @@ export class GridBoard {
    * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
    * @returns {void}
    * @throws {Error} If maker callback required but not provided for chosen strategy
-   * @private
    */
   #addSurroundingCells (x, y, container, strategy, maker) {
     /** @type {any} */
@@ -387,20 +406,34 @@ export class GridBoard {
 
     switch (strategy) {
       case 'keySet': {
-        result = SurroundingCellsHelper.asKeySet(currentMap, x, y)
+        result = SurroundingCellsHelper.asKeySet(
+          currentMap ?? { rows: 0, cols: 0 },
+          x,
+          y
+        )
         // @ts-ignore - container is Set when strategy is keySet
         result.forEach(key => container.add(key))
         break
       }
       case 'objectMap': {
         if (!maker) throw new Error('maker required for objectMap strategy')
-        result = SurroundingCellsHelper.asObjectMap(currentMap, x, y, maker)
+        result = SurroundingCellsHelper.asObjectMap(
+          currentMap ?? { rows: 0, cols: 0 },
+          x,
+          y,
+          maker
+        )
         Object.assign(container, result)
         break
       }
       case 'array': {
         if (!maker) throw new Error('maker required for array strategy')
-        result = SurroundingCellsHelper.asArray(currentMap, x, y, maker)
+        result = SurroundingCellsHelper.asArray(
+          currentMap ?? { rows: 0, cols: 0 },
+          x,
+          y,
+          maker
+        )
         // @ts-ignore - container is array when strategy is array
         container.push(...result)
         break
@@ -476,12 +509,15 @@ export class GridBoard {
     /** @type {Object<string, HTMLElement>} */
     const surroundings = container || {}
     for (const cell of cells) {
-      const { x, y } = CellUI.getCoords(cell)
+      const { x, y } = CellUI.getCoords(/** @type {HTMLDivElement} */ (cell))
       this.surroundObj(
         x,
         y,
         surroundings,
-        CellUI.nodeAt.bind(CellUI, this.board)
+        CellUI.nodeAt.bind(
+          CellUI,
+          this.board ?? /** @type {HTMLDivElement} */ (undefined)
+        )
       )
     }
     return Object.values(surroundings)
@@ -515,7 +551,7 @@ export class GridBoard {
    */
   addHover (onEnter, onLeave, thisRef, weaponSource) {
     this.#forEachBoardCell((/** @type {HTMLElement} */ el) => {
-      const { x, y } = CellUI.getCoords(el)
+      const { x, y } = CellUI.getCoords(/** @type {HTMLDivElement} */ (el))
       // @ts-ignore - addEventListener signature compatible at runtime
       el.addEventListener('mouseenter', onEnter.bind(null, weaponSource, y, x))
       // @ts-ignore - addEventListener signature compatible at runtime
@@ -553,7 +589,7 @@ export class GridBoard {
    * Creates grid with row/column labels for interactive display.
    *
    * @param {HTMLElement|null} boardElement - The board element
-   * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} onClick - Click handler
+   * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} [onClick] - Click handler
    * @param {Object} [thisRef] - Context for click handler binding
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
@@ -582,14 +618,20 @@ export class GridBoard {
     for (const [x, y] of this.locations()) {
       if (onClick) {
         CellUI.createAndAppendTo(
-          this.board,
+          this.board ?? /** @type {HTMLDivElement} */ (undefined),
           x,
           y,
           map,
           onClick.bind(thisRef, y, x)
         )
       } else {
-        CellUI.createAndAppendTo(this.board, x, y, map, onClick)
+        CellUI.createAndAppendTo(
+          this.board ?? /** @type {HTMLDivElement} */ (undefined),
+          x,
+          y,
+          map,
+          onClick
+        )
       }
     }
   }
@@ -619,14 +661,28 @@ export class GridBoard {
     this.board.innerHTML = ''
     /** @type {GridMap} */
     const map = this.map
-    CellUI.createEmptyNodeAndAppendTo(this.board)
+    CellUI.createEmptyNodeAndAppendTo(
+      this.board ?? /** @type {HTMLDivElement} */ (undefined)
+    )
     for (let x = 0; x < map.cols; x++) {
-      CellUI.createColLabelNodeAndAppendTo(this.board, x)
+      CellUI.createColLabelNodeAndAppendTo(
+        this.board ?? /** @type {HTMLDivElement} */ (undefined),
+        x
+      )
     }
     for (let y = 0; y < map.rows; y++) {
-      CellUI.createRowLabelNodeAndAppendTo(this.board, map.rows, y)
+      CellUI.createRowLabelNodeAndAppendTo(
+        this.board ?? /** @type {HTMLDivElement} */ (undefined),
+        map.rows,
+        y
+      )
       for (let x = 0; x < map.cols; x++) {
-        CellUI.createAndAppendTo(this.board, x, y, map)
+        CellUI.createAndAppendTo(
+          this.board ?? /** @type {HTMLDivElement} */ (undefined),
+          x,
+          y,
+          map
+        )
       }
     }
   }
@@ -695,7 +751,6 @@ export class GridBoard {
    * @param {GameModel} model - Game model containing placement rules and state
    * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration
    * @returns {void}
-   * @private
    */
   #configureBoardCellsForDrop (model, additionalSetup) {
     this.#forEachBoardCell(cell => {

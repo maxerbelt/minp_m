@@ -157,7 +157,7 @@ export class CellUI {
    * @returns {HTMLDivElement|null} DOM element at coordinates or null if not found
    */
   static nodeAt (board, x, y, map) {
-    const currentMap = map || bh.map
+    const currentMap = map || /** @type {GridMap|null} */ (bh.map)
     if (!currentMap) return null
     return /** @type {HTMLDivElement|null} */ (
       board?.children?.[this.gridIndex(x, y, currentMap)]
@@ -178,7 +178,7 @@ export class CellUI {
    * @throws {Error} If coordinates are invalid or element not found at coordinates
    */
   static node (board, x, y, map) {
-    const currentMap = map || bh.map
+    const currentMap = map || /** @type {GridMap|null} */ (bh.map)
     if (this.isValid(x, y, currentMap)) {
       const node = this.nodeAt(board, x, y, currentMap)
       if (node) return node
@@ -213,6 +213,7 @@ export class CellUI {
    * Removes all child nodes and text from the DOM element.
    * @private
    * @returns {void}
+   * @internal Used internally for cell state management
    */
   clearText () {
     this.node.textContent = ''
@@ -232,8 +233,13 @@ export class CellUI {
    * @throws {Error} If coordinates invalid or element not found at coordinates
    */
   static fromBoard (board, x, y, map) {
-    const currentMap = map || bh.map
-    return new CellUI(x, y, CellUI.node(board, x, y, currentMap), currentMap)
+    const currentMap = map || /** @type {GridMap|null} */ (bh.map)
+    return new CellUI(
+      x,
+      y,
+      CellUI.node(board, x, y, currentMap),
+      currentMap ?? undefined
+    )
   }
 
   /**
@@ -439,12 +445,12 @@ export class CellUI {
    * Uses cached result on subsequent accesses for performance.
    *
    * @instance
-   * @returns {GridMap} Map configuration object for terrain queries and bounds validation
+   * @returns {GridMap|undefined} Map configuration object for terrain queries and bounds validation, or undefined if unavailable
    */
   get map () {
     if (this._map) return this._map
 
-    this._map = bh.map
+    this._map = /** @type {GridMap|undefined} */ (bh.map ?? undefined)
     return this._map
   }
 
@@ -486,13 +492,14 @@ export class CellUI {
    * @static
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
-   * @param {GridMap} [map] - Map configuration with cols/rows dimensions
+   * @param {GridMap|null} [map] - Map configuration with cols/rows dimensions
    * @returns {boolean} True if coordinates are valid within bounds, false otherwise
    */
   static isValid (x, y, map) {
-    const m = map || bh.map
+    const m = map || /** @type {GridMap|null} */ (bh.map)
     if (!m) return false
-    return x >= 0 && x < m.cols && y >= 0 && y < m.rows
+    const gridMap = /** @type {GridMap} */ (m)
+    return x >= 0 && x < gridMap.cols && y >= 0 && y < gridMap.rows
   }
 
   /**

@@ -50,7 +50,7 @@ import { placedShipsInstance } from '../selection/PlacedShips.js'
 /**
  * Element visibility state mapping for batch visibility updates.
  * Array of [element, shouldShow] tuples for efficient bulk visibility control.
- * @typedef {Array<[HTMLElement|null, boolean]>} VisibilityMap
+ * @typedef {Array<[(HTMLElement|HTMLButtonElement|null|undefined), boolean]>} VisibilityMap
  * @description Each tuple contains [element, show] where show is boolean visibility state
  */
 
@@ -118,17 +118,32 @@ const SHIP_TIPS = [
  *
  * @class CustomUI
  * @extends {PlacementUI}
+ * @property {HTMLButtonElement|undefined} reuseBtn - Cached reuse map button reference
+ * @property {HTMLButtonElement|undefined} resetBtn - Cached reset/clear button reference
+ * @property {HTMLButtonElement|undefined} acceptBtn - Cached accept button reference
+ * @property {HTMLButtonElement|undefined} stopBtn - Cached stop button reference
+ * @property {HTMLButtonElement|undefined} undoBtn - Cached undo button reference
+ * @property {HTMLButtonElement|undefined} publishBtn - Cached publish button reference
+ * @property {HTMLButtonElement|undefined} saveBtn - Cached save button reference
+ * @property {HTMLElement|null|undefined} heightContainer - Cached height control container
+ * @property {HTMLElement|null|undefined} widthContainer - Cached width control container
+ * @property {HTMLElement|null|undefined} tallyTitle - Cached tally title element
+ * @property {string[]} tips - Array of current tips to display to user
+ * @property {Function[]} brushlistenCancellables - Array of cancellable brush mode listeners
+ * @property {Function[]} placelistenCancellables - Array of cancellable placement mode listeners
  */
 export class CustomUI extends PlacementUI {
   /**
    * Initializes the custom UI with cached elements and initial tips.
    * Sets up base placement UI state and caches frequently accessed DOM elements.
    * Initializes with brush mode tips for terrain editing workflow.
+   * Initializes listener cancellable arrays for managing event listeners.
    *
    * Side effects:
    * - Calls super() to initialize PlacementUI base class
    * - Calls _cacheElements() to populate button and container references
    * - Sets initial tips array to first brush tip
+   * - Initializes brushlistenCancellables and placelistenCancellables arrays
    *
    * @constructor
    */
@@ -136,6 +151,10 @@ export class CustomUI extends PlacementUI {
     super('custom', 'Customizing')
     this._cacheElements() // Cache DOM elements for performance
     this.tips = BRUSH_TIPS.slice(0, 1) // Initial tips
+    /** @type {Function[]} */
+    this.brushlistenCancellables = []
+    /** @type {Function[]} */
+    this.placelistenCancellables = []
   }
 
   /**
@@ -230,7 +249,7 @@ export class CustomUI extends PlacementUI {
    * Used for mode-specific UI updates.
    *
    * Side effects:
-   * - Adds or removes 'hidden' class from each element in visibilityMap
+   * - Adds or removes 'hidden' class from each non-null element in visibilityMap
    *
    * @param {VisibilityMap} visibilityMap - Array of [element, shouldShow] pairs
    * @returns {void}
@@ -238,7 +257,9 @@ export class CustomUI extends PlacementUI {
    */
   _toggleElementVisibility (visibilityMap) {
     for (const [element, show] of visibilityMap) {
-      if (element) element.classList.toggle('hidden', !show)
+      if (element) {
+        element.classList.toggle('hidden', !show)
+      }
     }
   }
 
@@ -325,8 +346,9 @@ export class CustomUI extends PlacementUI {
     this._setBrushModeVisibility()
 
     this.hideTransformBtns()
-    this.score.placed.textContent = 'None Yet'
-    this.score.weaponsPlaced.textContent = 'None Yet'
+    if (this.score.placed !== null) this.score.placed.textContent = 'None Yet'
+    if (this.score.weaponsPlaced !== null)
+      this.score.weaponsPlaced.textContent = 'None Yet'
     this._clearCellClasses()
     this._standardPanels()
   }
@@ -335,6 +357,7 @@ export class CustomUI extends PlacementUI {
    * Clears hit and placed classes from board cells.
    * Iterates through board cells and removes visual state classes.
    * Resets board appearance for new placement or terrain editing.
+   * Safely handles null board reference.
    *
    * Side effects:
    * - Removes 'hit' and 'placed' classes from all board cell children
@@ -343,8 +366,10 @@ export class CustomUI extends PlacementUI {
    * @private
    */
   _clearCellClasses () {
-    for (const cell of this.board.children) {
-      cell.classList.remove('hit', 'placed')
+    if (this.board !== null) {
+      for (const cell of this.board.children) {
+        cell.classList.remove('hit', 'placed')
+      }
     }
   }
 
@@ -383,35 +408,21 @@ export class CustomUI extends PlacementUI {
   }
 
   /**
-   * Clears map and refreshes display.
-   * Removes blank maps from storage and updates visual state.
-   * Called after terrain editing to apply changes.
-   *
-   * Side effects:
-   * - Calls bh.maps.clearBlank() to remove empty maps
-   * - Calls _refreshBuildUI() to update display
-   *
-   * @returns {void}
-   * @private
-   */
-  _clearMapAndRefresh () {
-    bh.maps.clearBlank()
-    this._refreshBuildUI()
-  }
-
-  /**
    * Updates reuse button state based on available maps.
    * Disables button if no map of current size exists in storage.
    * Used to control availability of 'reuse previous map' option.
+   * Safely handles undefined button reference.
    *
    * Side effects:
-   * - Sets reuseBtn.disabled based on hasMapOfCurrentSize() result
+   * - Sets reuseBtn.disabled based on hasMapOfCurrentSize() result (if button exists)
    *
    * @returns {void}
    * @private
    */
   _setReuseButtonState () {
-    this.reuseBtn.disabled = !hasMapOfCurrentSize()
+    if (this.reuseBtn !== undefined) {
+      this.reuseBtn.disabled = !hasMapOfCurrentSize()
+    }
   }
 
   /**
@@ -425,7 +436,7 @@ export class CustomUI extends PlacementUI {
    * - Makes board brush-editable via grid.makeBrushable()
    * - Builds brush tray with terrain via buildBrushTray()
    * - Enters brush mode via brushMode()
-   * - Enables acceptBtn
+   * - Enables acceptBtn (if exists)
    * - Sets reuse button state via _setReuseButtonState()
    * - Sets up zone info display via score.setupZoneInfo()
    * - Disables transform buttons via _disableBuildTransformButtons()
@@ -438,7 +449,7 @@ export class CustomUI extends PlacementUI {
     this.grid.makeBrushable()
     this.buildBrushTray(bh.terrain)
     this.brushMode()
-    this.acceptBtn.disabled = false
+    if (this.acceptBtn !== undefined) this.acceptBtn.disabled = false
     this._setReuseButtonState()
     this.score.setupZoneInfo()
     this._disableBuildTransformButtons()
@@ -448,22 +459,25 @@ export class CustomUI extends PlacementUI {
    * Disables transform buttons during build mode.
    * Prevents transformation operations (rotate, flip, undo, reset) while editing terrain.
    * Used during terrain editing to prevent accidental ship transformations.
+   * Filters out undefined buttons before passing to ButtonManager.
    *
    * Side effects:
-   * - Sets disabled state on rotate, flip, rotateLeft, undo, reset buttons via ButtonManager
+   * - Sets disabled state on non-undefined rotate, flip, rotateLeft, undo, reset buttons
    *
    * @returns {void}
    * @private
    */
   _disableBuildTransformButtons () {
+    const buttons = [
+      this.rotateBtn,
+      this.flipBtn,
+      this.rotateLeftBtn,
+      this.undoBtn,
+      this.resetBtn
+    ].filter(btn => btn !== undefined)
+
     ButtonManager.setButtonsDisabled(
-      [
-        this.rotateBtn,
-        this.flipBtn,
-        this.rotateLeftBtn,
-        this.undoBtn,
-        this.resetBtn
-      ],
+      /** @type {HTMLButtonElement[]} */ (buttons),
       true
     )
   }
@@ -478,11 +492,11 @@ export class CustomUI extends PlacementUI {
    * - Invokes customUI.subtraction(model, ship) for each placed ship
    * - Updates UI state to reflect removed ships
    *
-   * @param {Object} model - The game model context for subtraction operation
+   * @param {*} model - The game model context for subtraction operation (GameModel)
    * @returns {void}
    */
   removeAllPlacedShips (model) {
-    placedShipsInstance.popAll(ship => {
+    placedShipsInstance.popAll((/** @type {*} */ ship) => {
       customUI.subtraction(model, ship)
     })
   }
@@ -499,7 +513,7 @@ export class CustomUI extends PlacementUI {
    * @returns {void}
    */
   clearMapAndRefresh () {
-    bh.maps.clearBlank()
+    /** @type {any} */ ;(bh.maps).clearBlank()
     this._refreshBuildUI()
   }
 
@@ -554,7 +568,7 @@ export class CustomUI extends PlacementUI {
    * @returns {void}
    */
   brushMode () {
-    this._cancelListeners(this.placelistenCancellables)
+    this._cancelListeners(this.placelistenCancellables ?? [])
     this.placelistenCancellables = []
     this._configureBrushUI()
     gameStatus.setTips(this.tips, BRUSH_TIPS[1])
@@ -600,7 +614,7 @@ export class CustomUI extends PlacementUI {
    * - Shows status display via showStatus()
    * - Standardizes panels via _standardPanels()
    *
-   * @param {Array<Object>} ships - Ships to display in placement trays
+   * @param {*[]} ships - Ships to display in placement trays
    * @returns {void}
    * @private
    */
@@ -610,14 +624,16 @@ export class CustomUI extends PlacementUI {
     this.updateChangeClearButton()
     this.trayManager.showShipTrays()
     this._setShipModeVisibility()
-    this.score.placedLabel.classList.remove('hidden')
-    this.score.weaponsLabel.classList.remove('hidden')
+    if (this.score.placedLabel !== null)
+      this.score.placedLabel.classList.remove('hidden')
+    if (this.score.weaponsLabel !== null)
+      this.score.weaponsLabel.classList.remove('hidden')
     this.showTransformBtns()
-    this.autoBtn.classList.add('hidden')
-    const newPlacementBtn = /** @type {HTMLButtonElement} */ (
+    if (this.autoBtn !== undefined) this.autoBtn.classList.add('hidden')
+    const newPlacementBtn = /** @type {HTMLButtonElement|undefined} */ (
       this.newPlacementBtn
     )
-    newPlacementBtn.disabled = false
+    if (newPlacementBtn !== undefined) newPlacementBtn.disabled = false
     this.buildTrays(ships)
     this.buildWeaponTray()
     this.showStatus()
@@ -636,11 +652,11 @@ export class CustomUI extends PlacementUI {
    * - Sets game tips via gameStatus.setTips()
    * - Sets tips array to all SHIP_TIPS
    *
-   * @param {Array<Object>} ships - Ships available for placement on the board
+   * @param {*[]} ships - Ships available for placement on the board
    * @returns {void}
    */
   addShipMode (ships) {
-    this._cancelListeners(this.brushlistenCancellables)
+    this._cancelListeners(this.brushlistenCancellables ?? [])
     this.brushlistenCancellables = []
     this._configureShipUI(ships)
     gameStatus.setTips(this.tips, SHIP_TIPS[0])
