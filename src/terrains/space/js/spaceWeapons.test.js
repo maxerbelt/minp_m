@@ -12,7 +12,7 @@ import { jest } from '@jest/globals'
 describe('Space Weapons regression', () => {
   afterEach(() => {
     // restore possible mocks
-    Weapon.prototype.animateFlyingOnVM?.mockRestore?.()
+    jest.restoreAllMocks()
   })
 
   test('Missile.launchTo returns resolved target when animating across boards', async () => {
@@ -34,15 +34,17 @@ describe('Space Weapons regression', () => {
       grid: {
         nodeAt: () => ({}),
         node: () => ({})
-      }
+      },
+      cellSize: () => 10
     }
 
+    const mockMap = { cols: 10, rows: 10 }
     const coords = [[7, 8]]
     const result = await missile.launchTo(
       coords,
       3,
       4,
-      null,
+      mockMap,
       viewModel,
       opposingViewModel
     )
@@ -72,7 +74,8 @@ describe('spaceWeapons basic behavior', () => {
 
   it('Missile aoe delegates to boom from Megabomb and returns center', () => {
     const m = new Missile(2)
-    const area = m.aoe(null, [[4, 5]])
+    const mockMap = { cols: 10, rows: 10 }
+    const area = m.aoe(mockMap, [[4, 5]])
     // center should be first with power 2
     expect(area.length).toBeGreaterThan(0)
     expect(area[0]).toEqual([4, 5, 2])
@@ -80,10 +83,10 @@ describe('spaceWeapons basic behavior', () => {
 
   it('Missile getTurn maps variants correctly', () => {
     const m = new Missile(1)
-    expect(m.getTurn(0)).toBe('turn3')
-    expect(m.getTurn(1)).toBe('turn4')
-    expect(m.getTurn(3)).toBe('turn2')
-    expect(m.getTurn(99)).toBe('')
+    expect(m.getTurn(0, 0, 0)).toBe('turn3')
+    expect(m.getTurn(1, 0, 0)).toBe('turn4')
+    expect(m.getTurn(3, 0, 0)).toBe('turn2')
+    expect(m.getTurn(99, 0, 0)).toBe('')
   })
 
   it('RailBolt basic properties and clone/single', () => {
@@ -103,7 +106,7 @@ describe('spaceWeapons basic behavior', () => {
 
   it('RailBolt.redoCoords falls back to a degenerate line when given a single point', () => {
     const rail = new RailBolt(1)
-    const result = rail.redoCoords(null, [0, 0], [3, 4])
+    const result = rail.redoCoords({ cols: 10, rows: 10 }, 0, 0, 3, 4)
     expect(result).toEqual([
       [3, 4],
       [3, 4]
@@ -117,7 +120,7 @@ describe('spaceWeapons basic behavior', () => {
       .spyOn(Weapon.prototype, 'animateFlyingOnVM')
       .mockImplementation(async () => ({}))
 
-    const createPortalCell = label => ({
+    const createPortalCell = (/** @type {string} */ label) => ({
       label,
       classList: { add: jest.fn(), remove: jest.fn() }
     })
@@ -159,10 +162,13 @@ describe('spaceWeapons basic behavior', () => {
           if (!oppoCells.has(key)) oppoCells.set(key, createPortalCell(key))
           return oppoCells.get(key)
         })
-      }
+      },
+      cellSize: () => 10
     }
     const map = { cols: 10, rows: 10 }
-    bh.terrainMaps.current.current = map
+    if (bh.terrainMaps.current) {
+      bh.terrainMaps.current.current = map
+    }
     const gameModel = { getTarget: () => null }
 
     const coords = [
@@ -207,7 +213,7 @@ describe('spaceWeapons basic behavior', () => {
       .spyOn(Weapon.prototype, 'animateFlyingOnVM')
       .mockImplementation(async () => ({}))
 
-    const makeCell = label => ({
+    const makeCell = (/** @type {string} */ label) => ({
       label,
       classList: { add: jest.fn(), remove: jest.fn() }
     })
@@ -230,10 +236,10 @@ describe('spaceWeapons basic behavior', () => {
           if (!viewCells.has(key)) viewCells.set(key, makeCell(key))
           return viewCells.get(key)
         })
-      }
+      },
       cellSize: () => 10
     }
-    const opposingViewModel = { 
+    const opposingViewModel = {
       grid: {
         nodeAt: jest.fn((row, col) => {
           const rowIndex = Number(row)
@@ -249,10 +255,13 @@ describe('spaceWeapons basic behavior', () => {
           if (!oppoCells.has(key)) oppoCells.set(key, makeCell(key))
           return oppoCells.get(key)
         })
-      }
+      },
+      cellSize: () => 10
     }
     const map = { cols: 10, rows: 10, isLand: () => false }
-    bh.terrainMaps.current.current = map
+    if (bh.terrainMaps.current) {
+      bh.terrainMaps.current.current = map
+    }
     const gameModel = { getTarget: () => null }
 
     const hintR = 1
@@ -299,11 +308,13 @@ describe('spaceWeapons basic behavior', () => {
         node: jest.fn(() => ({
           classList: { add: jest.fn(), remove: jest.fn() }
         }))
-      }
+      },
       cellSize: () => 10
     }
     const map = { cols: 10, rows: 10, isLand: () => false }
-    bh.terrainMaps.current.current = map
+    if (bh.terrainMaps.current) {
+      bh.terrainMaps.current.current = map
+    }
     const gameModel = { getTarget: () => null }
 
     const hintR = 1
@@ -319,7 +330,7 @@ describe('spaceWeapons basic behavior', () => {
       hintC,
       map,
       viewModel,
-      null,
+      undefined,
       gameModel
     )
 
@@ -330,10 +341,13 @@ describe('spaceWeapons basic behavior', () => {
   it('GaussRound.processCoords accepts flat target coordinates without throwing', () => {
     const gauss = new GaussRound(1)
     const map = { cols: 10, rows: 10, isLand: () => false }
-    bh.terrainMaps.current.current = map
+    if (bh.terrainMaps.current) {
+      bh.terrainMaps.current.current = map
+    }
     const model = { getTarget: () => null }
 
     expect(() => {
+      // eslint-disable-next-line no-underscore-dangle
       const result = gauss.processCoords(map, [0, 0], [3, 4], model)
       expect(Array.isArray(result)).toBe(true)
       expect(Array.isArray(result[0])).toBe(true)
@@ -355,6 +369,7 @@ describe('spaceWeapons basic behavior', () => {
   })
 
   it('spaceWeaponsCatalogue contains Missile and RailBolt entries', () => {
+    // eslint-disable-next-line no-underscore-dangle
     const letters = spaceWeaponsCatalogue.weapons.map(w => w.tag)
     expect(letters).toContain('missile')
     expect(letters).toContain('rail')
