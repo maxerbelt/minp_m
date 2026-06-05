@@ -1189,7 +1189,7 @@ describe('Enemy.updateWeaponStatus', () => {
             selectedShip,
             this.opponent
           )
-          this.steps.addSource(viewModel, launchR, launchC, selectedCell)
+          this.steps.addSource(viewModel, launchC, launchR, selectedCell)
 
           const selection = this.createWeaponSelection(
             launchR,
@@ -1985,8 +1985,8 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(/** @type {any} */ (enemy.steps.addSource)).toHaveBeenCalledWith(
         // @ts-ignore - opponent is possibly null
         /** @type {any} */ (enemy.opponent.UI),
-        2,
         3,
+        2,
         'cell'
       )
       // @ts-ignore - _armSelectedWeapon property doesn't exist on Enemy

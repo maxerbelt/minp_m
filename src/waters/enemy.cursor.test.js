@@ -14,21 +14,26 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 
 /**
+ * Mock terrain configuration object.
+ * @typedef {Object} MockTerrain
+ * @property {boolean} hasAttachedWeapons - Whether terrain has attached weapons
+ * @property {string} tag - Terrain identifier tag
+ * @property {string} title - Terrain display title
+ * @property {Array<unknown>} subterrains - Array of sub-terrain configurations
+ * @property {Object} ships - Ship configuration object
+ * @property {Object} weapons - Weapon configuration object
+ * @property {Function} subterrainTag - Function to get sub-terrain tag
+ * @property {Function} allSubterrainTag - Function to get all sub-terrain tags
+ * @property {Function} getNewWeapon - Function to create new weapon
+ * @property {jest.Mock} updateCustomMaps - Mock function for custom map updates
+ */
+
+/**
  * Creates a mock terrain object with required properties and methods.
  * Provides minimal implementation to satisfy Enemy class terrain interface.
  *
  * @private
- * @returns {Object} Mock terrain with required game properties
- * @returns {boolean} returns.hasAttachedWeapons - Whether terrain has attached weapons
- * @returns {string} returns.tag - Terrain identifier tag
- * @returns {string} returns.title - Terrain display title
- * @returns {Array} returns.subterrains - Array of sub-terrain configurations
- * @returns {Object} returns.ships - Ship configuration object
- * @returns {Object} returns.weapons - Weapon configuration object
- * @returns {Function} returns.subterrainTag - Function to get sub-terrain tag
- * @returns {Function} returns.allSubterrainTag - Function to get all sub-terrain tags
- * @returns {Function} returns.getNewWeapon - Function to create new weapon
- * @returns {jest.Mock} returns.updateCustomMaps - Mock function for custom map updates
+ * @returns {MockTerrain} Mock terrain with required game properties
  */
 const createTerrainMock = () => ({
   hasAttachedWeapons: false,
@@ -44,16 +49,21 @@ const createTerrainMock = () => ({
 })
 
 /**
+ * Mock mask object for board representation.
+ * @typedef {Object} MockMask
+ * @property {Uint8Array} bits - Bit representation array
+ * @property {Function} test - Function to test bit values
+ * @property {Array<unknown>} toCoords - Coordinate array representation
+ * @property {jest.Mock} setRanges - Mock function for range setting
+ * @property {number} length - Mask length in bits
+ */
+
+/**
  * Creates a mock mask object for board representation.
  * Represents empty grid mask state for terrain operations.
  *
  * @private
- * @returns {Object} Mock mask with required bitboard properties
- * @returns {Uint8Array} returns.bits - Bit representation array
- * @returns {Function} returns.test - Function to test bit values
- * @returns {Array} returns.toCoords - Coordinate array representation
- * @returns {jest.Mock} returns.setRanges - Mock function for range setting
- * @returns {number} returns.length - Mask length in bits
+ * @returns {MockMask} Mock mask with required bitboard properties
  */
 const createBlankMaskMock = () => ({
   bits: new Uint8Array(100),
@@ -71,21 +81,21 @@ const createBlankMaskMock = () => ({
  */
 jest.unstable_mockModule('./StatusUI.js', () => ({
   gameStatus: {
-    /** @type {jest.Mock<void>} Mock ammo status display */
+    /** @type {jest.Mock} Mock ammo status display */
     displayAmmoStatus: jest.fn(),
-    /** @type {jest.Mock<void>} Mock ammo display */
+    /** @type {jest.Mock} Mock ammo display */
     displayAmmo: jest.fn(),
-    /** @type {jest.Mock<void>} Mock mode display */
+    /** @type {jest.Mock} Mock mode display */
     showMode: jest.fn(),
-    /** @type {jest.Mock<void>} Mock queue message addition */
+    /** @type {jest.Mock} Mock queue message addition */
     addToQueue: jest.fn(),
-    /** @type {jest.Mock<void>} Mock tips setter */
+    /** @type {jest.Mock} Mock tips setter */
     setTips: jest.fn(),
-    /** @type {jest.Mock<void>} Mock queue clear */
+    /** @type {jest.Mock} Mock queue clear */
     clearQueue: jest.fn(),
-    /** @type {jest.Mock<void>} Mock selection mode reset */
+    /** @type {jest.Mock} Mock selection mode reset */
     resetToSelectionMode: jest.fn(),
-    /** @type {jest.Mock<void>} Mock info display */
+    /** @type {jest.Mock} Mock info display */
     info2: jest.fn()
   }
 }))
@@ -112,7 +122,7 @@ jest.unstable_mockModule('../terrains/all/js/bh.js', () => ({
       cols: 10,
       /** @type {Object} Blank mask template */
       blankMask: createBlankMaskMock(),
-      /** @type {Array} Blank grid state */
+      /** @type {Array<unknown>} Blank grid state */
       blankGrid: [],
       /** @type {Function} Bounds checking function */
       inBounds: () => true
@@ -138,26 +148,26 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
     board: /** @type {HTMLElement} */ (document.createElement('div')),
     /** @type {Object} Grid manipulation methods */
     grid: {
-      /** @type {jest.Mock<void>} Mock hover effect addition */
+      /** @type {jest.Mock} Mock hover effect addition */
       addHover: jest.fn(),
-      /** @type {jest.Mock<void>} Mock class clearing */
+      /** @type {jest.Mock} Mock class clearing */
       clearClasses: jest.fn(),
-      /** @type {jest.Mock<void>} Mock AoE highlight removal */
+      /** @type {jest.Mock} Mock AoE highlight removal */
       removeHighlightAoE: jest.fn()
     },
-    /** @type {jest.Mock<void>} Mock play mode activation */
+    /** @type {jest.Mock} Mock play mode activation */
     playMode: jest.fn(),
-    /** @type {jest.Mock<void>} Mock board construction */
+    /** @type {jest.Mock} Mock board construction */
     buildBoard: jest.fn(),
-    /** @type {jest.Mock<void>} Mock UI reset */
+    /** @type {jest.Mock} Mock UI reset */
     reset: jest.fn(),
-    /** @type {jest.Mock<void>} Mock weapon cell activation */
+    /** @type {jest.Mock} Mock weapon cell activation */
     cellWeaponActive: jest.fn(),
-    /** @type {jest.Mock<void>} Mock weapon button display */
+    /** @type {jest.Mock} Mock weapon button display */
     weaponButtons: jest.fn(),
-    /** @type {jest.Mock<void>} Mock board reveal */
+    /** @type {jest.Mock} Mock board reveal */
     revealAll: jest.fn(),
-    /** @type {jest.Mock<void>} Mock button enable */
+    /** @type {jest.Mock} Mock button enable */
     enableBtns: jest.fn()
   }
 }))

@@ -88,11 +88,11 @@ export const WeaponMode = Object.freeze({
  * @property {Weapon} weapon - The weapon object
  * @property {string} wletter - Single-letter weapon identifier
  * @property {number} weaponId - Unique weapon ID
- * @property {number} r - Row coordinate of weapon source
- * @property {number} c - Column coordinate of weapon source
+ * @property {number} x - Row coordinate of weapon source
+ * @property {number} y - Column coordinate of weapon source
  * @property {HTMLElement} cell - DOM element of the source cell
- * @property {number} hintR - Row coordinate of hint/preview location
- * @property {number} hintC - Column coordinate of hint/preview location
+ * @property {number} hintX - Row coordinate of hint/preview location
+ * @property {number} hintY - Column coordinate of hint/preview location
  */
 
 /**
@@ -334,19 +334,19 @@ export class Steps {
   /**
    * Determine shadow coordinates based on weapon type and game mode.
    * In seeking mode or for weapons with shadow at hint, uses hint coordinates.
-   * Otherwise returns source coordinates (r, c).
+   * Otherwise returns source coordinates (x, y).
    * Shadow is the visual indicator showing where the weapon will fire/effect.
    *
    * @param {Weapon} weapon - Weapon object to check for shadow properties
-   * @param {number} r - Row coordinate of source (weapon location)
-   * @param {number} c - Column coordinate of source (weapon location)
-   * @param {number} hintR - Row coordinate of hint/preview location
-   * @param {number} hintC - Column coordinate of hint/preview location
-   * @returns {[number, number]} Tuple [shadowR, shadowC] - Shadow coordinates
+   * @param {number} x - Column coordinate of source (weapon location)
+   * @param {number} y - Row coordinate of source (weapon location)
+   * @param {number} hintX - Column coordinate of hint/preview location
+   * @param {number} hintY - Row coordinate of hint/preview location
+   * @returns {[number, number]} Tuple [shadowX, shadowY] - Shadow coordinates
    */
-  #resolveShadowCoords (weapon, r, c, hintR, hintC) {
+  #resolveShadowCoords (weapon, x, y, hintX, hintY) {
     // @ts-ignore - bh is a global game state singleton with dynamic properties
-    return bh.seekingMode || weapon.hasShadowAtHint ? [hintR, hintC] : [r, c]
+    return bh.seekingMode || weapon.hasShadowAtHint ? [hintX, hintY] : [x, y]
   }
 
   /**
@@ -368,14 +368,14 @@ export class Steps {
    *
    * @param {'source'|'sourceHint'|'sourceShadow'|'target'} key - Property name to set
    * @param {Board} board - Game board object
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {HTMLElement} cell - DOM element of the cell
    * @returns {void}
    * @throws {Error} Implicitly throws if key is not a valid option (switch falls through)
    */
-  #setBoardContext (key, board, r, c, cell) {
-    const context = this.#buildBoardContext(board, r, c, cell)
+  #setBoardContext (key, board, x, y, cell) {
+    const context = this.#buildBoardContext(board, x, y, cell)
     switch (key) {
       case 'source':
         this.source = context
@@ -397,13 +397,13 @@ export class Steps {
    * Encapsulates location information for easy passing throughout the system.
    *
    * @param {Board} board - Game board object
-   * @param {number} r - Row coordinate
-   * @param {number} c - Column coordinate
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
    * @param {HTMLElement} cell - DOM element of the cell
-   * @returns {BoardContext} Context object with board, r, c, and cell properties
+   * @returns {BoardContext} Context object with board, x, y, and cell properties
    */
-  #buildBoardContext (board, r, c, cell) {
-    return { board, r, c, cell }
+  #buildBoardContext (board, x, y, cell) {
+    return { board, x, y, cell }
   }
 
   /**
@@ -483,8 +483,8 @@ export class Steps {
    */
   deactivateCurrentSourceRack () {
     if (!this.#hasActiveRack() || !this.sourceRack) return
-    const { r, c, shadowR, shadowC } = this.sourceRack
-    this.onDeactivate(r, c, shadowR, shadowC)
+    const { y, x, shadowY, shadowX } = this.sourceRack
+    this.onDeactivate(y, x, shadowY, shadowX)
   }
 
   /**
@@ -603,16 +603,16 @@ export class Steps {
    * @returns {ShadowCoords} Shadow coordinates {shadowR, shadowC} for weapon visual placement
    */
   addRack (params) {
-    const { rack, weapon, wletter, weaponId, r, c, cell, hintR, hintC } = params
+    const { rack, weapon, wletter, weaponId, x, y, cell, hintX, hintY } = params
     const resolvedWeaponId = this.#resolveWeaponId(weaponId, rack)
     this.#maybeNotifyAttachedWeaponChange(wletter)
 
-    const [shadowR, shadowC] = this.#resolveShadowCoords(
+    const [shadowC, shadowR] = this.#resolveShadowCoords(
       weapon,
-      r,
-      c,
-      hintR,
-      hintC
+      x,
+      y,
+      hintX,
+      hintY
     )
 
     this.activate({
@@ -620,8 +620,8 @@ export class Steps {
       weapon,
       rack,
       wletter,
-      r,
-      c,
+      r: y,
+      c: x,
       cell,
       shadowR,
       shadowC
@@ -632,8 +632,8 @@ export class Steps {
       weapon,
       wletter,
       weaponId: resolvedWeaponId,
-      r,
-      c,
+      r: y,
+      c: x,
       cell,
       shadowR,
       shadowC
@@ -667,9 +667,13 @@ export class Steps {
       weaponId,
       r,
       c,
+      x: c,
+      y: r,
       cell,
       shadowR,
-      shadowC
+      shadowC,
+      shadowX: shadowC,
+      shadowY: shadowR
     }
   }
 
@@ -698,7 +702,7 @@ export class Steps {
    * @returns {void}
    */
   activate (params) {
-    const { weaponId, weapon, rack, wletter, r, c, cell, shadowR, shadowC } =
+    const { weaponId, weapon, rack, wletter, r, c, cell, shadowC, shadowR } =
       params
     this.deactivateOnNewRack(weaponId)
     if (this.shouldActivateNewRack(weapon, weaponId)) {
@@ -816,13 +820,13 @@ export class Steps {
    *
    * @public
    * @param {Board} board - Game board object
-   * @param {number} r - Row coordinate of source location
-   * @param {number} c - Column coordinate of source location
+   * @param {number} y - Row coordinate of source location
+   * @param {number} x - Column coordinate of source location
    * @param {HTMLElement} cell - DOM element of the source cell
    * @returns {void}
    */
-  addSource (board, r, c, cell) {
-    this.#setBoardContext('source', board, r, c, cell)
+  addSource (board, y, x, cell) {
+    this.#setBoardContext('source', board, y, x, cell)
   }
 
   /**

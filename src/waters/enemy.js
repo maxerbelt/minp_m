@@ -171,7 +171,7 @@ const MESSAGES = {
  * @property {Function|null} onChangeWeapon - Change weapon callback (switch weapon system)
  * @property {() => void|undefined} clearSource - Clear selected source (ship weapon rack)
  * @property {(ship: Object) => void} addShip - Add ship to selection (source ship)
- * @property {(ui: EnemyUI, r: number, c: number, cell?: HTMLElement) => void} addSource - Add source location (weapon rack position)
+ * @property {(ui: EnemyUI, x: number, y: number, cell?: HTMLElement) => void} addSource - Add source location (weapon rack position)
  * @property {(ui: EnemyUI, r: number, c: number, cell?: HTMLElement) => void} addHint - Add hint location (targeting hint)
  * @property {() => void} select - Trigger selection mode (prepare for targeting)
  * @property {() => void} endTurn - End the current turn
@@ -1262,13 +1262,13 @@ class Enemy extends Waters {
    * 6. Create weapon selection and arm for next firing phase
    *
    * @private
-   * @param {number} r - Target row coordinate (0-indexed); used as source hint in seek mode for multi-step weapons
-   * @param {number} c - Target column coordinate (0-indexed); used as source hint in seek mode for multi-step weapons
+   * @param {number} y - Target row coordinate (0-indexed); used as source hint in seek mode for multi-step weapons
+   * @param {number} x - Target column coordinate (0-indexed); used as source hint in seek mode for multi-step weapons
    * @throws {void} Returns early via random fallback if weapon not found or no ships available
    * @returns {void} No explicit return; mutates game state via side effects
    * @memberof Enemy
    */
-  _selectCurrentWeaponOnRandomShip (r, c) {
+  _selectCurrentWeaponOnRandomShip (y, x) {
     // Get the weapon the player currently has selected (via weapon button click)
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     const currentWeapon = loadOut?.currentWeaponSystem
@@ -1336,7 +1336,7 @@ class Enemy extends Waters {
       return
     }
 
-    const [launchC, launchR] = parsePair(key)
+    const [launchX, launchY] = parsePair(key)
     // @ts-ignore - opponent UI type compatibility
     const opponentUI = opponent?.UI
     const viewModel = opponentUI || this.UI
@@ -1344,26 +1344,26 @@ class Enemy extends Waters {
     const postSelectCoords = currentWeapon?.weapon?.postSelectCoords ?? 0
     // @ts-ignore - bh.seekingMode is dynamically set, not in type definition
     const isSeekSource = bh.seekingMode && postSelectCoords > 0
-    const sourceY = isSeekSource ? r : launchR
-    const sourceX = isSeekSource ? c : launchC
+    const sourceY = isSeekSource ? y : launchY
+    const sourceX = isSeekSource ? x : launchX
     const sourceCell = viewModel?.grid.nodeAt?.(sourceX, sourceY)
 
     const hintCoords = isSeekSource
-      ? [r, c]
+      ? [y, x]
       : this._normalizeSourceHint(
           // @ts-ignore - generateSourceHint is parent method
           this.generateSourceHint?.(selectedShip, opponent)
         )
 
     // @ts-ignore - viewModel type is EnemyUI and this.steps is typed as Object
-    this.steps?.addSource?.(viewModel, sourceY, sourceX, sourceCell)
+    this.steps?.addSource?.(viewModel, sourceX, sourceY, sourceCell)
 
     // Create weapon selection for the current weapon. In pure seek mode,
     // the clicked location becomes the source hint for two-step weapons.
     // @ts-ignore - createWeaponSelection is parent method
     const selection = this.createWeaponSelection?.(
-      launchR,
-      launchC,
+      launchY,
+      launchX,
       /** @type {any} */ (weapon)?.id,
       hintCoords[0],
       hintCoords[1]
@@ -1418,13 +1418,13 @@ class Enemy extends Waters {
    * - Delegates state mutation to _selectCurrentWeaponOnRandomShip()
    *
    * @private
-   * @param {number} r - Target row coordinate (0-indexed); passed to weapon selection for source hint in seek mode
-   * @param {number} c - Target column coordinate (0-indexed); passed to weapon selection for source hint in seek mode
+   * @param {number} y - Target row coordinate (0-indexed); passed to weapon selection for source hint in seek mode
+   * @param {number} x - Target column coordinate (0-indexed); passed to weapon selection for source hint in seek mode
    * @returns {void} No explicit return; updates UI and game state via side effects
    * @memberof Enemy
    */
-  _onFirstClickSelection (r, c) {
-    this._selectCurrentWeaponOnRandomShip(r, c)
+  _onFirstClickSelection (y, x) {
+    this._selectCurrentWeaponOnRandomShip(y, x)
     gameStatus.addToQueue(MESSAGES.ENEMY_SELECTING_TARGET, true)
   }
 

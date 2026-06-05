@@ -777,22 +777,22 @@ export class Waters {
    * Records launch coordinates as the weapon's origin point in the steps tracker.
    *
    * @param {Object} viewModel - UI view model instance for marker rendering
-   * @param {number} launchR - Launch row coordinate (weapon origin)
-   * @param {number} launchC - Launch column coordinate (weapon origin)
+   * @param {number} launchY - Launch row coordinate (weapon origin)
+   * @param {number} launchX - Launch column coordinate (weapon origin)
    * @param {HTMLElement|null} cell - Candidate cell element for marker placement
    * @returns {void}
    * @private
    */
-  addSelectionSource (viewModel, launchR, launchC, cell) {
+  addSelectionSource (viewModel, launchX, launchY, cell) {
     if (!this.steps) return
     // @ts-ignore - viewModel is Board at runtime, cast for steps.addSource
     const board = /** @type {Board} */ (viewModel)
     this.steps.addSource(
       board,
-      launchR,
-      launchC,
+      launchX,
+      launchY,
       // @ts-ignore - gridCellAt method available at runtime
-      cell || board.gridCellAt?.(launchR, launchC)
+      cell || board.grid.nodeAt?.(launchX, launchY)
     )
   }
 
@@ -882,10 +882,10 @@ export class Waters {
   processSelectedWeaponKey (selectedKey, viewModel, hintR, hintC) {
     const result = parseTriple(selectedKey)
     if (!result) return this.createEmptyWeaponSelection()
-    const [launchC, launchR, weaponId] = result
+    const [launchX, launchY, weaponId] = result
     // @ts-ignore - viewModel is Board at runtime
     const board = /** @type {Board} */ (viewModel)
-    this.addSelectionSource(board, launchR, launchC, null)
+    this.addSelectionSource(board, launchX, launchY, null)
 
     if (this.loadOut) {
       // @ts-ignore - weaponId is number from parseTriple
@@ -1000,32 +1000,32 @@ export class Waters {
   /**
    * Selects a loaded weapon system from a ship's available entries.
    * @param {Object} ship - Ship instance with loaded weapons
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
+   * @param {number} hintY - Hint row coordinate
+   * @param {number} hintX - Hint column coordinate
    * @param {boolean} random - Whether to select randomly
    * @param {Object} viewModel - UI view model
    * @param {HTMLElement|null} cell - Candidate cell element
    * @returns {WeaponSelection} Weapon selection payload
    * @private
    */
-  selectWeaponFromShip (ship, hintR, hintC, random, viewModel, cell) {
+  selectWeaponFromShip (ship, hintY, hintX, random, viewModel, cell) {
     // @ts-ignore - loadedWeaponEntries getter available at runtime
     const entries = ship.loadedWeaponEntries
     const [key, weapon] = random
       ? randomElement(entries)
-      : findClosestCoord(entries, hintR, hintC, (/** @type {any[]} */ [k]) =>
+      : findClosestCoord(entries, hintY, hintX, (/** @type {any[]} */ [k]) =>
           parsePair(k)
         )
 
-    const [launchC, launchR] = parsePair(key)
+    const [launchX, launchY] = parsePair(key)
     // @ts-ignore - gridCellAt method available at runtime
-    const selectedCell = cell || viewModel.gridCellAt(launchR, launchC)
+    const selectedCell = cell || viewModel.grid.nodeAt(launchY, launchX)
     if (this.steps) {
       // @ts-ignore - viewModel is Board at runtime
-      this.steps.addSource(viewModel, launchR, launchC, selectedCell)
+      this.steps.addSource(viewModel, launchX, launchY, selectedCell)
     }
 
-    return this.createWeaponSelection(launchR, launchC, weapon.id, hintR, hintC)
+    return this.createWeaponSelection(launchY, launchX, weapon.id, hintY, hintX)
   }
 
   /**
@@ -1621,14 +1621,14 @@ export class Waters {
    * Selects and arms a weapon system for firing.
    * @param {Waters|null} oppo - Opponent instance
    * @param {number} weaponId - Weapon system ID to arm
-   * @param {number} launchR - Launch row coordinate
-   * @param {number} launchC - Launch column coordinate
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
+   * @param {number} launchY - Launch row coordinate
+   * @param {number} launchX - Launch column coordinate
+   * @param {number} hintY - Hint row coordinate
+   * @param {number} hintX - Hint column coordinate
    * @param {HTMLElement|null} [cell] - Optional cell element
    * @returns {void}
    */
-  selectAndArmWps (oppo, weaponId, launchR, launchC, hintR, hintC, cell = null) {
+  selectAndArmWps (oppo, weaponId, launchY, launchX, hintY, hintX, cell = null) {
     // @ts-ignore - loadOut available at runtime
     const rack = this.loadOut?.getWeaponBySystemId(weaponId)
     // @ts-ignore - rack structure known at runtime with weapon property
@@ -1637,7 +1637,7 @@ export class Waters {
 
     this.giveTempHint(weapon, cell, oppo)
     // @ts-expect-error - rack type is compatible at runtime despite TypeScript mismatch
-    this.addSource(oppo, launchR, launchC, rack, cell)
+    this.addSource(oppo, launchX, launchY, rack, cell)
     // Construct proper params object for addRack with all required properties
     const addRackParams = {
       // @ts-ignore - rack is Rack type at runtime
@@ -1645,11 +1645,11 @@ export class Waters {
       weapon,
       wletter: letter,
       weaponId,
-      r: launchR,
-      c: launchC,
+      r: launchY,
+      c: launchX,
       cell,
-      hintR,
-      hintC
+      hintY,
+      hintX
     }
     // @ts-ignore - addRack method available at runtime
     const rackInfo = this.steps?.addRack?.(addRackParams) || {
@@ -1704,20 +1704,20 @@ export class Waters {
   /**
    * Adds source tracking for weapon selection.
    * @param {Waters|null} oppo - Opponent instance
-   * @param {number} launchR - Launch row coordinate
-   * @param {number} launchC - Launch column coordinate
+   * @param {number} launchY - Launch row coordinate
+   * @param {number} launchX - Launch column coordinate
    * @param {WeaponRack|undefined} rack - Weapon rack object
    * @param {HTMLElement|null} cell - Cell element
    * @returns {void}
    * @private
    */
-  addSource (oppo, launchR, launchC, rack, cell) {
+  addSource (oppo, launchX, launchY, rack, cell) {
     // @ts-ignore - steps available at runtime
     if (this.steps.source === null) {
       // @ts-ignore - UI available at runtime
       const viewModel = oppo?.UI || this.UI
       // @ts-ignore - steps available at runtime
-      this.steps.addSource(viewModel, launchR, launchC, cell)
+      this.steps.addSource(viewModel, launchX, launchY, cell)
       console.warn(
         'no source found when selecting and arming weapon, adding source with launch coords'
       )
@@ -1786,19 +1786,19 @@ export class Waters {
    * Selects and arms a weapon by ID with coordinate targeting.
    * @param {number} weaponId - Weapon system ID
    * @param {Waters|null} oppo - Opponent instance
-   * @param {number} launchR - Launch row coordinate
-   * @param {number} launchC - Launch column coordinate
-   * @param {number} hintR - Hint row coordinate
-   * @param {number} hintC - Hint column coordinate
+   * @param {number} launchY - Launch row coordinate
+   * @param {number} launchX - Launch column coordinate
+   * @param {number} hintY - Hint row coordinate
+   * @param {number} hintX - Hint column coordinate
    * @param {HTMLElement|null} [cell] - Cell element
    * @returns {void}
    */
-  #selectAndArmWeaponId (weaponId, oppo, launchR, launchC, hintR, hintC, cell) {
+  #selectAndArmWeaponId (weaponId, oppo, launchY, launchX, hintY, hintX, cell) {
     if (!weaponId || weaponId < 1) {
       return
     }
 
-    this.selectAndArmWps(oppo, weaponId, launchR, launchC, hintR, hintC, cell)
+    this.selectAndArmWps(oppo, weaponId, launchY, launchX, hintY, hintX, cell)
   }
 
   /**
