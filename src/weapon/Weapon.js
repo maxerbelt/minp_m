@@ -57,6 +57,10 @@ import { Random } from '../core/Random.js'
 
 export class Weapon {
   /**
+   * Index signature for dynamic property access in configuration.
+   * @type {{[key: string]: any}}
+   */
+  /**
    * Base class for all weapon types in the game.
    * Abstract class that cannot be instantiated directly - must be extended by weapon subclasses.
    * Handles weapon properties, animations, and launch mechanics.
@@ -198,10 +202,9 @@ export class Weapon {
    * Create a clone of this weapon with optional ammunition override.
    * Eliminates duplicate clone() implementations in subclasses.
    *
-   * @template T
-   * @param {function(new:T): T} weaponClass - Constructor for the weapon type to instantiate
+   * @param {any} weaponClass - Constructor for the weapon type to instantiate (callable with ammo param)
    * @param {number} [ammoOverride] - Optional ammo count for cloned weapon (defaults to this.ammo)
-   * @returns {T} New weapon instance with specified ammo
+   * @returns {Weapon} New weapon instance with specified ammo
    */
   createClone (weaponClass, ammoOverride) {
     ammoOverride = ammoOverride || /** @type {any} */ (this).ammo
@@ -499,7 +502,7 @@ export class Weapon {
    * @returns {Array<[number, number, number]>} Updated effect array
    */
   addSplash (map, row, col, power, newEffect) {
-    if (!map || map.inBounds(row, col)) {
+    if (!map || (/** @type {any} */ (map).inBounds && (/** @type {any} */ (map).inBounds(row, col)))) {
       newEffect.push([row, col, power])
     }
     return newEffect
@@ -596,7 +599,10 @@ export class Weapon {
     model
   ) {
     map = map || bh.map
-    const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
+    /** @type {any} */
+    const redoResult = this.redoCoords(map, [rr, cc], coords)
+    const [base, target] = redoResult
+    const [r, c] = base
     const endPoint = target.toReversed()
     const [sy, sx] = map.randomEdge(...target)
     const sourceCell = opposingViewModel
