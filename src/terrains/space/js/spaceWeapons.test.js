@@ -28,15 +28,13 @@ describe('Space Weapons regression', () => {
         nodeAt: () => ({}),
         node: () => ({})
       },
-      gridCellAt: () => ({}),
       cellSize: () => 10
     }
     const opposingViewModel = {
       grid: {
         nodeAt: () => ({}),
         node: () => ({})
-      },
-      gridCellAt: () => ({})
+      }
     }
 
     const coords = [[7, 8]]
@@ -143,13 +141,6 @@ describe('spaceWeapons basic behavior', () => {
           return viewCells.get(key)
         })
       },
-      gridCellAt: jest.fn((row, col) => {
-        const rowIndex = Number(row)
-        const colIndex = Number(col)
-        const key = `${rowIndex},${colIndex}`
-        if (!viewCells.has(key)) viewCells.set(key, createPortalCell(key))
-        return viewCells.get(key)
-      }),
       cellSize: () => 10
     }
     const opposingViewModel = {
@@ -168,14 +159,7 @@ describe('spaceWeapons basic behavior', () => {
           if (!oppoCells.has(key)) oppoCells.set(key, createPortalCell(key))
           return oppoCells.get(key)
         })
-      },
-      gridCellAt: jest.fn((row, col) => {
-        const rowIndex = Number(row)
-        const colIndex = Number(col)
-        const key = `${rowIndex},${colIndex}`
-        if (!oppoCells.has(key)) oppoCells.set(key, createPortalCell(key))
-        return oppoCells.get(key)
-      })
+      }
     }
     const map = { cols: 10, rows: 10 }
     bh.terrainMaps.current.current = map
@@ -231,23 +215,41 @@ describe('spaceWeapons basic behavior', () => {
     const viewCells = new Map()
     const oppoCells = new Map()
     const viewModel = {
-      gridCellAt: jest.fn((row, col) => {
-        const rowIndex = Number(row)
-        const colIndex = Number(col)
-        const key = `${rowIndex},${colIndex}`
-        if (!viewCells.has(key)) viewCells.set(key, makeCell(key))
-        return viewCells.get(key)
-      }),
+      grid: {
+        nodeAt: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!viewCells.has(key)) viewCells.set(key, makeCell(key))
+          return viewCells.get(key)
+        }),
+        node: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!viewCells.has(key)) viewCells.set(key, makeCell(key))
+          return viewCells.get(key)
+        })
+      }
       cellSize: () => 10
     }
-    const opposingViewModel = {
-      gridCellAt: jest.fn((row, col) => {
-        const rowIndex = Number(row)
-        const colIndex = Number(col)
-        const key = `${rowIndex},${colIndex}`
-        if (!oppoCells.has(key)) oppoCells.set(key, makeCell(key))
-        return oppoCells.get(key)
-      })
+    const opposingViewModel = { 
+      grid: {
+        nodeAt: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!oppoCells.has(key)) oppoCells.set(key, makeCell(key))
+          return oppoCells.get(key)
+        }),
+        node: jest.fn((row, col) => {
+          const rowIndex = Number(row)
+          const colIndex = Number(col)
+          const key = `${rowIndex},${colIndex}`
+          if (!oppoCells.has(key)) oppoCells.set(key, makeCell(key))
+          return oppoCells.get(key)
+        })
+      }
     }
     const map = { cols: 10, rows: 10, isLand: () => false }
     bh.terrainMaps.current.current = map
@@ -270,8 +272,8 @@ describe('spaceWeapons basic behavior', () => {
       gameModel
     )
 
-    expect(opposingViewModel.gridCellAt).toHaveBeenCalledWith(hintR, hintC)
-    expect(viewModel.gridCellAt).toHaveBeenCalledWith(hintR, hintC)
+    expect(opposingViewModel.grid.nodeAt).toHaveBeenCalledWith(hintR, hintC)
+    expect(viewModel.grid.nodeAt).toHaveBeenCalledWith(hintR, hintC)
 
     const sourceOpposite = oppoCells.get(`${hintR},${hintC}`)
     const sourceView = viewCells.get(`${hintR},${hintC}`)
@@ -297,10 +299,7 @@ describe('spaceWeapons basic behavior', () => {
         node: jest.fn(() => ({
           classList: { add: jest.fn(), remove: jest.fn() }
         }))
-      },
-      gridCellAt: jest.fn(() => ({
-        classList: { add: jest.fn(), remove: jest.fn() }
-      })),
+      }
       cellSize: () => 10
     }
     const map = { cols: 10, rows: 10, isLand: () => false }
