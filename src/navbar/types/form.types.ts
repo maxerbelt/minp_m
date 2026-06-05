@@ -4,7 +4,7 @@
  */
 
 import type { ValidatorFn, ChangeHandlerFn } from './callbacks.types.js';
-import type { StringMap, Nullable } from './shared.types.js';
+import type { StringMap } from './shared.types.js';
 
 // ============================================================================
 // Form State

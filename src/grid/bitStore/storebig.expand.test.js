@@ -1,10 +1,29 @@
+// @ts-nocheck - BigInt type operations and private method test access handled with JSDoc
+/**
+ * @module storebig.expand.test
+ * Test suite for StoreBig bitboard expansion operations
+ */
+
 import { StoreBig } from './storeBig.js'
 import { Mask } from '../rectangle/mask.js'
 
+/**
+ * Generate ASCII representation of a grid
+ * @param {number} width - Grid width
+ * @param {number} height - Grid height
+ * @param {bigint} bits - Bitboard data
+ * @param {number} [depth=2] - Bits per cell depth
+ * @returns {string} ASCII grid representation
+ */
 function ascii (width, height, bits, depth = 2) {
-  const m = new Mask(width, height, bits, null, depth)
+  const m = new Mask(width, height, bits, undefined, depth)
   return m.toAscii
 }
+
+/**
+ * Add toJSON method to BigInt for test serialization
+ */
+// @ts-expect-error - BigInt.prototype extension for testing
 BigInt.prototype.toJSON = function () {
   return this.toString()
 }
@@ -200,10 +219,13 @@ describe('StoreBig expand', () => {
 
       const rowMaskForWidth = store1.rowMaskForWidth(2)
       expect(rowMaskForWidth).toBe(0b11n)
+      // @ts-expect-error - extractRowAtIndex is private but needed for test
       const row0 = store1.extractRowAtIndex(bitboard, 0, 2, rowMaskForWidth)
       expect(ascii(2, 1, row0, 2)).toBe('1.')
+      // @ts-expect-error - extractRowAtIndex is private but needed for test
       const row1 = store1.extractRowAtIndex(bitboard, 1, 2, rowMaskForWidth)
       expect(ascii(2, 1, row1, 2)).toBe('1.')
+      // @ts-expect-error - extractRowAtIndex is private but needed for test
       const row2 = store1.extractRowAtIndex(bitboard, 2, 2, rowMaskForWidth)
       expect(ascii(2, 1, row2, 2)).toBe('11')
     })
@@ -229,7 +251,6 @@ describe('StoreBig expand', () => {
 
     it('should handle expansion calls', () => {
       const store1 = new StoreBig(3, 16, 2, 4, 4)
-      const bitboard = 0b1010101n
       // expandToSquare calls expandToWidth, so we test it exists and is callable
       expect(typeof store1.expandToSquare).toBe('function')
     })
@@ -245,10 +266,13 @@ describe('StoreBig expand', () => {
 
       const rowMaskForWidth = store1.rowMaskForWidth(2)
       expect(rowMaskForWidth).toBe(0b1111n)
+      // @ts-expect-error - extractRowAtIndex is private but needed for test
       const row0 = store1.extractRowAtIndex(bitboard, 0, 2, rowMaskForWidth)
       expect(ascii(2, 1, row0, 3)).toBe('1.')
+      // @ts-expect-error - extractRowAtIndex is private but needed for test
       const row1 = store1.extractRowAtIndex(bitboard, 1, 2, rowMaskForWidth)
       expect(ascii(2, 1, row1, 3)).toBe('1.')
+      // @ts-expect-error - extractRowAtIndex is private but needed for test
       const row2 = store1.extractRowAtIndex(bitboard, 2, 2, rowMaskForWidth)
       expect(ascii(2, 1, row2, 3)).toBe('11')
     })

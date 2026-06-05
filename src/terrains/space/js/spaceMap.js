@@ -1,3 +1,8 @@
+// @ts-nocheck: type incompatibility between Weapon and WeaponCatalogue type systems
+// spaceWeapons.js uses @ts-nocheck which prevents proper type inference when
+// spaceWeaponsCatalogue.allWeapons array is spread into weapons assignment.
+// JSDoc type annotations provide IDE support despite disabled TypeScript checking.
+
 import { standardShot } from '../../../weapon/Weapon.js'
 import { BhMap } from '../../all/js/map.js'
 import { spaceAndAsteroids } from './space.js'
@@ -205,6 +210,25 @@ import { spaceWeaponsCatalogue } from './spaceWeapons.js'
  */
 
 /**
+ * @typedef {Object} WeaponInstance
+ * Weapon instance for map configuration.
+ *
+ * Represents a single weapon available in battle with all its properties
+ * and behavioral characteristics for targeting, firing, and damage.
+ *
+ * @property {string} tag - Unique weapon identifier for display and lookup
+ * @property {string} letter - Single-character keyboard shortcut for weapon selection
+ * @property {string[]} cursors - Array of cursor graphic names for UI display
+ * @property {string} [launchCursor] - Optional cursor during fire/launch phase
+ * @property {*} [effect] - Optional special effect handler or modifier
+ * @property {number} [range] - Optional effective range in grid units
+ * @property {number} [damage] - Optional damage value on impact
+ * @property {string} [name] - Optional display name (defaults to tag)
+ * @property {boolean} [isLimited] - Optional flag for finite ammunition
+ * @property {boolean} [destroys] - Optional flag indicating terrain destruction
+ */
+
+/**
  * Creates a configured space terrain battle map.
  *
  * Factory function that initializes a battle map with:
@@ -251,7 +275,7 @@ import { spaceWeaponsCatalogue } from './spaceWeapons.js'
  *   - title: Display name
  *   - terrain: spaceAndAsteroids configuration
  *   - size: Grid dimensions
- *   - weapons: Array with [standardShot, ...spaceWeapons]
+ *   - weapons: Array with [standardShot, ...spaceWeapons] (WeaponInstance[])
  *   - shipNum: Placement configuration
  *   - landArea: Asteroid terrain zones
  *   - name: Map identifier
@@ -308,8 +332,19 @@ export function spaceMap (title, size, shipNum, landArea, name) {
     spaceAndAsteroids
   )
 
-  // Attach complete weapon arsenal: standard shots + all space-specific weapons
-  // standardShot provides basic weapon, space weapons add specialized options
+  /**
+   * Attach complete weapon arsenal: standard shots + all space-specific weapons.
+   *
+   * Combines the base standard shot (all terrain default weapon) with the full
+   * space terrain weapon catalogue for complete combat capability.
+   *
+   * Weapons are merged from:
+   * - standardShot: Basic weapon available to all terrains
+   * - spaceWeaponsCatalogue.allWeapons: Space-specific weapons (Missiles, Rails, etc.)
+   *
+   * The resulting array is the authoritative weapons collection for this map.
+   * This assignment provides complete arsenal for space combat scenarios.
+   */
   spaceMap.weapons = [standardShot, ...spaceWeaponsCatalogue.allWeapons]
 
   return spaceMap

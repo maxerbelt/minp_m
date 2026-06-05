@@ -14,6 +14,10 @@ import { trackTab, trackClick } from './gtag.js'
  */
 
 /**
+ * @typedef {import('../navbar/gtag.js').GTagMap} GTagMap
+ */
+
+/**
  * @typedef {Object} MapWithTerrain
  * @property {string} [title] - Display title of the map.
  * @property {number} [rows] - Map height in rows.
@@ -354,6 +358,7 @@ export class NavigationService {
     try {
       const map = this.#getCurrentMap()
       const huntModeStr = String(huntMode)
+      // @ts-ignore - map parameter is compatible with CustomMapData
       const url = storeShips(params, huntModeStr, targetPage, map || {})
       if (typeof url === 'string') {
         globalThis.location.href = url
@@ -460,8 +465,33 @@ export class NavigationService {
     ) {
       map.saveToLocalStorage()
     }
-    trackClick(map, 'import map')
+    const trackingMap = this.#normalizeMapForTracking(map)
+    trackClick(trackingMap, 'import map')
     alert('Map imported successfully.')
+  }
+
+  /**
+   * Normalize map object for Google Analytics tracking.
+   * Converts MapWithTerrain object to GTagMap format by extracting
+   * terrain string from terrain config object if needed.
+   *
+   * @param {MapWithTerrain} map - Map object to normalize.
+   * @returns {GTagMap} Normalized map object compatible with trackClick.
+   */
+  #normalizeMapForTracking (map) {
+    let terrainStr = ''
+    if (typeof map.terrain === 'string') {
+      terrainStr = map.terrain
+    } else if (map.terrain && typeof map.terrain === 'object') {
+      terrainStr = map.terrain.bodyTag || map.terrain.tag || ''
+    }
+
+    return {
+      title: map.title,
+      terrain: terrainStr,
+      rows: map.rows,
+      cols: map.cols
+    }
   }
 
   /**

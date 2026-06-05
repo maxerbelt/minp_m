@@ -11,7 +11,6 @@
  */
 
 import type { GridSize, AsteroidLayout } from './grid.types'
-import type { ShipTypeCode } from './domain.types'
 
 /**
  * Configuration for a single terrain zone.

@@ -434,7 +434,7 @@ describe('RectCanvasColor - Multi-Color Canvas Controller', () => {
      */
     it('should handle color input range', () => {
       const input = document.getElementById('color-value-input')
-      if (input && input.max) {
+      if (input?.max) {
         expect(parseInt(input.max)).toBe(3) // 4-color palette (0-3)
       }
     })

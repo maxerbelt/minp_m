@@ -949,7 +949,7 @@ export class MaskBase extends CanvasGrid {
    */
   *occupiedLocationsAndValues () {
     const bits = this.bits
-    if (typeof bits !== 'bigint' || bits === 0n) return // early exit for empty mask
+    if (typeof bits != 'bigint' || bits === 0n) return // early exit for empty mask
     const all = this.store.all
     return yield* all.locationsWithValues(bits, true)
   }

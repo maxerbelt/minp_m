@@ -64,10 +64,10 @@ export class BhMap {
   terrain
   /** @type {bigint} - Bitfield/bitboard representation of land cells for efficient queries */
   landBits
-  /** @type {bigint} - Bitfield representation of default terrain (non-land) cells */
-  defaultTerrainBits
-  /** @type {Mask} - Mask object representing default terrain accessibility (lazy-loaded) */
-  defaultTerrainMask
+  /** @type {bigint|undefined} - Bitfield representation of default terrain (non-land) cells; lazy-loaded on first access */
+  defaultTerrainBits = undefined
+  /** @type {Mask|undefined} - Mask object representing default terrain accessibility (lazy-loaded on first access) */
+  defaultTerrainMask = undefined
   /** @type {Mask} - Mask object representing land area cells (computed from landArea/land) */
   landMask
   /** @type {SubTerrainTrackers} - Tracker managing subterrain regions, zones, and properties */
@@ -91,7 +91,6 @@ export class BhMap {
    * @param {Object} mapTerrain - Terrain configuration with subterrains, properties, and optional weapons
    * @param {Set<string>} [land] - Optional Set of land coordinates as "r,c" strings; created empty if undefined
    * @throws {Error} Logs warning if terrain.subterrains is missing and uses default bh.terrain
-   * @returns {void}
    * @description Initializes land masks and terrain trackers. Lazy-loads defaultTerrainBits and defaultTerrainMask.
    * @example
    * const map = new BhMap('Forest Map', [20, 30], 10, [[10, 5, 25]], 'forest_1', terrainConfig)
@@ -167,9 +166,9 @@ export class BhMap {
    * Gets an empty mask for this map's dimensions.
    * All cells are initially unset (0) and ready for marking.
    * Dimensions match this map (cols × rows).
+   * This is a read-only computed property (getter).
    *
    * @public
-   * @readonly
    * @returns {Mask} A new empty mask with dimensions matching this map (cols × rows)
    * @see Mask.empty
    * @description Returns fresh Mask instance without modifications. Use for temporary calculations.
@@ -182,9 +181,9 @@ export class BhMap {
    * Gets a full mask for this map's dimensions.
    * All cells are set (1) and enabled for operations.
    * Dimensions match this map (cols × rows).
+   * This is a read-only computed property (getter).
    *
    * @public
-   * @readonly
    * @returns {Mask} A new full mask with all cells enabled and dimensions matching this map
    * @see Mask.full
    * @description Returns completely filled Mask. Use for universal set or coverage calculations.
@@ -197,16 +196,16 @@ export class BhMap {
    * Gets extra armed fleet shapes for this map.
    * Includes ships that are attached to weapon racks or have armed configurations.
    * Uses newShapesForMap and filters by isAttachedToRack predicate.
+   * This is a read-only computed property (getter).
    *
    * @public
-   * @readonly
    * @returns {Array<Object>} Array of ship shape objects with armed weapons attached to racks
    * @see newFleetForMap
    * @description Filters shapes to include only those with weapons attached. Subset of newFleetForMap.
    */
   get extraArmedFleetForMap () {
     const repeatShapes = this.newShapesForMap
-    const ships = bh.extraFleetBuilder(repeatShapes, s => s.isAttachedToRack)
+    const ships = bh.extraFleetBuilder(repeatShapes, /** @type {(s: any) => boolean} */ (s => s.isAttachedToRack))
     return ships
   }
 
@@ -214,9 +213,9 @@ export class BhMap {
    * Gets the new fleet shapes for this map.
    * Includes all ships based on the current shipNum configuration.
    * Uses the base shapes repeated according to shipNum.
+   * This is a read-only computed property (getter).
    *
    * @public
-   * @readonly
    * @returns {Array<Object>} Array of ship shape objects ready for placement on this map
    * @see newShapesForMap
    * @description Uses fleetBuilder to generate full fleet. Includes all ship types based on configuration.
@@ -231,9 +230,9 @@ export class BhMap {
    * Gets the base shapes repeated according to ship numbers.
    * Each base shape is duplicated according to shipNum configuration.
    * Handles both single-number shipNum and object {letter: count} formats.
+   * This is a read-only computed property (getter).
    *
    * @public
-   * @readonly
    * @returns {Array<Object>} Array of repeated ship shape objects for fleet composition
    * @description If shipNum is a single number, all base shapes are repeated that many times.
    * If shipNum is an object {letter: count}, each base shape is repeated by its letter count.
@@ -244,7 +243,7 @@ export class BhMap {
     const baseShapes = terrain.ships.baseShapes
     const shipNum = this.shipNum
     const repeatShapes = baseShapes.flatMap(
-      s => new Array(shipNum[s.letter] || 0).fill(s) || []
+      /** @type {(s: any) => any[]} */ (s => new Array(/** @type {Record<string, number>} */ (shipNum)[s.letter] || 0).fill(s) || [])
     )
     return repeatShapes
   }
@@ -396,7 +395,8 @@ export class BhMap {
    * @returns { number[][]} Array of [row, col] coordinates within bounds (max 9 items)
    */
   surroundArea (x, y) {
-    let surroundings = []
+    /** @type {Array<Array<number>>} */
+    const surroundings = []
     this.surroundBase(x, y, this.inBounds.bind(this), surroundings)
     return surroundings
   }
@@ -412,8 +412,9 @@ export class BhMap {
    * @returns { number[][]} Array of [row, col] coordinates within bounds, excluding center (max 8 items)
    */
   surround (x, y) {
-    let surroundings = []
-    const isValid = (rr, cc) => (cc !== x || rr !== y) && this.inBounds(rr, cc)
+    /** @type {Array<Array<number>>} */
+    const surroundings = []
+    const isValid = /** @type {(rr: number, cc: number) => boolean} */ ((rr, cc) => (cc !== x || rr !== y) && this.inBounds(rr, cc))
     this.surroundBase(x, y, isValid, surroundings)
     return surroundings
   }
@@ -563,8 +564,8 @@ export class BhMap {
    * Gets all possible terrain tags for this map's terrain.
    * Aggregates all subterrain tags into a single concatenated string.
    * Used to pre-load all terrain CSS classes for a map.
+   * Private method (indicated by # prefix).
    *
-   * @private
    * @returns {string} Concatenated string of all subterrain tags
    */
   #allTags () {
@@ -602,8 +603,8 @@ export class BhMap {
    * Checks if cell has edges with land and applies corresponding CSS classes.
    * Adds edge classes for water cells adjacent to land cells.
    * Modifies tags array in-place to include edge classification CSS classes.
+   * Private method (indicated by # prefix).
    *
-   * @private
    * @param {number} x - Column coordinate (0-based, x-axis)
    * @param {number} y - Row coordinate (0-based, y-axis)
    * @param {boolean} isLand - Whether current cell is land terrain
@@ -733,7 +734,6 @@ export class CustomMap extends BhMap {
    * @param {Set<string>} land - Set of land cell coordinates as "r,c" strings
    * @param {Object} mapTerrain - Terrain configuration with subterrains and properties
    * @param {Object} [example] - Optional example or reference data for this map
-   * @returns {void}
    * @description Sets isPreGenerated to false and uses empty landArea array.
    */
   constructor (title, size, shipNum, land, mapTerrain, example) {
@@ -1001,7 +1001,7 @@ export class CustomBlankMap extends withModifyable(CustomMap) {
     this.rows = rows
     this.cols = cols
     for (const key of this.land) {
-      const [r, c] = key.split(',').map(n => Number.parseInt(n, 10))
+      const [r, c] = key.split(',').map(/** @type {(n: string) => number} */ (n => Number.parseInt(n, 10)))
       if (!this.inBounds(r, c)) this.land.delete(key)
     }
   }
@@ -1023,7 +1023,6 @@ export class SavedCustomMap extends CustomMap {
    * Reconstructs weapons from the saved weapon specifications.
    * Combines terrain weapons with any custom saved weapons.
    *
-   * @constructor
    * @param {Object<string, any>} data - The saved map data object from localStorage
    * @param {string} data.title - Map title shown to players
    * @param {number} data.rows - Number of rows in the grid (positive integer)
@@ -1033,7 +1032,6 @@ export class SavedCustomMap extends CustomMap {
    * @param {string|Object<string, any>} data.terrain - Terrain name or terrain object with subterrains
    * @param {Array<Object<string, any>>} [data.weapons] - Array of weapon specs with letter and ammo properties
    * @param {Object<string, any>} [data.example] - Optional example or reference data
-   * @returns {void}
    * @description Reconstructs weapons array with standardShot + terrain weapons + custom weapons.
    */
   constructor (data) {
@@ -1050,7 +1048,7 @@ export class SavedCustomMap extends CustomMap {
 
     // Get saved custom weapons
     const customWeapons = this.terrain
-      ? data.weapons.map(w => this.terrain.getNewWeapon(w.letter, w.ammo))
+      ? data.weapons.map(/** @type {(w: any) => any} */ (w => this.terrain.getNewWeapon(w.letter, w.ammo)))
       : []
 
     // Include terrain's default weapons plus any custom saved weapons

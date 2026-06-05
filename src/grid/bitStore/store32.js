@@ -1156,7 +1156,7 @@ export class Store32 extends StoreBase {
         min = lenA
       }
     } else {
-      min = lenA < lenB ? lenA : lenB
+      min = Math.min(lenA, lenB)
     }
 
     // Delegate to specific operation handlers

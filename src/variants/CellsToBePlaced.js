@@ -125,7 +125,6 @@ export class CellsToBePlaced {
    * Used to iterate over all placed cells for validation checks.
    * This getter is read-only; use constructor to set cells.
    *
-   * @readonly
    * @returns {Array<[number, number, number]>} Array of [x, y, value] coordinate tuples in world space
    */
   get cells () {
@@ -171,7 +170,6 @@ export class CellsToBePlaced {
    * @param {number} y - The y-coordinate (row) in world space
    * @param {number} [zoneDetail] - Optional zone detail level override
    *   If not provided, uses this.zoneDetail (0=no detail, 1=subterrain, 2=zone)
-   * @returns {ZoneInfo} Zone information object for the position or null if unavailableerrain, 2=zone)
    * @returns {ZoneInfo} Zone information object for the position
    */
   zoneInfo (x, y, zoneDetail) {
@@ -185,8 +183,7 @@ export class CellsToBePlaced {
    * Coordinates are in world space (after embedding transformation).
    *
    * @param {number} x - The x-coordinate (column) in world space
-   * @param {number} y - The y-coordinate (row) in world spacemn)
-   * @param {number} y - The y-coordinate (row)
+   * @param {number} y - The y-coordinate (row) in world space
    * @returns {boolean} True if the position's zone passes validation or no zone info available,
    *   false if zone validation explicitly fails
    */
@@ -206,8 +203,7 @@ export class CellsToBePlaced {
    * Coordinates are in world space (after embedding transformation).
    *
    * @param {number} x - The x-coordinate (column) in world space
-   * @param {number} y - The y-coordinate (row) in world spacemn)
-   * @param {number} y - The y-coordinate (row)
+   * @param {number} y - The y-coordinate (row) in world space
    * @param {ShipCellGrid} shipCellGrid - The grid containing existing ship cells to check against
    * @returns {boolean} True if there is no touching with other cells in 3×3 neighborhood, false otherwise
    */

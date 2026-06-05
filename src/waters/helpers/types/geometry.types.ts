@@ -9,11 +9,6 @@
  * - Displacement and area calculations
  */
 
-import type {
-  CellCallback,
-  CellReducer,
-  InBoundsCallback
-} from './callbacks.types'
 
 /**
  * Map interface for grid boundary checking.

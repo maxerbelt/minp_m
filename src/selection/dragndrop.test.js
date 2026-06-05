@@ -88,8 +88,8 @@ jest.unstable_mockModule('./cursor.js', () => ({
 }))
 
 describe('dragndrop module', () => {
+  /** @type {any} */
   let mockClickedShip
-  let mockSelection
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -103,12 +103,6 @@ describe('dragndrop module', () => {
       nextForm: jest.fn()
     }
 
-    mockSelection = {
-      shown: true,
-      hide: jest.fn(),
-      show: jest.fn(),
-      move: jest.fn()
-    }
     dragNDrop.setClickedShip(mockClickedShip)
   })
 
@@ -172,23 +166,23 @@ describe('dragndrop module', () => {
 
   describe('getShipIdFromElement', () => {
     it('should extract ship ID from element dataset', () => {
-      const element = {
+      const element = /** @type {any} */ ({
         dataset: { id: '42' }
-      }
+      })
       expect(getShipIdFromElement(element)).toBe(42)
     })
 
     it('should handle string IDs', () => {
-      const element = {
+      const element = /** @type {any} */ ({
         dataset: { id: '123' }
-      }
+      })
       expect(getShipIdFromElement(element)).toBe(123)
     })
 
     it('should return NaN for non-numeric IDs', () => {
-      const element = {
+      const element = /** @type {any} */ ({
         dataset: { id: 'abc' }
-      }
+      })
       expect(Number.isNaN(getShipIdFromElement(element))).toBe(true)
     })
   })
@@ -210,25 +204,27 @@ describe('dragndrop module', () => {
 
     describe('getShip', () => {
       it('should extract ship information from drag event', () => {
-        const element = { dataset: { id: '5' } }
-        const event = {
+        const element = /** @type {any} */ ({ dataset: { id: '5' } })
+        const event = /** @type {any} */ ({
           currentTarget: element,
           target: element
-        }
-        const result = dragNDrop._getShip(event)
+        })
+        // @ts-ignore - testing private method
+        const result = /** @type {any} */ (dragNDrop._getShip(event))
         expect(result.shipId).toBe(5)
         expect(result.shipElement).toBe(element)
         expect(result.isNotShipElement).toBe(false)
       })
 
       it('should identify when target is not ship element', () => {
-        const element = { dataset: {} } // No ID on current element
-        const targetElement = { dataset: {} }
-        const event = {
+        const element = /** @type {any} */ ({ dataset: {} }) // No ID on current element
+        const targetElement = /** @type {any} */ ({ dataset: {} })
+        const event = /** @type {any} */ ({
           currentTarget: element,
           target: targetElement
-        }
-        const result = dragNDrop._getShip(event)
+        })
+        // @ts-ignore - testing private method
+        const result = /** @type {any} */ (dragNDrop._getShip(event))
         expect(result.shipElement).toBe(element)
         expect(result.isNotShipElement).toBe(true)
       })
@@ -236,10 +232,10 @@ describe('dragndrop module', () => {
 
     describe('makeUndraggable', () => {
       it('should remove draggable class and set draggable to false', () => {
-        const element = {
+        const element = /** @type {any} */ ({
           classList: { remove: jest.fn() },
           setAttribute: jest.fn()
-        }
+        })
         dragNDrop.makeUndraggable(element)
         expect(element.classList.remove).toHaveBeenCalledWith('draggable')
         expect(element.setAttribute).toHaveBeenCalledWith('draggable', 'false')
@@ -263,16 +259,16 @@ describe('dragndrop module', () => {
 
     describe('_handleShipDragStart', () => {
       it('should handle drag start event', () => {
-        const element = {
+        const element = /** @type {any} */ ({
           dataset: { id: '1', variant: '0' },
           getBoundingClientRect: jest.fn().mockReturnValue({
             left: 10,
             top: 20
           }),
           style: { opacity: '' }
-        }
+        })
 
-        const event = {
+        const event = /** @type {any} */ ({
           currentTarget: element,
           target: element,
           clientX: 100,
@@ -282,9 +278,9 @@ describe('dragndrop module', () => {
             setDragImage: jest.fn(),
             effectAllowed: ''
           }
-        }
+        })
 
-        const mockShip = {
+        const mockShip = /** @type {any} */ ({
           id: 1,
           shape: jest.fn().mockReturnValue({
             tip: 'test ship',
@@ -304,15 +300,16 @@ describe('dragndrop module', () => {
               setByIndex: jest.fn()
             })
           })
-        }
+        })
 
-        const mockViewmodel = {
+        const mockViewmodel = /** @type {any} */ ({
           showNotice: jest.fn(),
           removeClicked: jest.fn(),
           cellSize: jest.fn().mockReturnValue(32),
           setDragShipContents: jest.fn()
-        }
+        })
 
+        // @ts-ignore - testing private method
         dragNDrop._handleShipDragStart(mockViewmodel, [mockShip], event)
 
         expect(mockViewmodel.showNotice).toHaveBeenCalledWith('test ship')
@@ -321,19 +318,20 @@ describe('dragndrop module', () => {
       })
 
       it('should handle ship element that is not current element', () => {
-        const shipElement = { dataset: {} } // No ID - make it not a ship element
-        const targetElement = { dataset: {} }
+        const shipElement = /** @type {any} */ ({ dataset: {} }) // No ID - make it not a ship element
+        const targetElement = /** @type {any} */ ({ dataset: {} })
 
-        const event = {
+        const event = /** @type {any} */ ({
           currentTarget: shipElement,
           target: targetElement,
           dataTransfer: { setData: jest.fn() }
-        }
+        })
 
-        const mockViewmodel = {
+        const mockViewmodel = /** @type {any} */ ({
           removeClicked: jest.fn()
-        }
+        })
 
+        // @ts-ignore - testing private method
         dragNDrop._handleShipDragStart(mockViewmodel, [], event)
         // When target is not ship element and element has no ID, should return early
         expect(mockViewmodel.removeClicked).not.toHaveBeenCalled()
@@ -342,26 +340,30 @@ describe('dragndrop module', () => {
 
     describe('_handleWeaponDragStart', () => {
       it('should handle weapon drag start', () => {
-        const element = {
+        const element = /** @type {any} */ ({
           dataset: { id: '1' },
           style: { opacity: '' }
-        }
+        })
 
-        const event = {
+        const event = /** @type {any} */ ({
           currentTarget: element,
           target: element,
           dataTransfer: {
             setData: jest.fn(),
             effectAllowed: ''
           }
-        }
+        })
 
-        const mockWeapon = { letter: 'G', tip: 'Gatling Gun' }
-        const mockViewmodel = {
+        const mockWeapon = /** @type {any} */ ({
+          letter: 'G',
+          tip: 'Gatling Gun'
+        })
+        const mockViewmodel = /** @type {any} */ ({
           showNotice: jest.fn(),
           removeClicked: jest.fn()
-        }
+        })
 
+        // @ts-ignore - testing private method
         dragNDrop._handleWeaponDragStart(
           mockViewmodel,
           mockWeapon,
@@ -376,14 +378,15 @@ describe('dragndrop module', () => {
 
     describe('_setupShipClickHandler', () => {
       it('should handle click on tray item', () => {
-        const element = {
+        const element = /** @type {any} */ ({
           dataset: { id: '1' },
           addEventListener: jest.fn()
-        }
+        })
 
-        const mockShip = { id: 1 }
-        const mockViewmodel = { assignClicked: jest.fn() }
+        const mockShip = /** @type {any} */ ({ id: 1 })
+        const mockViewmodel = /** @type {any} */ ({ assignClicked: jest.fn() })
 
+        // @ts-ignore - testing private method
         dragNDrop._setupShipClickHandler(mockViewmodel, element, [mockShip])
 
         expect(element.addEventListener).toHaveBeenCalledWith(
@@ -395,14 +398,17 @@ describe('dragndrop module', () => {
 
     describe('_setupWeaponClickHandler', () => {
       it('should handle click on weapon tray item', () => {
-        const element = {
+        const element = /** @type {any} */ ({
           dataset: { letter: 'G' },
           addEventListener: jest.fn()
-        }
+        })
 
-        const mockWeapon = { letter: 'G' }
-        const mockViewmodel = { assignClickedWeapon: jest.fn() }
+        const mockWeapon = /** @type {any} */ ({ letter: 'G' })
+        const mockViewmodel = /** @type {any} */ ({
+          assignClickedWeapon: jest.fn()
+        })
 
+        // @ts-ignore - testing private method
         dragNDrop._setupWeaponClickHandler(mockViewmodel, element, mockWeapon)
 
         expect(element.addEventListener).toHaveBeenCalledWith(
@@ -414,26 +420,6 @@ describe('dragndrop module', () => {
 
     describe('handleDropEvent', () => {
       it('should handle successful ship placement', () => {
-        const mockPlaceable = {
-          cells: [[0, 0, 1]],
-          canPlace: jest.fn().mockReturnValue(true)
-        }
-
-        const mockSelection = {
-          constructor: { name: 'DraggedShip' },
-          place: jest.fn().mockReturnValue([{ cell: 'data' }]),
-          ship: { id: 1, addToGrid: jest.fn() },
-          source: { dataset: {} }
-        }
-
-        const mockCell = { dataset: { id: '1' } }
-        const mockModel = { shipCellGrid: {} }
-        const mockViewmodel = {
-          removeHighlight: jest.fn(),
-          placement: jest.fn()
-        }
-        const mockEvent = { preventDefault: jest.fn() }
-
         // We'd need to set up state to test this properly
         // This demonstrates the structure
         expect(dragNDrop.handleDropEvent).toBeDefined()
@@ -481,8 +467,6 @@ describe('dragndrop module', () => {
   })
 
   describe('DraggedWeapon class', () => {
-    let DraggedWeapon
-
     beforeEach(async () => {
       // Extract DraggedWeapon from the module
       const module = await import('./dragndrop.js')
@@ -502,7 +486,7 @@ describe('dragndrop module', () => {
     it('enterCursor should return early if not placing ships', () => {
       const mockViewmodel = { placingShips: false }
       const mockModel = {}
-      const event = { preventDefault: jest.fn() }
+      const event = /** @type {any} */ ({ preventDefault: jest.fn() })
 
       enterCursor(event, mockViewmodel, mockModel)
       expect(event.preventDefault).not.toHaveBeenCalled()
@@ -511,7 +495,7 @@ describe('dragndrop module', () => {
     it('tabCursor should return early if not placing ships', () => {
       const mockViewmodel = { placingShips: false }
       const mockModel = {}
-      const event = { preventDefault: jest.fn() }
+      const event = /** @type {any} */ ({ preventDefault: jest.fn() })
 
       tabCursor(event, mockViewmodel, mockModel)
       expect(event.preventDefault).not.toHaveBeenCalled()
@@ -528,7 +512,7 @@ describe('dragndrop module', () => {
         assignByCursor: jest.fn()
       }
       const mockModel = { ships: [], shipCellGrid: {} }
-      const event = { preventDefault: jest.fn() }
+      const event = /** @type {any} */ ({ preventDefault: jest.fn() })
 
       // Function should exist and be callable
       expect(() => {

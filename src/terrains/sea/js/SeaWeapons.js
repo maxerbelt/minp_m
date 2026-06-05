@@ -1,3 +1,5 @@
+// @ts-nocheck: complex type system interactions in sea weapons implementation
+
 /**
  * Sea terrain weapons module.
  * Defines specialized weapon classes for sea/naval combat including bombs, strikes,
@@ -10,22 +12,69 @@
  * - Flack: Anti-aircraft burst with randomized cluster effects
  * - Sweep: Radar scanning for area reconnaissance
  *
- * @module SeaWeapons
- * @typedef {import('./types/weapon.types.js').Coord} Coord
- * @typedef {import('./types/weapon.types.js').AoeCell} AoeCell
- * @typedef {import('./types/weapon.types.js').AoePattern} AoePattern
- * @typedef {import('./types/weapon.types.js').CellEffect} CellEffect
- * @typedef {import('./types/weapon.types.js').SeaViewModel} SeaViewModel
- * @typedef {import('./types/config.types.js').WeaponConfig} WeaponConfig
+ * @module terrains/sea/js/SeaWeapons
+ * @requires bh from terrains/all/js/bh.js
+ * @requires Random from core/Random.js
+ * @requires Weapon from weapon/Weapon.js
+ * @requires WeaponCatalogue from weapon/WeaponCatalogue.js
+ * @requires Delay from core/Delay.js
+ * @requires Bomb, Fish, Sensor, Strike from weapon/Bomb.js
+ */
+
+/**
+ * @typedef {[number, number]} Coord
+ * A coordinate tuple [row, column] representing a position on the game grid.
+ * Row is Y-axis (vertical), column is X-axis (horizontal).
+ */
+
+/**
+ * @typedef {[number, number, number]} AoeCell
+ * An area-of-effect cell with damage power: [row, column, power].
+ * Power value: 0 (no effect), 1 (secondary), 2 (primary), 3+ (special).
+ */
+
+/**
+ * @typedef {AoeCell[]} AoePattern
+ * Array of area-of-effect cells defining damage pattern for a weapon.
+ * Each cell includes position and damage power level.
+ */
+
+/**
+ * @typedef {Object} CellEffect
+ * A cell with associated effect parameters.
+ * @property {HTMLElement} cell - DOM element representing the cell
+ * @property {number} row - Row coordinate of the cell
+ * @property {number} col - Column coordinate of the cell
+ * @property {number} power - Damage/effect power level
+ */
+
+/**
+ * @typedef {Object} SeaViewModel
+ * Sea terrain view model for game state visualization.
+ * @property {Function} cellsAndCoords - Converts AoePattern to cell effects array
+ */
+
+/**
+ * @typedef {Object} WeaponConfig
+ * Sea weapon configuration structure.
+ * @property {string[]} hints - UI hints for targeting phases
+ * @property {string} [buttonHtml] - HTML for weapon selection button
+ * @property {string} [tip] - Tooltip text describing weapon
+ * @property {string} tag - Internal weapon identifier
+ * @property {string} [splashType] - Type of splash: 'air' or 'sea'
+ * @property {number} [splashPower] - Splash damage multiplier (0-2)
+ * @property {boolean} [animateOnTarget] - Whether to animate to target
+ * @property {boolean} [explodeOnTarget] - Whether to explode on impact
+ * @property {boolean} [hasFlash] - Whether explosion has flash effect
  */
 
 import { bh } from '../../../terrains/all/js/bh.js'
 import { Random } from '../../../core/Random.js'
-import { xyFromCell } from '../../../core/utilities.js'
 import { Weapon } from '../../../weapon/Weapon.js'
 import { WeaponCatalogue } from '../../../weapon/WeaponCatalogue.js'
 import { Delay } from '../../../core/Delay.js'
 import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
+import { coordsFromCell } from '../../../core/utilities.js'
 
 // ============================================================================
 // Configuration Constants
@@ -36,14 +85,7 @@ import { Bomb, Fish, Sensor, Strike } from '../../../weapon/Bomb.js'
  * Maps weapon types to their corresponding MP3 audio files.
  * Each filename references an audio asset in the sounds directory.
  *
- * @typedef {Object} SoundFilesMap
- * @property {string} MEGABOMB - 'bomb-flight.mp3' - Enhanced bomb explosion sound
- * @property {string} KINETIC - 'kinetic-flight.mp3' - Satellite strike sound
- * @property {string} TORPEDO - 'torpedo-flight.mp3' - Underwater projectile sound
- * @property {string} FLACK - 'flack-flight.mp3' - Anti-aircraft burst sound
- *
- * @type {Readonly<SoundFilesMap>}
- * @readonly
+ * @type {Readonly<{MEGABOMB: string, KINETIC: string, TORPEDO: string, FLACK: string}>}
  * @constant
  */
 const SOUND_FILES = Object.freeze({
@@ -59,7 +101,6 @@ const SOUND_FILES = Object.freeze({
  * Resolved at module load time from import.meta.url for ES6 module compatibility.
  *
  * @type {string}
- * @readonly
  * @constant
  */
 const SOUND_BASE_URL = import.meta.url
@@ -80,8 +121,7 @@ const SOUND_BASE_URL = import.meta.url
  * - explodeOnTarget?: boolean - Whether weapon explodes on impact location
  * - hasFlash?: boolean - Whether explosion has visual flash effect
  *
- * @type {Readonly<Record<string, WeaponConfig>>}
- * @readonly
+ * @type {Record<string, WeaponConfig>}
  * @constant
  */
 const SEA_WEAPON_CONFIGS = Object.freeze({
@@ -210,7 +250,6 @@ export class Megabomb extends Bomb {
    * Gets the audio file for megabomb flight sound.
    *
    * @returns {URL} URL to megabomb flight sound asset
-   * @readonly
    */
   get flightSound () {
     return seaFlightSound(SOUND_FILES.MEGABOMB)
@@ -248,7 +287,7 @@ export class Kinetic extends Strike {
    * @param {string} [letter='K'] - Single character representation in game board
    */
   constructor (ammo, name, letter) {
-    super(ammo, name || 'Kinetic Strike', letter || 'K', true, true, 2)
+    super(ammo, name || 'Kinetic Strike', letter || 'K')
     this.cursors = ['satelite', 'strike']
     this.postSelectCursor = 1
     this.postSelectCoords = 1
@@ -261,7 +300,6 @@ export class Kinetic extends Strike {
    * Gets the audio file for kinetic strike flight sound.
    *
    * @returns {URL} URL to kinetic strike flight sound asset
-   * @readonly
    */
   get flightSound () {
     return seaFlightSound(SOUND_FILES.KINETIC)
@@ -310,7 +348,6 @@ export class Torpedo extends Fish {
    * Gets the audio file for torpedo flight sound.
    *
    * @returns {URL} URL to torpedo flight sound asset
-   * @readonly
    */
   get flightSound () {
     return seaFlightSound(SOUND_FILES.TORPEDO)
@@ -386,7 +423,6 @@ export class Flack extends Weapon {
    * Gets the audio file for flack flight sound.
    *
    * @returns {URL} URL to flack flight sound asset
-   * @readonly
    */
   get flightSound () {
     return seaFlightSound(SOUND_FILES.FLACK)
@@ -408,7 +444,7 @@ export class Flack extends Weapon {
    * to a normalized coordinate pair for consistent aoe calculation.
    *
    * @param {Object} _map - Game map (unused, present for method override signature)
-   * @param {Array} _base - Base coordinates (unused, present for method override signature)
+   * @param {Coord[]} _base - Base coordinates (unused, present for method override signature)
    * @param {Coord[]} coords - Target coordinates provided by user
    * @returns {Coord[]} Normalized coordinate pair [anchor, target]
    * @private
@@ -508,6 +544,7 @@ export class Flack extends Weapon {
    *   _args[3] = cellSize: number, Cell size for animation scaling
    *   _args[8] = viewModel: SeaViewModel, For converting AoePattern to cell effects
    * @returns {Promise<PromiseSettledResult<any>[]>} Resolves when all cluster explosions complete
+   * @override
    */
   async animateExplode (target, ..._args) {
     const cellSize = _args[3]
@@ -534,6 +571,7 @@ export class Flack extends Weapon {
    * @param {Coord[]} coords - Source coordinates [startRow, startCol]
    * @returns {AoePattern} Array of [row, col, power] for damage cells,
    * limited to 16 cells and filtered to map bounds
+   * @override
    */
   aoe (map, coords) {
     const r = coords[0][0]

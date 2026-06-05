@@ -9,7 +9,7 @@ describe('PolyominoGridManager', () => {
   let manager
   /** @type {HTMLCanvasElement} */
   let mockCanvas
-  /** @type {CanvasRenderingContext2D} */
+  /** @type {Partial<CanvasRenderingContext2D> & { toDataURL(): string }} */
   let mockContext
 
   beforeEach(() => {
@@ -34,6 +34,7 @@ describe('PolyominoGridManager', () => {
       toDataURL: () => 'data:image/png;base64,fake'
     }
 
+    // @ts-ignore - mock object for testing
     mockCanvas.getContext = () => mockContext
     document.body.appendChild(mockCanvas)
 
