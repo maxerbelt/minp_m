@@ -106,6 +106,7 @@ describe('spaceWeapons basic behavior', () => {
 
   it('RailBolt.redoCoords falls back to a degenerate line when given a single point', () => {
     const rail = new RailBolt(1)
+    // @ts-ignore - mock map with cols/rows properties required by redoCoords at runtime
     const result = rail.redoCoords({ cols: 10, rows: 10 }, [0, 0], [[3, 4]])
     expect(result).toEqual([
       [3, 4],
@@ -348,7 +349,7 @@ describe('spaceWeapons basic behavior', () => {
     const model = { getTarget: () => null }
 
     expect(() => {
-      // eslint-disable-next-line no-underscore-dangle
+      // @ts-ignore - processCoords is private; accessing for test coverage
       const result = gauss.processCoords(map, [0, 0], [3, 4], model)
       expect(Array.isArray(result)).toBe(true)
       expect(Array.isArray(result[0])).toBe(true)
@@ -370,7 +371,7 @@ describe('spaceWeapons basic behavior', () => {
   })
 
   it('spaceWeaponsCatalogue contains Missile and RailBolt entries', () => {
-    // eslint-disable-next-line no-underscore-dangle
+    // @ts-ignore - weapons is private; accessing for test coverage
     const letters = spaceWeaponsCatalogue.weapons.map(w => w.tag)
     expect(letters).toContain('missile')
     expect(letters).toContain('rail')

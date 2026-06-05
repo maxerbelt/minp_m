@@ -65,6 +65,9 @@ describe('LoadOut', () => {
     }
     // @ts-ignore - Object type used for mock setup
     mockViewModel = {
+      grid: {
+        nodeAt: jest.fn(() => ({ id: 1 }))
+      },
       gridCellAt: jest.fn(() => ({ id: 1 })),
       cellSize: jest.fn(() => 10)
     }

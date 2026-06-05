@@ -51,7 +51,6 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 
 /**
  * @typedef {Object} ViewModel
- * @property {function(number, number): HTMLElement} gridCellAt - Gets grid cell at coordinates
  * @property {function(): number} cellSize - Gets cell size for screen
  */
 
@@ -553,9 +552,9 @@ export class LoadOut {
    */
   static launchDefault (viewModel, coordinates, weapon) {
     const targetCoordinates = coordinates.at(-1)
-    const targetCell = viewModel.gridCellAt(
-      targetCoordinates[0],
-      targetCoordinates[1]
+    const targetCell = viewModel.grid.nodeAt(
+      targetCoordinates[1],
+      targetCoordinates[0]
     )
     return weapon.animateExplodeRaw(
       targetCell,

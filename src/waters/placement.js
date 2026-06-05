@@ -17,7 +17,6 @@ import { moveCursorBase } from './placementUI.js'
  * @property {Function} [placeTally] - Displays ship placement tally
  * @property {Function} [clearVisuals] - Clears placement visualization
  * @property {Function} [revealShips] - Reveals ships on the board
- * @property {Function} [gridCellAt] - Gets cell element at coordinates (r, c)
  * @property {HTMLCollection} [children] - Cell children collection on board
  * @property {DOMTokenList} [classList] - CSS class list of board
  * @property {Function} [removeDisplayClasses] - Removes display-related CSS classes

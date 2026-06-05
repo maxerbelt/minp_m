@@ -1947,13 +1947,14 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.randomAttachedWeapon = /** @type {any} */ jest.fn()
       // @ts-ignore - steps is possibly undefined
       enemy.steps.addShip = /** @type {any} */ jest.fn()
+      const mockCell = /** @type {any} */ ({
+        classList: { add: jest.fn(), remove: jest.fn() }
+      })
       enemy.opponent = {
         UI: {
           grid: {
             // @ts-ignore - mock nodeAt type compatibility
-            nodeAt: jest.fn(() => ({
-              classList: { add: jest.fn(), remove: jest.fn() }
-            }))
+            nodeAt: jest.fn(() => mockCell)
           }
         },
         // @ts-ignore - loadedWeaponEntries structure is test-specific mock
@@ -1987,7 +1988,7 @@ describe('Enemy.updateWeaponStatus', () => {
         /** @type {any} */ (enemy.opponent.UI),
         3,
         2,
-        'cell'
+        mockCell
       )
       // @ts-ignore - _armSelectedWeapon property doesn't exist on Enemy
       const [selection] = /** @type {any} */ (enemy._armSelectedWeapon).mock

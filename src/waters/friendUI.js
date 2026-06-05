@@ -354,12 +354,12 @@ export class FriendUI extends PlacementUI {
    */
   #applyModeConfiguration (config) {
     this.setTabText(config.tabText)
-    this._updateControlVisibility(
+    this.#updateControlVisibility(
       config.showPlacingControls,
       config.showGameControls
     )
-    this._updateTraysVisibility(config.showShipTrays)
-    this._updateButtonsVisibility(config.showTransformBtns, config.showTips)
+    this.#updateTraysVisibility(config.showShipTrays)
+    this.#updateButtonsVisibility(config.showTransformBtns, config.showTips)
     if (config.showStatus) this.showStatus()
     if (config.standardPanels) this.standardPanels()
     if (config.clearBoardCells) this.#clearBoardCells()
@@ -371,12 +371,11 @@ export class FriendUI extends PlacementUI {
    * Updates placement and game control visibility.
    * Consolidated control visibility management.
    *
-   * @private
    * @param {boolean} showPlacing - Show placement controls
    * @param {boolean} showGame - Show game controls
    * @returns {void}
    */
-  _updateControlVisibility (showPlacing, showGame) {
+  #updateControlVisibility (showPlacing, showGame) {
     this.toggleElements(
       [this.chooseControls, this.newPlacementBtn],
       showPlacing
@@ -387,11 +386,10 @@ export class FriendUI extends PlacementUI {
   /**
    * Updates ship tray visibility.
    *
-   * @private
    * @param {boolean} isVisible - Show or hide trays
    * @returns {void}
    */
-  _updateTraysVisibility (isVisible) {
+  #updateTraysVisibility (isVisible) {
     if (isVisible) {
       this.trayManager.showShipTrays()
     } else {
@@ -402,12 +400,11 @@ export class FriendUI extends PlacementUI {
   /**
    * Updates ship transformation buttons and tips visibility.
    *
-   * @private
    * @param {boolean} showBtns - Show transformation buttons
    * @param {boolean} showTipsFlag - Show help tips
    * @returns {void}
    */
-  _updateButtonsVisibility (showBtns, showTipsFlag) {
+  #updateButtonsVisibility (showBtns, showTipsFlag) {
     if (showBtns) {
       this.showTransformBtns(this)
     } else {

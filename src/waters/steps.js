@@ -825,8 +825,8 @@ export class Steps {
    * @param {HTMLElement} cell - DOM element of the source cell
    * @returns {void}
    */
-  addSource (board, y, x, cell) {
-    this.#setBoardContext('source', board, y, x, cell)
+  addSource (board, x, y, cell) {
+    this.#setBoardContext('source', board, x, y, cell)
   }
 
   /**

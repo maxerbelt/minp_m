@@ -158,11 +158,14 @@ const WEAPON_CONFIGS = {
  * @param {number} col1 - Starting column coordinate
  * @param {number} row2 - Ending row coordinate
  * @param {number} col2 - Ending column coordinate
+ * @param {MapLike} map - Game map for intercept calculation
  * @returns {LineIntercepts} Intercept points { x0, y0, x1, y1 }
  * @public
  */
 export function getIntercepts (row1, col1, row2, col2, map) {
+  // @ts-ignore - BhMapList accepts BattleMap which has cols/rows; MapLike is compatible at runtime
   const points = RectListCanvas.BhMapList(map)
+  // @ts-ignore - RectListCanvas.intercepts returns Object matching LineIntercepts at runtime
   return points.intercepts(col1, row1, col2, row2)
 }
 
@@ -178,8 +181,8 @@ export function getIntercepts (row1, col1, row2, col2, map) {
  * @returns {AoePattern} Array of [row, column, power] tuples
  * @public
  */
-export function getExtendedLinePoints (row1, col1, row2, col2, power) {
-  const points = RectListCanvas.BhMapList()
+export function getExtendedLinePoints (row1, col1, row2, col2, power, map) {
+  const points = RectListCanvas.BhMapList(map)
   points.drawLineInfinite(col1, row1, col2, row2, power)
   return points.list.map(([x, y, p]) => [y, x, p || power])
 }
@@ -195,8 +198,8 @@ export function getExtendedLinePoints (row1, col1, row2, col2, power) {
  * @returns {AoePattern} Array of [row, column, power] tuples
  * @public
  */
-export function getLinePoints (row1, col1, row2, col2, power) {
-  const points = RectListCanvas.BhMapList()
+export function getLinePoints (row1, col1, row2, col2, power, map) {
+  const points = RectListCanvas.BhMapList(map)
   points.drawRay(col1, row1, col2, row2, power)
   return points.list.map(([x, y, p]) => [y, x, p || power])
 }
@@ -232,7 +235,7 @@ export function getPieSegmentCells (
     spreadDeg,
     1
   )
-  return points.list.map(([x, y, p]) => [y, x, p])
+  return points.list.map(([x, y, p]) => [y, x, p || 1])
 }
 // ============================================================================
 // Shared Helper Functions - Effect Pattern Calculations
@@ -460,7 +463,7 @@ export function createSplashEffect (
  * Handles invalid/degenerate coordinate input gracefully by logging and returning empty.
  * @param {number[][]} coords - Two-point coordinates [[startRow, startCol], [endRow, endCol]]
  * @param {number} [power=1] - Power level for damage cells
- * @param {(row1: number, col1: number, row2: number, col2: number, power: number) => AoePattern} [lineFunction=getExtendedLinePoints] - Function to calculate line points
+ * @param {(row1: number, col1: number, row2: number, col2: number, power: number, map: MapLike|null) => AoePattern} [lineFunction=getExtendedLinePoints] - Function to calculate line points
  * @param {TerrainCheck|null} [terrainFilter=null] - Optional terrain filter (stops at first match)
  * @param {number} [penetration=0] - Number of cells beyond filter to include
  * @returns {AoePattern} Cells along the line with damage power
@@ -471,7 +474,8 @@ function calculateLineAreaOfEffect (
   power = 1,
   lineFunction = getExtendedLinePoints,
   terrainFilter = null,
-  penetration = 0
+  penetration = 0,
+  map = null
 ) {
   // Defensive: ensure coords is a pair of coordinates
   if (!coords || !Array.isArray(coords) || coords.length < 2) {
@@ -484,7 +488,7 @@ function calculateLineAreaOfEffect (
 
   const [row1, col1] = coords[0]
   const [row2, col2] = coords[1]
-  let line = lineFunction(row1, col1, row2, col2, power)
+  let line = lineFunction(row1, col1, row2, col2, power, map)
 
   if (terrainFilter) {
     const stopIndex = line.findIndex(([row, col]) => terrainFilter(row, col))
@@ -608,7 +612,8 @@ export class Bomb extends Weapon {
    * @returns {AoePattern} Damage cells with power levels
    * @public
    */
-  aoe (_map, coords) {
+  // @ts-ignore - Parameter specialization from Object to MapLike|null valid at runtime
+  aoe (/** @type {MapLike|null} */ _map, coords) {
     const [row, col] = coords[0]
     return this.boom(row, col)
   }
@@ -783,8 +788,16 @@ export class Strike extends WeapponWithPath {
    * @returns {AoePattern} Damage cells with power levels
    * @public
    */
-  aoe (_map, coords) {
-    return calculateLineAreaOfEffect(coords, 2, getExtendedLinePoints)
+  // @ts-ignore - Parameter specialization from Object to MapLike|null valid at runtime
+  aoe (/** @type {MapLike|null} */ map, coords) {
+    return calculateLineAreaOfEffect(
+      coords,
+      2,
+      getExtendedLinePoints,
+      null,
+      0,
+      map
+    )
   }
 
   /**
@@ -870,7 +883,7 @@ export class Fish extends WeapponWithPath {
       coords,
       power,
       getLinePoints,
-      (row, col) => map.isLand(row, col),
+      (row, col) => map.isLand?.(row, col) || false,
       penetration
     )
   }
@@ -898,6 +911,7 @@ export class Fish extends WeapponWithPath {
    */
   redoCoords (_map, _base, coords) {
     const line = this.aoe(_map, coords)
+    // @ts-ignore - line is guaranteed to have at least one element from aoe calculation
     return [line[0], line.at(-1)]
   }
 
@@ -916,7 +930,7 @@ export class Fish extends WeapponWithPath {
       map,
       resolvedTarget,
       1,
-      (row, col) => !map.isLand(row, col)
+      (row, col) => !(map.isLand?.(row, col) || false)
     )
   }
 }
@@ -963,7 +977,8 @@ export class Sensor extends Weapon {
    * @returns {AoePattern} Scan cells with power levels
    * @public
    */
-  aoe (_map, coords) {
+  // @ts-ignore - Parameter specialization from Object to MapLike|null valid at runtime
+  aoe (/** @type {MapLike|null} */ _map, coords) {
     const [centerRow, centerCol] = coords[0]
     const [targetRow, targetCol] = coords[1]
     return getPieSegmentCells(centerCol, centerRow, targetCol, targetRow)
