@@ -79,9 +79,6 @@ import { GridBoard } from '../waters/gridBoard.js'
  * @property {Object<string, HTMLElement>} [weaponBtns] - Map of weapon letters to button elements.
  *                                                       Keys are single-letter weapon IDs (e.g., 'A', 'B').
  *                                                       Values are clickable button elements.
- * @property {(row: number, col: number) => HTMLElement} gridCellAt - Get cell element at coordinates.
- *                                                                    Function gridCellAt(row, col) → HTMLElement
- *                                                                    Used to apply visual highlights to cells.
  * @property {() => void} removeHighlightAoE - Clear weapon effect highlights.
  *                                            Removes all 'target' and power-level classes.
  *                                            Called before updating highlights.
@@ -105,12 +102,9 @@ import { GridBoard } from '../waters/gridBoard.js'
  * @property {() => void} [clearFriendClasses] - Remove friend-specific CSS classes.
  *                                             Called when transitioning to opponent turn.
  *
- * @callback KeyboardHandler
- * @description Callback invoked when keyboard shortcut is pressed.
- * @param {KeyboardEvent} [event] - Keyboard event (may not be passed for programmatic calls).
- * @returns {void}
- *
  * @typedef {(event: KeyboardEvent) => void} KeyboardHandler
+ * @description Callback invoked when keyboard shortcut is pressed.
+ *              Parameters: event (KeyboardEvent, may not be passed for programmatic calls).
  * @typedef {(event: Event) => void} EventListener
  * @typedef {() => void} CleanupHandler
  */
@@ -194,8 +188,9 @@ const ModelAccessor = {
    * @returns {Array<Array<number>>} Target coordinate pairs.
    */
   getTargetingCoordinates (model) {
-    if (!model?.loadOut) return []
-    return model.loadOut.selectedCoordinates || model.loadOut.coordinates || []
+    const m = /** @type {any} */ (model)
+    if (!m?.loadOut) return []
+    return m.loadOut.selectedCoordinates || m.loadOut.coordinates || []
   },
 
   /**
@@ -209,14 +204,15 @@ const ModelAccessor = {
    * @returns {Weapon | undefined} Active weapon or undefined.
    */
   getActiveWeapon (model) {
-    if (!model?.loadOut) return undefined
+    const m = /** @type {any} */ (model)
+    if (!m?.loadOut) return undefined
 
-    const selectedWeapon = model.loadOut.selectedWeapon
+    const selectedWeapon = m.loadOut.selectedWeapon
     if (selectedWeapon) {
       return selectedWeapon.weapon || selectedWeapon
     }
 
-    return model.loadOut.currentWeaponSystem?.weapon
+    return m.loadOut.currentWeaponSystem?.weapon
   },
 
   /**
@@ -229,7 +225,12 @@ const ModelAccessor = {
    */
   getSplashCellsInBounds (weapon, boardMap, targetCoordinates) {
     const splashCells = weapon.splashAoe(boardMap, targetCoordinates)
-    return filterCoordinatesInBounds(boardMap, splashCells)
+    // Convert readonly array to mutable for filtering
+    const coords = /** @type {Array<Array<number>>} */ (
+      Array.from(splashCells).map(cell => [cell[0], cell[1], cell[2]])
+    )
+    const result = filterCoordinatesInBounds(boardMap, coords)
+    return /** @type {Array<SplashCell>} */ (/** @type {unknown} */ (result))
   },
 
   /**
@@ -255,12 +256,13 @@ const ModelAccessor = {
    * @returns {Array<Array<number>>} Preview coordinate pairs.
    */
   getPreviewTargetingCoordinates (model, cellRow, cellCol) {
-    const targetingCoordinates = this.getTargetingCoordinates(model)
+    const m = /** @type {any} */ (model)
+    const targetingCoordinates = this.getTargetingCoordinates(m)
     if (targetingCoordinates.length > 0) {
       return [...targetingCoordinates, [cellRow, cellCol]]
     }
 
-    const selectedCell = model?.selectedCellCoordinates
+    const selectedCell = m?.selectedCellCoordinates
     if (selectedCell) {
       return [
         [selectedCell.r, selectedCell.c],
@@ -307,17 +309,14 @@ class BoardHighlighter {
    * Runs once per board; reused for multiple highlight operations.
    *
    * @constructor
-   * @param {EnemyUIModel} boardUI - UI with gridCellAt() and removeHighlightAoE() methods.
+   * @param {EnemyUIModel} boardUI - UI with grid.nodeAt() and removeHighlightAoE() methods.
    *                                 Provides element access for applying styles.
    * @param {BoardMap} boardMap - Board for bounds validation.
    *                              Ensures splash cells stay within playable area.
-   * @returns {void}
-   * @param {EnemyUIModel} boardUI - UI with gridCellAt() and removeHighlightAoE() methods.
-   * @param {BoardMap} boardMap - Board for bounds validation.
    */
   constructor (boardUI, boardMap) {
-    this.boardUI = boardUI
-    this.boardMap = boardMap
+    this.boardUI = /** @type {EnemyUIModel} */ (boardUI)
+    this.boardMap = /** @type {BoardMap} */ (boardMap)
   }
 
   /**
@@ -330,7 +329,8 @@ class BoardHighlighter {
    * @returns {void}
    */
   _clearExistingHighlights () {
-    this.boardUI.removeHighlightAoE()
+    const ui = /** @type {any} */ (this.boardUI)
+    ui?.removeHighlightAoE?.()
   }
 
   /**
@@ -346,10 +346,12 @@ class BoardHighlighter {
    * @returns {void}
    */
   #applyHighlightsToCells (splashCells) {
-    for (const [cellRow, cellCol, powerLevel] of splashCells) {
-      const cell = this.boardUI.gridCellAt(cellRow, cellCol)
-      const cellClass = bh.splashTags[powerLevel]
-      cell.classList.add(cellClass, 'target')
+    const ui = /** @type {any} */ (this.boardUI)
+    const bhRef = /** @type {any} */ (bh)
+    for (const [y, x, powerLevel] of splashCells) {
+      const cell = ui?.grid.nodeAt(x, y)
+      const cellClass = bhRef?.splashTags?.[powerLevel]
+      if (cell && cellClass) cell.classList.add(cellClass, 'target')
     }
   }
 
@@ -373,7 +375,7 @@ class BoardHighlighter {
   highlightWeaponEffect (weapon, targetCoordinates) {
     this._clearExistingHighlights()
 
-    if (!ModelAccessor.canApplyWeapon(weapon, targetCoordinates)) {
+    if (!weapon || !ModelAccessor.canApplyWeapon(weapon, targetCoordinates)) {
       return
     }
 
@@ -398,7 +400,8 @@ class BoardHighlighter {
  * @returns {void}
  */
 function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
-  const boardMap = bh.map
+  const m = /** @type {any} */ (model)
+  const boardMap = /** @type {BoardMap} */ (/** @type {any} */ (bh)?.map)
 
   // Validate cursor position
   if (!isCoordinateInBounds(boardMap, cellRow, cellCol)) {
@@ -406,10 +409,12 @@ function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
   }
 
   // Get targeting data
-  const boardUI = model.UI
-  const activeWeapon = ModelAccessor.getActiveWeapon(model)
+  const boardUI = m?.UI
+  if (!boardUI) return
+
+  const activeWeapon = ModelAccessor.getActiveWeapon(m)
   const fullTargetCoordinates = ModelAccessor.getPreviewTargetingCoordinates(
-    model,
+    m,
     cellRow,
     cellCol
   )
@@ -441,15 +446,12 @@ function _createAreaOfEffectHighlighter (model, cellRow, cellCol) {
  * - Called in strict order by newGame()
  * - No dependency on instance state; all state is in bh or enemy globals
  *
- * @namespace BoardInitializer
- * @type {Object}
- * @private
- *
  * @example
  * BoardInitializer.initializeGameMode(true);      // Seeking mode
  * BoardInitializer.updateBoardTitle();
  * BoardInitializer.initializeOpponentBoard(...);
  */
+/** @type {Object<string, Function>} */
 const BoardInitializer = {
   /**
    * Initialize game visibility state and opponent ship clearing.
@@ -466,9 +468,11 @@ const BoardInitializer = {
    * BoardInitializer.initializeGameMode(true);  // Start seek phase
    */
   initializeGameMode (isSeekingMode) {
-    bh.seekingMode = isSeekingMode
+    const bhRef = /** @type {any} */ (bh)
+    bhRef.seekingMode = isSeekingMode
     if (isSeekingMode) {
-      enemy.ships = []
+      const enemyRef = /** @type {any} */ (enemy)
+      enemyRef.ships = []
     }
   },
 
@@ -487,7 +491,8 @@ const BoardInitializer = {
   updateBoardTitle () {
     const titleElement = document.getElementById('enemy-title')
     if (titleElement) {
-      titleElement.textContent = 'Enemy ' + bh.terrain.mapHeading
+      const bhRef = /** @type {any} */ (bh)
+      titleElement.textContent = 'Enemy ' + bhRef?.terrain?.mapHeading
     }
   },
 
@@ -529,9 +534,11 @@ const BoardInitializer = {
     // Initialize Friend board if provided
     if (opponentBoardCleanup && friendUI) {
       cleanupOpponentBoard = opponentBoardCleanup
-      friendUI.clearFriendClasses()
+      const friendUIRef = /** @type {any} */ (friendUI)
+      friendUIRef.clearFriendClasses?.()
       // Arm opponent weapons for two-click targeting in hide mode
-      enemy.opponent?.armWeapons()
+      const enemyRef = /** @type {any} */ (enemy)
+      enemyRef.opponent?.armWeapons()
     }
   },
 
@@ -548,13 +555,16 @@ const BoardInitializer = {
    * BoardInitializer.configureBoardHover();  // Enable weapon preview
    */
   configureBoardHover () {
+    const enemyRef = /** @type {any} */ (enemy)
+    const enemyUI = enemyRef?.UI
+    const boardMap = /** @type {any} */ (bh)?.map
     GridBoard.addHover(
-      enemy.UI.board,
-      bh.map,
+      enemyUI?.board,
+      boardMap,
       _createAreaOfEffectHighlighter,
-      enemy.UI.removeHighlightAoE,
-      enemy.UI,
-      enemy
+      enemyUI?.removeHighlightAoE,
+      enemyUI,
+      enemyRef
     )
   },
 
@@ -574,7 +584,8 @@ const BoardInitializer = {
    * BoardInitializer.configureBoardTargeting(true);  // Setup attack mode
    */
   configureBoardTargeting (isSeekingMode) {
-    enemy.setBoardTargetingState(isSeekingMode)
+    const enemyRef = /** @type {any} */ (enemy)
+    enemyRef.setBoardTargetingState(isSeekingMode)
   }
 }
 
@@ -629,7 +640,8 @@ export function newGame (seek, opponentBoard, friendUI) {
   BoardInitializer.initializeGameMode(isSeekingMode)
 
   // Phase 2: Reset core state
-  enemy.resetModel()
+  const enemyRef = /** @type {any} */ (enemy)
+  enemyRef.resetModel()
   BoardInitializer.updateBoardTitle()
 
   // Phase 3: Board initialization
@@ -638,7 +650,7 @@ export function newGame (seek, opponentBoard, friendUI) {
 
   // Phase 4: Configure interaction
   BoardInitializer.configureBoardTargeting(isSeekingMode)
-  enemy.setupWeaponButtonHandlers()
+  enemyRef.setupWeaponButtonHandlers()
 }
 
 // ============================================================================
@@ -683,17 +695,26 @@ function buildSeekModeShortcuts (placementHandler, testHandler) {
     [KEYBOARD_SHORTCUTS.PLACEMENT]: () => placementHandler?.(),
     [KEYBOARD_SHORTCUTS.TEST]: () => testHandler?.(),
     [KEYBOARD_SHORTCUTS.RESTART]: () => newGame(GAME_MODE_SEEK, () => {}, null),
-    [KEYBOARD_SHORTCUTS.REVEAL]: () => enemy.onClickReveal?.(),
-    [KEYBOARD_SHORTCUTS.SINGLE_SHOT]: () => enemy.onClickSingleShotButton?.()
+    [KEYBOARD_SHORTCUTS.REVEAL]: () => {
+      const enemyRef = /** @type {any} */ (enemy)
+      enemyRef.onClickReveal?.()
+    },
+    [KEYBOARD_SHORTCUTS.SINGLE_SHOT]: () => {
+      const enemyRef = /** @type {any} */ (enemy)
+      enemyRef.onClickSingleShotButton?.()
+    }
   }
 
   // Dynamically register weapon shortcuts
-  const weaponButtons = enemy.UI?.weaponBtns || {}
+  const enemyUI = /** @type {any} */ (enemy)['UI']
+  const weaponButtons = enemyUI?.['weaponBtns'] || {}
   for (const button of Object.values(weaponButtons)) {
-    const letter = button.dataset.letter
+    const letter = /** @type {any} */ (button)?.['dataset']?.['letter']
     if (letter) {
-      shortcuts[letter.toLowerCase()] = () =>
-        enemy.onClickWeaponButtons?.(letter)
+      shortcuts[letter.toLowerCase()] = () => {
+        const enemyRef = /** @type {any} */ (enemy)
+        enemyRef.onClickWeaponButtons?.(letter)
+      }
     }
   }
 
@@ -761,8 +782,9 @@ function initializeSeekModeShortcuts (placementHandler, testHandler) {
  * // Safe even if element or handler is null/undefined
  */
 function _attachClickHandler (element, handler) {
-  if (element?.addEventListener && typeof handler === 'function') {
-    element.addEventListener('click', /** @type {EventListener} */ (handler))
+  const elem = /** @type {any} */ (element)
+  if (elem?.addEventListener && typeof handler === 'function') {
+    elem.addEventListener('click', /** @type {EventListener} */ (handler))
   }
 }
 
@@ -797,18 +819,20 @@ function _attachClickHandler (element, handler) {
  */
 function _wireUpButtonHandlers (placementHandler, testHandler) {
   // Refresh button states
-  enemy.UI?.refreshButtons?.()
+  const enemyRef = /** @type {any} */ (enemy)
+  enemyRef.UI?.refreshButtons?.()
 
   // Wire game control buttons
+  const enemyUI = enemyRef.UI
   _attachClickHandler(
-    enemy.UI?.buttons?.restart,
+    enemyUI?.buttons?.restart,
     newGame.bind(null, GAME_MODE_SEEK, null)
   )
-  enemy.wireupButtons()
+  enemyRef.wireupButtons()
 
   // Wire mode toggle buttons
-  _attachClickHandler(enemy.UI?.buttons?.place, placementHandler)
-  _attachClickHandler(enemy.UI?.buttons?.test, testHandler)
+  _attachClickHandler(enemyUI?.buttons?.place, placementHandler)
+  _attachClickHandler(enemyUI?.buttons?.test, testHandler)
 
   // Initialize keyboard shortcuts
   return initializeSeekModeShortcuts(placementHandler, testHandler)
