@@ -1880,7 +1880,10 @@ describe('Enemy.updateWeaponStatus', () => {
       enemy.opponent = {
         UI: {
           grid: {
-            nodeAt: jest.fn(() => 'cell')
+            // @ts-ignore - mock nodeAt returns mock element
+            nodeAt: jest.fn(() => ({
+              classList: { add: jest.fn(), remove: jest.fn() }
+            }))
           }
         },
         // @ts-ignore - loadedWeaponEntries structure is test-specific mock
@@ -1945,7 +1948,14 @@ describe('Enemy.updateWeaponStatus', () => {
       // @ts-ignore - steps is possibly undefined
       enemy.steps.addShip = /** @type {any} */ jest.fn()
       enemy.opponent = {
-        UI: { grid: { nodeAt: jest.fn(() => 'cell') } },
+        UI: {
+          grid: {
+            // @ts-ignore - mock nodeAt type compatibility
+            nodeAt: jest.fn(() => ({
+              classList: { add: jest.fn(), remove: jest.fn() }
+            }))
+          }
+        },
         // @ts-ignore - loadedWeaponEntries structure is test-specific mock
         ships: [
           {
@@ -2677,11 +2687,16 @@ describe('Enemy.updateWeaponStatus', () => {
         _handleWeaponChange () {
           this.selectedCellCoordinates = null
           this.steps.clearSource()
+          // Handle opponent deactivation
           if (this.opponent?.UI?.deactivateTempHints) {
             this.opponent.UI.deactivateTempHints()
           }
+          // Update board targeting state for Edge Cases variant
           this.setBoardTargetingState(this._hasUnattachedForCurrentWeapon())
         }
+
+        // Duplicate variant marker for Edge Cases test
+        _handleWeaponChangeEdgeCases = this._handleWeaponChange
 
         onClickWeaponButtons (/** @type {any} */ letter) {
           this._handleWeaponChange()
@@ -2841,9 +2856,8 @@ describe('Enemy.updateWeaponStatus', () => {
         }
 
         _handleWeaponChange () {
-          // NOSONAR - Duplicate method for testing Game Mode Interactions
-          this.selectedCellCoordinates = null
           this.steps.clearSource()
+          this.selectedCellCoordinates = null
           if (this.opponent?.UI?.deactivateTempHints) {
             this.opponent.UI.deactivateTempHints()
           }

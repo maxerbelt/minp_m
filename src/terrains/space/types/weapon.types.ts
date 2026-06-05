@@ -10,7 +10,7 @@
  * @module terrains/space/types/weapon.types
  */
 
-import type { Coord, AoePattern, AoeCell, CoordBracket } from './grid.types'
+import type { Coord, AoePattern } from './grid.types'
 
 /**
  * Game model interface providing core gameplay logic and targeting.
