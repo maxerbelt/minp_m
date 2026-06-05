@@ -107,7 +107,7 @@ const SCORE_LABEL_KEYS = ['placed', 'shots', 'hits', 'sunk', 'reveals', 'hints']
  * Mode-to-configuration mapping.
  * Centralized configuration for all game mode UI states.
  * Eliminates duplication across mode application methods.
- * @type {Object<string, FriendUIConfig & {modeSetupCallback?: Function}>}
+ * @type {Object<string, FriendUIConfig & {modeSetupCallback?: (ui: FriendUI) => void}>}
  * @readonly
  */
 const MODE_CONFIGURATIONS = {
@@ -153,10 +153,10 @@ const MODE_CONFIGURATIONS = {
     clearBoardCells: false,
     addAltPanels: false,
     modeSetupCallback: _ui => {
-      gameStatus.line.classList.add(UI_CLASSES.MEDIUM)
-      gameStatus.game.classList.remove(UI_CLASSES.HIDDEN)
-      gameStatus.mode.classList.remove(UI_CLASSES.HIDDEN)
-      gameStatus.line.classList.remove(UI_CLASSES.HIDDEN)
+      gameStatus.line?.classList.add(UI_CLASSES.MEDIUM)
+      gameStatus.game?.classList.remove(UI_CLASSES.HIDDEN)
+      gameStatus.mode?.classList.remove(UI_CLASSES.HIDDEN)
+      gameStatus.line?.classList.remove(UI_CLASSES.HIDDEN)
     }
   },
   [UI_MODES.SEEKING]: {
@@ -171,9 +171,9 @@ const MODE_CONFIGURATIONS = {
     clearBoardCells: false,
     addAltPanels: true,
     modeSetupCallback: _ui => {
-      gameStatus.line.classList.remove(UI_CLASSES.MEDIUM)
-      gameStatus.line2.classList.remove(UI_CLASSES.MEDIUM)
-      gameStatus.line2.classList.add(UI_CLASSES.SMALL)
+      gameStatus.line?.classList.remove(UI_CLASSES.MEDIUM)
+      gameStatus.line2?.classList.remove(UI_CLASSES.MEDIUM)
+      gameStatus.line2?.classList.add(UI_CLASSES.SMALL)
     }
   }
 }
@@ -377,7 +377,7 @@ export class FriendUI extends PlacementUI {
    */
   #updateControlVisibility (showPlacing, showGame) {
     this.toggleElements(
-      [this.chooseControls, this.newPlacementBtn],
+      [this.chooseControls, this.newPlacementBtn].filter(el => el != null),
       showPlacing
     )
     this._toggleGameControls(showGame)
@@ -390,6 +390,7 @@ export class FriendUI extends PlacementUI {
    * @returns {void}
    */
   #updateTraysVisibility (isVisible) {
+    // @noInspection JSMethodCanBeStatic - Method intentionally uses conditional logic
     if (isVisible) {
       this.trayManager.showShipTrays()
     } else {
@@ -406,14 +407,14 @@ export class FriendUI extends PlacementUI {
    */
   #updateButtonsVisibility (showBtns, showTipsFlag) {
     if (showBtns) {
-      this.showTransformBtns(this)
+      this.showTransformBtns()
     } else {
-      this.hideTransformBtns(this)
+      this.hideTransformBtns()
     }
     if (showTipsFlag) {
-      this.showTips(this)
+      this.showTips()
     } else {
-      this.hideTips(this)
+      this.hideTips()
     }
   }
 
@@ -421,13 +422,18 @@ export class FriendUI extends PlacementUI {
    * Toggles the visibility of game controls.
    * Shows or hides test/seek buttons and stop button based on isVisible flag.
    *
-   * @private
    * @param {boolean} isVisible - True to show controls, false to hide
    * @returns {void}
    */
   _toggleGameControls (isVisible) {
-    this.toggleElements([this.testBtn, this.seekBtn], isVisible)
-    this.toggleElements([this.stopBtn], false)
+    this.toggleElements(
+      [this.testBtn, this.seekBtn].filter(el => el != null),
+      isVisible
+    )
+    this.toggleElements(
+      [this.stopBtn].filter(el => el != null),
+      false
+    )
   }
 
   // ============ Score Labels ============
@@ -436,7 +442,6 @@ export class FriendUI extends PlacementUI {
    * Updates score label visibility for the given mode.
    * Shows/hides score elements based on MODE_SCORE_LABELS configuration.
    *
-   * @private
    * @param {string} mode - The game mode to configure labels for
    * @returns {void}
    */
@@ -540,8 +545,8 @@ export class FriendUI extends PlacementUI {
     gameStatus.flush()
     gameStatus.addToQueue('Enemy Fleet Revealed', true)
     gameStatus.addToQueue('Your Fleet is Destroyed', true)
-    this.board.classList.add(UI_CLASSES.DESTROYED)
-    trackLevelEnd(bh.map, false)
+    this.board?.classList.add(UI_CLASSES.DESTROYED)
+    trackLevelEnd(bh.map || undefined, false)
   }
 
   /**
@@ -621,6 +626,7 @@ export class FriendUI extends PlacementUI {
    * @returns {boolean} True if in test mode
    */
   isTestEnvironment () {
-    return bh.test
+    // @ts-ignore - bh.test is a dynamic property set at runtime
+    return bh.test || false
   }
 }
