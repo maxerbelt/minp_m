@@ -180,6 +180,20 @@ export type SplashCoordinates = readonly AoeCell[]
  * ]
  */
 export type DragShape = readonly AoeCell[]
+/**
+ * Sea view grid for board visualization and animation.
+ *
+ * Provides methods for converting weapon effects to visual representations
+ * for rendering on the game board.
+ *
+ @interface SeaViewGrid
+ * @property {(aoe: AoePattern) => CellEffectIterator} cellsForRClist
+ * Converts an area-of-effect pattern to iterable cell effects for rendering
+ */
+export interface SeaViewGrid {
+  cellsForRClist: (aoe: AoePattern) => CellEffectIterator
+}
+
 
 /**
  * Sea view model for board visualization and animation.
@@ -188,12 +202,13 @@ export type DragShape = readonly AoeCell[]
  * for rendering on the game board.
  *
  * @interface SeaViewModel
- * @property {(aoe: AoePattern) => CellEffectIterator} cellsAndCoords
+ * @property {SeaViewGrid} grid - Grid utility for converting AOE patterns to cell effects
  * Converts an area-of-effect pattern to iterable cell effects for rendering
  */
 export interface SeaViewModel {
-  cellsAndCoords: (aoe: AoePattern) => CellEffectIterator
+   readonly grid: SeaViewGrid
 }
+
 
 /**
  * Weapon instance properties for game mechanics.

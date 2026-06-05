@@ -358,34 +358,6 @@ export class WatersUI {
   }
 
   /**
-   * Generator yielding cell elements for each coordinate in iterable.
-   * Provides lazy evaluation of coordinate-to-cell mapping.
-   *
-   * @param {Iterable<[number, number]>} coords - Iterable of [row, col] coordinate pairs
-   * @yields {HTMLElement} Cell element for each coordinate
-   * @generator
-   */
-  *gridCellsForCoords (coords) {
-    for (const [row, column] of coords) {
-      yield this.gridCellAt(row, column)
-    }
-  }
-
-  /**
-   * Generator yielding tuples of [cell, row, column, power] for coordinates.
-   * Enriches coordinate data with cell reference for efficient processing.
-   *
-   * @param {Iterable<[number, number, any]>} coords - Iterable of [row, col, power] tuples
-   * @yields {[HTMLElement, number, number, any]} Tuple of cell element with coordinates and power
-   * @generator
-   */
-  *cellsAndCoords (coords) {
-    for (const [row, column, power] of coords) {
-      yield [this.gridCellAt(row, column), row, column, power]
-    }
-  }
-
-  /**
    * Applies async effects to multiple cells with random delays.
    * @param {Array<[HTMLDivElement, number, number, any]>} cells - Cells with coordinates and power
    * @param {CellEffectCallback} effect - Async callback for each cell

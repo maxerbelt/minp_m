@@ -47,13 +47,16 @@
  * @property {number} col - Column coordinate of the cell
  * @property {number} power - Damage/effect power level
  */
-
+/**
+ * @typedef {Object} SeaViewGrid
+ * Sea terrain view model for game state visualization.
+ * @property {(aoe: AoePattern) => CellEffectIterator} cellsForRClist
+ */
 /**
  * @typedef {Object} SeaViewModel
  * Sea terrain view model for game state visualization.
- * @property {Function} cellsAndCoords - Converts AoePattern to cell effects array
+ * @property {SeaViewGrid} grid
  */
-
 /**
  * @typedef {Object} WeaponConfig
  * Sea weapon configuration structure.
@@ -551,7 +554,7 @@ export class Flack extends Weapon {
     const viewModel = _args[8] || null
     const coord = coordsFromCell(target)
     const aoe = this.aoe(bh.map, [coord]).filter(([, , power]) => power > 0)
-    const cells = viewModel ? [...viewModel.cellsAndCoords(aoe)] : []
+    const cells = viewModel ? [...viewModel.grid.cellsForRClist(aoe)] : []
 
     return this.delayAsyncEffects(cells, 0, 500, cellSize)
   }

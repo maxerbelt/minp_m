@@ -636,7 +636,6 @@ export class GridBoard {
    *
    * @param {(cell: HTMLElement) => void} callback - Function to call for each cell
    * @returns {void}
-   * @private
    */
   #forEachBoardCell (callback) {
     for (const cell of getBoardChildren(this.board)) {

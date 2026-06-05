@@ -13,7 +13,23 @@
  * @module ui/gridButtonUtils
  */
 
-// Re-export pure morphology operations with unified interface
+/**
+ * Re-exported from MorphologyOps.js for convenient access:
+ * - bitsChanged: Check if bitboard changed
+ * - isBitboardFull: Check if bitboard is at full capacity
+ * - normalizeBits: Normalize bitboard representation
+ * - copyOccupancyBitsExact: Copy exact occupancy bits
+ * - createOccupancyGrid: Create occupancy grid structure
+ * - checkMorphologyState: Check morphology state
+ * - checkMorphologyChange: Check morphology changes
+ * - computeMorphologyState: Compute morphology state
+ * - getMorphologyDifferences: Get morphology differences
+ * - findNeighborColor: Find neighbor color in grid
+ * - colorAddedCells: Color newly added cells
+ * - clearRemovedCells: Clear removed cells
+ *
+ * @exports ui/gridButtonUtils
+ */
 export {
   bitsChanged,
   isBitboardFull,
@@ -36,6 +52,46 @@ import { Delay } from '../core/Delay.js'
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
+
+/**
+ * Callback function that retrieves mask bits from a grid object
+ * @typedef {(grid: any) => number} MaskBitsGetter
+ */
+
+/**
+ * Callback function to apply mask bits operation
+ * @typedef {(bits: number) => void} MaskApplyCallback
+ */
+
+/**
+ * Callback function to update UI after mutation
+ * @typedef {() => void} MaskUpdateCallback
+ */
+
+/**
+ * Callback function to compute preview cells for line
+ * @typedef {(start: HitTestResult, end: HitTestResult) => Array<any>} ComputePreviewCallback
+ */
+
+/**
+ * Callback function to apply line operation
+ * @typedef {(start: HitTestResult, end: HitTestResult) => void} LineApplyCallback
+ */
+
+/**
+ * Callback function to invoke after line completion
+ * @typedef {() => void} LineUpdateCallback
+ */
+
+/**
+ * Tool type identifier: null for single mode, or 'segment'|'ray'|'full' for line mode
+ * @typedef {string|null} LineTool
+ */
+
+/**
+ * Callback function to set the current tool
+ * @typedef {(toolValue: LineTool) => void} SetToolCallback
+ */
 
 /**
  * @typedef {Object} GridObject
@@ -134,7 +190,7 @@ function setElementsDisabled (ids, disabled) {
  * Safely handles missing canvas by returning null.
  *
  * @param {GridObject|null} grid - Grid object with canvas and _hitTest method
- * @param {MouseEvent} e - Mouse event with clientX/clientY properties
+ * @param {MouseEvent|any} e - Mouse event with clientX/clientY properties
  * @returns {HitTestResult|null} Hit test result (cell location) or null if unavailable
  * @example
  * canvas.addEventListener('mousemove', (e) => {
@@ -157,7 +213,7 @@ export function getCanvasHitTest (grid, e) {
  * @param {GridObject|null} grid - Grid object with previewCells and redraw method
  * @param {HitTestResult|null} lineStart - Starting point coordinates
  * @param {HitTestResult|null} lineEnd - Ending point coordinates
- * @param {Function} computePreviewFn - Function that computes preview cells from start/end
+ * @param {ComputePreviewCallback} computePreviewFn - Function that computes preview cells from start/end
  * @returns {void}
  * @example
  * updateLinePreviewRedraw(
@@ -187,8 +243,8 @@ export function updateLinePreviewRedraw (
  * @param {GridObject|null} grid - Grid object with previewCells and redraw method
  * @param {HitTestResult|null} lineStart - Starting point coordinates
  * @param {HitTestResult|null} lineEnd - Ending point coordinates
- * @param {Function} applyFn - Function to apply the line operation
- * @param {Function} [updateFn] - Optional callback to invoke after completion
+ * @param {LineApplyCallback} applyFn - Function to apply the line operation
+ * @param {LineUpdateCallback} [updateFn] - Optional callback to invoke after completion
  * @returns {void}
  * @example
  * completeLineShape(
@@ -257,7 +313,7 @@ export function applyMaskMutation (mask, x, y, operation) {
  */
 export function applyPackedMutation (packed, x, y, color) {
   if (packed) {
-    /** @type {any} */ ;(packed).set(x, y, color)
+    /** @type {any} */ packed.set(x, y, color)
   }
 }
 
@@ -267,20 +323,27 @@ export function applyPackedMutation (packed, x, y, color) {
  * Generates a lookup table that maps button element IDs to functions that
  * retrieve mask bits. Used with wireMaskMutationButtons for consistent UI wiring.
  *
- * @returns {Object<string, Function>} Map of button IDs to functions that get mask bits
+ * @returns {Object<string, MaskBitsGetter>} Map of button IDs to functions that get mask bits
  * @example
  * const mutMap = createMaskMutationMap();
  * console.log(Object.keys(mutMap)); // ['empty', 'full', 'inverse', ...]
  */
 export function createMaskMutationMap () {
   return {
-    empty: (/** @type {any} */ grid) => grid.mask.emptyMask.bits,
-    full: (/** @type {any} */ grid) => grid.mask.fullMask.bits,
-    inverse: (/** @type {any} */ grid) => grid.mask.invertedMask.bits,
-    'outer-border': (/** @type {any} */ grid) => grid.mask.outerBorderMask.bits,
-    'outer-area': (/** @type {any} */ grid) => grid.mask.outerAreaMask.bits,
-    'inner-border': (/** @type {any} */ grid) => grid.mask.innerBorderMask.bits,
-    'inner-area': (/** @type {any} */ grid) => grid.mask.innerAreaMask.bits
+    empty: (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.emptyMask.bits),
+    full: (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.fullMask.bits),
+    inverse: (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.invertedMask.bits),
+    'outer-border': (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.outerBorderMask.bits),
+    'outer-area': (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.outerAreaMask.bits),
+    'inner-border': (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.innerBorderMask.bits),
+    'inner-area': (/** @type {any} */ grid) =>
+      /** @type {number} */ (grid.mask.innerAreaMask.bits)
   }
 }
 
@@ -290,9 +353,9 @@ export function createMaskMutationMap () {
  * Attaches click handlers to mutation buttons that apply mask operations
  * and optionally trigger UI updates.
  *
- * @param {Object<string, Function>} mutationMap - Map of button IDs to mask bit getters
- * @param {Function} applyFn - Function to invoke with retrieved mask bits
- * @param {Function} [updateFn] - Optional callback to invoke after applying
+ * @param {Object<string, MaskBitsGetter>} mutationMap - Map of button IDs to mask bit getters
+ * @param {MaskApplyCallback} applyFn - Function to invoke with retrieved mask bits
+ * @param {MaskUpdateCallback} [updateFn] - Optional callback to invoke after applying
  * @returns {void}
  * @example
  * wireMaskMutationButtons(mutMap, (bits) => {
@@ -433,8 +496,8 @@ export function updateSymmetryDisplay (symElement, maskActions) {
  * reliable triggering across browsers.
  *
  * @param {string} buttonId - ID of the radio button element
- * @param {*} toolValue - Value to set when button is checked
- * @param {Function} setToolFn - Callback function to set the tool
+ * @param {LineTool} toolValue - Value to set when button is checked
+ * @param {SetToolCallback} setToolFn - Callback function to set the tool
  * @returns {void}
  * @private
  * @example
@@ -462,7 +525,7 @@ export function wireLineToolButton (buttonId, toolValue, setToolFn) {
  * Generates a lookup table mapping radio button values to tool identifiers.
  * The 'single' tool is represented as null (no line mode).
  *
- * @returns {Object<string, string|null>} Map of input values to tool types
+ * @returns {Object<string, LineTool>} Map of input values to tool types
  * @example
  * const toolMap = createLineToolMap();
  * // { single: null, segment: 'segment', ray: 'ray', full: 'full' }
@@ -483,8 +546,8 @@ export function createLineToolMap () {
  * Calls setToolFn with the mapped tool value when a button is selected.
  *
  * @param {string} radioSelector - CSS selector for radio button elements
- * @param {Object<string, *>} toolMap - Map of radio values to tool types
- * @param {Function} setToolFn - Callback to invoke with selected tool value
+ * @param {Object<string, LineTool>} toolMap - Map of radio values to tool types
+ * @param {SetToolCallback} setToolFn - Callback to invoke with selected tool value
  * @returns {void}
  * @example
  * wireAllLineToolButtons(
@@ -497,7 +560,7 @@ export function wireAllLineToolButtons (radioSelector, toolMap, setToolFn) {
   if (typeof document === 'undefined') return
   const radioButtons = document.querySelectorAll(radioSelector)
   radioButtons.forEach(radio => {
-    radio.addEventListener('change', e => {
+    radio.addEventListener('change', (/** @type {Event} */ e) => {
       const target = /** @type {HTMLInputElement|null} */ (e.target)
       if (target?.checked) {
         setToolFn(toolMap[target.value])
@@ -551,7 +614,9 @@ export function createMorphLog () {
  * console.log('Log was displayed and cleared');
  */
 export async function showMorphLog (logElement, text, timeout = 3000) {
-  if (typeof console !== 'undefined') console.log('[rectcolor-morph]', text)
+  if (typeof console !== 'undefined') {
+    console.log('[rectcolor-morph]', text)
+  }
   if (!logElement) return
   logElement.textContent = text
   if (timeout > 0) {
@@ -656,12 +721,16 @@ export function computeTransformedBits (mask, map, actions) {
   if (store && indexer) {
     let out = store.empty
     for (const i of /** @type {any} */ (indexer).bitsIndices(mask.bits)) {
-      out = /** @type {any} */ (store).addBit(out, map[i])
+      out = /** @type {any} */ (store).addBit(
+        out,
+        /** @type {number} */ (map[i])
+      )
     }
-    return out
+    return /** @type {number} */ (out)
   }
   try {
-    return /** @type {any} */ (actions)?.applyMap?.(map) || mask.bits
+    const result = /** @type {any} */ (actions)?.applyMap?.(map)
+    return result ?? mask.bits
   } catch {
     return mask.bits
   }
@@ -686,13 +755,15 @@ export function getSymmetryClass (actions, maskActions) {
       actions?.classifyOrbitType &&
       typeof actions.classifyOrbitType === 'function'
     ) {
-      return /** @type {Function} */ (actions.classifyOrbitType)()
+      const result = /** @type {Function} */ (actions.classifyOrbitType)()
+      return String(result)
     }
     if (
       maskActions?.classifyOrbitType &&
       typeof maskActions.classifyOrbitType === 'function'
     ) {
-      return /** @type {Function} */ (maskActions.classifyOrbitType)()
+      const result = /** @type {Function} */ (maskActions.classifyOrbitType)()
+      return String(result)
     }
   } catch {
     // Silently handle error and return fallback
@@ -739,9 +810,8 @@ export function updateSymmetryAndDetails (
       const mapsObj = actions?.transformMaps || maskActions?.transformMaps
       const template = actions?.template || maskActions?.template
       const mapKeys = mapsObj ? Object.keys(mapsObj).join(', ') : 'n/a'
-      detailsElement.textContent = `Template: ${
-        template || 'n/a'
-      } — Maps: ${mapKeys}`
+      const templateStr = String(template || 'n/a')
+      detailsElement.textContent = `Template: ${templateStr} — Maps: ${mapKeys}`
     } catch {
       detailsElement.textContent = ''
     }
