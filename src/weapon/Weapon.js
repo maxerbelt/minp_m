@@ -502,7 +502,11 @@ export class Weapon {
    * @returns {Array<[number, number, number]>} Updated effect array
    */
   addSplash (map, row, col, power, newEffect) {
-    if (!map || (/** @type {any} */ (map).inBounds && (/** @type {any} */ (map).inBounds(row, col)))) {
+    if (
+      !map ||
+      /** @type {any} */ ((map).inBounds &&
+        /** @type {any} */ (map).inBounds(row, col))
+    ) {
       newEffect.push([row, col, power])
     }
     return newEffect
