@@ -488,11 +488,12 @@ export class Weapon {
   ) {
     map = map || bh.map
     const [[r, c], target] = this.redoCoords(map, [rr, cc], coords)
-    const [sr, sc] = map.randomEdge(...target)
+    const endPoint = target.toReversed()
+    const [sy, sx] = map.randomEdge(...target)
     const sourceCell = opposingViewModel
-      ? opposingViewModel.gridCellAt(sr, sc)
-      : viewModel.gridCellAt(sr, sc)
-    const endCell = viewModel.gridCellAt(...target)
+      ? opposingViewModel.grid.nodeAt(sx, sy)
+      : viewModel.grid.nodeAt(sx, sy)
+    const endCell = viewModel.grid.nodeAt(...endPoint)
     const flyCursor = this.letter === '-' ? 'crosshair' : this.cursors.at(-1)
     const options = {
       rotation: 0,
