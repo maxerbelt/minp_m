@@ -618,6 +618,7 @@ export function enterCursor (event, viewModel, model) {
  * @returns {void}
  */
 export function tabCursor (event, viewModel, model) {
+  // @ts-ignore - viewModel and model are Object types with expected properties
   if (!viewModel.placingShips) return
   if (cursor.isDragging) return
 
@@ -679,6 +680,7 @@ function _makeSelection (
   shipElement,
   variantIndex
 ) {
+  // @ts-ignore - viewModel is Object type with expected properties
   return new DraggedShip(
     ship,
     offsetX,
