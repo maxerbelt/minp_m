@@ -460,14 +460,14 @@ export class Waters {
       }
     )
     if (result) {
+      // @ts-ignore - UI is Board-compatible at runtime, provides grid and cell management
+      const board = /** @type {Board} */ (this.UI)
+      // @ts-ignore - grid is GridBoard at runtime
+      const grid = /** @type {GridBoard} */ (board.grid)
       for (const { placedCells, ship } of this.tempPlacement) {
         onShipPlaced?.(ship, placedCells)
-        // @ts-ignore - UI is Board-compatible at runtime, provides grid and cell management
-        const board = /** @type {any} */ (this.UI)
-        board.markPlaced?.(placedCells, ship)
+        grid.markPlaced?.(placedCells, ship)
       }
-      // @ts-ignore - UI is Board at runtime
-      const board = /** @type {Board} */ (this.UI)
       board.onFleetPlaced?.()
     } else {
       this.handlePlacementFailure(onPlacementReset)
@@ -656,7 +656,7 @@ export class Waters {
    * Displays all ships on the board in their current placed positions.
    * Reveals ship cells for visual representation without modifying ship state.
    * @returns {void}
-   * @private
+   * @protected
    */
   resetShipCells () {
     if (this.ships && this.UI) {

@@ -274,7 +274,7 @@ export class PlacementUI extends WatersUI {
    * @constructor
    * @param {string} territory - Territory identifier (e.g., 'friend', 'enemy', 'neutral')
    * @param {string} title - Display title for the placement UI panel
-   * 
+   *
    * @property {boolean} placingShips - Whether currently in ship placement mode
    * @property {boolean} readyingShips - Whether ships are being finalized for battle
    * @property {ElementCache} elements - Cached DOM element references for efficient access
@@ -1682,7 +1682,7 @@ export class PlacementUI extends WatersUI {
    */
   placement (placed, model, ship) {
     this.showNotice(ship.getDescription() + this.addText)
-    this.markPlaced(placed, ship)
+    this.grid.markPlaced(placed, ship)
     this.score.buildTallyFromModel(model, this)
     this.displayShipInfo(model.ships)
   }
@@ -1722,7 +1722,7 @@ export class PlacementUI extends WatersUI {
    */
   addition (placed, model, ship) {
     this.showNotice(ship.getDescription() + this.addText)
-    this.markPlaced(placed, ship)
+    this.grid.markPlaced(placed, ship)
 
     model.ships.push(ship)
     const map = bh.map

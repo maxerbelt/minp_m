@@ -4,6 +4,16 @@ import { customUI } from './customUI.js'
 import { placedShipsInstance } from '../selection/PlacedShips.js'
 
 /**
+ * @typedef {import('../ships/Ship.js').Ship} Ship
+ * @description Represents a single game ship with placement, weapons, and hit tracking
+ */
+
+/**
+ * @typedef {import('./customUI.js').CustomUI} CustomUI
+ * @description Custom Map and Ship Placement UI Manager
+ */
+
+/**
  * @module waters/custom
  * @description Custom game mode management for user-created maps with displacement metrics.
  * Extends Placement with fleet composition analysis for custom map creation.
@@ -36,6 +46,7 @@ import { placedShipsInstance } from '../selection/PlacedShips.js'
  *
  * @class Custom
  * @extends Placement
+ * @property {CustomUI} UI
  * @example
  * // Create custom game instance with custom UI
  * const customGame = new Custom(customUI)
@@ -56,7 +67,6 @@ class Custom extends Placement {
    *
    * @type {Object<string, number>}
    * @static
-   * @private
    * @property {number} playable - Maximum ratio for playable difficulty (0.35 = 35%)
    * @property {number} sparse - Maximum ratio for sparse fleets (0.15 = 15%)
    */
@@ -91,7 +101,6 @@ class Custom extends Placement {
    *
    * @constructor
    * @param {CustomUI} ui - The custom UI instance for rendering and interaction
-   * @returns {void}
    * @example
    * // Create and use custom game
    * const game = new Custom(customUI)
@@ -157,11 +166,10 @@ class Custom extends Placement {
    * - Resets score counters to zero (calls score.reset)
    * - Optionally displays "ships removed" user notice
    *
-   * @private
    * @param {boolean} [showNotice=false] - Whether to show user-facing notice message
    * @returns {void}
    */
-  _resetPlacementState (showNotice = false) {
+  #resetPlacementState (showNotice = false) {
     if (showNotice) {
       this.UI.showNotice('ships removed')
     }
@@ -176,7 +184,7 @@ class Custom extends Placement {
    * Updates both internal ship array and UI display to show empty board.
    *
    * **Side Effects**:
-   * - Clears grid cells (calls _resetPlacementState)
+   * - Clears grid cells (calls #resetPlacementState)
    * - Removes visual elements from UI
    * - Resets score counters
    * - Clears internal ships array
@@ -186,9 +194,9 @@ class Custom extends Placement {
    * @returns {void}
    */
   removeAllPlacedShips () {
-    this._resetPlacementState(true)
-    this.UI.removeAllPlacedShips(this)
-    custom.ships = []
+    this.#resetPlacementState(true)
+    (/** @type {CustomUI} */ this.UI).removeAllPlacedShips(this)
+    this.ships = []
   }
   /**
    * Initialize new placement state for the custom game.
@@ -205,8 +213,9 @@ class Custom extends Placement {
    * @returns {void}
    */
   initializePlacement () {
-    this.UI.resetAdd(this)
-    this.UI.initializePlacement()
+    /** @type {CustomUI} */ ;(this.UI)
+      .resetAdd(this)(/** @type {CustomUI} */ this.UI)
+      .initializePlacement()
   }
 
   /**
@@ -227,14 +236,15 @@ class Custom extends Placement {
    * - Updates ship count display
    * - Prepares for new placement session
    *
-   * @private
    * @returns {void}
    */
-  _restartPlacementAfterClear () {
-    this.removeAllPlacedShips()
-    this.UI.trayManager.setTrays()
-    this.initializePlacement()
-    this.UI.displayShipTrackingInfo(this)
+  #restartPlacementAfterClear () {
+    this.removeAllPlacedShips()(
+      /** @type {CustomUI} */ this.UI
+    ).trayManager.setTrays()
+    this.initializePlacement()(
+      /** @type {CustomUI} */ this.UI
+    ).displayShipTrackingInfo(this)
   }
   /**
    * Handles clear button click - clears ships or maps depending on mode.
@@ -251,10 +261,10 @@ class Custom extends Placement {
    */
   handleClear () {
     if (this.UI.placingShips) {
-      this._restartPlacementAfterClear()
+      this.#restartPlacementAfterClear()
       return
     }
-    this.UI.clearMapAndRefresh()
+    /** @type {CustomUI} */ ;(this.UI).clearMapAndRefresh()
   }
 
   /**
@@ -272,14 +282,14 @@ class Custom extends Placement {
    * @returns {void}
    */
   handleUndo () {
-    this._resetPlacementState()
+    this.#resetPlacementState()
     placedShipsInstance.popAndRefresh(
       this.shipCellGrid.grid,
       ship => {
-        this.UI.markPlaced(ship.cells, ship)
+        /** @type {CustomUI} */ ;(this.UI).grid.markPlaced(ship.cells, ship)
       },
       ship => {
-        this.UI.subtraction(this, ship)
+        /** @type {CustomUI} */ ;(this.UI).subtraction(this, ship)
       }
     )
   }
@@ -389,7 +399,6 @@ class Custom extends Placement {
    * Private helper used in displacement ratio calculations.
    * Represents the total grid area available for ship placement.
    *
-   * @private
    * @returns {number} Available placement area in grid units
    */
   #getAvailablePlacementArea () {
@@ -404,7 +413,6 @@ class Custom extends Placement {
    *
    * **Type Safety**: Uses optional chaining (?.) to safely traverse properties.
    *
-   * @private
    * @param {Ship} ship - The ship to evaluate
    * @returns {number} Ship displacement (area) or 0 if unavailable
    */
@@ -416,7 +424,6 @@ class Custom extends Placement {
    * Indicates whether displacement ratio is below a threshold.
    * Helper method for difficulty evaluation and classification.
    *
-   * @private
    * @param {number} threshold - The threshold ratio to compare against
    * @returns {boolean} True if current ratio is below threshold
    */
