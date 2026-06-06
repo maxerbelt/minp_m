@@ -68,7 +68,6 @@ describe('LoadOut', () => {
       grid: {
         nodeAt: jest.fn(() => ({ id: 1 }))
       },
-      gridCellAt: jest.fn(() => ({ id: 1 })),
       cellSize: jest.fn(() => 10)
     }
     // @ts-ignore - Object type used for mock setup
