@@ -7,9 +7,9 @@
  *
  * @module dragndrop
  * @requires src/terrains/all/js/bh.js - Terrain configuration and biome helpers
- * @requires src/selection/DraggedShip.js - Ghost ship preview class
- * @requires src/selection/Brush.js - Terrain brush painting class
- * @requires src/selection/cursor.js - Cursor management module
+ * @requires src/_selection/DraggedShip.js - Ghost ship preview class
+ * @requires src/_selection/Brush.js - Terrain brush painting class
+ * @requires src/_selection/cursor.js - Cursor management module
  * @requires src/core/utilities.js - Coordinate conversion and grid utilities
  * 
  * A coordinate pair representing a single cell on the game board.
@@ -29,11 +29,11 @@
  * Each cell includes position and damage power level.
  *
  * @typedef {Object} DragDropEventData
- * @property {DraggedShip|DraggedWeapon|Brush|null} selection - Currently selected drag item
+ * @property {DraggedShip|DraggedWeapon|Brush|null} _selection - Currently selected drag item
  * @property {Coord} _lastEntered - Last entered cell coordinates [row, col]
  * @property {Object|null} _clickedShip - Ship selected via UI for transforms
- * @property {string} lastModifier - Last keyboard modifier ('shift', 'ctrl', 'alt', etc.)
- * @property {number} dragCounter - Counter for nested drag events (dragenter/dragleave)
+ * @property {string} _lastModifier - Last keyboard modifier ('shift', 'ctrl', 'alt', etc.)
+ * @property {number} _dragCounter - Counter for nested drag events (dragenter/dragleave)
  *
  * @typedef {Object} GridBoard
  * @property {HTMLElement} board - Main game board DOM element
@@ -105,7 +105,7 @@ function pairEqual (a, b) {
  * Tracks currently selected item, modifier keys, cursor position, and nested drag events.
  *
  * @class DragDropState
- * @description Maintains mutable state for drag-and-drop operations including selection, last entered cell, and modifier keys.
+ * @description Maintains mutable state for drag-and-drop operations including _selection, last entered cell, and modifier keys.
  * Provides methods to reset and synchronize state after drag operations complete.
  */
 class DragDropState {
@@ -113,9 +113,9 @@ class DragDropState {
    * Currently selected item being dragged (DraggedShip, DraggedWeapon, or Brush instance).
    * Set during dragstart, used during drag operations, cleared on dragend.
    * @type {DraggedShip|DraggedWeapon|Brush|null}
-   * @private
+   * @internal
    */
-  selection = null
+  _selection = null
 
   /**
    * Last entered cell coordinates represented as [row, column] tuple.
@@ -143,7 +143,7 @@ class DragDropState {
    * @type {string}
    * @internal
    */
-  lastModifier = ''
+  _lastModifier = ''
 
   /**
    * Counter for nested dragenter/dragleave events on board element.
@@ -151,9 +151,9 @@ class DragDropState {
    * Used to determine when mouse has truly left board (counter === 0).
    * Prevents premature ghost hide when dragging over nested child elements.
    * @type {number}
-   * @private
+   * @internal
    */
-  dragCounter = 0
+  _dragCounter = 0
 
   /**
    * Resets modifier key effect and drag counter to initial state.
@@ -161,8 +161,8 @@ class DragDropState {
    * @returns {void}
    */
   resetModifierAndCounter () {
-    this.lastModifier = ''
-    this.dragCounter = 0
+    this._lastModifier = ''
+    this._dragCounter = 0
   }
 
   /**
@@ -171,20 +171,20 @@ class DragDropState {
    * @returns {void}
    */
   resetModifier () {
-    this.lastModifier = ''
+    this._lastModifier = ''
   }
 
   /**
-   * Resets the selection and clicked ship to null state.
-   * Calls remove() on current selection to clean up DOM elements.
-   * Called after drag operations complete or when selection is cancelled.
+   * Resets the _selection and clicked ship to null state.
+   * Calls remove() on current _selection to clean up DOM elements.
+   * Called after drag operations complete or when _selection is cancelled.
    * @returns {void}
    */
   resetSelections () {
-    if (this.selection) {
-      this.selection.remove()
+    if (this._selection) {
+      this._selection.remove()
     }
-    this.selection = null
+    this._selection = null
     this._clickedShip = null
   }
 }
@@ -202,7 +202,7 @@ class DraggedWeapon {
    * Creates a DraggedWeapon instance for drag-and-drop operations.
    * Stores weapon data and whether ammo should be decremented (take) or incremented (place) on drop.
    *
-   * @param {Weapon} weapon - The weapon object with letter, tip, and ammo properties
+   * @param {Weapon}  weapon - The weapon object with letter, tip, and ammo properties
    * @param {boolean} subtract - Whether to subtract ammo on drop (true for take operations, false for add)
    *
    * @returns {void}
@@ -213,7 +213,7 @@ class DraggedWeapon {
      * @description Weapon object being dragged containing letter, tip, and ammo properties
      * @private
      */
-    this.weapon = weapon
+    this._weapon = weapon
 
     /**
      * @type {boolean}
@@ -247,9 +247,9 @@ class DraggedWeapon {
     map = map || bh.map
     const weapons = map.weapons
 
-    const idx = weapons.findIndex(w => w.letter === this.weapon.letter)
+    const idx = weapons.findIndex(w => w.letter === this._weapon.letter)
     if (idx < 0) {
-      weapons.push(this.weapon)
+      weapons.push(this._weapon)
     } else if (this.subtract) {
       weapons[idx].ammo--
     } else {
@@ -324,7 +324,7 @@ export function onClickTransform () {
 /**
  * Sets up dragenter/dragleave handlers for ship placement board.
  * Manages ghost visibility based on nesting level of dragenter/dragleave events.
- * Prevents ghost hide when dragging over nested child elements by using dragCounter.
+ * Prevents ghost hide when dragging over nested child elements by using _dragCounter.
  *
  * @param {ViewModel} viewModel - The view model providing board element and highlight management
  *
@@ -344,22 +344,22 @@ export function setupDragHandlers (viewModel) {
     if (!isShip) return
     e.preventDefault()
 
-    state.dragCounter++
-    if (state.dragCounter > 1 || !state.selection) return
-    state.selection.hide()
+    state._dragCounter++
+    if (state._dragCounter > 1 || !state._selection) return
+    state._selection.hide()
   })
 
   viewModel.board.addEventListener('dragleave', e => {
     const isShip = e.dataTransfer.types.includes('ship')
     if (!isShip) return
     e.preventDefault()
-    state.dragCounter--
-    if (state.dragCounter > 0) return
+    state._dragCounter--
+    if (state._dragCounter > 0) return
 
     viewModel.removeHighlight()
 
-    if (!state.selection) return
-    state.selection.show()
+    if (!state._selection) return
+    state._selection.show()
   })
 }
 
@@ -420,7 +420,7 @@ export function dragOverAddingHandlerSetup (model, viewModel) {
 }
 
 /**
- * Handles drag selection during dragover event.
+ * Handles drag _selection during dragover event.
  * Processes modifier key transformations, updates highlight, and moves ghost preview.
  * Called continuously during drag operation to track cursor and apply modifier effects.
  *
@@ -451,23 +451,23 @@ function _handleDragSelection (event, viewModel, model) {
  */
 function _processModifierKeyTransformations (event) {
   const allow = event.dataTransfer.effectAllowed
-  if (state.lastModifier === allow) return false
+  if (state._lastModifier === allow) return false
 
-  state.lastModifier = allow
+  state._lastModifier = allow
 
-  if (!state.selection || !(state.selection instanceof DraggedShip)) {
+  if (!state._selection || !(state._selection instanceof DraggedShip)) {
     return false
   }
 
   // macOS Chrome uses modifier keys for different transformations
   if (allow === 'link') {
-    state.selection.rotate() // control = rotate clockwise
+    state._selection.rotate() // control = rotate clockwise
     return true
   } else if (allow === 'copy') {
-    state.selection.flip() // option = flip
+    state._selection.flip() // option = flip
     return true
   } else if (allow === 'none') {
-    state.selection.leftRotate() // command = rotate left
+    state._selection.leftRotate() // command = rotate left
     return true
   }
 
@@ -475,7 +475,7 @@ function _processModifierKeyTransformations (event) {
 }
 
 /**
- * Updates highlight on board if transformation occurred and selection is hidden.
+ * Updates highlight on board if transformation occurred and _selection is hidden.
  * Re-highlights cells when modifier key causes transformation while ghost is hidden.
  * Ensures visual feedback of new placement after rotation/flip.
  *
@@ -487,7 +487,7 @@ function _processModifierKeyTransformations (event) {
  * @private
  */
 function _updateHighlightIfNeeded (transformed, viewModel, model) {
-  if (transformed && state.selection?.isNotShown?.()) {
+  if (transformed && state._selection?.isNotShown?.()) {
     dragNDrop.highlight(viewModel, model.shipCellGrid.grid)
   }
 }
@@ -503,8 +503,8 @@ function _updateHighlightIfNeeded (transformed, viewModel, model) {
  * @private
  */
 function _updateGhostPosition (event) {
-  if (state.selection?.shown) {
-    state.selection.move(event)
+  if (state._selection?.shown) {
+    state._selection.move(event)
   }
 }
 
@@ -534,8 +534,8 @@ export function enterCursor (event, viewModel, model) {
 
 /**
  * Toggles between keyboard cursor and grid placement modes.
- * In grid mode: disables keyboard ship selection and creates drag selection for placement.
- * In tray mode: removes selection and restores keyboard ship selection by cursor.
+ * In grid mode: disables keyboard ship _selection and creates drag _selection for placement.
+ * In tray mode: removes _selection and restores keyboard ship _selection by cursor.
  * Allows player to switch between keyboard navigation and direct grid placement.
  *
  * @param {KeyboardEvent} event - The keyboard event (typically Tab key)
@@ -584,9 +584,9 @@ export function getShipIdFromElement (shipElement) {
 }
 
 /**
- * Creates a new DraggedShip selection from ship object and position.
+ * Creates a new DraggedShip _selection from ship object and position.
  * Initializes drag state including ghost preview, offset tracking, and variant.
- * Called during dragstart to create the dragged selection object.
+ * Called during dragstart to create the dragged _selection object.
  *
  * @param {Ship} ship - The ship object being dragged
  * @param {number} offsetX - X offset in pixels from ship element left edge to mouse position
@@ -618,7 +618,7 @@ function _makeSelection (
 }
 
 /**
- * Creates and initializes a ship selection from tray or keyboard cursor.
+ * Creates and initializes a ship _selection from tray or keyboard cursor.
  * Sets up initial drag state with zero offset and hidden ghost.
  * Used in keyboard mode when Tab switches to grid navigation.
  *
@@ -640,7 +640,7 @@ function _createSelection (viewModel, ships, shipId) {
   const ship = ships.find(s => s.id === id)
   const variantIndex = Number.parseInt(shipElement.dataset.variant) || 0
 
-  state.selection = _makeSelection(
+  state._selection = _makeSelection(
     ship,
     0,
     0,
@@ -648,24 +648,24 @@ function _createSelection (viewModel, ships, shipId) {
     shipElement,
     variantIndex
   )
-  state.selection.shown = false
+  state._selection.shown = false
   cursor.y = 0
   cursor.x = 0
 }
 
 /**
- * Removes current selection and cleans up resources.
- * Calls remove() on selection to clean up DOM ghost element.
- * Sets selection to null after cleanup.
+ * Removes current _selection and cleans up resources.
+ * Calls remove() on _selection to clean up DOM ghost element.
+ * Sets _selection to null after cleanup.
  * Called after drag operations complete or when switching modes.
  *
  * @returns {void}
  * @private
  */
 function _removeSelection () {
-  if (!state.selection) return
-  state.selection.remove()
-  state.selection = null
+  if (!state._selection) return
+  state._selection.remove()
+  state._selection = null
 }
 
 // ============================================================================
@@ -697,7 +697,7 @@ class DragNDrop {
   /**
    * Sets the currently clicked/selected ship.
    * Called when user clicks ship in tray or navigates with keyboard cursor.
-   * Updates state and enables transform controls (rotate, flip) for new selection.
+   * Updates state and enables transform controls (rotate, flip) for new _selection.
    *
    * @param {Object|null} clicked - The ship to click and select, or null to clear
    *
@@ -738,7 +738,7 @@ class DragNDrop {
   /**
    * Handles drop event for placing ships on board (removing from placement).
    * Validates drop location, executes ship placement, and updates UI.
-   * Clears selection and highlight after drop completes or fails.
+   * Clears _selection and highlight after drop completes or fails.
    *
    * @param {HTMLElement} cell - The target cell element at drop location
    * @param {Model} model - The model providing shipCellGrid for placement validation
@@ -751,12 +751,12 @@ class DragNDrop {
     if (event) event.preventDefault()
     viewModel.removeHighlight()
     cursor.isDragging = false
-    if (!state.selection) return
+    if (!state._selection) return
 
-    if (state.selection instanceof DraggedShip) {
+    if (state._selection instanceof DraggedShip) {
       this._handleShipDrop(cell, model, viewModel, false)
-    } else if (state.selection instanceof DraggedWeapon) {
-      state.selection.addToMap()
+    } else if (state._selection instanceof DraggedWeapon) {
+      state._selection.addToMap()
     }
     _removeSelection()
   }
@@ -776,13 +776,13 @@ class DragNDrop {
   handleAddDropEvent (cell, model, viewModel, event) {
     if (event) event.preventDefault()
 
-    if (!state.selection) return
+    if (!state._selection) return
 
-    if (state.selection instanceof DraggedShip) {
+    if (state._selection instanceof DraggedShip) {
       this._handleShipDrop(cell, model, viewModel, true)
     }
 
-    if (state.selection instanceof DraggedWeapon) {
+    if (state._selection instanceof DraggedWeapon) {
       this._handleWeaponDrop(model, viewModel)
     }
 
@@ -790,9 +790,9 @@ class DragNDrop {
   }
 
   /**
-   * Handles weapon drop event for adding weapons to map.
-   * Updates weapon array and re-arms all weapons.
-   * Updates display after weapon addition.
+   * Handles  weapon drop event for adding weapons to map.
+   * Updates  weapon array and re-arms all weapons.
+   * Updates display after  weapon addition.
    *
    * @param {Model} model - The model for arming weapons
    * @param {ViewModel} viewModel - The view model for display updates
@@ -818,13 +818,16 @@ class DragNDrop {
    * @returns {void}
    */
   handleTakeDropEvent (model, viewModel, event) {
-    if (!state.selection) return
+    if (!state._selection) return
 
-    if (state.selection instanceof DraggedWeapon && state.selection.subtract) {
+    if (
+      state._selection instanceof DraggedWeapon &&
+      state._selection.subtract
+    ) {
       if (event) event.preventDefault()
       cursor.isDragging = false
 
-      state.selection.addToMap()
+      state._selection.addToMap()
       model.armWeapons()
     }
     viewModel.displayShipTrackingInfo(model)
@@ -845,7 +848,7 @@ class DragNDrop {
    */
   _handleShipDrop (cell, model, viewModel, isAddition) {
     const [x, y] = xyFromCell(cell)
-    const placed = state.selection.place(x, y, model.shipCellGrid)
+    const placed = state._selection.place(x, y, model.shipCellGrid)
 
     if (!placed) {
       console.log(`Invalid placement at (${y}, ${x})`)
@@ -853,14 +856,14 @@ class DragNDrop {
     }
 
     if (isAddition) {
-      const newId = viewModel.addition(placed, model, state.selection.ship)
-      if (state.selection.source) {
-        state.selection.source.dataset.id = newId
+      const newId = viewModel.addition(placed, model, state._selection.ship)
+      if (state._selection.source) {
+        state._selection.source.dataset.id = newId
       }
     } else {
-      viewModel.placement(placed, model, state.selection.ship)
-      if (state.selection.source) {
-        viewModel.removeDragShip(state.selection.source)
+      viewModel.placement(placed, model, state._selection.ship)
+      if (state._selection.source) {
+        viewModel.removeDragShip(state._selection.source)
       }
     }
 
@@ -878,10 +881,10 @@ class DragNDrop {
    * @private
    */
   _handleWeaponDrop (model, _viewModel) {
-    if (!state.selection) return
-    if (!(state.selection instanceof DraggedWeapon)) return
+    if (!state._selection) return
+    if (!(state._selection instanceof DraggedWeapon)) return
 
-    state.selection.addToMap()
+    state._selection.addToMap()
     model.armWeapons()
   }
 
@@ -927,10 +930,10 @@ class DragNDrop {
   }
 
   /**
-   * Adds drop listener to weapon panel for weapon placement.
-   * Attaches to panel-board element to receive weapon drops.
+   * Adds drop listener to  weapon panel for  weapon placement.
+   * Attaches to panel-board element to receive  weapon drops.
    *
-   * @param {Model} model - The model for weapon management
+   * @param {Model} model - The model for  weapon management
    * @param {ViewModel} viewModel - The view model providing panel element reference
    *
    * @returns {void}
@@ -995,7 +998,7 @@ class DragNDrop {
    * @returns {void}
    */
   highlight (viewModel, shipCellGrid, cursorX, cursorY) {
-    if (!state.selection?.ghost) return
+    if (!state._selection?.ghost) return
 
     const { x, y } = this.#calculatePlacementPosition(cursorX, cursorY)
     if (!bh.map.isInBoundsAt(x, y)) {
@@ -1040,7 +1043,7 @@ class DragNDrop {
    */
   #calculatePlacementPosition (cursorX, cursorY) {
     const [x0, y0] = this.#getCoordinates(cursorX, cursorY)
-    const [x, y] = state.selection.offsetCell(x0, y0)
+    const [x, y] = state._selection.offsetCell(x0, y0)
     return { x, y }
   }
 
@@ -1059,7 +1062,7 @@ class DragNDrop {
    *   - cells: {Array<[number, number]>} Array of [col, row] occupied cells to highlight
    */
   #getPlacingAndCells (x, y, shipCellGrid) {
-    const placement = state.selection.placeable().placeAt(x, y)
+    const placement = state._selection.placeable().placeAt(x, y)
     const canPlace = placement.canPlace(shipCellGrid)
     if (!canPlace) {
       const warning = placement.cantPlaceReason(shipCellGrid)
@@ -1207,8 +1210,8 @@ class DragNDrop {
    * @private
    */
   #applyBrushOperation (viewModel, x, y) {
-    const size = state.selection?.size
-    const subterrain = state.selection?.subterrain
+    const size = state._selection?.size
+    const subterrain = state._selection?.subterrain
     const map = bh.map
 
     if (!(size && subterrain && map instanceof CustomMap)) return
@@ -1254,7 +1257,7 @@ class DragNDrop {
 
   /**
    * Adds dragend listener for ship placement operation completion.
-   * Handles cleanup after drop: removes highlight, restores opacity, clears selection.
+   * Handles cleanup after drop: removes highlight, restores opacity, clears _selection.
    * Distinguishes between successful drop (dropEffect !== 'none') and cancelled drag (dropEffect === 'none').
    * On cancel, re-selects the ship; on success, disables transform controls.
    *
@@ -1279,7 +1282,7 @@ class DragNDrop {
       cursor.isDragging = false
       if (e.dataTransfer.dropEffect === 'none') {
         // Drag was canceled
-        viewModel.assignClicked(state.selection?.ship, shipElement)
+        viewModel.assignClicked(state._selection?.ship, shipElement)
       } else {
         // Drag was successful
         viewModel.disableRotateFlip()
@@ -1343,7 +1346,7 @@ class DragNDrop {
 
   /**
    * Handles ship dragstart event initiation.
-   * Extracts ship data, calculates mouse offset, prepares UI, creates dragged selection with ghost preview.
+   * Extracts ship data, calculates mouse offset, prepares UI, creates dragged _selection with ghost preview.
    * Called when user starts dragging a ship from tray.
    *
    * @param {ViewModel} viewModel - The view model for drag UI and ghost content
@@ -1366,7 +1369,7 @@ class DragNDrop {
     const { offsetX, offsetY } = this._calculateOffsets(event, shipElement)
 
     this._prepareDragUI(viewModel, ship, event)
-    state.selection = this._createAndPositionSelection(
+    state._selection = this._createAndPositionSelection(
       ship,
       offsetX,
       offsetY,
@@ -1419,7 +1422,7 @@ class DragNDrop {
 
   /**
    * Prepares UI state for ship drag operation.
-   * Sets dataTransfer data, displays notice, clears previous selection, configures drag image and cursor.
+   * Sets dataTransfer data, displays notice, clears previous _selection, configures drag image and cursor.
    * Called at start of ship drag to initialize UI before creating ghost.
    *
    * @param {ViewModel} viewModel - The view model for notice display
@@ -1439,7 +1442,7 @@ class DragNDrop {
   }
 
   /**
-   * Creates dragged ship selection and positions ghost preview at cursor.
+   * Creates dragged ship _selection and positions ghost preview at cursor.
    * Initializes DraggedShip with drag offsets and ghost, positions ghost at current cursor location.
    * Called after UI preparation to set up visual feedback.
    *
@@ -1463,7 +1466,7 @@ class DragNDrop {
     variantIndex,
     event
   ) {
-    const selection = _makeSelection(
+    const _selection = _makeSelection(
       ship,
       offsetX,
       offsetY,
@@ -1471,8 +1474,8 @@ class DragNDrop {
       shipElement,
       variantIndex
     )
-    selection.moveTo(event.clientX, event.clientY)
-    return selection
+    _selection.moveTo(event.clientX, event.clientY)
+    return _selection
   }
 
   // ============================================================================
@@ -1500,10 +1503,10 @@ class DragNDrop {
   /**
    * Handles weapon dragstart event initiation.
    * Creates DraggedWeapon state, sets dataTransfer data, displays notice, configures cursor.
-   * Called when user starts dragging a weapon from tray.
+   * Called when user starts dragging a  weapon from tray.
    *
    * @param {ViewModel} viewModel - The view model for notice display
-   * @param {Weapon} weapon - The weapon being dragged
+   * @param {Weapon}  weapon - The  weapon being dragged
    * @param {boolean} subtract - Ammo adjustment mode: true to decrement, false to increment
    * @param {DragEvent} event - The dragstart event
    *
@@ -1520,7 +1523,7 @@ class DragNDrop {
 
     event.dataTransfer.effectAllowed = 'all'
     cursor.isDragging = true
-    state.selection = new DraggedWeapon(weapon, subtract)
+    state._selection = new DraggedWeapon(weapon, subtract)
     shipElement.style.opacity = '0.6'
   }
 
@@ -1562,7 +1565,7 @@ class DragNDrop {
       e.dataTransfer.effectAllowed = 'all'
 
       cursor.isDragging = true
-      state.selection = new Brush(size, subterrain)
+      state._selection = new Brush(size, subterrain)
       const el = /** @type {HTMLElement} */ (e.currentTarget)
       el.style.opacity = '0.6'
     })
@@ -1575,7 +1578,7 @@ class DragNDrop {
   /**
    * Extracts ship information from drag event target.
    * Used to determine if drag originated from ship element itself or child element.
-   * Helper method for validating drag start events on ship/weapon elements.
+   * Helper method for validating drag start events on ship/ weapon elements.
    *
    * @param {DragEvent} event - The drag event with currentTarget and target
    *
@@ -1611,12 +1614,12 @@ class DragNDrop {
    * Makes element draggable with appropriate listeners for ships or weapons.
    * Attaches dragstart listeners and click handlers based on element type.
    * Avoids duplicate listener attachment using dragListen class check.
-   * Called when ship/weapon elements are added to tray.
+   * Called when ship/ weapon elements are added to tray.
    *
    * @param {ViewModel} viewModel - The view model for UI handlers
    * @param {HTMLElement} dragShip - The element to make draggable
    * @param {Array<Ship>} ships - Available ships (null for weapons)
-   * @param {Weapon} [weapon] - Optional weapon object; if present, configures as weapon
+   * @param {Weapon} [ weapon] - Optional  weapon object; if present, configures as weapon
    * @param {boolean} [subtract] - Ammo adjustment mode for weapons (true = take, false = place)
    *
    * @returns {void}
@@ -1644,7 +1647,7 @@ class DragNDrop {
    * Called when user clicks ship element in tray to select/activate it.
    * Validates click is on ship element or child, finds ship by ID, delegates to viewModel.
    *
-   * @param {ViewModel} viewModel - The view model for ship selection
+   * @param {ViewModel} viewModel - The view model for ship _selection
    * @param {HTMLElement} dragShip - The ship element with listener
    * @param {Array<Ship>} ships - Available ships for finding ship by ID
    *
@@ -1665,9 +1668,9 @@ class DragNDrop {
   /**
    * Sets up click handler for weapon tray items.
    * Called when user clicks weapon element in tray to select/activate it.
-   * Validates click is on weapon element or child, delegates to viewModel for selection.
+   * Validates click is on weapon element or child, delegates to viewModel for _selection.
    *
-   * @param {ViewModel} viewModel - The view model for weapon selection
+   * @param {ViewModel} viewModel - The view model for weapon _selection
    * @param {HTMLElement} dragShip - The weapon element with listener
    * @param {Weapon} weapon - The weapon object associated with element
    *
@@ -1688,7 +1691,7 @@ class DragNDrop {
 /**
  * Singleton instance of DragNDrop manager.
  * Provides centralized drag-and-drop coordination for the entire application.
- * Handles ship placement/addition, weapon management, and brush terrain painting.
+ * Handles ship placement/addition,  weapon management, and brush terrain painting.
  * Maintains state through DragDropState for consistent drag operation behavior.
  *
  * @type {DragNDrop}
