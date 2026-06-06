@@ -204,7 +204,7 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 /**
  * @typedef {Object} LaunchOptions
- * @property {Array<number>} [crashLoc] - Crash location coordinates [r, c]
+ * @property {Coord} [crashLoc] - Crash location coordinates [r, c]
  * @property {boolean} [isSplash] - Whether this is a splash effect
  */
 
@@ -258,7 +258,7 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
  * @typedef {Object} FiringInfo
  * @property {Coord[]} [fireCoordinates] - Target coordinates
  * @property {(target: ?Object) => Promise<FireResult>} [fireWeapon] - Weapon firing function
- * @property {WeaponsSystem} [wps] - Weapon system being fired
+ * @property {WeaponSystem} [wps] - Weapon system being fired
  * @property {Weapon} [weapon] - Weapon being fired
  * @property {boolean} [hasUnattached] - Whether unattached weapon is involved
  */
@@ -2377,7 +2377,7 @@ export class Waters {
   }
   /**
    * Checks if there are no hit candidates.
-   * @param {Coord[]} hitCandidates - The hit candidates.
+   * @param {Array<Array<number>>} hitCandidates - The hit candidates [r, c, power][].
    * @returns {boolean} True if no candidates.
    */
   hasNoHitCandidates (hitCandidates) {
