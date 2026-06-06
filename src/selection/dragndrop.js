@@ -900,7 +900,7 @@ class DragNDrop {
     viewModel.removeHighlight()
     cursor.isDragging = false
     viewModel.displayShipTrackingInfo(model)
-    this.#removeSelection()
+    _removeSelection()
     viewModel.checkTrays()
   }
 
