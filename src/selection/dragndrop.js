@@ -11,13 +11,43 @@
  * @requires src/selection/Brush.js - Terrain brush painting class
  * @requires src/selection/cursor.js - Cursor management module
  * @requires src/core/utilities.js - Coordinate conversion and grid utilities
+ * 
+ * A coordinate pair representing a single cell on the game board.
+ * Format: [row, col] where row is Y-axis and col is X-axis.
+ * Used extensively for targeting, positioning, and layout calculations.
+ *
+ * @typedef {[number, number]} Coord
+ 
+ * Area-of-effect damage cell with power/impact rating.
+ * Format: [row, col, power] where power represents damage intensity or effect level.
+ * Power values typically: 0 (no effect), 1 (secondary), 2 (primary), 3+ (special).
+ *
+ * @typedef {[number, number, number]} AoeCell
+ *
+ * @typedef {AoeCell[]} AoePattern
+ * Array of area-of-effect cells defining damage pattern for a weapon.
+ * Each cell includes position and damage power level.
  *
  * @typedef {Object} DragDropEventData
  * @property {DraggedShip|DraggedWeapon|Brush|null} selection - Currently selected drag item
- * @property {[number, number]} lastEntered - Last entered cell coordinates [row, col]
- * @property {Object|null} clickedShip - Ship selected via UI for transforms
+ * @property {Coord} _lastEntered - Last entered cell coordinates [row, col]
+ * @property {Object|null} _clickedShip - Ship selected via UI for transforms
  * @property {string} lastModifier - Last keyboard modifier ('shift', 'ctrl', 'alt', etc.)
  * @property {number} dragCounter - Counter for nested drag events (dragenter/dragleave)
+ *
+ * @typedef {Object} GridBoard
+ * @property {HTMLElement} board - Main game board DOM element
+ * @property {Function} nodeAt - Get cell at coordinates (x, y)
+ * @property {Function} node - Get cell at coordinates (x, y)
+ * @property {Function} clearClasses - Clear CSS classes from cells
+ * @property {Function} surroundCellElement - Get surrounding cell elements
+ * @property {Function} displaySurround - Display surround cells
+ * @property {Function} markPlaced - Mark ship as placed
+ * @property {Function} [surroundCells] - Get surrounding cells
+ * @property {Function} [cellMiss] - Mark cell as miss
+ * @property {Function} [cellUseAmmo] - Mark ammo usage
+ * @property {Function} [cellHintReveal] - Reveal cell via hint
+ * @property {Function} [cellSemiReveal] - Semi-reveal cell
  *
  * @typedef {Object} ViewModel
  * @description View model interface expected by dragndrop handlers for board access and UI updates.
@@ -92,18 +122,18 @@ class DragDropState {
    * Tracks cursor position to avoid duplicate highlight operations.
    * Used for keyboard navigation and highlight positioning.
    * @type {[number, number]}
-   * @private
+   * @internal
    */
-  lastEntered = [-1, -1]
+  _lastEntered = [-1, -1]
 
   /**
    * Currently clicked/selected ship for keyboard and UI transform controls (rotate, flip, transform).
    * Set when user clicks ship in tray, cleared when drag starts or ESC pressed.
    * Used for keyboard-based ship transformations.
    * @type {Object|null}
-   * @private
+   * @internal
    */
-  clickedShip = null
+  _clickedShip = null
 
   /**
    * Last modifier key effect detected during drag operation.
@@ -111,7 +141,7 @@ class DragDropState {
    * 'none' (Command - rotate left), or '' (no modifier).
    * Tracks which transformation was applied to avoid re-applying same transformation multiple times.
    * @type {string}
-   * @private
+   * @internal
    */
   lastModifier = ''
 
@@ -155,7 +185,7 @@ class DragDropState {
       this.selection.remove()
     }
     this.selection = null
-    this.clickedShip = null
+    this._clickedShip = null
   }
 }
 
@@ -243,8 +273,8 @@ const state = new DragDropState()
  * @returns {void}
  */
 export function onClickRotate () {
-  if (state.clickedShip?.canRotate?.()) {
-    state.clickedShip.rotate()
+  if (state._clickedShip?.canRotate?.()) {
+    state._clickedShip.rotate()
   }
 }
 
@@ -256,8 +286,8 @@ export function onClickRotate () {
  * @returns {void}
  */
 export function onClickRotateLeft () {
-  if (state.clickedShip?.canRotate?.()) {
-    state.clickedShip.leftRotate()
+  if (state._clickedShip?.canRotate?.()) {
+    state._clickedShip.leftRotate()
   }
 }
 
@@ -269,8 +299,8 @@ export function onClickRotateLeft () {
  * @returns {void}
  */
 export function onClickFlip () {
-  if (state.clickedShip) {
-    state.clickedShip.flip()
+  if (state._clickedShip) {
+    state._clickedShip.flip()
   }
 }
 
@@ -282,8 +312,8 @@ export function onClickFlip () {
  * @returns {void}
  */
 export function onClickTransform () {
-  if (state.clickedShip?.canTransform?.()) {
-    state.clickedShip.nextForm()
+  if (state._clickedShip?.canTransform?.()) {
+    state._clickedShip.nextForm()
   }
 }
 
@@ -524,9 +554,9 @@ export function tabCursor (event, viewModel, model) {
 
   if (cursor.isGrid) {
     viewModel.disableRotateFlip()
-    const shipId = state.clickedShip?.ship.id
+    const shipId = state._clickedShip?.ship.id
     viewModel.removeClicked()
-    state.clickedShip = null
+    state._clickedShip = null
     _createSelection(viewModel, model.ships, shipId)
   } else {
     _removeSelection()
@@ -661,7 +691,7 @@ class DragNDrop {
    * @returns {Object|null} The clicked ship object, or null if no ship selected
    */
   getClickedShip () {
-    return state.clickedShip
+    return state._clickedShip
   }
 
   /**
@@ -674,7 +704,7 @@ class DragNDrop {
    * @returns {void}
    */
   setClickedShip (clicked) {
-    state.clickedShip = clicked
+    state._clickedShip = clicked
   }
 
   /**
@@ -834,7 +864,7 @@ class DragNDrop {
       }
     }
 
-    state.clickedShip = null
+    state._clickedShip = null
   }
 
   /**
@@ -959,8 +989,8 @@ class DragNDrop {
    *
    * @param {ViewModel} viewModel - The view model providing grid and removeHighlight
    * @param {Object} shipCellGrid - The multi-bit grid for collision detection and placement validation
-   * @param {number} [cursorX] - Column coordinate; uses state.lastEntered[1] if null/undefined
-   * @param {number} [cursorY] - Row coordinate; uses state.lastEntered[0] if null/undefined
+   * @param {number} [cursorX] - Column coordinate; uses state._lastEntered[1] if null/undefined
+   * @param {number} [cursorY] - Row coordinate; uses state._lastEntered[0] if null/undefined
    *
    * @returns {void}
    */
@@ -987,15 +1017,14 @@ class DragNDrop {
    * Gets coordinates from parameters or falls back to last entered state.
    * Used to determine cursor position when dragenter event doesn't provide coordinates.
    *
-   * @param {number|null} cursorX - Column coordinate; null to use state.lastEntered[1]
-   * @param {number|null} cursorY - Row coordinate; null to use state.lastEntered[0]
+   * @param {number|null} cursorX - Column coordinate; null to use state._lastEntered[1]
+   * @param {number|null} cursorY - Row coordinate; null to use state._lastEntered[0]
    *
    * @returns {[number, number]} Array [x, y] with resolved coordinates
-   * @private
    */
   #getCoordinates (cursorX, cursorY) {
-    const y = cursorY === null ? state.lastEntered[1] : cursorY
-    const x = cursorX === null ? state.lastEntered[0] : cursorX
+    const y = cursorY === null ? state._lastEntered[1] : cursorY
+    const x = cursorX === null ? state._lastEntered[0] : cursorX
     return [x, y]
   }
 
@@ -1008,7 +1037,6 @@ class DragNDrop {
    * @param {number|null} cursorY - Grid row coordinate
    *
    * @returns {Object} Object with x and y properties containing adjusted placement coordinates
-   * @private
    */
   #calculatePlacementPosition (cursorX, cursorY) {
     const [x0, y0] = this.#getCoordinates(cursorX, cursorY)
@@ -1029,7 +1057,6 @@ class DragNDrop {
    *   - placement: {PlacementData} Placement object with board and constraint data
    *   - canPlace: {boolean} True if placement valid, false if collides or out of bounds
    *   - cells: {Array<[number, number]>} Array of [col, row] occupied cells to highlight
-   * @private
    */
   #getPlacingAndCells (x, y, shipCellGrid) {
     const placement = state.selection.placeable().placeAt(x, y)
@@ -1054,7 +1081,6 @@ class DragNDrop {
    * @param {Object} placement - Placement object with notGood constraint grid
    *
    * @returns {void}
-   * @private
    */
   #applyHighlights (viewModel, cells, isPlacementValid, placement) {
     for (const [x, y] of cells) {
@@ -1116,7 +1142,7 @@ class DragNDrop {
   /**
    * Adds dragenter listener for ship cell highlighting.
    * Detects when dragging over new cell and updates highlight preview.
-   * Prevents duplicate highlights for same cell using state.lastEntered comparison.
+   * Prevents duplicate highlights for same cell using state._lastEntered comparison.
    *
    * @param {HTMLElement} cell - The cell element to attach listener to
    * @param {Model} model - The model providing shipCellGrid for highlight generation
@@ -1132,9 +1158,9 @@ class DragNDrop {
 
       const el = /** @type {HTMLElement} */ (e.target)
       const coords = xyFromCell(el)
-      if (strictEqual(coords, state.lastEntered)) return
+      if (strictEqual(coords, state._lastEntered)) return
 
-      state.lastEntered = coords
+      state._lastEntered = coords
       this.highlight(viewModel, model.shipCellGrid, ...coords)
     })
   }
@@ -1142,7 +1168,7 @@ class DragNDrop {
   /**
    * Adds dragenter listener for brush terrain painting.
    * Detects when dragging brush over new cell and applies terrain changes and recoloring.
-   * Prevents duplicate brush operations for same cell using state.lastEntered comparison.
+   * Prevents duplicate brush operations for same cell using state._lastEntered comparison.
    *
    * @param {HTMLElement} cell - The cell element to attach listener to
    * @param {ViewModel} viewModel - The view model for grid access and cell recoloring
@@ -1156,9 +1182,9 @@ class DragNDrop {
       if (!isBrush) return
       const el = e.target
       const coords = xyFromCell(el)
-      if (pairEqual(state.lastEntered, coords)) return
+      if (pairEqual(state._lastEntered, coords)) return
 
-      state.lastEntered = coords
+      state._lastEntered = coords
 
       this.#applyBrushOperation(viewModel, ...coords)
       viewModel.score.displayZoneInfo()
