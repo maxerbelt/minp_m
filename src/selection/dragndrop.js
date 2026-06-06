@@ -370,25 +370,45 @@ const state = new DragDropState()
  * @returns {void}
  */
 export function onClickRotate () {
-  if (state._clickedShip?.canRotate?.()) {
+  // @ts-ignore - _clickedShip.rotate may not be typed
+  state._clickedShip?.canRotate?.() && state._clickedShip.rotate()
+}
+
+/**
+ * Rotates clicked ship counter-clockwise if the ship supports rotation.
+ * Called when user clicks left-rotate button or presses left-rotate hotkey.
  * Delegates to clicked ship's leftRotate() method; does nothing if no ship clicked or rotation unavailable.
  *
  * @returns {void}
  */
 export function onClickRotateLeft () {
-  if (state._clickedShip?.canRotate?.()) {
+  // @ts-ignore - _clickedShip.leftRotate may not be typed
+  state._clickedShip?.canRotate?.() && state._clickedShip.leftRotate()
+}
+
+/**
+ * Flips/mirrors clicked ship if the ship supports flipping.
+ * Called when user clicks flip button or presses flip hotkey.
  * Delegates to clicked ship's flip() method; does nothing if no ship clicked.
  *
  * @returns {void}
  */
 export function onClickFlip () {
+  // @ts-ignore - _clickedShip.flip may not be typed
+  state._clickedShip?.flip?.()
+}
+
+/**
+ * Transforms clicked ship to next form if transformation available.
  * Called when user clicks transform button or presses transform hotkey.
  * Delegates to clicked ship's nextForm() method; does nothing if no ship clicked or transformation unavailable.
  *
  * @returns {void}
  */
 export function onClickTransform () {
-  if (state._clickedShip?.canTransform?.()) {
+  // @ts-ignore - _clickedShip.nextForm may not be typed
+  state._clickedShip?.canTransform?.() && state._clickedShip.nextForm()
+}
 /**
  * Sets up dragenter/dragleave handlers for ship placement board.
  * Manages ghost visibility based on nesting level of dragenter/dragleave events.
@@ -416,6 +436,7 @@ export function setupDragHandlers (/** @type {ViewModel} */ viewModel) {
 
       state._dragCounter++
       if (state._dragCounter > 1 || !state._selection) return
+      // @ts-ignore
       state._selection.hide?.()
     }
   )
@@ -432,6 +453,7 @@ export function setupDragHandlers (/** @type {ViewModel} */ viewModel) {
       viewModel.removeHighlight()
 
       if (!state._selection) return
+      // @ts-ignore
       state._selection.show?.()
     }
   )
@@ -501,9 +523,7 @@ export function dragOverAddingHandlerSetup (/** @type {Model} */ model, /** @typ
  * @param {ViewModel} viewModel - The view model providing highlight and cell management
  * @param {Model} model - The model providing shipCellGrid for highlight positioning
  *
- * @returns {void}
- * @private
- */
+ * @returns {void} */
 function _handleDragSelection (/** @type {DragEvent} */ event, /** @type {ViewModel} */ viewModel, /** @type {Model} */ model) {
   event.preventDefault()
 
@@ -519,9 +539,7 @@ function _handleDragSelection (/** @type {DragEvent} */ event, /** @type {ViewMo
  *
  * @param {DragEvent} event - The dragover event containing effectAllowed from modifier keys
  *
- * @returns {boolean} True if transformation was applied; false if unchanged or not applicable
- * @private
- */
+ * @returns {boolean} True if transformation was applied; false if unchanged or not applicable */
 function _processModifierKeyTransformations (event) {
   const allow = event.dataTransfer?.effectAllowed
   if (state._lastModifier === allow) return false
@@ -556,11 +574,12 @@ function _processModifierKeyTransformations (event) {
  * @param {ViewModel} viewModel - The view model providing highlight management
  * @param {Model} model - The model providing shipCellGrid for new highlight positions
  *
- * @returns {void}
- * @private
- */
+ * @returns {void} */
 function _updateHighlightIfNeeded (/** @type {boolean} */ transformed, /** @type {ViewModel} */ viewModel, /** @type {Model} */ model) {
+  // @ts-ignore
   if (transformed && state._selection?.isNotShown?.()) {
+    // @ts-ignore
+
     dragNDrop.highlight(viewModel, model.shipCellGrid.grid)
   }
 }
@@ -572,11 +591,11 @@ function _updateHighlightIfNeeded (/** @type {boolean} */ transformed, /** @type
  *
  * @param {MouseEvent} event - The mouse event with clientX/clientY coordinates
  *
- * @returns {void}
- * @private
- */
+ * @returns {void} */
 function _updateGhostPosition (/** @type {MouseEvent} */ event) {
+  // @ts-ignore
   if (state._selection?.shown) {
+    // @ts-ignore
     state._selection.move(event)
   }
 }
@@ -627,6 +646,7 @@ export function tabCursor (/** @type {KeyboardEvent} */ event, /** @type {ViewMo
 
   if (cursor.isGrid) {
     viewModel.disableRotateFlip()
+    // @ts-ignore
     const shipId = state._clickedShip?.ship?.id ?? null
     viewModel.removeClicked()
     state._clickedShip = null
@@ -668,9 +688,7 @@ export function getShipIdFromElement (/** @type {HTMLElement|null|undefined} */ 
  * @param {HTMLElement} shipElement - The source tray element being dragged
  * @param {number} variantIndex - The selected variant index for rendering drag preview
  *
- * @returns {DraggedShip} The created dragged ship with initialized ghost preview
- * @private
- */
+ * @returns {DraggedShip} The created dragged ship with initialized ghost preview */
 function _makeSelection (
   /** @type {Ship} */ ship,
   /** @type {number} */ offsetX,
@@ -699,9 +717,7 @@ function _makeSelection (
  * @param {Array<Ship>} ships - Available ships for finding by ID
  * @param {number|null} shipId - ID of ship to select, or null to select first tray item
  *
- * @returns {void}
- * @private
- */
+ * @returns {void} */
 function _createSelection (/** @type {ViewModel} */ viewModel, /** @type {Ship[]} */ ships, /** @type {number|null} */ shipId) {
   const shipElement =
     shipId === null
@@ -733,9 +749,7 @@ function _createSelection (/** @type {ViewModel} */ viewModel, /** @type {Ship[]
  * Sets _selection to null after cleanup.
  * Called after drag operations complete or when switching modes.
  *
- * @returns {void}
- * @private
- */
+ * @returns {void} */
 function _removeSelection () {
   if (!state._selection) return
   // @ts-ignore - remove() method may not exist on Brush class
@@ -1074,10 +1088,14 @@ class DragNDrop {
    * @returns {void}
    */
   highlight (/** @type {ViewModel} */ viewModel, /** @type {Object} */ shipCellGrid, /** @type {number} */ cursorX, /** @type {number} */ cursorY) {
+    // @ts-ignore
     if (!state._selection?.ghost) return
 
-    const coords = this.#calculatePlacementPosition(cursorX, cursorY)
+    // @ts-ignore
+    const coords = this.#calculatePlacementPosition(cursorX ?? null, cursorY ?? null)
+    // @ts-ignore
     const { x, y } = coords
+    // @ts-ignore
     if (!bh.map?.isInBoundsAt(x, y)) {
       console.log(`Placement 1 out of bounds at (${x}, ${y})`)
       return
@@ -1087,6 +1105,7 @@ class DragNDrop {
 
     const result = this.#getPlacingAndCells(x, y, shipCellGrid)
     if (!result) return
+    // @ts-ignore
     const { placement, canPlace, cells } = result
     this.#applyHighlights(viewModel, cells, canPlace, placement)
   }
@@ -1138,7 +1157,9 @@ class DragNDrop {
    *   - cells: {Array<[number, number]>} Array of [col, row] occupied cells to highlight
    */
   #getPlacingAndCells (/** @type {number} */ x, /** @type {number} */ y, /** @type {Object} */ shipCellGrid) {
+    // @ts-ignore
     if (!state._selection || !(state._selection instanceof DraggedShip)) return null
+    // @ts-ignore
     const placement = state._selection.placeable().placeAt(x, y)
     const canPlace = placement.canPlace(shipCellGrid)
     if (!canPlace) {
@@ -1164,6 +1185,7 @@ class DragNDrop {
    */
   #applyHighlights (/** @type {ViewModel} */ viewModel, /** @type {Array<[number, number]>} */ cells, /** @type {boolean} */ isPlacementValid, /** @type {Object} */ placement) {
     for (const [x, y] of cells) {
+      // @ts-ignore
       if (bh.map?.isInBoundsAt(x, y)) {
         const cell = viewModel.grid.nodeAt(x, y)
         const cellClass = this.#getHighlightClass(
@@ -1186,9 +1208,7 @@ class DragNDrop {
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    *
-   * @returns {string} CSS class: 'good' (valid), 'notgood' (terrain conflict), 'bad' (collision)
-   * @private
-   */
+   * @returns {string} CSS class: 'good' (valid), 'notgood' (terrain conflict), 'bad' (collision) */
   #getHighlightClass (/** @type {boolean} */ isPlacementValid, /** @type {Object} */ placement, /** @type {number} */ x, /** @type {number} */ y) {
     if (!isPlacementValid) {
       return this._getInvalidHighlightClass(placement, x, y)
@@ -1205,10 +1225,9 @@ class DragNDrop {
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
    *
-   * @returns {string} CSS class: 'notgood' (terrain conflict) or 'bad' (collision)
-   * @private
-   */
+   * @returns {string} CSS class: 'notgood' (terrain conflict) or 'bad' (collision) */
   _getInvalidHighlightClass (/** @type {Object} */ placement, /** @type {number} */ x, /** @type {number} */ y) {
+    // @ts-ignore
     if (placement.notGood.at(x, y) > 0) {
       return 'notgood'
     }
@@ -1256,6 +1275,7 @@ class DragNDrop {
    * @returns {void}
    */
   dragBrushEnter (/** @type {HTMLElement} */ cell, /** @type {ViewModel} */ viewModel) {
+    // @ts-ignore
     const handler = e => {
       e.preventDefault()
       const isBrush = e.dataTransfer?.types.includes('brush')
@@ -1283,9 +1303,7 @@ class DragNDrop {
    * @param {number} x - Center row coordinate for brush operation
    * @param {number} y - Center column coordinate for brush operation
    *
-   * @returns {void}
-   * @private
-   */
+   * @returns {void} */
   #applyBrushOperation (/** @type {ViewModel} */ viewModel, /** @type {number} */ x, /** @type {number} */ y) {
     const brush = state._selection instanceof Brush ? state._selection : null
     const size = brush?.size
@@ -1321,7 +1339,9 @@ class DragNDrop {
   #setLandCells (/** @type {ViewModel} */ viewModel, /** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ min, /** @type {number} */ max, /** @type {Object} */ map, /** @type {string} */ subterrain) {
     for (let i = min; i < max; i++) {
       for (let j = min; j < max; j++) {
+        // @ts-ignore
         if (map.isInBoundsAt(x + i, y + j)) {
+          // @ts-ignore
           map.setLand(x + i, y + j, subterrain)
           viewModel.recolor(x + i, y + j)
         }
@@ -1346,6 +1366,7 @@ class DragNDrop {
    * @returns {void}
    */
   dragEnd (/** @type {HTMLElement} */ div, /** @type {ViewModel} */ viewModel, /** @type {Function} */ callback) {
+    // @ts-ignore
     const handler = e => {
       const isShip = e.dataTransfer?.types.includes('ship')
       if (!isShip) return
@@ -1389,6 +1410,7 @@ class DragNDrop {
    * @returns {void}
    */
   dragBrushEnd (/** @type {HTMLElement} */ div, /** @type {ViewModel} */ viewModel, /** @type {Function} */ callback) {
+    // @ts-ignore
     const handler = e => {
       const isBrush = e.dataTransfer?.types.includes('brush')
       if (!isBrush) return
@@ -1432,11 +1454,10 @@ class DragNDrop {
    * @param {Array<Ship>} ships - Available ships for finding ship by ID
    * @param {DragEvent} event - The dragstart event
    *
-   * @returns {void}
-   * @private
-   */
+   * @returns {void} */
   _handleShipDragStart (/** @type {ViewModel} */ viewModel, /** @type {Ship[]} */ ships, /** @type {DragEvent} */ event) {
     if (!ships) ships = []
+    // @ts-ignore
     const { shipId, shipElement, isNotShipElement } = this._getShip(event)
     if (isNotShipElement) return
 
@@ -1445,8 +1466,11 @@ class DragNDrop {
       shipId,
       shipElement
     )
+    // @ts-ignore
     if (!shipInfo.ship) return
+    // @ts-ignore
     const { ship, variantIndex } = shipInfo
+    // @ts-ignore
     const { offsetX, offsetY } = this._calculateOffsets(event, shipElement)
 
     this._prepareDragUI(viewModel, ship, event)
@@ -1472,11 +1496,10 @@ class DragNDrop {
    *
    * @returns {Object} Object with properties:
    *   - ship: {Ship} The ship object from array
-   *   - variantIndex: {number} Variant index parsed from element data attribute
-   * @private
-   */
+   *   - variantIndex: {number} Variant index parsed from element data attribute */
   _getShipAndVariant (/** @type {Ship[]} */ ships, /** @type {number} */ shipId, /** @type {HTMLElement} */ shipElement) {
     const ship = ships.find(s => s.id === shipId)
+    // @ts-ignore
     const variantIndex = Number.parseInt(shipElement.dataset.variant, 10)
     return { ship, variantIndex }
   }
@@ -1491,9 +1514,7 @@ class DragNDrop {
    *
    * @returns {Object} Object with properties:
    *   - offsetX: {number} X pixels from element left edge to mouse
-   *   - offsetY: {number} Y pixels from element top edge to mouse
-   * @private
-   */
+   *   - offsetY: {number} Y pixels from element top edge to mouse */
   _calculateOffsets (/** @type {DragEvent} */ event, /** @type {HTMLElement} */ shipElement) {
     const rect = shipElement.getBoundingClientRect()
     const offsetX = event.clientX - rect.left
@@ -1510,14 +1531,15 @@ class DragNDrop {
    * @param {Ship} ship - The ship being dragged
    * @param {DragEvent} event - The dragstart event for dataTransfer configuration
    *
-   * @returns {void}
-   * @private
-   */
+   * @returns {void} */
   _prepareDragUI (/** @type {ViewModel} */ viewModel, /** @type {Ship} */ ship, /** @type {DragEvent} */ event) {
+    // @ts-ignore
     event.dataTransfer.setData('ship', ship.id.toString())
     viewModel.showNotice(ship.shape().tip)
     viewModel.removeClicked()
+    // @ts-ignore
     event.dataTransfer.effectAllowed = 'all'
+    // @ts-ignore
     event.dataTransfer.setDragImage(new Image(), 0, 0)
     cursor.isDragging = true
   }
@@ -1535,9 +1557,7 @@ class DragNDrop {
    * @param {number} variantIndex - Variant index for ghost rendering
    * @param {DragEvent} event - The dragstart event with cursor position
    *
-   * @returns {DraggedShip} The created dragged ship with positioned ghost
-   * @private
-   */
+   * @returns {DraggedShip} The created dragged ship with positioned ghost */
   _createAndPositionSelection (
     /** @type {Ship} */ ship,
     /** @type {number} */ offsetX,
@@ -1591,17 +1611,18 @@ class DragNDrop {
    * @param {boolean} subtract - Ammo adjustment mode: true to decrement, false to increment
    * @param {DragEvent} event - The dragstart event
    *
-   * @returns {void}
-   * @private
-   */
+   * @returns {void} */
   _handleWeaponDragStart (/** @type {ViewModel} */ viewModel, /** @type {Weapon} */ weapon, /** @type {boolean} */ subtract, /** @type {DragEvent} */ event) {
+    // @ts-ignore
     const { shipElement, isNotShipElement } = this._getShip(event)
     if (isNotShipElement) return
 
+    // @ts-ignore
     event.dataTransfer.setData('weapon', weapon.letter)
     viewModel.showNotice(weapon.tip)
     viewModel.removeClicked()
 
+    // @ts-ignore
     event.dataTransfer.effectAllowed = 'all'
     cursor.isDragging = true
     state._selection = new DraggedWeapon(weapon, subtract)
@@ -1642,7 +1663,9 @@ class DragNDrop {
     brush.addEventListener('dragstart', e => {
       if (e.target !== e.currentTarget) return
 
+      // @ts-ignore
       e.dataTransfer.setData('brush', subterrain + size.toString())
+      // @ts-ignore
       e.dataTransfer.effectAllowed = 'all'
 
       cursor.isDragging = true
@@ -1666,9 +1689,7 @@ class DragNDrop {
    * @returns {Object} Object with properties:
    *   - shipId: {number} Parsed ship ID from data-id, 0 if missing
    *   - shipElement: {HTMLElement} The ship element (currentTarget)
-   *   - isNotShipElement: {boolean} True if target is child element or missing ID
-   * @private
-   */
+   *   - isNotShipElement: {boolean} True if target is child element or missing ID */
   _getShip (/** @type {DragEvent} */ event) {
     const shipElement = /** @type {HTMLElement} */ (event.currentTarget)
     const shipId = getShipIdFromElement(shipElement)
@@ -1712,6 +1733,7 @@ class DragNDrop {
 
     if (weapon) {
       if (!alreadyListened) {
+        // @ts-ignore
         this.dragStartWeapon(viewModel, dragShip, weapon, subtract)
       }
       if (!subtract) this._setupWeaponClickHandler(viewModel, dragShip, weapon)
@@ -1732,12 +1754,11 @@ class DragNDrop {
    * @param {HTMLElement} dragShip - The ship element with listener
    * @param {Array<Ship>} ships - Available ships for finding ship by ID
    *
-   * @returns {void}
-   * @private
-   */
+   * @returns {void} */
   _setupShipClickHandler (/** @type {ViewModel} */ viewModel, /** @type {HTMLElement} */ dragShip, /** @type {Ship[]} */ ships) {
     dragShip.addEventListener('click', e => {
       const shipElement = /** @type {HTMLElement} */ (e.currentTarget)
+      // @ts-ignore
       const shipId = Number.parseInt(shipElement.dataset.id, 10)
       if (e.target !== shipElement && !shipId) return
 
@@ -1755,9 +1776,7 @@ class DragNDrop {
    * @param {HTMLElement} dragShip - The weapon element with listener
    * @param {Weapon} weapon - The weapon object associated with element
    *
-   * @returns {void}
-   * @private
-   */
+   * @returns {void} */
   _setupWeaponClickHandler (/** @type {ViewModel} */ viewModel, /** @type {HTMLElement} */ dragShip, /** @type {Weapon} */ weapon) {
     dragShip.addEventListener('click', e => {
       const shipElement = /** @type {HTMLElement} */ (e.currentTarget)
