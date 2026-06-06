@@ -30,7 +30,6 @@ import { bh } from '../terrains/all/js/bh.js'
  * @property {jest.Mock} cellHit - Mock cell hit callback
  * @property {jest.Mock} cellMiss - Mock cell miss callback
  * @property {jest.Mock} cellSunkAt - Mock cell sunk at callback
- * @property {jest.Mock} gridCellAt - Mock cell lookup by coordinates
  * @property {Object} trayManager - Mock ship tray manager
  * @property {jest.Mock} removeDragShip - Mock drag removal
  * @property {jest.Mock} cellSize - Mock cell size getter

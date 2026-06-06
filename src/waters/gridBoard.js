@@ -25,56 +25,88 @@ import { CustomMap } from '../terrains/all/js/map.js'
  * @typedef {[number, number]} XY
  */
 
-/** @enum {string} */
+/**
+ * CSS class names for cell state visualization.
+ * Used to mark cells with visual indicators for gameplay state and targeting feedback.
+ * @enum {string}
+ * @readonly
+ * @const
+ */
 const UI_CLASSES = {
+  /** Cell is hidden from view (e.g., obscured by fog of war) */
   HIDDEN: 'hidden',
+  /** Cell contains destroyed/sunk ship structure */
   DESTROYED: 'destroyed',
+  /** Cell has been hit (direct damage received) */
   HIT: 'hit',
+  /** Cell has ship placed on it */
   PLACED: 'placed',
+  /** Cell is active/selected for interaction */
   ACTIVE: 'active',
+  /** Cell is empty (no ship, no hit) */
   EMPTY: 'empty',
+  /** Cell contains weapon rack or armed position */
   WEAPON: 'weapon',
+  /** Medium weapon splash size indicator */
   MEDIUM: 'medium',
+  /** Small weapon splash size indicator */
   SMALL: 'small',
+  /** Alternative/secondary weapon indicator */
   ALT: 'alt'
 }
 
 /**
+ * Map configuration and boundary validation.
+ * Defines grid dimensions and provides boundary checking for coordinate validation.
  * @typedef {Object} GridMap
- * @property {number} rows - Number of rows in grid
- * @property {number} cols - Number of columns in grid
- * @property {((row: number, col: number) => boolean)|undefined} [inBounds] - Check if coordinate is in bounds
+ * @property {number} rows - Number of rows in grid (height in cells)
+ * @property {number} cols - Number of columns in grid (width in cells)
+ * @property {((row: number, col: number) => boolean)|undefined} [inBounds] - Function to validate coordinates within bounds
  */
 
 /**
+ * Game state model with configuration and rules.
+ * Contains placement constraints and UI references for interactive gameplay.
  * @typedef {Object} GameModel
- * @property {Object} placement - Placement rules and state
- * @property {any} [additionalConfig] - Additional game configuration
+ * @property {Object} placement - Placement rules and state constraints
+ * @property {Object} UI - User interface element references and handlers
+ * @property {any} [additionalConfig] - Optional additional game configuration
  */
 
 /**
+ * Armed weapon rack slot configuration.
+ * Represents a single weapon installation on a ship with status tracking.
  * @typedef {Object} WeaponSlot
- * @property {Object} weapon - Weapon information
- * @property {string} weapon.letter - Weapon identifier letter
- * @property {number} ammo - Remaining ammunition count
+ * @property {Object} weapon - Weapon information object
+ * @property {string} weapon.letter - Weapon identifier letter (A, B, C, etc.)
+ * @property {number} weapon.power - Base damage power rating
+ * @property {number} ammo - Remaining ammunition count for this rack
  */
 
 /**
+ * Handles mouse entry into cell during hover targeting.
+ * Displays weapon preview (splash, trajectory, etc.) for the targeted cell.
  * @typedef {(weaponSource: any, row: number, col: number) => void} CellHoverEnterCallback
- * Callback fired when mouse enters a cell during hover targeting.
- * @description Receives weapon source data and cell coordinates for aiming display
+ * @param {any} weaponSource - Weapon system providing targeting data
+ * @param {number} row - Row coordinate (y-axis, 0-based) of entered cell
+ * @param {number} col - Column coordinate (x-axis, 0-based) of entered cell
  */
 
 /**
+ * Handles mouse departure from cell after hover targeting.
+ * Cleans up weapon preview and hover-related visual indicators.
  * @typedef {(row: number, col: number) => void} CellHoverLeaveCallback
- * Callback fired when mouse leaves a cell during hover targeting.
- * @description Receives cell coordinates for cleanup of hover-related display
+ * @param {number} row - Row coordinate (y-axis, 0-based) of exited cell
+ * @param {number} col - Column coordinate (x-axis, 0-based) of exited cell
  */
 
 /**
+ * Marks a cell as a miss with optional damage type indicator.
+ * Applies CSS styling to show no ship was hit at this location.
  * @typedef {(row: number, col: number, damageType?: string) => void} CellMissCallback
- * Callback to mark a cell as a miss (no hit).
- * @description Marks cell with miss/damage styling
+ * @param {number} row - Row coordinate (y-axis, 0-based) of miss location
+ * @param {number} col - Column coordinate (x-axis, 0-based) of miss location
+ * @param {string} [damageType] - Optional damage type class (e.g., 'splash', 'fire')
  */
 
 /**
@@ -83,19 +115,29 @@ const UI_CLASSES = {
  */
 
 /**
+ * Transforms grid coordinates to a computed value or object.
+ * Used for coordinate-based queries, mappers, and data extraction.
  * @typedef {(row: number, col: number) => any} CoordToValueCallback
- * Callback that transforms coordinates to a value.
+ * @param {number} row - Row coordinate (y-axis, 0-based)
+ * @param {number} col - Column coordinate (x-axis, 0-based)
+ * @returns {any} Transformed value or object
  */
 
 /**
+ * Transforms grid coordinates to DOM element or null.
+ * Used for cell lookups and coordinate-to-DOM mappings.
  * @typedef {(row: number, col: number) => HTMLElement|null} CoordToElementCallback
- * Callback that transforms coordinates to an HTMLElement.
+ * @param {number} row - Row coordinate (y-axis, 0-based)
+ * @param {number} col - Column coordinate (x-axis, 0-based)
+ * @returns {HTMLElement|null} Cell DOM element or null if not found
  */
 
 /**
- * Retrieves all child elements from a board element.
- * @param {HTMLElement|null} board - The board element
- * @returns {HTMLCollection|Array<HTMLElement>} Child elements or empty array
+ * Safely retrieves all child DOM elements from a board container.
+ * Returns empty array if board is null or missing, preventing errors in iteration.
+ * Used internally for batch operations on all board cells.
+ * @param {HTMLElement|null} board - The board container element (or null)
+ * @returns {HTMLCollection|Array<HTMLElement>} Child cell elements or empty array
  * @private
  */
 const getBoardChildren = (/** @type {HTMLElement|null} */ board) => {
@@ -106,8 +148,11 @@ const getBoardChildren = (/** @type {HTMLElement|null} */ board) => {
 export class GridBoard {
   /**
    * Creates a new GridBoard instance for managing board cell interactions.
-   * @param {HTMLElement|null} boardElement - The board DOM element
-   * @param {GridMap} [map] - Optional map configuration (defaults to current map from bh)
+   * Initializes board reference and optional map configuration for coordinate validation.
+   * If map is not provided, falls back to global bh.map when needed.
+   * @constructor
+   * @param {HTMLElement|null} boardElement - The board DOM element (can be null for static usage)
+   * @param {GridMap} [map] - Optional map configuration (dimensions and bounds checking)
    */
   constructor (boardElement, map) {
     /** @type {HTMLElement|null} */
@@ -117,11 +162,18 @@ export class GridBoard {
   }
 
   /**
-   * Gets the map configuration, defaulting to global bh.map if not set.
-   * Safely handles null/undefined by loading from bh.map.
-   * Ensures map always has inBounds method for boundary validation.
-   * @returns {GridMap} The map configuration object
+   * Gets the map configuration with lazy initialization from global bh.map.
+   * Provides reliable map access and ensures inBounds method exists for validation.
+   * Creates default bounds checking function if not provided by map.
+   * 
+   * **Behavior**:
+   * - Returns cached map if already initialized
+   * - Falls back to global bh.map if instance map not set
+   * - Guarantees inBounds method exists for coordinate validation
+   * - Provides sensible default if bh.map is also unavailable
+   * @returns {GridMap} The map configuration object with guaranteed bounds checking
    * @type {GridMap}
+   * @public
    */
   get map () {
     if (this._map == null) {
@@ -142,21 +194,32 @@ export class GridBoard {
   }
 
   /**
-   * CSS highlight class names for cell validity states.
-   * Represents different levels of placement validity for visual feedback.
+   * CSS class names for placement validity highlighting.
+   * Represents color-coded feedback for ship placement validity (good → worse).
+   * Ordered from most valid to least valid placement options.
+   * 
+   * **Classes**:
+   * - 'good': Placement is valid and optimal
+   * - 'notgood': Placement is valid but suboptimal
+   * - 'bad': Placement may overlap or violate constraints
+   * - 'worse': Placement is invalid or blocked
+   * 
    * @type {string[]}
    * @static
    * @readonly
+   * @const
    */
   static #HIGHLIGHT_CLASSES = ['good', 'notgood', 'bad', 'worse']
 
   /**
    * Factory method to create a GridBoard from territory name.
-   * Looks up board element by '{territory}-board' ID.
-   * @param {string} territory - Territory name (e.g., 'friendly', 'enemy')
-   * @param {GridMap} [map] - Optional map configuration
-   * @returns {GridBoard} New GridBoard instance
+   * Looks up board element by DOM ID pattern '{territory}-board' and wraps it.
+   * Provides convenient creation from territory identifier string.
+   * @param {string} territory - Territory identifier name (e.g., 'friendly', 'enemy')
+   * @param {GridMap} [map] - Optional map configuration (defaults to bh.map)
+   * @returns {GridBoard} New GridBoard instance wrapping the found board element
    * @static
+   * @public
    */
   static create (territory, map) {
     const board = document.getElementById(territory + '-board')
@@ -312,11 +375,18 @@ export class GridBoard {
   /**
    * Displays center cells using provided display function.
    * Typically marks original cells with ship or hit indicators.
+   * Renders the impact zone (original cells) of an area effect.
    *
-   * @param {Iterable<Coord>} cells - Original cell coordinates
-   * @param {Ship} ship - Ship object for display
-   * @param {CellDisplayCallback} displayFn - Callback to display cells: (row, col, ship) => void
+   * **Side Effects**:
+   * - Calls displayFn(row, col, ship) for each center cell coordinate
+   * - Each call triggers UI updates (ship display, hit markers, etc.)
+   * - Called after surrounding misses in displaySurround flow
+   *
+   * @param {Iterable<Coord>} cells - Original cell coordinates as [row, col] tuples
+   * @param {Ship} ship - Ship object for display context
+   * @param {CellDisplayCallback} displayFn - Callback to display cells (row, col, ship) => void
    * @returns {void}
+   * @private
    */
   #displayCenterCells (cells, ship, displayFn) {
     for (const [row, column] of cells) {
@@ -325,14 +395,22 @@ export class GridBoard {
   }
 
   /**
-   * Displays surrounding cells with miss indicator and center cells with display function.
-   * Used for area-of-effect visualization (e.g., weapon splash).
+   * Displays surrounding cells as misses and optionally center cells with custom display.
+   * Core method for area-of-effect visualization during targeting/weapon effects.
+   * Separates surrounding cells (hollow ring) from center cells for different styling.
    *
-   * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs
+   * **Behavior**:
+   * - Computes hollow cells (surrounding minus original) using hollowCells()
+   * - Calls cellMiss callback for each hollow cell to mark as miss
+   * - If display callback provided, calls it for each center cell
+   * - Used for weapon splash, area effects, and targeting previews
+   *
+   * @param {Iterable<Coord>} cells - Original cell coordinates to compute area around
    * @param {Ship} ship - Ship object for center cell display
-   * @param {CellMissCallback} cellMiss - Callback to mark surrounding cells as miss
-   * @param {CellDisplayCallback} [display] - Optional callback to display center cells
+   * @param {CellMissCallback} cellMiss - Callback to mark surrounding cells as miss (row, col, damageType?) => void
+   * @param {CellDisplayCallback} [display] - Optional callback to display center cells (row, col, ship) => void
    * @returns {void}
+   * @public
    */
   displaySurround (cells, ship, cellMiss, display) {
     /** @type {Set<string>} */
@@ -344,16 +422,23 @@ export class GridBoard {
   }
   /**
    * Adds a marked-as-placed visual to ship cell and surroundings.
-   * Calls display surround with callbacks to render miss/surround effects.
-   * Displays ship placement result and surrounding terrain state.
+   * Combines displaySurround with cellMiss and cellPlacedAt callbacks.
+   * Shows placement result and surrounding terrain state (water effects, etc.).
    *
-   * Side effects:
-   * - Invokes this.displaySurround() with cellMiss and cellPlacedAt callbacks
-   * - Updates board display to show placement result
+   * **Side Effects**:
+   * - Calls displaySurround() with specialized callbacks for placement context
+   * - cellMiss: Marks surrounding cells with miss styling
+   * - cellPlacedAt: Marks center cells with placed ship styling
+   * - Updates board display to show placement result and effects
+   *
+   * **Callback Details**:
+   * - Center cells: cellPlacedAt callback shows placed ship
+   * - Surrounding cells: cellMiss marked for miss effect, then surroundShipAt called for terrain
    *
    * @param {Coord[]} cells - Placed cell coordinates as [row, col] tuples
    * @param {Ship} ship - Ship that was placed
    * @returns {void}
+   * @public
    */
   markPlaced (cells, ship) {
     this.displaySurround(
@@ -368,10 +453,14 @@ export class GridBoard {
   }
   /**
    * Converts coordinate pairs to set of cell keys.
-   * Keys are formatted as 'col-row' for keyed lookups.
+   * Keys are formatted as 'col-row' for keyed lookups and deduplication.
+   * Internal utility for cell coordinate deduplication.
+   *
+   * **Key Format**: 'col-row' (e.g., '3-5' for column 3, row 5)
    *
    * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs
-   * @returns {Set<string>} Set of cell keys
+   * @returns {Set<string>} Set of cell keys for efficient lookups and deduplication
+   * @private
    */
   #cellSet (cells) {
     /** @type {Set<string>} */
@@ -384,11 +473,19 @@ export class GridBoard {
 
   /**
    * Calculates hollow set (outer ring without interior).
-   * Returns surrounding cells minus original cells.
-   * Useful for area-of-effect calculations.
+   * Returns surrounding cells excluding the original cells themselves.
+   * Useful for area-of-effect calculations to separate splash zone from impact.
    *
-   * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs
-   * @returns {Set<string>} Set of hollow cells (surrounding but not original)
+   * **Formula**: hollowCells = surroundCells - originalCells
+   *
+   * **Use Cases**:
+   * - Weapon splash effects (surround marked as miss, center marked as hit)
+   * - Area movement range (movement cells minus blocking cells)
+   * - Targeting preview visualization
+   *
+   * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs forming the shape
+   * @returns {Set<string>} Set of hollow cells in 'col-row' key format (e.g., '3-5')
+   * @public
    */
   hollowCells (cells) {
     /** @type {Set<string>} */
@@ -400,10 +497,18 @@ export class GridBoard {
 
   /**
    * Calculates all cells surrounding given cells (flood fill perimeter).
-   * Includes diagonal neighbors.
+   * Includes all 8 directional neighbors (orthogonal and diagonal).
+   * Forms the "halo" around a shape for area-of-effect or aura calculations.
    *
-   * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs
-   * @returns {Set<string>} Set of surrounding cell keys
+   * **Characteristics**:
+   * - Includes corners (diagonal neighbors)
+   * - Filters out-of-bounds neighbors
+   * - Deduplicates cells if multiple source cells share neighbors
+   * - Used for splash zones, auras, and effect ranges
+   *
+   * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs forming the shape
+   * @returns {Set<string>} Set of surrounding cell keys in 'col-row' key format
+   * @public
    */
   surroundCells (cells) {
     /** @type {Set<string>} */
@@ -417,14 +522,27 @@ export class GridBoard {
   /**
    * Adds surrounding cells to container using specified strategy.
    * Generic method that delegates to SurroundingCellsHelper with flexible result format.
+   * Provides unified interface for different surrounding cell data structures.
    *
-   * @param {number} x - Column coordinate of center cell
-   * @param {number} y - Row coordinate of center cell
+   * **Strategies**:
+   * - 'keySet': Accumulates cell keys in Set (maker not required)
+   * - 'objectMap': Accumulates maker results in Object keyed by cell (maker required)
+   * - 'array': Pushes maker results into Array (maker required)
+   *
+   * **Error Handling**:
+   * - Throws Error if 'objectMap' or 'array' strategy used without maker callback
+   * - Throws Error for unknown strategy values
+   * - Silently skips out-of-bounds neighbors based on map bounds
+   *
+   * @param {number} x - Column coordinate of center cell (0-based, x-axis)
+   * @param {number} y - Row coordinate of center cell (0-based, y-axis)
    * @param {Set<string>|Object<string, HTMLElement>|any[]} container - Container to accumulate results
-   * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy
+   * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy ('keySet' | 'objectMap' | 'array')
    * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
    * @returns {void}
-   * @throws {Error} If maker callback required but not provided for chosen strategy
+   * @throws {Error} If maker required but not provided for chosen strategy
+   * @throws {Error} If strategy name is unrecognized
+   * @private
    */
   #addSurroundingCells (x, y, container, strategy, maker) {
     /** @type {any} */
@@ -472,25 +590,34 @@ export class GridBoard {
   }
 
   /**
-   * Adds surrounding cell keys to a set container.
-   * Retrieves all neighbors of specified cell and adds their keys.
+   * Adds surrounding cell keys to a set container using key format.
+   * Retrieves all 8 neighbors of specified cell and accumulates their string keys.
+   * Filters out-of-bounds neighbors based on map configuration.
    *
-   * @param {number} x - Column coordinate of center cell
-   * @param {number} y - Row coordinate of center cell
+   * **Key Format**: 'col-row' (e.g., '3-5' for column 3, row 5)
+   *
+   * @param {number} x - Column coordinate of center cell (0-based, x-axis)
+   * @param {number} y - Row coordinate of center cell (0-based, y-axis)
    * @param {Set<string>} container - Set to accumulate surrounding cell keys
    * @returns {void}
+   * @private
    */
   surround (x, y, container) {
     // @ts-ignore - map compatible with GridMap when defined
     this.#addSurroundingCells(x, y, container, 'keySet')
   }
   /**
-   * Generator yielding cell elements for each coordinate in iterable.
-   * Provides lazy evaluation of coordinate-to-cell mapping.
+   * Generator yielding cell DOM elements for each coordinate in iterable.
+   * Provides lazy evaluation of coordinate-to-cell mapping without pre-allocating array.
+   * Useful for iterating through cells without intermediate array allocations.
+   *
+   * **Note**: Coordinates are [row, col] but nodeAt expects (x, y) format,
+   * so the generator automatically converts by swapping: [y, x] → nodeAt(x, y)
    *
    * @param {Iterable<Coord>} coords - Iterable of [row, col] coordinate pairs
-   * @yields {HTMLElement} Cell element for each coordinate
+   * @yields {HTMLElement|null} Cell element for each coordinate (may be null if out of bounds)
    * @generator
+   * @private
    */
   *cellsForRClist (coords) {
     for (const [y, x] of coords) {
@@ -500,26 +627,34 @@ export class GridBoard {
   /**
    * Adds surrounding cells as object mappings to container.
    * Retrieves neighbors and applies maker function to each coordinate.
+   * Results stored in object with keys as keys and mapper output as values.
    *
-   * @param {number} x - Column coordinate of center cell
-   * @param {number} y - Row coordinate of center cell
+   * **Strategy**: Used for flexible surrounding cell data extraction with custom mappers.
+   *
+   * @param {number} x - Column coordinate of center cell (0-based, x-axis)
+   * @param {number} y - Row coordinate of center cell (0-based, y-axis)
    * @param {Object<string, HTMLElement>} container - Object to accumulate surrounding cell mappings
    * @param {CoordToElementCallback} maker - Callback to transform [row, col] → HTMLElement
    * @returns {void}
+   * @private
    */
   surroundObj (x, y, container, maker) {
     this.#addSurroundingCells(x, y, container, 'objectMap', maker)
   }
 
   /**
-   * Adds surrounding cells to array container.
-   * Retrieves neighbors and applies maker function to each coordinate.
+   * Adds surrounding cells to array container using maker callback.
+   * Retrieves all 8 neighbors and transforms each using maker function.
+   * Accumulates results in provided array.
    *
-   * @param {number} x - Column coordinate of center cell
-   * @param {number} y - Row coordinate of center cell
-   * @param {any[]} container - Array to accumulate surrounding cell elements
-   * @param {CoordToValueCallback} maker - Callback to transform [row, col] → any value
+   * **Strategy**: Used for collecting surrounding cell data with custom transformation.
+   *
+   * @param {number} x - Column coordinate of center cell (0-based, x-axis)
+   * @param {number} y - Row coordinate of center cell (0-based, y-axis)
+   * @param {any[]} container - Array to accumulate surrounding cell results
+   * @param {CoordToValueCallback} maker - Callback to transform coordinates [x, y] → value
    * @returns {void}
+   * @private
    */
   surroundList (x, y, container, maker) {
     this.#addSurroundingCells(x, y, container, 'array', maker)
@@ -527,11 +662,16 @@ export class GridBoard {
 
   /**
    * Gets surrounding cell DOM elements for given cell elements.
-   * Retrieves neighbor cells and returns as flat array.
+   * For each input cell, retrieves all neighbor cells and returns deduplicated array.
+   * Useful for applying effects to cells surrounding a target area (e.g., weapon splash).
    *
-   * @param {Iterable<HTMLElement>} cells - Iterable of DOM cell elements
-   * @param {Object<string, HTMLElement>} [container] - Optional container object to accumulate results
-   * @returns {HTMLElement[]} Array of surrounding cell elements
+   * **Deduplication**: If container object is provided, keys track visited cells to prevent duplicates
+   * when surrounding multiple cells with overlapping neighborhoods.
+   *
+   * @param {Iterable<HTMLElement>} cells - Iterable of DOM cell elements to find neighbors of
+   * @param {Object<string, HTMLElement>} [container] - Optional container object for deduplication tracking
+   * @returns {HTMLElement[]} Array of unique surrounding cell DOM elements
+   * @public
    */
   surroundCellElement (cells, container) {
     /** @type {Object<string, HTMLElement>} */
@@ -552,15 +692,22 @@ export class GridBoard {
   }
   /**
    * Attaches hover event listeners to all board cells (static factory).
-   * Shows/hides area-of-effect or targeting information on hover.
+   * Shows/hides area-of-effect or targeting information on mouse movement.
+   * Convenience method for creating GridBoard and setting up hover handlers in one call.
+   * 
+   * **Event Binding**:
+   * - mouseenter: onEnter(weaponSource, row, col)
+   * - mouseleave: onLeave.call(thisRef, row, col)
+   * 
    * @param {HTMLElement|null} boardElement - The board element
    * @param {GridMap} [map] - Map configuration (defaults to current map)
-   * @param {CellHoverEnterCallback} onEnter - Mouseenter handler
-   * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler
-   * @param {Object} [thisRef] - Context for onLeave binding
-   * @param {any} [weaponSource] - Weapon source data passed to onEnter
+   * @param {CellHoverEnterCallback} onEnter - Mouseenter handler for showing weapon preview
+   * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler for hiding weapon preview
+   * @param {Object} [thisRef] - Context ('this' binding) for onLeave callback
+   * @param {any} [weaponSource] - Weapon source data passed to all onEnter calls
    * @returns {void}
    * @static
+   * @public
    */
   static addHover (boardElement, map, onEnter, onLeave, thisRef, weaponSource) {
     /** @type {GridBoard} */
@@ -569,13 +716,24 @@ export class GridBoard {
   }
   /**
    * Attaches hover event listeners to all board cells.
-   * Shows/hides area-of-effect or targeting information on hover.
+   * Shows/hides area-of-effect or targeting information on mouse movement.
+   * Binds onEnter with weaponSource and cell coordinates.
+   * Binds onLeave with cell coordinates and thisRef context.
    *
-   * @param {CellHoverEnterCallback} onEnter - Mouseenter handler
-   * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler
-   * @param {Object} [thisRef] - Context for onLeave binding
-   * @param {any} [weaponSource] - Weapon source data passed to onEnter
+   * **Event Binding Details**:
+   * - mouseenter: onEnter.bind(null, weaponSource, y, x) — note row/col order (y, x)
+   * - mouseleave: onLeave.bind(thisRef, y, x) — preserves 'this' context
+   *
+   * **Coordinate System**:
+   * - Gets (x, y) from CellUI.getCoords(), then passes (y, x) to callbacks
+   * - Callbacks receive row (y) first, then col (x) — standard grid convention
+   *
+   * @param {CellHoverEnterCallback} onEnter - Mouseenter handler (weaponSource, row, col) => void
+   * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler (row, col) => void
+   * @param {Object} [thisRef] - Context object for onLeave.call() binding
+   * @param {any} [weaponSource] - Weapon source data passed to all onEnter calls
    * @returns {void}
+   * @public
    */
   addHover (onEnter, onLeave, thisRef, weaponSource) {
     this.#forEachBoardCell((/** @type {HTMLElement} */ el) => {
@@ -589,13 +747,19 @@ export class GridBoard {
 
   /**
    * Removes all visual highlight states from board cells.
-   * Clears validity indicators (good/bad/worse classes).
-   * Restores all cells to neutral appearance.
+   * Clears placement validity indicators (good/notgood/bad/worse classes).
+   * Restores all cells to neutral appearance after placement preview completes.
    *
-   * Side effects:
-   * - Removes all highlight CSS classes (good, notgood, bad, worse) from board cells
+   * **Side Effects**:
+   * - Iterates all board cells via #forEachBoardCell
+   * - Removes all classes from GridBoard.#HIGHLIGHT_CLASSES
+   * - Used to clear placement feedback after placement action completes
+   * - Called when placement cancelled or finalized
+   *
+   * **Performance**: O(n*c) where n = cells, c = highlight classes (4)
    *
    * @returns {void}
+   * @public
    */
   removeHighlight () {
     this.#forEachBoardCell(el => {
@@ -631,15 +795,18 @@ export class GridBoard {
     )
   }
   /**
-   * Builds board grid for screen (static factory).
-   * Creates grid with row/column labels for interactive display.
+   * Builds board grid for screen display (static factory).
+   * Creates interactive grid with cell elements and optional click handlers.
+   * Convenience method wrapping createScreenGrid with GridBoard creation.
+   * Used during game initialization to render the playable board.
    *
-   * @param {HTMLElement|null} boardElement - The board element
-   * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} [onClick] - Click handler
-   * @param {Object} [thisRef] - Context for click handler binding
+   * @param {HTMLElement|null} boardElement - The board container element
+   * @param {((row: number, col: number, event: MouseEvent) => void)|undefined} [onClick] - Click handler for cells (row, col, event) => void
+   * @param {Object} [thisRef] - Context ('this' binding) for click handler
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
    * @static
+   * @public
    */
   static createScreenGrid (boardElement, onClick, thisRef, map) {
     /** @type {GridBoard} */
@@ -683,12 +850,14 @@ export class GridBoard {
   }
   /**
    * Builds board grid for print output with labels (static factory).
-   * Creates grid with row/column labels for printing.
+   * Creates grid with row/column labels optimized for printing.
+   * Convenience method wrapping createPrintableGrid with GridBoard creation.
    *
-   * @param {HTMLElement|null} boardElement - The board element
+   * @param {HTMLElement|null} boardElement - The board container element
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @returns {void}
    * @static
+   * @public
    */
   static createPrintableGrid (boardElement, map) {
     /** @type {GridBoard} */
@@ -759,10 +928,20 @@ export class GridBoard {
     }
   }
   /**
-   * Clears all cell classes from every cell in the board.
+   * Clears all cell styling classes from every cell in the board.
    * Returns board to base state (only terrain coloring remains).
+   * Useful when transitioning between game modes or resetting board state.
+   *
+   * **Side Effects**:
+   * - Calls CellClassManager.clearCell on every board cell
+   * - Removes all game-state classes (placed, hit, destroyed, weapon, etc.)
+   * - Preserves terrain/landform coloring (colors are data, not classes)
+   * - Typically called before reapplying game state after mode change
+   *
+   * **Performance**: O(n) where n is number of cells
    *
    * @returns {void}
+   * @public
    */
   clearClasses () {
     this.#forEachBoardCell((/** @type {HTMLElement} */ cell) =>
@@ -773,6 +952,11 @@ export class GridBoard {
    * Marks weapon cells on the friendly board with the 'weapon' class.
    * Iterates through all ships and their cells, adding the weapon class to cells that have armed weapons.
    * Called during game initialization to visually distinguish weapon-equipped cells.
+   *
+   * **Behavior**:
+   * - Iterates through array of ship objects
+   * - For each ship, calls markShipsWeapons() to mark armed cells
+   * - Handles null/undefined ships gracefully with early return
    *
    * @public
    * @param {Array<ShipObject>} ships - Array of ship objects with cells and rackAt method
@@ -789,14 +973,20 @@ export class GridBoard {
    * Consolidated pattern used by placement and additional weapon scenarios.
    * Clears existing styling and enables standard drag-drop interactions.
    *
-   * Side effects:
+   * **Side Effects**:
    * - Clears visual styling from all board cells using ShipCellDisplayer.clearPlaceCell
-   * - Invokes dragNDrop.drop() and dragNDrop.dragEnter() on each cell
-   * - Calls additionalSetup callback on each cell if provided
+   * - Invokes dragNDrop.drop() and dragNDrop.dragEnter() on each cell for event binding
+   * - Calls additionalSetup callback on each cell if provided for custom configuration
+   * - Used internally by makeDroppable() and makeAddDroppable() methods
+   *
+   * **Parameters**:
+   * - model.UI: Required for drag-drop event handlers
+   * - model.placement: Used by drag-drop handlers for placement validation
    *
    * @param {GameModel} model - Game model containing placement rules and state
-   * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration
+   * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration (e.g., weapon-specific setup)
    * @returns {void}
+   * @private
    */
   #configureBoardCellsForDrop (model, additionalSetup) {
     this.#forEachBoardCell(cell => {
@@ -811,10 +1001,17 @@ export class GridBoard {
 
   /**
    * Prepares board cells for standard ship placement with drop handlers.
-   * Clears existing visuals and enables drag-drop interactions.
+   * Clears existing visuals and enables drag-drop interactions for ship placement.
+   * Provides baseline cell configuration for placement UI state.
    *
-   * @param {GameModel} model - Game model with placement configuration
+   * **Side Effects**:
+   * - Calls #configureBoardCellsForDrop with no additional setup
+   * - Enables drag-drop event listeners on all board cells
+   * - Clears previous cell styling
+   *
+   * @param {GameModel} model - Game model with placement configuration and constraints
    * @returns {void}
+   * @public
    */
   makeDroppable (model) {
     this.#configureBoardCellsForDrop(model)
@@ -822,15 +1019,22 @@ export class GridBoard {
 
   /**
    * Prepares board cells for additional weapon placement with enhanced drop handlers.
-   * Includes weapon-specific drop behavior in addition to standard handlers.
+   * Includes weapon-specific drop behavior in addition to standard placement handlers.
+   * Called after initial placement to enable weapon installation on already-placed ships.
    *
-   * Side effects:
-   * - Invokes dragNDrop.addWeaponDrop(model, this)
-   * - Configures board cells with both standard and weapon-specific drop handlers
+   * **Side Effects**:
+   * - Invokes dragNDrop.addWeaponDrop(model, viewModel) to register weapon-specific handlers
+   * - Calls #configureBoardCellsForDrop with weapon-specific additional setup
+   * - Enables weapon drop targets on all board cells
+   *
+   * **Parameters**:
+   * - viewModel: Should contain weapon selection and placement context
+   * - model.UI: Required for weapon drag-drop event routing
    *
    * @param {GameModel} model - Game model with weapon placement configuration
-   * @param {any} viewModel - View model for weapon placement
+   * @param {any} viewModel - View model for weapon placement UI state
    * @returns {void}
+   * @public
    */
   makeAddDroppable (model, viewModel) {
     dragNDrop.addWeaponDrop(model, viewModel)
@@ -856,10 +1060,22 @@ export class GridBoard {
 
   /**
    * Removes and reapplies terrain coloring to cell at coordinates.
-   * Used when terrain has changed and colors need refresh.
+   * Updates CSS styling to reflect current terrain at location.
+   * Called after terrain modifications via brush tool.
+   * Ensures cell visual representation matches current map state.
    *
-   * @param {number} x - Column coordinate (0-indexed)
-   * @param {number} y - Row coordinate (0-indexed)
+   * **Side Effects**:
+   * - Looks up cell element by coordinates using CellUI.fromBoard
+   * - Calls cellUI.recolor() to apply updated terrain colors
+   * - Logs warning if board element is missing
+   *
+   * **Error Handling**:
+   * - Returns silently if board is null (prevents errors)
+   * - Handles undefined cellUI gracefully
+   * - Provides console warning for debugging
+   *
+   * @param {number} x - Column coordinate (0-indexed, x-axis)
+   * @param {number} y - Row coordinate (0-indexed, y-axis)
    * @returns {void}
    * @public
    */
@@ -882,19 +1098,37 @@ export class GridBoard {
 
   /**
    * Sets land terrain cells in square area around brush center.
-   * Iterates through min to max offsets from center applying subterrain type.
-   * Validates bounds before each assignment to prevent errors.
-   * Recolors cells after land terrain change to reflect new terrain type.
-   * Recolors area larger than paint area (extended by 1) to update adjacent cells.
-   * Called by _applyBrushOperation to paint terrain.
+   * Applies subterrain type to grid cells in square pattern centered at coordinates.
+   * Validates bounds before each assignment to prevent out-of-bounds errors.
+   * Updates cell colors after terrain assignment to reflect new type.
+   * Recolors extended area (larger than paint area) to update neighboring cells.
+   * Called internally by applyBrushOperation to execute terrain painting.
    *
-   * @param {number} y - Center row coordinate
-   * @param {number} x - Center column coordinate
-   * @param {number} min - Minimum offset from center (-1, 0, or -0.5)
-   * @param {number} max - Maximum offset from center (1, 2, or 1.5)
-   * @param {string} subterrain - Terrain type identifier to paint
+   * **Bounds Validation**:
+   * - Checks using map.inBounds() before each cell assignment
+   * - Skips cells outside map boundaries silently
+   * - Uses map.setLand() to assign terrain type
+   *
+   * **Area Calculation**:
+   * - Iterates from min offset to max offset in both x and y
+   * - Creates square area (not circular)
+   * - Examples:
+   *   - min=-1, max=2: 3x3 square with center offset
+   *   - min=0, max=1: 1x1 single cell
+   *   - min=-0.5, max=1.5: 2x2 half-size variant
+   *
+   * **Side Effects**:
+   * - Modifies map terrain state for each valid cell
+   * - Calls this.recolor() to update visual representation
+   *
+   * @param {number} x - Center column coordinate (0-indexed, x-axis)
+   * @param {number} y - Center row coordinate (0-indexed, y-axis)
+   * @param {number} min - Minimum offset from center (-1, 0, or -0.5 for half-size)
+   * @param {number} max - Maximum offset from center (1, 2, or 1.5 for half-size)
+   * @param {string} subterrain - Terrain type identifier to paint (e.g., 'sand', 'water', 'mountain')
    *
    * @returns {void}
+   * @private
    */
   #setLandCells (
     /** @type {number} */ x,
@@ -920,14 +1154,34 @@ export class GridBoard {
   /**
    * Applies brush painting operation to map at specified coordinates.
    * Sets land terrain cells in square area around cursor based on brush size.
-   * Only applies to CustomMap instances (not default maps).
-   * Called on each dragenter event during brush drag operation.
+   * Only applies to CustomMap instances (not default maps) to prevent modifying built-in maps.
+   * Called on each dragenter event during brush drag operation for real-time terrain painting.
    *
-   * @param {Brush} brush
-   * @param {number} x - Center row coordinate for brush operation
-   * @param {number} y - Center column coordinate for brush operation
+   * **Brush Size Mapping**:
+   * - Size > 2: Large brush (2×2 area, offsets -1 to 2)
+   * - Size = 2: Medium brush (2×2 area, offsets 0 to 2)
+   * - Size = 1: Small brush (1×1 area, offsets 0 to 1)
+   * - Size <= 0: No operation (early return)
    *
-   * @returns {void} */
+   * **Constraints**:
+   * - Only modifies CustomMap instances (not bh.map or other map types)
+   * - Validates all cell coordinates using map.inBounds()
+   * - Skips operation if brush or map configuration missing
+   * - Returns early if brush size is 0 or negative
+   *
+   * **Implementation**:
+   * - Checks if map is CustomMap using instanceof CustomMap
+   * - Calculates min/max offsets based on brush size
+   * - Calls #setLandCells to apply terrain changes
+   * - Terrain type from brush.subterrain property
+   *
+   * @param {Brush} brush - Brush configuration with size and subterrain type
+   * @param {number} x - Center column coordinate for brush operation (0-indexed, x-axis)
+   * @param {number} y - Center row coordinate for brush operation (0-indexed, y-axis)
+   *
+   * @returns {void}
+   * @public
+   */
   applyBrushOperation (
     /** @type {Brush} */ brush,
     /** @type {number} */ x,

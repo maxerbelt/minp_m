@@ -197,9 +197,8 @@ export class WatersUI {
    * @param {string[]} oldClasses - Array of class names to remove
    * @param {string[]} newClasses - Array of class names to add
    * @returns {void}
-   * @private
    */
-  _updateCellClasses (cell, oldClasses = [], newClasses = []) {
+  #updateCellClasses (cell, oldClasses = [], newClasses = []) {
     if (oldClasses.length) {
       cell.classList.remove(...oldClasses)
     }
@@ -213,9 +212,8 @@ export class WatersUI {
    *
    * @param {HTMLElement} cell - DOM element to clear
    * @returns {void}
-   * @private
    */
-  _clearCellText (cell) {
+  #clearCellText (cell) {
     cell.textContent = ''
   }
 
@@ -470,7 +468,7 @@ export class WatersUI {
    */
   displayAsSunk (cell, _letter) {
     CellClassManager.applyFriendlySunkCellState(cell)
-    this._clearCellText(cell)
+    this.#clearCellText(cell)
   }
 
   /**
@@ -499,7 +497,7 @@ export class WatersUI {
   cellHit (x, y, damageType) {
     const cell = this.grid.node(x, y)
     CellClassManager.applyEnemyHitCellState(cell, damageType)
-    this._clearCellText(cell)
+    this.#clearCellText(cell)
   }
 
   /**
@@ -517,7 +515,7 @@ export class WatersUI {
     if (!CellClassManager.applySemiRevealState(cell)) {
       return LoadOut.noResult
     }
-    this._clearCellText(cell)
+    this.#clearCellText(cell)
     return LoadOut.missResult
   }
 
@@ -537,7 +535,7 @@ export class WatersUI {
       return
     }
     this.deactivateTempHints()
-    this._clearCellText(cell)
+    this.#clearCellText(cell)
   }
 
   /**
@@ -560,16 +558,15 @@ export class WatersUI {
    * @param {HTMLDivElement} cell - DOM element to style
    * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
    * @param {string} [extraClass] - Additional class to apply (optional)
-   * @private
    */
-  _applyWeaponStyling (cell, rotationClass, extraClass) {
+  #applyWeaponStyling (cell, rotationClass, extraClass) {
     const classesToAdd = ['weapon', 'active']
     if (extraClass) classesToAdd.push(extraClass)
     if (rotationClass) classesToAdd.push(rotationClass)
 
-    this._updateCellClasses(cell, ['wake'], classesToAdd)
+    this.#updateCellClasses(cell, ['wake'], classesToAdd)
     this.addContrast(cell)
-    this._clearCellText(cell)
+    this.#clearCellText(cell)
   }
 
   /**
@@ -583,8 +580,8 @@ export class WatersUI {
    * @returns {void}
    */
   cellWeaponActive (row, column, rotationClass, extraClass) {
-    const cell = this.gridCellAt(row, column)
-    this._applyWeaponStyling(cell, rotationClass, extraClass)
+    const cell = this.grid.node(column, row)
+    this.#applyWeaponStyling(cell, rotationClass, extraClass)
   }
 
   /**

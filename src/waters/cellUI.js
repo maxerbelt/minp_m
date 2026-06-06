@@ -213,12 +213,29 @@ export class CellUI {
   /**
    * Clears text content from this cell element.
    * Removes all child nodes and text from the DOM element.
-   * @private
    * @returns {void}
    * @internal Used internally for cell state management
    */
   clearText () {
     this.node.textContent = ''
+  }
+
+  /**
+   * Updates cell CSS classes: adds newClasses, removes oldClasses.
+   * No-op if arrays are empty to avoid unnecessary DOM updates.
+   *
+   * @param {HTMLElement} cell - DOM element to update
+   * @param {string[]} oldClasses - Array of class names to remove
+   * @param {string[]} newClasses - Array of class names to add
+   * @returns {void}
+   */
+  updateCellClasses (oldClasses = [], newClasses = []) {
+    if (oldClasses.length) {
+      this.node.classList.remove(...oldClasses)
+    }
+    if (newClasses.length) {
+      this.node.classList.add(...newClasses)
+    }
   }
 
   /**
