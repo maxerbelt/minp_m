@@ -2180,6 +2180,8 @@ export class Waters {
       // @ts-ignore - UI is Board at runtime, grid is GridBoard
       const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
+        // Guard against undefined cells (outside board boundaries)
+        if (!cell) continue
         // @ts-ignore - _clickOppoHandler is dynamically attached
         if (cell._clickOppoHandler) {
           // @ts-ignore - handler is dynamically attached
@@ -2209,7 +2211,10 @@ export class Waters {
       // @ts-ignore - UI is Board at runtime, grid is GridBoard
       const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
-        cellsToListen.add(cell)
+        // Guard against undefined cells (outside board boundaries)
+        if (cell) {
+          cellsToListen.add(cell)
+        }
       }
     }
 
