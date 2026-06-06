@@ -211,16 +211,16 @@ class DraggedWeapon {
     /**
      * @type {Weapon}
      * @description Weapon object being dragged containing letter, tip, and ammo properties
-     * @private
+     * @internal
      */
     this._weapon = weapon
 
     /**
      * @type {boolean}
      * @description Flag indicating ammo adjustment direction: true to decrement, false to increment
-     * @private
+     * @internal
      */
-    this.subtract = subtract
+    this._subtract = subtract
   }
 
   /**
@@ -250,7 +250,7 @@ class DraggedWeapon {
     const idx = weapons.findIndex(w => w.letter === this._weapon.letter)
     if (idx < 0) {
       weapons.push(this._weapon)
-    } else if (this.subtract) {
+    } else if (this._subtract) {
       weapons[idx].ammo--
     } else {
       weapons[idx].ammo++
@@ -754,7 +754,7 @@ class DragNDrop {
     if (!state._selection) return
 
     if (state._selection instanceof DraggedShip) {
-      this._handleShipDrop(cell, model, viewModel, false)
+      this.#handleShipDrop(cell, model, viewModel, false)
     } else if (state._selection instanceof DraggedWeapon) {
       state._selection.addToMap()
     }
@@ -779,14 +779,14 @@ class DragNDrop {
     if (!state._selection) return
 
     if (state._selection instanceof DraggedShip) {
-      this._handleShipDrop(cell, model, viewModel, true)
+      this.#handleShipDrop(cell, model, viewModel, true)
     }
 
     if (state._selection instanceof DraggedWeapon) {
-      this._handleWeaponDrop(model, viewModel)
+      this.#handleWeaponDrop(model, viewModel)
     }
 
-    this._refreshAfterAddition(model, viewModel)
+    this.#refreshAfterAddition(model, viewModel)
   }
 
   /**
@@ -802,8 +802,8 @@ class DragNDrop {
    */
   handleDropWeaponEvent (model, viewModel, event) {
     if (event) event.preventDefault()
-    this._handleWeaponDrop(model, viewModel)
-    this._refreshAfterAddition(model, viewModel)
+    this.#handleWeaponDrop(model, viewModel)
+    this.#refreshAfterAddition(model, viewModel)
   }
 
   /**
@@ -822,7 +822,7 @@ class DragNDrop {
 
     if (
       state._selection instanceof DraggedWeapon &&
-      state._selection.subtract
+      state._selection._subtract
     ) {
       if (event) event.preventDefault()
       cursor.isDragging = false
@@ -844,9 +844,8 @@ class DragNDrop {
    * @param {boolean} isAddition - True for addition mode, false for placement mode
    *
    * @returns {void}
-   * @private
    */
-  _handleShipDrop (cell, model, viewModel, isAddition) {
+  #handleShipDrop (cell, model, viewModel, isAddition) {
     const [x, y] = xyFromCell(cell)
     const placed = state._selection.place(x, y, model.shipCellGrid)
 
@@ -878,9 +877,8 @@ class DragNDrop {
    * @param {ViewModel} _viewModel - The view model (unused but kept for interface consistency)
    *
    * @returns {void}
-   * @private
    */
-  _handleWeaponDrop (model, _viewModel) {
+  #handleWeaponDrop (model, _viewModel) {
     if (!state._selection) return
     if (!(state._selection instanceof DraggedWeapon)) return
 
@@ -897,13 +895,12 @@ class DragNDrop {
    * @param {ViewModel} viewModel - The view model for UI updates
    *
    * @returns {void}
-   * @private
    */
-  _refreshAfterAddition (model, viewModel) {
+  #refreshAfterAddition (model, viewModel) {
     viewModel.removeHighlight()
     cursor.isDragging = false
     viewModel.displayShipTrackingInfo(model)
-    _removeSelection()
+    this.#removeSelection()
     viewModel.checkTrays()
   }
 
