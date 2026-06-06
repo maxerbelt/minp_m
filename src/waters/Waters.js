@@ -822,7 +822,7 @@ export class Waters {
       board,
       launchX,
       launchY,
-      // @ts-ignore - gridCellAt method available at runtime
+      // @ts-ignore - grid.nodeAt method available at runtime
       cell || board.grid.nodeAt?.(launchX, launchY)
     )
   }

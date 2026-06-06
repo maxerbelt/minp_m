@@ -165,7 +165,7 @@ export class GridBoard {
    * Gets the map configuration with lazy initialization from global bh.map.
    * Provides reliable map access and ensures inBounds method exists for validation.
    * Creates default bounds checking function if not provided by map.
-   * 
+   *
    * **Behavior**:
    * - Returns cached map if already initialized
    * - Falls back to global bh.map if instance map not set
@@ -197,13 +197,13 @@ export class GridBoard {
    * CSS class names for placement validity highlighting.
    * Represents color-coded feedback for ship placement validity (good → worse).
    * Ordered from most valid to least valid placement options.
-   * 
+   *
    * **Classes**:
    * - 'good': Placement is valid and optimal
    * - 'notgood': Placement is valid but suboptimal
    * - 'bad': Placement may overlap or violate constraints
    * - 'worse': Placement is invalid or blocked
-   * 
+   *
    * @type {string[]}
    * @static
    * @readonly
@@ -694,11 +694,11 @@ export class GridBoard {
    * Attaches hover event listeners to all board cells (static factory).
    * Shows/hides area-of-effect or targeting information on mouse movement.
    * Convenience method for creating GridBoard and setting up hover handlers in one call.
-   * 
+   *
    * **Event Binding**:
    * - mouseenter: onEnter(weaponSource, row, col)
    * - mouseleave: onLeave.call(thisRef, row, col)
-   * 
+   *
    * @param {HTMLElement|null} boardElement - The board element
    * @param {GridMap} [map] - Map configuration (defaults to current map)
    * @param {CellHoverEnterCallback} onEnter - Mouseenter handler for showing weapon preview
