@@ -41,6 +41,27 @@ import { Animator } from '../core/Animator.js'
 import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 /**
+ * A coordinate pair representing a single cell on the game board.
+ * Format: [row, col] where row is Y-axis and col is X-axis.
+ * Used extensively for targeting, positioning, and layout calculations.
+ *
+ * @typedef {[number, number]} Coord
+ */
+
+/**
+ * Area-of-effect damage cell with power/impact rating.
+ * Format: [row, col, power] where power represents damage intensity or effect level.
+ * Power values typically: 0 (no effect), 1 (secondary), 2 (primary), 3+ (special).
+ *
+ * @typedef {[number, number, number]} AoeCell
+ */
+/**
+ * @typedef {AoeCell[]} AoePattern
+ * Array of area-of-effect cells defining damage pattern for a weapon.
+ * Each cell includes position and damage power level.
+ */
+
+/**
  * @typedef {Object} WeaponResult
  * @property {number} hits - Number of hits scored
  * @property {number} shots - Number of shots fired (including multi-hit)
@@ -86,14 +107,15 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
 
 /**
  * @typedef {Object} EffectNormalizationResult
- * @property {Array<Array<number>>} normalized - [r, c, power] coordinate triples
+ * @property {AoePattern} normalized - [r, c, power] coordinate triples
  * @property {boolean} isValid - Whether effect was properly formatted
- * @property {Array<Array<number>>} filtered - Entries with exactly 3+ elements
+ * @property {AoePattern} filtered - Entries with exactly 3+ elements
  */
 /**
  * @typedef {Object} GridBoard
  * @property {HTMLElement} board - Main game board DOM element
  * @property {Function} nodeAt - Get cell at coordinates (x, y)
+ * @property {Function} node - Get cell at coordinates (x, y)
  * @property {Function} clearClasses - Clear CSS classes from cells
  * @property {Function} surroundCellElement - Get surrounding cell elements
  * @property {Function} displaySurround - Display surround cells
@@ -230,6 +252,15 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
  * @property {Array<HitEntry>} misses - List of miss cell entries
  * @property {boolean} sunk - Whether ship was sunk
  * @property {(r: number, c: number) => Object} hitAt - Get hit result at coordinates
+ */
+
+/**
+ * @typedef {Object} FiringInfo
+ * @property {Coord[]} [fireCoordinates] - Target coordinates
+ * @property {(target: ?Object) => Promise<FireResult>} [fireWeapon] - Weapon firing function
+ * @property {WeaponsSystem} [wps] - Weapon system being fired
+ * @property {Weapon} [weapon] - Weapon being fired
+ * @property {boolean} [hasUnattached] - Whether unattached weapon is involved
  */
 
 /**
@@ -1745,7 +1776,7 @@ export class Waters {
    */
   #armSelectedWeapon (selection, oppo) {
     // @ts-ignore - UI available at runtime on oppo or this
-    const cell = oppo?.UI?.gridCellAt(selection.hintR, selection.hintC)
+    const cell = oppo?.UI?.grid?.node(selection.hintC, selection.hintR)
     this.#selectAndArmWeaponId(
       selection.weaponId || -1,
       oppo,
@@ -1859,7 +1890,7 @@ export class Waters {
   #createDefaultWeaponSelection (hintR, hintC) {
     // @ts-ignore - this.UI is Board at runtime
     const board = /** @type {Board} */ (this.UI)
-    this.addSelectionSource(board, 0, 0, board.grid?.nodeAt?.(0, 0))
+    this.addSelectionSource(board, 0, 0, board.grid?.node?.(0, 0))
     return this.createWeaponSelection(0, 0, -1, hintR, hintC)
   }
 
@@ -2346,7 +2377,7 @@ export class Waters {
   }
   /**
    * Checks if there are no hit candidates.
-   * @param {Array<any>} hitCandidates - The hit candidates.
+   * @param {Coord[]} hitCandidates - The hit candidates.
    * @returns {boolean} True if no candidates.
    */
   hasNoHitCandidates (hitCandidates) {
@@ -2356,7 +2387,7 @@ export class Waters {
   /**
    * Handles the case when there are no hit candidates.
    * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<Array<number>>} effect - The effect
+   * @param {AoePattern} effect - The effect
    * @param {LaunchOptions} [options] - Additional options
    * @returns {WeaponResult} The destruction result
    * @private
@@ -2396,9 +2427,9 @@ export class Waters {
   /**
    * Handles the case when there are hit candidates.
    * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<Array<number>>} effect - The effect
-   * @param {Array<number>} target - The target
-   * @param {Array<Array<number>>} hitCandidates - The hit candidates
+   * @param {AoePattern} effect - The effect
+   * @param {Coord} target - The target
+   * @param { Coord[]} hitCandidates - The hit candidates
    * @param {LaunchOptions} options - Additional options
    * @returns {WeaponResult} The destruction result
    * @private
@@ -2420,10 +2451,10 @@ export class Waters {
    * Determines whether to use crash splash or strike splash based on weapon configuration.
    *
    * @param {Weapon|Object} weapon - The weapon with splash configuration
-   * @param {Array<number>} resolvedTarget - Resolved hit target [r, c]
-   * @param {Array<Array<number>>} effect - The original effect array
+   * @param {Coord} resolvedTarget - Resolved hit target [r, c]
+   * @param {AoePattern} effect - The original effect array
    * @param {LaunchOptions} [options] - Additional options (may include crashLoc)
-   * @returns {Array<Array<number>>} The splash effect as [r, c, power] array
+   * @returns {AoePattern} The splash effect as [r, c, power] array
    * @private
    */
   selectSplashEffect (weapon, resolvedTarget, effect, options = {}) {
@@ -2476,9 +2507,9 @@ export class Waters {
   }
   /**
    * Resolves the target from hit candidates.
-   * @param {Array<number>|null} target - The provided target.
-   * @param {Array<Array<number>>} hitCandidates - The candidates.
-   * @returns {Array<number>} The resolved target.
+   * @param {Coord|null} target - The provided target.
+   * @param {Coord[]} hitCandidates - The candidates.
+   * @returns {Coord} The resolved target.
    */
   resolveTarget (target, hitCandidates) {
     if (!target || target.length < 2) {
@@ -2490,8 +2521,8 @@ export class Waters {
   /**
    * Destroys one target with the given weapon and effect.
    * @param {Weapon|Object} weapon - The weapon used
-   * @param {Array<Array<number>>} effect - The effect coordinates
-   * @param {Array<number>|null} [target] - Optional target coordinates
+   * @param {AoePattern} effect - The effect coordinates
+   * @param {Coord[]|null} [target] - Optional target coordinates
    * @param {LaunchOptions} [options] - Additional options for destruction
    * @returns {WeaponResult} The result of the destruction
    */
@@ -2509,7 +2540,7 @@ export class Waters {
    * Checks if crash splash should be used.
    * @private
    * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<number>} resolvedTarget - The resolved target
+   * @param {Coord} resolvedTarget - The resolved target
    * @param {LaunchOptions} [options] - Additional firing options
    * @returns {boolean} True if crash splash
    */
@@ -2527,10 +2558,10 @@ export class Waters {
   /**
    * Gets the strike splash effect.
    * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<number>} targetCoords - Target coordinates [r, c]
-   * @param {Array<any>} effect - The original effect
+   * @param {Coord} targetCoords - Target coordinates [r, c]
+   * @param {AoePattern} effect - The original effect
    * @param {Object} [options] - Additional options
-   * @returns {Array<any>} The splash effect
+   * @returns {AoePattern} The splash effect
    * @private
    */
   getStrikeSplash (weapon, targetCoords, effect, options = {}) {
@@ -2542,7 +2573,7 @@ export class Waters {
 
   /**
    * Animates the strike splash effect.
-   * @param {Array<number>} targetCoords - Target coordinates [r, c]
+   * @param {Coord} targetCoords - Target coordinates [r, c]
    * @param {Weapon|Object} weapon - The weapon
    * @returns {Promise<void>}
    * @private
@@ -2551,7 +2582,7 @@ export class Waters {
     // @ts-ignore - this.UI is Board at runtime
     const board = /** @type {Board} */ (this.UI)
     const cellSize = board.cellSize?.()
-    const targetCell = board.gridCellAt?.(targetCoords[0], targetCoords[1])
+    const targetCell = board.grid.nodeAt?.(targetCoords[1], targetCoords[0])
     // @ts-ignore - weapon.animateSplashExplode available at runtime
     if (cellSize && targetCell && weapon?.animateSplashExplode) {
       // @ts-ignore - animateSplashExplode available at runtime on Weapon objects
@@ -2562,10 +2593,10 @@ export class Waters {
   /**
    * Gets the crash splash effect.
    * @param {Weapon|Object} weapon - The weapon
-   * @param {Array<number>} targetCoords - Target coordinates [r, c]
-   * @param {Array<any>} effect - The original effect
+   * @param {Coord} targetCoords - Target coordinates [r, c]
+   * @param {AoePattern} effect - The original effect
    * @param {Object} [options] - Additional options
-   * @returns {Array<any>} The crash splash effect
+   * @returns {AoePattern} The crash splash effect
    * @private
    */
   getCrashSplash (weapon, targetCoords, effect, options = {}) {

@@ -447,7 +447,7 @@ export class Flack extends Weapon {
    * to a normalized coordinate pair for consistent aoe calculation.
    *
    * @param {Object} _map - Game map (unused, present for method override signature)
-   * @param {Coord[]} _base - Base coordinates (unused, present for method override signature)
+   * @param {Coord} _base - Base coordinates (unused, present for method override signature)
    * @param {Coord[]} coords - Target coordinates provided by user
    * @returns {Coord[]} Normalized coordinate pair [anchor, target]
    * @private

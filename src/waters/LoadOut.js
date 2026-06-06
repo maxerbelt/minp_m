@@ -72,10 +72,35 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
  * @property {WeaponsSystem} weaponSystem - Current weapon system
  * @property {number} index - Current index
  */
+/**
+ * @typedef {Object} WeaponResult
+ * @property {number} hits - Number of hits
+ * @property {number} [dtap] - Damage points
+ */
+/**
+ * A coordinate pair representing a single cell on the game board.
+ * Format: [row, col] where row is Y-axis and col is X-axis.
+ * Used extensively for targeting, positioning, and layout calculations.
+ *
+ * @typedef {[number, number]} Coord
+ */
+
+/**
+ * Area-of-effect damage cell with power/impact rating.
+ * Format: [row, col, power] where power represents damage intensity or effect level.
+ * Power values typically: 0 (no effect), 1 (secondary), 2 (primary), 3+ (special).
+ *
+ * @typedef {[number, number, number]} AoeCell
+ */
+/**
+ * @typedef {AoeCell[]} AoePattern
+ * Array of area-of-effect cells defining damage pattern for a weapon.
+ * Each cell includes position and damage power level.
+ */
 
 /**
  * @typedef {Object} FiringInfo
- * @property {number[][]} [fireCoordinates] - Target coordinates
+ * @property {Coord[]} [fireCoordinates] - Target coordinates
  * @property {(target: ?Object) => Promise<FireResult>} [fireWeapon] - Weapon firing function
  * @property {WeaponsSystem} [wps] - Weapon system being fired
  * @property {Weapon} [weapon] - Weapon being fired
@@ -85,14 +110,14 @@ import { WeaponSystem, AttachedWeaponSystems } from '../weapon/WeaponSystem.js'
 /**
  * @typedef {Object} FireWeaponInfoContext
  * @property {Weapon} weapon - The weapon object
- * @property {Array<*>} affectedArea - Cells affected by weapon
+ * @property {AoePattern} affectedArea - Cells affected by weapon
  * @property {Object} options - Weapon-specific options
  */
 
 /**
  * @typedef {Object} SingleShotInfo
  * @property {Weapon} weapon - The weapon object
- * @property {Array<*>} affectedLoc - Affected location
+ * @property {Coord[]} affectedLoc - Affected location
  * @property {WeaponsSystem} wps - Weapon system
  */
 
@@ -223,7 +248,7 @@ export class LoadOut {
       this.selectedWeapon = unattachedWeaponSystem
     }
 
-    return this._resolveFiringState(wps, unattachedWeaponSystem, map)
+    return this.#resolveFiringState(wps, unattachedWeaponSystem, map)
   }
 
   /**
@@ -234,16 +259,15 @@ export class LoadOut {
    * @param {?WeaponsSystem} unattachedWeaponSystem - Unattached weapon if present
    * @param {Object} map - Game map
    * @returns {?FiringInfo} Firing info or continuation signal
-   * @private
    */
-  _resolveFiringState (wps, unattachedWeaponSystem, map) {
+  #resolveFiringState (wps, unattachedWeaponSystem, map) {
     if (!wps?.weapon) {
       return null
     }
     const hasUnattached = unattachedWeaponSystem != null
 
     // Selection complete - build firing info
-    if (this._isSelectionComplete(wps, hasUnattached)) {
+    if (this.#isSelectionComplete(wps, hasUnattached)) {
       const { fireCoordinates, fireWeapon } = this._buildFiringInfo(wps, map)
       // @ts-ignore - Function type compatibility with fireWeapon
       return { fireCoordinates, fireWeapon, wps, weapon: wps.weapon }
@@ -265,9 +289,8 @@ export class LoadOut {
    * @param {?WeaponsSystem} weaponSystem - Weapon being checked
    * @param {boolean} hasUnattached - Whether unattached weapon is involved
    * @returns {boolean} True if selection is complete
-   * @private
    */
-  _isSelectionComplete (weaponSystem, hasUnattached) {
+  #isSelectionComplete (weaponSystem, hasUnattached) {
     if (!weaponSystem?.weapon) {
       return false
     }
@@ -452,9 +475,9 @@ export class LoadOut {
    * Handles destruction of a single target from many (secondary weapon logic).
    *
    * @param {Weapon} weapon - Weapon being fired
-   * @param {Array<*>} affectedArea - Affected cells
+   * @param {AoePattern} affectedArea - Affected cells
    * @param {Object} options - Weapon options
-   * @param {?Object} [target] - Target information
+   * @param {?Coord[]} [target] - Target information
    * @returns {Promise<FireResult>} Result of firing
    */
   onDestroyOneOfMany (weapon, affectedArea, options, target = null) {

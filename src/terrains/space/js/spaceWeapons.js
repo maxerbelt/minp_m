@@ -134,9 +134,11 @@ function normalizeWeaponCoordinates (coords, rr, cc) {
     throw new TypeError('coords must be an array')
   }
   if (coords.length === 2 && typeof coords[0] === 'number') {
+    console.log('Normalizing flat coordinate to pair format:', coords)
     return [[rr, cc], coords]
   }
   if (coords.length === 1 && Array.isArray(coords[0])) {
+    console.log('Normalizing single-element array to pair format:', coords)
     return [[rr, cc], coords[0]]
   }
   if (
@@ -518,9 +520,9 @@ export class Missile extends Bomb {
    * For missiles, only the first (and usually only) target in array is used.
    *
    * @param {TerrainMap} _map - Game map (unused for missile single-target)
-   * @param {number[]} baseCoords - Source coordinates [row, col]
-   * @param {number[][]} targetCoords - Array of target coordinates (uses first element)
-   * @returns {number[][]} Transformed coordinate pair [baseCoords, targetCoords[0]]
+   * @param {Coord} baseCoords - Source coordinates [row, col]
+   * @param {Coord[]} targetCoords - Array of target coordinates (uses first element)
+   * @returns {Coord[]} Transformed coordinate pair [baseCoords, targetCoords[0]]
    * @public
    */
   redoCoords (_map, baseCoords, targetCoords) {
@@ -534,7 +536,7 @@ export class Missile extends Bomb {
    * For missiles, AOE is always computed at the last/primary target coordinate.
    *
    * @param {TerrainMap} _map - Game map (unused for missile)
-   * @param {number[][]} coords - Target coordinates [[row, col], ...] (uses last element)
+   * @param {Coord[]} coords - Target coordinates [[row, col], ...] (uses last element)
    * @returns {AoePattern} Damage cells with power levels [row, col, power]
    * @public
    */
@@ -559,7 +561,7 @@ export class Missile extends Bomb {
    * 3. Return resolved target for hit registration
    *
    * @async
-   * @param {number[]|number[][]} coords - Target coordinates [[row, col]] or flat coordinate
+   * @param {Coord|Coord[]} coords - Target coordinates [[row, col]] or flat coordinate
    * @param {number} row - Source row coordinate
    * @param {number} col - Source column coordinate
    * @param {TerrainMap} map - Game map object
@@ -1150,7 +1152,7 @@ export class GaussRound extends Fish {
    *
    * @param {TerrainMap} map - Game map object
    * @param {number[]} _sourceCoords - Source coordinates [row, col] (extracted via destructuring)
-   * @param {number[]|number[][]} coords - Target coordinates [row, col]
+   * @param {[number, number][]} coords - Target coordinates [row, col]
    * @param {GameModel} model - Game model for target lookup
    * @returns {[number[], Coord, boolean]} Tuple with [source, resolvedTarget, hasCandidates]
    * @private
