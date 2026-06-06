@@ -130,6 +130,41 @@ export class CellsToBePlaced {
   get cells () {
     return this.board.toCoords
   }
+  /**
+   * Gets the highlight class for invalid placement.
+   * Checks notGood grid: > 0 means terrain conflict (notgood), 0 means collision (bad).
+   * Used to provide visual distinction between different placement failure reasons.
+   *
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
+   *
+   * @returns {string} CSS class: 'notgood' (terrain conflict) or 'bad' (collision) */
+  getInvalidHighlightClass (/** @type {number} */ x, /** @type {number} */ y) {
+    // @ts-ignore
+    if (this.notGood.at(x, y) > 0) {
+      return 'notgood'
+    }
+    return 'bad'
+  }
+  /**
+   * Determines CSS class for highlighted cell based on placement validity.
+   * Returns 'good' for valid placements, delegates to _getInvalidHighlightClass for invalid.
+   *
+   * @param {boolean} isPlacementValid - Whether placement is valid
+   * @param {number} x - Column coordinate
+   * @param {number} y - Row coordinate
+   *
+   * @returns {string} CSS class: 'good' (valid), 'notgood' (terrain conflict), 'bad' (collision) */
+  getHighlightClass (
+    /** @type {boolean} */ isPlacementValid,
+    /** @type {number} */ x,
+    /** @type {number} */ y
+  ) {
+    if (!isPlacementValid) {
+      return this.getInvalidHighlightClass(x, y)
+    }
+    return 'good'
+  }
 
   /**
    * Gets the mask of the displaced area (dilated and expanded by 1 cell).

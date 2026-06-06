@@ -240,15 +240,6 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * CSS highlight class names for cell validity states.
-   * Represents different levels of placement validity for visual feedback.
-   * @type {string[]}
-   * @static
-   * @readonly
-   */
-  static #HIGHLIGHT_CLASSES = ['good', 'notgood', 'bad', 'worse']
-
-  /**
    * Brush size range for terrain brush generation.
    * Available sizes for terrain brush tools during placement.
    * @type {number[]}
@@ -608,24 +599,6 @@ export class PlacementUI extends WatersUI {
       container.remove()
     }
     this.trayManager.checkTrays()
-  }
-
-  /**
-   * Removes all visual highlight states from board cells.
-   * Clears validity indicators (good/bad/worse classes).
-   * Restores all cells to neutral appearance.
-   *
-   * Side effects:
-   * - Removes all highlight CSS classes (good, notgood, bad, worse) from board cells
-   *
-   * @returns {void}
-   */
-  removeHighlight () {
-    this.#forEachBoardCell(el => {
-      PlacementUI.#HIGHLIGHT_CLASSES.forEach(cls => {
-        el.classList.remove(cls)
-      })
-    })
   }
 
   /**

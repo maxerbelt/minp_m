@@ -195,7 +195,8 @@ class Custom extends Placement {
    */
   removeAllPlacedShips () {
     this.#resetPlacementState(true)
-    (/** @type {CustomUI} */ this.UI).removeAllPlacedShips(this)
+    const customUIInstance = /** @type {CustomUI} */ (this.UI)
+    customUIInstance.removeAllPlacedShips(this)
     this.ships = []
   }
   /**
@@ -213,9 +214,9 @@ class Custom extends Placement {
    * @returns {void}
    */
   initializePlacement () {
-    /** @type {CustomUI} */ ;(this.UI)
-      .resetAdd(this)(/** @type {CustomUI} */ this.UI)
-      .initializePlacement()
+    const customUIInstance = /** @type {CustomUI} */ (this.UI)
+    customUIInstance.resetAdd(this)
+    customUIInstance.initializePlacement()
   }
 
   /**
@@ -239,12 +240,11 @@ class Custom extends Placement {
    * @returns {void}
    */
   #restartPlacementAfterClear () {
-    this.removeAllPlacedShips()(
-      /** @type {CustomUI} */ this.UI
-    ).trayManager.setTrays()
-    this.initializePlacement()(
-      /** @type {CustomUI} */ this.UI
-    ).displayShipTrackingInfo(this)
+    this.removeAllPlacedShips()
+    const customUIInstance = /** @type {CustomUI} */ (this.UI)
+    customUIInstance.trayManager.setTrays()
+    this.initializePlacement()
+    customUIInstance.displayShipTrackingInfo(this)
   }
   /**
    * Handles clear button click - clears ships or maps depending on mode.
@@ -264,7 +264,8 @@ class Custom extends Placement {
       this.#restartPlacementAfterClear()
       return
     }
-    /** @type {CustomUI} */ ;(this.UI).clearMapAndRefresh()
+    const customUIInstance = /** @type {CustomUI} */ (this.UI)
+    customUIInstance.clearMapAndRefresh()
   }
 
   /**
@@ -283,13 +284,22 @@ class Custom extends Placement {
    */
   handleUndo () {
     this.#resetPlacementState()
+    const customUIInstance = /** @type {CustomUI} */ (this.UI)
     placedShipsInstance.popAndRefresh(
       this.shipCellGrid.grid,
+      /**
+       * @param {Ship} ship - Ship being removed
+       * @returns {void}
+       */
       ship => {
-        /** @type {CustomUI} */ ;(this.UI).grid.markPlaced(ship.cells, ship)
+        customUIInstance.grid.markPlaced(ship.cells, ship)
       },
+      /**
+       * @param {Ship} ship - Ship being undone
+       * @returns {void}
+       */
       ship => {
-        /** @type {CustomUI} */ ;(this.UI).subtraction(this, ship)
+        customUIInstance.subtraction(this, ship)
       }
     )
   }
@@ -403,7 +413,10 @@ class Custom extends Placement {
    */
   #getAvailablePlacementArea () {
     const map = bh.map
-    return (map.rows + 1) * (map.cols + 1) + 1
+    if (!map) return 0
+    const rows = /** @type {number} */ (map.rows)
+    const cols = /** @type {number} */ (map.cols)
+    return (rows + 1) * (cols + 1) + 1
   }
 
   /**
@@ -417,7 +430,9 @@ class Custom extends Placement {
    * @returns {number} Ship displacement (area) or 0 if unavailable
    */
   #getShipDisplacement (ship) {
-    return ship?.shape?.()?.displacement || 0
+    const shape = ship?.shape?.()
+    const displacement = shape?.displacement ?? 0
+    return typeof displacement === 'number' ? displacement : 0
   }
 
   /**

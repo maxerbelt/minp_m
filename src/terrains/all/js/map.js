@@ -956,8 +956,10 @@ const withModifyable = Base =>
     setLand (x, y, subterrain) {
       if (subterrain.isDefault) {
         this.removeLand(x, y)
+        this.landMask.clear(x, y)
       } else {
         this.addLand(x, y)
+        this.landMask.set(x, y)
       }
     }
   }

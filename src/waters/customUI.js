@@ -446,7 +446,7 @@ export class CustomUI extends PlacementUI {
   initializePlacement () {
     this.buildBoard((_r, _c) => {})
     this.trayManager.showBrushTrays()
-    this.grid.makeBrushable()
+    this.grid.makeBrushable(this)
     this.buildBrushTray(bh.terrain)
     this.brushMode()
     if (this.acceptBtn !== undefined) this.acceptBtn.disabled = false
@@ -513,7 +513,7 @@ export class CustomUI extends PlacementUI {
    * @returns {void}
    */
   clearMapAndRefresh () {
-    /** @type {any} */ ;(bh.maps).clearBlank()
+    /** @type {any} */ bh.maps.clearBlank()
     this._refreshBuildUI()
   }
 
