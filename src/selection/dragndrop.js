@@ -438,7 +438,7 @@ export function setupDragHandlers (/** @type {ViewModel} */ viewModel) {
       state._dragCounter--
       if (state._dragCounter > 0) return
 
-      viewModel.removeHighlight()
+      viewModel.grid.removeHighlight()
 
       if (!state._selection) return
       // @ts-ignore
@@ -664,7 +664,7 @@ export function tabCursor (
   } else {
     _removeSelection()
 
-    viewModel.removeHighlight()
+    viewModel.grid.removeHighlight()
     viewModel.assignByCursor('ArrowRight', model.ships)
   }
 }
@@ -860,7 +860,7 @@ class DragNDrop {
     /** @type {DragEvent} */ event
   ) {
     if (event) event.preventDefault()
-    viewModel.removeHighlight()
+    viewModel.grid.removeHighlight()
     cursor.isDragging = false
     if (!state._selection) return
 
@@ -1037,7 +1037,7 @@ class DragNDrop {
     /** @type {Model} */ model,
     /** @type {ViewModel} */ viewModel
   ) {
-    viewModel.removeHighlight()
+    viewModel.grid.removeHighlight()
     cursor.isDragging = false
     viewModel.displayShipTrackingInfo(model)
     _removeSelection()
@@ -1413,7 +1413,7 @@ class DragNDrop {
       }
 
       _removeSelection()
-      viewModel.removeHighlight()
+      viewModel.grid.removeHighlight()
       if (callback) callback()
     }
     div.addEventListener('dragend', handler)

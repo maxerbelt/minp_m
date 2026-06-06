@@ -804,8 +804,8 @@ export class GridBoard {
       if (additionalSetup) {
         additionalSetup(cell)
       }
-      dragNDrop.drop(cell, model, this)
-      dragNDrop.dragEnter(cell, model, this)
+      dragNDrop.drop(cell, model, model.UI)
+      dragNDrop.dragEnter(cell, model, model.UI)
     })
   }
 

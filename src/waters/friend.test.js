@@ -562,7 +562,7 @@ describe('Friend', () => {
   describe('buildBoard', () => {
     beforeEach(() => {
       friend.resetShipCells = jest.fn()
-      friend.UI.makeDroppable = jest.fn()
+      friend.UI.grid.makeDroppable = jest.fn()
     })
 
     it('calls UI.buildBoard with onClickCell handler bound to this', () => {

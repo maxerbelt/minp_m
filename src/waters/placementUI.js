@@ -539,42 +539,6 @@ export class PlacementUI extends WatersUI {
   }
 
   /**
-   * Configures board cells for ship placement with standard drop and drag-enter handlers.
-   * Consolidated pattern used by placement and additional weapon scenarios.
-   * Clears existing styling and enables standard drag-drop interactions.
-   *
-   * Side effects:
-   * - Clears visual styling from all board cells using ShipCellDisplayer.clearPlaceCell
-   * - Invokes dragNDrop.drop() and dragNDrop.dragEnter() on each cell
-   * - Calls additionalSetup callback on each cell if provided
-   *
-   * @param {GameModel} model - Game model containing placement rules and state
-   * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration
-   * @returns {void}
-   */
-  #configureBoardCellsForDrop (model, additionalSetup) {
-    this.#forEachBoardCell(cell => {
-      ShipCellDisplayer.clearPlaceCell(cell)
-      if (additionalSetup) {
-        additionalSetup(cell)
-      }
-      dragNDrop.drop(cell, model, this)
-      dragNDrop.dragEnter(cell, model, this)
-    })
-  }
-
-  /**
-   * Prepares board cells for standard ship placement with drop handlers.
-   * Clears existing visuals and enables drag-drop interactions.
-   *
-   * @param {GameModel} model - Game model with placement configuration
-   * @returns {void}
-   */
-  makeDroppable (model) {
-    this.#configureBoardCellsForDrop(model)
-  }
-
-  /**
    * Removes a dragged ship element and its container if empty.
    * Cleans up DOM after dragged ship is dropped or discarded.
    * Triggers tray check to update visibility state.
