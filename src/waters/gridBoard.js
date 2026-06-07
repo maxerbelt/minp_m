@@ -805,7 +805,6 @@ export class GridBoard {
    * @returns {void}
    */
   applyHighlights (
-    /** @type {GridBoard} */ grid,
     /** @type {Coord[]} */ cells,
     /** @type {boolean} */ isPlacementValid,
     /** @type {PlacementData} */ placement
@@ -814,7 +813,7 @@ export class GridBoard {
     for (const [x, y] of cells) {
       // @ts-ignore
       if (bhMap?.isInBoundsAt(x, y)) {
-        const cell = grid.node(x, y)
+        const cell = this.node(x, y)
         const cellClass = placement.getHighlightClass(isPlacementValid, x, y)
         if (cell && cellClass) {
           cell.classList.add(cellClass)
