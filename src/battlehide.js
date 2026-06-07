@@ -384,7 +384,7 @@ function onClickUndo () {
   const ship = placedShipsInstance.popAndRefresh(
     friend.shipCellGrid,
     ship => {
-      friendUI.markPlaced(ship.cells, ship)
+      friendUI.grid.markPlaced(ship.cells, ship)
     },
     ship => {
       friendUI.addShipToTrays(friend.ships, ship)
