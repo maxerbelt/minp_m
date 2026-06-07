@@ -334,7 +334,8 @@ export class GridBoard {
   markShipsWeapons (ship) {
     if (!ship.cells) return
 
-    for (const [x, y] of ship.cells) {
+    // @ts-ignore - ship.XYs is [x, y]; convert to (x, y) for markFriendlyWeapon
+    for (const [x, y] of ship.XYs) {
       this.markFriendlyWeapon(x, y, ship)
     }
   }
@@ -379,14 +380,14 @@ export class GridBoard {
    * Displays a single ship on the board in fog-of-war state.
    * Shows ship letter or weapon indicator based on cell content.
    *
-   * @param {Ship} ship - Ship object with cells property (iterable of [col, row])
+   * @param {Ship} ship - Ship object with cells property (iterable of [row, col])
    * @returns {void}
    */
   revealShip (ship) {
     // @ts-ignore - bh.maps contains required ColorMaps properties
     const colorMaps = bh.maps
-    // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
-    for (const [x, y] of ship.cells) {
+    // @ts-ignore - ship.XYs is iterable of [x, y] coordinate pairs; convert to (x, y)
+    for (const [x, y] of ship.XYs) {
       const board = this.board
       if (!board) return
       const cell = this.node(x, y)
