@@ -582,7 +582,7 @@ function _updateHighlightIfNeeded (
   if (transformed && state._selection?.isNotShown?.()) {
     // @ts-ignore
 
-    dragNDrop.highlight(viewModel, model.shipCellGrid.grid)
+    dragNDrop.highlight(viewModel.grid, model.shipCellGrid.grid)
   }
 }
 
@@ -1175,7 +1175,7 @@ class DragNDrop {
     if (!result) return
     // @ts-ignore
     const { placement, canPlace, cells } = result
-    this.#applyHighlights(grid, cells, canPlace, placement)
+    grid.applyHighlights(cells, canPlace, placement)
   }
 
   /**
@@ -1311,7 +1311,7 @@ class DragNDrop {
       if (strictEqual(coords, state._lastEntered)) return
 
       state._lastEntered = coords
-      this.highlight(viewModel, model.shipCellGrid, coords[0], coords[1])
+      this.highlight(viewModel.grid, model.shipCellGrid, coords[0], coords[1])
     })
   }
 

@@ -25,6 +25,19 @@ import { LoadOut } from './loadout.js'
  * x, y
  * @typedef {[number, number]} XY
  */
+
+/**
+ * Ship/weapon placement information.
+ *
+ * @typedef {Object} PlacementData
+ * @property {Object} board - Board representation of placement
+ * @property {Function} board.occupiedLocations - Get occupied cell coordinates
+ * @property {Function} canPlace - Validate placement against grid
+ * @property {Function} cantPlaceReason - Get reason for placement rejection
+ * @property {Object} notGood - Terrain conflict grid
+ * @property {Function} notGood.at - Get terrain conflict value at coordinates
+ * @property {Function} getHighlightClass
+ */
 /**
  * @typedef {Object} FireResult
  * @property {number} hits - Number of hits scored
@@ -521,7 +534,6 @@ export class GridBoard {
    *
    * @param {Iterable<Coord>} cells - Iterable of [row, col] coordinate pairs
    * @returns {Set<string>} Set of cell keys for efficient lookups and deduplication
-   * @private
    */
   #cellSet (cells) {
     /** @type {Set<string>} */
@@ -777,6 +789,37 @@ export class GridBoard {
         ship.reset()
       }
       this.revealShip(ship)
+    }
+  }
+
+  /**
+   * Applies highlight CSS classes to all cells occupied by ship preview.
+   * Iterates through cells, validates bounds, adds 'good'/'notgood'/'bad' class.
+   * Skips cells outside map bounds to prevent console errors.
+   *
+   * @param {GridBoard} grid - The grid board providing nodeAt for DOM access
+   * @param {Coord[]} cells - Array of [col, row] cells to highlight
+   * @param {boolean} isPlacementValid - Whether placement is valid (determines class type)
+   * @param {PlacementData} placement - Placement object with notGood constraint grid
+   *
+   * @returns {void}
+   */
+  applyHighlights (
+    /** @type {GridBoard} */ grid,
+    /** @type {Coord[]} */ cells,
+    /** @type {boolean} */ isPlacementValid,
+    /** @type {PlacementData} */ placement
+  ) {
+    const bhMap = this.map
+    for (const [x, y] of cells) {
+      // @ts-ignore
+      if (bhMap?.isInBoundsAt(x, y)) {
+        const cell = grid.node(x, y)
+        const cellClass = placement.getHighlightClass(isPlacementValid, x, y)
+        if (cell && cellClass) {
+          cell.classList.add(cellClass)
+        }
+      }
     }
   }
   /**

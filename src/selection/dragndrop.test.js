@@ -244,10 +244,10 @@ describe('dragndrop module', () => {
 
     describe('highlight', () => {
       it('should return early if no ghost', () => {
-        const mockViewmodel = { removeHighlight: jest.fn() }
-        dragNDrop.highlight(mockViewmodel, {})
+        const mockGrid = { removeHighlight: jest.fn() }
+        dragNDrop.highlight(mockGrid, {})
         // Should return early without calling removeHighlight
-        expect(mockViewmodel.removeHighlight).not.toHaveBeenCalled()
+        expect(mockGrid.removeHighlight).not.toHaveBeenCalled()
       })
 
       it('should handle highlight cells when ghost exists', () => {
