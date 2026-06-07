@@ -125,6 +125,11 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
  * @property {Function} [cellUseAmmo] - Mark ammo usage
  * @property {Function} [cellHintReveal] - Reveal cell via hint
  * @property {Function} [cellSemiReveal] - Semi-reveal cell
+ * @property {Function} revealShips - Reveal ships visually
+ * @property {Function} clearVisuals - Clear visual elements
+ * @property {Function} deactivateTempHints - Deactivate temp hints
+ * @property {Function} deactivateWeapons - Deactivate weapons
+ *
  */
 /**
  * @typedef {Object} Board
@@ -134,19 +139,13 @@ import { ShipCellGrid } from '../grid/rectangle/ShipCellGrid.js'
  * @property {Function} cellHit - Mark cell as hit
  * @property {Function} cellMiss - Mark cell as miss
  * @property {Function} cellUseAmmo - Mark ammo usage
- * @property {Function} cellHintReveal - Reveal cell via hint
- * @property {Function} cellSemiReveal - Semi-reveal cell (partial info)
  * @property {Function} cellSunkAt - Mark cell as sunk with ship letter
  * @property {Function} cellSize - Get cell size in pixels
  * @property {Function} onFleetPlaced - Callback when fleet placed
  * @property {Function} placeTally - Display placement tally
  * @property {Function} displayShipInfo - Display ship information
- * @property {Function} revealShips - Reveal ships visually
- * @property {Function} clearVisuals - Clear visual elements
  * @property {Function} clearPlaceVisuals - Clear placement visuals
  * @property {Function} displayFleetSunk - Display fleet sunk
- * @property {Function} deactivateTempHints - Deactivate temp hints
- * @property {Function} deactivateWeapons - Deactivate weapons
  * @property {HTMLCollection} children - Cell children collection
  * @property {Object} [score] - Score display object
  * @property {Object} [weaponBtns] - Weapon button elements
@@ -662,7 +661,7 @@ export class Waters {
     if (this.ships && this.UI) {
       // @ts-ignore - UI is Board at runtime
       const board = /** @type {Board} */ (this.UI)
-      board.revealShips?.(this.ships)
+      board.grid.revealShips?.(this.ships)
     }
   }
 
@@ -2177,7 +2176,7 @@ export class Waters {
     const armedShips = this.loadOut.ships
     for (const ship of armedShips) {
       // @ts-ignore - shipCells method available at runtime
-      const cells = oppo.shipCells(ship.id)
+      const cells = oppo.UI.grid.shipCells(ship.id)
       // @ts-ignore - UI is Board at runtime, grid is GridBoard
       const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
@@ -2208,7 +2207,7 @@ export class Waters {
     // Collect all unique surrounding cells across all armed ships
     for (const ship of armedShips) {
       // @ts-ignore - shipCells method available at runtime
-      const cells = oppo.shipCells(ship.id)
+      const cells = oppo.UI.grid.shipCells(ship.id)
       // @ts-ignore - UI is Board at runtime, grid is GridBoard
       const surround = oppo.UI.grid.surroundCellElement(cells)
       for (const cell of surround) {
@@ -2502,12 +2501,12 @@ export class Waters {
     }
     // @ts-ignore - UI is Board at runtime
     const board = /** @type {Board} */ (this.UI)
-    board.deactivateWeapons?.()
+    board.grid?.deactivateWeapons?.()
     // @ts-ignore - opponent.UI is Board at runtime
     const opponentBoard = this.opponent?.UI
       ? /** @type {Board} */ (/** @type {unknown} */ (this.opponent.UI))
       : null
-    opponentBoard?.deactivateWeapons?.()
+    opponentBoard?.grid?.deactivateWeapons?.()
     // @ts-ignore - opponent may have _handleBeginTurn at runtime
     await this.opponent?._handleBeginTurn?.()
   }
@@ -2659,86 +2658,13 @@ export class Waters {
   }
 
   /**
-   * Gets armed ship cells (cells with ammo > 0).
-   * Filters all board cells to find those with loaded weapons.
-   *
-   * @returns {HTMLElement[]} Array of armed cell DOM elements
-   */
-  armedCells () {
-    return this.cellList().filter(
-      (/** @type {any} */ c) => Number.parseInt(c?.dataset?.ammo || '0') > 0
-    )
-  }
-
-  /**
-   * Gets armed ship cells for a specific weapon letter.
-   * Filters armed cells to those with specified weapon letter.
-   *
-   * @param {string} letter - Weapon letter identifier (e.g., 'M', 'R', 'T')
-   * @returns {HTMLElement[]} Array of armed cells with matching weapon letter
-   */
-  armedCellsWithWeapon (letter) {
-    return this.cellList().filter(
-      (/** @type {any} */ c) =>
-        Number.parseInt(c?.dataset?.ammo || '0') > 0 &&
-        c?.dataset?.wletter === letter
-    )
-  }
-
-  /**
-   * Gets all cells on the game board.
-   * Converts HTMLCollection to array for easier iteration and filtering.
-   *
-   * @returns {HTMLElement[]} Array of all board cell DOM elements
-   */
-  cellList () {
-    // @ts-ignore - cellsOnBoard returns HTMLCollection, cast to HTMLElement[]
-    return [...(this.cellsOnBoard() || [])]
-  }
-
-  /**
-   * Gets direct children elements of board (cell references).
-   * Returns the HTMLCollection of board's immediate children.
-   *
-   * @returns {HTMLCollection} Live collection of board cell children
-   */
-  cellsOnBoard () {
-    // @ts-ignore - this.UI is Board at runtime
-    const board = /** @type {Board} */ (this.UI)
-    return board.board?.children || []
-  }
-
-  /**
-   * Gets all cells on board belonging to a specific ship.
-   * Filters cells by matching ship ID in dataset.
-   *
-   * @param {number} id - Ship ID to match
-   * @returns {HTMLElement[]} Array of cells belonging to the ship
-   * @private
-   */
-  shipCells (id) {
-    /** @type {HTMLElement[]} */
-    const list = []
-    const cells = this.cellsOnBoard() || []
-    for (const cell of cells) {
-      // @ts-ignore - dataset property available on Element
-      const cellId = cell?.dataset?.id ? Number.parseInt(cell.dataset.id) : null
-      if (cellId === id) {
-        // @ts-ignore - Element from HTMLCollection, cast to HTMLElement
-        list.push(cell)
-      }
-    }
-    return list
-  }
-
-  /**
    * Records an auto-miss at the given coordinates.
    * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
    * @returns {void}
    * @private
    */
-  recordAutoMiss (y, x) {
+  recordAutoMiss (x, y) {
     const key = this.score.addAutoMiss(x, y)
     if (!key) return // already shot here
     // @ts-ignore - this.UI is Board at runtime

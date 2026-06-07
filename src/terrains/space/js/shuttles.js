@@ -39,7 +39,7 @@ import { Missile } from './spaceWeapons.js'
  * @module shuttles
  * @example
  * import { corvette, missileBoat, miningShip } from './shuttles.js'
- * const cells = corvette.cellList      // Get grid cells
+ * const cells = corvette.cells      // Get grid cells
  * const code = missileBoat.shortCode   // 'M' for missile boat
  *
  * @example
@@ -127,11 +127,11 @@ const SHUTTLE_RACKS = {
  * @property {string} name - 'Corvette'
  * @property {string} shortCode - 'V' for quick identification
  * @property {string} armor - 'H' armor rating (standard hull)
- * @property {ShuttleCell[]} cellList - 4 cells: [[0,0], [2,0], [1,1], [1,2]]
+ * @property {ShuttleCell[]} cells - 4 cells: [[0,0], [2,0], [1,1], [1,2]]
  *
  * @example
  * import { corvette } from './shuttles.js'
- * const cells = corvette.cellList  // Access ship cells
+ * const cells = corvette.cells  // Access ship cells
  * const type = corvette.shortCode  // 'V'
  */
 export const corvette = new Shuttle(
@@ -156,7 +156,7 @@ export const corvette = new Shuttle(
  * @property {string} name - 'Lifter'
  * @property {string} shortCode - 'L' for quick identification
  * @property {string} armor - 'L' armor rating (light/vulnerable)
- * @property {ShuttleCell[]} cellList - 4 cells in vertical line: [[0,0], [0,1], [0,2], [0,3]]
+ * @property {ShuttleCell[]} cells - 4 cells in vertical line: [[0,0], [0,1], [0,2], [0,3]]
  * @property {string[]} vulnerable - ['+'] indicates missile vulnerability marker
  * @property {string[]} notes - Descriptive notes about vulnerability mechanics
  *
@@ -186,7 +186,7 @@ lifter.notes = [
  * @property {string} name - 'Missile Boat'
  * @property {string} shortCode - 'M' for quick identification
  * @property {string} armor - 'H' armor rating
- * @property {ShuttleCell[]} cellList - 4 cells: [[0,1], [1,0], [1,1], [1,2]]
+ * @property {ShuttleCell[]} cells - 4 cells: [[0,1], [1,0], [1,1], [1,2]]
  * @property {ShuttleCell[]} weaponRacks - 2 weapon positions: [[1,0], [1,2]]
  * @property {Function} attachWeapon - Returns Missile.single for weapon system
  *
@@ -221,7 +221,7 @@ missileBoat.attachWeapon(() => {
  * @property {string} name - 'Mining Ship'
  * @property {string} shortCode - '3' for quick identification
  * @property {string} armor - 'L' armor rating (light)
- * @property {ShuttleCell[]} cellList - 3 cells in vertical line: [[0,0], [0,1], [0,2]]
+ * @property {ShuttleCell[]} cells - 3 cells in vertical line: [[0,0], [0,1], [0,2]]
  * @property {string[]} hardened - ['^'] indicates gauss round hardening pattern
  * @property {string[]} notes - Descriptive notes about hardening mechanics
  *
@@ -254,10 +254,10 @@ miningShip.notes = [
  * @property {string} name - 'Runabout'
  * @property {string} shortCode - '4' for quick identification
  * @property {string} armor - 'D' armor rating (standard durability)
- * @property {ShuttleCell[]} cellList - 3 cells: [[0,0], [0,1], [1,2]]
+ * @property {ShuttleCell[]} cells- 3 cells: [[0,0], [0,1], [1,2]]
  *
  * @example
- * const runaboutCells = runabout.cellList
+ * const runaboutCells = runabout.cells
  * const type = runabout.shortCode  // '4'
  */
 export const runabout = new Shuttle(
@@ -279,10 +279,10 @@ export const runabout = new Shuttle(
  * @property {string} name - 'Scout Ship'
  * @property {string} shortCode - '1' for quick identification
  * @property {string} armor - 'D' armor rating (standard durability)
- * @property {ShuttleCell[]} cellList - 4 cells in cross pattern: [[0,0], [1,1], [2,1], [1,2]]
+ * @property {ShuttleCell[]} cella - 4 cells in cross pattern: [[0,0], [1,1], [2,1], [1,2]]
  *
  * @example
- * const scoutCells = scoutShip.cellList
+ * const scoutCells = scoutShip.cells
  * if (scoutShip.shortCode === '1') {
  *   console.log('Scout ship reconnaissance active')
  * }

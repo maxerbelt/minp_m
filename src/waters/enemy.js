@@ -602,7 +602,7 @@ class Enemy extends Waters {
   // @ts-ignore - Used by friend.js opponent._transitionToOpponentTurn()
   _transitionToOpponentTurn () {
     const ui = /** @type {EnemyUI|undefined} */ (this.UI)
-    ui?.deactivateWeapons?.()
+    ui?.grid?.deactivateWeapons?.()
     this.#setSpinnerState(true, MESSAGES.ENEMY_TURN)
   }
 

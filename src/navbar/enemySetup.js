@@ -99,9 +99,7 @@ import { GridBoard } from '../waters/gridBoard.js'
  * @typedef {Object} FriendUI
  * @description UI reference for friendly player's board (used in hide mode).
  *              Manages visual state specific to defending player.
- * @property {() => void} [clearFriendClasses] - Remove friend-specific CSS classes.
- *                                             Called when transitioning to opponent turn.
- *
+ 
  * @typedef {(event: KeyboardEvent) => void} KeyboardHandler
  * @description Callback invoked when keyboard shortcut is pressed.
  *              Parameters: event (KeyboardEvent, may not be passed for programmatic calls).
@@ -534,7 +532,7 @@ const BoardInitializer = {
     if (opponentBoardCleanup && friendUI) {
       cleanupOpponentBoard = opponentBoardCleanup
       const friendUIRef = /** @type {any} */ (friendUI)
-      friendUIRef.clearFriendClasses?.()
+      friendUIRef.grid.clearFriendClasses?.()
       // Arm opponent weapons for two-click targeting in hide mode
       const enemyRef = /** @type {any} */ (enemy)
       enemyRef.opponent?.armWeapons()
@@ -620,7 +618,7 @@ const BoardInitializer = {
  *                                               Stored for next game transition.
  *                                               Null for first game.
  * @param {FriendUI | null} friendUI - Friend UI reference for hiding mode.
- *                                    Contains clearFriendClasses() for UI cleanup.
+ *                                    Contains grid.clearFriendClasses() for UI cleanup.
  *                                    Null in seeking mode.
  * @returns {void}
  *

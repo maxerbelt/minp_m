@@ -11,12 +11,14 @@ jest.unstable_mockModule('./WatersUI.js', () => {
       constructor (waterType, displayName) {
         this.waterType = waterType
         this.displayName = displayName
+        this.grid = {
+          revealShips: () => {
+            /* no-op */
+          }
+        }
       }
 
       playMode () {
-        /* no-op */
-      }
-      revealShips () {
         /* no-op */
       }
       revealMode () {

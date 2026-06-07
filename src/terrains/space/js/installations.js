@@ -40,7 +40,7 @@ import { Installation, CoreInstallation } from './spaceShapes.js'
  * @module installations
  * @example
  * import { shelter, mine, commandCenter } from './installations.js'
- * const cells = shelter.cellList  // Get grid cells occupied
+ * const cells = shelter.cells  // Get grid cells occupied
  * const code = mine.shortCode     // 'N' for mine
  *
  * @example
@@ -110,15 +110,15 @@ const INSTALLATION_CELLS = {
  * @property {string} name - Display name: 'Shelter'
  * @property {string} letter - Single character identifier: 'S'
  * @property {string} symmetry - Armor rating: 'H' (for armor type)
- * @property {InstallationCell[]} cellList - Grid footprint: [[0,1], [0,2], [1,0], [2,0]]
- * @property {number} cellList.length - Always 4 cells
+ * @property {InstallationCell[]} cells- Grid footprint: [[0,1], [0,2], [1,0], [2,0]]
+ * @property {number} cells.length - Always 4 cells
  * @property {string} type - Installation type: 'G' (ground installation)
  * @property {string} tip - Detailed placement and usage instructions
  * @property {string} descriptionText - Display name from constructor
  *
  * @example
  * // Get shelter dimensions and position
- * const cells = shelter.cellList  // 4 cells in L-shape
+ * const cells = shelter.cells  // 4 cells in L-shape
  * const typeCode = shelter.shortCode  // 'S'
  * console.log(shelter.name)  // 'Shelter'
  *
@@ -153,8 +153,8 @@ export const shelter = new Installation(
  * @property {string} name - Display name: 'Mine'
  * @property {string} letter - Single character identifier: 'N'
  * @property {string} symmetry - Armor rating: 'D' (for defense)
- * @property {InstallationCell[]} cellList - Grid footprint: [[0,1], [1,0], [1,1], [2,1], [2,2]]
- * @property {number} cellList.length - Always 5 cells
+ * @property {InstallationCell[]} cells- Grid footprint: [[0,1], [1,0], [1,1], [2,1], [2,2]]
+ * @property {number} cells.length - Always 5 cells
  * @property {string} type - Installation type: 'G' (ground installation)
  * @property {string} tip - Detailed placement and hardening instructions
  * @property {string} descriptionText - Display name from constructor
@@ -172,7 +172,7 @@ export const shelter = new Installation(
  * @example
  * // Get tactical information
  * console.log(mine.notes[0])  // Hardening description
- * console.log(mine.cellList.length)  // 5 cells
+ * console.log(mine.cells.length)  // 5 cells
  */
 export const mine = new Installation('Mine', 'N', 'D', INSTALLATION_CELLS.MINE)
 /** @type {string[]} Hardening indicator pattern for missile resistance */
@@ -204,8 +204,8 @@ mine.notes = [
  * @property {string} name - Display name: 'Command Center'
  * @property {string} letter - Single character identifier: 'J'
  * @property {string} symmetry - Armor rating: 'A' (for armor/armor-plated)
- * @property {InstallationCell[]} cellList - Grid footprint: [[0,0], [0,1], [1,1], [2,1], [2,2]]
- * @property {number} cellList.length - Always 5 cells
+ * @property {InstallationCell[]} cells- Grid footprint: [[0,0], [0,1], [1,1], [2,1], [2,2]]
+ * @property {number} cells.length - Always 5 cells
  * @property {string} type - Installation type: 'G' (ground installation)
  * @property {string} tip - Deep placement and hardening instructions
  * @property {string} descriptionText - Display name from constructor

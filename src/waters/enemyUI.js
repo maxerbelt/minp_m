@@ -389,7 +389,7 @@ class EnemyUI extends WatersUI {
    * @returns {void}
    */
   revealAll (ships) {
-    this.revealShips(/** @type {any} */ (ships))
+    this.grid.revealShips(/** @type {any} */ (ships))
     this.revealMode()
     gameStatus.showMode('Enemy Fleet Revealed')
     gameStatus.addToQueue('You Gave Up')

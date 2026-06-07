@@ -15,8 +15,6 @@ import { moveCursorBase } from './placementUI.js'
  * @property {() => void} [updateDisplay] - Updates placement visualization on the board
  * @property {(ship: Object) => void} [assignShip] - Assigns ship to current cursor position
  * @property {Function} [placeTally] - Displays ship placement tally
- * @property {Function} [clearVisuals] - Clears placement visualization
- * @property {Function} [revealShips] - Reveals ships on the board
  * @property {HTMLCollection} [children] - Cell children collection on board
  * @property {DOMTokenList} [classList] - CSS class list of board
  */
@@ -74,7 +72,7 @@ export class Placement extends Waters {
    *   - Board element and cell grid management
    *   - Cursor movement visualization (moveCursor callback)
    *   - Ship placement interaction (selectCell, assignShip callbacks)
-   *   - Display updates (updateDisplay, clearVisuals, revealShips)
+   *   - Display updates
    * @param {string|null} [playerType=null] - Type of player for turn tracking:
    *   - 'AI': Initializes Steps with AI player tracking for step-based logging
    *   - 'Human': Initializes Steps with human player tracking

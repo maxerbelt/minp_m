@@ -252,10 +252,7 @@ export interface Board {
 
   /** Display ship information */
   displayShipInfo?: (ship: Ship) => void
-
-  /** Reveal ships on board */
-  revealShips?: (ships: Ship[]) => void
-
+ 
   /** Clear visual elements */
   clearVisuals?: () => void
 
@@ -271,13 +268,7 @@ export interface Board {
 
   /** Display surrounding cells effect */
   displaySurround?: (r: number, c: number) => void
-
-  /** Deactivate temporary hints */
-  deactivateTempHints?: () => void
-
-  /** Deactivate weapons display */
-  deactivateWeapons?: () => void
-
+ 
   /** Score display object */
   score?: unknown
 

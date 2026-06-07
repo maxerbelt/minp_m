@@ -267,6 +267,7 @@ export class GridBoard {
       this.map
     )
   }
+
   /**
    * Marks a cell as having an active weapon with specific rotation.
    * Displays weapon indicator and applies rotation/cursor classes.
@@ -347,11 +348,10 @@ export class GridBoard {
   cellPlacedAt (x, y, ship) {
     /** @type {any} */
     const mapObj = this.map
-    if (!mapObj || typeof mapObj.inBounds !== 'function') return
-    if (!mapObj.inBounds(y, x)) return
+    if (!mapObj.isInBoundsAt(x, y)) return
     /** @type {HTMLDivElement|null} */
     const cell = this.node(x, y)
-    if (cell !== null) {
+    if (cell) {
       ShipCellDisplayer.displayPlacedCell(cell, ship, y, x)
     }
   }
@@ -380,7 +380,7 @@ export class GridBoard {
    *
    * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
-   * @returns {number|Object} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
+   * @returns {FireResult} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
    */
   cellSemiReveal (x, y) {
     const cell = this.node(x, y)
@@ -752,6 +752,34 @@ export class GridBoard {
     return Object.values(surroundings)
   }
   /**
+   * Reveals multiple ships on the board without resetting them.
+   * Useful for showing previously hidden ships.
+   *
+   * @param {Ship[]} ships - Array of ship objects to reveal
+   * @returns {void}
+   */
+  revealShips (ships) {
+    for (const ship of ships) {
+      this.revealShip(ship)
+    }
+  }
+  /**
+   * Resets all ships to initial state and reveals them on the board.
+   * Used when starting a new game or round.
+   *
+   * @param {Ship[]} ships - Array of ship objects to reset
+   * @returns {void}
+   */
+  resetShips (ships) {
+    for (const ship of ships) {
+      if (ship && typeof ship.reset === 'function') {
+        // @ts-ignore - ship.reset exists based on typeof check
+        ship.reset()
+      }
+      this.revealShip(ship)
+    }
+  }
+  /**
    * Attaches hover event listeners to all board cells (static factory).
    * Shows/hides area-of-effect or targeting information on mouse movement.
    * Convenience method for creating GridBoard and setting up hover handlers in one call.
@@ -827,6 +855,19 @@ export class GridBoard {
       this.refreshColor(el)
     )
   }
+
+  /**
+   * Removes all weapon activation indicators from board.
+   * Deactivates visual targeting display for all cells.
+   *
+   * @returns {void}
+   */
+  deactivateWeapons () {
+    this.#forEachBoardCell((/** @type {HTMLElement} */ cell) =>
+      CellClassManager.deactivateWeapon(cell)
+    )
+  }
+
   /**
    * Removes all area-of-effect highlight classes from board.
    * Clears target and splash effect visual indicators.
@@ -840,9 +881,76 @@ export class GridBoard {
     )
   }
   /**
+   * Generic method to clear cell visuals using custom clearing strategy.
+   * Delegates class clearing to provided function for context-specific behavior.
+   *
+   * @param {HTMLDivElement} cell - DOM element to clear
+   * @param {'none'|'content'|'all'} details - What to clear:
+   *   'none' = only call classClear, 'content' = text only, 'all' = text and style
+   * @param {CellClassClearer} [classClear] - Function to clear cell classes (defaults to clearCell)
+   * @returns {void}
+   */
+  #clearCellVisuals (cell, details, classClear) {
+    const clear =
+      classClear || CellClassManager.clearCell.bind(CellClassManager)
+    ShipCellDisplayer.clearDetails(cell, details)
+    clear(cell)
+  }
+  /**
+   * Clears cell visuals across entire board using provided strategy.
+   * Generic method applying custom clearing callback and detail level to all cells.
+   *
+   * @param {'none'|'content'|'all'} details - What to clear: 'none', 'content', or 'all'
+   * @param {CellClassClearer} [classClearer] - Function to clear cell classes
+   * @returns {void}
+   */
+  #clearAllCellVisuals (details, classClearer) {
+    const clear =
+      classClearer || CellClassManager.clearCell.bind(CellClassManager)
+    this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
+      this.#clearCellVisuals(/** @type {HTMLDivElement} */ (el), details, clear)
+    )
+  }
+
+  /**
+   * Clears all cell visuals (text, styles, and classes) from entire board.
+   * Returns board to clean state with only terrain coloring.
+   *
+   * @returns {void}
+   */
+  clearVisuals () {
+    this.#clearAllCellVisuals('all')
+  }
+
+  /**
+   * Clears friendly board cell visuals including damage indicators.
+   * Preserves terrain coloring but removes game state classes.
+   * @public
+   * @returns {void}
+   */
+  clearFriendVisuals () {
+    this.#clearAllCellVisuals(
+      'all',
+      CellClassManager.clearFriendCell.bind(CellClassManager)
+    )
+  }
+
+  /**
+   * Clears only friendly cell classes, preserving text and styling.
+   * Used when resetting game state without visual refresh.
+   * @public
+   * @returns {void}
+   */
+  clearFriendClasses () {
+    this.#clearAllCellVisuals(
+      'none',
+      CellClassManager.clearFriendCell.bind(CellClassManager)
+    )
+  }
+  /**
    * Removes temporary hint indicators from entire board.
    * Clears targeting or placement hints.
-   *
+   * @public
    * @returns {void}
    */
   deactivateTempHints () {
@@ -861,6 +969,27 @@ export class GridBoard {
       CellClassManager.clearDisplayCell(cell)
     )
   }
+  /**
+   * Gets all cells on board belonging to a specific ship.
+   * Filters cells by matching ship ID in dataset.
+   *
+   * @param {number} id - Ship ID to match
+   * @returns {HTMLElement[]} Array of cells belonging to the ship
+   */
+  shipCells (id) {
+    /** @type {HTMLElement[]} */
+    const list = []
+    this.#forEachBoardCell((/** @type {HTMLElement} */ cell) => {
+      // @ts-ignore - dataset property available on Element
+      const cellId = cell?.dataset?.id ? Number.parseInt(cell.dataset.id) : null
+      if (cellId === id) {
+        // @ts-ignore - Element from HTMLCollection, cast to HTMLElement
+        list.push(cell)
+      }
+    })
+    return list
+  }
+
   /**
    * Deactivates weapon display on a cell.
    * Removes weapon and rotation indicators.
@@ -1053,11 +1182,40 @@ export class GridBoard {
    * @returns {void}
    */
   #forEachBoardCell (callback) {
-    for (const cell of getBoardChildren(this.board)) {
+    for (const cell of this.cells) {
       callback(/** @type {HTMLElement} */ (cell))
     }
   }
+  get cells () {
+    return getBoardChildren(this.board)
+  }
 
+  /**
+   * Gets armed ship cells (cells with ammo > 0).
+   * Filters all board cells to find those with loaded weapons.
+   *
+   * @returns {HTMLElement[]} Array of armed cell DOM elements
+   */
+  get armedCells () {
+    return this.cells.filter(
+      (/** @type {any} */ c) => Number.parseInt(c?.dataset?.ammo || '0') > 0
+    )
+  }
+
+  /**
+   * Gets armed ship cells for a specific weapon letter.
+   * Filters armed cells to those with specified weapon letter.
+   *
+   * @param {string} letter - Weapon letter identifier (e.g., 'M', 'R', 'T')
+   * @returns {HTMLElement[]} Array of armed cells with matching weapon letter
+   */
+  armedCellsWithWeapon (letter) {
+    return this.cells.filter(
+      (/** @type {any} */ c) =>
+        Number.parseInt(c?.dataset?.ammo || '0') > 0 &&
+        c?.dataset?.wletter === letter
+    )
+  }
   /**
    * Generator for all cell coordinates in the board.
    * Yields coordinates in row-major order: top-left to bottom-right.

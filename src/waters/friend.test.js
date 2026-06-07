@@ -15,15 +15,15 @@ import { it, describe, expect, beforeEach, jest } from '@jest/globals'
  * @property {HTMLElement} board - Game board DOM element mock
  * @property {jest.Mock} makeDroppable - Enable drag-and-drop on board
  * @property {jest.Mock} markFleetWeapons - Mark weapon cell display
+ * @property {jest.Mock} clearVisuals - Clear weapon visual effects
+ * @property {jest.Mock} clearFriendVisuals - Clear friendly player visuals
+ * @property {jest.Mock} revealShip - Reveal single ship
+ * @property {jest.Mock} revealShips - Reveal multiple ships
  */
 
 /**
  * @typedef {Object} MockUI
  * @property {jest.Mock} showNotice - Show notice to player
- * @property {jest.Mock} clearVisuals - Clear weapon visual effects
- * @property {jest.Mock} clearFriendVisuals - Clear friendly player visuals
- * @property {jest.Mock} revealShip - Reveal single ship
- * @property {jest.Mock} revealShips - Reveal multiple ships
  * @property {jest.Mock} resetShips - Reset ship display state
  * @property {jest.Mock} buildBoard - Build game board with click handlers
  * @property {jest.Mock} buildTrays - Build weapon trays
@@ -73,15 +73,15 @@ const getMockUI = () =>
   /** @type {MockUI} */ (
     /** @type {unknown} */ ({
       showNotice: jest.fn(),
-      clearVisuals: jest.fn(),
-      clearFriendVisuals: jest.fn(),
-      revealShip: jest.fn(),
-      revealShips: jest.fn(),
-      resetShips: jest.fn(),
       buildBoard: jest.fn(),
       grid: {
         makeDroppable: jest.fn(),
-        markFleetWeapons: jest.fn()
+        markFleetWeapons: jest.fn(),
+        clearVisuals: jest.fn(),
+        clearFriendVisuals: jest.fn(),
+        revealShip: jest.fn(),
+        revealShips: jest.fn(),
+        resetShips: jest.fn()
       },
       buildTrays: jest.fn(),
       reset: jest.fn(),

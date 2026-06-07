@@ -178,6 +178,8 @@ import { Placement } from './placement.js'
  * @property {Function} makeAddDroppable - Make board cells droppable for ship addition
  * @property {Function} makeBrushable - Make board cells brushable for terrain editing
  * @property {() => void} makeDroppable - Make board droppable for drag operations
+ * @property {() => void} [clearVisuals] - Clear all visual effects from board
+ * @property {() => void} [resetShips] - Reset ship cell styling
  */
 /**
  * @typedef {Object} PlacementUI
@@ -185,12 +187,9 @@ import { Placement } from './placement.js'
  * @property {GridBoard} grid - The grid board instance
  * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
  * @property {(x: number, y: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
- * @property {() => void} [clearVisuals] - Clear all visual effects from board
- * @property {() => void} [resetShips] - Reset ship cell styling
  * @property {(ships: Array<Object>) => void} [reset] - Reset UI with new ships
  * @property {(onClickCell?: Function, thisRef?: any) => void} [buildBoard] - Build board grid with handlers
  * @property {(ships: Array<Object>, shipCellGrid?: Object) => void} [buildTrays] - Build weapon trays
- * @property {() => void} [clearFriendVisuals] - Clear friendly player visuals
  * @property {() => void} [testMode] - Switch UI to test mode
  * @property {() => void} [showNotice] - Show notice message
  */
@@ -919,13 +918,13 @@ export class Friend extends Placement {
     // @ts-ignore - score.reset is method defined in Score class at runtime
     this.score.reset()
     // @ts-ignore - UI.clearVisuals is method defined in Board class at runtime
-    this.UI.clearVisuals()
+    this.UI.grid.clearVisuals()
     if (friendlyMode) {
-      // @ts-ignore - UI.clearFriendVisuals is method defined in Board class at runtime
-      this.UI.clearFriendVisuals()
+      // @ts-ignore - UI.grid.clearFriendVisuals is method defined in GridBoard class at runtime
+      this.UI.grid.clearFriendVisuals()
     }
-    // @ts-ignore - UI.resetShips is method defined in Board class at runtime
-    this.UI.resetShips(this.ships)
+    // @ts-ignore - UI.grid.resetShips is method defined in Board class at runtime
+    this.UI.grid.resetShips(this.ships)
     // @ts-ignore - armWeapons is method defined in base Placement class at runtime
     this.armWeapons()
   }

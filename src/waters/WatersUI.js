@@ -105,15 +105,6 @@ export const gameHost = {
 }
 
 /**
- * Retrieves all child elements from a board element.
- * @param {HTMLElement|null} board - The board element
- * @returns {HTMLCollection|Array<never>} Child elements or empty collection
- * @private
- */
-const getBoardChildren = (/** @type {HTMLElement|null} */ board) =>
-  board?.children || []
-
-/**
  * Configuration mapping ship types to tray element IDs.
  * Maps unit types to their corresponding UI tray containers.
  * @type {Object<string, string>}
@@ -225,21 +216,6 @@ export class WatersUI {
    */
   #clearCellText (cell) {
     cell.textContent = ''
-  }
-
-  /**
-   * Iterates over all cells in the board, calling callback for each.
-   * Provides functional interface to board cell enumeration.
-   *
-   * @param {(cell: HTMLElement) => void} callback - Function to call for each cell
-   * @returns {void}
-   * @private
-   */
-  _forEachBoardCell (callback) {
-    for (const cell of getBoardChildren(this.board)) {
-      // @ts-ignore - child elements are HTMLElement at runtime
-      callback(/** @type {HTMLElement} */ (cell))
-    }
   }
 
   /**
@@ -399,65 +375,6 @@ export class WatersUI {
     await Delay.randomWait(mindelay, maxdelay)
     await effect(cell, power)
   }
-
-  /**
-   * Resets all ships to initial state and reveals them on the board.
-   * Used when starting a new game or round.
-   *
-   * @param {Ship[]} ships - Array of ship objects to reset
-   * @returns {void}
-   */
-  resetShips (ships) {
-    for (const ship of ships) {
-      if (ship && typeof ship.reset === 'function') {
-        // @ts-ignore - ship.reset exists based on typeof check
-        ship.reset()
-      }
-      this.revealShip(ship)
-    }
-  }
-
-  /**
-   * Reveals multiple ships on the board without resetting them.
-   * Useful for showing previously hidden ships.
-   *
-   * @param {Ship[]} ships - Array of ship objects to reveal
-   * @returns {void}
-   */
-  revealShips (ships) {
-    for (const ship of ships) {
-      this.revealShip(ship)
-    }
-  }
-
-  /**
-   * Displays a single ship on the board in fog-of-war state.
-   * Shows ship letter or weapon indicator based on cell content.
-   *
-   * @param {Ship} ship - Ship object with cells property (iterable of [col, row])
-   * @returns {void}
-   */
-  revealShip (ship) {
-    this.grid.revealShip(ship)
-  }
-
-  /**
-   * Generic method to clear cell visuals using custom clearing strategy.
-   * Delegates class clearing to provided function for context-specific behavior.
-   *
-   * @param {HTMLDivElement} cell - DOM element to clear
-   * @param {'none'|'content'|'all'} details - What to clear:
-   *   'none' = only call classClear, 'content' = text only, 'all' = text and style
-   * @param {CellClassClearer} [classClear] - Function to clear cell classes (defaults to clearCell)
-   * @returns {void}
-   */
-  clearCellVisuals (cell, details, classClear) {
-    const clear =
-      classClear || CellClassManager.clearCell.bind(CellClassManager)
-    ShipCellDisplayer.clearDetails(cell, details)
-    clear(cell)
-  }
-
   /**
    * Marks a friendly cell as sunk.
    * Displays sunk marker and clears hit-related state.
@@ -659,58 +576,6 @@ export class WatersUI {
   }
 
   /**
-   * Clears cell visuals across entire board using provided strategy.
-   * Generic method applying custom clearing callback and detail level to all cells.
-   *
-   * @param {'none'|'content'|'all'} details - What to clear: 'none', 'content', or 'all'
-   * @param {CellClassClearer} [classClearer] - Function to clear cell classes
-   * @returns {void}
-   */
-  _clearAllCellVisuals (details, classClearer) {
-    const clear =
-      classClearer || CellClassManager.clearCell.bind(CellClassManager)
-    this._forEachBoardCell((/** @type {HTMLElement} */ el) =>
-      this.clearCellVisuals(/** @type {HTMLDivElement} */ (el), details, clear)
-    )
-  }
-
-  /**
-   * Clears all cell visuals (text, styles, and classes) from entire board.
-   * Returns board to clean state with only terrain coloring.
-   *
-   * @returns {void}
-   */
-  clearVisuals () {
-    this._clearAllCellVisuals('all')
-  }
-
-  /**
-   * Clears friendly board cell visuals including damage indicators.
-   * Preserves terrain coloring but removes game state classes.
-   *
-   * @returns {void}
-   */
-  clearFriendVisuals () {
-    this._clearAllCellVisuals(
-      'all',
-      CellClassManager.clearFriendCell.bind(CellClassManager)
-    )
-  }
-
-  /**
-   * Clears only friendly cell classes, preserving text and styling.
-   * Used when resetting game state without visual refresh.
-   *
-   * @returns {void}
-   */
-  clearFriendClasses () {
-    this._clearAllCellVisuals(
-      'none',
-      CellClassManager.clearFriendCell.bind(CellClassManager)
-    )
-  }
-
-  /**
    * Clears placement mode visuals from entire board.
    * Returns board to battle-ready state after ship placement phase.
    *
@@ -753,18 +618,6 @@ export class WatersUI {
    */
   hideTips () {
     gameStatus.clearQueue()
-  }
-
-  /**
-   * Removes all weapon activation indicators from board.
-   * Deactivates visual targeting display for all cells.
-   *
-   * @returns {void}
-   */
-  deactivateWeapons () {
-    this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
-      CellClassManager.deactivateWeapon(cell)
-    )
   }
 
   /**
