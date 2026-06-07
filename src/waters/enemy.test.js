@@ -2315,7 +2315,7 @@ describe('Enemy.updateWeaponStatus', () => {
       // All three should be cleared
       expect(enemy.selectedCellCoordinates).toBeNull()
       expect(enemy.steps.clearSource).toHaveBeenCalled()
-      expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
+      expect(enemy.opponent.UI.grid.deactivateTempHints).toHaveBeenCalled()
     })
   })
 
