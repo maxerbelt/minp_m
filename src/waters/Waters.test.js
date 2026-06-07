@@ -60,7 +60,8 @@ const mockUI = {
     surroundCellElement: jest.fn(),
     nodeAt: jest.fn(),
     node: jest.fn(),
-    makeDroppable: jest.fn()
+    makeDroppable: jest.fn(),
+    removeDisplayClasses: jest.fn()
   },
   placeTally: jest.fn(),
   displayShipInfo: jest.fn(),
@@ -86,7 +87,6 @@ const mockUI = {
   showTips: jest.fn(),
   hideTips: jest.fn(),
   displayInfo: jest.fn(),
-  removeDisplayClasses: jest.fn(),
 
   showTransformBtns: jest.fn(),
   hideTransformBtns: jest.fn(),

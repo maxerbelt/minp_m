@@ -19,7 +19,6 @@ import { moveCursorBase } from './placementUI.js'
  * @property {Function} [revealShips] - Reveals ships on the board
  * @property {HTMLCollection} [children] - Cell children collection on board
  * @property {DOMTokenList} [classList] - CSS class list of board
- * @property {Function} [removeDisplayClasses] - Removes display-related CSS classes
  */
 
 /**

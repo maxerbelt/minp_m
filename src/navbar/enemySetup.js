@@ -325,12 +325,11 @@ class BoardHighlighter {
    * Removes all previously applied splash zone styling.
    * Called before applying new highlights to prevent overlay.
    *
-   * @private
    * @returns {void}
    */
-  _clearExistingHighlights () {
+  #clearExistingHighlights () {
     const ui = /** @type {any} */ (this.boardUI)
-    ui?.removeHighlightAoE?.()
+    ui?.grid?.removeHighlightAoE?.()
   }
 
   /**
@@ -373,7 +372,7 @@ class BoardHighlighter {
    * highlighter.highlightWeaponEffect(activeWeapon, [[5, 5], [5, 6]]);
    */
   highlightWeaponEffect (weapon, targetCoordinates) {
-    this._clearExistingHighlights()
+    this.#clearExistingHighlights()
 
     if (!weapon || !ModelAccessor.canApplyWeapon(weapon, targetCoordinates)) {
       return
@@ -562,7 +561,7 @@ const BoardInitializer = {
       enemyUI?.board,
       boardMap,
       _createAreaOfEffectHighlighter,
-      enemyUI?.removeHighlightAoE,
+      enemyUI?.grid?.removeHighlightAoE,
       enemyUI,
       enemyRef
     )

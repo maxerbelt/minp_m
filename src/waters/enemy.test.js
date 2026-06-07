@@ -2140,7 +2140,9 @@ describe('Enemy.updateWeaponStatus', () => {
           }
           this.opponent = {
             UI: {
-              deactivateTempHints: jest.fn()
+              grid: {
+                deactivateTempHints: jest.fn()
+              }
             }
           }
           this.loadOut = {
@@ -2185,8 +2187,8 @@ describe('Enemy.updateWeaponStatus', () => {
           }
 
           // Remove the temporary hint location from the opponent board
-          if (this.opponent?.UI?.deactivateTempHints) {
-            this.opponent.UI.deactivateTempHints()
+          if (this.opponent?.UI?.grid?.deactivateTempHints) {
+            this.opponent.UI.grid.deactivateTempHints()
           }
 
           // Reset UI mode icons to show we're back in selection mode
@@ -2234,13 +2236,13 @@ describe('Enemy.updateWeaponStatus', () => {
       expect(enemy.steps.clearSource).toHaveBeenCalled()
     })
 
-    it('should remove the hint location by calling opponent.UI.deactivateTempHints()', () => {
+    it('should remove the hint location by calling opponent.UI.grid.deactivateTempHints()', () => {
       // @ts-ignore - Variable implicitly has an 'any' type
       const enemy = new Enemy()
 
       enemy._handleWeaponChange()
 
-      expect(enemy.opponent.UI.deactivateTempHints).toHaveBeenCalled()
+      expect(enemy.opponent.UI.grid.deactivateTempHints).toHaveBeenCalled()
     })
 
     it('should clear selection BEFORE weapon is switched (preventing weapon mismatch)', () => {

@@ -126,7 +126,7 @@ describe('enemySetup.js - Regression Prevention Documentation', () => {
       // Additional fix: _handleWeaponChange() clears visual state:
       //   this.selectedCellCoordinates = null
       //   this.steps.clearSource() (removes weapon rack selection)
-      //   this.opponent.UI.deactivateTempHints() (removes hint location)
+      //   this.opponent.UI.grid.deactivateTempHints() (removes hint location)
 
       const fixedCondition = 'opponent?.hasAttachedWeapons'
       expect(fixedCondition).toContain('opponent')

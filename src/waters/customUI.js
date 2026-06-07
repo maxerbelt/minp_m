@@ -141,7 +141,7 @@ export class CustomUI extends PlacementUI {
    *
    * Side effects:
    * - Calls super() to initialize PlacementUI base class
-   * - Calls _cacheElements() to populate button and container references
+   * - Calls #cacheElements() to populate button and container references
    * - Sets initial tips array to first brush tip
    * - Initializes brushlistenCancellables and placelistenCancellables arrays
    *
@@ -149,7 +149,7 @@ export class CustomUI extends PlacementUI {
    */
   constructor () {
     super('custom', 'Customizing')
-    this._cacheElements() // Cache DOM elements for performance
+    this.#cacheElements() // Cache DOM elements for performance
     this.tips = BRUSH_TIPS.slice(0, 1) // Initial tips
     /** @type {Function[]} */
     this.brushlistenCancellables = []
@@ -164,9 +164,8 @@ export class CustomUI extends PlacementUI {
    *
    * @param {string} id - The DOM element id to retrieve
    * @returns {HTMLButtonElement} The button element (type-safe cast)
-   * @private
    */
-  _queryButton (id) {
+  #queryButton (id) {
     return /** @type {HTMLButtonElement} */ (document.getElementById(id))
   }
 
@@ -177,9 +176,8 @@ export class CustomUI extends PlacementUI {
    *
    * @param {string} id - The DOM element id to retrieve
    * @returns {HTMLElement|null} The element or null if not found
-   * @private
    */
-  _queryElement (id) {
+  #queryElement (id) {
     return document.getElementById(id)
   }
 
@@ -194,19 +192,18 @@ export class CustomUI extends PlacementUI {
    * - Populates this.heightContainer, widthContainer, tallyTitle
    *
    * @returns {void}
-   * @private
    */
-  _cacheElements () {
-    this.reuseBtn = this._queryButton('reuseBtn')
-    this.resetBtn = this._queryButton('resetBtn')
-    this.acceptBtn = this._queryButton('acceptBtn')
-    this.stopBtn = this._queryButton('stopBtn')
-    this.undoBtn = this._queryButton('undoBtn')
-    this.publishBtn = this._queryButton('publishBtn')
-    this.saveBtn = this._queryButton('saveBtn')
-    this.heightContainer = this._queryElement('height-container')
-    this.widthContainer = this._queryElement('width-container')
-    this.tallyTitle = this._queryElement('tally-title')
+  #cacheElements () {
+    this.reuseBtn = this.#queryButton('reuseBtn')
+    this.resetBtn = this.#queryButton('resetBtn')
+    this.acceptBtn = this.#queryButton('acceptBtn')
+    this.stopBtn = this.#queryButton('stopBtn')
+    this.undoBtn = this.#queryButton('undoBtn')
+    this.publishBtn = this.#queryButton('publishBtn')
+    this.saveBtn = this.#queryButton('saveBtn')
+    this.heightContainer = this.#queryElement('height-container')
+    this.widthContainer = this.#queryElement('width-container')
+    this.tallyTitle = this.#queryElement('tally-title')
   }
 
   /**
@@ -225,7 +222,7 @@ export class CustomUI extends PlacementUI {
     const newPlacementBtn = /** @type {HTMLButtonElement} */ (
       this.newPlacementBtn
     )
-    newPlacementBtn.innerHTML = this._changeClearLabel()
+    newPlacementBtn.innerHTML = this.#changeClearLabel()
     newPlacementBtn.disabled = !this.placingShips && !this.score.hasZoneInfo()
   }
 
@@ -235,9 +232,8 @@ export class CustomUI extends PlacementUI {
    * Includes keyboard shortcut and terrain-specific map heading.
    *
    * @returns {string} HTML label for the button with shortcut span
-   * @private
    */
-  _changeClearLabel () {
+  #changeClearLabel () {
     const action = this.placingShips ? 'hange' : 'lear'
     return `<span class="shortcut">C</span>${action} ${bh.terrain.mapHeading}`
   }
@@ -253,9 +249,8 @@ export class CustomUI extends PlacementUI {
    *
    * @param {VisibilityMap} visibilityMap - Array of [element, shouldShow] pairs
    * @returns {void}
-   * @private
    */
-  _toggleElementVisibility (visibilityMap) {
+  #toggleElementVisibility (visibilityMap) {
     for (const [element, show] of visibilityMap) {
       if (element) {
         element.classList.toggle('hidden', !show)
@@ -273,10 +268,9 @@ export class CustomUI extends PlacementUI {
    * - Hides: tallyTitle, resetBtn, acceptBtn, publishBtn, saveBtn, testBtn, seekBtn, stopBtn, undoBtn
    *
    * @returns {void}
-   * @private
    */
-  _setBrushModeVisibility () {
-    this._toggleElementVisibility([
+  #setBrushModeVisibility () {
+    this.#toggleElementVisibility([
       [this.heightContainer, true],
       [this.widthContainer, true],
       [this.tallyTitle, false],
@@ -302,10 +296,9 @@ export class CustomUI extends PlacementUI {
    * - Hides: heightContainer, widthContainer, tallyTitle, reuseBtn, acceptBtn, testBtn, seekBtn, stopBtn, undoBtn
    *
    * @returns {void}
-   * @private
    */
-  _setShipModeVisibility () {
-    this._toggleElementVisibility([
+  #setShipModeVisibility () {
+    this.#toggleElementVisibility([
       [this.heightContainer, false],
       [this.widthContainer, false],
       [this.tallyTitle, false],
@@ -334,23 +327,22 @@ export class CustomUI extends PlacementUI {
    * - Hides transform buttons via hideTransformBtns()
    * - Resets score display to 'None Yet'
    * - Clears cell classes via _clearCellClasses()
-   * - Standardizes panel appearance via _standardPanels()
+   * - Standardizes panel appearance via #standardPanels()
    *
    * @returns {void}
-   * @private
    */
-  _configureBrushUI () {
+  #configureBrushUI () {
     this.showMapTitle()
     this.placingShips = false
     this.updateChangeClearButton()
-    this._setBrushModeVisibility()
+    this.#setBrushModeVisibility()
 
     this.hideTransformBtns()
     if (this.score.placed !== null) this.score.placed.textContent = 'None Yet'
     if (this.score.weaponsPlaced !== null)
       this.score.weaponsPlaced.textContent = 'None Yet'
-    this._clearCellClasses()
-    this._standardPanels()
+    this.#clearCellClasses()
+    this.#standardPanels()
   }
 
   /**
@@ -363,9 +355,8 @@ export class CustomUI extends PlacementUI {
    * - Removes 'hit' and 'placed' classes from all board cell children
    *
    * @returns {void}
-   * @private
    */
-  _clearCellClasses () {
+  #clearCellClasses () {
     if (this.board !== null) {
       for (const cell of this.board.children) {
         cell.classList.remove('hit', 'placed')
@@ -383,9 +374,8 @@ export class CustomUI extends PlacementUI {
    * - Calls updateChangeClearButton() to refresh button state
    *
    * @returns {void}
-   * @private
    */
-  _refreshBuildControls () {
+  #refreshBuildControls () {
     this.score.displayZoneInfo()
     this.updateChangeClearButton()
   }
@@ -397,14 +387,13 @@ export class CustomUI extends PlacementUI {
    *
    * Side effects:
    * - Calls refreshAllColor() to update cell colors
-   * - Calls _refreshBuildControls() to update buttons and score
+   * - Calls #refreshBuildControls() to update buttons and score
    *
    * @returns {void}
-   * @private
    */
-  _refreshBuildUI () {
-    this.refreshAllColor()
-    this._refreshBuildControls()
+  #refreshBuildUI () {
+    this.grid.refreshAllColor()
+    this.#refreshBuildControls()
   }
 
   /**
@@ -417,9 +406,8 @@ export class CustomUI extends PlacementUI {
    * - Sets reuseBtn.disabled based on hasMapOfCurrentSize() result (if button exists)
    *
    * @returns {void}
-   * @private
    */
-  _setReuseButtonState () {
+  #setReuseButtonState () {
     if (this.reuseBtn !== undefined) {
       this.reuseBtn.disabled = !hasMapOfCurrentSize()
     }
@@ -437,9 +425,9 @@ export class CustomUI extends PlacementUI {
    * - Builds brush tray with terrain via buildBrushTray()
    * - Enters brush mode via brushMode()
    * - Enables acceptBtn (if exists)
-   * - Sets reuse button state via _setReuseButtonState()
+   * - Sets reuse button state via #setReuseButtonState()
    * - Sets up zone info display via score.setupZoneInfo()
-   * - Disables transform buttons via _disableBuildTransformButtons()
+   * - Disables transform buttons via #disableBuildTransformButtons()
    *
    * @returns {void}
    */
@@ -450,9 +438,9 @@ export class CustomUI extends PlacementUI {
     this.buildBrushTray(bh.terrain)
     this.brushMode()
     if (this.acceptBtn !== undefined) this.acceptBtn.disabled = false
-    this._setReuseButtonState()
+    this.#setReuseButtonState()
     this.score.setupZoneInfo()
-    this._disableBuildTransformButtons()
+    this.#disableBuildTransformButtons()
   }
 
   /**
@@ -465,9 +453,8 @@ export class CustomUI extends PlacementUI {
    * - Sets disabled state on non-undefined rotate, flip, rotateLeft, undo, reset buttons
    *
    * @returns {void}
-   * @private
    */
-  _disableBuildTransformButtons () {
+  #disableBuildTransformButtons () {
     const buttons = [
       this.rotateBtn,
       this.flipBtn,
@@ -508,13 +495,13 @@ export class CustomUI extends PlacementUI {
    *
    * Side effects:
    * - Calls bh.maps.clearBlank() to remove empty maps from storage
-   * - Calls _refreshBuildUI() to update all colors and controls
+   * - Calls #refreshBuildUI() to update all colors and controls
    *
    * @returns {void}
    */
   clearMapAndRefresh () {
     /** @type {any} */ bh.maps.clearBlank()
-    this._refreshBuildUI()
+    this.#refreshBuildUI()
   }
 
   /**
@@ -524,13 +511,13 @@ export class CustomUI extends PlacementUI {
    *
    * Side effects:
    * - Calls setNewMapToCorrectSize() to load map matching current dimensions
-   * - Calls _refreshBuildUI() to update all colors and controls
+   * - Calls #refreshBuildUI() to update all colors and controls
    *
    * @returns {void}
    */
   handleReuse () {
     setNewMapToCorrectSize()
-    this._refreshBuildUI()
+    this.#refreshBuildUI()
   }
 
   /**
@@ -543,9 +530,8 @@ export class CustomUI extends PlacementUI {
    * - Removes 'alt' class from each panel element
    *
    * @returns {void}
-   * @private
    */
-  _standardPanels () {
+  #standardPanels () {
     const panels = document.getElementsByClassName('panel')
     for (const panel of panels) {
       panel.classList.remove('alt')
@@ -558,7 +544,7 @@ export class CustomUI extends PlacementUI {
    * Sets tips for terrain editing guidance and shows help text.
    *
    * Side effects:
-   * - Cancels all placement listeners via _cancelListeners(placelistenCancellables)
+   * - Cancels all placement listeners via #cancelListeners(placelistenCancellables)
    * - Resets placelistenCancellables array to empty
    * - Configures brush UI via _configureBrushUI()
    * - Sets game tips via gameStatus.setTips()
@@ -568,9 +554,9 @@ export class CustomUI extends PlacementUI {
    * @returns {void}
    */
   brushMode () {
-    this._cancelListeners(this.placelistenCancellables ?? [])
+    this.#cancelListeners(this.placelistenCancellables ?? [])
     this.placelistenCancellables = []
-    this._configureBrushUI()
+    this.#configureBrushUI()
     gameStatus.setTips(this.tips, BRUSH_TIPS[1])
     this.tips = BRUSH_TIPS.slice(1)
     this.showTips()
@@ -587,9 +573,8 @@ export class CustomUI extends PlacementUI {
    *
    * @param {Array<Function>} listeners - Array of cancellable listener functions
    * @returns {void}
-   * @private
    */
-  _cancelListeners (listeners) {
+  #cancelListeners (listeners) {
     for (const cancellable of listeners) {
       cancellable()
     }
@@ -605,25 +590,24 @@ export class CustomUI extends PlacementUI {
    * - Sets placingShips = true
    * - Updates button state via updateChangeClearButton()
    * - Shows ship trays via trayManager.showShipTrays()
-   * - Applies ship mode visibility via _setShipModeVisibility()
+   * - Applies ship mode visibility via #setShipModeVisibility()
    * - Shows score labels (placed, weapons)
    * - Shows transform buttons via showTransformBtns()
    * - Hides auto button
    * - Enables newPlacementBtn
    * - Builds ship and weapon trays via buildTrays(ships) and buildWeaponTray()
    * - Shows status display via showStatus()
-   * - Standardizes panels via _standardPanels()
+   * - Standardizes panels via #standardPanels()
    *
    * @param {*[]} ships - Ships to display in placement trays
    * @returns {void}
-   * @private
    */
-  _configureShipUI (ships) {
+  #configureShipUI (ships) {
     this.showFleetTitle()
     this.placingShips = true
     this.updateChangeClearButton()
     this.trayManager.showShipTrays()
-    this._setShipModeVisibility()
+    this.#setShipModeVisibility()
     if (this.score.placedLabel !== null)
       this.score.placedLabel.classList.remove('hidden')
     if (this.score.weaponsLabel !== null)
@@ -637,7 +621,7 @@ export class CustomUI extends PlacementUI {
     this.buildTrays(ships)
     this.buildWeaponTray()
     this.showStatus()
-    this._standardPanels()
+    this.#standardPanels()
   }
 
   /**
@@ -646,9 +630,9 @@ export class CustomUI extends PlacementUI {
    * Sets tips for ship placement guidance and shows help text.
    *
    * Side effects:
-   * - Cancels all brush listeners via _cancelListeners(brushlistenCancellables)
+   * - Cancels all brush listeners via #cancelListeners(brushlistenCancellables)
    * - Resets brushlistenCancellables array to empty
-   * - Configures ship UI via _configureShipUI(ships)
+   * - Configures ship UI via #configureShipUI(ships)
    * - Sets game tips via gameStatus.setTips()
    * - Sets tips array to all SHIP_TIPS
    *
@@ -656,9 +640,9 @@ export class CustomUI extends PlacementUI {
    * @returns {void}
    */
   addShipMode (ships) {
-    this._cancelListeners(this.brushlistenCancellables ?? [])
+    this.#cancelListeners(this.brushlistenCancellables ?? [])
     this.brushlistenCancellables = []
-    this._configureShipUI(ships)
+    this.#configureShipUI(ships)
     gameStatus.setTips(this.tips, SHIP_TIPS[0])
     this.tips = SHIP_TIPS
   }

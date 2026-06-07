@@ -79,7 +79,6 @@ import { customUI } from './waters/customUI.js'
  * @property {GridBoard} grid - The grid board instance for cell manipulation
  * @property {(width?: number, height?: number) => void} resetBoardSize - Reset board display size to optional dimensions or viewport
  * @property {() => void} clearVisuals - Clear all visual markers, overlays, and temporary styling
- * @property {() => void} refreshAllColor - Refresh all cell colors based on current game state
  * @property {Object} score - Score tracking object with placement statistics (ships, cells used)
  * @property {() => void} buildBoard - Build and render the game board DOM elements in UI
  * @property {(ships: Array<Object>) => void} addShipMode - Enter ship addition mode with available ship list

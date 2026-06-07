@@ -616,7 +616,7 @@ export class Waters {
             attempt + 1
           }`
         )
-        this.UI.removeDisplayClasses()
+        this.UI.grid.removeDisplayClasses()
         return true
       }
     }
@@ -1577,7 +1577,8 @@ export class Waters {
     if (this.steps && opponent?.UI) {
       // @ts-ignore - opponent.UI is Board at runtime
       const opponentBoard = /** @type {Board} */ (opponent.UI)
-      this.steps.addHint(opponentBoard, r, c, opponentBoard.gridCellAt?.(r, c))
+      const opponentGrid = /** @type {GridBoard} */ (opponentBoard.grid)
+      this.steps.addHint(opponentBoard, r, c, opponentGrid.node?.(c, r))
     }
     return [r, c]
   }
@@ -1727,7 +1728,7 @@ export class Waters {
   giveTempHint (weapon, cell, oppo) {
     if (oppo && weapon?.givesHint) {
       // @ts-ignore - UI available at runtime
-      oppo.UI.deactivateTempHints()
+      oppo.UI.grid.deactivateTempHints()
       if (cell) cell.classList.add('temp-hint')
     }
   }

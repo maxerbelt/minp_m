@@ -1,4 +1,4 @@
-import { CellUI } from './cellUI.js'
+import { CellUI, NodeUI } from './cellUI.js'
 import { bh } from '../terrains/all/js/bh.js'
 import { CellClassManager } from './helpers/CellClassManager.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
@@ -6,6 +6,7 @@ import { makeKey, parsePair } from '../core/utilities.js'
 import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
 import { dragNDrop } from '../selection/dragndrop.js'
 import { CustomMap } from '../terrains/all/js/map.js'
+import { LoadOut } from './loadout.js'
 /**
  * @fileoverview GridBoard class for managing game board cell interactions and displays
  * Handles cell marking, hover effects, drag-drop zones, and board state visualization
@@ -23,6 +24,15 @@ import { CustomMap } from '../terrains/all/js/map.js'
  * @typedef {[number, number]} Coord
  * x, y
  * @typedef {[number, number]} XY
+ */
+/**
+ * @typedef {Object} FireResult
+ * @property {number} hits - Number of hits scored
+ * @property {number} shots - Number of shots fired
+ * @property {string} sunk - Ship letter or count of sunk ships
+ * @property {number} dtap - Double-tap count
+ * @property {number} reveals - Cells revealed
+ * @property {string} info - Info message
  */
 
 /**
@@ -234,7 +244,7 @@ export class GridBoard {
    */
   nodeAt (x, y) {
     /** @type {HTMLElement|null} */
-    return CellUI.nodeAt(
+    return NodeUI.nodeAt(
       this.board ?? /** @type {HTMLDivElement} */ (undefined),
       x,
       y,
@@ -246,16 +256,31 @@ export class GridBoard {
    * Gets or creates node at coordinates.
    * @param {number} x - Column coordinate
    * @param {number} y - Row coordinate
-   * @returns {HTMLElement} Node element
+   * @returns {HTMLDivElement} Node element
    */
   node (x, y) {
-    /** @type {HTMLElement} */
-    return CellUI.node(
+    /** @type {HTMLDivElement} */
+    return NodeUI.node(
       this.board ?? /** @type {HTMLDivElement} */ (undefined),
       x,
       y,
       this.map
     )
+  }
+  /**
+   * Marks a cell as having an active weapon with specific rotation.
+   * Displays weapon indicator and applies rotation/cursor classes.
+   *
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
+   * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
+   * @param {string} [extraClass] - Additional class to apply (optional)
+   * @returns {HTMLDivElement} Node element
+   */
+  activeWeaponNode (x, y, rotationClass, extraClass) {
+    const cell = this.node(x, y)
+    NodeUI.addWeaponClasses(cell, rotationClass, extraClass)
+    return cell
   }
 
   /**
@@ -271,7 +296,7 @@ export class GridBoard {
     const weaponSlot = ship.rackAt?.(x, y)
     if (weaponSlot) {
       // Try using node for flexible lookup (works with or without map)
-      /** @type {HTMLElement|null} */
+      /** @type {HTMLDivElement|null} */
       let cell = this.node(x, y)
       if (cell) {
         cell.classList.add(UI_CLASSES.WEAPON)
@@ -301,7 +326,7 @@ export class GridBoard {
    * @returns {void}
    */
   surroundShipAt (x, y, ship) {
-    return CellUI.surroundShipAt(
+    return NodeUI.surroundShipAt(
       this.board ?? /** @type {HTMLDivElement} */ (undefined),
       x,
       y,
@@ -321,14 +346,50 @@ export class GridBoard {
    */
   cellPlacedAt (x, y, ship) {
     /** @type {any} */
-    const mapObj = bh.map
+    const mapObj = this.map
     if (!mapObj || typeof mapObj.inBounds !== 'function') return
     if (!mapObj.inBounds(y, x)) return
-    /** @type {HTMLElement|null} */
-    const cell = this.nodeAt(x, y)
+    /** @type {HTMLDivElement|null} */
+    const cell = this.node(x, y)
     if (cell !== null) {
       ShipCellDisplayer.displayPlacedCell(cell, ship, y, x)
     }
+  }
+  /**
+   * Displays a single ship on the board in fog-of-war state.
+   * Shows ship letter or weapon indicator based on cell content.
+   *
+   * @param {Ship} ship - Ship object with cells property (iterable of [col, row])
+   * @returns {void}
+   */
+  revealShip (ship) {
+    const colorMaps = this.map
+    // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
+    for (const [x, y] of ship.cells) {
+      const board = this.board
+      if (!board) return
+      const cell = this.node(x, y, colorMaps)
+      // @ts-ignore - ship matches Ship type for display
+      ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
+    }
+  }
+  /**
+   * Reveals a cell with semi-visibility indicator.
+   * Semi means cell is revealed but not confirmed as hit or miss yet.
+   * Returns result code for game logic based on cell state.
+   *
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
+   * @returns {number|Object} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
+   */
+  cellSemiReveal (x, y) {
+    const cell = this.node(x, y)
+
+    if (!CellClassManager.applySemiRevealState(cell)) {
+      return LoadOut.noResult
+    }
+    cell.textContext = ''
+    return LoadOut.missResult
   }
   /**
    * Displays surrounding cells with miss indicator.
@@ -358,8 +419,8 @@ export class GridBoard {
    * @returns {void}
    */
   cellMiss (x, y, damageType) {
-    /** @type {HTMLElement} */
-    const cell = CellUI.node(
+    /** @type {HTMLDivElement} */
+    const cell = NodeUI.node(
       this.board ?? /** @type {HTMLDivElement} */ (undefined),
       x,
       y
@@ -677,13 +738,13 @@ export class GridBoard {
     /** @type {Object<string, HTMLElement>} */
     const surroundings = container || {}
     for (const cell of cells) {
-      const { x, y } = CellUI.getCoords(/** @type {HTMLDivElement} */ (cell))
+      const { x, y } = NodeUI.getXY(/** @type {HTMLDivElement} */ (cell))
       this.surroundObj(
         x,
         y,
         surroundings,
-        CellUI.nodeAt.bind(
-          CellUI,
+        NodeUI.node.bind(
+          NodeUI,
           this.board ?? /** @type {HTMLDivElement} */ (undefined)
         )
       )
@@ -725,7 +786,7 @@ export class GridBoard {
    * - mouseleave: onLeave.bind(thisRef, y, x) — preserves 'this' context
    *
    * **Coordinate System**:
-   * - Gets (x, y) from CellUI.getCoords(), then passes (y, x) to callbacks
+   * - Gets (x, y) from NodeUI.getXY()), then passes (y, x) to callbacks
    * - Callbacks receive row (y) first, then col (x) — standard grid convention
    *
    * @param {CellHoverEnterCallback} onEnter - Mouseenter handler (weaponSource, row, col) => void
@@ -737,12 +798,95 @@ export class GridBoard {
    */
   addHover (onEnter, onLeave, thisRef, weaponSource) {
     this.#forEachBoardCell((/** @type {HTMLElement} */ el) => {
-      const { x, y } = CellUI.getCoords(/** @type {HTMLDivElement} */ (el))
+      const { x, y } = NodeUI.getXY(/** @type {HTMLDivElement} */ (el))
       // @ts-ignore - addEventListener signature compatible at runtime
       el.addEventListener('mouseenter', onEnter.bind(null, weaponSource, y, x))
       // @ts-ignore - addEventListener signature compatible at runtime
       el.addEventListener('mouseleave', onLeave.bind(thisRef, y, x))
     })
+  }
+  /**
+   * Removes and reapplies terrain coloring for a single cell.
+   * Extracts coordinates from cell dataset and recolorizes.
+   *
+   * @param {HTMLElement} cell - DOM element to refresh
+   * @returns {void}
+   */
+  refreshColor (cell) {
+    const cellUI = CellUI.fromHtmlElement(/** @type {HTMLDivElement} */ (cell))
+    cellUI.recolor()
+  }
+  /**
+   * Refreshes terrain coloring for all board cells.
+   * Called when terrain configuration has changed.
+   *
+   * @returns {void}
+   */
+  refreshAllColor () {
+    this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
+      this.refreshColor(el)
+    )
+  }
+  /**
+   * Removes all area-of-effect highlight classes from board.
+   * Clears target and splash effect visual indicators.
+   *
+   * @returns {void}
+   */
+  removeHighlightAoE () {
+    const tags = ['target', ...Object.values(bh.splashTags)]
+    this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
+      el.classList.remove(...tags)
+    )
+  }
+  /**
+   * Removes temporary hint indicators from entire board.
+   * Clears targeting or placement hints.
+   *
+   * @returns {void}
+   */
+  deactivateTempHints () {
+    this.#forEachBoardCell((/** @type {HTMLElement} */ cell) =>
+      CellClassManager.deactivateTempHint(cell)
+    )
+  }
+  /**
+   * Removes all display-related CSS classes from board cells.
+   * Clears visual indicators used during display/reveal phases.
+   *
+   * @returns {void}
+   */
+  removeDisplayClasses () {
+    this.#forEachBoardCell((/** @type {HTMLElement} */ cell) =>
+      CellClassManager.clearDisplayCell(cell)
+    )
+  }
+  /**
+   * Deactivates weapon display on a cell.
+   * Removes weapon and rotation indicators.
+   *
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
+   * @returns {void}
+   */
+  cellWeaponDeactivate (x, y) {
+    const cell = this.node(x, y)
+    if (cell == null) return
+    CellClassManager.deactivateWeapon(cell)
+  }
+
+  /**
+   * Deactivates weapon display on a cell.
+   * Removes weapon and rotation indicators.
+   *
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
+   * @returns {void}
+   */
+  cellHintDeactivate (x, y) {
+    const cell = this.node(x, y)
+    if (cell == null) return
+    CellClassManager.deactivateTempHint(cell)
   }
 
   /**
@@ -880,13 +1024,13 @@ export class GridBoard {
       this.board ?? /** @type {HTMLDivElement} */ (undefined)
     )
     for (let x = 0; x < map.cols; x++) {
-      CellUI.createColLabelNodeAndAppendTo(
+      NodeUI.createColLabelNodeAndAppendTo(
         this.board ?? /** @type {HTMLDivElement} */ (undefined),
         x
       )
     }
     for (let y = 0; y < map.rows; y++) {
-      CellUI.createRowLabelNodeAndAppendTo(
+      NodeUI.createRowLabelNodeAndAppendTo(
         this.board ?? /** @type {HTMLDivElement} */ (undefined),
         map.rows,
         y

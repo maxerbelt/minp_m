@@ -10,6 +10,16 @@
  */
 
 /**
+ * @typedef {Object} FireResult
+ * @property {number} hits - Number of hits scored
+ * @property {number} shots - Number of shots fired
+ * @property {string} sunk - Ship letter or count of sunk ships
+ * @property {number} dtap - Double-tap count
+ * @property {number} reveals - Cells revealed
+ * @property {string} info - Info message
+ */
+
+/**
  * @typedef {Object} Ship
  * Represents a game ship with state, shape, and cell occupation.
  * @property {string} id - Unique ship identifier for game tracking and state management
@@ -428,17 +438,7 @@ export class WatersUI {
    * @returns {void}
    */
   revealShip (ship) {
-    const colorMaps = bh.maps
-    // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
-    for (const [x, y] of ship.cells) {
-      const board = this.board
-      if (!board) return
-      const cell =
-        // @ts-ignore - colorMaps type incompatibility across modules
-        CellUI.nodeAt(/** @type {HTMLDivElement} */ (board), x, y, colorMaps)
-      // @ts-ignore - ship matches Ship type for display
-      ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
-    }
+    this.grid.revealShip(ship)
   }
 
   /**
@@ -507,16 +507,10 @@ export class WatersUI {
    *
    * @param {number} y - Row coordinate
    * @param {number} x - Column coordinate
-   * @returns {number|Object} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
+   * @returns {FireResult} Result code: LoadOut.noResult if already revealed, LoadOut.missResult otherwise
    */
   cellSemiReveal (x, y) {
-    const cell = this.grid.node(x, y)
-
-    if (!CellClassManager.applySemiRevealState(cell)) {
-      return LoadOut.noResult
-    }
-    this.#clearCellText(cell)
-    return LoadOut.missResult
+    return this.grid.cellSemiReveal(x, y)
   }
 
   /**
@@ -534,7 +528,7 @@ export class WatersUI {
     if (cell == null || !CellClassManager.applyHintState(cell)) {
       return
     }
-    this.deactivateTempHints()
+    this.grid.deactivateTempHints()
     this.#clearCellText(cell)
   }
 
@@ -552,36 +546,18 @@ export class WatersUI {
   }
 
   /**
-   * Adds weapon activation styling to a cell.
-   * Applies weapon classes, rotation, and optional contrast for visual emphasis.
-   *
-   * @param {HTMLDivElement} cell - DOM element to style
-   * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
-   * @param {string} [extraClass] - Additional class to apply (optional)
-   */
-  #applyWeaponStyling (cell, rotationClass, extraClass) {
-    const classesToAdd = ['weapon', 'active']
-    if (extraClass) classesToAdd.push(extraClass)
-    if (rotationClass) classesToAdd.push(rotationClass)
-
-    this.#updateCellClasses(cell, ['wake'], classesToAdd)
-    this.addContrast(cell)
-    this.#clearCellText(cell)
-  }
-
-  /**
    * Marks a cell as having an active weapon with specific rotation.
    * Displays weapon indicator and applies rotation/cursor classes.
    *
-   * @param {number} row - Row coordinate
-   * @param {number} column - Column coordinate
+   * @param {number} y - Row coordinate
+   * @param {number} x - Column coordinate
    * @param {string} rotationClass - Rotation indicator class (e.g., 'turn2')
    * @param {string} [extraClass] - Additional class to apply (optional)
    * @returns {void}
    */
-  cellWeaponActive (row, column, rotationClass, extraClass) {
-    const cell = this.grid.node(column, row)
-    this.#applyWeaponStyling(cell, rotationClass, extraClass)
+  cellWeaponActive (x, y, rotationClass, extraClass) {
+    const cell = this.grid.activeWeaponNode(x, y, rotationClass, extraClass)
+    this.addContrast(cell)
   }
 
   /**
@@ -593,9 +569,7 @@ export class WatersUI {
    * @returns {void}
    */
   cellWeaponDeactivate (x, y) {
-    const cell = this.grid.nodeAt(x, y)
-    if (cell == null) return
-    CellClassManager.deactivateWeapon(cell)
+    this.grid.cellWeaponDeactivate(x, y)
   }
 
   /**
@@ -606,9 +580,7 @@ export class WatersUI {
    * @returns {void}
    */
   cellHintDeactivate (x, y) {
-    const cell = this.grid.nodeAt(x, y)
-    if (cell == null) return
-    CellClassManager.deactivateTempHint(cell)
+    this.grid.cellWeaponDeactivate(x, y)
   }
 
   /**
@@ -662,30 +634,6 @@ export class WatersUI {
   }
 
   /**
-   * Refreshes terrain coloring for all board cells.
-   * Called when terrain configuration has changed.
-   *
-   * @returns {void}
-   */
-  refreshAllColor () {
-    this._forEachBoardCell((/** @type {HTMLElement} */ el) =>
-      this.refreshColor(el)
-    )
-  }
-
-  /**
-   * Removes and reapplies terrain coloring for a single cell.
-   * Extracts coordinates from cell dataset and recolorizes.
-   *
-   * @param {HTMLElement} cell - DOM element to refresh
-   * @returns {void}
-   */
-  refreshColor (cell) {
-    const cellUI = CellUI.fromHtmlElement(/** @type {HTMLDivElement} */ (cell))
-    cellUI.recolor()
-  }
-
-  /**
    * Builds board grid for print output with labels.
    * Creates grid with row/column labels for printing.
    *
@@ -708,19 +656,6 @@ export class WatersUI {
    */
   buildBoard (onClickCell, thisRef, map) {
     GridBoard.createScreenGrid(this.board, onClickCell, thisRef, map)
-  }
-
-  /**
-   * Removes all area-of-effect highlight classes from board.
-   * Clears target and splash effect visual indicators.
-   *
-   * @returns {void}
-   */
-  removeHighlightAoE () {
-    const tags = ['target', ...Object.values(bh.splashTags)]
-    this._forEachBoardCell((/** @type {HTMLElement} */ el) =>
-      el.classList.remove(...tags)
-    )
   }
 
   /**
@@ -829,30 +764,6 @@ export class WatersUI {
   deactivateWeapons () {
     this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
       CellClassManager.deactivateWeapon(cell)
-    )
-  }
-
-  /**
-   * Removes temporary hint indicators from entire board.
-   * Clears targeting or placement hints.
-   *
-   * @returns {void}
-   */
-  deactivateTempHints () {
-    this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
-      CellClassManager.deactivateTempHint(cell)
-    )
-  }
-
-  /**
-   * Removes all display-related CSS classes from board cells.
-   * Clears visual indicators used during display/reveal phases.
-   *
-   * @returns {void}
-   */
-  removeDisplayClasses () {
-    this._forEachBoardCell((/** @type {HTMLElement} */ cell) =>
-      CellClassManager.clearDisplayCell(cell)
     )
   }
 

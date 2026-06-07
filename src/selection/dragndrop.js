@@ -49,6 +49,7 @@
  * @property {Function} [cellUseAmmo] - Mark ammo usage
  * @property {Function} [cellHintReveal] - Reveal cell via hint
  * @property {Function} [cellSemiReveal] - Semi-reveal cell
+ * @property {Function} refreshAllColor - Refresh all board colors
  */
 
 /**
@@ -82,7 +83,6 @@
  * @property {Function} assignClicked - Set clicked ship selection
  * @property {Function} assignByCursor - Assign selection by cursor
  * @property {Function} assignClickedWeapon - Set clicked weapon selection
- * @property {Function} refreshAllColor - Refresh all board colors
  * @property {Array<Function>} placelistenCancellables - Cleanup functions for placement
  * @property {Array<Function>} brushlistenCancellables - Cleanup functions for brush
  */
@@ -1443,7 +1443,7 @@ class DragNDrop {
       const isBrush = e.dataTransfer?.types.includes('brush')
       if (!isBrush) return
 
-      viewModel.refreshAllColor()
+      viewModel.grid.refreshAllColor()
       if (callback) callback()
     }
     div.addEventListener('dragend', handler)

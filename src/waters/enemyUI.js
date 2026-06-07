@@ -459,7 +459,7 @@ class EnemyUI extends WatersUI {
    * Adds contrast to a cell.
    * Adds 'contrast' class to cell for visual highlighting.
    *
-   * @param {HTMLElement} cell - The cell element
+   * @param {HTMLDivElement} cell - The cell element
    * @returns {void}
    */
   addContrast (cell) {

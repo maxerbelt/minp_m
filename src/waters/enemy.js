@@ -73,7 +73,9 @@ const MESSAGES = {
   YOUR_TURN: 'Your Turn',
   SINGLE_SHOT_LABEL: 'single shot'
 }
-
+/**
+ * @typedef {import('./gridBoard.js').GridBoard} GridBoard
+ */
 /**
  * @typedef {Object} WeaponLaunchResult
  * @property {boolean} [hasTargettedWeapon] - Indicates if a targeted weapon was used
@@ -118,23 +120,18 @@ const MESSAGES = {
 /**
  * @typedef {Object} EnemyUI
  * @property {HTMLElement} board - The main game board element
+ * @property {GridBoard} grid - The GridBoard instance for cell interactions
  * @property {HTMLButtonElement} [weaponBtn] - Weapon selection button
  * @property {HTMLButtonElement} [revealBtn] - Reveal ships button
  * @property {Array<HTMLButtonElement>} [weaponBtns] - Array of weapon buttons
- * @property {(row: number, column: number, rotationClass?: string, extraClass?: string) => void} [cellWeaponActive] - Activate weapon cell display
- * @property {(x: number, y: number, force?: boolean) => void} [cellWeaponDeactivate] - Deactivate weapon cell
- * @property {(x: number, y: number) => void} [cellHintDeactivate] - Deactivate hint display
  * @property {() => void} [clearClasses] - Clear all CSS classes from board
  * @property {(ships: Array<Object>) => void} [revealAll] - Reveal all ships on board
  * @property {() => void} [playMode] - Switch to play mode display
  * @property {() => void} [reset] - Reset UI to initial state
- * @property {() => void} [deactivateTempHints] - Clear temporary hint displays
  * @property {() => void} [enableBtns] - Enable all control buttons
  * @property {() => void} [disableBtns] - Disable all control buttons
  * @property {(onClickCell?: Function, thisRef?: any, map?: any) => void} [buildBoard] - Build board UI with click handlers
- * @property {() => void} [removeHighlightAoE] - Remove area-of-effect highlight
  * @property {(letter?: string, systems?: Array<any>, handler?: Function) => Array<HTMLButtonElement>} [weaponButtons] - Create weapon buttons
- * @property {() => void} [deactivateWeapons] - Deactivate weapon buttons
  */
 /**
  * @typedef {Object} LoadOutType
@@ -359,8 +356,8 @@ class Enemy extends Waters {
     }
 
     const opponentUI = /** @type {EnemyUI|undefined} */ (this.opponent?.UI)
-    if (opponentUI?.deactivateTempHints) {
-      opponentUI.deactivateTempHints()
+    if (opponentUI?.grid?.deactivateTempHints) {
+      opponentUI.grid.deactivateTempHints()
     }
   }
 
@@ -574,10 +571,10 @@ class Enemy extends Waters {
     const { weapon, targetRow, targetCol, shadowRow, shadowCol } =
       activationData
     const opponentUI = /** @type {EnemyUI|undefined} */ (this.opponent?.UI)
-    opponentUI?.cellWeaponActive?.(targetRow, targetCol)
+    opponentUI?.cellWeaponActive?.(targetCol, targetRow)
     const ui = /** @type {EnemyUI} */ (this.UI)
     if (weapon?.postSelectShadow && ui.cellWeaponActive) {
-      ui.cellWeaponActive(shadowRow, shadowCol, '', weapon.tag)
+      ui.cellWeaponActive(shadowCol, shadowRow, '', weapon.tag)
     }
   }
 
@@ -1138,17 +1135,17 @@ class Enemy extends Waters {
    * Orchestrates the full weapon launch flow from preparation through execution.
    *
    * @async
-   * @param {number} r - Target row coordinate (0-indexed)
-   * @param {number} c - Target column coordinate (0-indexed)
+   * @param {number} y - Target row coordinate (0-indexed)
+   * @param {number} x - Target column coordinate (0-indexed)
    * @returns {Promise<WeaponLaunchResult|null>} Result containing weapon, score, or targeting state
    * @memberof Enemy
    */
-  async #prepareWeaponLaunch (r, c) {
-    // @ts-ignore - this.UI.removeHighlightAoE is a real method
-    this.UI?.removeHighlightAoE?.()
+  async #prepareWeaponLaunch (y, x) {
+    // @ts-ignore - this.UI.grid.removeHighlightAoE is a real method
+    this.UI?.grid?.removeHighlightAoE?.()
     // @ts-ignore - setWeaponFireHandlers is parent method
     this.setWeaponFireHandlers?.()
-    return await this.#launchWeaponSequence(c, r)
+    return await this.#launchWeaponSequence(x, y)
   }
 
   /**
@@ -1672,8 +1669,8 @@ class Enemy extends Waters {
     // @ts-ignore - bh.map is possibly null, nearestCornerTo is unknown type
     const { r0, c0 } = bh.map?.nearestCornerTo(r, c) || { r0: r, c0: c }
 
-    // @ts-ignore - this.UI.removeHighlightAoE is a real method
-    this.UI?.removeHighlightAoE?.()
+    // @ts-ignore - this.UI.grid.removeHighlightAoE is a real method
+    this.UI?.grid?.removeHighlightAoE?.()
     // @ts-ignore - setWeaponFireHandlers is parent method
     this.setWeaponFireHandlers?.()
     // @ts-ignore - this.loadOut is typed as Object but has the required properties
@@ -1791,10 +1788,10 @@ class Enemy extends Waters {
 
     // Deactivate temporary hints on opponent board
     // @ts-ignore - opponent UI type compatibility
-    opponent?.UI?.deactivateTempHints?.()
+    opponent?.UI?.grid?.deactivateTempHints?.()
     // Clear area-of-effect highlight
-    // @ts-ignore - this.UI.removeHighlightAoE is a real method
-    this.UI?.removeHighlightAoE?.()
+    // @ts-ignore - this.UI.grid.removeHighlightAoE is a real method
+    this.UI?.grid?.removeHighlightAoE?.()
 
     // @ts-ignore - this.loadOut is typed as Object but has the required properties
     const loadOut = this.loadOut
