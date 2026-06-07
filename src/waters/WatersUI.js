@@ -82,12 +82,6 @@
  * @description Receives cell coordinates for cleanup of hover-related display
  */
 
-/**
- * @typedef {(cell: HTMLElement) => void} CellClassClearer
- * Callback to clear CSS classes from a cell.
- * @description Custom strategy for class clearing used during board reset operations
- */
-
 import { bh } from '../terrains/all/js/bh.js'
 import { Terrain } from '../terrains/all/js/terrain.js'
 import { ScoreUI } from './ScoreUI.js'
@@ -573,19 +567,6 @@ export class WatersUI {
    */
   buildBoard (onClickCell, thisRef, map) {
     GridBoard.createScreenGrid(this.board, onClickCell, thisRef, map)
-  }
-
-  /**
-   * Clears placement mode visuals from entire board.
-   * Returns board to battle-ready state after ship placement phase.
-   *
-   * @returns {void}
-   */
-  clearPlaceVisuals () {
-    this._clearAllCellVisuals(
-      'all',
-      CellClassManager.clearPlaceCell.bind(CellClassManager)
-    )
   }
 
   /**

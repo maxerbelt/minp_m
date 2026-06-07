@@ -684,9 +684,9 @@ export class CellClassManager {
    * Dataset properties cleared:
    * - All custom properties (e.g., ship ID, placement data)
    *
-   * @param {HTMLElement} cell - The placement cell element to clear
+   * @param {HTMLDivElement} cell - The placement cell element to clear
    * @returns {void}
-   * @throws {TypeError} If cell is not a valid HTMLElement
+   * @throws {TypeError} If cell is not a valid HTMLDivElement
    * @see #clearPlacementClasses
    * @see #clearDatasetExceptCoordinates
    * @see clearFriendCell
@@ -708,9 +708,9 @@ export class CellClassManager {
    * Preserved dataset keys: 'r' (row), 'c' (column)
    * Cleared dataset keys: All others
    *
-   * @param {HTMLElement} cell - The cell element whose dataset will be cleared
+   * @param {HTMLDivElement} cell - The cell element whose dataset will be cleared
    * @returns {void}
-   * @throws {TypeError} If cell is not a valid HTMLElement
+   * @throws {TypeError} If cell is not a valid HTMLDivElement
    * @see #PRESERVED_DATASET_KEYS
    * @see clearPlaceCell
    */
@@ -756,6 +756,20 @@ export class CellClassManager {
     return bh.terrain?.weapons?.cursors ?? []
   }
 
+  static extractCursorFromElement (element) {
+    const el = /** @type {HTMLDivElement|undefined} */ (element)
+    const classList = /** @type {DOMTokenList|undefined} */ el?.classList
+    if (classList) {
+      const cursorClasses = this.#cursorTags()
+      for (const cursorClass of cursorClasses) {
+        if (classList.contains(cursorClass)) {
+          return cursorClass
+        }
+      }
+    }
+    return null
+  }
+
   // ──────────────────────────────────────────────────────────────────
   // PRIVATE HELPERS - Class & Dataset Manipulation
   // ──────────────────────────────────────────────────────────────────
@@ -766,17 +780,34 @@ export class CellClassManager {
    * Always safe to call with empty array.
    * Batches removal to minimize DOM reflows.
    *
-   * @param {HTMLElement} cell - DOM element to remove classes from
+   * @param {HTMLElement} element - DOM element to remove classes from
    * @param {string[]} classNames - Array of CSS class names to remove from the cell
    * @returns {void}
    * @throws {TypeError} If cell is not a valid HTMLElement or classNames is not an array
    */
-  static #removeClassNames (cell, classNames) {
-    if (classNames.length) {
-      cell.classList.remove(...classNames)
+  static #removeClassNames (element, classNames) {
+    const el = /** @type {HTMLElement|undefined} */ (element)
+    const classList = /** @type {DOMTokenList|undefined} */ el?.classList
+    if (classList) {
+      this.#removeClasses(classList, classNames)
     }
   }
-
+  /**
+   * Removes specified CSS classes from a cell element in batch.
+   * No-op if classNames array is empty to avoid unnecessary DOM updates.
+   * Always safe to call with empty array.
+   * Batches removal to minimize DOM reflows.
+   *
+   * @param {DOMTokenList} classList - The class list to remove classes from
+   * @param {string[]} classNames - Array of CSS class names to remove from the cell
+   * @returns {void}
+   * @throws {TypeError} If cell is not a valid HTMLElement or classNames is not an array
+   */
+  static #removeClasses (classList, classNames) {
+    if (classNames.length) {
+      classList.remove(...classNames)
+    }
+  }
   /**
    * Gets all weapon-related CSS class names including both weapon tags and cursor tags.
    * Used for bulk operations on all weapon-related classes in one call.
@@ -930,7 +961,24 @@ export class CellClassManager {
   static removeCursorClasses (cell) {
     this.#removeClassNames(cell, this.#cursorTags())
   }
-
+  /**
+   * Removes cursor-related classes from a cell.
+   * Clears cursor indicator classes added during weapon targeting preview.
+   * Called as part of resetHitCellState to clear all preview effects.
+   *
+   * @param {DOMTokenList} classList - The class list to update
+   * @returns {void}
+   * @public
+   * @see #cursorTags
+   * @see resetHitCellState
+   *
+   * @example
+   * // Clear targeting cursor indicators
+   * CellClassManager.removeCursorClasses(cell);
+   */
+  static removeCursor (classList) {
+    this.#removeClasses(classList, this.#cursorTags())
+  }
   // ──────────────────────────────────────────────────────────────────
   // PRIVATE HELPERS - State Application (Hit & Sunk)
   // ──────────────────────────────────────────────────────────────────

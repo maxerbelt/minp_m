@@ -22,8 +22,6 @@ import { bh } from '../terrains/all/js/bh.js'
  * @property {jest.Mock} placement - Mock placement callback
  * @property {jest.Mock} placeTally - Mock tally update
  * @property {jest.Mock} displayShipInfo - Mock ship info display
- * @property {jest.Mock} clearPlaceVisuals - Mock visual clear for placement
- * @property {jest.Mock} clearVisuals - Mock general visual clear
  * @property {Object} board - Mock board DOM element with classList and children
  * @property {jest.Mock} displayFleetSunk - Mock sunk fleet display
  * @property {jest.Mock} displaySurround - Mock surround display
@@ -61,12 +59,12 @@ const mockUI = {
     nodeAt: jest.fn(),
     node: jest.fn(),
     makeDroppable: jest.fn(),
-    removeDisplayClasses: jest.fn()
+    removeDisplayClasses: jest.fn(),
+    clearPlaceVisuals: jest.fn(),
+    clearVisuals: jest.fn()
   },
   placeTally: jest.fn(),
   displayShipInfo: jest.fn(),
-  clearPlaceVisuals: jest.fn(),
-  clearVisuals: jest.fn(),
   board: { classList: { remove: jest.fn() }, children: [] },
   displayFleetSunk: jest.fn(),
   cellHit: jest.fn(),

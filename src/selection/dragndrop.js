@@ -50,6 +50,8 @@
  * @property {Function} [cellHintReveal] - Reveal cell via hint
  * @property {Function} [cellSemiReveal] - Semi-reveal cell
  * @property {Function} refreshAllColor - Refresh all board colors
+ * @property {Function} removeHighlight - Remove highlight classes from cells
+ * @property {Function} removeErrorHighlights - Remove error highlight classes from cells
  */
 
 /**
@@ -1396,10 +1398,7 @@ class DragNDrop {
 
       const shipElement = e.target
       if (shipElement?.style) shipElement.style.opacity = ''
-
-      for (const el of viewModel.board.children) {
-        el.classList.remove('good', 'bad', 'notgood')
-      }
+      viewModel.grid.removeErrorHighlights()
 
       cursor.isDragging = false
       if (e.dataTransfer.dropEffect === 'none') {

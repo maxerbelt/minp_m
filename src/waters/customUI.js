@@ -341,27 +341,8 @@ export class CustomUI extends PlacementUI {
     if (this.score.placed !== null) this.score.placed.textContent = 'None Yet'
     if (this.score.weaponsPlaced !== null)
       this.score.weaponsPlaced.textContent = 'None Yet'
-    this.#clearCellClasses()
+    this.grid.removeBrushClasses()
     this.#standardPanels()
-  }
-
-  /**
-   * Clears hit and placed classes from board cells.
-   * Iterates through board cells and removes visual state classes.
-   * Resets board appearance for new placement or terrain editing.
-   * Safely handles null board reference.
-   *
-   * Side effects:
-   * - Removes 'hit' and 'placed' classes from all board cell children
-   *
-   * @returns {void}
-   */
-  #clearCellClasses () {
-    if (this.board !== null) {
-      for (const cell of this.board.children) {
-        cell.classList.remove('hit', 'placed')
-      }
-    }
   }
 
   /**

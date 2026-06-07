@@ -347,19 +347,6 @@ describe('Enemy.updateWeaponStatus', () => {
           if (oldCursor) {
             board.remove(oldCursor)
           }
-          const staleCursorClasses = []
-          for (const cls of /** @type {Iterable<string>} */ (board)) {
-            if (typeof cls !== 'string') continue
-            if (cls.startsWith('cursor-') || cls.includes('cursor')) {
-              staleCursorClasses.push(cls)
-            }
-          }
-          const uniqueStaleClasses = [...new Set(staleCursorClasses)].filter(
-            Boolean
-          )
-          if (uniqueStaleClasses.length) {
-            board.remove(...uniqueStaleClasses)
-          }
           board.add(newCursor)
         } else if (oldCursor !== '') {
           // Do not remove the old cursor when transitioning into an empty cursor state.
@@ -887,12 +874,9 @@ describe('Enemy.updateWeaponStatus', () => {
         wps: { weapon: { letter: 'M' } }
       }
 
-      enemy.cursorChange('', newCursorInfo)
+      enemy.cursorChange('cursor-old', newCursorInfo)
 
-      expect(boardClassList.remove).toHaveBeenCalledWith(
-        'cursor-old',
-        'cursor-stale'
-      )
+      expect(boardClassList.remove).toHaveBeenCalledWith('cursor-old')
       expect(boardClassList.add).toHaveBeenCalledWith('cursor-new')
       expect(enemy.updateMode).toHaveBeenCalled()
     })
@@ -2160,22 +2144,6 @@ describe('Enemy.updateWeaponStatus', () => {
           this._hasUnattachedForCurrentWeapon = jest.fn(() => false)
         }
 
-        // Helper to extract cursor class from board classList
-        _extractCursorFromBoard () {
-          if (!this.UI?.board?.classList) return ''
-          for (const cls of /** @type {Iterable<string>} */ (
-            this.UI.board.classList
-          )) {
-            if (
-              typeof cls === 'string' &&
-              (cls.startsWith('cursor-') || cls.includes('cursor'))
-            ) {
-              return cls
-            }
-          }
-          return ''
-        }
-
         _handleWeaponChange () {
           // CRITICAL: Reset two-click weapon selection before weapon is changed
           // This prevents firing the old weapon on the next click
@@ -2197,7 +2165,7 @@ describe('Enemy.updateWeaponStatus', () => {
           }
 
           // Update cursor display
-          const oldCursor = this._extractCursorFromBoard()
+          const oldCursor = this.UI.grid.extractBoardCursor()
           if (this.loadOut?.notifyCursorChange) {
             this.loadOut.notifyCursorChange(oldCursor)
           }

@@ -379,7 +379,7 @@ function onClickUndo () {
     friendUI.placeMode()
   }
   friend.resetShipCells()
-  friendUI.clearPlaceVisuals()
+  friendUI.grid.clearPlaceVisuals()
   friend.score.reset()
   const ship = placedShipsInstance.popAndRefresh(
     friend.shipCellGrid,
@@ -538,7 +538,7 @@ function _initializePlacement () {
   friendUI.testBtn.disabled = false
   friendUI.seekBtn.disabled = false
   friend.ships = []
-  friendUI.clearPlaceVisuals()
+  friendUI.grid.clearPlaceVisuals()
   friendUI.placeMode()
   friend.resetModel()
 

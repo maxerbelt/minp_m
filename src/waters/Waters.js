@@ -578,7 +578,7 @@ export class Waters {
     return this.autoPlaceWithCallbacks(
       Function.prototype,
       // @ts-ignore - clearPlaceVisuals method available at runtime
-      this.UI.clearPlaceVisuals.bind(this.UI)
+      this.UI.grid.clearPlaceVisuals.bind(this.UI)
     )
   }
 

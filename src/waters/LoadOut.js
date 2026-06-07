@@ -1238,9 +1238,8 @@ export class LoadOut {
    *
    * @param {?WeaponsSystem} unattachedWeaponSystem - Weapon to check
    * @returns {boolean} True if weapon uses unattached cursor advancement
-   * @private
    */
-  _shouldAdvanceUnattachedCursor (unattachedWeaponSystem) {
+  #shouldAdvanceUnattachedCursor (unattachedWeaponSystem) {
     return (
       unattachedWeaponSystem != null &&
       (unattachedWeaponSystem.weapon?.unattachedCursor ?? 0) > 0
@@ -1254,10 +1253,9 @@ export class LoadOut {
    * @param {string} oldCursor - Previous cursor
    * @param {?WeaponsSystem} unattachedWeaponSystem - Unattached weapon
    * @returns {void}
-   * @private
    */
-  _handleUnattachedCursorSelection (oldCursor, unattachedWeaponSystem) {
-    if (this._shouldAdvanceUnattachedCursor(unattachedWeaponSystem)) {
+  #handleUnattachedCursorSelection (oldCursor, unattachedWeaponSystem) {
+    if (this.#shouldAdvanceUnattachedCursor(unattachedWeaponSystem)) {
       this.addSelectedCoordinates(-1, -1, unattachedWeaponSystem?.weapon)
       return
     }
@@ -1296,7 +1294,7 @@ export class LoadOut {
       return
     }
 
-    this._handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
+    this.#handleUnattachedCursorSelection(oldCursor, unattachedWeaponSystem)
   }
 
   /**

@@ -6,7 +6,7 @@ import { makeKey, parsePair } from '../core/utilities.js'
 import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
 import { dragNDrop } from '../selection/dragndrop.js'
 import { CustomMap } from '../terrains/all/js/map.js'
-import { LoadOut } from './loadout.js'
+import { LoadOut } from './LoadOut.js'
 /**
  * @fileoverview GridBoard class for managing game board cell interactions and displays
  * Handles cell marking, hover effects, drag-drop zones, and board state visualization
@@ -14,7 +14,7 @@ import { LoadOut } from './loadout.js'
  */
 
 /** @typedef {import('../selection/Brush.js').Brush} Brush  */
-/** @typedef {import('../ships/ship.js').Ship} Ship  */
+/** @typedef {import('../ships/Ship.js').Ship} Ship  */
 /**
  * A coordinate pair representing a single cell on the game board.
  * Format: [row, col] where row is Y-axis and col is X-axis.
@@ -38,6 +38,13 @@ import { LoadOut } from './loadout.js'
  * @property {Function} notGood.at - Get terrain conflict value at coordinates
  * @property {Function} getHighlightClass
  */
+
+/**
+ * @typedef {(cell: HTMLDivElement) => void} CellClassClearer
+ * Callback to clear CSS classes from a cell.
+ * @description Custom strategy for class clearing used during board reset operations
+ */
+
 /**
  * @typedef {Object} FireResult
  * @property {number} hits - Number of hits scored
@@ -376,16 +383,18 @@ export class GridBoard {
    * @returns {void}
    */
   revealShip (ship) {
-    const colorMaps = this.map
+    // @ts-ignore - bh.maps contains required ColorMaps properties
+    const colorMaps = bh.maps
     // @ts-ignore - ship.cells is iterable of [col, row] coordinate pairs
     for (const [x, y] of ship.cells) {
       const board = this.board
       if (!board) return
-      const cell = this.node(x, y, colorMaps)
+      const cell = this.node(x, y)
       // @ts-ignore - ship matches Ship type for display
       ShipCellDisplayer.displayAsRevealed(cell, ship, colorMaps)
     }
   }
+
   /**
    * Reveals a cell with semi-visibility indicator.
    * Semi means cell is revealed but not confirmed as hit or miss yet.
@@ -414,10 +423,11 @@ export class GridBoard {
    * @returns {void}
    */
   #displaySurroundingMisses (surroundingKeys, cellMiss) {
+    const bhMap = this.map
     for (const key of surroundingKeys) {
       const [y, x] = parsePair(key)
       // Validate coordinates are in bounds before calling cellMiss
-      if (this.map.inBounds(y, x)) {
+      if (bhMap.isInBoundsAt(x, y)) {
         cellMiss(x, y)
       }
     }
@@ -460,7 +470,6 @@ export class GridBoard {
    * @param {Ship} ship - Ship object for display context
    * @param {CellDisplayCallback} displayFn - Callback to display cells (row, col, ship) => void
    * @returns {void}
-   * @private
    */
   #displayCenterCells (cells, ship, displayFn) {
     for (const [row, column] of cells) {
@@ -727,7 +736,7 @@ export class GridBoard {
    * @param {any[]} container - Array to accumulate surrounding cell results
    * @param {CoordToValueCallback} maker - Callback to transform coordinates [x, y] → value
    * @returns {void}
-   * @private
+   * @public
    */
   surroundList (x, y, container, maker) {
     this.#addSurroundingCells(x, y, container, 'array', maker)
@@ -769,6 +778,7 @@ export class GridBoard {
    *
    * @param {Ship[]} ships - Array of ship objects to reveal
    * @returns {void}
+   * @public
    */
   revealShips (ships) {
     for (const ship of ships) {
@@ -781,6 +791,7 @@ export class GridBoard {
    *
    * @param {Ship[]} ships - Array of ship objects to reset
    * @returns {void}
+   * @public
    */
   resetShips (ships) {
     for (const ship of ships) {
@@ -803,6 +814,7 @@ export class GridBoard {
    * @param {PlacementData} placement - Placement object with notGood constraint grid
    *
    * @returns {void}
+   * @public
    */
   applyHighlights (
     /** @type {Coord[]} */ cells,
@@ -821,6 +833,7 @@ export class GridBoard {
       }
     }
   }
+
   /**
    * Attaches hover event listeners to all board cells (static factory).
    * Shows/hides area-of-effect or targeting information on mouse movement.
@@ -876,6 +889,28 @@ export class GridBoard {
     })
   }
   /**
+   * Clears hit and placed classes from board cells.
+   * Iterates through board cells and removes visual state classes.
+   * Resets board appearance for new placement or terrain editing.
+   * Safely handles null board reference.
+   *
+   * Side effects:
+   * - Removes 'hit' and 'placed' classes from all board cell children
+   *
+   * @returns {void}
+   */
+  removeBrushClasses () {
+    this.#forEachBoardCell((/** @type {HTMLElement} */ el) => {
+      el.classList.remove('hit', 'placed')
+    })
+  }
+
+  removeErrorHighlights () {
+    this.#forEachBoardCell((/** @type {HTMLElement} */ el) => {
+      el.classList.remove('good', 'bad', 'notgood')
+    })
+  }
+  /**
    * Removes and reapplies terrain coloring for a single cell.
    * Extracts coordinates from cell dataset and recolorizes.
    *
@@ -922,6 +957,44 @@ export class GridBoard {
       el.classList.remove(...tags)
     )
   }
+  updateElementCursor (newCursor, oldCursor) {
+    // @ts-ignore - this.UI is typed as Object but has board property
+    const boardElement = /** @type {HTMLElement|undefined} */ (this.UI?.board)
+    const classList = boardElement?.classList
+
+    if (classList) {
+      this.updateCursor(newCursor, oldCursor, classList)
+    }
+  }
+
+  /**
+   * Updates the board cursor display when the cursor changes.
+   * Handles adding new cursor classes and removing stale ones.
+   * Extracted from cursorChange() to reduce cognitive complexity.
+   *
+   * @param {string} newCursor - The new cursor class (may be empty string)
+   * @param {string|null} oldCursor - The old cursor class (may be null)
+   * @param {DOMTokenList} classList - The board classList element
+   * @returns {void}
+   */
+  updateCursor (newCursor, oldCursor, classList) {
+    // When switching to a new non-empty cursor, remove any stale cursor classes
+    // from the board before adding the new one. This prevents multiple cursor
+    // classes from accumulating during weapon/step changes.
+    if (newCursor !== '') {
+      if (oldCursor) {
+        classList.remove(oldCursor)
+      }
+      CellClassManager.removeCursor(classList)
+      if (newCursor) {
+        classList.add(newCursor)
+      }
+    } else if (oldCursor !== '') {
+      // Do NOT remove the old cursor when transitioning into an empty cursor
+      // state; empty cursor is a transient firing-ready state and should leave
+      // the previous weapon cursor visible.
+    }
+  }
   /**
    * Generic method to clear cell visuals using custom clearing strategy.
    * Delegates class clearing to provided function for context-specific behavior.
@@ -938,6 +1011,9 @@ export class GridBoard {
     ShipCellDisplayer.clearDetails(cell, details)
     clear(cell)
   }
+  extractBoardCursor () {
+    return CellClassManager.extractCursorFromElement(this.board)
+  }
   /**
    * Clears cell visuals across entire board using provided strategy.
    * Generic method applying custom clearing callback and detail level to all cells.
@@ -949,11 +1025,28 @@ export class GridBoard {
   #clearAllCellVisuals (details, classClearer) {
     const clear =
       classClearer || CellClassManager.clearCell.bind(CellClassManager)
-    this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
-      this.#clearCellVisuals(/** @type {HTMLDivElement} */ (el), details, clear)
+    this.#forEachBoardCell((/** @type {HTMLDivElement} */ el) =>
+      this.#clearCellVisuals(el, details, clear)
     )
   }
+  /**
+   * Clears all cursor classes from the board element and its child cells.
+   * Removes stale cursor classes from entire grid to prevent accumulation.
+   * Called when switching weapons or modes to reset visual cursor display.
+   * @returns {void}
+   * @memberof Enemy
+   */
+  clearAllCursorClasses () {
+    // @ts-ignore - this.UI is typed as Object but has board property
+    const board = /** @type {HTMLElement|undefined} */ (this.board)
+    if (!board) return
 
+    CellClassManager.removeCursorClasses(board)
+
+    this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
+      CellClassManager.removeCursorClasses(el)
+    )
+  }
   /**
    * Clears all cell visuals (text, styles, and classes) from entire board.
    * Returns board to clean state with only terrain coloring.
@@ -963,7 +1056,18 @@ export class GridBoard {
   clearVisuals () {
     this.#clearAllCellVisuals('all')
   }
-
+  /**
+   * Clears placement mode visuals from entire board.
+   * Returns board to battle-ready state after ship placement phase.
+   *
+   * @returns {void}
+   */
+  clearPlaceVisuals () {
+    this.#clearAllCellVisuals(
+      'all',
+      CellClassManager.clearPlaceCell.bind(CellClassManager)
+    )
+  }
   /**
    * Clears friendly board cell visuals including damage indicators.
    * Preserves terrain coloring but removes game state classes.

@@ -24,7 +24,6 @@ const ATTEMPTS_PER_RETRY = 25
  * @property {string} DESTROYED - Class applied when board is destroyed
  * @property {string} WAITING - Class applied while waiting for action
  * @property {string} HIDDEN - Class applied to hide elements
- * @property {string} CURSOR_PREFIX - Prefix for cursor-type class names
  * @property {string} OFF - Class applied to disabled/off state
  * @property {string} ON - Class applied to enabled/on state
  */
@@ -32,7 +31,6 @@ const CSS_CLASSES = {
   DESTROYED: 'destroyed',
   WAITING: 'waiting',
   HIDDEN: 'hidden',
-  CURSOR_PREFIX: 'cursor-',
   OFF: 'off',
   ON: 'on'
 }
@@ -313,12 +311,6 @@ class Enemy extends Waters {
       return ''
     }
 
-    for (const cls of board.classList) {
-      if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
-        return cls
-      }
-    }
-
     return ''
   }
 
@@ -365,13 +357,11 @@ class Enemy extends Waters {
    * Updates board cursor and mode display.
    * Triggers UI update for weapon status display.
    *
-   * @param {string|null} oldCursor - Current cursor class to remove (nullable)
+   * @param {string} oldCursorClass - Current cursor class to remove (nullable)
    * @memberof Enemy
    * @returns {void}
    */
-  #updateBoardCursor (oldCursor) {
-    const oldCursorClass = oldCursor || this.#extractCursorClass()
-
+  #updateBoardCursor (oldCursorClass = '') {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
     if (loadOut?.notifyCursorChange) {
       loadOut.notifyCursorChange(oldCursorClass)
@@ -389,58 +379,6 @@ class Enemy extends Waters {
   #updateBoardTargetingState () {
     const hasUnattached = this._hasUnattachedForCurrentWeapon()
     this.setBoardTargetingState(hasUnattached)
-  }
-
-  /**
-   * Remove cursor classes from the board element and all its child cells.
-   * Prevents accumulation of stale cursor classes during weapon/step changes.
-   * @private
-   * @param {HTMLElement|undefined} element - The DOM element to clear cursor classes from
-   * @memberof Enemy
-   * @returns {void}
-   */
-  _clearCursorClassesFromElement (element) {
-    const el = /** @type {HTMLElement|undefined} */ (element)
-    if (!el?.classList) return
-
-    const staleCursorClasses = /** @type {string[]} */ ([])
-    for (const cls of Array.from(el.classList)) {
-      if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
-        staleCursorClasses.push(cls)
-      }
-    }
-    if (staleCursorClasses.length) {
-      el.classList.remove(...new Set(staleCursorClasses))
-    }
-    CellClassManager.removeCursorClasses(el)
-  }
-
-  /**
-   * Clears all cursor classes from the board element and its child cells.
-   * Removes stale cursor classes from entire grid to prevent accumulation.
-   * Called when switching weapons or modes to reset visual cursor display.
-   * @returns {void}
-   * @memberof Enemy
-   */
-  #clearBoardCursorClasses () {
-    // @ts-ignore - this.UI is typed as Object but has board property
-    const board = /** @type {HTMLElement|undefined} */ (this.UI?.board)
-    if (!board) return
-
-    this._clearCursorClassesFromElement(board)
-
-    const cells = board.children?.length
-      ? board.children
-      : board.querySelectorAll('*')
-    for (const cell of cells) {
-      try {
-        this._clearCursorClassesFromElement(
-          /** @type {HTMLElement|undefined} */ (cell)
-        )
-      } catch {
-        // ignore non-element nodes or unexpected structure
-      }
-    }
   }
 
   /**
@@ -571,10 +509,10 @@ class Enemy extends Waters {
     const { weapon, targetRow, targetCol, shadowRow, shadowCol } =
       activationData
     const opponentUI = /** @type {EnemyUI|undefined} */ (this.opponent?.UI)
-    opponentUI?.cellWeaponActive?.(targetCol, targetRow)
+    opponentUI?.grid.cellWeaponActive?.(targetCol, targetRow)
     const ui = /** @type {EnemyUI} */ (this.UI)
-    if (weapon?.postSelectShadow && ui.cellWeaponActive) {
-      ui.cellWeaponActive(shadowCol, shadowRow, '', weapon.tag)
+    if (weapon?.postSelectShadow && ui?.grid?.cellWeaponActive) {
+      ui.grid.cellWeaponActive(shadowCol, shadowRow, '', weapon.tag)
     }
   }
 
@@ -678,66 +616,13 @@ class Enemy extends Waters {
 
     // @ts-ignore - this.UI is typed as Object but has board property
     const boardElement = /** @type {HTMLElement|undefined} */ (this.UI?.board)
-    const board = boardElement?.classList
 
-    if (!board) return
-
-    this.#updateBoardCursorDisplay(newCursor, oldCursor, board)
+    this.UI.grid.updateElementCursor(newCursor, oldCursor, boardElement)
 
     const wps = /** @type {WeaponSystem|undefined} */ (newCursorInfo?.wps)
     if (wps) {
       // @ts-ignore - Parent class updateMode is private but we call it here
       this.updateMode(wps, newCursorInfo)
-    }
-  }
-
-  /**
-   * Updates the board cursor display when the cursor changes.
-   * Handles adding new cursor classes and removing stale ones.
-   * Extracted from cursorChange() to reduce cognitive complexity.
-   *
-   * @param {string} newCursor - The new cursor class (may be empty string)
-   * @param {string|null} oldCursor - The old cursor class (may be null)
-   * @param {DOMTokenList} board - The board classList element
-   * @returns {void}
-   */
-  #updateBoardCursorDisplay (newCursor, oldCursor, board) {
-    // When switching to a new non-empty cursor, remove any stale cursor classes
-    // from the board before adding the new one. This prevents multiple cursor
-    // classes from accumulating during weapon/step changes.
-    if (newCursor !== '') {
-      if (oldCursor) {
-        board.remove(oldCursor)
-      }
-      this.#removeStaleCursorClasses(board)
-      if (newCursor) {
-        board.add(newCursor)
-      }
-    } else if (oldCursor !== '') {
-      // Do NOT remove the old cursor when transitioning into an empty cursor
-      // state; empty cursor is a transient firing-ready state and should leave
-      // the previous weapon cursor visible.
-    }
-  }
-
-  /**
-   * Removes all stale cursor classes from the board.
-   * Identifies and removes classes that match cursor patterns.
-   * Extracted from cursorChange() to reduce cognitive complexity.
-   *
-   * @param {DOMTokenList} board - The board classList element
-   * @returns {void}
-   */
-  #removeStaleCursorClasses (board) {
-    const staleCursorClasses = /** @type {string[]} */ ([])
-    for (const cls of board) {
-      if (cls.startsWith(CSS_CLASSES.CURSOR_PREFIX) || cls.includes('cursor')) {
-        staleCursorClasses.push(cls)
-      }
-    }
-    const uniqueStaleClasses = [...new Set(staleCursorClasses)].filter(Boolean)
-    if (uniqueStaleClasses.length) {
-      board.remove(...uniqueStaleClasses)
     }
   }
 
@@ -2089,18 +1974,10 @@ class Enemy extends Waters {
     // Clear all state systems in logical order
     this.#clearCoordinateState()
     this.#clearSelectionVisualState()
-    // Ensure cursor classes are cleared on the board element itself
-    // (some tests spy on `_clearCursorClassesFromElement` directly)
-    if (this._clearCursorClassesFromElement) {
-      try {
-        // @ts-ignore - this.UI.board property access
-        this._clearCursorClassesFromElement(this.UI?.board)
-      } catch {
-        // ignore errors from mocked elements
-      }
-    }
-    this.#clearBoardCursorClasses()
-    this.#updateBoardCursor(null)
+
+    this.UI.grid.clearAllCellCursors?.()
+
+    this.#updateBoardCursor()
     this.#updateBoardTargetingState()
   }
 
