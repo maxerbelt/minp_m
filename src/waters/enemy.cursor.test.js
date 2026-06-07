@@ -153,7 +153,9 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
       /** @type {jest.Mock} Mock class clearing */
       clearClasses: jest.fn(),
       /** @type {jest.Mock} Mock AoE highlight removal */
-      removeHighlightAoE: jest.fn()
+      removeHighlightAoE: jest.fn(),
+      /** @type {jest.Mock} Mock clear cursor classes (implemented in beforeEach) */
+      clearAllCursorClasses: jest.fn()
     },
     /** @type {jest.Mock} Mock play mode activation */
     playMode: jest.fn(),
@@ -196,6 +198,18 @@ describe('Enemy cursor cleanup on single-shot switch', () => {
     jest.clearAllMocks()
     CellClassManagerModule = await import('./helpers/CellClassManager.js')
     enemyModule = await import('./enemy.js')
+
+    // Configure mock grid clearAllCursorClasses to actually call CellClassManager.removeCursorClasses
+    const { CellClassManager: CCM } = CellClassManagerModule
+    const { enemy } = enemyModule
+    enemy.UI.grid.clearAllCursorClasses.mockImplementation(function () {
+      const board = enemy.UI.board
+      if (!board) return
+      CCM.removeCursorClasses(board)
+      for (const cell of board.children) {
+        CCM.removeCursorClasses(cell)
+      }
+    })
   })
 
   /**

@@ -149,7 +149,19 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
     reset: jest.fn(),
     weaponButtons: jest.fn(),
     buildBoardHover: jest.fn(),
-    enableBtns: jest.fn()
+    enableBtns: jest.fn(),
+    grid: {
+      cellWeaponActive: jest.fn(),
+      removeHighlightAoE: jest.fn(),
+      clearClasses: jest.fn(),
+      revealAll: jest.fn(),
+      extractBoardCursor: jest.fn(),
+      updateElementCursor: jest.fn(),
+      deactivateTempHints: jest.fn(),
+      clearAllCursorClasses: jest.fn(),
+      nodeAt: jest.fn(),
+      node: jest.fn()
+    }
   }
 }))
 // Mock enemyUI BEFORE importing Enemy
@@ -2146,6 +2158,12 @@ describe('Enemy.updateWeaponStatus', () => {
                   yield 'cursor-default'
                 }
               }
+            },
+            grid: {
+              extractBoardCursor: jest.fn(),
+              updateElementCursor: jest.fn(),
+              clearAllCursorClasses: jest.fn(),
+              removeHighlightAoE: jest.fn()
             }
           }
           this.opponent = {
