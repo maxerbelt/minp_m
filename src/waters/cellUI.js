@@ -496,13 +496,13 @@ export class CellUI {
 
   /**
    * Marks all ship cells in loaded board with friendly weapon CSS indicators.
-   * Iterates through ships in ship.cells and calls markFriendlyWeapon for each cell.
+   * Iterates through ships in ship.XYs and calls markFriendlyWeapon for each cell.
    * Safely handles missing or empty ship cells arrays (non-fatal).
    *
    * **Iteration Process**:
    * 1. Returns early if ship.cells unavailable/undefined
-   * 2. Iterates through [x, y] coordinates in ship.cells
-   * 3. Calls static markFriendlyWeapon for each coordinate
+   * 2. Iterates through [row, col] coordinates in ship.cells
+   * 3. Calls static markFriendlyWeapon for each coordinate, converting to (col, row)
    * 4. Weapon CSS class added only if ship has weapon at that cell
    *
    * **Side Effects**:
@@ -520,8 +520,8 @@ export class CellUI {
   static markShipsWeapons (board, ship, map) {
     if (!ship.cells) return
 
-    for (const [x, y] of ship.cells) {
-      CellUI.markFriendlyWeapon(board, x, y, ship, map)
+    for (const [x, y] of ship.XYs) {
+      NodeUI.markFriendlyWeapon(board, x, y, ship, map)
     }
   }
 
