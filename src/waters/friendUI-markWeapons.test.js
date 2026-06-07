@@ -116,13 +116,14 @@ describe('FriendUI - markFleetWeapons', () => {
       {
         id: 'ship-1',
         letter: 'A',
+        // Cells in [row, col] format: row 0, cols 0-2 (horizontal ship)
         cells: [
           [0, 0],
-          [1, 0],
-          [2, 0]
+          [0, 1],
+          [0, 2]
         ],
         rackAt: jest.fn((column, row) => {
-          // Weapon at position (0, 0) and (2, 0)
+          // Weapon at position (col=0, row=0) and (col=2, row=0)
           if ((column === 0 && row === 0) || (column === 2 && row === 0)) {
             return { weapon: { letter: 'X' }, ammo: 5 }
           }
@@ -132,12 +133,13 @@ describe('FriendUI - markFleetWeapons', () => {
       {
         id: 'ship-2',
         letter: 'B',
+        // Cells in [row, col] format: rows 1-2, col 0 (vertical ship)
         cells: [
-          [0, 1],
-          [0, 2]
+          [1, 0],
+          [2, 0]
         ],
         rackAt: jest.fn((column, row) => {
-          // Weapon at position (0, 1)
+          // Weapon at position (col=0, row=1)
           if (column === 0 && row === 1) {
             return { weapon: { letter: 'Y' }, ammo: 3 }
           }
@@ -147,10 +149,11 @@ describe('FriendUI - markFleetWeapons', () => {
       {
         id: 'ship-3',
         letter: 'C',
+        // Cells in [row, col] format: rows 1-3, col 1 (vertical ship)
         cells: [
           [1, 1],
-          [1, 2],
-          [1, 3]
+          [2, 1],
+          [3, 1]
         ],
         rackAt: jest.fn(() => null) // No weapons
       }
@@ -179,16 +182,18 @@ describe('FriendUI - markFleetWeapons', () => {
     friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells with weapons have the 'weapon' class
+    // Ship 1: weapons at (row=0, col=0) and (row=0, col=2)
+    // Ship 2: weapon at (row=1, col=0)
     /** @type {HTMLElement} Cell at row 0, col 0 (Ship 1 with weapon) */
     const cell_0_0 = friendUI.gridCellAt(0, 0)
     /** @type {HTMLElement} Cell at row 0, col 2 (Ship 1 with weapon) */
-    const cell_2_0 = friendUI.gridCellAt(0, 2)
+    const cell_0_2 = friendUI.gridCellAt(0, 2)
     /** @type {HTMLElement} Cell at row 1, col 0 (Ship 2 with weapon) */
-    const cell_0_1 = friendUI.gridCellAt(1, 0)
+    const cell_1_0 = friendUI.gridCellAt(1, 0)
 
     expect(cell_0_0.classList.contains('weapon')).toBe(true)
-    expect(cell_2_0.classList.contains('weapon')).toBe(true)
-    expect(cell_0_1.classList.contains('weapon')).toBe(true)
+    expect(cell_0_2.classList.contains('weapon')).toBe(true)
+    expect(cell_1_0.classList.contains('weapon')).toBe(true)
   })
 
   /**
@@ -203,19 +208,22 @@ describe('FriendUI - markFleetWeapons', () => {
     friendUI.grid.markFleetWeapons(mockShips)
 
     // Check that cells without weapons don't have the 'weapon' class
+    // Ship 1: cell at (row=0, col=1) has no weapon
+    // Ship 2: cell at (row=2, col=0) has no weapon
+    // Ship 3: cells at (row=1, col=1), (row=2, col=1) have no weapons
     /** @type {HTMLElement} Cell at row 0, col 1 (Ship 1, no weapon here) */
-    const cell_1_0 = friendUI.gridCellAt(0, 1) // Ship 1 cell without weapon (col 1, row 0)
-    /** @type {HTMLElement} Cell at row 0, col 2 (Ship 2, no weapon here) */
-    const cell_2_0 = friendUI.gridCellAt(2, 0) // Ship 2 cell without weapon (col 0, row 2)
+    const cell_0_1 = friendUI.gridCellAt(0, 1)
+    /** @type {HTMLElement} Cell at row 2, col 0 (Ship 2, no weapon here) */
+    const cell_2_0 = friendUI.gridCellAt(2, 0)
     /** @type {HTMLElement} Cell at row 1, col 1 (Ship 3, no weapons) */
-    const cell_3_1 = friendUI.gridCellAt(1, 1) // Ship 3 cells (no weapons)
-    /** @type {HTMLElement} Cell at row 1, col 2 (Ship 3, no weapons) */
-    const cell_3_2 = friendUI.gridCellAt(1, 2)
+    const cell_1_1 = friendUI.gridCellAt(1, 1)
+    /** @type {HTMLElement} Cell at row 2, col 1 (Ship 3, no weapons) */
+    const cell_2_1 = friendUI.gridCellAt(2, 1)
 
-    expect(cell_1_0.classList.contains('weapon')).toBe(false)
+    expect(cell_0_1.classList.contains('weapon')).toBe(false)
     expect(cell_2_0.classList.contains('weapon')).toBe(false)
-    expect(cell_3_1.classList.contains('weapon')).toBe(false)
-    expect(cell_3_2.classList.contains('weapon')).toBe(false)
+    expect(cell_1_1.classList.contains('weapon')).toBe(false)
+    expect(cell_2_1.classList.contains('weapon')).toBe(false)
   })
 
   /**
