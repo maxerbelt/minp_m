@@ -556,12 +556,11 @@ const BoardInitializer = {
     const enemyUI = enemyRef?.UI
     const boardMap = /** @type {any} */ (bh)?.map
     GridBoard.addHover(
-      enemyUI?.board,
+      enemyUI,
+      enemyRef,
       boardMap,
       _createAreaOfEffectHighlighter,
-      enemyUI?.grid?.removeHighlightAoE,
-      enemyUI,
-      enemyRef
+      enemyUI?.grid?.removeHighlightAoE
     )
   },
 
@@ -618,7 +617,6 @@ const BoardInitializer = {
  *                                               Stored for next game transition.
  *                                               Null for first game.
  * @param {FriendUI | null} friendUI - Friend UI reference for hiding mode.
- *                                    Contains grid.clearFriendClasses() for UI cleanup.
  *                                    Null in seeking mode.
  * @returns {void}
  *

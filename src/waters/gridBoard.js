@@ -788,20 +788,20 @@ export class GridBoard {
    * - mouseenter: onEnter(weaponSource, row, col)
    * - mouseleave: onLeave.call(thisRef, row, col)
    *
-   * @param {HTMLElement|null} boardElement - The board element
-   * @param {GridMap} [map] - Map configuration (defaults to current map)
+   * @param {GridMap} map - Map configuration (defaults to current map)
    * @param {CellHoverEnterCallback} onEnter - Mouseenter handler for showing weapon preview
    * @param {CellHoverLeaveCallback} onLeave - Mouseleave handler for hiding weapon preview
-   * @param {Object} [thisRef] - Context ('this' binding) for onLeave callback
-   * @param {any} [weaponSource] - Weapon source data passed to all onEnter calls
+   * @param {Object} model - Context ('this' binding) for onLeave callback
+   * @param {any} viewModel - Weapon source data passed to all onEnter calls
    * @returns {void}
    * @static
    * @public
    */
-  static addHover (boardElement, map, onEnter, onLeave, thisRef, weaponSource) {
+  static addHover (viewModel, model, map, onEnter, onLeave) {
+    const boardElement = /** @type {HTMLDivElement} */ viewModel.board
     /** @type {GridBoard} */
     const grid = new GridBoard(boardElement, map)
-    grid.addHover(onEnter, onLeave, thisRef, weaponSource)
+    grid.addHover(onEnter, onLeave, viewModel, model)
   }
   /**
    * Attaches hover event listeners to all board cells.
@@ -947,6 +947,28 @@ export class GridBoard {
       CellClassManager.clearFriendCell.bind(CellClassManager)
     )
   }
+  /**
+   * Apply CSS highlighting to splash area cells.
+   *
+   * Iterates splash cells and adds CSS classes for visual display.
+   * Classes applied:
+   * - Power-level-based class (e.g., 'power-1', 'power-2') from bh.splashTags[powerLevel]
+   * - 'target' class for unified styling and easy removal
+   *
+   * @param {Array<SplashCell>} splashCells - [row, col, powerLevel] cells.
+   *                                         PowerLevel determines color intensity (0-n).
+   * @returns {void}
+   */
+  #applyHighlightsToCells (splashCells) {
+    const ui = /** @type {any} */ (this.boardUI)
+    const bhRef = /** @type {any} */ (bh)
+    for (const [y, x, powerLevel] of splashCells) {
+      const cell = this.nodeAt(x, y)
+      const cellClass = bhRef?.splashTags?.[powerLevel]
+      if (cell && cellClass) cell.classList.add(cellClass, 'target')
+    }
+  }
+
   /**
    * Removes temporary hint indicators from entire board.
    * Clears targeting or placement hints.

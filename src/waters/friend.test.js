@@ -322,21 +322,21 @@ describe('Friend', () => {
     expect(typeof friend.hasPlayableShips()).toBe('boolean')
   })
 
-  it('restartBoard calls score.reset and UI.clearVisuals', () => {
+  it('restartBoard calls score.reset and UI.grid.clearVisuals', () => {
     friend.score.reset = jest.fn()
     friend.armWeapons = jest.fn()
     friend.restartBoard()
     expect(friend.score.reset).toHaveBeenCalled()
-    expect(friend.UI.clearVisuals).toHaveBeenCalled()
+    expect(friend.UI.grid.clearVisuals).toHaveBeenCalled()
     expect(friend.armWeapons).toHaveBeenCalled()
   })
 
-  it('restartFriendBoard calls score.reset and UI.clearFriendVisuals', () => {
+  it('restartFriendBoard calls score.reset and UI.grid.clearFriendVisuals', () => {
     friend.score.reset = jest.fn()
     friend.armWeapons = jest.fn()
     friend.restartBoard(true)
     expect(friend.score.reset).toHaveBeenCalled()
-    expect(friend.UI.clearFriendVisuals).toHaveBeenCalled()
+    expect(friend.UI.grid.clearFriendVisuals).toHaveBeenCalled()
     expect(friend.armWeapons).toHaveBeenCalled()
   })
 

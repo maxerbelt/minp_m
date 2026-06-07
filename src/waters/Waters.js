@@ -562,7 +562,7 @@ export class Waters {
       },
       () => {
         // @ts-ignore - clearVisuals method available at runtime
-        this.UI.clearVisuals()
+        this.UI.grid.clearVisuals()
         placedShipsInstance.reset()
       }
     )

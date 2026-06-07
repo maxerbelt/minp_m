@@ -174,7 +174,7 @@ class Custom extends Placement {
       this.UI.showNotice('ships removed')
     }
     this.resetShipCells()
-    this.UI.clearVisuals()
+    this.UI.grid.clearVisuals()
     this.score.reset()
   }
   /**
