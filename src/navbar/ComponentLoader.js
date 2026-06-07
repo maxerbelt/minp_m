@@ -64,7 +64,7 @@ export class ComponentLoader {
    * @param {string} componentPath - Path to component HTML file (relative or absolute URL).
    * @param {ComponentLoaderSuccessCallback|null} [successCallback=null] - Called on successful load with HTML content.
    * @param {ComponentLoaderErrorCallback|null} [errorCallback=null] - Called if load fails with Error object.
-   * @returns {Promise<string>} Resolves with the loaded HTML content string.
+   * @returns {Promise<string|null>} Resolves with the loaded HTML content string.
    * @throws {Error} If HTTP request fails, response status is not ok, or component insertion fails.
    * @throws {Error} If insertPoint is invalid (string ID not found, or not an Element).
    *
