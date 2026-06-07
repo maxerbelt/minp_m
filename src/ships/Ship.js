@@ -454,12 +454,13 @@ export class Ship {
     }
     return []
   }
-
+  get XYs () {
+    return this.cells.map(([r, c]) => [c, r])
+  }
   /**
    * Extract row/col from cell in various formats
    * @param {any} cell - Cell in various formats
    * @returns {CoordinatePair} [row, col] pair
-   * @private
    */
   _extractCellCoordinates (cell) {
     if (Array.isArray(cell) && cell.length >= 2) {
