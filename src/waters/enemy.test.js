@@ -147,16 +147,32 @@ jest.unstable_mockModule('./enemyUI.js', () => ({
     playMode: jest.fn(),
     buildBoard: jest.fn(),
     reset: jest.fn(),
-    cellWeaponActive: jest.fn(),
-    removeHighlightAoE: jest.fn(),
     weaponButtons: jest.fn(),
     buildBoardHover: jest.fn(),
-    clearClasses: jest.fn(),
-    revealAll: jest.fn(),
     enableBtns: jest.fn()
   }
 }))
-
+// Mock enemyUI BEFORE importing Enemy
+/**
+ * Mock enemyUI (opponent board UI component) for targeting and display.
+ * Provides board element access, button management, and effect highlighting.
+ *
+ * @typedef {Object} MockGrid
+ * @property {Object} board - DOM board element with className management
+ * @property {jest.Mock} cellWeaponActive - Mark cell as weapon active
+ * @property {jest.Mock} removeHighlightAoE - Clear area-of-effect highlights
+ * @property {jest.Mock} clearClasses - Remove all CSS classes from board
+ * @property {jest.Mock} revealAll - Reveal hidden opponent ships
+ */
+jest.unstable_mockModule('./gridBoard.js', () => ({
+  enemyUI: {
+    board: { classList: { add: jest.fn(), remove: jest.fn() } },
+    cellWeaponActive: jest.fn(),
+    removeHighlightAoE: jest.fn(),
+    clearClasses: jest.fn(),
+    revealAll: jest.fn()
+  }
+}))
 /** @type {any} */
 let mockLoadOut = null
 /**
@@ -235,7 +251,18 @@ describe('Enemy.updateWeaponStatus', () => {
       clearSource: jest.fn(),
       endTurn: jest.fn()
     }
-
+    // Create a basic mock grid
+    const mockGrid = /** @type {any} */ ({
+      board: {
+        classList: {
+          add: jest.fn(),
+          remove: jest.fn(),
+          [Symbol.iterator]: function* () {}
+        }
+      },
+      cellWeaponActive: jest.fn(),
+      removeHighlightAoE: jest.fn()
+    })
     // Create a basic mock UI
     const mockUI = /** @type {any} */ ({
       board: {
@@ -245,10 +272,9 @@ describe('Enemy.updateWeaponStatus', () => {
           [Symbol.iterator]: function* () {}
         }
       },
+      grid: mockGrid,
       buildBoard: jest.fn(),
-      enableBtns: jest.fn(),
-      cellWeaponActive: jest.fn(),
-      removeHighlightAoE: jest.fn()
+      enableBtns: jest.fn()
     })
 
     /**

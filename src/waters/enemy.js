@@ -326,9 +326,7 @@ class Enemy extends Waters {
    */
   #clearCoordinateState () {
     const loadOut = /** @type {LoadOut|undefined} */ (this.loadOut)
-    if (loadOut?.clearSelectedCoordinates) {
-      loadOut.clearSelectedCoordinates()
-    }
+    loadOut?.clearSelectedCoordinates?.()
   }
 
   /**
@@ -1975,7 +1973,7 @@ class Enemy extends Waters {
     this.#clearCoordinateState()
     this.#clearSelectionVisualState()
 
-    this.UI.grid.clearAllCellCursors?.()
+    this.UI.grid.clearAllCursorClasses?.()
 
     this.#updateBoardCursor()
     this.#updateBoardTargetingState()
@@ -2004,7 +2002,7 @@ class Enemy extends Waters {
     this.loadOut?.switchToSingleShot?.()
     // Clear any cursor classes applied to board cells when switching to single-shot
     // Single-shot mode should show no cursor previews on the opponent board
-    this.#clearBoardCursorClasses()
+    this.UI.grid.clearAllCursorClasses?.()
   }
 
   /**
