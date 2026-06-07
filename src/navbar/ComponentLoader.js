@@ -87,12 +87,12 @@ export class ComponentLoader {
     errorCallback = null
   ) {
     try {
-      const html = await this._fetchComponent(componentPath)
-      this._insertHtml(insertPoint, html)
-      await this._invokeSuccessCallback(successCallback, html)
+      const html = await this.#fetchComponent(componentPath)
+      this.#insertHtml(insertPoint, html)
+      await this.#invokeSuccessCallback(successCallback, html)
       return html
     } catch (error) {
-      this._handleComponentError(insertPoint, error, errorCallback)
+      this.#handleComponentError(insertPoint, error, errorCallback)
       throw error
     }
   }
@@ -117,7 +117,7 @@ export class ComponentLoader {
    */
   async preloadComponent (componentPath) {
     try {
-      const html = await this._fetchComponent(componentPath)
+      const html = await this.#fetchComponent(componentPath)
       return html
     } catch (error) {
       console.error(`Failed to preload component from ${componentPath}:`, error)
@@ -136,20 +136,19 @@ export class ComponentLoader {
    * 2. Check if HTML is already cached → return cached HTML
    * 3. Start new fetch → track promise → cache result
    *
-   * @private
    * @async
    * @param {string} componentPath - Path to component HTML file.
-   * @returns {Promise<string>} Resolves with HTML content from cache or fetch.
+   * @returns {Promise<string | undefined>} Resolves with HTML content from cache or fetch.
    * @throws {Error} If HTTP request fails or response status is not ok.
    *
    * @example
    * // Multiple concurrent calls for same path automatically deduplicated
    * const [html1, html2] = await Promise.all([
-   *   this._fetchComponent('path/to/component.html'),
-   *   this._fetchComponent('path/to/component.html')  // Uses same promise as html1
+   *   this.#fetchComponent('path/to/component.html'),
+   *   this.#fetchComponent('path/to/component.html')  // Uses same promise as html1
    * ]);
    */
-  async _fetchComponent (componentPath) {
+  async #fetchComponent (componentPath) {
     // Return existing in-flight fetch to deduplicate concurrent requests
     if (this.loadingPromises.has(componentPath)) {
       return this.loadingPromises.get(componentPath)
@@ -161,7 +160,7 @@ export class ComponentLoader {
     }
 
     // Create new fetch and track it to deduplicate concurrent requests
-    const fetchPromise = this._performFetch(componentPath)
+    const fetchPromise = this.#performFetch(componentPath)
     this.loadingPromises.set(componentPath, fetchPromise)
 
     try {
@@ -176,14 +175,13 @@ export class ComponentLoader {
    * Inserts HTML content into target element by setting innerHTML.
    * Silently skips insertion if target element cannot be resolved.
    *
-   * @private
    * @param {ComponentLoaderInsertPoint} insertPoint - Target element ID string or Element reference.
    * @param {string} html - HTML content string to insert into target element.
    * @returns {void}
    * @throws {Error} Implicitly throws if innerHTML assignment fails (e.g., due to security policies).
    */
-  _insertHtml (insertPoint, html) {
-    const element = this._resolveInsertPoint(insertPoint)
+  #insertHtml (insertPoint, html) {
+    const element = this.#resolveInsertPoint(insertPoint)
     if (element) {
       element.innerHTML = html
     }
@@ -194,18 +192,17 @@ export class ComponentLoader {
    * Accepts either string element ID (looked up via document.getElementById())
    * or direct Element reference. Returns null if insert point type is neither string nor Element.
    *
-   * @private
    * @param {ComponentLoaderInsertPoint} insertPoint - Element ID string or Element DOM reference.
    * @returns {Element|null} Resolved Element reference, or null if element not found or invalid type.
    *
    * @example
    * // String ID lookup
-   * const el1 = this._resolveInsertPoint('my-container'); // returns element or null
+   * const el1 = this.#resolveInsertPoint('my-container'); // returns element or null
    *
    * // Direct element reference
-   * const el2 = this._resolveInsertPoint(document.body); // returns document.body
+   * const el2 = this.#resolveInsertPoint(document.body); // returns document.body
    */
-  _resolveInsertPoint (insertPoint) {
+  #resolveInsertPoint (insertPoint) {
     if (typeof insertPoint === 'string') {
       return document.getElementById(insertPoint)
     }
@@ -219,13 +216,12 @@ export class ComponentLoader {
    * If callback is not a function, silently returns. Callback errors are caught,
    * logged to console, and not rethrown to prevent cascading failures.
    *
-   * @private
    * @async
    * @param {ComponentLoaderSuccessCallback|null} callback - Success callback function or null/undefined.
    * @param {string} html - Loaded HTML content string to pass to callback.
    * @returns {Promise<void>} Always resolves (never rejects), resolves when callback completes.
    */
-  async _invokeSuccessCallback (callback, html) {
+  async #invokeSuccessCallback (callback, html) {
     if (typeof callback !== 'function') {
       return
     }
@@ -242,18 +238,17 @@ export class ComponentLoader {
    * Constructs informative error message including insert point description and delegates
    * to error callback asynchronously. Callback errors are caught and logged separately.
    *
-   * @private
    * @param {ComponentLoaderInsertPoint} insertPoint - Target element where component was to be inserted.
    * @param {Error} error - The Error object that occurred during component load.
    * @param {ComponentLoaderErrorCallback|null} errorCallback - Error handler callback or null/undefined.
    * @returns {void}
    */
-  _handleComponentError (insertPoint, error, errorCallback) {
-    const location = this._describeInsertPoint(insertPoint)
+  #handleComponentError (insertPoint, error, errorCallback) {
+    const location = this.#describeInsertPoint(insertPoint)
     console.error(`Failed to load component at ${location}:`, error)
 
     // Invoke error callback asynchronously to prevent blocking
-    this._invokeErrorCallback(errorCallback, error).catch(err => {
+    this.#invokeErrorCallback(errorCallback, error).catch(err => {
       console.error('Unhandled error in error callback:', err)
     })
   }
@@ -263,16 +258,15 @@ export class ComponentLoader {
    * Safely handles string IDs, Element references, and invalid types by generating
    * appropriate descriptions or fallback text.
    *
-   * @private
    * @param {ComponentLoaderInsertPoint} insertPoint - Element ID string or Element reference.
    * @returns {string} Human-readable description for error logging (e.g., "element with id 'my-div'").
    *
    * @example
-   * this._describeInsertPoint('container')        // "element with id "container""
-   * this._describeInsertPoint(document.body)      // "BODY element"
-   * this._describeInsertPoint({})                 // "unknown element"
+   * this.#describeInsertPoint('container')        // "element with id "container""
+   * this.#describeInsertPoint(document.body)      // "BODY element"
+   * this.#describeInsertPoint({})                 // "unknown element"
    */
-  _describeInsertPoint (insertPoint) {
+  #describeInsertPoint (insertPoint) {
     if (typeof insertPoint === 'string') {
       return `element with id "${insertPoint}"`
     }
@@ -291,13 +285,12 @@ export class ComponentLoader {
    * If callback is not a function, silently returns. Callback errors are caught,
    * logged to console.error(), and not rethrown to prevent cascading failures.
    *
-   * @private
    * @async
    * @param {ComponentLoaderErrorCallback|null} errorCallback - Error callback function or null/undefined.
    * @param {Error} error - The Error object that occurred during component load.
    * @returns {Promise<void>} Always resolves (never rejects), resolves when callback completes.
    */
-  async _invokeErrorCallback (errorCallback, error) {
+  async #invokeErrorCallback (errorCallback, error) {
     if (typeof errorCallback !== 'function') {
       return
     }
@@ -315,7 +308,6 @@ export class ComponentLoader {
    * Caches result in this.cache only on success. Throws Error if HTTP
    * request fails, network error occurs, or response.ok is false.
    *
-   * @private
    * @async
    * @param {string} componentPath - Path or URL to component HTML file.
    * @returns {Promise<string>} Resolves with HTML content string.
@@ -324,17 +316,17 @@ export class ComponentLoader {
    *
    * @example
    * // Successful fetch and cache
-   * const html = await this._performFetch('/components/nav.html');
+   * const html = await this.#performFetch('/components/nav.html');
    * // html is cached in this.cache
    *
    * // Failed fetch
    * try {
-   *   await this._performFetch('/missing.html'); // 404 response
+   *   await this.#performFetch('/missing.html'); // 404 response
    * } catch (error) {
    *   // error: "HTTP error fetching /missing.html: status 404"
    * }
    */
-  async _performFetch (componentPath) {
+  async #performFetch (componentPath) {
     const response = await fetch(componentPath)
 
     if (!response.ok) {

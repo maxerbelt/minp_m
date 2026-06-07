@@ -89,9 +89,8 @@ export async function fetchNavBar (tab, title) {
   bh.setTheme()
   bh.setTest(urlParams)
 
-  console.debug('fetchNavBar - loading navbar component...')
   await _loadNavbarComponent()
-  console.debug('fetchNavBar - navbar component loaded; checking DOM wiring')
+
   try {
     const weaponBtn = document.getElementById('weaponBtn')
     const tallyBox = document.getElementById('enemy-tallyBox')
@@ -191,7 +190,7 @@ function _buildNavigationUrl (targetPage, params) {
  * into the navbar container element.
  *
  * @private
- * @returns {Promise<void>}
+ * @returns {Promise<string>}
  */
 function _loadNavbarComponent () {
   return componentLoader.loadComponent(
