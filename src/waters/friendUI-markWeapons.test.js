@@ -122,6 +122,11 @@ describe('FriendUI - markFleetWeapons', () => {
           [0, 1],
           [0, 2]
         ],
+        XYs: [
+          [0, 0],
+          [1, 0],
+          [2, 0]
+        ],
         rackAt: jest.fn((column, row) => {
           // Weapon at position (col=0, row=0) and (col=2, row=0)
           if ((column === 0 && row === 0) || (column === 2 && row === 0)) {
@@ -137,6 +142,10 @@ describe('FriendUI - markFleetWeapons', () => {
         cells: [
           [1, 0],
           [2, 0]
+        ],
+        XYs: [
+          [0, 1],
+          [0, 2]
         ],
         rackAt: jest.fn((column, row) => {
           // Weapon at position (col=0, row=1)
@@ -154,6 +163,11 @@ describe('FriendUI - markFleetWeapons', () => {
           [1, 1],
           [2, 1],
           [3, 1]
+        ],
+        XYs: [
+          [1, 1],
+          [1, 2],
+          [1, 3]
         ],
         rackAt: jest.fn(() => null) // No weapons
       }

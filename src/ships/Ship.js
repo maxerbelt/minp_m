@@ -493,7 +493,10 @@ export class Ship {
    * @private
    */
   _extractCellC (cell) {
-    if ('c' in cell) return cell.c
+    if ('c' in cell) {
+      console.log(`_extractCellC ${JSON.stringify(cell)}`)
+      return cell.c
+    }
     if (Array.isArray(cell) && cell[1] != null) return cell[1]
     return 0
   }

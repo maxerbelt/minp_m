@@ -252,7 +252,11 @@ export class GameStateManager {
       } catch (error) {
         const funcName = fn.name || fnName || 'anonymous'
         const errorMsg = error instanceof Error ? error.message : String(error)
-        console.error(`Error in ${funcName} callback: ${errorMsg}`)
+        console.error(
+          `Error in ${funcName} callback: ${errorMsg} stack: ${
+            error?.stack || 'none'
+          }`
+        )
       }
     }
   }

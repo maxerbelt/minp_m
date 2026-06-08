@@ -4,6 +4,7 @@ import { CellClassManager } from './helpers/CellClassManager.js'
 import { ShipCellDisplayer } from './helpers/ShipCellDisplayer.js'
 import { makeKey, parsePair } from '../core/utilities.js'
 import { SurroundingCellsHelper } from './helpers/SurroundingCellsHelper.js'
+import { SurroundingXYsHelper } from './helpers/SurroundingXYhelper.js'
 import { dragNDrop } from '../selection/dragndrop.js'
 import { CustomMap } from '../terrains/all/js/map.js'
 import { LoadOut } from './LoadOut.js'
@@ -625,7 +626,6 @@ export class GridBoard {
    * @returns {void}
    * @throws {Error} If maker required but not provided for chosen strategy
    * @throws {Error} If strategy name is unrecognized
-   * @private
    */
   #addSurroundingCells (x, y, container, strategy, maker) {
     /** @type {any} */
@@ -672,6 +672,74 @@ export class GridBoard {
     }
   }
 
+  /**
+   * Adds surrounding cells to container using specified strategy.
+   * Generic method that delegates to SurroundingCellsHelper with flexible result format.
+   * Provides unified interface for different surrounding cell data structures.
+   *
+   * **Strategies**:
+   * - 'keySet': Accumulates cell keys in Set (maker not required)
+   * - 'objectMap': Accumulates maker results in Object keyed by cell (maker required)
+   * - 'array': Pushes maker results into Array (maker required)
+   *
+   * **Error Handling**:
+   * - Throws Error if 'objectMap' or 'array' strategy used without maker callback
+   * - Throws Error for unknown strategy values
+   * - Silently skips out-of-bounds neighbors based on map bounds
+   *
+   * @param {number} x - Column coordinate of center cell (0-based, x-axis)
+   * @param {number} y - Row coordinate of center cell (0-based, y-axis)
+   * @param {Set<string>|Object<string, HTMLElement>|any[]} container - Container to accumulate results
+   * @param {'keySet'|'objectMap'|'array'} strategy - Result format strategy ('keySet' | 'objectMap' | 'array')
+   * @param {CoordToValueCallback} [maker] - Callback for 'objectMap'/'array' strategies (required for those)
+   * @returns {void}
+   * @throws {Error} If maker required but not provided for chosen strategy
+   * @throws {Error} If strategy name is unrecognized
+   */
+  #addSurroundingXYs (x, y, container, strategy, maker) {
+    /** @type {any} */
+    let result
+    /** @type {GridMap} */
+    const currentMap = this.map
+
+    switch (strategy) {
+      case 'keySet': {
+        result = SurroundingXYsHelper.asKeySet(
+          currentMap ?? { rows: 0, cols: 0 },
+          x,
+          y
+        )
+        // @ts-ignore - container is Set when strategy is keySet
+        result.forEach(key => container.add(key))
+        break
+      }
+      case 'objectMap': {
+        if (!maker) throw new Error('maker required for objectMap strategy')
+        result = SurroundingXYsHelper.asObjectMap(
+          currentMap ?? { rows: 0, cols: 0 },
+          x,
+          y,
+          maker
+        )
+        Object.assign(container, result)
+        break
+      }
+      case 'array': {
+        if (!maker) throw new Error('maker required for array strategy')
+        result = SurroundingXYsHelper.asArray(
+          currentMap ?? { rows: 0, cols: 0 },
+          x,
+          y,
+          maker
+        )
+        // @ts-ignore - container is array when strategy is array
+        container.push(...result)
+        break
+      }
+      default:
+        throw new Error(`Unknown surround strategy: ${strategy}`)
+    }
+  }
   /**
    * Adds surrounding cell keys to a set container using key format.
    * Retrieves all 8 neighbors of specified cell and accumulates their string keys.
@@ -724,6 +792,23 @@ export class GridBoard {
   surroundObj (x, y, container, maker) {
     this.#addSurroundingCells(x, y, container, 'objectMap', maker)
   }
+  /**
+   * Adds surrounding cells as object mappings to container.
+   * Retrieves neighbors and applies maker function to each coordinate.
+   * Results stored in object with keys as keys and mapper output as values.
+   *
+   * **Strategy**: Used for flexible surrounding cell data extraction with custom mappers.
+   *
+   * @param {number} x - Column coordinate of center cell (0-based, x-axis)
+   * @param {number} y - Row coordinate of center cell (0-based, y-axis)
+   * @param {Object<string, HTMLElement>} container - Object to accumulate surrounding cell mappings
+   * @param {CoordToElementCallback} maker - Callback to transform [row, col] → HTMLElement
+   * @returns {void}
+   * @private
+   */
+  surroundXYsObj (x, y, container, maker) {
+    this.#addSurroundingXYs(x, y, container, 'objectMap', maker)
+  }
 
   /**
    * Adds surrounding cells to array container using maker callback.
@@ -761,7 +846,7 @@ export class GridBoard {
     const surroundings = container || {}
     for (const cell of cells) {
       const { x, y } = NodeUI.getXY(/** @type {HTMLDivElement} */ (cell))
-      this.surroundObj(
+      this.surroundXYsObj(
         x,
         y,
         surroundings,

@@ -33,10 +33,8 @@ import { makeKey } from '../../core/utilities.js'
  * Maps must implement boundary validation to ensure operations stay within valid grid bounds.
  *
  * @typedef {Object} GridMap
- * @property {(row: number, col: number) => boolean} inBounds - Boundary check function.
- *                                                              Signature: (row: number, col: number) => boolean
- *                                                              Returns true if the given row and column are within grid bounds.
- *                                                              Used to validate neighboring cells before iteration.
+ * @property {(x: number, y: number) => boolean} isInBoundsAt - Boundary check function.
+ *
  */
 
 /**
@@ -45,9 +43,11 @@ import { makeKey } from '../../core/utilities.js'
  * Invoked for each neighboring cell during iteration operations.
  * Called once per in-bounds cell within the 3×3 neighborhood.
  *
- * @callback CellIteratorCallback
- * @param {number} row - Row coordinate of the cell (0-based, must be >= 0)
- * @param {number} col - Column coordinate of the cell (0-based, must be >= 0)
+ * @callback  XYsIteratorCallback
+ * @template T
+ * @param {T} collection - Target collection being populated (mutated by reducer)
+ * @param {number} x - Column coordinate of the cell (0-based, must be >= 0)
+ * @param {number} y - Row coordinate of the cell (0-based, must be >= 0)
  * @returns {void} Callback performs side effects only
  */
 
@@ -57,11 +57,12 @@ import { makeKey } from '../../core/utilities.js'
  * Invoked for each neighboring cell to accumulate into target collection.
  * Function receives collection and cell coordinates; must mutate collection if applicable.
  *
- * @callback CellReducerCallback
+ * @callback  XYsReducerCallback
  * @template T
  * @param {T} collection - Target collection being populated (mutated by reducer)
- * @param {number} row - Row coordinate of the cell
- * @param {number} col - Column coordinate of the cell
+ *
+ * @param {number} x - Column coordinate of the cell (0-based, must be >= 0)
+ * @param {number} y - Row coordinate of the cell (0-based, must be >= 0)
  * @returns {void} Reducer performs mutation on collection, no return value expected
  */
 
@@ -71,10 +72,10 @@ import { makeKey } from '../../core/utilities.js'
  * Called for each neighboring cell to generate a value for that cell.
  * Return value is used in the result collection (Set, Object, or Array).
  *
- * @callback CellMakerCallback
+ * @callback XYsMakerCallback
  * @template T
- * @param {number} row - Row coordinate of the cell
- * @param {number} col - Column coordinate of the cell
+ * @param {number} x - Column coordinate of the cell (0-based, must be >= 0)
+ * @param {number} y - Row coordinate of the cell (0-based, must be >= 0)
  * @returns {T} Value to associate with this cell in result collection
  */
 
@@ -118,7 +119,7 @@ import { makeKey } from '../../core/utilities.js'
  *   (r, c) => ({ row: r, col: c, id: makeKey(r, c) })
  * );
  */
-export class SurroundingCellsHelper {
+export class SurroundingXYsHelper {
   /**
    * Neighborhood span constants for 8-connected adjacency (3×3 kernel).
    *
@@ -151,7 +152,7 @@ export class SurroundingCellsHelper {
    *                        Used to validate cells before invoking callback.
    * @param {number} x - Center column coordinate (0-based). Must be >= 0.
    * @param {number} y - Center row coordinate (0-based). Must be >= 0.
-   * @param {CellIteratorCallback} callback - Iterator function invoked for each in-bounds neighboring cell.
+   * @param { XYsIteratorCallback} callback - Iterator function invoked for each in-bounds neighboring cell.
    *                                          Called in row-major order (top-left to bottom-right).
    * @returns {void} This method performs side effects (iteration) only.
    *
@@ -173,10 +174,10 @@ export class SurroundingCellsHelper {
 
     for (let dy = MIN_DELTA; dy <= MAX_DELTA; dy++) {
       for (let dx = MIN_DELTA; dx <= MAX_DELTA; dx++) {
-        const row = y + dy
-        const col = x + dx
-        if (map.inBounds(row, col)) {
-          callback(row, col)
+        const sy = y + dy
+        const sx = x + dx
+        if (map.isInBoundsAt(sx, sy)) {
+          callback(sx, sy)
         }
       }
     }
@@ -200,7 +201,7 @@ export class SurroundingCellsHelper {
    * @param {T} initialCollection - Starting collection to populate (Object, Array, Set, or custom type).
    *                                 Passed by reference and mutated by reducer.
    *                                 Must be a mutable collection (array, Set, Object, etc.).
-   * @param {CellReducerCallback<T>} reducer - Accumulation function.
+   * @param {XYsReducerCallback<T>} reducer - Accumulation function.
    *                                           Receives collection and cell coordinates.
    *                                           Must mutate collection (no return value expected).
    *                                           Called exactly once per in-bounds neighboring cell.
@@ -220,8 +221,8 @@ export class SurroundingCellsHelper {
    * );
    */
   static #collectSurroundingCells (map, x, y, initialCollection, reducer) {
-    this.#forEachSurroundingCell(map, x, y, (row, col) => {
-      reducer(initialCollection, row, col)
+    this.#forEachSurroundingCell(map, x, y, (sx, sy) => {
+      reducer(initialCollection, sx, sy)
     })
     return initialCollection
   }
@@ -260,12 +261,8 @@ export class SurroundingCellsHelper {
    * console.log(`Found ${neighbors.size} neighbors near corner`);
    */
   static asKeySet (map, x, y) {
-    return this.#collectSurroundingCells(
-      map,
-      x,
-      y,
-      new Set(),
-      (set, row, col) => set.add(makeKey(row, col))
+    return this.#collectSurroundingCells(map, x, y, new Set(), (set, sx, sy) =>
+      set.add(makeKey(sx, sy))
     )
   }
 
@@ -287,7 +284,7 @@ export class SurroundingCellsHelper {
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
    * @param {number} x - Center column coordinate (0-based).
    * @param {number} y - Center row coordinate (0-based).
-   * @param {CellMakerCallback<T>} maker - Mapping function for generating values.
+   * @param {XYsMakerCallback<T>} maker - Mapping function for generating values.
    *                                       Called for each in-bounds neighboring cell.
    *                                       Return value becomes the value for that cell's key.
    * @returns {Object<string, T>} Object map where:
@@ -312,8 +309,8 @@ export class SurroundingCellsHelper {
    * );
    */
   static asObjectMap (map, x, y, maker) {
-    return this.#collectSurroundingCells(map, x, y, {}, (obj, row, col) => {
-      obj[makeKey(row, col)] = maker(row, col)
+    return this.#collectSurroundingCells(map, x, y, {}, (obj, sx, sy) => {
+      obj[makeKey(sx, sy)] = maker(sx, sy)
     })
   }
 
@@ -336,7 +333,7 @@ export class SurroundingCellsHelper {
    * @param {GridMap} map - Grid map with inBounds(row, col) boundary checking method.
    * @param {number} x - Center column coordinate (0-based).
    * @param {number} y - Center row coordinate (0-based).
-   * @param {CellMakerCallback<T>} maker - Mapping function for generating values.
+   * @param {XYsMakerCallback<T>} maker - Mapping function for generating values.
    *                                       Called for each in-bounds neighboring cell.
    *                                       Return value is pushed to result array.
    * @returns {Array<T>} Array of maker results, one per neighboring cell.
@@ -360,8 +357,8 @@ export class SurroundingCellsHelper {
    * // Result: [[4,4], [4,5], [4,6], [5,4], [5,5], [5,6], [6,4], [6,5], [6,6]]
    */
   static asArray (map, x, y, maker) {
-    return this.#collectSurroundingCells(map, x, y, [], (arr, row, col) => {
-      arr.push(maker(row, col))
+    return this.#collectSurroundingCells(map, x, y, [], (arr, sx, sy) => {
+      arr.push(maker(sx, sy))
     })
   }
 }
