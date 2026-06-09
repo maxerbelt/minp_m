@@ -1045,7 +1045,7 @@ export class GridBoard {
   }
   updateElementCursor (newCursor, oldCursor) {
     // @ts-ignore - this.UI is typed as Object but has board property
-    const boardElement = /** @type {HTMLElement|undefined} */ (this.UI?.board)
+    const boardElement = /** @type {HTMLElement|undefined} */ (this.board)
     const classList = boardElement?.classList
 
     if (classList) {
