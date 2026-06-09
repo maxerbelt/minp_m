@@ -1890,6 +1890,9 @@ class Enemy extends Waters {
    * @memberof Enemy
    */
   updateWeaponStatus (_rack, _cursorInfo) {
+    // Guard against gameStatus not being available (e.g., in test environments)
+    if (!gameStatus?.updateWeaponStatus) return
+
     // @ts-ignore - this.loadOut is typed as Object but has currentWeaponSystem and selectedCoordinates
     const loadOut = this.loadOut
     // @ts-ignore - WeaponsSystem vs WeaponSystem type incompatibility
@@ -2003,6 +2006,9 @@ class Enemy extends Waters {
     // Clear any cursor classes applied to board cells when switching to single-shot
     // Single-shot mode should show no cursor previews on the opponent board
     this.UI.grid.clearAllCursorClasses?.()
+
+    // Update weapon status display and mode icons for single-shot mode
+    this.updateWeaponStatus()
   }
 
   /**
@@ -2055,6 +2061,9 @@ class Enemy extends Waters {
       // @ts-ignore - Weapon type incompatibility (LoadOut.Weapon vs StatusUI.Weapon)
       gameStatus.resetToSelectionMode(currentWeaponSystem?.weapon)
     }
+
+    // Update weapon status display with new weapon info, mode icons, and cursor class
+    this.updateWeaponStatus()
   }
 
   /**
