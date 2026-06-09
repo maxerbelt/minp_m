@@ -35,8 +35,8 @@ export const WeaponMode = Object.freeze({
  * Context information for a board cell location.
  * @typedef {Object} BoardContext
  * @property {Board} board - The game board object
- * @property {number} r - Row coordinate
- * @property {number} c - Column coordinate
+ * @property {number} x - Column coordinate
+ * @property {number} y - Row coordinate
  * @property {HTMLElement} cell - DOM element of the cell
  */
 
@@ -553,7 +553,7 @@ export class Steps {
    */
   #useSourceAmmo () {
     if (!this.source) return
-    this.source.board.cellUseAmmo(this.source.c, this.source.r)
+    this.source.board.cellUseAmmo(this.source.x, this.source.y)
   }
 
   /**
@@ -588,8 +588,8 @@ export class Steps {
     )
       return
 
-    this.sourceHint.board.cellHintReveal(this.sourceHint.r, this.sourceHint.c)
-    this.onHint(this.sourceHint.r, this.sourceHint.c)
+    this.sourceHint.board.cellHintReveal(this.sourceHint.x, this.sourceHint.y)
+    this.onHint(this.sourceHint.x, this.sourceHint.y)
   }
 
   /**

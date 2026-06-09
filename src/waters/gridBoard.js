@@ -1303,24 +1303,12 @@ export class GridBoard {
    * @returns {void}
    * @static
    */
-  static removeHighlightAoE (boardElement) {
+  static removeHighlightAoeFor (boardElement) {
     /** @type {GridBoard} */
     const grid = new GridBoard(boardElement)
     grid.removeHighlightAoE()
   }
-  /**
-   * Removes all area-of-effect highlight classes from board.
-   * Clears target and splash effect visual indicators.
-   *
-   * @returns {void}
-   */
-  removeHighlightAoE () {
-    /** @type {string[]} */
-    const tags = ['target', ...Object.values(bh.splashTags)]
-    this.#forEachBoardCell((/** @type {HTMLElement} */ el) =>
-      el.classList.remove(...tags)
-    )
-  }
+
   /**
    * Builds board grid for screen display (static factory).
    * Creates interactive grid with cell elements and optional click handlers.
@@ -1542,7 +1530,6 @@ export class GridBoard {
    * @param {GameModel} model - Game model containing placement rules and state
    * @param {(cell:HTMLElement)=>void} [additionalSetup] - Optional callback for additional cell configuration (e.g., weapon-specific setup)
    * @returns {void}
-   * @private
    */
   #configureBoardCellsForDrop (model, additionalSetup) {
     this.#forEachBoardCell(cell => {

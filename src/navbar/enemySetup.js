@@ -560,7 +560,8 @@ const BoardInitializer = {
       enemyRef,
       boardMap,
       _createAreaOfEffectHighlighter,
-      enemyUI?.grid?.removeHighlightAoE
+      // Wrap in arrow function to preserve grid context
+      () => enemyUI?.grid?.removeHighlightAoE?.()
     )
   },
 

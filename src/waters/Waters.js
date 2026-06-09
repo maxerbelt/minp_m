@@ -578,7 +578,7 @@ export class Waters {
     return this.autoPlaceWithCallbacks(
       Function.prototype,
       // @ts-ignore - clearPlaceVisuals method available at runtime
-      this.UI.grid.clearPlaceVisuals.bind(this.UI)
+      () => this.UI.grid.clearPlaceVisuals()
     )
   }
 
@@ -1546,7 +1546,7 @@ export class Waters {
    */
   generateSourceHint (ship, opponent) {
     if (this.steps?.sourceHint) {
-      return [this.steps.sourceHint.r, this.steps.sourceHint.c]
+      return [this.steps.sourceHint.y, this.steps.sourceHint.x]
     }
     return this.generateRandomSourceHint(ship, opponent)
   }

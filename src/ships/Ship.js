@@ -449,12 +449,16 @@ export class Ship {
     if (board && typeof board === 'object' && 'toCoords' in board) {
       const coords = board.toCoords
       if (Array.isArray(coords)) {
-        return coords.map(cell => this._extractCellCoordinates(cell))
+        return coords.map(cell => this.#extractCellCoordinates(cell))
       }
     }
     return []
   }
   get XYs () {
+    return this.cells
+  }
+
+  get RCs () {
     return this.cells.map(([r, c]) => [c, r])
   }
   /**
@@ -462,11 +466,12 @@ export class Ship {
    * @param {any} cell - Cell in various formats
    * @returns {CoordinatePair} [row, col] pair
    */
-  _extractCellCoordinates (cell) {
+  #extractCellCoordinates (cell) {
     if (Array.isArray(cell) && cell.length >= 2) {
       return [cell[0], cell[1]]
     }
     if (cell && typeof cell === 'object') {
+      console.log(`#extractCellCoordinates ${JSON.stringify(cell)}`)
       const r = this._extractCellR(cell)
       const c = this._extractCellC(cell)
       return [r, c]
@@ -1527,7 +1532,7 @@ export class Ship {
     if (!Array.isArray(cells)) return []
     const result = []
     for (const cell of cells) {
-      result.push(this._extractCellCoordinates(cell))
+      result.push(this.#extractCellCoordinates(cell))
     }
     return result
   }
